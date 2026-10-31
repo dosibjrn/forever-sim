@@ -1,0 +1,608 @@
+[
+  {
+    "details": {
+      "icon_key": "spell_holy_innerfire",
+      "modeled_talent": true,
+      "source_roster_key": "consecrated_ground"
+    },
+    "entity_kind": "talent",
+    "local_key": "consecrated_ground",
+    "name": "Consecrated Ground",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_eyeforaneye",
+      "modeled_talent": true,
+      "source_roster_key": "eye_for_an_eye"
+    },
+    "entity_kind": "talent",
+    "local_key": "eye_for_an_eye",
+    "name": "Eye for an Eye",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_power",
+      "modeled_talent": true,
+      "source_roster_key": "holy_power"
+    },
+    "entity_kind": "talent",
+    "local_key": "holy_power",
+    "name": "Holy Power",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_blessingofprotection",
+      "modeled_talent": true,
+      "source_roster_key": "holy_shield"
+    },
+    "entity_kind": "talent",
+    "local_key": "holy_shield",
+    "name": "Holy Shield",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_searinglight",
+      "modeled_talent": true,
+      "source_roster_key": "holy_shock"
+    },
+    "entity_kind": "talent",
+    "local_key": "holy_shock",
+    "name": "Holy Shock",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_paladin_infusionoflight",
+      "modeled_talent": true,
+      "source_roster_key": "infusion_of_light"
+    },
+    "entity_kind": "talent",
+    "local_key": "infusion_of_light",
+    "name": "Infusion of Light",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_divinepurpose",
+      "modeled_talent": true,
+      "source_roster_key": "instrument_of_law"
+    },
+    "entity_kind": "talent",
+    "local_key": "instrument_of_law",
+    "name": "Instrument of Law",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_improvedresistanceauras",
+      "modeled_talent": true,
+      "source_roster_key": "iron_creed"
+    },
+    "entity_kind": "talent",
+    "local_key": "iron_creed",
+    "name": "Iron Creed",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_paladin_judgementofthepure",
+      "modeled_talent": true,
+      "source_roster_key": "lights_vigil"
+    },
+    "entity_kind": "talent",
+    "local_key": "lights_vigil",
+    "name": "Light's Vigil",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_rogue_ambush",
+      "modeled_talent": true,
+      "source_roster_key": "precision"
+    },
+    "entity_kind": "talent",
+    "local_key": "precision",
+    "name": "Precision",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_blessingofstrength",
+      "modeled_talent": true,
+      "source_roster_key": "reckoning"
+    },
+    "entity_kind": "talent",
+    "local_key": "reckoning",
+    "name": "Reckoning",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_prayerofhealing",
+      "modeled_talent": true,
+      "source_roster_key": "repentance"
+    },
+    "entity_kind": "talent",
+    "local_key": "repentance",
+    "name": "Repentance",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_paladin_judgementred",
+      "modeled_talent": true,
+      "source_roster_key": "swift_judgement"
+    },
+    "entity_kind": "talent",
+    "local_key": "swift_judgement",
+    "name": "Swift Judgement",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_paladin_shieldofthetemplar",
+      "modeled_talent": true,
+      "source_roster_key": "templars_bulwark"
+    },
+    "entity_kind": "talent",
+    "local_key": "templars_bulwark",
+    "name": "Templar's Bulwark",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_blessedresillience",
+      "modeled_talent": true,
+      "source_roster_key": "twist_of_light"
+    },
+    "entity_kind": "talent",
+    "local_key": "twist_of_light",
+    "name": "Twist of Light",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "inv_hammer_04",
+      "modeled_talent": true,
+      "source_roster_key": "two_handed_weapon_specialization"
+    },
+    "entity_kind": "talent",
+    "local_key": "two_handed_weapon_specialization",
+    "name": "Two-Handed Weapon Specialization",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_sealofvalor",
+      "source_roster_key": "blessing_of_freedom"
+    },
+    "entity_kind": "spell",
+    "local_key": "blessing_of_freedom",
+    "name": "Blessing of Freedom",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_magic_magearmor",
+      "source_roster_key": "blessing_of_kings"
+    },
+    "entity_kind": "spell",
+    "local_key": "blessing_of_kings",
+    "name": "Blessing of Kings",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_prayerofhealing02",
+      "source_roster_key": "blessing_of_light"
+    },
+    "entity_kind": "spell",
+    "local_key": "blessing_of_light",
+    "name": "Blessing of Light",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_fistofjustice",
+      "source_roster_key": "blessing_of_might"
+    },
+    "entity_kind": "spell",
+    "local_key": "blessing_of_might",
+    "name": "Blessing of Might",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_sealofprotection",
+      "source_roster_key": "blessing_of_protection"
+    },
+    "entity_kind": "spell",
+    "local_key": "blessing_of_protection",
+    "name": "Blessing of Protection",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_sealofsacrifice",
+      "source_roster_key": "blessing_of_sacrifice"
+    },
+    "entity_kind": "spell",
+    "local_key": "blessing_of_sacrifice",
+    "name": "Blessing of Sacrifice",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_sealofsalvation",
+      "source_roster_key": "blessing_of_salvation"
+    },
+    "entity_kind": "spell",
+    "local_key": "blessing_of_salvation",
+    "name": "Blessing of Salvation",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_sealofwisdom",
+      "source_roster_key": "blessing_of_wisdom"
+    },
+    "entity_kind": "spell",
+    "local_key": "blessing_of_wisdom",
+    "name": "Blessing of Wisdom",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_renew",
+      "source_roster_key": "cleanse"
+    },
+    "entity_kind": "spell",
+    "local_key": "cleanse",
+    "name": "Cleanse",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_mindsooth",
+      "source_roster_key": "concentration_aura"
+    },
+    "entity_kind": "spell",
+    "local_key": "concentration_aura",
+    "name": "Concentration Aura",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_heal",
+      "source_roster_key": "divine_favor"
+    },
+    "entity_kind": "spell",
+    "local_key": "divine_favor",
+    "name": "Divine Favor",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_timestop",
+      "source_roster_key": "divine_intervention"
+    },
+    "entity_kind": "spell",
+    "local_key": "divine_intervention",
+    "name": "Divine Intervention",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_restoration",
+      "source_roster_key": "divine_protection"
+    },
+    "entity_kind": "spell",
+    "local_key": "divine_protection",
+    "name": "Divine Protection",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_divineintervention",
+      "source_roster_key": "divine_shield"
+    },
+    "entity_kind": "spell",
+    "local_key": "divine_shield",
+    "name": "Divine Shield",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_excorcism_02",
+      "source_roster_key": "exorcism"
+    },
+    "entity_kind": "spell",
+    "local_key": "exorcism",
+    "name": "Exorcism",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_sealoffire",
+      "source_roster_key": "fire_resistance_aura"
+    },
+    "entity_kind": "spell",
+    "local_key": "fire_resistance_aura",
+    "name": "Fire Resistance Aura",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_wizardmark",
+      "source_roster_key": "frost_resistance_aura"
+    },
+    "entity_kind": "spell",
+    "local_key": "frost_resistance_aura",
+    "name": "Frost Resistance Aura",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_magic_greaterblessingofkings",
+      "source_roster_key": "greater_blessing_of_kings"
+    },
+    "entity_kind": "spell",
+    "local_key": "greater_blessing_of_kings",
+    "name": "Greater Blessing of Kings",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_greaterblessingoflight",
+      "source_roster_key": "greater_blessing_of_light"
+    },
+    "entity_kind": "spell",
+    "local_key": "greater_blessing_of_light",
+    "name": "Greater Blessing of Light",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_greaterblessingofkings",
+      "source_roster_key": "greater_blessing_of_might"
+    },
+    "entity_kind": "spell",
+    "local_key": "greater_blessing_of_might",
+    "name": "Greater Blessing of Might",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_greaterblessingofsalvation",
+      "source_roster_key": "greater_blessing_of_salvation"
+    },
+    "entity_kind": "spell",
+    "local_key": "greater_blessing_of_salvation",
+    "name": "Greater Blessing of Salvation",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_greaterblessingofwisdom",
+      "source_roster_key": "greater_blessing_of_wisdom"
+    },
+    "entity_kind": "spell",
+    "local_key": "greater_blessing_of_wisdom",
+    "name": "Greater Blessing of Wisdom",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_sealofmight",
+      "source_roster_key": "hammer_of_justice"
+    },
+    "entity_kind": "spell",
+    "local_key": "hammer_of_justice",
+    "name": "Hammer of Justice",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_thunderclap",
+      "source_roster_key": "hammer_of_wrath"
+    },
+    "entity_kind": "spell",
+    "local_key": "hammer_of_wrath",
+    "name": "Hammer of Wrath",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_blessingofprotection",
+      "source_roster_key": "holy_shield"
+    },
+    "entity_kind": "spell",
+    "local_key": "holy_shield",
+    "name": "Holy Shield",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_searinglight",
+      "source_roster_key": "holy_shock"
+    },
+    "entity_kind": "spell",
+    "local_key": "holy_shock",
+    "name": "Holy Shock",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_excorcism",
+      "source_roster_key": "holy_wrath"
+    },
+    "entity_kind": "spell",
+    "local_key": "holy_wrath",
+    "name": "Holy Wrath",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_layonhands",
+      "source_roster_key": "lay_on_hands"
+    },
+    "entity_kind": "spell",
+    "local_key": "lay_on_hands",
+    "name": "Lay on Hands",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_paladin_judgementofthepure",
+      "source_roster_key": "lights_vigil"
+    },
+    "entity_kind": "spell",
+    "local_key": "lights_vigil",
+    "name": "Light's Vigil",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_purify",
+      "source_roster_key": "purify"
+    },
+    "entity_kind": "spell",
+    "local_key": "purify",
+    "name": "Purify",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_resurrection",
+      "source_roster_key": "redemption"
+    },
+    "entity_kind": "spell",
+    "local_key": "redemption",
+    "name": "Redemption",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_prayerofhealing",
+      "source_roster_key": "repentance"
+    },
+    "entity_kind": "spell",
+    "local_key": "repentance",
+    "name": "Repentance",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_sealoffury",
+      "source_roster_key": "righteous_fury"
+    },
+    "entity_kind": "spell",
+    "local_key": "righteous_fury",
+    "name": "Righteous Fury",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_sealofwrath",
+      "source_roster_key": "seal_of_justice"
+    },
+    "entity_kind": "spell",
+    "local_key": "seal_of_justice",
+    "name": "Seal of Justice",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_healingaura",
+      "source_roster_key": "seal_of_light"
+    },
+    "entity_kind": "spell",
+    "local_key": "seal_of_light",
+    "name": "Seal of Light",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_holysmite",
+      "source_roster_key": "seal_of_the_crusader"
+    },
+    "entity_kind": "spell",
+    "local_key": "seal_of_the_crusader",
+    "name": "Seal of the Crusader",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_righteousnessaura",
+      "source_roster_key": "seal_of_wisdom"
+    },
+    "entity_kind": "spell",
+    "local_key": "seal_of_wisdom",
+    "name": "Seal of Wisdom",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_senseundead",
+      "source_roster_key": "sense_undead"
+    },
+    "entity_kind": "spell",
+    "local_key": "sense_undead",
+    "name": "Sense Undead",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_shadow_sealofkings",
+      "source_roster_key": "shadow_resistance_aura"
+    },
+    "entity_kind": "spell",
+    "local_key": "shadow_resistance_aura",
+    "name": "Shadow Resistance Aura",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_paladin_judgementred",
+      "source_roster_key": "swift_judgement"
+    },
+    "entity_kind": "spell",
+    "local_key": "swift_judgement",
+    "name": "Swift Judgement",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_paladin_shieldofthetemplar",
+      "source_roster_key": "templars_bulwark"
+    },
+    "entity_kind": "spell",
+    "local_key": "templars_bulwark",
+    "name": "Templar's Bulwark",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_turnundead",
+      "source_roster_key": "turn_undead"
+    },
+    "entity_kind": "spell",
+    "local_key": "turn_undead",
+    "name": "Turn Undead",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_horn_03",
+      "source_roster_key": "voice_of_truth"
+    },
+    "entity_kind": "spell",
+    "local_key": "voice_of_truth",
+    "name": "Voice of Truth",
+    "reason": "spell_family_rank_ids_not_imported"
+  }
+]
