@@ -1,3 +1,5 @@
+> **Public repository migration in progress (2026-10-31).** Issues and five draft PRs have been recreated; this `main` is not yet a complete code/data snapshot of the private predecessor. Do not treat current CI or partial code as a full P1–P7 certificate. See [migration P0 issue #26](https://github.com/dosibjrn/forever-sim/issues/26) and [history-free snapshot script](scripts/complete_public_migration.sh). The original private repository and its automations are not the active development target.
+
 # WoW Forever — simulator and optimizer
 
 ## Upstream inspiration and acknowledgments
