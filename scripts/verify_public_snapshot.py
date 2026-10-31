@@ -25,7 +25,7 @@ PROTECTED_PREFIX = ('docs/migration/', '.github/workflows/')
 LFS_POINTER = b'version https://git-lfs.github.com/spec/v1\n'
 
 
-def git_index(root):
+def git_index(root, include_oids=False):
     raw = subprocess.check_output(['git', '-C', str(root), 'ls-files', '--stage', '-z'])
     result = {}
     for entry in raw.split(b'\0'):
@@ -38,8 +38,25 @@ def git_index(root):
             raise ValueError(f'unmerged index entry: {path}')
         if path in result:
             raise ValueError(f'duplicate index entry: {path}')
-        result[path] = mode
+        result[path] = (mode, _oid) if include_oids else mode
     return result
+
+
+def staged_expected_oid(root, rel, mode):
+    """Hash exactly what Git's index SHOULD contain, honoring clean filters.
+
+    LFS stores a clean-filtered pointer in Git even when the working file
+    contains hydrated bytes; comparing a staged OID to a raw file SHA fails
+    valid LFS checkouts. The hydrated source/target byte check is separate.
+    """
+    if mode == '120000':
+        data = os.fsencode(os.readlink(root / rel))
+        return subprocess.check_output(
+            ['git', '-C', str(root), 'hash-object', '--stdin'], input=data
+        ).decode('ascii').strip()
+    return subprocess.check_output(
+        ['git', '-C', str(root), 'hash-object', f'--path={rel}', '--', rel]
+    ).decode('ascii').strip()
 
 
 def sha256_file(path):
@@ -71,7 +88,7 @@ def selected_source_paths(source):
 
 def verify(source, target, require_staged=True):
     source_index = git_index(source)
-    target_index = git_index(target) if require_staged else {}
+    target_index = git_index(target, include_oids=True) if require_staged else {}
     errors = []
     compared = 0
     excluded = 0
@@ -110,10 +127,28 @@ def verify(source, target, require_staged=True):
         else:
             errors.append(f'UNSUPPORTED_GIT_MODE {mode} {rel}')
             continue
-        if require_staged and target_index.get(rel) != mode:
-            errors.append(f'NOT_STAGED_WITH_SOURCE_MODE {rel} expected={mode} got={target_index.get(rel)}')
-            continue
+        if require_staged:
+            indexed = target_index.get(rel)
+            if indexed is None or indexed[0] != mode:
+                errors.append(f'NOT_STAGED_WITH_SOURCE_MODE {rel} expected={mode} got={indexed}')
+                continue
+            expected_oid = staged_expected_oid(target, rel, mode)
+            if indexed[1] != expected_oid:
+                errors.append(f'STAGED_BLOB_MISMATCH {rel} expected={expected_oid} got={indexed[1]}')
+                continue
         compared += 1
+    if require_staged:
+        # An unrelated staged secret or protected file would be committed too.
+        selected = set(selected_source_paths(source))
+        staged = subprocess.check_output([
+            'git', '-C', str(target), 'diff', '--cached', '--name-only',
+            '--no-renames', '-z',
+        ])
+        for raw_path in staged.split(b'\0'):
+            if raw_path:
+                rel = os.fsdecode(raw_path)
+                if rel not in selected:
+                    errors.append(f'UNEXPECTED_STAGED_PATH {rel}')
     return compared, excluded, errors
 
 
@@ -145,7 +180,7 @@ def main(argv=None):
         print(error, file=sys.stderr)
     if errors:
         return 1
-    print('WORKTREE_AND_INDEX_PARITY_OK (NOT a publication audit, LFS remote proof, or gate PASS)')
+    print('WORKTREE_AND_STAGED_BLOB_PARITY_OK (NOT a publication audit, LFS remote proof, or gate PASS)')
     return 0
 
 
