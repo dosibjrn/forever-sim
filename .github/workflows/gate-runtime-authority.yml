@@ -1,0 +1,27 @@
+name: Gate runtime authority tests
+
+# Manual-only port: no automatic CI while main is incomplete.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate-dispatch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test runner
+        run: python -m pip install --disable-pip-version-check pytest beautifulsoup4
+      - name: Reject forged PASS evidence and exercise live provider dispatch
+        run: python -m pytest -q tests/test_wf_gate_runtime_authority.py tests/test_wf_gate_p3_approved.py
+      - name: Existing gate CLI regressions (including actual P2 live probes)
+        run: python -m pytest -q tests/test_wf_gate_class_cli.py
+
+  # Real 30/300-second searches are NOT executed by this short PR contract test.
+  # Each gate must supply its own runner, independent search CI and raw evidence.
