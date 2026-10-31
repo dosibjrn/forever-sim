@@ -1,0 +1,12 @@
+{
+  "gate": "P7.5",
+  "mode": "stochastic",
+  "first_seed": 92000001,
+  "last_seed": 92001000,
+  "count": 1000,
+  "independent_from_search": true,
+  "comparison_gate": "P7.4",
+  "prior_best_mean_dps": 853.9305465836047,
+  "prior_best_sd_dps": 33.184201265813556,
+  "require_noninferiority": true
+}
