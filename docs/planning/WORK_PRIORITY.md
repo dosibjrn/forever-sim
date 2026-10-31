@@ -1,3 +1,9 @@
+> **Migration status (2026-10-31): PUBLIC forever-sim is the new working repository.** The copied queue below is a historical snapshot from private mage-level-sim, NOT an authorization to edit or trigger CI on the private repo. Public main is still incomplete until the source tree, native/data assets, and workflows are fully restored. All five migrated PRs are DRAFT. Do not claim local/CI PASS or certified checkpoints here. Continue implementation only after the baseline migration is verified. Current full checkpoint count remains 0/148.
+>
+> **New issue links:** old #28→new #7; old #34→new #11; old #35→new #12; old #40→new #15; old #41→new #16; old #42→new #17 (legacy-only incident); old #61→new #19; old #27→new #6. **New PRs:** old #58→#20, #62→#21, #67→#22, #68→#23, #69→#24. All bare numbers in the historical section below are OLD PRIVATE REPO identifiers, not current forever-sim links.
+
+---
+
 # WORK PRIORITY — live integration queue
 
 **Owner:** Integration/merge hourly automation. This is a **mutable routing index**; **detailed independent work items must live in GitHub issues**, not in long task prose here. Implementation hourly automation reads main and works separately owned issue/PR branches. Never overwrite another worker's branch.
