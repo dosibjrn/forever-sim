@@ -1,0 +1,4081 @@
+{
+  "schema_version": 1,
+  "source_url": "https://talentsforever.com/data.json",
+  "source_generated": "2026-09-24",
+  "license": "CC-BY-4.0",
+  "attribution": "Talents Forever (talentsforever.com), WoW Forever beta client-derived icon keys",
+  "classes": {
+    "druid": {
+      "talents": {
+        "berserk": {
+          "name": "Berserk",
+          "icon_key": "ability_druid_berserk"
+        },
+        "blood_frenzy": {
+          "name": "Blood Frenzy",
+          "icon_key": "ability_ghoulfrenzy"
+        },
+        "brutal_impact": {
+          "name": "Brutal Impact",
+          "icon_key": "ability_druid_bash"
+        },
+        "eclipse": {
+          "name": "Eclipse",
+          "icon_key": "ability_druid_eclipse"
+        },
+        "feral_charge": {
+          "name": "Feral Charge",
+          "icon_key": "ability_hunter_pet_bear"
+        },
+        "feral_instinct": {
+          "name": "Feral Instinct",
+          "icon_key": "ability_ambush"
+        },
+        "feral_swiftness": {
+          "name": "Feral Swiftness",
+          "icon_key": "spell_nature_spiritwolf"
+        },
+        "ferocity": {
+          "name": "Ferocity",
+          "icon_key": "ability_hunter_pet_hyena"
+        },
+        "furor": {
+          "name": "Furor",
+          "icon_key": "spell_holy_blessingofstamina"
+        },
+        "genesis": {
+          "name": "Genesis",
+          "icon_key": "spell_arcane_arcane03"
+        },
+        "gift_of_nature": {
+          "name": "Gift of Nature",
+          "icon_key": "spell_nature_protectionformnature"
+        },
+        "gift_of_the_earthmother": {
+          "name": "Gift of the Earthmother",
+          "icon_key": "spell_nature_spiritarmor"
+        },
+        "heart_of_the_wild": {
+          "name": "Heart of the Wild",
+          "icon_key": "spell_holy_blessingofagility"
+        },
+        "improved_entangling_roots": {
+          "name": "Improved Entangling Roots",
+          "icon_key": "spell_nature_stranglevines"
+        },
+        "improved_moonfire": {
+          "name": "Improved Moonfire",
+          "icon_key": "spell_nature_starfall"
+        },
+        "improved_regrowth": {
+          "name": "Improved Regrowth",
+          "icon_key": "spell_nature_resistnature"
+        },
+        "improved_rejuvenation": {
+          "name": "Improved Rejuvenation",
+          "icon_key": "spell_nature_rejuvenation"
+        },
+        "improved_starfire": {
+          "name": "Improved Starfire",
+          "icon_key": "spell_arcane_starfire"
+        },
+        "improved_tranquility": {
+          "name": "Improved Tranquility",
+          "icon_key": "spell_nature_tranquility"
+        },
+        "improved_wrath": {
+          "name": "Improved Wrath",
+          "icon_key": "spell_nature_abolishmagic"
+        },
+        "insect_swarm": {
+          "name": "Insect Swarm",
+          "icon_key": "spell_nature_insectswarm"
+        },
+        "king_of_the_jungle": {
+          "name": "King of the Jungle",
+          "icon_key": "ability_druid_kingofthejungle"
+        },
+        "leader_of_the_pack": {
+          "name": "Leader of the Pack",
+          "icon_key": "spell_nature_unyeildingstamina"
+        },
+        "living_spirit": {
+          "name": "Living Spirit",
+          "icon_key": "spell_nature_giftofthewaterspirit"
+        },
+        "moonfury": {
+          "name": "Moonfury",
+          "icon_key": "spell_nature_moonglow"
+        },
+        "moonglow": {
+          "name": "Moonglow",
+          "icon_key": "spell_nature_sentinal"
+        },
+        "moonkin_form": {
+          "name": "Moonkin Form",
+          "icon_key": "spell_nature_forceofnature"
+        },
+        "natural_reaction": {
+          "name": "Natural Reaction",
+          "icon_key": "ability_bullrush"
+        },
+        "natural_shapeshifter": {
+          "name": "Natural Shapeshifter",
+          "icon_key": "spell_nature_wispsplode"
+        },
+        "naturalist": {
+          "name": "Naturalist",
+          "icon_key": "spell_nature_healingtouch"
+        },
+        "natures_focus": {
+          "name": "Nature's Focus",
+          "icon_key": "spell_nature_healingwavegreater"
+        },
+        "natures_grace": {
+          "name": "Nature's Grace",
+          "icon_key": "spell_nature_naturesblessing"
+        },
+        "natures_majesty": {
+          "name": "Nature's Majesty",
+          "icon_key": "inv_staff_01"
+        },
+        "natures_reach": {
+          "name": "Nature's Reach",
+          "icon_key": "spell_nature_naturetouchgrow"
+        },
+        "natures_splendor": {
+          "name": "Nature's Splendor",
+          "icon_key": "spell_nature_natureresistancetotem"
+        },
+        "natures_swiftness": {
+          "name": "Nature's Swiftness",
+          "icon_key": "spell_nature_ravenform"
+        },
+        "overgrowth": {
+          "name": "Overgrowth",
+          "icon_key": "inv_misc_herb_15"
+        },
+        "predatory_instincts": {
+          "name": "Predatory Instincts",
+          "icon_key": "ability_druid_predatoryinstincts"
+        },
+        "predatory_strikes": {
+          "name": "Predatory Strikes",
+          "icon_key": "ability_hunter_pet_cat"
+        },
+        "primal_bite": {
+          "name": "Primal Bite",
+          "icon_key": "ability_racial_cannibalize"
+        },
+        "reflection": {
+          "name": "Reflection",
+          "icon_key": "spell_frost_windwalkon"
+        },
+        "rend_and_tear": {
+          "name": "Rend and Tear",
+          "icon_key": "ability_druid_primalagression"
+        },
+        "savage_fury": {
+          "name": "Savage Fury",
+          "icon_key": "ability_druid_ravage"
+        },
+        "sharpened_claws": {
+          "name": "Sharpened Claws",
+          "icon_key": "inv_misc_monsterclaw_04"
+        },
+        "shredding_attacks": {
+          "name": "Shredding Attacks",
+          "icon_key": "spell_shadow_vampiricaura"
+        },
+        "subtlety": {
+          "name": "Subtlety",
+          "icon_key": "ability_eyeoftheowl"
+        },
+        "swiftmend": {
+          "name": "Swiftmend",
+          "icon_key": "inv_relics_idolofrejuvenation"
+        },
+        "thick_hide": {
+          "name": "Thick Hide",
+          "icon_key": "inv_misc_pelt_bear_03"
+        },
+        "tranquil_spirit": {
+          "name": "Tranquil Spirit",
+          "icon_key": "spell_holy_elunesgrace"
+        },
+        "vengeance": {
+          "name": "Vengeance",
+          "icon_key": "spell_nature_purge"
+        },
+        "wild_growth": {
+          "name": "Wild Growth",
+          "icon_key": "ability_druid_flourish"
+        }
+      },
+      "spells": {
+        "abolish_poison": {
+          "name": "Abolish Poison",
+          "icon_key": "spell_nature_nullifypoison_02"
+        },
+        "aquatic_form": {
+          "name": "Aquatic Form",
+          "icon_key": "ability_druid_aquaticform"
+        },
+        "barkskin": {
+          "name": "Barkskin",
+          "icon_key": "spell_nature_stoneclawtotem"
+        },
+        "bash": {
+          "name": "Bash",
+          "icon_key": "ability_druid_bash"
+        },
+        "bear_form": {
+          "name": "Bear Form",
+          "icon_key": "ability_racial_bearform"
+        },
+        "berserk": {
+          "name": "Berserk",
+          "icon_key": "ability_druid_berserk"
+        },
+        "cat_form": {
+          "name": "Cat Form",
+          "icon_key": "ability_druid_catform"
+        },
+        "challenging_roar": {
+          "name": "Challenging Roar",
+          "icon_key": "ability_druid_challangingroar"
+        },
+        "claw": {
+          "name": "Claw",
+          "icon_key": "ability_druid_rake"
+        },
+        "cower": {
+          "name": "Cower",
+          "icon_key": "ability_druid_cower"
+        },
+        "cure_poison": {
+          "name": "Cure Poison",
+          "icon_key": "spell_nature_nullifypoison"
+        },
+        "dash": {
+          "name": "Dash",
+          "icon_key": "ability_druid_dash"
+        },
+        "demoralizing_roar": {
+          "name": "Demoralizing Roar",
+          "icon_key": "ability_druid_demoralizingroar"
+        },
+        "dire_bear_form": {
+          "name": "Dire Bear Form",
+          "icon_key": "ability_racial_bearform"
+        },
+        "enrage": {
+          "name": "Enrage",
+          "icon_key": "ability_druid_enrage"
+        },
+        "entangling_roots": {
+          "name": "Entangling Roots",
+          "icon_key": "spell_nature_stranglevines"
+        },
+        "faerie_fire": {
+          "name": "Faerie Fire",
+          "icon_key": "spell_nature_faeriefire"
+        },
+        "feline_grace": {
+          "name": "Feline Grace",
+          "icon_key": "inv_feather_01"
+        },
+        "feral_charge": {
+          "name": "Feral Charge",
+          "icon_key": "ability_hunter_pet_bear"
+        },
+        "ferocious_bite": {
+          "name": "Ferocious Bite",
+          "icon_key": "ability_druid_ferociousbite"
+        },
+        "frenzied_regeneration": {
+          "name": "Frenzied Regeneration",
+          "icon_key": "ability_bullrush"
+        },
+        "gift_of_the_wild": {
+          "name": "Gift of the Wild",
+          "icon_key": "spell_nature_regeneration"
+        },
+        "growl": {
+          "name": "Growl",
+          "icon_key": "ability_physical_taunt"
+        },
+        "healing_touch": {
+          "name": "Healing Touch",
+          "icon_key": "spell_nature_healingtouch"
+        },
+        "hibernate": {
+          "name": "Hibernate",
+          "icon_key": "spell_nature_sleep"
+        },
+        "hurricane": {
+          "name": "Hurricane",
+          "icon_key": "spell_nature_cyclone"
+        },
+        "innervate": {
+          "name": "Innervate",
+          "icon_key": "spell_nature_lightning"
+        },
+        "insect_swarm": {
+          "name": "Insect Swarm",
+          "icon_key": "spell_nature_insectswarm"
+        },
+        "lacerate": {
+          "name": "Lacerate",
+          "icon_key": "ability_druid_lacerate"
+        },
+        "mark_of_the_wild": {
+          "name": "Mark of the Wild",
+          "icon_key": "spell_nature_regeneration"
+        },
+        "maul": {
+          "name": "Maul",
+          "icon_key": "ability_druid_maul"
+        },
+        "moonfire": {
+          "name": "Moonfire",
+          "icon_key": "spell_nature_starfall"
+        },
+        "moonkin_form": {
+          "name": "Moonkin Form",
+          "icon_key": "spell_nature_forceofnature"
+        },
+        "natures_grasp": {
+          "name": "Nature's Grasp",
+          "icon_key": "spell_nature_natureswrath"
+        },
+        "natures_swiftness": {
+          "name": "Nature's Swiftness",
+          "icon_key": "spell_nature_ravenform"
+        },
+        "omen_of_clarity": {
+          "name": "Omen of Clarity",
+          "icon_key": "spell_nature_crystalball"
+        },
+        "pounce": {
+          "name": "Pounce",
+          "icon_key": "ability_druid_supriseattack"
+        },
+        "primal_bite": {
+          "name": "Primal Bite",
+          "icon_key": "ability_racial_cannibalize"
+        },
+        "prowl": {
+          "name": "Prowl",
+          "icon_key": "ability_ambush"
+        },
+        "rake": {
+          "name": "Rake",
+          "icon_key": "ability_druid_disembowel"
+        },
+        "ravage": {
+          "name": "Ravage",
+          "icon_key": "ability_druid_ravage"
+        },
+        "rebirth": {
+          "name": "Rebirth",
+          "icon_key": "spell_nature_reincarnation"
+        },
+        "regrowth": {
+          "name": "Regrowth",
+          "icon_key": "spell_nature_resistnature"
+        },
+        "rejuvenation": {
+          "name": "Rejuvenation",
+          "icon_key": "spell_nature_rejuvenation"
+        },
+        "remove_curse": {
+          "name": "Remove Curse",
+          "icon_key": "spell_holy_removecurse"
+        },
+        "revive": {
+          "name": "Revive",
+          "icon_key": "ability_druid_lunarguidance"
+        },
+        "rip": {
+          "name": "Rip",
+          "icon_key": "ability_ghoulfrenzy"
+        },
+        "shred": {
+          "name": "Shred",
+          "icon_key": "spell_shadow_vampiricaura"
+        },
+        "soothe_animal": {
+          "name": "Soothe Animal",
+          "icon_key": "ability_hunter_beastsoothe"
+        },
+        "starfire": {
+          "name": "Starfire",
+          "icon_key": "spell_arcane_starfire"
+        },
+        "swiftmend": {
+          "name": "Swiftmend",
+          "icon_key": "inv_relics_idolofrejuvenation"
+        },
+        "swipe": {
+          "name": "Swipe",
+          "icon_key": "inv_misc_monsterclaw_03"
+        },
+        "teleport_moonglade": {
+          "name": "Teleport: Moonglade",
+          "icon_key": "spell_arcane_teleportmoonglade"
+        },
+        "thorns": {
+          "name": "Thorns",
+          "icon_key": "spell_nature_thorns"
+        },
+        "tigers_fury": {
+          "name": "Tiger's Fury",
+          "icon_key": "ability_mount_jungletiger"
+        },
+        "track_humanoids": {
+          "name": "Track Humanoids",
+          "icon_key": "ability_tracking"
+        },
+        "tranquility": {
+          "name": "Tranquility",
+          "icon_key": "spell_nature_tranquility"
+        },
+        "travel_form": {
+          "name": "Travel Form",
+          "icon_key": "ability_druid_travelform"
+        },
+        "wild_growth": {
+          "name": "Wild Growth",
+          "icon_key": "ability_druid_flourish"
+        },
+        "wrath": {
+          "name": "Wrath",
+          "icon_key": "spell_nature_abolishmagic"
+        }
+      }
+    },
+    "hunter": {
+      "talents": {
+        "barrage": {
+          "name": "Barrage",
+          "icon_key": "ability_upgrademoonglaive"
+        },
+        "bestial_discipline": {
+          "name": "Bestial Discipline",
+          "icon_key": "spell_nature_abolishmagic"
+        },
+        "bestial_swiftness": {
+          "name": "Bestial Swiftness",
+          "icon_key": "ability_druid_dash"
+        },
+        "bestial_wrath": {
+          "name": "Bestial Wrath",
+          "icon_key": "ability_druid_ferociousbite"
+        },
+        "careful_aim": {
+          "name": "Careful Aim",
+          "icon_key": "ability_hunter_zenarchery"
+        },
+        "clever_traps": {
+          "name": "Clever Traps",
+          "icon_key": "spell_nature_timestop"
+        },
+        "counterattack": {
+          "name": "Counterattack",
+          "icon_key": "ability_warrior_challange"
+        },
+        "deadly_aspects": {
+          "name": "Deadly Aspects",
+          "icon_key": "spell_nature_ravenform"
+        },
+        "deflection": {
+          "name": "Deflection",
+          "icon_key": "ability_parry"
+        },
+        "deterrence": {
+          "name": "Deterrence",
+          "icon_key": "ability_whirlwind"
+        },
+        "efficiency": {
+          "name": "Efficiency",
+          "icon_key": "spell_frost_wizardmark"
+        },
+        "endurance_training": {
+          "name": "Endurance Training",
+          "icon_key": "spell_nature_reincarnation"
+        },
+        "entrapment": {
+          "name": "Entrapment",
+          "icon_key": "spell_nature_stranglevines"
+        },
+        "expose_prey": {
+          "name": "Expose Prey",
+          "icon_key": "ability_hunter_swiftstrike"
+        },
+        "ferocity": {
+          "name": "Ferocity",
+          "icon_key": "inv_misc_monsterclaw_04"
+        },
+        "focused_fire": {
+          "name": "Focused Fire",
+          "icon_key": "inv_weapon_crossbow_10"
+        },
+        "frenzy": {
+          "name": "Frenzy",
+          "icon_key": "inv_misc_monsterclaw_03"
+        },
+        "hawk_eye": {
+          "name": "Hawk Eye",
+          "icon_key": "ability_townwatch"
+        },
+        "improved_arcane_shot": {
+          "name": "Improved Arcane Shot",
+          "icon_key": "ability_impalingbolt"
+        },
+        "improved_aspect_of_the_monkey": {
+          "name": "Improved Aspect of the Monkey",
+          "icon_key": "ability_hunter_aspectofthemonkey"
+        },
+        "improved_concussive_shot": {
+          "name": "Improved Concussive Shot",
+          "icon_key": "spell_frost_stun"
+        },
+        "improved_mend_pet": {
+          "name": "Improved Mend Pet",
+          "icon_key": "ability_hunter_mendpet"
+        },
+        "improved_revive_pet": {
+          "name": "Improved Revive Pet",
+          "icon_key": "ability_hunter_beastsoothe"
+        },
+        "improved_stings": {
+          "name": "Improved Stings",
+          "icon_key": "hunter_pvp_spidersting"
+        },
+        "improved_tracking": {
+          "name": "Improved Tracking",
+          "icon_key": "inv_misc_head_dragon_black"
+        },
+        "improved_wing_clip": {
+          "name": "Improved Wing Clip",
+          "icon_key": "ability_rogue_trip"
+        },
+        "intimidation": {
+          "name": "Intimidation",
+          "icon_key": "ability_devour"
+        },
+        "lacerating_strikes": {
+          "name": "Lacerating Strikes",
+          "icon_key": "ability_gouge"
+        },
+        "lethal_attacks": {
+          "name": "Lethal Attacks",
+          "icon_key": "ability_searingarrow"
+        },
+        "lightning_reflexes": {
+          "name": "Lightning Reflexes",
+          "icon_key": "spell_nature_invisibilty"
+        },
+        "lone_wolf": {
+          "name": "Lone Wolf",
+          "icon_key": "ability_mount_whitedirewolf"
+        },
+        "mortal_shots": {
+          "name": "Mortal Shots",
+          "icon_key": "ability_piercedamage"
+        },
+        "pathfinding": {
+          "name": "Pathfinding",
+          "icon_key": "ability_mount_jungletiger"
+        },
+        "predators_edge": {
+          "name": "Predator's Edge",
+          "icon_key": "ability_hunter_hatchettoss"
+        },
+        "ranged_weapon_specialization": {
+          "name": "Ranged Weapon Specialization",
+          "icon_key": "inv_weapon_rifle_06"
+        },
+        "rapid_killing": {
+          "name": "Rapid Killing",
+          "icon_key": "ability_hunter_rapidkilling"
+        },
+        "rapid_recuperation": {
+          "name": "Rapid Recuperation",
+          "icon_key": "ability_hunter_rapidregeneration"
+        },
+        "resourcefulness": {
+          "name": "Resourcefulness",
+          "icon_key": "ability_hunter_resourcefulness"
+        },
+        "savage_strikes": {
+          "name": "Savage Strikes",
+          "icon_key": "ability_racial_bloodrage"
+        },
+        "scatter_shot": {
+          "name": "Scatter Shot",
+          "icon_key": "ability_golemstormbolt"
+        },
+        "sniper_shot": {
+          "name": "Sniper Shot",
+          "icon_key": "hunter_pvp_snipershot"
+        },
+        "spirit_bond": {
+          "name": "Spirit Bond",
+          "icon_key": "ability_druid_demoralizingroar"
+        },
+        "strider_kick": {
+          "name": "Strider Kick",
+          "icon_key": "ability_hunter_pet_tallstrider"
+        },
+        "summon_hawk": {
+          "name": "Summon Hawk",
+          "icon_key": "ability_hunter_animalhandler"
+        },
+        "surefooted": {
+          "name": "Surefooted",
+          "icon_key": "ability_kick"
+        },
+        "survival_tactics": {
+          "name": "Survival Tactics",
+          "icon_key": "ability_ensnare"
+        },
+        "survivalist": {
+          "name": "Survivalist",
+          "icon_key": "spell_shadow_twilight"
+        },
+        "survivalists_discipline": {
+          "name": "Survivalist's Discipline",
+          "icon_key": "ability_hunter_mastertactitian"
+        },
+        "trueshot_aura": {
+          "name": "Trueshot Aura",
+          "icon_key": "ability_trueshot"
+        },
+        "unleashed_fury": {
+          "name": "Unleashed Fury",
+          "icon_key": "ability_bullrush"
+        }
+      },
+      "spells": {
+        "aimed_shot": {
+          "name": "Aimed Shot",
+          "icon_key": "inv_spear_07"
+        },
+        "arcane_resistance": {
+          "name": "Arcane Resistance",
+          "icon_key": "spell_nature_starfall"
+        },
+        "arcane_shot": {
+          "name": "Arcane Shot",
+          "icon_key": "ability_impalingbolt"
+        },
+        "aspect_of_the_beast": {
+          "name": "Aspect of the Beast",
+          "icon_key": "ability_mount_pinktiger"
+        },
+        "aspect_of_the_cheetah": {
+          "name": "Aspect of the Cheetah",
+          "icon_key": "ability_mount_jungletiger"
+        },
+        "aspect_of_the_hawk": {
+          "name": "Aspect of the Hawk",
+          "icon_key": "spell_nature_ravenform"
+        },
+        "aspect_of_the_monkey": {
+          "name": "Aspect of the Monkey",
+          "icon_key": "ability_hunter_aspectofthemonkey"
+        },
+        "aspect_of_the_pack": {
+          "name": "Aspect of the Pack",
+          "icon_key": "ability_mount_whitetiger"
+        },
+        "aspect_of_the_wild": {
+          "name": "Aspect of the Wild",
+          "icon_key": "spell_nature_protectionformnature"
+        },
+        "auto_shot": {
+          "name": "Auto Shot",
+          "icon_key": "ability_whirlwind"
+        },
+        "beast_lore": {
+          "name": "Beast Lore",
+          "icon_key": "ability_physical_taunt"
+        },
+        "bestial_wrath": {
+          "name": "Bestial Wrath",
+          "icon_key": "ability_druid_ferociousbite"
+        },
+        "bite": {
+          "name": "Bite",
+          "icon_key": "ability_racial_cannibalize"
+        },
+        "call_pet": {
+          "name": "Call Pet",
+          "icon_key": "ability_hunter_beastcall"
+        },
+        "charge": {
+          "name": "Charge",
+          "icon_key": "ability_hunter_pet_boar"
+        },
+        "claw": {
+          "name": "Claw",
+          "icon_key": "ability_druid_rake"
+        },
+        "concussive_shot": {
+          "name": "Concussive Shot",
+          "icon_key": "spell_frost_stun"
+        },
+        "counterattack": {
+          "name": "Counterattack",
+          "icon_key": "ability_warrior_challange"
+        },
+        "cower": {
+          "name": "Cower",
+          "icon_key": "ability_druid_cower"
+        },
+        "dash": {
+          "name": "Dash",
+          "icon_key": "ability_druid_dash"
+        },
+        "demoralizing_screech": {
+          "name": "Demoralizing Screech",
+          "icon_key": "ability_hunter_pet_vulture"
+        },
+        "deterrence": {
+          "name": "Deterrence",
+          "icon_key": "ability_whirlwind"
+        },
+        "disengage": {
+          "name": "Disengage",
+          "icon_key": "ability_rogue_feint"
+        },
+        "dismember": {
+          "name": "Dismember",
+          "icon_key": "ability_hunter_pet_crocolisk"
+        },
+        "dismiss_pet": {
+          "name": "Dismiss Pet",
+          "icon_key": "spell_nature_spiritwolf"
+        },
+        "distracting_shot": {
+          "name": "Distracting Shot",
+          "icon_key": "spell_arcane_blink"
+        },
+        "dive": {
+          "name": "Dive",
+          "icon_key": "spell_shadow_burningspirit"
+        },
+        "dust_cloud": {
+          "name": "Dust Cloud",
+          "icon_key": "spell_nature_sleep"
+        },
+        "eagle_eye": {
+          "name": "Eagle Eye",
+          "icon_key": "ability_hunter_eagleeye"
+        },
+        "enchanted_flare": {
+          "name": "Enchanted Flare",
+          "icon_key": "ability_mage_arcanebarrage"
+        },
+        "explosive_trap": {
+          "name": "Explosive Trap",
+          "icon_key": "spell_fire_selfdestruct"
+        },
+        "eyes_of_the_beast": {
+          "name": "Eyes of the Beast",
+          "icon_key": "ability_eyeoftheowl"
+        },
+        "feed_pet": {
+          "name": "Feed Pet",
+          "icon_key": "ability_hunter_beasttraining"
+        },
+        "feign_death": {
+          "name": "Feign Death",
+          "icon_key": "ability_rogue_feigndeath"
+        },
+        "fire_resistance": {
+          "name": "Fire Resistance",
+          "icon_key": "spell_fire_firearmor"
+        },
+        "flare": {
+          "name": "Flare",
+          "icon_key": "spell_fire_flare"
+        },
+        "freezing_trap": {
+          "name": "Freezing Trap",
+          "icon_key": "spell_frost_chainsofice"
+        },
+        "frost_resistance": {
+          "name": "Frost Resistance",
+          "icon_key": "spell_frost_frostward"
+        },
+        "frost_trap": {
+          "name": "Frost Trap",
+          "icon_key": "spell_frost_freezingbreath"
+        },
+        "furious_howl": {
+          "name": "Furious Howl",
+          "icon_key": "ability_hunter_pet_wolf"
+        },
+        "great_stamina": {
+          "name": "Great Stamina",
+          "icon_key": "spell_nature_unyeildingstamina"
+        },
+        "growl": {
+          "name": "Growl",
+          "icon_key": "ability_physical_taunt"
+        },
+        "hunters_mark": {
+          "name": "Hunter's Mark",
+          "icon_key": "ability_hunter_snipershot"
+        },
+        "immolation_trap": {
+          "name": "Immolation Trap",
+          "icon_key": "spell_fire_flameshock"
+        },
+        "intimidation": {
+          "name": "Intimidation",
+          "icon_key": "ability_devour"
+        },
+        "lacerate": {
+          "name": "Lacerate",
+          "icon_key": "ability_gouge"
+        },
+        "lightning_breath": {
+          "name": "Lightning Breath",
+          "icon_key": "spell_nature_lightning"
+        },
+        "mend_pet": {
+          "name": "Mend Pet",
+          "icon_key": "ability_hunter_mendpet"
+        },
+        "mine": {
+          "name": "Mine!",
+          "icon_key": "spell_nature_natureswrath"
+        },
+        "mongoose_bite": {
+          "name": "Mongoose Bite",
+          "icon_key": "ability_hunter_swiftstrike"
+        },
+        "multi_shot": {
+          "name": "Multi-Shot",
+          "icon_key": "ability_upgrademoonglaive"
+        },
+        "natural_armor": {
+          "name": "Natural Armor",
+          "icon_key": "spell_nature_spiritarmor"
+        },
+        "nature_resistance": {
+          "name": "Nature Resistance",
+          "icon_key": "spell_nature_resistnature"
+        },
+        "pinch": {
+          "name": "Pinch",
+          "icon_key": "ability_hunter_pet_crab"
+        },
+        "prowl": {
+          "name": "Prowl",
+          "icon_key": "ability_druid_supriseattack"
+        },
+        "rapid_fire": {
+          "name": "Rapid Fire",
+          "icon_key": "ability_hunter_runningshot"
+        },
+        "raptor_strike": {
+          "name": "Raptor Strike",
+          "icon_key": "ability_meleedamage"
+        },
+        "revive_pet": {
+          "name": "Revive Pet",
+          "icon_key": "ability_hunter_beastsoothe"
+        },
+        "savage_rend": {
+          "name": "Savage Rend",
+          "icon_key": "ability_hunter_pet_raptor"
+        },
+        "scare_beast": {
+          "name": "Scare Beast",
+          "icon_key": "ability_druid_cower"
+        },
+        "scatter_shot": {
+          "name": "Scatter Shot",
+          "icon_key": "ability_golemstormbolt"
+        },
+        "scorpid_poison": {
+          "name": "Scorpid Poison",
+          "icon_key": "ability_poisonsting"
+        },
+        "scorpid_sting": {
+          "name": "Scorpid Sting",
+          "icon_key": "ability_hunter_criticalshot"
+        },
+        "serpent_sting": {
+          "name": "Serpent Sting",
+          "icon_key": "ability_hunter_quickshot"
+        },
+        "shadow_resistance": {
+          "name": "Shadow Resistance",
+          "icon_key": "spell_shadow_antishadow"
+        },
+        "shell_shield": {
+          "name": "Shell Shield",
+          "icon_key": "ability_hunter_pet_turtle"
+        },
+        "sniper_shot": {
+          "name": "Sniper Shot",
+          "icon_key": "hunter_pvp_snipershot"
+        },
+        "strider_kick": {
+          "name": "Strider Kick",
+          "icon_key": "ability_hunter_pet_tallstrider"
+        },
+        "summon_hawk": {
+          "name": "Summon Hawk",
+          "icon_key": "ability_hunter_animalhandler"
+        },
+        "swipe": {
+          "name": "Swipe",
+          "icon_key": "inv_misc_monsterclaw_03"
+        },
+        "tame_beast": {
+          "name": "Tame Beast",
+          "icon_key": "ability_hunter_beasttaming"
+        },
+        "tendon_rip": {
+          "name": "Tendon Rip",
+          "icon_key": "ability_hunter_pet_hyena"
+        },
+        "thunderstomp": {
+          "name": "Thunderstomp",
+          "icon_key": "ability_hunter_pet_gorilla"
+        },
+        "track_beasts": {
+          "name": "Track Beasts",
+          "icon_key": "ability_tracking"
+        },
+        "track_demons": {
+          "name": "Track Demons",
+          "icon_key": "spell_shadow_summonfelhunter"
+        },
+        "track_dragonkin": {
+          "name": "Track Dragonkin",
+          "icon_key": "inv_misc_head_dragon_01"
+        },
+        "track_elementals": {
+          "name": "Track Elementals",
+          "icon_key": "spell_frost_summonwaterelemental"
+        },
+        "track_giants": {
+          "name": "Track Giants",
+          "icon_key": "ability_racial_avatar"
+        },
+        "track_hidden": {
+          "name": "Track Hidden",
+          "icon_key": "ability_stealth"
+        },
+        "track_humanoids": {
+          "name": "Track Humanoids",
+          "icon_key": "spell_holy_prayerofhealing"
+        },
+        "track_undead": {
+          "name": "Track Undead",
+          "icon_key": "spell_shadow_darksummoning"
+        },
+        "tranquilizing_shot": {
+          "name": "Tranquilizing Shot",
+          "icon_key": "spell_nature_drowsy"
+        },
+        "tricksters_dance": {
+          "name": "Trickster's Dance",
+          "icon_key": "ability_hunter_aspectofthefox"
+        },
+        "trueshot_aura": {
+          "name": "Trueshot Aura",
+          "icon_key": "ability_trueshot"
+        },
+        "viper_sting": {
+          "name": "Viper Sting",
+          "icon_key": "ability_hunter_aimedshot"
+        },
+        "volley": {
+          "name": "Volley",
+          "icon_key": "ability_marksmanship"
+        },
+        "web": {
+          "name": "Web",
+          "icon_key": "spell_nature_web"
+        },
+        "wing_clip": {
+          "name": "Wing Clip",
+          "icon_key": "ability_rogue_trip"
+        }
+      }
+    },
+    "mage": {
+      "talents": {
+        "arcane_blast": {
+          "name": "Arcane Blast",
+          "icon_key": "spell_arcane_blast"
+        },
+        "arcane_concentration": {
+          "name": "Arcane Concentration",
+          "icon_key": "spell_shadow_manaburn"
+        },
+        "arcane_focus": {
+          "name": "Arcane Focus",
+          "icon_key": "spell_holy_devotion"
+        },
+        "arcane_geometry": {
+          "name": "Arcane Geometry",
+          "icon_key": "inv_ability_mage_radiantspark"
+        },
+        "arcane_impact": {
+          "name": "Arcane Impact",
+          "icon_key": "spell_nature_wispsplode"
+        },
+        "arcane_instability": {
+          "name": "Arcane Instability",
+          "icon_key": "spell_shadow_teleport"
+        },
+        "arcane_meditation": {
+          "name": "Arcane Meditation",
+          "icon_key": "spell_shadow_siphonmana"
+        },
+        "arcane_mind": {
+          "name": "Arcane Mind",
+          "icon_key": "spell_shadow_charm"
+        },
+        "arcane_power": {
+          "name": "Arcane Power",
+          "icon_key": "spell_nature_lightning"
+        },
+        "arcane_resilience": {
+          "name": "Arcane Resilience",
+          "icon_key": "spell_arcane_arcaneresilience"
+        },
+        "arcane_shielding": {
+          "name": "Arcane Shielding",
+          "icon_key": "spell_shadow_detectlesserinvisibility"
+        },
+        "arcane_subtlety": {
+          "name": "Arcane Subtlety",
+          "icon_key": "spell_holy_dispelmagic"
+        },
+        "arctic_reach": {
+          "name": "Arctic Reach",
+          "icon_key": "spell_shadow_darkritual"
+        },
+        "blast_wave": {
+          "name": "Blast Wave",
+          "icon_key": "spell_holy_excorcism_02"
+        },
+        "burning_soul": {
+          "name": "Burning Soul",
+          "icon_key": "spell_fire_fire"
+        },
+        "cold_snap": {
+          "name": "Cold Snap",
+          "icon_key": "spell_frost_wizardmark"
+        },
+        "combustion": {
+          "name": "Combustion",
+          "icon_key": "spell_fire_sealoffire"
+        },
+        "critical_mass": {
+          "name": "Critical Mass",
+          "icon_key": "spell_nature_wispheal"
+        },
+        "elemental_precision": {
+          "name": "Elemental Precision",
+          "icon_key": "spell_ice_magicdamage"
+        },
+        "fingers_of_frost": {
+          "name": "Fingers of Frost",
+          "icon_key": "ability_mage_wintersgrasp"
+        },
+        "fire_power": {
+          "name": "Fire Power",
+          "icon_key": "spell_fire_immolation"
+        },
+        "flame_throwing": {
+          "name": "Flame Throwing",
+          "icon_key": "spell_fire_flare"
+        },
+        "frost_channeling": {
+          "name": "Frost Channeling",
+          "icon_key": "spell_frost_stun"
+        },
+        "frost_warding": {
+          "name": "Frost Warding",
+          "icon_key": "spell_frost_frostward"
+        },
+        "frostbite": {
+          "name": "Frostbite",
+          "icon_key": "spell_frost_frostarmor"
+        },
+        "hot_streak": {
+          "name": "Hot Streak",
+          "icon_key": "ability_mage_hotstreak"
+        },
+        "ice_barrier": {
+          "name": "Ice Barrier",
+          "icon_key": "spell_ice_lament"
+        },
+        "ice_block": {
+          "name": "Ice Block",
+          "icon_key": "spell_frost_frost"
+        },
+        "ice_lance": {
+          "name": "Ice Lance",
+          "icon_key": "spell_frost_frostblast"
+        },
+        "ice_shards": {
+          "name": "Ice Shards",
+          "icon_key": "spell_frost_iceshard"
+        },
+        "ignite": {
+          "name": "Ignite",
+          "icon_key": "spell_fire_incinerate"
+        },
+        "impact": {
+          "name": "Impact",
+          "icon_key": "spell_fire_meteorstorm"
+        },
+        "improved_blizzard": {
+          "name": "Improved Blizzard",
+          "icon_key": "spell_frost_icestorm"
+        },
+        "improved_channeling": {
+          "name": "Improved Channeling",
+          "icon_key": "spell_nature_starfall"
+        },
+        "improved_cone_of_cold": {
+          "name": "Improved Cone of Cold",
+          "icon_key": "spell_frost_glacier"
+        },
+        "improved_counterspell": {
+          "name": "Improved Counterspell",
+          "icon_key": "spell_frost_iceshock"
+        },
+        "improved_fire_ward": {
+          "name": "Improved Fire Ward",
+          "icon_key": "spell_fire_firearmor"
+        },
+        "improved_fireball": {
+          "name": "Improved Fireball",
+          "icon_key": "spell_fire_flamebolt"
+        },
+        "improved_flamestrike": {
+          "name": "Improved Flamestrike",
+          "icon_key": "spell_fire_selfdestruct"
+        },
+        "improved_frost_nova": {
+          "name": "Improved Frost Nova",
+          "icon_key": "spell_frost_freezingbreath"
+        },
+        "improved_frostbolt": {
+          "name": "Improved Frostbolt",
+          "icon_key": "spell_frost_frostbolt02"
+        },
+        "improved_scorch": {
+          "name": "Improved Scorch",
+          "icon_key": "spell_fire_windsofwoe"
+        },
+        "incineration": {
+          "name": "Incineration",
+          "icon_key": "spell_fire_flameshock"
+        },
+        "magic_absorption": {
+          "name": "Magic Absorption",
+          "icon_key": "spell_nature_astralrecalgroup"
+        },
+        "master_of_elements": {
+          "name": "Master of Elements",
+          "icon_key": "spell_fire_masterofelements"
+        },
+        "missile_barrage": {
+          "name": "Missile Barrage",
+          "icon_key": "ability_mage_missilebarrage"
+        },
+        "permafrost": {
+          "name": "Permafrost",
+          "icon_key": "spell_frost_wisp"
+        },
+        "piercing_ice": {
+          "name": "Piercing Ice",
+          "icon_key": "spell_frost_frostbolt"
+        },
+        "presence_of_mind": {
+          "name": "Presence of Mind",
+          "icon_key": "spell_nature_enchantarmor"
+        },
+        "pyroblast": {
+          "name": "Pyroblast",
+          "icon_key": "spell_fire_fireball02"
+        },
+        "shatter": {
+          "name": "Shatter",
+          "icon_key": "spell_frost_frostshock"
+        },
+        "wake_of_fire": {
+          "name": "Wake of Fire",
+          "icon_key": "spell_fire_lavaspawn"
+        },
+        "wand_specialization": {
+          "name": "Wand Specialization",
+          "icon_key": "inv_wand_01"
+        },
+        "winters_chill": {
+          "name": "Winter's Chill",
+          "icon_key": "spell_frost_chillingblast"
+        }
+      },
+      "spells": {
+        "amplify_magic": {
+          "name": "Amplify Magic",
+          "icon_key": "spell_holy_flashheal"
+        },
+        "arcane_blast": {
+          "name": "Arcane Blast",
+          "icon_key": "spell_arcane_blast"
+        },
+        "arcane_brilliance": {
+          "name": "Arcane Brilliance",
+          "icon_key": "spell_holy_arcaneintellect"
+        },
+        "arcane_explosion": {
+          "name": "Arcane Explosion",
+          "icon_key": "spell_nature_wispsplode"
+        },
+        "arcane_intellect": {
+          "name": "Arcane Intellect",
+          "icon_key": "spell_holy_magicalsentry"
+        },
+        "arcane_missiles": {
+          "name": "Arcane Missiles",
+          "icon_key": "spell_nature_starfall"
+        },
+        "arcane_power": {
+          "name": "Arcane Power",
+          "icon_key": "spell_nature_lightning"
+        },
+        "blast_wave": {
+          "name": "Blast Wave",
+          "icon_key": "spell_holy_excorcism_02"
+        },
+        "blink": {
+          "name": "Blink",
+          "icon_key": "spell_arcane_blink"
+        },
+        "blizzard": {
+          "name": "Blizzard",
+          "icon_key": "spell_frost_icestorm"
+        },
+        "cold_snap": {
+          "name": "Cold Snap",
+          "icon_key": "spell_frost_wizardmark"
+        },
+        "combustion": {
+          "name": "Combustion",
+          "icon_key": "spell_fire_sealoffire"
+        },
+        "cone_of_cold": {
+          "name": "Cone of Cold",
+          "icon_key": "spell_frost_glacier"
+        },
+        "conjure_food": {
+          "name": "Conjure Food",
+          "icon_key": "inv_misc_food_10"
+        },
+        "conjure_food_rank_2": {
+          "name": "Conjure Food|Rank 2",
+          "icon_key": "inv_misc_food_09"
+        },
+        "conjure_food_rank_3": {
+          "name": "Conjure Food|Rank 3",
+          "icon_key": "inv_misc_food_12"
+        },
+        "conjure_food_rank_4": {
+          "name": "Conjure Food|Rank 4",
+          "icon_key": "inv_misc_food_08"
+        },
+        "conjure_food_rank_5": {
+          "name": "Conjure Food|Rank 5",
+          "icon_key": "inv_misc_food_11"
+        },
+        "conjure_food_rank_6": {
+          "name": "Conjure Food|Rank 6",
+          "icon_key": "inv_misc_food_33"
+        },
+        "conjure_food_rank_7": {
+          "name": "Conjure Food|Rank 7",
+          "icon_key": "inv_misc_food_73cinnamonroll"
+        },
+        "conjure_mana_agate": {
+          "name": "Conjure Mana Agate",
+          "icon_key": "inv_misc_gem_emerald_01"
+        },
+        "conjure_mana_citrine": {
+          "name": "Conjure Mana Citrine",
+          "icon_key": "inv_misc_gem_opal_01"
+        },
+        "conjure_mana_jade": {
+          "name": "Conjure Mana Jade",
+          "icon_key": "inv_misc_gem_emerald_02"
+        },
+        "conjure_mana_ruby": {
+          "name": "Conjure Mana Ruby",
+          "icon_key": "inv_misc_gem_ruby_01"
+        },
+        "conjure_water": {
+          "name": "Conjure Water",
+          "icon_key": "inv_drink_06"
+        },
+        "conjure_water_rank_2": {
+          "name": "Conjure Water|Rank 2",
+          "icon_key": "inv_drink_07"
+        },
+        "conjure_water_rank_3": {
+          "name": "Conjure Water|Rank 3",
+          "icon_key": "inv_drink_milk_02"
+        },
+        "conjure_water_rank_4": {
+          "name": "Conjure Water|Rank 4",
+          "icon_key": "inv_drink_10"
+        },
+        "conjure_water_rank_5": {
+          "name": "Conjure Water|Rank 5",
+          "icon_key": "inv_drink_09"
+        },
+        "conjure_water_rank_6": {
+          "name": "Conjure Water|Rank 6",
+          "icon_key": "inv_drink_11"
+        },
+        "conjure_water_rank_7": {
+          "name": "Conjure Water|Rank 7",
+          "icon_key": "inv_drink_18"
+        },
+        "counterspell": {
+          "name": "Counterspell",
+          "icon_key": "spell_frost_iceshock"
+        },
+        "dampen_magic": {
+          "name": "Dampen Magic",
+          "icon_key": "spell_nature_abolishmagic"
+        },
+        "evocation": {
+          "name": "Evocation",
+          "icon_key": "spell_nature_purge"
+        },
+        "fire_blast": {
+          "name": "Fire Blast",
+          "icon_key": "spell_fire_fireball"
+        },
+        "fire_ward": {
+          "name": "Fire Ward",
+          "icon_key": "spell_fire_firearmor"
+        },
+        "fireball": {
+          "name": "Fireball",
+          "icon_key": "spell_fire_flamebolt"
+        },
+        "flamestrike": {
+          "name": "Flamestrike",
+          "icon_key": "spell_fire_selfdestruct"
+        },
+        "frost_armor": {
+          "name": "Frost Armor",
+          "icon_key": "spell_frost_frostarmor02"
+        },
+        "frost_nova": {
+          "name": "Frost Nova",
+          "icon_key": "spell_frost_frostnova"
+        },
+        "frost_ward": {
+          "name": "Frost Ward",
+          "icon_key": "spell_frost_frostward"
+        },
+        "frostbolt": {
+          "name": "Frostbolt",
+          "icon_key": "spell_frost_frostbolt02"
+        },
+        "frostfire_bolt": {
+          "name": "Frostfire Bolt",
+          "icon_key": "ability_mage_frostfirebolt"
+        },
+        "ice_armor": {
+          "name": "Ice Armor",
+          "icon_key": "spell_frost_frostarmor02"
+        },
+        "ice_barrier": {
+          "name": "Ice Barrier",
+          "icon_key": "spell_ice_lament"
+        },
+        "ice_block": {
+          "name": "Ice Block",
+          "icon_key": "spell_frost_frost"
+        },
+        "ice_lance": {
+          "name": "Ice Lance",
+          "icon_key": "spell_frost_frostblast"
+        },
+        "mage_armor": {
+          "name": "Mage Armor",
+          "icon_key": "spell_magearmor"
+        },
+        "mana_shield": {
+          "name": "Mana Shield",
+          "icon_key": "spell_shadow_detectlesserinvisibility"
+        },
+        "polymorph": {
+          "name": "Polymorph",
+          "icon_key": "spell_nature_polymorph"
+        },
+        "polymorph_pig": {
+          "name": "Polymorph|Pig",
+          "icon_key": "spell_magic_polymorphpig"
+        },
+        "polymorph_turtle": {
+          "name": "Polymorph|Turtle",
+          "icon_key": "ability_hunter_pet_turtle"
+        },
+        "portal_darnassus": {
+          "name": "Portal: Darnassus",
+          "icon_key": "spell_arcane_portaldarnassus"
+        },
+        "portal_ironforge": {
+          "name": "Portal: Ironforge",
+          "icon_key": "spell_arcane_portalironforge"
+        },
+        "portal_orgrimmar": {
+          "name": "Portal: Orgrimmar",
+          "icon_key": "spell_arcane_portalorgrimmar"
+        },
+        "portal_stormwind": {
+          "name": "Portal: Stormwind",
+          "icon_key": "spell_arcane_portalstormwind"
+        },
+        "portal_thunder_bluff": {
+          "name": "Portal: Thunder Bluff",
+          "icon_key": "spell_arcane_portalthunderbluff"
+        },
+        "portal_undercity": {
+          "name": "Portal: Undercity",
+          "icon_key": "spell_arcane_portalundercity"
+        },
+        "presence_of_mind": {
+          "name": "Presence of Mind",
+          "icon_key": "spell_nature_enchantarmor"
+        },
+        "pyroblast": {
+          "name": "Pyroblast",
+          "icon_key": "spell_fire_fireball02"
+        },
+        "remove_lesser_curse": {
+          "name": "Remove Lesser Curse",
+          "icon_key": "spell_nature_removecurse"
+        },
+        "scorch": {
+          "name": "Scorch",
+          "icon_key": "spell_fire_soulburn"
+        },
+        "slow_fall": {
+          "name": "Slow Fall",
+          "icon_key": "spell_magic_featherfall"
+        },
+        "teleport_dalaran": {
+          "name": "Teleport: Dalaran",
+          "icon_key": "spell_arcane_teleporthalloftheguardian"
+        },
+        "teleport_darnassus": {
+          "name": "Teleport: Darnassus",
+          "icon_key": "spell_arcane_teleportdarnassus"
+        },
+        "teleport_ironforge": {
+          "name": "Teleport: Ironforge",
+          "icon_key": "spell_arcane_teleportironforge"
+        },
+        "teleport_orgrimmar": {
+          "name": "Teleport: Orgrimmar",
+          "icon_key": "spell_arcane_teleportorgrimmar"
+        },
+        "teleport_stormwind": {
+          "name": "Teleport: Stormwind",
+          "icon_key": "spell_arcane_teleportstormwind"
+        },
+        "teleport_thunder_bluff": {
+          "name": "Teleport: Thunder Bluff",
+          "icon_key": "spell_arcane_teleportthunderbluff"
+        },
+        "teleport_undercity": {
+          "name": "Teleport: Undercity",
+          "icon_key": "spell_arcane_teleportundercity"
+        }
+      }
+    },
+    "paladin": {
+      "talents": {
+        "anticipation": {
+          "name": "Anticipation",
+          "icon_key": "spell_magic_lesserinvisibilty"
+        },
+        "benediction": {
+          "name": "Benediction",
+          "icon_key": "spell_frost_windwalkon"
+        },
+        "champion_of_the_light": {
+          "name": "Champion of the Light",
+          "icon_key": "ability_paladin_enlightenedjudgements"
+        },
+        "consecrated_ground": {
+          "name": "Consecrated Ground",
+          "icon_key": "spell_holy_innerfire"
+        },
+        "conviction": {
+          "name": "Conviction",
+          "icon_key": "spell_holy_retributionaura"
+        },
+        "deflection": {
+          "name": "Deflection",
+          "icon_key": "ability_parry"
+        },
+        "divine_favor": {
+          "name": "Divine Favor",
+          "icon_key": "spell_holy_heal"
+        },
+        "divine_intellect": {
+          "name": "Divine Intellect",
+          "icon_key": "spell_nature_sleep"
+        },
+        "divine_precision": {
+          "name": "Divine Precision",
+          "icon_key": "spell_holy_healingfocus"
+        },
+        "divine_strength": {
+          "name": "Divine Strength",
+          "icon_key": "ability_golemthunderclap"
+        },
+        "eye_for_an_eye": {
+          "name": "Eye for an Eye",
+          "icon_key": "spell_holy_eyeforaneye"
+        },
+        "guardians_favor": {
+          "name": "Guardian's Favor",
+          "icon_key": "spell_holy_sealofprotection"
+        },
+        "healing_light": {
+          "name": "Healing Light",
+          "icon_key": "spell_holy_holybolt"
+        },
+        "holy_conduit": {
+          "name": "Holy Conduit",
+          "icon_key": "spell_holy_devineaegis"
+        },
+        "holy_power": {
+          "name": "Holy Power",
+          "icon_key": "spell_holy_power"
+        },
+        "holy_shield": {
+          "name": "Holy Shield",
+          "icon_key": "spell_holy_blessingofprotection"
+        },
+        "holy_shock": {
+          "name": "Holy Shock",
+          "icon_key": "spell_holy_searinglight"
+        },
+        "illumination": {
+          "name": "Illumination",
+          "icon_key": "spell_holy_greaterheal"
+        },
+        "improved_hammer_of_justice": {
+          "name": "Improved Hammer of Justice",
+          "icon_key": "spell_holy_sealofmight"
+        },
+        "improved_judgement": {
+          "name": "Improved Judgement",
+          "icon_key": "spell_holy_righteousfury"
+        },
+        "improved_righteous_fury": {
+          "name": "Improved Righteous Fury",
+          "icon_key": "spell_holy_sealoffury"
+        },
+        "improved_seal_of_fury": {
+          "name": "Improved Seal of Fury",
+          "icon_key": "spell_holy_righteousnessaura"
+        },
+        "improved_seals": {
+          "name": "Improved Seals",
+          "icon_key": "ability_thunderbolt"
+        },
+        "infusion_of_light": {
+          "name": "Infusion of Light",
+          "icon_key": "ability_paladin_infusionoflight"
+        },
+        "instrument_of_law": {
+          "name": "Instrument of Law",
+          "icon_key": "spell_holy_divinepurpose"
+        },
+        "iron_creed": {
+          "name": "Iron Creed",
+          "icon_key": "spell_holy_improvedresistanceauras"
+        },
+        "lights_vigil": {
+          "name": "Light's Vigil",
+          "icon_key": "ability_paladin_judgementofthepure"
+        },
+        "one_handed_weapon_specialization": {
+          "name": "One-Handed Weapon Specialization",
+          "icon_key": "inv_sword_20"
+        },
+        "precision": {
+          "name": "Precision",
+          "icon_key": "ability_rogue_ambush"
+        },
+        "purifying_power": {
+          "name": "Purifying Power",
+          "icon_key": "spell_holy_purifyingpower"
+        },
+        "pursuit_of_justice": {
+          "name": "Pursuit of Justice",
+          "icon_key": "spell_holy_persuitofjustice"
+        },
+        "reckoning": {
+          "name": "Reckoning",
+          "icon_key": "spell_holy_blessingofstrength"
+        },
+        "redoubt": {
+          "name": "Redoubt",
+          "icon_key": "ability_defend"
+        },
+        "repentance": {
+          "name": "Repentance",
+          "icon_key": "spell_holy_prayerofhealing"
+        },
+        "reverence": {
+          "name": "Reverence",
+          "icon_key": "spell_holy_divineillumination"
+        },
+        "sacred_arbiter": {
+          "name": "Sacred Arbiter",
+          "icon_key": "inv_sword_08"
+        },
+        "sacred_duty": {
+          "name": "Sacred Duty",
+          "icon_key": "spell_holy_divineintervention"
+        },
+        "sanctified_judgement": {
+          "name": "Sanctified Judgement",
+          "icon_key": "ability_paladin_judgementblue"
+        },
+        "seal_of_command": {
+          "name": "Seal of Command",
+          "icon_key": "ability_warrior_innerrage"
+        },
+        "shield_specialization": {
+          "name": "Shield Specialization",
+          "icon_key": "inv_shield_06"
+        },
+        "spiritual_focus": {
+          "name": "Spiritual Focus",
+          "icon_key": "spell_arcane_blink"
+        },
+        "swift_judgement": {
+          "name": "Swift Judgement",
+          "icon_key": "ability_paladin_judgementred"
+        },
+        "templars_bulwark": {
+          "name": "Templar's Bulwark",
+          "icon_key": "ability_paladin_shieldofthetemplar"
+        },
+        "toughness": {
+          "name": "Toughness",
+          "icon_key": "spell_holy_devotion"
+        },
+        "twist_of_light": {
+          "name": "Twist of Light",
+          "icon_key": "spell_holy_blessedresillience"
+        },
+        "two_handed_weapon_specialization": {
+          "name": "Two-Handed Weapon Specialization",
+          "icon_key": "inv_hammer_04"
+        },
+        "unyielding_faith": {
+          "name": "Unyielding Faith",
+          "icon_key": "spell_holy_unyieldingfaith"
+        },
+        "vengeance": {
+          "name": "Vengeance",
+          "icon_key": "ability_racial_avatar"
+        },
+        "vindication": {
+          "name": "Vindication",
+          "icon_key": "spell_holy_vindication"
+        },
+        "voice_of_truth": {
+          "name": "Voice of Truth",
+          "icon_key": "inv_misc_horn_03"
+        },
+        "crusade": {
+          "name": "Crusade",
+          "icon_key": "spell_holy_crusade",
+          "historical_snapshot": true
+        },
+        "improved_holy_strike": {
+          "name": "Improved Holy Strike",
+          "icon_key": "classicon_paladin",
+          "historical_snapshot": true
+        }
+      },
+      "spells": {
+        "blessing_of_freedom": {
+          "name": "Blessing of Freedom",
+          "icon_key": "spell_holy_sealofvalor"
+        },
+        "blessing_of_kings": {
+          "name": "Blessing of Kings",
+          "icon_key": "spell_magic_magearmor"
+        },
+        "blessing_of_light": {
+          "name": "Blessing of Light",
+          "icon_key": "spell_holy_prayerofhealing02"
+        },
+        "blessing_of_might": {
+          "name": "Blessing of Might",
+          "icon_key": "spell_holy_fistofjustice"
+        },
+        "blessing_of_protection": {
+          "name": "Blessing of Protection",
+          "icon_key": "spell_holy_sealofprotection"
+        },
+        "blessing_of_sacrifice": {
+          "name": "Blessing of Sacrifice",
+          "icon_key": "spell_holy_sealofsacrifice"
+        },
+        "blessing_of_salvation": {
+          "name": "Blessing of Salvation",
+          "icon_key": "spell_holy_sealofsalvation"
+        },
+        "blessing_of_wisdom": {
+          "name": "Blessing of Wisdom",
+          "icon_key": "spell_holy_sealofwisdom"
+        },
+        "cleanse": {
+          "name": "Cleanse",
+          "icon_key": "spell_holy_renew"
+        },
+        "concentration_aura": {
+          "name": "Concentration Aura",
+          "icon_key": "spell_holy_mindsooth"
+        },
+        "consecration": {
+          "name": "Consecration",
+          "icon_key": "spell_holy_innerfire"
+        },
+        "devotion_aura": {
+          "name": "Devotion Aura",
+          "icon_key": "spell_holy_devotionaura"
+        },
+        "divine_favor": {
+          "name": "Divine Favor",
+          "icon_key": "spell_holy_heal"
+        },
+        "divine_intervention": {
+          "name": "Divine Intervention",
+          "icon_key": "spell_nature_timestop"
+        },
+        "divine_protection": {
+          "name": "Divine Protection",
+          "icon_key": "spell_holy_restoration"
+        },
+        "divine_shield": {
+          "name": "Divine Shield",
+          "icon_key": "spell_holy_divineintervention"
+        },
+        "exorcism": {
+          "name": "Exorcism",
+          "icon_key": "spell_holy_excorcism_02"
+        },
+        "fire_resistance_aura": {
+          "name": "Fire Resistance Aura",
+          "icon_key": "spell_fire_sealoffire"
+        },
+        "flash_of_light": {
+          "name": "Flash of Light",
+          "icon_key": "spell_holy_flashheal"
+        },
+        "frost_resistance_aura": {
+          "name": "Frost Resistance Aura",
+          "icon_key": "spell_frost_wizardmark"
+        },
+        "greater_blessing_of_kings": {
+          "name": "Greater Blessing of Kings",
+          "icon_key": "spell_magic_greaterblessingofkings"
+        },
+        "greater_blessing_of_light": {
+          "name": "Greater Blessing of Light",
+          "icon_key": "spell_holy_greaterblessingoflight"
+        },
+        "greater_blessing_of_might": {
+          "name": "Greater Blessing of Might",
+          "icon_key": "spell_holy_greaterblessingofkings"
+        },
+        "greater_blessing_of_salvation": {
+          "name": "Greater Blessing of Salvation",
+          "icon_key": "spell_holy_greaterblessingofsalvation"
+        },
+        "greater_blessing_of_wisdom": {
+          "name": "Greater Blessing of Wisdom",
+          "icon_key": "spell_holy_greaterblessingofwisdom"
+        },
+        "hammer_of_justice": {
+          "name": "Hammer of Justice",
+          "icon_key": "spell_holy_sealofmight"
+        },
+        "hammer_of_wrath": {
+          "name": "Hammer of Wrath",
+          "icon_key": "ability_thunderclap"
+        },
+        "holy_light": {
+          "name": "Holy Light",
+          "icon_key": "spell_holy_holybolt"
+        },
+        "holy_shield": {
+          "name": "Holy Shield",
+          "icon_key": "spell_holy_blessingofprotection"
+        },
+        "holy_shock": {
+          "name": "Holy Shock",
+          "icon_key": "spell_holy_searinglight"
+        },
+        "holy_strike": {
+          "name": "Holy Strike",
+          "icon_key": "classicon_paladin"
+        },
+        "holy_wrath": {
+          "name": "Holy Wrath",
+          "icon_key": "spell_holy_excorcism"
+        },
+        "judgement": {
+          "name": "Judgement",
+          "icon_key": "spell_holy_righteousfury"
+        },
+        "lay_on_hands": {
+          "name": "Lay on Hands",
+          "icon_key": "spell_holy_layonhands"
+        },
+        "lights_vigil": {
+          "name": "Light's Vigil",
+          "icon_key": "ability_paladin_judgementofthepure"
+        },
+        "purify": {
+          "name": "Purify",
+          "icon_key": "spell_holy_purify"
+        },
+        "redemption": {
+          "name": "Redemption",
+          "icon_key": "spell_holy_resurrection"
+        },
+        "repentance": {
+          "name": "Repentance",
+          "icon_key": "spell_holy_prayerofhealing"
+        },
+        "retribution_aura": {
+          "name": "Retribution Aura",
+          "icon_key": "spell_holy_auraoflight"
+        },
+        "righteous_fury": {
+          "name": "Righteous Fury",
+          "icon_key": "spell_holy_sealoffury"
+        },
+        "seal_of_command": {
+          "name": "Seal of Command",
+          "icon_key": "ability_warrior_innerrage"
+        },
+        "seal_of_fury": {
+          "name": "Seal of Fury",
+          "icon_key": "spell_holy_retributionaura"
+        },
+        "seal_of_justice": {
+          "name": "Seal of Justice",
+          "icon_key": "spell_holy_sealofwrath"
+        },
+        "seal_of_light": {
+          "name": "Seal of Light",
+          "icon_key": "spell_holy_healingaura"
+        },
+        "seal_of_righteousness": {
+          "name": "Seal of Righteousness",
+          "icon_key": "ability_thunderbolt"
+        },
+        "seal_of_the_crusader": {
+          "name": "Seal of the Crusader",
+          "icon_key": "spell_holy_holysmite"
+        },
+        "seal_of_wisdom": {
+          "name": "Seal of Wisdom",
+          "icon_key": "spell_holy_righteousnessaura"
+        },
+        "sense_undead": {
+          "name": "Sense Undead",
+          "icon_key": "spell_holy_senseundead"
+        },
+        "shadow_resistance_aura": {
+          "name": "Shadow Resistance Aura",
+          "icon_key": "spell_shadow_sealofkings"
+        },
+        "swift_judgement": {
+          "name": "Swift Judgement",
+          "icon_key": "ability_paladin_judgementred"
+        },
+        "templars_bulwark": {
+          "name": "Templar's Bulwark",
+          "icon_key": "ability_paladin_shieldofthetemplar"
+        },
+        "turn_undead": {
+          "name": "Turn Undead",
+          "icon_key": "spell_holy_turnundead"
+        },
+        "voice_of_truth": {
+          "name": "Voice of Truth",
+          "icon_key": "inv_misc_horn_03"
+        }
+      }
+    },
+    "priest": {
+      "talents": {
+        "binding_heal": {
+          "name": "Binding Heal",
+          "icon_key": "spell_holy_blindingheal"
+        },
+        "blackout": {
+          "name": "Blackout",
+          "icon_key": "spell_shadow_gathershadows"
+        },
+        "blessed_recovery": {
+          "name": "Blessed Recovery",
+          "icon_key": "spell_holy_blessedrecovery"
+        },
+        "darkness": {
+          "name": "Darkness",
+          "icon_key": "spell_shadow_twilight"
+        },
+        "devouring_contagion": {
+          "name": "Devouring Contagion",
+          "icon_key": "spell_shadow_devouringplague"
+        },
+        "divine_aegis": {
+          "name": "Divine Aegis",
+          "icon_key": "spell_holy_devineaegis"
+        },
+        "divine_fury": {
+          "name": "Divine Fury",
+          "icon_key": "spell_holy_sealofwrath"
+        },
+        "early_demise": {
+          "name": "Early Demise",
+          "icon_key": "spell_shadow_demonicfortitude"
+        },
+        "holy_nova": {
+          "name": "Holy Nova",
+          "icon_key": "spell_holy_holynova"
+        },
+        "holy_precision": {
+          "name": "Holy Precision",
+          "icon_key": "spell_holy_divineillumination"
+        },
+        "holy_reach": {
+          "name": "Holy Reach",
+          "icon_key": "spell_holy_purify"
+        },
+        "holy_specialization": {
+          "name": "Holy Specialization",
+          "icon_key": "spell_holy_sealofsalvation"
+        },
+        "improved_fade": {
+          "name": "Improved Fade",
+          "icon_key": "spell_magic_lesserinvisibilty"
+        },
+        "improved_healing": {
+          "name": "Improved Healing",
+          "icon_key": "spell_holy_heal02"
+        },
+        "improved_inner_fire": {
+          "name": "Improved Inner Fire",
+          "icon_key": "spell_holy_innerfire"
+        },
+        "improved_mana_burn": {
+          "name": "Improved Mana Burn",
+          "icon_key": "spell_shadow_manaburn"
+        },
+        "improved_mind_blast": {
+          "name": "Improved Mind Blast",
+          "icon_key": "spell_shadow_unholyfrenzy"
+        },
+        "improved_mind_flay": {
+          "name": "Improved Mind Flay",
+          "icon_key": "spell_shadow_soulleech_2"
+        },
+        "improved_power_word_shield": {
+          "name": "Improved Power Word: Shield",
+          "icon_key": "spell_holy_powerwordshield"
+        },
+        "improved_psychic_scream": {
+          "name": "Improved Psychic Scream",
+          "icon_key": "spell_shadow_psychicscream"
+        },
+        "improved_renew": {
+          "name": "Improved Renew",
+          "icon_key": "spell_holy_renew"
+        },
+        "improved_shadow_word_pain": {
+          "name": "Improved Shadow Word: Pain",
+          "icon_key": "spell_shadow_shadowwordpain"
+        },
+        "inner_focus": {
+          "name": "Inner Focus",
+          "icon_key": "spell_frost_windwalkon"
+        },
+        "inspiration": {
+          "name": "Inspiration",
+          "icon_key": "spell_holy_layonhands"
+        },
+        "litany_of_light": {
+          "name": "Litany of Light",
+          "icon_key": "inv_scroll_07"
+        },
+        "martyrdom": {
+          "name": "Martyrdom",
+          "icon_key": "spell_nature_tranquility"
+        },
+        "meditation": {
+          "name": "Meditation",
+          "icon_key": "spell_nature_sleep"
+        },
+        "mental_agility": {
+          "name": "Mental Agility",
+          "icon_key": "ability_hibernation"
+        },
+        "mental_strength": {
+          "name": "Mental Strength",
+          "icon_key": "spell_nature_enchantarmor"
+        },
+        "mind_flay": {
+          "name": "Mind Flay",
+          "icon_key": "spell_shadow_siphonmana"
+        },
+        "penance": {
+          "name": "Penance",
+          "icon_key": "spell_holy_penance"
+        },
+        "power_in_light": {
+          "name": "Power in Light",
+          "icon_key": "spell_holy_searinglight"
+        },
+        "power_infusion": {
+          "name": "Power Infusion",
+          "icon_key": "spell_holy_powerinfusion"
+        },
+        "prayer_of_mending": {
+          "name": "Prayer of Mending",
+          "icon_key": "spell_holy_prayerofmendingtga"
+        },
+        "renewed_hope": {
+          "name": "Renewed Hope",
+          "icon_key": "spell_holy_holyprotection"
+        },
+        "searing_light": {
+          "name": "Searing Light",
+          "icon_key": "spell_holy_searinglightpriest"
+        },
+        "shadow_affinity": {
+          "name": "Shadow Affinity",
+          "icon_key": "spell_shadow_shadowward"
+        },
+        "shadow_focus": {
+          "name": "Shadow Focus",
+          "icon_key": "spell_shadow_burningspirit"
+        },
+        "shadow_reach": {
+          "name": "Shadow Reach",
+          "icon_key": "spell_shadow_chilltouch"
+        },
+        "shadow_weaving": {
+          "name": "Shadow Weaving",
+          "icon_key": "spell_shadow_blackplague"
+        },
+        "shadowform": {
+          "name": "Shadowform",
+          "icon_key": "spell_shadow_shadowform"
+        },
+        "silence": {
+          "name": "Silence",
+          "icon_key": "spell_shadow_impphaseshift"
+        },
+        "silent_resolve": {
+          "name": "Silent Resolve",
+          "icon_key": "spell_nature_manaregentotem"
+        },
+        "soul_warding": {
+          "name": "Soul Warding",
+          "icon_key": "spell_holy_pureofheart"
+        },
+        "spell_warding": {
+          "name": "Spell Warding",
+          "icon_key": "spell_holy_spellwarding"
+        },
+        "spirit_of_redemption": {
+          "name": "Spirit of Redemption",
+          "icon_key": "inv_enchant_essenceeternallarge"
+        },
+        "spirit_tap": {
+          "name": "Spirit Tap",
+          "icon_key": "spell_shadow_requiem"
+        },
+        "spiritual_guidance": {
+          "name": "Spiritual Guidance",
+          "icon_key": "spell_holy_spiritualguidence"
+        },
+        "spiritual_healing": {
+          "name": "Spiritual Healing",
+          "icon_key": "spell_nature_moonglow"
+        },
+        "twilight_focus": {
+          "name": "Twilight Focus",
+          "icon_key": "spell_holy_healingfocus"
+        },
+        "twin_disciplines": {
+          "name": "Twin Disciplines",
+          "icon_key": "spell_holy_sealofvengeance"
+        },
+        "vampiric_embrace": {
+          "name": "Vampiric Embrace",
+          "icon_key": "spell_shadow_unsummonbuilding"
+        },
+        "wand_specialization": {
+          "name": "Wand Specialization",
+          "icon_key": "inv_wand_01"
+        }
+      },
+      "spells": {
+        "abolish_disease": {
+          "name": "Abolish Disease",
+          "icon_key": "spell_nature_nullifydisease"
+        },
+        "binding_heal": {
+          "name": "Binding Heal",
+          "icon_key": "spell_holy_blindingheal"
+        },
+        "chastise": {
+          "name": "Chastise",
+          "icon_key": "spell_holy_chastise"
+        },
+        "confounding_flash": {
+          "name": "Confounding Flash",
+          "icon_key": "ability_paladin_blindinglight2"
+        },
+        "contingency_plan": {
+          "name": "Contingency Plan",
+          "icon_key": "ability_priest_soulwarding"
+        },
+        "cure_disease": {
+          "name": "Cure Disease",
+          "icon_key": "spell_holy_nullifydisease"
+        },
+        "dark_sacrifice": {
+          "name": "Dark Sacrifice",
+          "icon_key": "spell_holy_powerinfusion_shadow"
+        },
+        "desperate_prayer": {
+          "name": "Desperate Prayer",
+          "icon_key": "spell_holy_restoration"
+        },
+        "devouring_plague": {
+          "name": "Devouring Plague",
+          "icon_key": "spell_shadow_devouringplague"
+        },
+        "dispel_magic": {
+          "name": "Dispel Magic",
+          "icon_key": "spell_holy_dispelmagic"
+        },
+        "divine_grace": {
+          "name": "Divine Grace",
+          "icon_key": "ability_priest_savinggrace"
+        },
+        "divine_spirit": {
+          "name": "Divine Spirit",
+          "icon_key": "spell_holy_divinespirit"
+        },
+        "elunes_grace": {
+          "name": "Elune's Grace",
+          "icon_key": "spell_holy_elunesgrace"
+        },
+        "fade": {
+          "name": "Fade",
+          "icon_key": "spell_magic_lesserinvisibilty"
+        },
+        "fear_ward": {
+          "name": "Fear Ward",
+          "icon_key": "spell_holy_excorcism"
+        },
+        "feedback": {
+          "name": "Feedback",
+          "icon_key": "spell_shadow_ritualofsacrifice"
+        },
+        "flash_heal": {
+          "name": "Flash Heal",
+          "icon_key": "spell_holy_flashheal"
+        },
+        "greater_heal": {
+          "name": "Greater Heal",
+          "icon_key": "spell_holy_greaterheal"
+        },
+        "heal": {
+          "name": "Heal",
+          "icon_key": "spell_holy_heal"
+        },
+        "heal_rank_3": {
+          "name": "Heal|Rank 3",
+          "icon_key": "spell_holy_heal02"
+        },
+        "heal_rank_4": {
+          "name": "Heal|Rank 4",
+          "icon_key": "spell_holy_heal02"
+        },
+        "hex_of_weakness": {
+          "name": "Hex of Weakness",
+          "icon_key": "spell_shadow_fingerofdeath"
+        },
+        "holy_fire": {
+          "name": "Holy Fire",
+          "icon_key": "spell_holy_searinglight"
+        },
+        "holy_nova": {
+          "name": "Holy Nova",
+          "icon_key": "spell_holy_holynova"
+        },
+        "inner_fire": {
+          "name": "Inner Fire",
+          "icon_key": "spell_holy_innerfire"
+        },
+        "inner_focus": {
+          "name": "Inner Focus",
+          "icon_key": "spell_frost_windwalkon"
+        },
+        "lesser_heal": {
+          "name": "Lesser Heal",
+          "icon_key": "spell_holy_lesserheal"
+        },
+        "levitate": {
+          "name": "Levitate",
+          "icon_key": "spell_holy_layonhands"
+        },
+        "lightwell": {
+          "name": "Lightwell",
+          "icon_key": "spell_holy_summonlightwell"
+        },
+        "mana_burn": {
+          "name": "Mana Burn",
+          "icon_key": "spell_shadow_manaburn"
+        },
+        "mind_blast": {
+          "name": "Mind Blast",
+          "icon_key": "spell_shadow_unholyfrenzy"
+        },
+        "mind_control": {
+          "name": "Mind Control",
+          "icon_key": "spell_shadow_shadowworddominate"
+        },
+        "mind_flay": {
+          "name": "Mind Flay",
+          "icon_key": "spell_shadow_siphonmana"
+        },
+        "mind_soothe": {
+          "name": "Mind Soothe",
+          "icon_key": "spell_holy_mindsooth"
+        },
+        "mind_vision": {
+          "name": "Mind Vision",
+          "icon_key": "spell_holy_mindvision"
+        },
+        "penance": {
+          "name": "Penance",
+          "icon_key": "spell_holy_penance"
+        },
+        "power_infusion": {
+          "name": "Power Infusion",
+          "icon_key": "spell_holy_powerinfusion"
+        },
+        "power_word_fortitude": {
+          "name": "Power Word: Fortitude",
+          "icon_key": "spell_holy_wordfortitude"
+        },
+        "power_word_shield": {
+          "name": "Power Word: Shield",
+          "icon_key": "spell_holy_powerwordshield"
+        },
+        "prayer_of_fortitude": {
+          "name": "Prayer of Fortitude",
+          "icon_key": "spell_holy_prayeroffortitude"
+        },
+        "prayer_of_healing": {
+          "name": "Prayer of Healing",
+          "icon_key": "spell_holy_prayerofhealing02"
+        },
+        "prayer_of_mending": {
+          "name": "Prayer of Mending",
+          "icon_key": "spell_holy_prayerofmendingtga"
+        },
+        "prayer_of_shadow_protection": {
+          "name": "Prayer of Shadow Protection",
+          "icon_key": "spell_holy_prayerofshadowprotection"
+        },
+        "prayer_of_spirit": {
+          "name": "Prayer of Spirit",
+          "icon_key": "spell_holy_prayerofspirit"
+        },
+        "psychic_scream": {
+          "name": "Psychic Scream",
+          "icon_key": "spell_shadow_psychicscream"
+        },
+        "renew": {
+          "name": "Renew",
+          "icon_key": "spell_holy_renew"
+        },
+        "resurrection": {
+          "name": "Resurrection",
+          "icon_key": "spell_holy_resurrection"
+        },
+        "shackle_undead": {
+          "name": "Shackle Undead",
+          "icon_key": "spell_nature_slow"
+        },
+        "shadow_protection": {
+          "name": "Shadow Protection",
+          "icon_key": "spell_shadow_antishadow"
+        },
+        "shadow_word_death": {
+          "name": "Shadow Word: Death",
+          "icon_key": "spell_shadow_demonicfortitude"
+        },
+        "shadow_word_pain": {
+          "name": "Shadow Word: Pain",
+          "icon_key": "spell_shadow_shadowwordpain"
+        },
+        "shadowform": {
+          "name": "Shadowform",
+          "icon_key": "spell_shadow_shadowform"
+        },
+        "shadowguard": {
+          "name": "Shadowguard",
+          "icon_key": "spell_nature_lightningshield"
+        },
+        "silence": {
+          "name": "Silence",
+          "icon_key": "spell_shadow_impphaseshift"
+        },
+        "smite": {
+          "name": "Smite",
+          "icon_key": "spell_holy_holysmite"
+        },
+        "starshards": {
+          "name": "Starshards",
+          "icon_key": "spell_arcane_starfire"
+        },
+        "touch_of_weakness": {
+          "name": "Touch of Weakness",
+          "icon_key": "spell_shadow_deadofnight"
+        },
+        "vampiric_embrace": {
+          "name": "Vampiric Embrace",
+          "icon_key": "spell_shadow_unsummonbuilding"
+        }
+      }
+    },
+    "rogue": {
+      "talents": {
+        "adrenaline_rush": {
+          "name": "Adrenaline Rush",
+          "icon_key": "spell_shadow_shadowworddominate"
+        },
+        "aggression": {
+          "name": "Aggression",
+          "icon_key": "ability_racial_avatar"
+        },
+        "blade_flurry": {
+          "name": "Blade Flurry",
+          "icon_key": "ability_warrior_punishingblow"
+        },
+        "camouflage": {
+          "name": "Camouflage",
+          "icon_key": "ability_stealth"
+        },
+        "cold_blood": {
+          "name": "Cold Blood",
+          "icon_key": "spell_ice_lament"
+        },
+        "cutthroat": {
+          "name": "Cutthroat",
+          "icon_key": "classicon_rogue"
+        },
+        "deflection": {
+          "name": "Deflection",
+          "icon_key": "ability_parry"
+        },
+        "dirty_deeds": {
+          "name": "Dirty Deeds",
+          "icon_key": "spell_shadow_summonsuccubus"
+        },
+        "dirty_tricks": {
+          "name": "Dirty Tricks",
+          "icon_key": "ability_sap"
+        },
+        "dual_wield_specialization": {
+          "name": "Dual Wield Specialization",
+          "icon_key": "ability_dualwield"
+        },
+        "elusiveness": {
+          "name": "Elusiveness",
+          "icon_key": "spell_magic_lesserinvisibilty"
+        },
+        "endurance": {
+          "name": "Endurance",
+          "icon_key": "spell_shadow_shadowward"
+        },
+        "flawless_execution": {
+          "name": "Flawless Execution",
+          "icon_key": "inv_sword_35"
+        },
+        "ghostly_strike": {
+          "name": "Ghostly Strike",
+          "icon_key": "spell_shadow_curse"
+        },
+        "hack_and_slash": {
+          "name": "Hack and Slash",
+          "icon_key": "inv_sword_27"
+        },
+        "heightened_senses": {
+          "name": "Heightened Senses",
+          "icon_key": "ability_ambush"
+        },
+        "hemorrhage": {
+          "name": "Hemorrhage",
+          "icon_key": "spell_shadow_lifedrain"
+        },
+        "improved_ambush": {
+          "name": "Improved Ambush",
+          "icon_key": "ability_rogue_ambush"
+        },
+        "improved_distract": {
+          "name": "Improved Distract",
+          "icon_key": "ability_rogue_distract"
+        },
+        "improved_eviscerate": {
+          "name": "Improved Eviscerate",
+          "icon_key": "ability_rogue_eviscerate"
+        },
+        "improved_expose_armor": {
+          "name": "Improved Expose Armor",
+          "icon_key": "ability_warrior_riposte"
+        },
+        "improved_gouge": {
+          "name": "Improved Gouge",
+          "icon_key": "ability_gouge"
+        },
+        "improved_kick": {
+          "name": "Improved Kick",
+          "icon_key": "ability_kick"
+        },
+        "improved_kidney_shot": {
+          "name": "Improved Kidney Shot",
+          "icon_key": "ability_rogue_kidneyshot"
+        },
+        "improved_poisons": {
+          "name": "Improved Poisons",
+          "icon_key": "ability_poisons"
+        },
+        "improved_sinister_strike": {
+          "name": "Improved Sinister Strike",
+          "icon_key": "spell_shadow_ritualofsacrifice"
+        },
+        "improved_slice_and_dice": {
+          "name": "Improved Slice and Dice",
+          "icon_key": "ability_rogue_slicedice"
+        },
+        "improved_sprint": {
+          "name": "Improved Sprint",
+          "icon_key": "ability_rogue_sprint"
+        },
+        "initiative": {
+          "name": "Initiative",
+          "icon_key": "spell_shadow_fumble"
+        },
+        "lethality": {
+          "name": "Lethality",
+          "icon_key": "ability_criticalstrike"
+        },
+        "lightning_reflexes": {
+          "name": "Lightning Reflexes",
+          "icon_key": "spell_nature_invisibilty"
+        },
+        "malice": {
+          "name": "Malice",
+          "icon_key": "ability_racial_bloodrage"
+        },
+        "master_of_deception": {
+          "name": "Master of Deception",
+          "icon_key": "spell_shadow_charm"
+        },
+        "murder": {
+          "name": "Murder",
+          "icon_key": "spell_shadow_deathscream"
+        },
+        "mutilate": {
+          "name": "Mutilate",
+          "icon_key": "ability_rogue_deadlybrew"
+        },
+        "opportunity": {
+          "name": "Opportunity",
+          "icon_key": "ability_warrior_warcry"
+        },
+        "precision": {
+          "name": "Precision",
+          "icon_key": "ability_marksmanship"
+        },
+        "premeditation": {
+          "name": "Premeditation",
+          "icon_key": "spell_shadow_possession"
+        },
+        "preparation": {
+          "name": "Preparation",
+          "icon_key": "spell_shadow_antishadow"
+        },
+        "puncturing_wounds": {
+          "name": "Puncturing Wounds",
+          "icon_key": "ability_backstab"
+        },
+        "quietus": {
+          "name": "Quietus",
+          "icon_key": "ability_rogue_garrote"
+        },
+        "relentless_strikes": {
+          "name": "Relentless Strikes",
+          "icon_key": "ability_warrior_decisivestrike"
+        },
+        "remorseless_attacks": {
+          "name": "Remorseless Attacks",
+          "icon_key": "ability_fiegndead"
+        },
+        "riposte": {
+          "name": "Riposte",
+          "icon_key": "ability_warrior_challange"
+        },
+        "ruthlessness": {
+          "name": "Ruthlessness",
+          "icon_key": "ability_druid_disembowel"
+        },
+        "seal_fate": {
+          "name": "Seal Fate",
+          "icon_key": "spell_shadow_chilltouch"
+        },
+        "serrated_blades": {
+          "name": "Serrated Blades",
+          "icon_key": "inv_sword_17"
+        },
+        "setup": {
+          "name": "Setup",
+          "icon_key": "spell_nature_mirrorimage"
+        },
+        "thousand_cuts": {
+          "name": "Thousand Cuts",
+          "icon_key": "ability_rogue_rupture"
+        },
+        "venom": {
+          "name": "Venom",
+          "icon_key": "inv_sword_31"
+        },
+        "vigor": {
+          "name": "Vigor",
+          "icon_key": "spell_nature_earthbindtotem"
+        },
+        "vile_poisons": {
+          "name": "Vile Poisons",
+          "icon_key": "ability_rogue_feigndeath"
+        },
+        "weapon_expertise": {
+          "name": "Weapon Expertise",
+          "icon_key": "spell_holy_blessingofstrength"
+        }
+      },
+      "spells": {
+        "adrenaline_rush": {
+          "name": "Adrenaline Rush",
+          "icon_key": "spell_shadow_shadowworddominate"
+        },
+        "ambush": {
+          "name": "Ambush",
+          "icon_key": "ability_rogue_ambush"
+        },
+        "backstab": {
+          "name": "Backstab",
+          "icon_key": "ability_backstab"
+        },
+        "blade_flurry": {
+          "name": "Blade Flurry",
+          "icon_key": "ability_warrior_punishingblow"
+        },
+        "blind": {
+          "name": "Blind",
+          "icon_key": "spell_shadow_mindsteal"
+        },
+        "blinding_powder": {
+          "name": "Blinding Powder",
+          "icon_key": "inv_misc_ammo_gunpowder_02"
+        },
+        "cheap_shot": {
+          "name": "Cheap Shot",
+          "icon_key": "ability_cheapshot"
+        },
+        "cold_blood": {
+          "name": "Cold Blood",
+          "icon_key": "spell_ice_lament"
+        },
+        "crippling_poison": {
+          "name": "Crippling Poison",
+          "icon_key": "ability_poisonsting"
+        },
+        "deadly_poison": {
+          "name": "Deadly Poison",
+          "icon_key": "ability_rogue_dualweild"
+        },
+        "detect_traps": {
+          "name": "Detect Traps",
+          "icon_key": "ability_spy"
+        },
+        "disarm_trap": {
+          "name": "Disarm Trap",
+          "icon_key": "spell_shadow_grimward"
+        },
+        "distract": {
+          "name": "Distract",
+          "icon_key": "ability_rogue_distract"
+        },
+        "evasion": {
+          "name": "Evasion",
+          "icon_key": "spell_shadow_shadowward"
+        },
+        "eviscerate": {
+          "name": "Eviscerate",
+          "icon_key": "ability_rogue_eviscerate"
+        },
+        "expose_armor": {
+          "name": "Expose Armor",
+          "icon_key": "ability_warrior_riposte"
+        },
+        "feint": {
+          "name": "Feint",
+          "icon_key": "ability_rogue_feint"
+        },
+        "garrote": {
+          "name": "Garrote",
+          "icon_key": "ability_rogue_garrote"
+        },
+        "ghostly_strike": {
+          "name": "Ghostly Strike",
+          "icon_key": "spell_shadow_curse"
+        },
+        "gouge": {
+          "name": "Gouge",
+          "icon_key": "ability_gouge"
+        },
+        "hemorrhage": {
+          "name": "Hemorrhage",
+          "icon_key": "spell_shadow_lifedrain"
+        },
+        "instant_poison": {
+          "name": "Instant Poison",
+          "icon_key": "ability_poisons"
+        },
+        "kick": {
+          "name": "Kick",
+          "icon_key": "ability_kick"
+        },
+        "kidney_shot": {
+          "name": "Kidney Shot",
+          "icon_key": "ability_rogue_kidneyshot"
+        },
+        "mind_numbing_poison": {
+          "name": "Mind-numbing Poison",
+          "icon_key": "spell_nature_nullifydisease"
+        },
+        "mutilate": {
+          "name": "Mutilate",
+          "icon_key": "ability_rogue_deadlybrew"
+        },
+        "pick_pocket": {
+          "name": "Pick Pocket",
+          "icon_key": "inv_misc_bag_11"
+        },
+        "premeditation": {
+          "name": "Premeditation",
+          "icon_key": "spell_shadow_possession"
+        },
+        "preparation": {
+          "name": "Preparation",
+          "icon_key": "spell_shadow_antishadow"
+        },
+        "riposte": {
+          "name": "Riposte",
+          "icon_key": "ability_warrior_challange"
+        },
+        "rupture": {
+          "name": "Rupture",
+          "icon_key": "ability_rogue_rupture"
+        },
+        "safe_fall": {
+          "name": "Safe Fall",
+          "icon_key": "inv_feather_01"
+        },
+        "sap": {
+          "name": "Sap",
+          "icon_key": "ability_sap"
+        },
+        "sinister_strike": {
+          "name": "Sinister Strike",
+          "icon_key": "spell_shadow_ritualofsacrifice"
+        },
+        "slice_and_dice": {
+          "name": "Slice and Dice",
+          "icon_key": "ability_rogue_slicedice"
+        },
+        "sprint": {
+          "name": "Sprint",
+          "icon_key": "ability_rogue_sprint"
+        },
+        "stealth": {
+          "name": "Stealth",
+          "icon_key": "ability_stealth"
+        },
+        "vanish": {
+          "name": "Vanish",
+          "icon_key": "ability_vanish"
+        },
+        "venom": {
+          "name": "Venom",
+          "icon_key": "inv_sword_31"
+        },
+        "wound_poison": {
+          "name": "Wound Poison",
+          "icon_key": "inv_misc_herb_16"
+        }
+      }
+    },
+    "shaman": {
+      "talents": {
+        "ancestral_healing": {
+          "name": "Ancestral Healing",
+          "icon_key": "spell_nature_undyingstrength"
+        },
+        "ancestral_knowledge": {
+          "name": "Ancestral Knowledge",
+          "icon_key": "spell_shadow_grimward"
+        },
+        "anticipation": {
+          "name": "Anticipation",
+          "icon_key": "spell_nature_mirrorimage"
+        },
+        "call_of_flame": {
+          "name": "Call of Flame",
+          "icon_key": "spell_fire_immolation"
+        },
+        "call_of_thunder": {
+          "name": "Call of Thunder",
+          "icon_key": "spell_nature_callstorm"
+        },
+        "concussion": {
+          "name": "Concussion",
+          "icon_key": "spell_nature_earthshock"
+        },
+        "convection": {
+          "name": "Convection",
+          "icon_key": "spell_nature_wispsplode"
+        },
+        "earthbound": {
+          "name": "Earthbound",
+          "icon_key": "spell_nature_stranglevines"
+        },
+        "earths_grasp": {
+          "name": "Earth's Grasp",
+          "icon_key": "spell_nature_stoneclawtotem"
+        },
+        "elemental_alacrity": {
+          "name": "Elemental Alacrity",
+          "icon_key": "spell_lightning_lightningbolt01"
+        },
+        "elemental_devastation": {
+          "name": "Elemental Devastation",
+          "icon_key": "spell_fire_elementaldevastation"
+        },
+        "elemental_focus": {
+          "name": "Elemental Focus",
+          "icon_key": "spell_shadow_manaburn"
+        },
+        "elemental_fury": {
+          "name": "Elemental Fury",
+          "icon_key": "spell_fire_volcano"
+        },
+        "elemental_reach": {
+          "name": "Elemental Reach",
+          "icon_key": "spell_nature_stormreach"
+        },
+        "elemental_warding": {
+          "name": "Elemental Warding",
+          "icon_key": "spell_nature_spiritarmor"
+        },
+        "elemental_weapons": {
+          "name": "Elemental Weapons",
+          "icon_key": "spell_fire_flametounge"
+        },
+        "eye_of_the_storm": {
+          "name": "Eye of the Storm",
+          "icon_key": "spell_nature_eyeofthestorm"
+        },
+        "flurry": {
+          "name": "Flurry",
+          "icon_key": "ability_ghoulfrenzy"
+        },
+        "guardian_totems": {
+          "name": "Guardian Totems",
+          "icon_key": "spell_nature_stoneskintotem"
+        },
+        "healing_focus": {
+          "name": "Healing Focus",
+          "icon_key": "spell_nature_healingwavelesser"
+        },
+        "healing_way": {
+          "name": "Healing Way",
+          "icon_key": "spell_nature_healingway"
+        },
+        "improved_fire_nova": {
+          "name": "Improved Fire Nova",
+          "icon_key": "spell_fire_sealoffire"
+        },
+        "improved_ghost_wolf": {
+          "name": "Improved Ghost Wolf",
+          "icon_key": "spell_nature_spiritwolf"
+        },
+        "improved_healing_wave": {
+          "name": "Improved Healing Wave",
+          "icon_key": "spell_nature_magicimmunity"
+        },
+        "improved_lightning_shield": {
+          "name": "Improved Lightning Shield",
+          "icon_key": "spell_nature_lightningshield"
+        },
+        "improved_reincarnation": {
+          "name": "Improved Reincarnation",
+          "icon_key": "spell_nature_reincarnation"
+        },
+        "improved_stormstrike": {
+          "name": "Improved Stormstrike",
+          "icon_key": "spell_shaman_improvedstormstrike"
+        },
+        "lava_burst": {
+          "name": "Lava Burst",
+          "icon_key": "spell_shaman_lavaburst"
+        },
+        "lightning_overload": {
+          "name": "Lightning Overload",
+          "icon_key": "spell_nature_lightningoverload"
+        },
+        "maelstrom_weapon": {
+          "name": "Maelstrom Weapon",
+          "icon_key": "spell_shaman_maelstromweapon"
+        },
+        "mana_tide_totem": {
+          "name": "Mana Tide Totem",
+          "icon_key": "spell_frost_summonwaterelemental"
+        },
+        "mental_dexterity": {
+          "name": "Mental Dexterity",
+          "icon_key": "spell_nature_mentalquickness"
+        },
+        "mental_quickness": {
+          "name": "Mental Quickness",
+          "icon_key": "spell_nature_sleep"
+        },
+        "mindfulness": {
+          "name": "Mindfulness",
+          "icon_key": "spell_nature_sleep"
+        },
+        "natural_grace": {
+          "name": "Natural Grace",
+          "icon_key": "spell_nature_healingtouch"
+        },
+        "natures_swiftness": {
+          "name": "Nature's Swiftness",
+          "icon_key": "spell_nature_ravenform"
+        },
+        "purification": {
+          "name": "Purification",
+          "icon_key": "spell_frost_wizardmark"
+        },
+        "rage_of_the_farseer": {
+          "name": "Rage of the Farseer",
+          "icon_key": "spell_nature_bloodlust"
+        },
+        "restorative_totems": {
+          "name": "Restorative Totems",
+          "icon_key": "spell_nature_manaregentotem"
+        },
+        "reverberation": {
+          "name": "Reverberation",
+          "icon_key": "spell_frost_frostward"
+        },
+        "riptide": {
+          "name": "Riptide",
+          "icon_key": "spell_nature_riptide"
+        },
+        "shamanistic_focus": {
+          "name": "Shamanistic Focus",
+          "icon_key": "spell_nature_elementalabsorption"
+        },
+        "spirit_weapons": {
+          "name": "Spirit Weapons",
+          "icon_key": "ability_parry"
+        },
+        "stormstrike": {
+          "name": "Stormstrike",
+          "icon_key": "ability_shaman_stormstrike"
+        },
+        "thundering_strikes": {
+          "name": "Thundering Strikes",
+          "icon_key": "ability_thunderbolt"
+        },
+        "tidal_focus": {
+          "name": "Tidal Focus",
+          "icon_key": "spell_frost_manarecharge"
+        },
+        "tidal_mastery": {
+          "name": "Tidal Mastery",
+          "icon_key": "spell_nature_tranquility"
+        },
+        "totemic_focus": {
+          "name": "Totemic Focus",
+          "icon_key": "spell_nature_moonglow"
+        },
+        "toughness": {
+          "name": "Toughness",
+          "icon_key": "spell_holy_devotion"
+        },
+        "water_shield": {
+          "name": "Water Shield",
+          "icon_key": "ability_shaman_watershield"
+        }
+      },
+      "spells": {
+        "ancestral_spirit": {
+          "name": "Ancestral Spirit",
+          "icon_key": "spell_nature_regenerate"
+        },
+        "astral_recall": {
+          "name": "Astral Recall",
+          "icon_key": "spell_nature_astralrecal"
+        },
+        "call_of_the_ancestors": {
+          "name": "Call of the Ancestors",
+          "icon_key": "spell_shaman_dropall_02"
+        },
+        "call_of_the_elements": {
+          "name": "Call of the Elements",
+          "icon_key": "spell_shaman_dropall_01"
+        },
+        "call_of_the_spirits": {
+          "name": "Call of the Spirits",
+          "icon_key": "spell_shaman_dropall_03"
+        },
+        "chain_heal": {
+          "name": "Chain Heal",
+          "icon_key": "spell_nature_healingwavegreater"
+        },
+        "chain_lightning": {
+          "name": "Chain Lightning",
+          "icon_key": "spell_nature_chainlightning"
+        },
+        "cure_disease": {
+          "name": "Cure Disease",
+          "icon_key": "spell_nature_removedisease"
+        },
+        "cure_poison": {
+          "name": "Cure Poison",
+          "icon_key": "spell_nature_nullifypoison"
+        },
+        "disease_cleansing_totem": {
+          "name": "Disease Cleansing Totem",
+          "icon_key": "spell_nature_diseasecleansingtotem"
+        },
+        "earth_shock": {
+          "name": "Earth Shock",
+          "icon_key": "spell_nature_earthshock"
+        },
+        "earthbind_totem": {
+          "name": "Earthbind Totem",
+          "icon_key": "spell_nature_strengthofearthtotem02"
+        },
+        "far_sight": {
+          "name": "Far Sight",
+          "icon_key": "spell_nature_farsight"
+        },
+        "fire_nova": {
+          "name": "Fire Nova",
+          "icon_key": "spell_fire_sealoffire"
+        },
+        "fire_resistance_totem": {
+          "name": "Fire Resistance Totem",
+          "icon_key": "spell_fireresistancetotem_01"
+        },
+        "flame_shock": {
+          "name": "Flame Shock",
+          "icon_key": "spell_fire_flameshock"
+        },
+        "flametongue_totem": {
+          "name": "Flametongue Totem",
+          "icon_key": "spell_nature_guardianward"
+        },
+        "flametongue_weapon": {
+          "name": "Flametongue Weapon",
+          "icon_key": "spell_fire_flametounge"
+        },
+        "frost_resistance_totem": {
+          "name": "Frost Resistance Totem",
+          "icon_key": "spell_frostresistancetotem_01"
+        },
+        "frost_shock": {
+          "name": "Frost Shock",
+          "icon_key": "spell_frost_frostshock"
+        },
+        "frostbrand_weapon": {
+          "name": "Frostbrand Weapon",
+          "icon_key": "spell_frost_frostbrand"
+        },
+        "ghost_wolf": {
+          "name": "Ghost Wolf",
+          "icon_key": "spell_nature_spiritwolf"
+        },
+        "grace_of_air_totem": {
+          "name": "Grace of Air Totem",
+          "icon_key": "spell_nature_invisibilitytotem"
+        },
+        "grounding_totem": {
+          "name": "Grounding Totem",
+          "icon_key": "spell_nature_groundingtotem"
+        },
+        "healing_stream_totem": {
+          "name": "Healing Stream Totem",
+          "icon_key": "inv_spear_04"
+        },
+        "healing_wave": {
+          "name": "Healing Wave",
+          "icon_key": "spell_nature_magicimmunity"
+        },
+        "lava_burst": {
+          "name": "Lava Burst",
+          "icon_key": "spell_shaman_lavaburst"
+        },
+        "lesser_healing_wave": {
+          "name": "Lesser Healing Wave",
+          "icon_key": "spell_nature_healingwavelesser"
+        },
+        "lightning_bolt": {
+          "name": "Lightning Bolt",
+          "icon_key": "spell_nature_lightning"
+        },
+        "lightning_shield": {
+          "name": "Lightning Shield",
+          "icon_key": "spell_nature_lightningshield"
+        },
+        "magma_totem": {
+          "name": "Magma Totem",
+          "icon_key": "spell_fire_selfdestruct"
+        },
+        "mana_spring_totem": {
+          "name": "Mana Spring Totem",
+          "icon_key": "spell_nature_manaregentotem"
+        },
+        "mana_tide_totem": {
+          "name": "Mana Tide Totem",
+          "icon_key": "spell_frost_summonwaterelemental"
+        },
+        "nature_resistance_totem": {
+          "name": "Nature Resistance Totem",
+          "icon_key": "spell_nature_natureresistancetotem"
+        },
+        "natures_swiftness": {
+          "name": "Nature's Swiftness",
+          "icon_key": "spell_nature_ravenform"
+        },
+        "poison_cleansing_totem": {
+          "name": "Poison Cleansing Totem",
+          "icon_key": "spell_nature_poisoncleansingtotem"
+        },
+        "purge": {
+          "name": "Purge",
+          "icon_key": "spell_nature_purge"
+        },
+        "rage_of_the_farseer": {
+          "name": "Rage of the Farseer",
+          "icon_key": "spell_nature_bloodlust"
+        },
+        "reincarnation": {
+          "name": "Reincarnation",
+          "icon_key": "spell_nature_reincarnation"
+        },
+        "riptide": {
+          "name": "Riptide",
+          "icon_key": "spell_nature_riptide"
+        },
+        "rockbiter_weapon": {
+          "name": "Rockbiter Weapon",
+          "icon_key": "spell_nature_rockbiter"
+        },
+        "searing_totem": {
+          "name": "Searing Totem",
+          "icon_key": "spell_fire_searingtotem"
+        },
+        "sentry_totem": {
+          "name": "Sentry Totem",
+          "icon_key": "spell_nature_removecurse"
+        },
+        "stoneclaw_totem": {
+          "name": "Stoneclaw Totem",
+          "icon_key": "spell_nature_stoneclawtotem"
+        },
+        "stoneskin_totem": {
+          "name": "Stoneskin Totem",
+          "icon_key": "spell_nature_stoneskintotem"
+        },
+        "stormstrike": {
+          "name": "Stormstrike",
+          "icon_key": "ability_shaman_stormstrike"
+        },
+        "strength_of_earth_totem": {
+          "name": "Strength of Earth Totem",
+          "icon_key": "spell_nature_earthbindtotem"
+        },
+        "totemic_projection": {
+          "name": "Totemic Projection",
+          "icon_key": "ability_shaman_totemrelocation"
+        },
+        "totemic_recall": {
+          "name": "Totemic Recall",
+          "icon_key": "spell_shaman_totemrecall"
+        },
+        "tremor_totem": {
+          "name": "Tremor Totem",
+          "icon_key": "spell_nature_tremortotem"
+        },
+        "water_breathing": {
+          "name": "Water Breathing",
+          "icon_key": "spell_shadow_demonbreath"
+        },
+        "water_shield": {
+          "name": "Water Shield",
+          "icon_key": "ability_shaman_watershield"
+        },
+        "water_walking": {
+          "name": "Water Walking",
+          "icon_key": "spell_frost_windwalkon"
+        },
+        "windfury_totem": {
+          "name": "Windfury Totem",
+          "icon_key": "spell_nature_windfury"
+        },
+        "windfury_weapon": {
+          "name": "Windfury Weapon",
+          "icon_key": "spell_nature_cyclone"
+        },
+        "windwall_totem": {
+          "name": "Windwall Totem",
+          "icon_key": "spell_nature_earthbind"
+        }
+      }
+    },
+    "warlock": {
+      "talents": {
+        "aftermath": {
+          "name": "Aftermath",
+          "icon_key": "spell_fire_fire"
+        },
+        "agonizing_flames": {
+          "name": "Agonizing Flames",
+          "icon_key": "spell_fire_soulburn"
+        },
+        "amplify_curse": {
+          "name": "Amplify Curse",
+          "icon_key": "spell_shadow_contagion"
+        },
+        "bane": {
+          "name": "Bane",
+          "icon_key": "spell_shadow_deathpact"
+        },
+        "bane_of_havoc": {
+          "name": "Bane of Havoc",
+          "icon_key": "ability_warlock_baneofhavoc"
+        },
+        "cataclysm": {
+          "name": "Cataclysm",
+          "icon_key": "spell_fire_windsofwoe"
+        },
+        "conflagrate": {
+          "name": "Conflagrate",
+          "icon_key": "spell_fire_fireball"
+        },
+        "curse_of_exhaustion": {
+          "name": "Curse of Exhaustion",
+          "icon_key": "spell_shadow_grimward"
+        },
+        "decimation": {
+          "name": "Decimation",
+          "icon_key": "spell_fire_fireball02"
+        },
+        "demonic_aegis": {
+          "name": "Demonic Aegis",
+          "icon_key": "spell_shadow_ragingscream"
+        },
+        "demonic_brand": {
+          "name": "Demonic Brand",
+          "icon_key": "ability_demonhunter_chaoticimprint_fire"
+        },
+        "demonic_embrace": {
+          "name": "Demonic Embrace",
+          "icon_key": "spell_shadow_metamorphosis"
+        },
+        "demonic_energies": {
+          "name": "Demonic Energies",
+          "icon_key": "spell_shadow_felmending"
+        },
+        "demonic_knowledge": {
+          "name": "Demonic Knowledge",
+          "icon_key": "spell_shadow_improvedvampiricembrace"
+        },
+        "demonic_pact": {
+          "name": "Demonic Pact",
+          "icon_key": "inv_ability_soulharvesterwarlock_demonicsoul"
+        },
+        "demonic_sacrifice": {
+          "name": "Demonic Sacrifice",
+          "icon_key": "spell_shadow_psychicscream"
+        },
+        "destructive_reach": {
+          "name": "Destructive Reach",
+          "icon_key": "spell_shadow_corpseexplode"
+        },
+        "fel_concentration": {
+          "name": "Fel Concentration",
+          "icon_key": "spell_shadow_fingerofdeath"
+        },
+        "fel_domination": {
+          "name": "Fel Domination",
+          "icon_key": "spell_nature_removecurse"
+        },
+        "fel_vitality": {
+          "name": "Fel Vitality",
+          "icon_key": "spell_shadow_demonictactics"
+        },
+        "fire_and_brimstone": {
+          "name": "Fire and Brimstone",
+          "icon_key": "spell_fire_meteorstorm"
+        },
+        "improved_bane_of_agony": {
+          "name": "Improved Bane of Agony",
+          "icon_key": "spell_shadow_curseofsargeras"
+        },
+        "improved_corruption": {
+          "name": "Improved Corruption",
+          "icon_key": "spell_shadow_abominationexplosion"
+        },
+        "improved_drains": {
+          "name": "Improved Drains",
+          "icon_key": "spell_shadow_haunting"
+        },
+        "improved_felhunter": {
+          "name": "Improved Felhunter",
+          "icon_key": "spell_shadow_summonfelhunter"
+        },
+        "improved_health_funnel": {
+          "name": "Improved Health Funnel",
+          "icon_key": "spell_shadow_lifedrain"
+        },
+        "improved_imp": {
+          "name": "Improved Imp",
+          "icon_key": "spell_shadow_summonimp"
+        },
+        "improved_life_tap": {
+          "name": "Improved Life Tap",
+          "icon_key": "spell_shadow_burningspirit"
+        },
+        "improved_sayaad": {
+          "name": "Improved Sayaad",
+          "icon_key": "ability_warlock_randomizesuccubusincubus"
+        },
+        "improved_shadow_bolt": {
+          "name": "Improved Shadow Bolt",
+          "icon_key": "spell_shadow_shadowbolt"
+        },
+        "improved_voidwalker": {
+          "name": "Improved Voidwalker",
+          "icon_key": "spell_shadow_summonvoidwalker"
+        },
+        "incinerate": {
+          "name": "Incinerate",
+          "icon_key": "spell_fire_burnout"
+        },
+        "intensity": {
+          "name": "Intensity",
+          "icon_key": "spell_fire_lavaspawn"
+        },
+        "malediction": {
+          "name": "Malediction",
+          "icon_key": "spell_shadow_curseofachimonde"
+        },
+        "malevolence": {
+          "name": "Malevolence",
+          "icon_key": "spell_shadow_focusedpower"
+        },
+        "master_demonologist": {
+          "name": "Master Demonologist",
+          "icon_key": "spell_shadow_shadowpact"
+        },
+        "master_summoner": {
+          "name": "Master Summoner",
+          "icon_key": "spell_shadow_impphaseshift"
+        },
+        "molten_skin": {
+          "name": "Molten Skin",
+          "icon_key": "ability_mage_moltenarmor"
+        },
+        "nightfall": {
+          "name": "Nightfall",
+          "icon_key": "spell_shadow_twilight"
+        },
+        "pandemic": {
+          "name": "Pandemic",
+          "icon_key": "spell_shadow_unstableaffliction_2"
+        },
+        "pyroclasm": {
+          "name": "Pyroclasm",
+          "icon_key": "spell_fire_volcano"
+        },
+        "ruin": {
+          "name": "Ruin",
+          "icon_key": "spell_shadow_shadowwordpain"
+        },
+        "shadow_and_flame": {
+          "name": "Shadow and Flame",
+          "icon_key": "spell_fire_playingwithfire"
+        },
+        "shadow_mastery": {
+          "name": "Shadow Mastery",
+          "icon_key": "spell_shadow_shadetruesight"
+        },
+        "shadowburn": {
+          "name": "Shadowburn",
+          "icon_key": "spell_shadow_scourgebuild"
+        },
+        "siphon_life": {
+          "name": "Siphon Life",
+          "icon_key": "spell_shadow_requiem"
+        },
+        "soul_harvesting": {
+          "name": "Soul Harvesting",
+          "icon_key": "inv_elemental_primal_shadow"
+        },
+        "soul_link": {
+          "name": "Soul Link",
+          "icon_key": "spell_shadow_gathershadows"
+        },
+        "soul_siphon": {
+          "name": "Soul Siphon",
+          "icon_key": "spell_shadow_lifedrain02"
+        },
+        "suppression": {
+          "name": "Suppression",
+          "icon_key": "spell_shadow_unsummonbuilding"
+        },
+        "unholy_power": {
+          "name": "Unholy Power",
+          "icon_key": "spell_shadow_shadowworddominate"
+        },
+        "wrack": {
+          "name": "Wrack",
+          "icon_key": "ability_deathknight_hemorrhagicfever"
+        }
+      },
+      "spells": {
+        "amplify_curse": {
+          "name": "Amplify Curse",
+          "icon_key": "spell_shadow_contagion"
+        },
+        "bane_of_agony": {
+          "name": "Bane of Agony",
+          "icon_key": "spell_shadow_curseofsargeras"
+        },
+        "bane_of_doom": {
+          "name": "Bane of Doom",
+          "icon_key": "spell_shadow_auraofdarkness"
+        },
+        "bane_of_havoc": {
+          "name": "Bane of Havoc",
+          "icon_key": "ability_warlock_baneofhavoc"
+        },
+        "banish": {
+          "name": "Banish",
+          "icon_key": "spell_shadow_cripple"
+        },
+        "blood_pact": {
+          "name": "Blood Pact",
+          "icon_key": "spell_shadow_bloodboil"
+        },
+        "conflagrate": {
+          "name": "Conflagrate",
+          "icon_key": "spell_fire_fireball"
+        },
+        "consume_shadows": {
+          "name": "Consume Shadows",
+          "icon_key": "spell_shadow_antishadow"
+        },
+        "corruption": {
+          "name": "Corruption",
+          "icon_key": "spell_shadow_abominationexplosion"
+        },
+        "create_firestone": {
+          "name": "Create Firestone",
+          "icon_key": "inv_misc_gem_bloodstone_02"
+        },
+        "create_healthstone": {
+          "name": "Create Healthstone",
+          "icon_key": "inv_stone_04"
+        },
+        "create_soulstone": {
+          "name": "Create Soulstone",
+          "icon_key": "spell_shadow_soulgem"
+        },
+        "create_spellstone": {
+          "name": "Create Spellstone",
+          "icon_key": "inv_misc_gem_sapphire_01"
+        },
+        "curse_of_exhaustion": {
+          "name": "Curse of Exhaustion",
+          "icon_key": "spell_shadow_grimward"
+        },
+        "curse_of_recklessness": {
+          "name": "Curse of Recklessness",
+          "icon_key": "spell_shadow_unholystrength"
+        },
+        "curse_of_the_elements": {
+          "name": "Curse of the Elements",
+          "icon_key": "warlock_curse_shadow"
+        },
+        "curse_of_tongues": {
+          "name": "Curse of Tongues",
+          "icon_key": "spell_shadow_curseoftounges"
+        },
+        "curse_of_weakness": {
+          "name": "Curse of Weakness",
+          "icon_key": "spell_shadow_curseofmannoroth"
+        },
+        "death_coil": {
+          "name": "Death Coil",
+          "icon_key": "spell_shadow_deathcoil"
+        },
+        "demon_armor": {
+          "name": "Demon Armor",
+          "icon_key": "spell_shadow_ragingscream"
+        },
+        "demon_skin": {
+          "name": "Demon Skin",
+          "icon_key": "spell_shadow_ragingscream"
+        },
+        "demonic_sacrifice": {
+          "name": "Demonic Sacrifice",
+          "icon_key": "spell_shadow_psychicscream"
+        },
+        "detect_invisibility": {
+          "name": "Detect Invisibility",
+          "icon_key": "spell_shadow_detectinvisibility"
+        },
+        "devour_magic": {
+          "name": "Devour Magic",
+          "icon_key": "spell_nature_purge"
+        },
+        "drain_life": {
+          "name": "Drain Life",
+          "icon_key": "spell_shadow_lifedrain02"
+        },
+        "drain_mana": {
+          "name": "Drain Mana",
+          "icon_key": "spell_shadow_siphonmana"
+        },
+        "drain_soul": {
+          "name": "Drain Soul",
+          "icon_key": "spell_shadow_haunting"
+        },
+        "eye_of_kilrogg": {
+          "name": "Eye of Kilrogg",
+          "icon_key": "spell_shadow_evileye"
+        },
+        "fear": {
+          "name": "Fear",
+          "icon_key": "spell_shadow_possession"
+        },
+        "fel_domination": {
+          "name": "Fel Domination",
+          "icon_key": "spell_nature_removecurse"
+        },
+        "fire_shield": {
+          "name": "Fire Shield",
+          "icon_key": "spell_fire_firearmor"
+        },
+        "firebolt": {
+          "name": "Firebolt",
+          "icon_key": "spell_fire_firebolt"
+        },
+        "health_funnel": {
+          "name": "Health Funnel",
+          "icon_key": "spell_shadow_lifedrain"
+        },
+        "hellfire": {
+          "name": "Hellfire",
+          "icon_key": "spell_fire_incinerate"
+        },
+        "howl_of_terror": {
+          "name": "Howl of Terror",
+          "icon_key": "spell_shadow_deathscream"
+        },
+        "immolate": {
+          "name": "Immolate",
+          "icon_key": "spell_fire_immolation"
+        },
+        "incinerate": {
+          "name": "Incinerate",
+          "icon_key": "spell_fire_burnout"
+        },
+        "inferno": {
+          "name": "Inferno",
+          "icon_key": "spell_shadow_summoninfernal"
+        },
+        "lash_of_pain": {
+          "name": "Lash of Pain",
+          "icon_key": "spell_shadow_curse"
+        },
+        "lesser_invisibility": {
+          "name": "Lesser Invisibility",
+          "icon_key": "spell_magic_lesserinvisibilty"
+        },
+        "life_tap": {
+          "name": "Life Tap",
+          "icon_key": "spell_shadow_burningspirit"
+        },
+        "paranoia": {
+          "name": "Paranoia",
+          "icon_key": "spell_shadow_auraofdarkness"
+        },
+        "phase_shift": {
+          "name": "Phase Shift",
+          "icon_key": "spell_shadow_impphaseshift"
+        },
+        "rain_of_fire": {
+          "name": "Rain of Fire",
+          "icon_key": "spell_shadow_rainoffire"
+        },
+        "ritual_of_doom": {
+          "name": "Ritual of Doom",
+          "icon_key": "spell_shadow_antimagicshell"
+        },
+        "ritual_of_summoning": {
+          "name": "Ritual of Summoning",
+          "icon_key": "spell_shadow_twilight"
+        },
+        "sacrifice": {
+          "name": "Sacrifice",
+          "icon_key": "spell_shadow_sacrificialshield"
+        },
+        "searing_pain": {
+          "name": "Searing Pain",
+          "icon_key": "spell_fire_soulburn"
+        },
+        "seduction": {
+          "name": "Seduction",
+          "icon_key": "spell_shadow_mindsteal"
+        },
+        "sense_demons": {
+          "name": "Sense Demons",
+          "icon_key": "spell_shadow_metamorphosis"
+        },
+        "shadow_bolt": {
+          "name": "Shadow Bolt",
+          "icon_key": "spell_shadow_shadowbolt"
+        },
+        "shadow_ward": {
+          "name": "Shadow Ward",
+          "icon_key": "spell_shadow_antishadow"
+        },
+        "shadowburn": {
+          "name": "Shadowburn",
+          "icon_key": "spell_shadow_scourgebuild"
+        },
+        "siphon_life": {
+          "name": "Siphon Life",
+          "icon_key": "spell_shadow_requiem"
+        },
+        "soothing_kiss": {
+          "name": "Soothing Kiss",
+          "icon_key": "spell_shadow_soothingkiss"
+        },
+        "soul_fire": {
+          "name": "Soul Fire",
+          "icon_key": "spell_fire_fireball02"
+        },
+        "soul_link": {
+          "name": "Soul Link",
+          "icon_key": "spell_shadow_gathershadows"
+        },
+        "spell_lock": {
+          "name": "Spell Lock",
+          "icon_key": "spell_shadow_mindrot"
+        },
+        "subjugate_demon": {
+          "name": "Subjugate Demon",
+          "icon_key": "spell_shadow_enslavedemon"
+        },
+        "suffering": {
+          "name": "Suffering",
+          "icon_key": "spell_shadow_blackplague"
+        },
+        "summon_felhunter": {
+          "name": "Summon Felhunter",
+          "icon_key": "spell_shadow_summonfelhunter"
+        },
+        "summon_imp": {
+          "name": "Summon Imp",
+          "icon_key": "spell_shadow_summonimp"
+        },
+        "summon_incubus": {
+          "name": "Summon Incubus",
+          "icon_key": "ability_warlock_incubus"
+        },
+        "summon_succubus": {
+          "name": "Summon Succubus",
+          "icon_key": "spell_shadow_summonsuccubus"
+        },
+        "summon_voidwalker": {
+          "name": "Summon Voidwalker",
+          "icon_key": "spell_shadow_summonvoidwalker"
+        },
+        "tainted_blood": {
+          "name": "Tainted Blood",
+          "icon_key": "spell_shadow_lifedrain"
+        },
+        "torment": {
+          "name": "Torment",
+          "icon_key": "spell_shadow_gathershadows"
+        },
+        "unending_breath": {
+          "name": "Unending Breath",
+          "icon_key": "spell_shadow_demonbreath"
+        },
+        "wrack": {
+          "name": "Wrack",
+          "icon_key": "ability_deathknight_hemorrhagicfever"
+        }
+      }
+    },
+    "warrior": {
+      "talents": {
+        "anger_management": {
+          "name": "Anger Management",
+          "icon_key": "spell_holy_blessingofstamina"
+        },
+        "anticipation": {
+          "name": "Anticipation",
+          "icon_key": "spell_nature_mirrorimage"
+        },
+        "bastion": {
+          "name": "Bastion",
+          "icon_key": "inv_shield_04"
+        },
+        "blood_craze": {
+          "name": "Blood Craze",
+          "icon_key": "spell_shadow_summonimp"
+        },
+        "bloodthirst": {
+          "name": "Bloodthirst",
+          "icon_key": "spell_nature_bloodlust"
+        },
+        "bloodthrill": {
+          "name": "Bloodthrill",
+          "icon_key": "inv_sword_01"
+        },
+        "booming_voice": {
+          "name": "Booming Voice",
+          "icon_key": "spell_nature_purge"
+        },
+        "boundless_rage": {
+          "name": "Boundless Rage",
+          "icon_key": "ability_warrior_intensifyrage"
+        },
+        "concussion_blow": {
+          "name": "Concussion Blow",
+          "icon_key": "ability_thunderbolt"
+        },
+        "cruelty": {
+          "name": "Cruelty",
+          "icon_key": "ability_rogue_eviscerate"
+        },
+        "death_wish": {
+          "name": "Death Wish",
+          "icon_key": "spell_shadow_deathpact"
+        },
+        "deep_wounds": {
+          "name": "Deep Wounds",
+          "icon_key": "ability_backstab"
+        },
+        "defiance": {
+          "name": "Defiance",
+          "icon_key": "ability_warrior_innerrage"
+        },
+        "deflection": {
+          "name": "Deflection",
+          "icon_key": "ability_parry"
+        },
+        "dual_wield_specialization": {
+          "name": "Dual Wield Specialization",
+          "icon_key": "ability_dualwield"
+        },
+        "enrage": {
+          "name": "Enrage",
+          "icon_key": "spell_shadow_unholyfrenzy"
+        },
+        "flurry": {
+          "name": "Flurry",
+          "icon_key": "ability_ghoulfrenzy"
+        },
+        "focused_rage": {
+          "name": "Focused Rage",
+          "icon_key": "ability_warrior_focusedrage"
+        },
+        "impale": {
+          "name": "Impale",
+          "icon_key": "ability_searingarrow"
+        },
+        "improved_berserker_rage": {
+          "name": "Improved Berserker Rage",
+          "icon_key": "spell_nature_ancestralguardian"
+        },
+        "improved_bloodrage": {
+          "name": "Improved Bloodrage",
+          "icon_key": "ability_racial_bloodrage"
+        },
+        "improved_charge": {
+          "name": "Improved Charge",
+          "icon_key": "ability_warrior_charge"
+        },
+        "improved_cleave": {
+          "name": "Improved Cleave",
+          "icon_key": "ability_warrior_cleave"
+        },
+        "improved_disarm": {
+          "name": "Improved Disarm",
+          "icon_key": "ability_warrior_disarm"
+        },
+        "improved_execute": {
+          "name": "Improved Execute",
+          "icon_key": "inv_sword_48"
+        },
+        "improved_hamstring": {
+          "name": "Improved Hamstring",
+          "icon_key": "ability_shockwave"
+        },
+        "improved_heroic_strike": {
+          "name": "Improved Heroic Strike",
+          "icon_key": "ability_rogue_ambush"
+        },
+        "improved_intercept": {
+          "name": "Improved Intercept",
+          "icon_key": "ability_rogue_sprint"
+        },
+        "improved_overpower": {
+          "name": "Improved Overpower",
+          "icon_key": "inv_sword_05"
+        },
+        "improved_rend": {
+          "name": "Improved Rend",
+          "icon_key": "ability_gouge"
+        },
+        "improved_revenge": {
+          "name": "Improved Revenge",
+          "icon_key": "ability_warrior_revenge"
+        },
+        "improved_shield_bash": {
+          "name": "Improved Shield Bash",
+          "icon_key": "ability_warrior_shieldbash"
+        },
+        "improved_shield_wall": {
+          "name": "Improved Shield Wall",
+          "icon_key": "ability_warrior_shieldwall"
+        },
+        "improved_slam": {
+          "name": "Improved Slam",
+          "icon_key": "ability_warrior_decisivestrike"
+        },
+        "improved_sunder_armor": {
+          "name": "Improved Sunder Armor",
+          "icon_key": "ability_warrior_sunder"
+        },
+        "improved_tactical_mastery": {
+          "name": "Improved Tactical Mastery",
+          "icon_key": "spell_nature_enchantarmor"
+        },
+        "improved_thunder_clap": {
+          "name": "Improved Thunder Clap",
+          "icon_key": "ability_thunderclap"
+        },
+        "iron_will": {
+          "name": "Iron Will",
+          "icon_key": "spell_magic_magearmor"
+        },
+        "last_stand": {
+          "name": "Last Stand",
+          "icon_key": "spell_holy_ashestoashes"
+        },
+        "master_of_defense": {
+          "name": "Master of Defense",
+          "icon_key": "ability_warrior_shieldguard"
+        },
+        "mortal_strike": {
+          "name": "Mortal Strike",
+          "icon_key": "ability_warrior_savageblow"
+        },
+        "piercing_howl": {
+          "name": "Piercing Howl",
+          "icon_key": "spell_shadow_deathscream"
+        },
+        "precision": {
+          "name": "Precision",
+          "icon_key": "ability_marksmanship"
+        },
+        "raging_blows": {
+          "name": "Raging Blows",
+          "icon_key": "ability_whirlwind"
+        },
+        "shield_slam": {
+          "name": "Shield Slam",
+          "icon_key": "inv_shield_05"
+        },
+        "shield_specialization": {
+          "name": "Shield Specialization",
+          "icon_key": "inv_shield_06"
+        },
+        "spearing_strike": {
+          "name": "Spearing Strike",
+          "icon_key": "inv_spear_01"
+        },
+        "sweeping_strikes": {
+          "name": "Sweeping Strikes",
+          "icon_key": "ability_rogue_slicedice"
+        },
+        "toughness": {
+          "name": "Toughness",
+          "icon_key": "spell_holy_devotion"
+        },
+        "two_handed_weapon_specialization": {
+          "name": "Two-Handed Weapon Specialization",
+          "icon_key": "inv_axe_09"
+        },
+        "unbridled_wrath": {
+          "name": "Unbridled Wrath",
+          "icon_key": "spell_nature_stoneclawtotem"
+        },
+        "vanguard": {
+          "name": "Vanguard",
+          "icon_key": "ability_warrior_shieldcharge"
+        },
+        "weaponmaster": {
+          "name": "Weaponmaster",
+          "icon_key": "garrison_weaponupgrade"
+        }
+      },
+      "spells": {
+        "battle_shout": {
+          "name": "Battle Shout",
+          "icon_key": "ability_warrior_battleshout"
+        },
+        "battle_stance": {
+          "name": "Battle Stance",
+          "icon_key": "ability_warrior_offensivestance"
+        },
+        "berserker_rage": {
+          "name": "Berserker Rage",
+          "icon_key": "spell_nature_ancestralguardian"
+        },
+        "berserker_stance": {
+          "name": "Berserker Stance",
+          "icon_key": "ability_racial_avatar"
+        },
+        "bloodrage": {
+          "name": "Bloodrage",
+          "icon_key": "ability_racial_bloodrage"
+        },
+        "bloodthirst": {
+          "name": "Bloodthirst",
+          "icon_key": "spell_nature_bloodlust"
+        },
+        "challenging_shout": {
+          "name": "Challenging Shout",
+          "icon_key": "ability_bullrush"
+        },
+        "charge": {
+          "name": "Charge",
+          "icon_key": "ability_warrior_charge"
+        },
+        "cleave": {
+          "name": "Cleave",
+          "icon_key": "ability_warrior_cleave"
+        },
+        "concussion_blow": {
+          "name": "Concussion Blow",
+          "icon_key": "ability_thunderbolt"
+        },
+        "death_wish": {
+          "name": "Death Wish",
+          "icon_key": "spell_shadow_deathpact"
+        },
+        "defensive_stance": {
+          "name": "Defensive Stance",
+          "icon_key": "ability_warrior_defensivestance"
+        },
+        "demoralizing_shout": {
+          "name": "Demoralizing Shout",
+          "icon_key": "ability_warrior_warcry"
+        },
+        "disarm": {
+          "name": "Disarm",
+          "icon_key": "ability_warrior_disarm"
+        },
+        "execute": {
+          "name": "Execute",
+          "icon_key": "inv_sword_48"
+        },
+        "hamstring": {
+          "name": "Hamstring",
+          "icon_key": "ability_shockwave"
+        },
+        "heroic_strike": {
+          "name": "Heroic Strike",
+          "icon_key": "ability_rogue_ambush"
+        },
+        "intercept": {
+          "name": "Intercept",
+          "icon_key": "ability_rogue_sprint"
+        },
+        "intimidating_shout": {
+          "name": "Intimidating Shout",
+          "icon_key": "ability_golemthunderclap"
+        },
+        "last_stand": {
+          "name": "Last Stand",
+          "icon_key": "spell_holy_ashestoashes"
+        },
+        "mocking_blow": {
+          "name": "Mocking Blow",
+          "icon_key": "ability_warrior_punishingblow"
+        },
+        "mortal_strike": {
+          "name": "Mortal Strike",
+          "icon_key": "ability_warrior_savageblow"
+        },
+        "overpower": {
+          "name": "Overpower",
+          "icon_key": "ability_meleedamage"
+        },
+        "piercing_howl": {
+          "name": "Piercing Howl",
+          "icon_key": "spell_shadow_deathscream"
+        },
+        "pummel": {
+          "name": "Pummel",
+          "icon_key": "inv_gauntlets_04"
+        },
+        "recklessness": {
+          "name": "Recklessness",
+          "icon_key": "ability_criticalstrike"
+        },
+        "rend": {
+          "name": "Rend",
+          "icon_key": "ability_gouge"
+        },
+        "retaliation": {
+          "name": "Retaliation",
+          "icon_key": "ability_warrior_challange"
+        },
+        "revenge": {
+          "name": "Revenge",
+          "icon_key": "ability_warrior_revenge"
+        },
+        "shield_bash": {
+          "name": "Shield Bash",
+          "icon_key": "ability_warrior_shieldbash"
+        },
+        "shield_block": {
+          "name": "Shield Block",
+          "icon_key": "ability_defend"
+        },
+        "shield_slam": {
+          "name": "Shield Slam",
+          "icon_key": "inv_shield_05"
+        },
+        "shield_wall": {
+          "name": "Shield Wall",
+          "icon_key": "ability_warrior_shieldwall"
+        },
+        "slam": {
+          "name": "Slam",
+          "icon_key": "ability_warrior_decisivestrike"
+        },
+        "spearing_strike": {
+          "name": "Spearing Strike",
+          "icon_key": "inv_spear_01"
+        },
+        "sunder_armor": {
+          "name": "Sunder Armor",
+          "icon_key": "ability_warrior_sunder"
+        },
+        "sweeping_strikes": {
+          "name": "Sweeping Strikes",
+          "icon_key": "ability_rogue_slicedice"
+        },
+        "tactical_mastery": {
+          "name": "Tactical Mastery",
+          "icon_key": "spell_nature_enchantarmor"
+        },
+        "taunt": {
+          "name": "Taunt",
+          "icon_key": "spell_nature_reincarnation"
+        },
+        "thunder_clap": {
+          "name": "Thunder Clap",
+          "icon_key": "spell_nature_thunderclap"
+        },
+        "victory_rush": {
+          "name": "Victory Rush",
+          "icon_key": "ability_warrior_devastate"
+        },
+        "whirlwind": {
+          "name": "Whirlwind",
+          "icon_key": "ability_whirlwind"
+        }
+      }
+    }
+  }
+}
