@@ -1,0 +1,215 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+______ test_pinned_70338_charge_facts_compile_all_three_ranks_atomically _______
+
+    def test_pinned_70338_charge_facts_compile_all_three_ranks_atomically():
+        with sqlite3.connect(DB) as db:
+>           rows=db.execute("SELECT source_build,producer_family,consumer_family,grant_per_cast,capacity,duration_s,source_url FROM sourced_talent_charge_facts WHERE class_key='druid' AND talent_id='eclipse'").fetchall()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           sqlite3.OperationalError: no such table: sourced_talent_charge_facts
+
+tests/test_wf432_eclipse_charge_26pt_tdd.py:36: OperationalError
+_ test_legal_26pt_allocation_wires_source_action_families_without_static_cast_shortcut _
+
+    def test_legal_26pt_allocation_wires_source_action_families_without_static_cast_shortcut():
+        assert sum(ECLIPSE.values())==26
+>       ir=_selected()
+           ^^^^^^^^^^^
+
+tests/test_wf432_eclipse_charge_26pt_tdd.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_wf432_eclipse_charge_26pt_tdd.py:26: in _selected
+    return apply_talent_selection(_ir(),ECLIPSE,level=30,bonus_talent_points=5)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'eclipse': 3, 'ferocity': 3, 'genesis': 5, 'improved_entangling_roots': 1, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+_______ test_real_combat_casts_grant_cap_consume_and_expire_paid_charges _______
+
+    def test_real_combat_casts_grant_cap_consume_and_expire_paid_charges():
+>       rt,wrath,starfire=_runtime()
+                          ^^^^^^^^^^
+
+tests/test_wf432_eclipse_charge_26pt_tdd.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_wf432_eclipse_charge_26pt_tdd.py:64: in _runtime
+    ir=_selected()
+       ^^^^^^^^^^^
+tests/test_wf432_eclipse_charge_26pt_tdd.py:26: in _selected
+    return apply_talent_selection(_ir(),ECLIPSE,level=30,bonus_talent_points=5)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'eclipse': 3, 'ferocity': 3, 'genesis': 5, 'improved_entangling_roots': 1, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+_____ test_policy_reads_source_charge_state_not_a_fake_static_talent_score _____
+
+    def test_policy_reads_source_charge_state_not_a_fake_static_talent_score():
+>       rt,wrath,starfire=_runtime()
+                          ^^^^^^^^^^
+
+tests/test_wf432_eclipse_charge_26pt_tdd.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_wf432_eclipse_charge_26pt_tdd.py:64: in _runtime
+    ir=_selected()
+       ^^^^^^^^^^^
+tests/test_wf432_eclipse_charge_26pt_tdd.py:26: in _selected
+    return apply_talent_selection(_ir(),ECLIPSE,level=30,bonus_talent_points=5)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'eclipse': 3, 'ferocity': 3, 'genesis': 5, 'improved_entangling_roots': 1, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+____________ test_source_26pt_charge_apl_completes_real_paid_100mob ____________
+
+    def test_source_26pt_charge_apl_completes_real_paid_100mob():
+        from src.v2.source_bounded_joint_frontier import source_cold_start_stage,_source_stat_package_proposals,_recovery_variants
+        from src.game.data.forever.source_checkpoint_p3_swaps import substituted_multi_stage
+        from src.v2.source_persistent_joint_finalists import prepare_candidate,evaluate_persistent_candidate
+        ir=_ir()
+        stage=source_cold_start_stage(class_key='druid',level=30,source_ir=ir,gear_role='druid_feral')
+        packs=dict(_source_stat_package_proposals(class_key='druid',level=30,
+            base=stage['gear_policy_result']['winner']['gear'],max_packages=4)[0])
+        stage=substituted_multi_stage(stage=stage,class_key='druid',level=30,swaps=packs['spell_power'])
+>       candidate=prepare_candidate(class_key='druid',level=30,stage=stage,
+            allocation_override=ECLIPSE,source_ir=ir,allow_partial_gear_stats=True,bonus_talent_points=5)
+
+tests/test_wf432_eclipse_charge_26pt_tdd.py:121: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/v2/source_persistent_joint_finalists.py:63: in prepare_candidate
+    ir,_=apply_talent_selection(root,allocation,level=level,
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'eclipse': 3, 'ferocity': 3, 'genesis': 5, 'improved_entangling_roots': 1, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+______ test_cold_search_independently_generates_source_charge_apl_witness ______
+
+    def test_cold_search_independently_generates_source_charge_apl_witness():
+        from src.v2.source_bounded_joint_frontier import _source_modified_action_policy_witnesses,source_cold_start_stage
+        root=_ir()
+>       selected=_selected()
+                 ^^^^^^^^^^^
+
+tests/test_wf432_eclipse_charge_26pt_tdd.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_wf432_eclipse_charge_26pt_tdd.py:26: in _selected
+    return apply_talent_selection(_ir(),ECLIPSE,level=30,bonus_talent_points=5)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'eclipse': 3, 'ferocity': 3, 'genesis': 5, 'improved_entangling_roots': 1, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_wf432_eclipse_charge_26pt_tdd.py::test_pinned_70338_charge_facts_compile_all_three_ranks_atomically - sqlite3.OperationalError: no such table: sourced_talent_charge_facts
+FAILED tests/test_wf432_eclipse_charge_26pt_tdd.py::test_legal_26pt_allocation_wires_source_action_families_without_static_cast_shortcut - ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+FAILED tests/test_wf432_eclipse_charge_26pt_tdd.py::test_real_combat_casts_grant_cap_consume_and_expire_paid_charges - ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+FAILED tests/test_wf432_eclipse_charge_26pt_tdd.py::test_policy_reads_source_charge_state_not_a_fake_static_talent_score - ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+FAILED tests/test_wf432_eclipse_charge_26pt_tdd.py::test_source_26pt_charge_apl_completes_real_paid_100mob - ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+FAILED tests/test_wf432_eclipse_charge_26pt_tdd.py::test_cold_search_independently_generates_source_charge_apl_witness - ValueError: unsupported talent effect for eclipse rank 3; refusing no-op selection
+6 failed in 1.39s

@@ -1,0 +1,65 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_____ test_cold_64_frontier_reserves_legal_full_point_control_cap_witness ______
+
+    def test_cold_64_frontier_reserves_legal_full_point_control_cap_witness():
+        from src.v2.source_bounded_joint_frontier import bounded_full_point_talent_frontier
+        from src.game.talents import validate_talent_selection
+        ir=_ir()
+        allocations,_=bounded_full_point_talent_frontier(ir,level=30,
+            bonus_talent_points=5,max_frontier=64)
+        winners=[a for a in allocations if a.get('overgrowth')==2]
+>       assert winners
+E       assert []
+
+tests/test_wf433_p4_root_witness_blocked_red.py:16: AssertionError
+___________ test_cold_search_generates_actual_source_control_cap_apl ___________
+
+    def test_cold_search_generates_actual_source_control_cap_apl():
+        from src.v2.source_bounded_joint_frontier import (
+            _source_modified_action_policy_witnesses,source_cold_start_stage)
+        ir=_ir()
+        stage=source_cold_start_stage(class_key='druid',level=30,
+            source_ir=ir,gear_role='druid_feral')
+        allocation={**FILLER,'overgrowth':2,'ferocity':4}
+        selected=_selected(2)
+        witnesses=_source_modified_action_policy_witnesses(ir,selected,allocation,stage)
+        assert witnesses
+>       assert any(label.startswith('talent_modified:overgrowth:') for label,_ in witnesses)
+E       assert False
+E        +  where False = any(<generator object test_cold_search_generates_actual_source_control_cap_apl.<locals>.<genexpr> at 0x7f882ebb59a0>)
+
+tests/test_wf433_p4_root_witness_blocked_red.py:32: AssertionError
+___ test_bounded_cold_search_pays_control_cap_witness_before_budget_expires ____
+
+    def test_bounded_cold_search_pays_control_cap_witness_before_budget_expires():
+        from src.v2.source_bounded_joint_frontier import (
+            search_bounded_joint_frontier,source_cold_start_stage)
+        ir=_ir()
+        stage=source_cold_start_stage(class_key='druid',level=30,
+            source_ir=ir,gear_role='druid_feral')
+        result=search_bounded_joint_frontier(class_key='druid',level=30,
+            source_ir=ir,seed_stage=stage,bonus_talent_points=5,
+            max_talents=64,max_gear_moves=4,max_policies=4,
+            max_recovery_policies=2,max_paid_builds=12,max_cpu_s=30.,
+            per_candidate_wall_s=3.,screen_then_finalists=True,
+            max_finalists=2,screen_mobs=4,finalist_mobs=100,
+            proposal_strategy='diagonal')
+        paid=[row for row in result['rows'] if row['allocation'].get('overgrowth')==2
+              and row['policy_origin'].startswith('talent_modified:overgrowth:')]
+>       assert paid
+E       assert []
+
+tests/test_wf433_p4_root_witness_blocked_red.py:55: AssertionError
+=============================== warnings summary ===============================
+tests/test_wf433_p4_root_witness_blocked_red.py: 14 warnings
+  /usr/lib/python3.13/multiprocessing/popen_fork.py:67: DeprecationWarning: This process (pid=2564) is multi-threaded, use of fork() may lead to deadlocks in the child.
+    self.pid = os.fork()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_wf433_p4_root_witness_blocked_red.py::test_cold_64_frontier_reserves_legal_full_point_control_cap_witness - assert []
+FAILED tests/test_wf433_p4_root_witness_blocked_red.py::test_cold_search_generates_actual_source_control_cap_apl - assert False
+ +  where False = any(<generator object test_cold_search_generates_actual_source_control_cap_apl.<locals>.<genexpr> at 0x7f882ebb59a0>)
+FAILED tests/test_wf433_p4_root_witness_blocked_red.py::test_bounded_cold_search_pays_control_cap_witness_before_budget_expires - assert []
+3 failed, 14 warnings in 11.29s
