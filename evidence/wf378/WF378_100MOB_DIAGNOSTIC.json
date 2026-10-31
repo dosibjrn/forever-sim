@@ -1,0 +1,63 @@
+{
+  "checkpoint": "Mage L30 unrestricted",
+  "improvement_pct_incoming": 0.0,
+  "improvement_pct_no_incoming": 0.25319075543289715,
+  "results": {
+    "incoming_channel": {
+      "combat_s": 600.0,
+      "completed_mobs": 100,
+      "cpu_s": 0.08428769399999991,
+      "events": 2000,
+      "evocation_cooldown_ready_s": null,
+      "recovery_s": 315.95576619273436,
+      "seconds_per_mob": 9.159557661927344,
+      "total_s": 915.9557661927344,
+      "wall_s": 0.08438239000003023
+    },
+    "incoming_water": {
+      "combat_s": 600.0,
+      "completed_mobs": 100,
+      "cpu_s": 0.03678171599999991,
+      "events": 2000,
+      "evocation_cooldown_ready_s": null,
+      "recovery_s": 315.95576619273436,
+      "seconds_per_mob": 9.159557661927344,
+      "total_s": 915.9557661927344,
+      "wall_s": 0.037923662999958196
+    },
+    "no_incoming_channel": {
+      "combat_s": 600.0,
+      "completed_mobs": 100,
+      "cpu_s": 0.05679453899999998,
+      "events": 1700,
+      "evocation_cooldown_ready_s": 970.2969984202216,
+      "recovery_s": 313.63665086887977,
+      "seconds_per_mob": 9.136366508688798,
+      "total_s": 913.6366508688798,
+      "wall_s": 0.05688904000004413
+    },
+    "no_incoming_water": {
+      "combat_s": 600.0,
+      "completed_mobs": 100,
+      "cpu_s": 0.02443509899999996,
+      "events": 1700,
+      "evocation_cooldown_ready_s": null,
+      "recovery_s": 315.95576619273436,
+      "seconds_per_mob": 9.159557661927344,
+      "total_s": 915.9557661927344,
+      "wall_s": 0.024435227999958897
+    }
+  },
+  "scenario": {
+    "evocation_tick_source": "classic_spirit_2s_proxy_not_verified_forever_server_tick",
+    "fixed_policy": "wf378:fixed_source_frostbolt_probe",
+    "mobs": 100,
+    "not_checkpoint_P4_P5_P6": true,
+    "objective": "actual_100_mob_combat_paid_recovery_survival",
+    "pack_size": 1,
+    "spirit": 60,
+    "spirit_source": "qualified_proxy_not_verified_forever_level30",
+    "starting_mana": 750,
+    "target_hp": 150
+  }
+}
