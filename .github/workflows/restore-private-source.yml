@@ -1,7 +1,9 @@
 # INSTALL in PUBLIC dosibjrn/forever-sim at .github/workflows/restore-private-source.yml.
 # Add PUBLIC Actions secret FOREVER_SIM_PRIVATE_READ_TOKEN_2 granting read-only Contents
 # access to the PRIVATE dosibjrn/mage-level-sim repo (and its LFS objects).
-# Push of this workflow can only AUDIT, never publish. Run Actions -> Restore private source to public Forever Sim -> mode=audit,
+# One-shot owner-requested publication: ONLY the exact commit message + audited private SHA 3bd46df7e3b95a8a3bfdc7455de659341a905826 can publish via push.
+# Other pushes AUDIT only. Following successful publication, revert this one-shot trigger to manual-only.
+# Run Actions -> Restore private source to public Forever Sim -> mode=audit,
 # verify the private repository contains only material licensed/approved for PUBLIC release,
 # then mode=publish with exact audited private main SHA.
 # Public GITHUB_TOKEN handles destination writes. NO private audit path lists are uploaded.
@@ -35,8 +37,8 @@ jobs:
     timeout-minutes: 30
     if: github.repository == 'dosibjrn/forever-sim'
     env:
-      MIGRATION_MODE: ${{ inputs.mode || 'audit' }}
-      APPROVED_SOURCE_SHA: ${{ inputs.approved_source_sha }}
+      MIGRATION_MODE: ${{ github.event_name == 'push' && github.event.head_commit.message == 'migration: publish audited source 3bd46df7e3b95a8a3bfdc7455de659341a905826 [one-shot]' && 'publish' || inputs.mode || 'audit' }}
+      APPROVED_SOURCE_SHA: ${{ github.event_name == 'push' && github.event.head_commit.message == 'migration: publish audited source 3bd46df7e3b95a8a3bfdc7455de659341a905826 [one-shot]' && '3bd46df7e3b95a8a3bfdc7455de659341a905826' || inputs.approved_source_sha }}
       PRIVATE_READ_TOKEN: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN_2 }}
     steps:
       - name: Checkout PUBLIC destination main
