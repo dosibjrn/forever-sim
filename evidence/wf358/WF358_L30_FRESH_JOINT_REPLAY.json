@@ -1,0 +1,40 @@
+{
+  "accepted_checkpoints": "1/148",
+  "checkpoint": "druid:L30:unrestricted",
+  "expected_s_per_mob": 16.287595825231314,
+  "p3_acceptance": "NOT_YET",
+  "replay": {
+    "between_pull_full_recoveries": 14,
+    "between_pull_hot_casts": 0,
+    "between_pull_runtime_events": 108,
+    "carried_hot_heals_in_combat": 32,
+    "carried_hot_ticks_at_pull": 32,
+    "combat_s": 1448.0,
+    "continuous_actor_state": true,
+    "count": 100,
+    "elapsed_cpu_s": 3.4097616599999996,
+    "elapsed_wall_s": 3.409779671000024,
+    "end_to_end_child_cpu_s": 3.9362617650000002,
+    "end_to_end_child_wall_s": 3.9362831020000613,
+    "events": 9979,
+    "maintenance_casts": 4,
+    "maintenance_runtime_events": 28,
+    "maintenance_s": 9.0,
+    "mean_s_per_mob": 16.287595825231314,
+    "outer_wall_s": 4.927072782999971,
+    "recovery_policy": {
+      "exit_action_id": "cancel_mode:cat",
+      "health_fraction": 0.25,
+      "hot_action_id": null,
+      "hot_min_missing_health_fraction": 0.0,
+      "mana_fraction": 0.1,
+      "reentry_action_id": "cat_form:768"
+    },
+    "recovery_s": 171.75958252313148,
+    "skipped_satisfied_mode_prefixes": 97,
+    "source_only": true,
+    "status": "COMPLETE",
+    "total_s": 1628.7595825231315
+  },
+  "status": "COMPLETE_REPRODUCED"
+}
