@@ -1,5 +1,6 @@
 import importlib.util
 import os
+import shutil
 import sys
 from pathlib import Path
 import subprocess
@@ -7,6 +8,7 @@ import tempfile
 import unittest
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'verify_public_snapshot.py'
+MIGRATION = SCRIPT.with_name('complete_public_migration.sh')
 spec = importlib.util.spec_from_file_location('verify_public_snapshot', SCRIPT)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
@@ -79,6 +81,8 @@ class VerifyPublicSnapshotTest(unittest.TestCase):
         self.put('README.md', b'public README', self.new)
         self.stage(self.old)
         self.stage(self.new)
+        # Public-specific README is already committed, not an extra staged payload.
+        git(self.new, 'commit', '-m', 'public baseline')
         count, excluded, errors = mod.verify(self.old, self.new)
         self.assertEqual((count, excluded, errors), (1, 1, []))
 
@@ -122,6 +126,56 @@ class VerifyPublicSnapshotTest(unittest.TestCase):
         self.stage(self.old)
         self.stage(self.new)
         self.assertTrue(any('NOT_STAGED_WITH_SOURCE_MODE bin/tool.sh' in e for e in mod.verify(self.old, self.new)[2]))
+
+    def test_stale_index_blob_fails_even_when_worktree_matches(self):
+        self.put('src/engine.py', b'correct source bytes')
+        self.put('src/engine.py', b'WRONG staged bytes', self.new)
+        self.stage(self.old)
+        self.stage(self.new)
+        # Modify working tree AFTER staging. Mode and working bytes now match,
+        # but the committed Git blob still contains the wrong source.
+        self.put('src/engine.py', b'correct source bytes', self.new)
+        errors = mod.verify(self.old, self.new)[2]
+        self.assertTrue(any('STAGED_BLOB_MISMATCH src/engine.py' in e for e in errors), errors)
+
+    def test_extra_staged_private_file_fails(self):
+        self.put('src/engine.py', b'correct')
+        self.put('src/engine.py', b'correct', self.new)
+        self.put('README.md', b'protected but staged', self.new)
+        self.stage(self.old)
+        self.stage(self.new)
+        errors = mod.verify(self.old, self.new)[2]
+        self.assertIn('UNEXPECTED_STAGED_PATH README.md', errors)
+
+    def test_local_migration_requires_audited_sha_before_cloning(self):
+        env = dict(os.environ)
+        env.pop('APPROVED_SOURCE_SHA', None)
+        result = subprocess.run(['bash', str(MIGRATION)], env=env,
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('APPROVED_SOURCE_SHA', result.stderr)
+
+    def test_local_migration_rejects_private_head_mismatch(self):
+        self.put('src/engine.py', b'source')
+        self.stage(self.old)
+        git(self.old, 'commit', '-m', 'source')
+        git(self.old, 'branch', '-M', 'main')
+        shim = Path(self.temp.name) / 'shim'
+        shim.mkdir()
+        wrapper = shim / 'git'
+        wrapper.write_text(
+            '#!/bin/sh\\n'
+            'if [ "$1" = "lfs" ]; then exit 0; fi\\n'
+            'exec ' + shutil.which('git') + ' "$@"\\n'
+        )
+        wrapper.chmod(0o755)
+        env = dict(os.environ, APPROVED_SOURCE_SHA='0' * 40,
+                   OLD_URL=str(self.old), NEW_URL=str(self.new),
+                   PATH=str(shim) + os.pathsep + os.environ['PATH'])
+        result = subprocess.run(['bash', str(MIGRATION)], env=env,
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 4, result.stderr)
+        self.assertIn('Private main changed since approval', result.stderr)
 
 
 if __name__ == '__main__':
