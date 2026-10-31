@@ -5,6 +5,15 @@ blobs are **not** converted merely by adding attributes. Do not label these
 assets as migrated until the LFS pointers have been committed **and the actual
 objects have been uploaded and fetched back successfully**.
 
+**P0 prerequisite (public `forever-sim`, issue #25):** the public main snapshot
+is still incomplete as of 2026-11-01: ten SQLite payloads and two large JSON
+payloads remain absent. First finish the authenticated, audited source-state
+transfer and verify the *hydrated bytes* and hashes against the approved source
+SHA. Do **not** start a public-main LFS conversion from a partial snapshot or
+mistake Git LFS pointer text for a working SQLite database. Keep the historical
+private repository read-only. The separate LFS conversion is issue #5, **after**
+P0 parity and a successful public manual runner smoke.
+
 ## Assets and scope
 
 - All current tracked SQLite databases (`*.sqlite`), future `*.sqlite3`,
@@ -15,8 +24,9 @@ objects have been uploaded and fetched back successfully**.
   `evidence/wf353/WF353_L30_DISCOVERED_STAGES.json`.
 - All other JSON (config, ordinary run evidence, manifests) **remains text in
   Git** for diffability and review. No broad `*.json` LFS rule.
-- Audit at configuration time: **14 existing tracked candidates / 85,792,142 bytes**
-  (11 SQLite databases + 3 large historical JSONs).
+- **Historical private-source inventory**, not a claim about public main:
+  14 tracked candidates / 85,792,142 bytes (11 SQLite databases + 3 large
+  historical JSONs). Recalculate and verify the public inventory after P0.
 - Untracked historical recovery file:
   `feral_wf607_wf613_recovered_runtime.zip` (10,635,591 bytes)
   is in the project file library, **not yet in GitHub or Git LFS**.
@@ -24,8 +34,10 @@ objects have been uploaded and fetched back successfully**.
 
 ## Convert the already-tracked files (separate worker branch)
 
-Requires a local clone or an environment with *authenticated* `git lfs push`.
-Use a clean worktree based on the main commit containing these attributes:
+**Do this only after P0 source/data parity and the public manual runner smoke.**
+Requires a local clone of `dosibjrn/forever-sim` or an environment with
+authenticated `git lfs push`. Use a clean worktree based on the verified public
+main commit containing these attributes:
 
 ```bash
 git fetch origin
@@ -72,14 +84,22 @@ required remote LFS object.
 
 ```bash
 git lfs install
-git clone https://github.com/dosibjrn/mage-level-sim.git
-cd mage-level-sim
+git clone https://github.com/dosibjrn/forever-sim.git
+cd forever-sim
 git lfs pull
 git lfs ls-files
 ```
 
-Gate CI uses `actions/checkout@v4` with `lfs: true` so its source
-catalogues continue to load. Keep engine binary distribution via pinned
-GitHub Actions artifacts whenever possible.
+Until P0 is accepted, this public checkout may lack the twelve source payloads
+listed above. `git lfs pull` cannot restore objects that were never published.
+The historical `mage-level-sim` repository is an audit-only source, **not** a
+new work branch or LFS-conversion target.
+
+After the public runner smoke succeeds, enable only reviewed gate workflows.
+Every CI job requiring LFS-backed catalogues must explicitly use
+`actions/checkout@v4` with `lfs: true` and prove the hydrated SQLite bytes are
+readable; do not infer this from a checkout setting or a green compile.
+Keep engine binary distribution via pinned GitHub Actions artifacts whenever
+possible.
 
 See [repository structure](REPOSITORY_STRUCTURE.md).
