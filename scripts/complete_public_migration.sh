@@ -5,6 +5,12 @@
 set -euo pipefail
 OLD_URL="${OLD_URL:-https://github.com/dosibjrn/mage-level-sim.git}"
 NEW_URL="${NEW_URL:-https://github.com/dosibjrn/forever-sim.git}"
+# Must be the SHA explicitly approved after a PRIVATE source/disclosure audit.
+APPROVED_SOURCE_SHA="${APPROVED_SOURCE_SHA:-}"
+if [[ ! "$APPROVED_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "APPROVED_SOURCE_SHA must be an audited, lowercase 40-hex private main commit SHA" >&2
+  exit 2
+fi
 command -v git >/dev/null || { echo "git required" >&2; exit 2; }
 command -v tar >/dev/null || { echo "tar required" >&2; exit 2; }
 command -v python3 >/dev/null || { echo "python3 required for byte/stage parity check" >&2; exit 2; }
@@ -13,6 +19,11 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 echo "[1/7] Clone original private main (read-only)"
 git clone --depth=1 --single-branch --branch main "$OLD_URL" "$work/old"
+actual_source_sha="$(git -C "$work/old" rev-parse HEAD)"
+if [[ "$actual_source_sha" != "$APPROVED_SOURCE_SHA" ]]; then
+  echo "Private main changed since approval: expected $APPROVED_SOURCE_SHA, got $actual_source_sha; aborting" >&2
+  exit 4
+fi
 git -C "$work/old" lfs pull
 echo "[2/7] Clone destination public main"
 git clone --depth=1 --single-branch --branch main "$NEW_URL" "$work/new"
