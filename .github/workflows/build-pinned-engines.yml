@@ -1,0 +1,70 @@
+name: Build pinned Rust and Go engines
+# Port safety: only run manually after full public baseline and runner smoke.
+on:
+  workflow_dispatch:
+
+jobs:
+  rust:
+    runs-on: ubuntu-24.04
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with: {path: project}
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine
+          ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
+          path: upstream
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build original Rust engine
+        working-directory: upstream
+        run: cargo build --release --locked
+      - name: Package sources and binary
+        run: |
+          mkdir -p publish
+          tar czf publish/rust-source.tar.gz -C upstream --exclude=target --exclude=.git .
+          cp upstream/target/release/forever-engine publish/forever-engine
+          printf '%s\n' '666fe17a42682068a3c8497d88d5fa3732cbdfb9' > publish/SOURCE_COMMIT
+          sha256sum publish/forever-engine > publish/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mythicsim-rust-pinned-linux-x64
+          path: publish/
+          if-no-files-found: error
+  go:
+    runs-on: ubuntu-24.04
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine-go
+          ref: a667dce8492bd9fb94269a9f864289cb74006775
+          path: upstream
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: upstream/go.mod
+          cache-dependency-path: upstream/go.sum
+      - name: Generate pinned Go protobuf bindings
+        working-directory: upstream
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          make sim/core/proto/api.pb.go
+      - name: Build native Go CLI
+        working-directory: upstream
+        run: |
+          mkdir -p ../publish
+          go build -trimpath -o ../publish/wowsimcli ./cmd/wowsimcli
+      - name: Package sources and binary
+        run: |
+          tar czf publish/go-source.tar.gz -C upstream --exclude=.git .
+          printf '%s\n' 'a667dce8492bd9fb94269a9f864289cb74006775' > publish/SOURCE_COMMIT
+          sha256sum publish/wowsimcli > publish/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mythicsim-go-pinned-linux-x64
+          path: publish/
+          if-no-files-found: error

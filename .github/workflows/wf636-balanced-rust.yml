@@ -1,0 +1,45 @@
+name: WF636 Rust balanced RNG build
+# Port safety: only run manually after full public baseline and runner smoke.
+on:
+  workflow_dispatch:
+
+jobs:
+  balanced:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: forever-sim
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine
+          ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
+          path: engine
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Apply balanced RNG patch
+        run: |
+          cd engine
+          python3 ../forever-sim/integrations/mythicsim-rust/wf636_apply_balanced.py
+      - name: Run focused balanced RNG tests
+        working-directory: engine
+        run: cargo test --locked balanced_tests
+      - name: Build and smoke test
+        working-directory: engine
+        run: |
+          cargo build --release --locked
+          ./target/release/forever-engine --help
+          ./target/release/forever-engine version
+      - name: Package
+        run: |
+          mkdir -p deliverable
+          cp engine/target/release/forever-engine deliverable/forever-engine
+          cp engine/release/manifest.json deliverable/manifest.json
+          sha256sum deliverable/forever-engine > deliverable/SHA256SUMS
+          cp mage-level-sim/integrations/mythicsim-rust/wf636_apply_balanced.py deliverable/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wf636-balanced-rust-linux-x64
+          path: deliverable/
+          if-no-files-found: error
