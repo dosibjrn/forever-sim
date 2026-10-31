@@ -1,13 +1,17 @@
 # INSTALL in PUBLIC dosibjrn/forever-sim at .github/workflows/restore-private-source.yml.
-# Add PUBLIC Actions secret FOREVER_SIM_PRIVATE_READ_TOKEN granting read-only Contents
+# Add PUBLIC Actions secret FOREVER_SIM_PRIVATE_READ_TOKEN_2 granting read-only Contents
 # access to the PRIVATE dosibjrn/mage-level-sim repo (and its LFS objects).
-# MANUAL-ONLY: never publish on push. Run Actions -> Restore private source to public Forever Sim -> mode=audit,
+# Push of this workflow can only AUDIT, never publish. Run Actions -> Restore private source to public Forever Sim -> mode=audit,
 # verify the private repository contains only material licensed/approved for PUBLIC release,
 # then mode=publish with exact audited private main SHA.
 # Public GITHUB_TOKEN handles destination writes. NO private audit path lists are uploaded.
 # Existing public main-only governance/docs, existing PRs and the manual smoke are kept.
 name: Restore private source to public Forever Sim
 on:
+  # One-off audited migration check on this workflow's own edit. Push cannot publish.
+  push:
+    branches: [main]
+    paths: ['.github/workflows/restore-private-source.yml']
   workflow_dispatch:
     inputs:
       mode:
@@ -31,9 +35,9 @@ jobs:
     timeout-minutes: 30
     if: github.repository == 'dosibjrn/forever-sim'
     env:
-      MIGRATION_MODE: ${{ inputs.mode }}
+      MIGRATION_MODE: ${{ inputs.mode || 'audit' }}
       APPROVED_SOURCE_SHA: ${{ inputs.approved_source_sha }}
-      PRIVATE_READ_TOKEN: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN }}
+      PRIVATE_READ_TOKEN: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN_2 }}
     steps:
       - name: Checkout PUBLIC destination main
         uses: actions/checkout@v4
@@ -47,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dosibjrn/mage-level-sim
-          token: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN }}
+          token: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN_2 }}
           path: private-source
           ref: main
           fetch-depth: 1
