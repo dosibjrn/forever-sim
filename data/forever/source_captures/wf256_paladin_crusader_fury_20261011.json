@@ -1,0 +1,156 @@
+{
+  "capture_id": "wf256_paladin_crusader_fury_20261011",
+  "captured_at": "2026-10-11",
+  "client_build": "1.60.1.70338",
+  "class_key": "paladin",
+  "source_authority": "current_beta_client_tooltip_extracted_by_theforeverera_2026_10_11",
+  "families": [
+    {
+      "family_key": "seal_of_the_crusader",
+      "aura_id": "seal:crusader",
+      "mechanic_kind": "attack_rate_buff",
+      "source_url": "https://theforeverera.com/en/spells/paladin/seal-of-the-crusader/",
+      "crosscheck_url": "https://www.wowhead.com/classic/spell=20162/seal-of-the-crusader",
+      "duration_s": 30,
+      "gcd_s": 1.5,
+      "school": "holy",
+      "exclusive_group": "paladin_seal",
+      "attack_rate_multiplier": 1.4,
+      "judge_duration_s": 40,
+      "judge_exclusive_group": "paladin_judgement",
+      "judge_school_power_interpretation": "CLASSIC_SPELL_POWER_COEFFICIENT_PROXY_UNVERIFIED_FOREVER",
+      "damage_per_swing_interpretation": "DPS_X_EFFECTIVE_HASTED_SWING_DURATION_PROXY",
+      "ranks": [
+        {
+          "spell_id": 21082,
+          "min_level": 6,
+          "mana_cost": 25,
+          "actor_attack_power_delta": 31,
+          "judge_school_power_bonus": 23
+        },
+        {
+          "spell_id": 20162,
+          "min_level": 12,
+          "mana_cost": 40,
+          "actor_attack_power_delta": 51,
+          "judge_school_power_bonus": 35
+        },
+        {
+          "spell_id": 20305,
+          "min_level": 22,
+          "mana_cost": 65,
+          "actor_attack_power_delta": 94,
+          "judge_school_power_bonus": 58
+        },
+        {
+          "spell_id": 20306,
+          "min_level": 32,
+          "mana_cost": 90,
+          "actor_attack_power_delta": 145,
+          "judge_school_power_bonus": 92
+        },
+        {
+          "spell_id": 20307,
+          "min_level": 42,
+          "mana_cost": 125,
+          "actor_attack_power_delta": 221,
+          "judge_school_power_bonus": 127
+        },
+        {
+          "spell_id": 20308,
+          "min_level": 52,
+          "mana_cost": 160,
+          "actor_attack_power_delta": 306,
+          "judge_school_power_bonus": 161
+        }
+      ]
+    },
+    {
+      "family_key": "seal_of_fury",
+      "aura_id": "seal:fury",
+      "mechanic_kind": "swing_damage",
+      "source_url": "https://theforeverera.com/en/spells/paladin/seal-of-fury/",
+      "crosscheck_url": "https://foreverdiff.com/spells/seal-of-fury/",
+      "duration_s": 30,
+      "gcd_s": 1.5,
+      "school": "holy",
+      "exclusive_group": "paladin_seal",
+      "swing_speed_scaled": false,
+      "swing_absorb_fraction": 0.5,
+      "swing_absorb_requires_stat": "equipped_shield",
+      "swing_absorb_id": "fury_holy_shield",
+      "absorb_semantics": "REPLACEABLE_ABSORB_LEGACY_PROXY_UNVERIFIED_SERVER",
+      "judgement_taunt_duration_s": 4,
+      "judgement_taunt_status": "TARGET_AI_TAUNT_NOT_EXECUTABLE_FOR_SOLO_EXPECTED_TARGET",
+      "ranks": [
+        {
+          "spell_id": 1311649,
+          "min_level": 10,
+          "mana_cost": 40,
+          "swing_min": 6,
+          "swing_max": 6,
+          "judgement_min": 22,
+          "judgement_max": 24
+        },
+        {
+          "spell_id": 1311656,
+          "min_level": 18,
+          "mana_cost": 60,
+          "swing_min": 9,
+          "swing_max": 9,
+          "judgement_min": 35,
+          "judgement_max": 39
+        },
+        {
+          "spell_id": 20163,
+          "min_level": 25,
+          "mana_cost": 90,
+          "swing_min": 14,
+          "swing_max": 14,
+          "judgement_min": 51,
+          "judgement_max": 57
+        },
+        {
+          "spell_id": 20419,
+          "min_level": 34,
+          "mana_cost": 120,
+          "swing_min": 19,
+          "swing_max": 19,
+          "judgement_min": 70,
+          "judgement_max": 78
+        },
+        {
+          "spell_id": 20421,
+          "min_level": 42,
+          "mana_cost": 140,
+          "swing_min": 25,
+          "swing_max": 25,
+          "judgement_min": 91,
+          "judgement_max": 101
+        },
+        {
+          "spell_id": 20422,
+          "min_level": 50,
+          "mana_cost": 170,
+          "swing_min": 32,
+          "swing_max": 32,
+          "judgement_min": 118,
+          "judgement_max": 128
+        },
+        {
+          "spell_id": 20423,
+          "min_level": 58,
+          "mana_cost": 200,
+          "swing_min": 35,
+          "swing_max": 35,
+          "judgement_min": 146,
+          "judgement_max": 160
+        }
+      ],
+      "proc_sp_coefficient": 0.1,
+      "judge_sp_coefficient": 0.45,
+      "coefficient_source_url": "https://www.wowhead.com/forever/spell=20423/seal-of-fury",
+      "coefficient_provenance": "legacy_wowhead_2026_09_25_fixture_unverified_current_server"
+    }
+  ]
+}
