@@ -1,0 +1,51 @@
+{
+  "PASS4": false,
+  "PASS5": false,
+  "PASS6": false,
+  "checkpoint": "Druid L20 unrestricted",
+  "comparison_reference": "WF326 13.46412880141965 s/mob (same source and hundred-mob scorer)",
+  "distinct_talent_allocations": 96,
+  "finalists_evaluated": 10,
+  "full_cpu_s": 28.130639256,
+  "full_wall_s": 28.148083309999947,
+  "joint_events": 72068,
+  "limitations": "Attempt/event bounded joint search; NOT hard 30/300s wall-constrained acceptance.",
+  "origin": "self-discovered gear/talent/ordered policy (no old winner injected)",
+  "schema": "wf328_identical_stage_independent_joint_druid20_v1",
+  "screen_evaluated": 40,
+  "search_attempted": 714,
+  "search_cpu_s": 12.503347271,
+  "search_evaluated": 645,
+  "search_wall_s": 12.518928648999918,
+  "status": "PERSISTENT_VERIFIED_BOUNDED",
+  "winner": {
+    "fallback": "claw:20",
+    "gear": {
+      "back": 4706,
+      "chest": 252434,
+      "feet": 252439,
+      "hands": 5195,
+      "head": 252447,
+      "legs": 252445,
+      "neck": 285331,
+      "ring1": 284715,
+      "ring2": 20429,
+      "shoulder": 5404,
+      "trinket1": 273298,
+      "trinket2": 21566,
+      "waist": 5975,
+      "weapon": 7230,
+      "wrist": 14569
+    },
+    "mean_s_per_mob": 13.46412880141965,
+    "prefix": [
+      "cat_form:768"
+    ],
+    "status": "COMPLETE",
+    "talents": {
+      "feral_swiftness": 1,
+      "ferocity": 5,
+      "heart_of_the_wild": 5
+    }
+  }
+}

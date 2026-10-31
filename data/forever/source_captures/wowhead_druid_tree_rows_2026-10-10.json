@@ -1,0 +1,139 @@
+{
+  "capture_id": "wowhead-druid-tree-rows-2026-10-10",
+  "class_key": "druid",
+  "notes": "Partial explicit row facts. Rows are zero-indexed. This capture does NOT imply full tree, columns, ranks, effects or prerequisites. Secondary facts remain provisional.",
+  "facts": [
+    {
+      "name": "Heart of the Wild",
+      "row": 0,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 6 up to row 1",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Savage Fury",
+      "row": 2,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 5 up to row 3",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Feral Swiftness",
+      "row": 1,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 3 up to row 2",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Moonglow",
+      "row": 1,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 5 up to row 2",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Nature's Reach",
+      "row": 1,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 3 up to row 2",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Improved Entangling Roots",
+      "row": 2,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 2 down to row 3",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Overgrowth",
+      "row": 4,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "New talent in row 5",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Eclipse",
+      "row": 4,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "New talent in row 5",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Nature's Majesty",
+      "row": 1,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "New talent in row 2",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Genesis",
+      "row": 0,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "New talent in row 1",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Natural Shapeshifter",
+      "row": 1,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "moved to Restoration to row 2",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Subtlety",
+      "row": 1,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 3 up to row 2",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Gift of Nature",
+      "row": 2,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 5 up to row 3",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Swiftmend",
+      "row": 3,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "Moved from row 7 up to row 4",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Living Spirit",
+      "row": 4,
+      "source_url": "https://www.wowhead.com/news/druid-and-hunter-class-deep-dives-in-world-of-warcraft-forever-383190",
+      "evidence": "New row 5 talent",
+      "authority": "wowhead_announcement_row"
+    },
+    {
+      "name": "Ferocity",
+      "row": 0,
+      "source_url": "https://wowforever.gg/en/talents/druid/",
+      "evidence": "Feral Combat: Ferocity Maximum rank: 5 (no earlier-row requirement)",
+      "authority": "secondary_provisional_row"
+    },
+    {
+      "name": "Thick Hide",
+      "row": 1,
+      "source_url": "https://wowforever.gg/en/talents/druid/",
+      "evidence": "Thick Hide Maximum rank: 3; Requires points in earlier rows: 5",
+      "authority": "secondary_provisional_row"
+    },
+    {
+      "name": "Improved Wrath",
+      "row": 0,
+      "source_url": "https://wowforever.gg/en/talents/druid/",
+      "evidence": "Balance: Improved Wrath Maximum rank: 5 (no earlier-row requirement)",
+      "authority": "secondary_provisional_row"
+    }
+  ],
+  "tier_rule": {
+    "points_per_row": 5,
+    "source_url": "https://wowforever.gg/en/talents/druid/",
+    "evidence": "Rows beyond the first require 5 additional points in earlier rows per tier (5, 10, 15, 20, 25, 30).",
+    "authority": "secondary_provisional_rule"
+  }
+}

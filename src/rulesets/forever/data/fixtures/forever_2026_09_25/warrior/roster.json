@@ -1,0 +1,390 @@
+{
+  "attribution": "Talents Forever (talentsforever.com), WoW Forever beta client-derived icon keys",
+  "license": "CC-BY-4.0",
+  "source_generated": "2026-09-24",
+  "source_url": "https://talentsforever.com/data.json",
+  "spells": {
+    "battle_shout": {
+      "icon_key": "ability_warrior_battleshout",
+      "name": "Battle Shout"
+    },
+    "battle_stance": {
+      "icon_key": "ability_warrior_offensivestance",
+      "name": "Battle Stance"
+    },
+    "berserker_rage": {
+      "icon_key": "spell_nature_ancestralguardian",
+      "name": "Berserker Rage"
+    },
+    "berserker_stance": {
+      "icon_key": "ability_racial_avatar",
+      "name": "Berserker Stance"
+    },
+    "bloodrage": {
+      "icon_key": "ability_racial_bloodrage",
+      "name": "Bloodrage"
+    },
+    "bloodthirst": {
+      "icon_key": "spell_nature_bloodlust",
+      "name": "Bloodthirst"
+    },
+    "challenging_shout": {
+      "icon_key": "ability_bullrush",
+      "name": "Challenging Shout"
+    },
+    "charge": {
+      "icon_key": "ability_warrior_charge",
+      "name": "Charge"
+    },
+    "cleave": {
+      "icon_key": "ability_warrior_cleave",
+      "name": "Cleave"
+    },
+    "concussion_blow": {
+      "icon_key": "ability_thunderbolt",
+      "name": "Concussion Blow"
+    },
+    "death_wish": {
+      "icon_key": "spell_shadow_deathpact",
+      "name": "Death Wish"
+    },
+    "defensive_stance": {
+      "icon_key": "ability_warrior_defensivestance",
+      "name": "Defensive Stance"
+    },
+    "demoralizing_shout": {
+      "icon_key": "ability_warrior_warcry",
+      "name": "Demoralizing Shout"
+    },
+    "disarm": {
+      "icon_key": "ability_warrior_disarm",
+      "name": "Disarm"
+    },
+    "execute": {
+      "icon_key": "inv_sword_48",
+      "name": "Execute"
+    },
+    "hamstring": {
+      "icon_key": "ability_shockwave",
+      "name": "Hamstring"
+    },
+    "heroic_strike": {
+      "icon_key": "ability_rogue_ambush",
+      "name": "Heroic Strike"
+    },
+    "intercept": {
+      "icon_key": "ability_rogue_sprint",
+      "name": "Intercept"
+    },
+    "intimidating_shout": {
+      "icon_key": "ability_golemthunderclap",
+      "name": "Intimidating Shout"
+    },
+    "last_stand": {
+      "icon_key": "spell_holy_ashestoashes",
+      "name": "Last Stand"
+    },
+    "mocking_blow": {
+      "icon_key": "ability_warrior_punishingblow",
+      "name": "Mocking Blow"
+    },
+    "mortal_strike": {
+      "icon_key": "ability_warrior_savageblow",
+      "name": "Mortal Strike"
+    },
+    "overpower": {
+      "icon_key": "ability_meleedamage",
+      "name": "Overpower"
+    },
+    "piercing_howl": {
+      "icon_key": "spell_shadow_deathscream",
+      "name": "Piercing Howl"
+    },
+    "pummel": {
+      "icon_key": "inv_gauntlets_04",
+      "name": "Pummel"
+    },
+    "recklessness": {
+      "icon_key": "ability_criticalstrike",
+      "name": "Recklessness"
+    },
+    "rend": {
+      "icon_key": "ability_gouge",
+      "name": "Rend"
+    },
+    "retaliation": {
+      "icon_key": "ability_warrior_challange",
+      "name": "Retaliation"
+    },
+    "revenge": {
+      "icon_key": "ability_warrior_revenge",
+      "name": "Revenge"
+    },
+    "shield_bash": {
+      "icon_key": "ability_warrior_shieldbash",
+      "name": "Shield Bash"
+    },
+    "shield_block": {
+      "icon_key": "ability_defend",
+      "name": "Shield Block"
+    },
+    "shield_slam": {
+      "icon_key": "inv_shield_05",
+      "name": "Shield Slam"
+    },
+    "shield_wall": {
+      "icon_key": "ability_warrior_shieldwall",
+      "name": "Shield Wall"
+    },
+    "slam": {
+      "icon_key": "ability_warrior_decisivestrike",
+      "name": "Slam"
+    },
+    "spearing_strike": {
+      "icon_key": "inv_spear_01",
+      "name": "Spearing Strike"
+    },
+    "sunder_armor": {
+      "icon_key": "ability_warrior_sunder",
+      "name": "Sunder Armor"
+    },
+    "sweeping_strikes": {
+      "icon_key": "ability_rogue_slicedice",
+      "name": "Sweeping Strikes"
+    },
+    "tactical_mastery": {
+      "icon_key": "spell_nature_enchantarmor",
+      "name": "Tactical Mastery"
+    },
+    "taunt": {
+      "icon_key": "spell_nature_reincarnation",
+      "name": "Taunt"
+    },
+    "thunder_clap": {
+      "icon_key": "spell_nature_thunderclap",
+      "name": "Thunder Clap"
+    },
+    "victory_rush": {
+      "icon_key": "ability_warrior_devastate",
+      "name": "Victory Rush"
+    },
+    "whirlwind": {
+      "icon_key": "ability_whirlwind",
+      "name": "Whirlwind"
+    }
+  },
+  "talents": {
+    "anger_management": {
+      "icon_key": "spell_holy_blessingofstamina",
+      "name": "Anger Management"
+    },
+    "anticipation": {
+      "icon_key": "spell_nature_mirrorimage",
+      "name": "Anticipation"
+    },
+    "bastion": {
+      "icon_key": "inv_shield_04",
+      "name": "Bastion"
+    },
+    "blood_craze": {
+      "icon_key": "spell_shadow_summonimp",
+      "name": "Blood Craze"
+    },
+    "bloodthirst": {
+      "icon_key": "spell_nature_bloodlust",
+      "name": "Bloodthirst"
+    },
+    "bloodthrill": {
+      "icon_key": "inv_sword_01",
+      "name": "Bloodthrill"
+    },
+    "booming_voice": {
+      "icon_key": "spell_nature_purge",
+      "name": "Booming Voice"
+    },
+    "boundless_rage": {
+      "icon_key": "ability_warrior_intensifyrage",
+      "name": "Boundless Rage"
+    },
+    "concussion_blow": {
+      "icon_key": "ability_thunderbolt",
+      "name": "Concussion Blow"
+    },
+    "cruelty": {
+      "icon_key": "ability_rogue_eviscerate",
+      "name": "Cruelty"
+    },
+    "death_wish": {
+      "icon_key": "spell_shadow_deathpact",
+      "name": "Death Wish"
+    },
+    "deep_wounds": {
+      "icon_key": "ability_backstab",
+      "name": "Deep Wounds"
+    },
+    "defiance": {
+      "icon_key": "ability_warrior_innerrage",
+      "name": "Defiance"
+    },
+    "deflection": {
+      "icon_key": "ability_parry",
+      "name": "Deflection"
+    },
+    "dual_wield_specialization": {
+      "icon_key": "ability_dualwield",
+      "name": "Dual Wield Specialization"
+    },
+    "enrage": {
+      "icon_key": "spell_shadow_unholyfrenzy",
+      "name": "Enrage"
+    },
+    "flurry": {
+      "icon_key": "ability_ghoulfrenzy",
+      "name": "Flurry"
+    },
+    "focused_rage": {
+      "icon_key": "ability_warrior_focusedrage",
+      "name": "Focused Rage"
+    },
+    "impale": {
+      "icon_key": "ability_searingarrow",
+      "name": "Impale"
+    },
+    "improved_berserker_rage": {
+      "icon_key": "spell_nature_ancestralguardian",
+      "name": "Improved Berserker Rage"
+    },
+    "improved_bloodrage": {
+      "icon_key": "ability_racial_bloodrage",
+      "name": "Improved Bloodrage"
+    },
+    "improved_charge": {
+      "icon_key": "ability_warrior_charge",
+      "name": "Improved Charge"
+    },
+    "improved_cleave": {
+      "icon_key": "ability_warrior_cleave",
+      "name": "Improved Cleave"
+    },
+    "improved_disarm": {
+      "icon_key": "ability_warrior_disarm",
+      "name": "Improved Disarm"
+    },
+    "improved_execute": {
+      "icon_key": "inv_sword_48",
+      "name": "Improved Execute"
+    },
+    "improved_hamstring": {
+      "icon_key": "ability_shockwave",
+      "name": "Improved Hamstring"
+    },
+    "improved_heroic_strike": {
+      "icon_key": "ability_rogue_ambush",
+      "name": "Improved Heroic Strike"
+    },
+    "improved_intercept": {
+      "icon_key": "ability_rogue_sprint",
+      "name": "Improved Intercept"
+    },
+    "improved_overpower": {
+      "icon_key": "inv_sword_05",
+      "name": "Improved Overpower"
+    },
+    "improved_rend": {
+      "icon_key": "ability_gouge",
+      "name": "Improved Rend"
+    },
+    "improved_revenge": {
+      "icon_key": "ability_warrior_revenge",
+      "name": "Improved Revenge"
+    },
+    "improved_shield_bash": {
+      "icon_key": "ability_warrior_shieldbash",
+      "name": "Improved Shield Bash"
+    },
+    "improved_shield_wall": {
+      "icon_key": "ability_warrior_shieldwall",
+      "name": "Improved Shield Wall"
+    },
+    "improved_slam": {
+      "icon_key": "ability_warrior_decisivestrike",
+      "name": "Improved Slam"
+    },
+    "improved_sunder_armor": {
+      "icon_key": "ability_warrior_sunder",
+      "name": "Improved Sunder Armor"
+    },
+    "improved_tactical_mastery": {
+      "icon_key": "spell_nature_enchantarmor",
+      "name": "Improved Tactical Mastery"
+    },
+    "improved_thunder_clap": {
+      "icon_key": "ability_thunderclap",
+      "name": "Improved Thunder Clap"
+    },
+    "iron_will": {
+      "icon_key": "spell_magic_magearmor",
+      "name": "Iron Will"
+    },
+    "last_stand": {
+      "icon_key": "spell_holy_ashestoashes",
+      "name": "Last Stand"
+    },
+    "master_of_defense": {
+      "icon_key": "ability_warrior_shieldguard",
+      "name": "Master of Defense"
+    },
+    "mortal_strike": {
+      "icon_key": "ability_warrior_savageblow",
+      "name": "Mortal Strike"
+    },
+    "piercing_howl": {
+      "icon_key": "spell_shadow_deathscream",
+      "name": "Piercing Howl"
+    },
+    "precision": {
+      "icon_key": "ability_marksmanship",
+      "name": "Precision"
+    },
+    "raging_blows": {
+      "icon_key": "ability_whirlwind",
+      "name": "Raging Blows"
+    },
+    "shield_slam": {
+      "icon_key": "inv_shield_05",
+      "name": "Shield Slam"
+    },
+    "shield_specialization": {
+      "icon_key": "inv_shield_06",
+      "name": "Shield Specialization"
+    },
+    "spearing_strike": {
+      "icon_key": "inv_spear_01",
+      "name": "Spearing Strike"
+    },
+    "sweeping_strikes": {
+      "icon_key": "ability_rogue_slicedice",
+      "name": "Sweeping Strikes"
+    },
+    "toughness": {
+      "icon_key": "spell_holy_devotion",
+      "name": "Toughness"
+    },
+    "two_handed_weapon_specialization": {
+      "icon_key": "inv_axe_09",
+      "name": "Two-Handed Weapon Specialization"
+    },
+    "unbridled_wrath": {
+      "icon_key": "spell_nature_stoneclawtotem",
+      "name": "Unbridled Wrath"
+    },
+    "vanguard": {
+      "icon_key": "ability_warrior_shieldcharge",
+      "name": "Vanguard"
+    },
+    "weaponmaster": {
+      "icon_key": "garrison_weaponupgrade",
+      "name": "Weaponmaster"
+    }
+  }
+}

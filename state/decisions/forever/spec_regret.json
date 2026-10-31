@@ -1,0 +1,447 @@
+{
+  "schema_version": 1,
+  "ruleset": "forever",
+  "classes": {
+    "hunter": {
+      "schema_version": 1,
+      "ruleset": "forever",
+      "class": "hunter",
+      "basis": "preserved cumulative leveling objective",
+      "targets": {
+        "20": {
+          "status": "available",
+          "target_level": 20,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "objective_seconds": 9487.446951317463,
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "available",
+              "objective_seconds": 9497.657540627284,
+              "regret_seconds": 10.210589309821444,
+              "regret_percent": 0.10762209646298536,
+              "target_level_mobs_per_hour_delta": -1.7729798988154926
+            },
+            "marksmanship": {
+              "status": "available",
+              "objective_seconds": 9768.6713765942,
+              "regret_seconds": 281.22442527673775,
+              "regret_percent": 2.964173889137645,
+              "target_level_mobs_per_hour_delta": 3.8988225538192864
+            },
+            "survival": {
+              "status": "available",
+              "objective_seconds": 9957.877782614094,
+              "regret_seconds": 470.43083129663137,
+              "regret_percent": 4.958455459203443,
+              "target_level_mobs_per_hour_delta": -22.134619183141524
+            }
+          }
+        },
+        "30": {
+          "status": "not_available_in_frontier",
+          "target_level": 30,
+          "verified_level_cap": 20,
+          "verification_status": "provisional_above_verified_cap",
+          "uses_unverified_levels": true,
+          "unverified_from_level": 21
+        },
+        "40": {
+          "status": "not_available_in_frontier",
+          "target_level": 40,
+          "verified_level_cap": 20,
+          "verification_status": "provisional_above_verified_cap",
+          "uses_unverified_levels": true,
+          "unverified_from_level": 21
+        },
+        "60": {
+          "status": "not_available_in_frontier",
+          "target_level": 60,
+          "verified_level_cap": 20,
+          "verification_status": "provisional_above_verified_cap",
+          "uses_unverified_levels": true,
+          "unverified_from_level": 21
+        }
+      },
+      "level_curve": [
+        {
+          "level": 11,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 12,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 13,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 14,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 15,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 16,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 17,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 18,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 19,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "not_preserved"
+            },
+            "marksmanship": {
+              "status": "not_preserved"
+            },
+            "survival": {
+              "status": "not_preserved"
+            }
+          }
+        },
+        {
+          "level": 20,
+          "verified_level_cap": 20,
+          "verification_status": "verified_range",
+          "uses_unverified_levels": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0
+            },
+            "beast_mastery": {
+              "status": "available",
+              "regret_seconds": 10.210589309821444,
+              "regret_percent": 0.10762209646298536,
+              "target_level_mobs_per_hour_delta": -1.7729798988154926,
+              "allocation": "beast_mastery(11)[deadly_aspects:5,endurance_training:1,focused_fire:2,improved_revive_pet:2,bestial_swiftness:1] / marksmanship(0) / survival(0)"
+            },
+            "marksmanship": {
+              "status": "available",
+              "regret_seconds": 281.22442527673775,
+              "regret_percent": 2.964173889137645,
+              "target_level_mobs_per_hour_delta": 3.8988225538192864,
+              "allocation": "beast_mastery(0) / marksmanship(11)[lethal_attacks:5,careful_aim:5,rapid_killing:1] / survival(0)"
+            },
+            "survival": {
+              "status": "available",
+              "regret_seconds": 470.43083129663137,
+              "regret_percent": 4.958455459203443,
+              "target_level_mobs_per_hour_delta": -22.134619183141524,
+              "allocation": "beast_mastery(0) / marksmanship(0) / survival(11)[improved_tracking:5,deflection:5,surefooted:1]"
+            }
+          }
+        }
+      ],
+      "verified_level_cap": 20
+    },
+    "druid": {
+      "schema_version": 2,
+      "ruleset": "forever",
+      "class": "druid",
+      "forever_build": {
+        "schema_version": 1,
+        "build_id": "forever-beta@2026-10-02",
+        "as_of": "2026-10-02",
+        "source": "legacy_compat_default"
+      },
+      "basis": "canonical LevelFrontier + generic route DP",
+      "targets": {
+        "20": {
+          "status": "available",
+          "target_level": 20,
+          "verified_level_cap": 30,
+          "planning_level_cap": 30,
+          "verification_status": "verified_range",
+          "planning_status": "verified_range",
+          "uses_unverified_levels": false,
+          "uses_levels_above_planning_cap": false,
+          "unverified_from_level": null,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "objective_seconds": 1474.4829160239344,
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0,
+              "authority": "canonical_level_frontier_dp"
+            },
+            "balance": {
+              "status": "available",
+              "objective_seconds": 1659.9878793251262,
+              "regret_seconds": 185.50496330119176,
+              "regret_percent": 12.581018151191692,
+              "target_level_mobs_per_hour_delta": -38.48003472857391,
+              "authority": "canonical_level_frontier_dp"
+            },
+            "feral_cat": {
+              "status": "available",
+              "objective_seconds": 1474.4829160239344,
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0,
+              "authority": "canonical_level_frontier_dp"
+            },
+            "feral_bear": {
+              "status": "available",
+              "objective_seconds": 1474.4829160239344,
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0,
+              "authority": "canonical_level_frontier_dp"
+            },
+            "restoration": {
+              "status": "available",
+              "objective_seconds": 1558.566180218608,
+              "regret_seconds": 84.08326419467357,
+              "regret_percent": 5.702559404446074,
+              "target_level_mobs_per_hour_delta": -18.576725053665257,
+              "authority": "canonical_level_frontier_dp"
+            }
+          }
+        }
+      },
+      "level_curve": [
+        {
+          "level": 20,
+          "routes": {
+            "unconstrained": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0,
+              "allocation": "balance(0) / feral(11)[ferocity:5,heart_of_the_wild:3,thick_hide:2,savage_fury:1] / restoration(0)",
+              "authority": "canonical_level_frontier_dp"
+            },
+            "balance": {
+              "status": "available",
+              "regret_seconds": 185.50496330119176,
+              "regret_percent": 12.581018151191692,
+              "target_level_mobs_per_hour_delta": -38.48003472857391,
+              "allocation": "balance(11)[improved_wrath:5,genesis:3,improved_moonfire:2,natures_majesty:1] / feral(0) / restoration(0)",
+              "authority": "canonical_level_frontier_dp"
+            },
+            "feral_cat": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0,
+              "allocation": "balance(0) / feral(11)[ferocity:5,heart_of_the_wild:3,thick_hide:2,savage_fury:1] / restoration(0)",
+              "authority": "canonical_level_frontier_dp"
+            },
+            "feral_bear": {
+              "status": "available",
+              "regret_seconds": 0.0,
+              "regret_percent": 0.0,
+              "target_level_mobs_per_hour_delta": 0.0,
+              "allocation": "balance(0) / feral(11)[ferocity:5,heart_of_the_wild:3,thick_hide:2,savage_fury:1] / restoration(0)",
+              "authority": "canonical_level_frontier_dp"
+            },
+            "restoration": {
+              "status": "available",
+              "regret_seconds": 84.08326419467357,
+              "regret_percent": 5.702559404446074,
+              "target_level_mobs_per_hour_delta": -18.576725053665257,
+              "allocation": "balance(0) / feral(0) / restoration(11)[natures_focus:5,naturalist:5,natural_shapeshifter:1]",
+              "authority": "canonical_level_frontier_dp"
+            }
+          }
+        }
+      ],
+      "authority": "canonical_level_frontier_dp",
+      "verified_level_cap": 30
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "attempt_id": "46d11226a9af4cd287a071c590cf0796",
+  "created_at": 1791100209.56964,
+  "id": "e99ae25bd73446db979ab2e9249995c2",
+  "job_id": "0b8d9f22dcde49bb993365997dcfb6bd",
+  "parent_id": "e088ecf6e15946589367ea8a455cf802",
+  "request": {
+    "class_name": "druid",
+    "config": {
+      "beam_width": 10,
+      "family_keep": 1,
+      "final_k": 8,
+      "producer_version": "0.11.48.93.2",
+      "service_intent": {
+        "action": "recompute_range",
+        "depth": "standard"
+      },
+      "stat_weight_top_k": 1,
+      "workers": 2
+    },
+    "end_level": 30,
+    "endpoint_mode": "smooth",
+    "engine_semantic_hash": "current",
+    "forever_build_as_of": "2026-10-02",
+    "objective": "cumulative",
+    "policy_space_version": "current",
+    "ruleset": "forever",
+    "source_snapshot": "current",
+    "start_level": 11,
+    "validation_modes": []
+  },
+  "schema_version": 1,
+  "state_root": "/mnt/data/work97/state/runs/0b8d9f22dcde49bb993365997dcfb6bd/46d11226a9af4cd287a071c590cf0796/state"
+}

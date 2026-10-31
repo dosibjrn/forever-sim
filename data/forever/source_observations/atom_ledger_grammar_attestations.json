@@ -1,0 +1,14 @@
+{
+  "schema": "forever-effect-atom-whole-ledger-grammar-attestation-v1",
+  "derivation": "SHA256 of compact UTF-8 JSON [ordered coverage rows, ordered atom rows]; SELECT fields defined by _ledger_digest; no raw SQLite source bytes changed",
+  "ledgers": {
+    "944434bb2b890273da8274dd0bb4b054bde6e8a4caedf68ca5535f8926c153ed": {
+      "grammar_version": "legacy_v1", "indexed_ranks": 2255, "atoms": 685,
+      "source": "canonical catalogue source capture"
+    },
+    "f97df0b6b39512caebf224faaf90da4a77532b78d1f2f3f06c5a20975c3fabc4": {
+      "grammar_version": "enriched_v2", "indexed_ranks": 2255, "atoms": 742,
+      "source": "70338/70374 versioned staged source capture"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "state": "running",
+  "phase": "complete",
+  "outer_stage": "complete",
+  "level": 20,
+  "progress": {
+    "mode": "determinate",
+    "current": 10,
+    "total": 10,
+    "fraction": 1.0,
+    "unit": "levels"
+  },
+  "message": "Forever hunter experimental Fast search complete; MC disabled.",
+  "elapsed_seconds": 7.750555038452148,
+  "eta_seconds": null,
+  "updated_at": 1790875376.9318185
+}

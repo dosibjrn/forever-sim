@@ -1,0 +1,43 @@
+{
+  "schema": "forever_public_queued_swing_observation_v1",
+  "observations": [
+    {
+      "class_key": "druid",
+      "spell_id": 6807,
+      "name": "Maul",
+      "source_url": "https://www.wowhead.com/forever/spell=6807/maul",
+      "index_batch_id": "20261008T145657Z",
+      "observed_at": "2026-10-13T12:00:00Z",
+      "learn_level": 10,
+      "rank": 1,
+      "cost": "15 Rage",
+      "cast": "Next Melee",
+      "gcd": "0 sec",
+      "cooldown": "n/a",
+      "required_mode_id": "bear",
+      "form_requirement": "Bear Form, Dire Bear Form",
+      "effect_text": "Increases the druid's next attack by 18 damage.",
+      "source_build": "current_public_page_build_unspecified",
+      "source_description": "Current public Forever Wowhead spell detail transcription; no independent raw HTML/client verification"
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 6808,
+      "name": "Maul",
+      "source_url": "https://www.wowhead.com/forever/spell=6808/maul",
+      "index_batch_id": "20261008T145657Z",
+      "observed_at": "2026-10-13T12:00:00Z",
+      "learn_level": 18,
+      "rank": 2,
+      "cost": "15 Rage",
+      "cast": "Next Melee",
+      "gcd": "0 sec",
+      "cooldown": "n/a",
+      "required_mode_id": "bear",
+      "form_requirement": "Bear Form, Dire Bear Form",
+      "effect_text": "Increases the druid's next attack by 27 damage.",
+      "source_build": "current_public_page_build_unspecified",
+      "source_description": "Current public Forever Wowhead spell detail transcription; no independent raw HTML/client verification"
+    }
+  ]
+}

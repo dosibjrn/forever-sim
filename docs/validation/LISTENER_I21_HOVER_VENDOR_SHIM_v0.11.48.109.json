@@ -1,0 +1,9 @@
+{
+  "status": "pass",
+  "mode": "vendor-shim-browser-integration",
+  "anchors": 11,
+  "talent_hover": "Wowhead hover integration \u00b7 spell 20064 \u00b7 Deflection",
+  "item_hover": "Wowhead hover integration \u00b7 item 250517 \u00b7 Crusader's Chain Belt",
+  "page_errors": [],
+  "remote_vendor_gate": "blocked_by_execution_environment_network"
+}

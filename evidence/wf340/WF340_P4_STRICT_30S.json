@@ -1,0 +1,70 @@
+{
+  "checkpoint": "druid:L20:unrestricted",
+  "distinct_paid_complete_stages_lower_bound": 4,
+  "distinct_talent_allocations_paid_L2": 19,
+  "end_to_end_wall_s": 9.055335907000085,
+  "finalists_100mob": 3,
+  "finalists_100mob_completed": 3,
+  "finalists_budget_blocked": 0,
+  "full_cpu_s": 7.997499175000001,
+  "full_wall_s": 8.018735587000037,
+  "item_catalogue_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "joint_attempts": 145,
+  "joint_blocked": 11,
+  "joint_cpu_s": 2.910269983,
+  "joint_evaluated": 134,
+  "joint_events": 14043,
+  "joint_wall_s": 2.924869053000066,
+  "notes": [
+    "The single-mob estimate is NOT the actual 100mob objective.",
+    "Unique full combinations count is a LOWER BOUND from paid stages, not all internal attempts.",
+    "P4 needs 30s end-to-end including process startup; P5/P6 not run."
+  ],
+  "oracle_seeded": false,
+  "p4_pass": true,
+  "p5_pass": null,
+  "persistent_events": 25979,
+  "schema": "wf340_druid_l20_cold_p4_v1",
+  "screen_failures": 0,
+  "screening_events": 25979,
+  "screens": 16,
+  "source_context_sha256": "9d934367c0bbf63ef83cecd3ce135e4e88b3c7fedd665172af1ff3cf6d84d679",
+  "source_stage": "canonical_sqlite_plus_WF322_70338_plus_WF321_control",
+  "staged_source_sha256": "5af26210829fb2ed6b7ee82df23126092bcb77d2c75207897681177e6b09d920",
+  "status": "PASS_TIMED_P4_DIAGNOSTIC",
+  "timed_search_pass": true,
+  "total_events": 40022,
+  "total_paid_attempts": 164,
+  "winner": {
+    "actual_100mob_events": 7280,
+    "actual_100mob_s_per_mob": 13.485460079655134,
+    "combat_s": 981.5286492148248,
+    "fallback": "claw:20",
+    "gear": {
+      "back": 4706,
+      "chest": 252434,
+      "feet": 252439,
+      "hands": 10401,
+      "head": 252447,
+      "legs": 252445,
+      "neck": 285331,
+      "ring1": 284715,
+      "ring2": 20429,
+      "shoulder": 5404,
+      "waist": 5975,
+      "weapon": 7230,
+      "wrist": 14569
+    },
+    "maintenance_s": 6.0,
+    "opening": [
+      "cat_form:768"
+    ],
+    "predicted_single_mob_s_per_mob": 22.811439243070947,
+    "recovery_s": 361.01735875068863,
+    "talents": {
+      "ferocity": 5,
+      "heart_of_the_wild": 5,
+      "savage_fury": 1
+    }
+  }
+}

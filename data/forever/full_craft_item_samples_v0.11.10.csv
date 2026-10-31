@@ -1,0 +1,106 @@
+profession,family,name,slot,item_level,required_level,armor,bonus_armor,strength,agility,stamina,intellect,spirit,spell_power,spell_damage,healing,defense,attack_power,source_url
+tailoring,novice_arcanist,Novice Arcanist's Sash,waist,15,10,17,0.0,0.0,0.0,3,3,0.0,4,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/item=253885/novice-arcanists-sash
+tailoring,pristine,Pristine Gloves,hands,20,15,23,0.0,0.0,0.0,4,3,0.0,0.0,4,11,0.0,0.0,https://www.wowhead.com/forever/spell=1257382/pristine-gloves
+tailoring,pristine,Pristine Sash,waist,22,17,22,0.0,0.0,0.0,5,4,0.0,0.0,4,11,0.0,0.0,https://www.wowhead.com/forever/item=253925/pristine-sash
+tailoring,filigreed_shadow,Filigreed Shadow Gown,chest,20,15,37,0.0,0.0,0.0,4,5,3,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1257379/filigreed-shadow-gown
+tailoring,filigreed_pristine,Filigreed Pristine Leggings,legs,25,20,37,0.0,0.0,0.0,5,6,4,0.0,6,18,0.0,0.0,https://www.wowhead.com/forever/item=253937/filigreed-pristine-leggings
+tailoring,pristine,Pristine Circlet,head,25,20,35,0.0,0.0,0.0,10,0.0,0.0,0.0,6,18,0.0,0.0,https://www.wowhead.com/forever/item=253949/pristine-circlet
+tailoring,filigreed_pristine,Filigreed Pristine Circlet,head,30,25,38,0.0,0.0,0.0,12,0.0,0.0,0.0,8,22,0.0,0.0,https://www.wowhead.com/forever/item=253975/filigreed-pristine-circlet
+leatherworking,brawler,Brawler's Leather Belt,waist,17,12,45,0.0,4,4,3,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/item=252428/brawlers-leather-belt
+leatherworking,brawler,Brawler's Leather Gloves,hands,20,15,53,0.0,4,4,3,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255130/brawlers-leather-gloves
+leatherworking,brawler,Brawler's Leather Armor,chest,20,15,85,0.0,5,7,3,0.0,3,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255136/brawlers-leather-armor
+leatherworking,brawler,Brawler's Leather Boots,feet,22,17,61,0.0,5,5,4,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/item=252439/brawlers-leather-boots
+leatherworking,brawler,Brawler's Leather Hood,head,25,20,76,0.0,0.0,8,10,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/item=252504/brawlers-leather-hood
+leatherworking,brawler,Brawler's Leather Pants,legs,25,20,82,0.0,6,9,4,0.0,4,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255115/brawlers-leather-pants
+leatherworking,brawler,Brawler's Leather Tunic,chest,27,22,98,0.0,6,8,6,0.0,5,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255102/brawlers-leather-tunic
+leatherworking,brawler,Brawler's Leather Helm,head,30,25,84,0.0,0.0,10,13,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255093/brawlers-leather-helm
+leatherworking,brawler,Brawler's Leather Legguards,legs,30,25,90,0.0,7,9,7,0.0,6,0.0,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/item=252516/brawlers-leather-legguards
+leatherworking,totemic,Totemic Leather Belt,waist,17,12,45,0.0,4,0.0,3,0.0,0.0,4,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255139/totemic-leather-belt
+leatherworking,totemic,Totemic Leather Gloves,hands,20,15,53,0.0,4,0.0,3,0.0,0.0,5,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255127/totemic-leather-gloves
+leatherworking,totemic,Totemic Leather Armor,chest,20,15,85,0.0,7,0.0,3,3,0.0,6,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255133/totemic-leather-armor
+leatherworking,totemic,Totemic Leather Boots,feet,22,17,61,0.0,5,0.0,4,0.0,0.0,6,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255118/totemic-leather-boots
+leatherworking,totemic,Totemic Leather Hood,head,25,20,76,0.0,0.0,0.0,10,0.0,0.0,9,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/item=252448/totemic-leather-hood
+leatherworking,totemic,Totemic Leather Pants,legs,25,20,82,0.0,9,0.0,4,4,0.0,7,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255112/totemic-leather-pants
+leatherworking,totemic,Totemic Leather Tunic,chest,27,22,98,0.0,8,0.0,6,5,0.0,7,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255099/totemic-leather-tunic
+leatherworking,totemic,Totemic Leather Helm,head,30,25,84,0.0,0.0,0.0,13,0.0,0.0,12,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255090/totemic-leather-helm
+leatherworking,totemic,Totemic Leather Leggings,legs,30,25,90,0.0,9,0.0,7,6,0.0,8,0.0,0.0,0.0,0.0,https://www.wowhead.com/forever/spell=1255084/totemic-leather-leggings
+tailoring,gilded,Gilded Slippers,feet,35,30,35,0.0,0.0,0.0,6,7,4,0.0,7,20,0.0,0.0,https://wowforeverbuilds.com/gear/feet
+tailoring,gilded,Gilded Handwraps,hands,40,35,36,0.0,0.0,0.0,9,7,0.0,0.0,8,22,0.0,0.0,https://wowforeverbuilds.com/gear/hands
+tailoring,gilded,Gilded Cord,waist,45,40,37,0.0,0.0,0.0,8,8,6,0.0,8,22,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+tailoring,nethergeld,Nethergeld Shoulders,shoulder,47,42,51,0.0,0.0,0.0,8,8,6,0.0,9,26,0.0,0.0,https://wowforeverbuilds.com/gear/shoulder
+tailoring,nethergeld,Nethergeld Cuffs,wrist,50,45,31,0.0,0.0,0.0,7,7,5,0.0,7,20,0.0,0.0,https://wowforeverbuilds.com/gear/wrist
+tailoring,ghostweave,Ghostweave Cord,waist,52,47,38,0.0,0.0,0.0,0.0,0.0,11,14,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+tailoring,gilded,Gilded Waistcord,waist,52,47,42,0.0,0.0,0.0,12,9,0.0,0.0,10,29,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+tailoring,gilded,Gilded Gloves,hands,55,50,49,0.0,0.0,0.0,9,10,8,0.0,10,29,0.0,0.0,https://wowforeverbuilds.com/gear/hands
+tailoring,gilded,Gilded Sandals,feet,55,50,54,0.0,0.0,0.0,13,9,0.0,0.0,11,31,0.0,0.0,https://wowforeverbuilds.com/gear/feet
+tailoring,ghostweave,Ghostweave Mantle,shoulder,59,54,57,0.0,0.0,0.0,0.0,0.0,12,15,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/shoulder
+tailoring,ghostweave,Ghostweave Boots,feet,60,55,53,0.0,0.0,0.0,0.0,0.0,13,16,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/feet
+tailoring,ghostweave,Ghostweave Hood,head,61,56,64,0.0,0.0,0.0,0.0,0.0,18,21,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/head
+leatherworking,prowler,Prowler's Leather Belt,waist,35,30,63,0.0,9,6,6,4,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+leatherworking,skycaller,Skycaller's Leather Belt,waist,35,30,63,0.0,0.0,0.0,6,6,4,10,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+leatherworking,warden,Warden's Leather Belt,waist,35,30,63,38,6,6,9,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+leatherworking,prowler,Prowler's Leather Gloves,hands,40,35,76,0.0,10,9,7,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/hands
+leatherworking,skycaller,Skycaller's Leather Gloves,hands,40,35,76,0.0,0.0,0.0,7,9,0.0,11,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/hands
+leatherworking,warden,Warden's Leather Gloves,hands,40,35,76,72,9,0.0,10,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/hands
+leatherworking,prowler,Prowler's Leather Shoulders,shoulder,47,42,104,0.0,11,9,7,6,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/shoulder
+leatherworking,skycaller,Skycaller's Leather Shoulders,shoulder,47,42,104,0.0,0.0,0.0,7,9,6,13,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/shoulder
+leatherworking,warden,Warden's Leather Shoulders,shoulder,47,42,104,65,9,7,11,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/shoulder
+leatherworking,prowler,Prowler's Leather Bracers,wrist,50,45,64,0.0,9,7,6,5,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/wrist
+leatherworking,skycaller,Skycaller's Leather Bracers,wrist,50,45,64,0.0,0.0,0.0,6,7,5,10,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/wrist
+leatherworking,warden,Warden's Leather Bracers,wrist,50,45,64,52,7,6,9,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/wrist
+leatherworking,prowler,Prowler's Leather Boots,feet,52,47,104,0.0,13,11,9,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/feet
+leatherworking,skycaller,Skycaller's Leather Boots,feet,52,47,104,0.0,0.0,0.0,9,11,0.0,15,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/feet
+leatherworking,warden,Warden's Leather Boots,feet,52,47,104,93,11,0.0,13,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/feet
+leatherworking,prowler,Prowler's Leather Gauntlets,hands,55,50,99,0.0,14,9,9,6,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/hands
+leatherworking,skycaller,Skycaller's Leather Gauntlets,hands,55,50,99,0.0,0.0,0.0,9,9,6,16,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/hands
+leatherworking,warden,Warden's Leather Gauntlets,hands,55,50,99,62,9,9,14,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/hands
+leatherworking,prowler,Prowler's Leather Waistguard,waist,55,50,89,0.0,14,12,10,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+leatherworking,skycaller,Skycaller's Leather Waistguard,waist,55,50,89,0.0,0.0,0.0,10,12,0.0,16,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+leatherworking,warden,Warden's Leather Waistguard,waist,55,50,89,102,12,0.0,14,0.0,0.0,0.0,0.0,0.0,0.0,0.0,https://wowforeverbuilds.com/gear/waist
+blacksmithing,crusader,Crusader's Chain Belt,waist,17,12,98,0.0,3,0.0,4,0.0,0.0,5,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,crusader,Crusader's Gloves,hands,20,15,115,0.0,3,0.0,5,0.0,0.0,5,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,crusader,Crusader's Chain Shirt,chest,20,15,184,0.0,4,0.0,5,0.0,0.0,9,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,crusader,Crusader's Boots,feet,22,17,131,0.0,4,0.0,5,0.0,0.0,6,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,crusader,Crusader's Chain Leggings,legs,25,20,176,0.0,5,0.0,7,0.0,0.0,11,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,crusader,Crusader's Silvered Shirt,chest,27,22,208,0.0,6,0.0,7,0.0,0.0,12,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,crusader,Crusader's Chain Helm,head,30,25,177,0.0,11,0.0,0.0,0.0,0.0,14,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,crusader,Crusader's Silvered Leggings,legs,30,25,191,0.0,7,0.0,8,0.0,0.0,13,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,justicar,Justicar's Belt,waist,35,30,132,0.0,6,0.0,7,0.0,0.0,12,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,justicar,Justicar's Gauntlet,hands,40,35,159,0.0,7,0.0,9,0.0,0.0,11,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,justicar,Justicar's Boots,feet,45,40,330,0.0,7,0.0,9,0.0,0.0,15,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,justicar,Justicar's Pauldrons,shoulder,47,42,375,0.0,8,0.0,10,0.0,0.0,16,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,justicar,Justicar's Wrist,wrist,50,45,231,0.0,6,0.0,8,0.0,0.0,12,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,justicar,Justicar's Sabatons,feet,52,47,376,0.0,9,0.0,12,0.0,0.0,15,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,justicar,Justicar's Gloves,hands,55,50,361,0.0,9,0.0,11,0.0,0.0,19,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,justicar,Justicar's Waistguard,waist,55,50,324,0.0,10,0.0,13,0.0,0.0,16,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,protector,Protector's Chain Belt,waist,17,12,98,0.0,0.0,0.0,4,0.0,0.0,5,0.0,0.0,3,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,protector,Protector's Gloves,hands,20,15,115,0.0,0.0,0.0,5,0.0,0.0,5,0.0,0.0,3,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,protector,Protector's Boots,feet,22,17,131,0.0,0.0,0.0,5,0.0,0.0,6,0.0,0.0,4,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,protector,Protector's Chain Leggings,legs,25,20,176,0.0,0.0,0.0,9,0.0,0.0,6,0.0,0.0,7,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,protector,Protector's Silvered Helm,head,25,20,163,0.0,0.0,0.0,9,0.0,0.0,0.0,0.0,0.0,7,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,protector,Protector's Silvered Shirt,chest,27,22,208,0.0,0.0,0.0,10,0.0,0.0,7,0.0,0.0,7,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,protector,Protector's Chain Helm,head,30,25,177,0.0,0.0,0.0,11,0.0,0.0,0.0,0.0,0.0,8,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,protector,Protector's Silvered Leggings,legs,30,25,191,0.0,0.0,0.0,11,0.0,0.0,8,0.0,0.0,8,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,warder,Warder's Belt,waist,35,30,132,0.0,0.0,0.0,10,0.0,0.0,7,0.0,0.0,7,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,warder,Warder's Gauntlet,hands,40,35,159,0.0,0.0,0.0,10,0.0,0.0,11,0.0,0.0,7,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,warder,Warder's Boots,feet,45,40,330,0.0,0.0,0.0,13,0.0,0.0,9,0.0,0.0,9,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,warder,Warder's Pauldrons,shoulder,47,42,375,0.0,0.0,0.0,13,0.0,0.0,9,0.0,0.0,10,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,warder,Warder's Wrist,wrist,50,45,231,0.0,0.0,0.0,11,0.0,0.0,7,0.0,0.0,8,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,warder,Warder's Sabatons,feet,52,47,376,0.0,0.0,0.0,13,0.0,0.0,14,0.0,0.0,9,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,warder,Warder's Gloves,hands,55,50,361,0.0,0.0,0.0,16,0.0,0.0,11,0.0,0.0,11,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,warder,Warder's Waistguard,waist,55,50,324,0.0,0.0,0.0,14,0.0,0.0,15,0.0,0.0,10,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,prefect,Prefect's Belt,waist,35,30,132,0.0,0.0,0.0,6,7,0.0,0.0,7,22,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,prefect,Prefect's Gauntlet,hands,40,35,159,0.0,0.0,0.0,9,7,0.0,0.0,7,21,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,prefect,Prefect's Boots,feet,45,40,330,0.0,0.0,0.0,7,9,0.0,0.0,9,28,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,prefect,Prefect's Pauldrons,shoulder,47,42,375,0.0,0.0,0.0,8,10,0.0,0.0,10,29,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,prefect,Prefect's Wrist,wrist,50,45,231,0.0,0.0,0.0,6,8,0.0,0.0,8,23,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,prefect,Prefect's Sabatons,feet,52,47,376,0.0,0.0,0.0,12,9,0.0,0.0,9,27,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,prefect,Prefect's Gloves,hands,55,50,361,0.0,0.0,0.0,9,11,0.0,0.0,12,35,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,prefect,Prefect's Waistguard,waist,55,50,324,0.0,0.0,0.0,13,10,0.0,0.0,10,30,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,blessed_plate,Blessed Plate Chest,chest,61,56,579,0.0,20,0.0,8,0.0,0.0,13,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,blessed_plate,Blessed Plate Helm,head,60,55,463,0.0,11,0.0,7,0.0,0.0,23,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,blessed_plate,Blessed Plate Leggings,legs,59,54,491,0.0,7,0.0,20,0.0,0.0,13,0.0,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,depleted_thorium,Depleted Thorium Sabatons,feet,65,60,507,0.0,14,0.0,21,0.0,0.0,0.0,21,0.0,0.0,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,enriched_thorium,Enriched Thorium Breastplate,chest,62,57,647,0.0,0.0,0.0,25,0.0,0.0,14,0.0,0.0,9,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,enriched_thorium,Enriched Thorium Helm,head,63,58,534,0.0,0.0,0.0,21,0.0,0.0,23,0.0,0.0,8,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide
+blacksmithing,enriched_thorium,Enriched Thorium Leggings,legs,63,58,575,0.0,0.0,0.0,26,0.0,0.0,14,0.0,0.0,9,0.0,https://mobalytics.gg/wow-forever/guides/blacksmithing-profession-guide

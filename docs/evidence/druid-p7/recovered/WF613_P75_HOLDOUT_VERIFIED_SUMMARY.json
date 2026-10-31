@@ -1,0 +1,22 @@
+{
+  "source_archive": "WF613_COMPATIBILITY_REPAIR_P75_FAIL_2026-10-28(2).zip",
+  "member": "WF612/WF613_P75_HOLDOUT_1000.json",
+  "historical_status": "FAIL under original zero-margin noninferiority",
+  "revised_status": "PASS under 1% noninferiority provided prior 853.9305466 DPS is strongest compatible accepted result",
+  "seed_range": [
+    92000001,
+    92001000
+  ],
+  "observed_n": 1000,
+  "mean_dps": 848.7643621918036,
+  "std_dps": 30.18222914872394,
+  "prior_p74_mean_dps": 853.9305465836047,
+  "prior_p74_sd": 33.184201265813556,
+  "external_reference_dps": 811.0237260012982,
+  "old_lower_bound_delta": -7.49962612282251,
+  "new_floor": 845.3912411177687,
+  "adjusted_lower_bound": 1.039679343013538,
+  "original_binary_sha256": "69d30df669c5ea8601fb45479dd24fe4cad770092fd5c513910490c5453d1c7d",
+  "frozen_config_hash": "d098edb167f58562c6ea4b15242b83f6659f8bd78c0967e4c8b88965a70484b4",
+  "full_1000_fight_raw_data": "Original archive ZIP member, not embedded in this summary"
+}

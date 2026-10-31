@@ -1,0 +1,30 @@
+{
+  "gate": "P7.4",
+  "status": "PASS",
+  "accepted_backend": "hybrid",
+  "reference_id": "c31e596c-a30c-4b99-8789-0848fede6ea6",
+  "reference_dps": 811.0237260012982,
+  "winner_dps": 845.5219526091071,
+  "one_sided_95_lower_delta_dps": 31.996056683175635,
+  "search_wall_seconds": 256.03126531600014,
+  "paid_candidates": 584,
+  "final_n": 400,
+  "winner_items": [
+    12587,
+    22340,
+    272105,
+    13340,
+    252484,
+    19589,
+    272100,
+    272396,
+    237818,
+    22472,
+    18821,
+    234201,
+    272437,
+    11815
+  ],
+  "causal_ack": 216,
+  "binary_sha256": "32fd780978b307fc525223361e2f58657fa464f1c6bc55d5ba127e2a027b59d1"
+}

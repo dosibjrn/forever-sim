@@ -1,0 +1,68 @@
+[
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "warrior",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": 11.0,
+        "coefficient": null,
+        "metadata": {
+          "source_effect_value_displayed": 12
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "flat_weapon_bonus",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Tooltip: increases melee damage by 11; on-next-swing action.",
+        "school": "physical",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 0,
+        "source_effect_type": "weapon_damage",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "heroic_strike",
+    "flags": [
+      "on_next_swing",
+      "requires_main_hand_weapon"
+    ],
+    "gcd_s": 0.0,
+    "icon_key": "ability_rogue_ambush",
+    "name": "Heroic Strike",
+    "radius_yards": null,
+    "range_yards": 5.0,
+    "rank_label": "Rank 1",
+    "relations": [],
+    "required_level": 1,
+    "resource_cost": {
+      "flat": 15
+    },
+    "resource_type": "rage",
+    "school": "physical",
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "98438da24196ddf5b0eaa3a78129f388ef288483a4a6aadf7fc2e8b7a37f2bc3",
+      "entity_id": 78,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever rank-1 action anchor for the M45 onboarding proof."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=78/heroic-strike"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 78
+  }
+]

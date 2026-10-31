@@ -1,0 +1,3722 @@
+{
+  "accepted_checkpoints": 0,
+  "coverage": {
+    "class_key": "druid",
+    "complete_legal_spell_coverage_proven": false,
+    "indexed_ranks": [
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_CODES_PRESENT_METHOD_UNRESOLVED",
+        "l0_proxy_priority": 1.5786885,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 16,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Aquatic Form",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=1066",
+        "spell_id": 1066,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "buff",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.7406005,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 14,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [
+          "source_control:5211"
+        ],
+        "name": "Bash",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 1,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=5211",
+        "spell_id": 5211,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_CODES_PRESENT_METHOD_UNRESOLVED",
+        "l0_proxy_priority": 0.6678296,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 10,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "bear_form:5487"
+        ],
+        "name": "Bear Form",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": null,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=5487",
+        "spell_id": 5487,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing",
+          "buff",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.6678296,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 20,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "cat_form:768"
+        ],
+        "name": "Cat Form",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": null,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=768",
+        "spell_id": 768,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "buff",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 2.8218691,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 20,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "claw:20"
+        ],
+        "name": "Claw",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 1,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=1082",
+        "spell_id": 1082,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "damage",
+          "resource"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_CODES_PRESENT_METHOD_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 14,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Cure Poison",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=8946",
+        "spell_id": 8946,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Deeper Wilds",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=436956",
+        "spell_id": 436956,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "VERIFIED_DETAIL_METHOD_OBSERVATION_NOT_WORLD_ACCESS",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.8943,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 10,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Demoralizing Roar",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=99",
+        "spell_id": 99,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "debuff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.8943,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 20,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Demoralizing Roar",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=1735",
+        "spell_id": 1735,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "debuff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Efflorescence",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=417148",
+        "spell_id": 417148,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 2.3846154,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Belt - Berserk",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=424760",
+        "spell_id": 424760,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "resource",
+          "buff",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.9230769,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Belt - Eclipse",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410029",
+        "spell_id": 410029,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "debuff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Belt - Nourish",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410059",
+        "spell_id": 410059,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 2.7692308,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Boots - Dreamstate",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410060",
+        "spell_id": 410060,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "damage",
+          "resource",
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 1.6153846,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Boots - King of the Jungle",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=424765",
+        "spell_id": 424765,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "resource",
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 3.0769231,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Boots - Survival Instincts",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410027",
+        "spell_id": 410027,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing",
+          "resource",
+          "buff",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Bracers - Efflorescence",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=431468",
+        "spell_id": 431468,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Bracers - Elune's Fires",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=416051",
+        "spell_id": 416051,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Bracers - Improved Frenzied Regeneration",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=431461",
+        "spell_id": 431461,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Chest - Fury of Stormrage",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410061",
+        "spell_id": 410061,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Chest - Living Seed",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=416050",
+        "spell_id": 416050,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Chest - Survival of the Fittest",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=416042",
+        "spell_id": 416042,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Chest - Wild Strikes",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410021",
+        "spell_id": 410021,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Cloak - Improved Swipe",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=439765",
+        "spell_id": 439765,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Cloak - Starfall",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=439770",
+        "spell_id": 439770,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Cloak - Tree of Life",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=439767",
+        "spell_id": 439767,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 1.5384615,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Gloves - Mangle",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410025",
+        "spell_id": 410025,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Gloves - Skull Bash",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=416046",
+        "spell_id": 416046,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Gloves - Sunfire",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=416044",
+        "spell_id": 416044,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 1.0769231,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Gloves - Wild Growth",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410028",
+        "spell_id": 410028,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Helm - Gale Winds",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=431451",
+        "spell_id": 431451,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Helm - Gore",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=431447",
+        "spell_id": 431447,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Helm - Improved Barkskin",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=431449",
+        "spell_id": 431449,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 2.4458059,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Pants - Lacerate",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=416049",
+        "spell_id": 416049,
+        "tooltip_numeric_magnitude_hint": 50,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Pants - Lifebloom",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410033",
+        "spell_id": 410033,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 3.5384615,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Pants - Savage Roar",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410023",
+        "spell_id": 410023,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "damage",
+          "resource",
+          "buff",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Pants - Starsurge",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=424718",
+        "spell_id": 424718,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.9230769,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Arcane Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=453695",
+        "spell_id": 453695,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Dagger Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=453690",
+        "spell_id": 453690,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Defense Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=459313",
+        "spell_id": 459313,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Feral Combat Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=453703",
+        "spell_id": 453703,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Fist Weapon Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=453691",
+        "spell_id": 453691,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Healing Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=468761",
+        "spell_id": 468761,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Mace Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=453689",
+        "spell_id": 453689,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Meditation Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=468763",
+        "spell_id": 468763,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.9230769,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Nature Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=453698",
+        "spell_id": 453698,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ENGRAVING_REQUIRES_RUNE_AVAILABILITY",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Engrave Ring - Pole Weapon Specialization",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=453694",
+        "spell_id": 453694,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Enhanced Restoration",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=417123",
+        "spell_id": 417123,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.5146201,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 12,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "enrage:5229"
+        ],
+        "name": "Enrage",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": null,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=5229",
+        "spell_id": 5229,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "resource",
+          "debuff",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 2.7153263,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 8,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:339"
+        ],
+        "name": "Entangling Roots",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 1,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=339",
+        "spell_id": 339,
+        "tooltip_numeric_magnitude_hint": 20,
+        "tooltip_role_hints": [
+          "damage",
+          "control"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 3.2325241,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 18,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:1062"
+        ],
+        "name": "Entangling Roots",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 2,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=1062",
+        "spell_id": 1062,
+        "tooltip_numeric_magnitude_hint": 45,
+        "tooltip_role_hints": [
+          "damage",
+          "control"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.7937224,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 18,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [
+          "source_spell:770"
+        ],
+        "name": "Faerie Fire",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 1,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=770",
+        "spell_id": 770,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Feral Aggression",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16858",
+        "spell_id": 16858,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Feral Aggression",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16859",
+        "spell_id": 16859,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Feral Aggression",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 3,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16860",
+        "spell_id": 16860,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Feral Aggression",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 4,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16861",
+        "spell_id": 16861,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Feral Aggression",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 5,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16862",
+        "spell_id": 16862,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 20,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Feral Charge (Bear)",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16979",
+        "spell_id": 16979,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 10,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Growl",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "effect_role_unresolved",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=6795",
+        "spell_id": 6795,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.9924519,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Healing Touch",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=5185",
+        "spell_id": 5185,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.1742332,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 8,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:5186"
+        ],
+        "name": "Healing Touch",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 2,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=5186",
+        "spell_id": 5186,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.2023705,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 14,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:5187"
+        ],
+        "name": "Healing Touch",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 3,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=5187",
+        "spell_id": 5187,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.2128878,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 20,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "healing_touch:rank@20"
+        ],
+        "name": "Healing Touch",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 4,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=5188",
+        "spell_id": 5188,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 18,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Hibernate",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=2637",
+        "spell_id": 2637,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Enrage",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=17079",
+        "spell_id": 17079,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Enrage",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=17082",
+        "spell_id": 17082,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Mark of the Wild",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=17050",
+        "spell_id": 17050,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Mark of the Wild",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=17051",
+        "spell_id": 17051,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Mark of the Wild",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 3,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=17053",
+        "spell_id": 17053,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Mark of the Wild",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 4,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=17054",
+        "spell_id": 17054,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Mark of the Wild",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 5,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=17055",
+        "spell_id": 17055,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Shred",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16968",
+        "spell_id": 16968,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Thorns",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16836",
+        "spell_id": 16836,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Thorns",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16839",
+        "spell_id": 16839,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Improved Thorns",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 3,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16840",
+        "spell_id": 16840,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Lacerate",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=414647",
+        "spell_id": 414647,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Lifebloom",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=408124",
+        "spell_id": 408124,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Lifebloom",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=408245",
+        "spell_id": 408245,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Living Seed",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=414683",
+        "spell_id": 414683,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.8611028,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Mark of the Wild",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=1126",
+        "spell_id": 1126,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.8193665,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 10,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Mark of the Wild",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=5232",
+        "spell_id": 5232,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.0092787,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 20,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:6756"
+        ],
+        "name": "Mark of the Wild",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 3,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=6756",
+        "spell_id": 6756,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 10,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Maul",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=6807",
+        "spell_id": 6807,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 18,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Maul",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=6808",
+        "spell_id": 6808,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.9632717,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 4,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Moonfire",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=8921",
+        "spell_id": 8921,
+        "tooltip_numeric_magnitude_hint": 12,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 2.0249706,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 10,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Moonfire",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=8924",
+        "spell_id": 8924,
+        "tooltip_numeric_magnitude_hint": 24,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 2.6813127,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 16,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "moonfire:8925"
+        ],
+        "name": "Moonfire",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 3,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=8925",
+        "spell_id": 8925,
+        "tooltip_numeric_magnitude_hint": 36,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Natural Weapons",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16902",
+        "spell_id": 16902,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Natural Weapons",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16903",
+        "spell_id": 16903,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Natural Weapons",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 3,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16904",
+        "spell_id": 16904,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Natural Weapons",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 4,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16905",
+        "spell_id": 16905,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 0,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Natural Weapons",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 5,
+        "source_status": "BLOCKED_UNKNOWN_ACQUISITION_LEVEL",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16906",
+        "spell_id": 16906,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.7070136,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 10,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Nature's Grasp",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16689",
+        "spell_id": 16689,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "control",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.6833063,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 18,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Nature's Grasp",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16810",
+        "spell_id": 16810,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "control",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Nourish",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=408247",
+        "spell_id": 408247,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 4.5217391,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 20,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Omen of Clarity",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=16864",
+        "spell_id": 16864,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "damage",
+          "healing",
+          "resource",
+          "buff",
+          "debuff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 20,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Prowl",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=5215",
+        "spell_id": 5215,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 20,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Rebirth",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=20484",
+        "spell_id": 20484,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.2619832,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 12,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:8936"
+        ],
+        "name": "Regrowth",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 1,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=8936",
+        "spell_id": 8936,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.3285227,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 18,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:8938"
+        ],
+        "name": "Regrowth",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 2,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=8938",
+        "spell_id": 8938,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 4,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Rejuvenation",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=774",
+        "spell_id": 774,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.9674617,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 10,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Rejuvenation",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=1058",
+        "spell_id": 1058,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.1834736,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 16,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "rejuvenation:rank@16"
+        ],
+        "name": "Rejuvenation",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 3,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=1430",
+        "spell_id": 1430,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.5251937,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 12,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Revive",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=437138",
+        "spell_id": 437138,
+        "tooltip_numeric_magnitude_hint": 70,
+        "tooltip_role_hints": [
+          "healing",
+          "resource"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 3.390657,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 20,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "rip:20"
+        ],
+        "name": "Rip",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 1,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=1079",
+        "spell_id": 1079,
+        "tooltip_numeric_magnitude_hint": 150,
+        "tooltip_role_hints": [
+          "damage",
+          "resource",
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Skull Bash",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=410176",
+        "spell_id": 410176,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Starfall",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=439748",
+        "spell_id": 439748,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 2.7845217,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Starfall",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=439753",
+        "spell_id": 439753,
+        "tooltip_numeric_magnitude_hint": 54,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Starfall",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=439756",
+        "spell_id": 439756,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 2.5959447,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 20,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:2912"
+        ],
+        "name": "Starfire",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 1,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=2912",
+        "spell_id": 2912,
+        "tooltip_numeric_magnitude_hint": 96,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Starsurge",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=417157",
+        "spell_id": 417157,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Sunfire",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=414684",
+        "spell_id": 414684,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Sunfire",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=414687",
+        "spell_id": 414687,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Sunfire",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=414689",
+        "spell_id": 414689,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 3.4782609,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Survival Instincts",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=408024",
+        "spell_id": 408024,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "healing",
+          "resource",
+          "buff",
+          "mode"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Swipe",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=411128",
+        "spell_id": 411128,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 2.3803781,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 16,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [
+          "swipe:16"
+        ],
+        "name": "Swipe",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 1,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=779",
+        "spell_id": 779,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 0.4347826,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 10,
+        "listview_tooltip_phase": "unavailable",
+        "matched_action_ids": [],
+        "name": "Teleport: Moonglade",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "current_after_tooltip_unavailable",
+          "effect_role_unresolved",
+          "not_compiled_to_IR",
+          "tooltip_detail_unavailable"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=18960",
+        "spell_id": 18960,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": []
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 1.728171,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 6,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Thorns",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=467",
+        "spell_id": 467,
+        "tooltip_numeric_magnitude_hint": 4,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 0.9657469,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 14,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "source_spell:782"
+        ],
+        "name": "Thorns",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 2,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=782",
+        "spell_id": 782,
+        "tooltip_numeric_magnitude_hint": 9,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 1.826087,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Tiger's Fury",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": null,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=417045",
+        "spell_id": 417045,
+        "tooltip_numeric_magnitude_hint": 0.0,
+        "tooltip_role_hints": [
+          "resource",
+          "buff"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "SOURCE_ACQUISITION_UNRESOLVED",
+        "l0_proxy_priority": 2.1488029,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 1,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Wrath",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 1,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=5176",
+        "spell_id": 5176,
+        "tooltip_numeric_magnitude_hint": 18,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 2.1295063,
+        "legal_at_checkpoint_proven": false,
+        "level_hint": 6,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [],
+        "name": "Wrath",
+        "proxy_status": "INDEX_ONLY_UNCERTAIN_L0",
+        "rank_hint": 2,
+        "source_status": "BLOCKED_INDEX_ONLY_NO_EXECUTABLE_SEMANTICS",
+        "source_uncertainty": [
+          "acquisition_not_proven",
+          "not_compiled_to_IR"
+        ],
+        "source_url": "https://www.wowhead.com/forever/spell=5177",
+        "spell_id": 5177,
+        "tooltip_numeric_magnitude_hint": 28,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      },
+      {
+        "acquisition_status": "INDEX_HINTS_ONLY_NO_ACQUISITION_PROOF",
+        "eligibility_hint": "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED",
+        "l0_proxy_priority": 2.4632285,
+        "legal_at_checkpoint_proven": null,
+        "level_hint": 14,
+        "listview_tooltip_phase": "after",
+        "matched_action_ids": [
+          "wrath:5178"
+        ],
+        "name": "Wrath",
+        "proxy_status": "SOURCE_ID_MATCHED_IR_L0",
+        "rank_hint": 3,
+        "source_status": "SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED",
+        "source_uncertainty": [],
+        "source_url": "https://www.wowhead.com/forever/spell=5178",
+        "spell_id": 5178,
+        "tooltip_numeric_magnitude_hint": 37,
+        "tooltip_role_hints": [
+          "damage"
+        ]
+      }
+    ],
+    "ir_action_count": 23,
+    "ir_actions": [
+      {
+        "action_id": "wrath:5178",
+        "cost_units_unconverted": 40.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "direct_damage"
+        ],
+        "search_priority": 2.4632285,
+        "source_spell_ids": [
+          5178
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 2.0,
+        "uncertainty": [],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 30.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "moonfire:8925",
+        "cost_units_unconverted": 75.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "direct_damage",
+          "periodic_damage"
+        ],
+        "search_priority": 2.6813127,
+        "source_spell_ids": [
+          8925
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "dot_tick_survival_and_refresh"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 40.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "healing_touch:rank@20",
+        "cost_units_unconverted": 190.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "healing"
+        ],
+        "search_priority": 1.2128878,
+        "source_spell_ids": [
+          5188
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 3.0,
+        "uncertainty": [
+          "healing_only_useful_if_injured"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 362.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "rejuvenation:rank@16",
+        "cost_units_unconverted": 75.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "healing"
+        ],
+        "search_priority": 1.1834736,
+        "source_spell_ids": [
+          1430
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "healing_only_useful_if_injured"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 92.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:782",
+        "cost_units_unconverted": 60.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "combat_enabler"
+        ],
+        "search_priority": 0.9657469,
+        "source_spell_ids": [
+          782
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "aura_trigger_and_upkeep_context"
+        ],
+        "vector": {
+          "buff": 6.39859,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:6756",
+        "cost_units_unconverted": 100.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "combat_enabler"
+        ],
+        "search_priority": 1.0092787,
+        "source_spell_ids": [
+          6756
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "aura_trigger_and_upkeep_context"
+        ],
+        "vector": {
+          "buff": 8.18897,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "bear_form:5487",
+        "cost_units_unconverted": 194.7,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "mode_change"
+        ],
+        "search_priority": 0.6678296,
+        "source_spell_ids": [
+          5487
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "mode_value_depends_on_destination_actions_and_shifting_cost"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 1.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "cancel_mode:bear",
+        "cost_units_unconverted": 0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "mode_change"
+        ],
+        "search_priority": 1.0918114,
+        "source_spell_ids": [],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 0.05,
+        "uncertainty": [
+          "mode_value_depends_on_destination_actions_and_shifting_cost"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 1.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "enrage:5229",
+        "cost_units_unconverted": 0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "resource",
+          "resource"
+        ],
+        "search_priority": 1.5146201,
+        "source_spell_ids": [
+          5229
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 0.05,
+        "uncertainty": [
+          "resource_value_depends_on_state_and_mode"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 12.0
+        }
+      },
+      {
+        "action_id": "swipe:16",
+        "cost_units_unconverted": 20.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "direct_damage"
+        ],
+        "search_priority": 2.3803781,
+        "source_spell_ids": [
+          779
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "unsupported_semantics:explicit_gap"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 19.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "cat_form:768",
+        "cost_units_unconverted": 194.7,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "mode_change"
+        ],
+        "search_priority": 0.6678296,
+        "source_spell_ids": [
+          768
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "mode_value_depends_on_destination_actions_and_shifting_cost"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 1.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "cancel_mode:cat",
+        "cost_units_unconverted": 0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "mode_change"
+        ],
+        "search_priority": 1.0918114,
+        "source_spell_ids": [],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 0.05,
+        "uncertainty": [
+          "mode_value_depends_on_destination_actions_and_shifting_cost"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 1.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "claw:20",
+        "cost_units_unconverted": 45.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "direct_damage",
+          "resource"
+        ],
+        "search_priority": 2.8218691,
+        "source_spell_ids": [
+          1082
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.0,
+        "uncertainty": [
+          "resource_value_depends_on_state_and_mode",
+          "weapon_damage_requires_geared_actor_and_form"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 27.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 1.0
+        }
+      },
+      {
+        "action_id": "source_spell:1062",
+        "cost_units_unconverted": 65.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "control",
+          "periodic_damage"
+        ],
+        "search_priority": 3.2325241,
+        "source_spell_ids": [
+          1062
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "control_depends_on_enemy_and_swing_timing",
+          "dot_tick_survival_and_refresh",
+          "unsupported_semantics:not_yet_modeled"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 15.0,
+          "damage": 22.5,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:339",
+        "cost_units_unconverted": 50.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "control",
+          "periodic_damage"
+        ],
+        "search_priority": 2.7153263,
+        "source_spell_ids": [
+          339
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "control_depends_on_enemy_and_swing_timing",
+          "dot_tick_survival_and_refresh",
+          "unsupported_semantics:not_yet_modeled"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 12.0,
+          "damage": 10.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:5187",
+        "cost_units_unconverted": 110.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "healing"
+        ],
+        "search_priority": 1.2023705,
+        "source_spell_ids": [
+          5187
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 2.5,
+        "uncertainty": [
+          "healing_only_useful_if_injured"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 210.5,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:5186",
+        "cost_units_unconverted": 55.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "healing"
+        ],
+        "search_priority": 1.1742332,
+        "source_spell_ids": [
+          5186
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 2.0,
+        "uncertainty": [
+          "healing_only_useful_if_injured"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 107.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:8938",
+        "cost_units_unconverted": 125.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "healing",
+          "healing"
+        ],
+        "search_priority": 1.3285227,
+        "source_spell_ids": [
+          8938
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 2.0,
+        "uncertainty": [
+          "healing_only_useful_if_injured",
+          "unsupported_semantics:conservative_same_index_family_not_server_verified",
+          "unsupported_semantics:not_yet_modeled"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 330.5,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:8936",
+        "cost_units_unconverted": 70.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "healing",
+          "healing"
+        ],
+        "search_priority": 1.2619832,
+        "source_spell_ids": [
+          8936
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 2.0,
+        "uncertainty": [
+          "healing_only_useful_if_injured",
+          "unsupported_semantics:conservative_same_index_family_not_server_verified",
+          "unsupported_semantics:not_yet_modeled"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 187.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "rip:20",
+        "cost_units_unconverted": 30.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "periodic_damage",
+          "resource"
+        ],
+        "search_priority": 3.390657,
+        "source_spell_ids": [
+          1079
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.0,
+        "uncertainty": [
+          "resource_scaled_periodic_context",
+          "resource_value_depends_on_state_and_mode",
+          "unsupported_semantics:explicit_gap",
+          "unsupported_semantics:legacy_transcription_pending_independent_verification"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 75.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:2912",
+        "cost_units_unconverted": 95.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "direct_damage"
+        ],
+        "search_priority": 2.5959447,
+        "source_spell_ids": [
+          2912
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 3.5,
+        "uncertainty": [],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 81.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_control:5211",
+        "cost_units_unconverted": 10.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "control"
+        ],
+        "search_priority": 0.7406005,
+        "source_spell_ids": [
+          5211
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "control_depends_on_enemy_and_swing_timing"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 2.0,
+          "damage": 0.0,
+          "debuff": 0.0,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      },
+      {
+        "action_id": "source_spell:770",
+        "cost_units_unconverted": 55.0,
+        "level_eligible": true,
+        "not_measured_s_per_mob": true,
+        "provenance_present": true,
+        "roles": [
+          "target_debuff"
+        ],
+        "search_priority": 0.7937224,
+        "source_spell_ids": [
+          770
+        ],
+        "status": "L0_IR_PROXY_NOT_L2",
+        "time_s": 1.5,
+        "uncertainty": [
+          "target_stat_and_duration_context"
+        ],
+        "vector": {
+          "buff": 0.0,
+          "control": 0.0,
+          "damage": 0.0,
+          "debuff": 5.17048,
+          "healing": 0.0,
+          "mode": 0.0,
+          "other": 0.0,
+          "resource": 0.0
+        }
+      }
+    ],
+    "ir_proxy_scored_count": 23,
+    "level": 20,
+    "no_unknown_silently_zeroed": true,
+    "reason": "index source level hint is not proof of learnability or full typed effects",
+    "source_index_eligibility_hint_counts": {
+      "ENGRAVING_REQUIRES_RUNE_AVAILABILITY": 37,
+      "SOURCE_ACQUISITION_UNRESOLVED": 24,
+      "SOURCE_CODES_PRESENT_METHOD_UNRESOLVED": 3,
+      "TRAINING_COST_OBSERVED_LEARNABILITY_UNVERIFIED": 38,
+      "ZERO_LEVEL_TALENT_OR_PASSIVE_HINT": 22
+    },
+    "source_index_in_level_window": 124,
+    "source_index_ir_matched_count": 21,
+    "source_index_only_uncertain_count": 103,
+    "source_index_proxy_scored_count": 124,
+    "source_ir_id": "forever:druid:caster-healing-slice@20",
+    "trainer_hint_ir_matched": 20,
+    "trainer_hint_proxy_scored": 38,
+    "trainer_hint_ranks": 38
+  },
+  "l2": {
+    "attempted": 135,
+    "blocked": 9,
+    "controller_cpu_ns": null,
+    "evaluated": 126,
+    "events": 13827,
+    "measured_cpu_s": 1.9071435340000003,
+    "measured_wall_s": 1.9153120740011218,
+    "scope": "bounded L2 single-mob search, NOT 100-mob prediction or 30/300s saturation",
+    "status": "EVALUATED_BOUNDED",
+    "winner_allocation": {
+      "ferocity": 5,
+      "heart_of_the_wild": 5,
+      "savage_fury": 1
+    },
+    "winner_s_per_mob": 22.68755346449957
+  },
+  "pass_1": "NOT_YET_ACCEPTED_SOURCE_LEGAL_UNIVERSE_UNCERTAIN",
+  "pass_2": "NOT_MEASURED",
+  "pass_3": "NOT_MEASURED",
+  "pass_4": "NOT_MEASURED",
+  "pass_5": "NOT_MEASURED",
+  "pass_6": "NOT_MEASURED",
+  "schema": "wf327_druid20_checkpoint_action_l0_v1",
+  "search_envelope": {
+    "initial_actions": [
+      "source_spell:1062",
+      "source_spell:339",
+      "moonfire:8925",
+      "source_spell:2912",
+      "wrath:5178",
+      "source_spell:6756",
+      "source_spell:782",
+      "source_spell:770"
+    ],
+    "initial_fillers": [
+      "moonfire:8925",
+      "source_spell:2912",
+      "wrath:5178"
+    ],
+    "mode_paths": [
+      {
+        "actions": [
+          "swipe:16",
+          "enrage:5229",
+          "source_spell:770",
+          "source_control:5211"
+        ],
+        "entry": "bear_form:5487",
+        "fillers": [
+          "swipe:16"
+        ],
+        "mode_id": "bear"
+      },
+      {
+        "actions": [
+          "rip:20",
+          "claw:20",
+          "source_spell:770"
+        ],
+        "entry": "cat_form:768",
+        "fillers": [
+          "claw:20"
+        ],
+        "mode_id": "cat"
+      }
+    ]
+  },
+  "source_authority": "canonical SQLite with isolated WF322+WF321 staged web observations",
+  "source_stage_unverified_client_html": true,
+  "total_checkpoints": 148
+}

@@ -1,0 +1,454 @@
+{
+  "attribution": "Talents Forever (talentsforever.com), WoW Forever beta client-derived icon keys",
+  "license": "CC-BY-4.0",
+  "source_generated": "2026-09-24",
+  "source_url": "https://talentsforever.com/data.json",
+  "spells": {
+    "abolish_poison": {
+      "icon_key": "spell_nature_nullifypoison_02",
+      "name": "Abolish Poison"
+    },
+    "aquatic_form": {
+      "icon_key": "ability_druid_aquaticform",
+      "name": "Aquatic Form"
+    },
+    "barkskin": {
+      "icon_key": "spell_nature_stoneclawtotem",
+      "name": "Barkskin"
+    },
+    "bash": {
+      "icon_key": "ability_druid_bash",
+      "name": "Bash"
+    },
+    "bear_form": {
+      "icon_key": "ability_racial_bearform",
+      "name": "Bear Form"
+    },
+    "berserk": {
+      "icon_key": "ability_druid_berserk",
+      "name": "Berserk"
+    },
+    "cat_form": {
+      "icon_key": "ability_druid_catform",
+      "name": "Cat Form"
+    },
+    "challenging_roar": {
+      "icon_key": "ability_druid_challangingroar",
+      "name": "Challenging Roar"
+    },
+    "claw": {
+      "icon_key": "ability_druid_rake",
+      "name": "Claw"
+    },
+    "cower": {
+      "icon_key": "ability_druid_cower",
+      "name": "Cower"
+    },
+    "cure_poison": {
+      "icon_key": "spell_nature_nullifypoison",
+      "name": "Cure Poison"
+    },
+    "dash": {
+      "icon_key": "ability_druid_dash",
+      "name": "Dash"
+    },
+    "demoralizing_roar": {
+      "icon_key": "ability_druid_demoralizingroar",
+      "name": "Demoralizing Roar"
+    },
+    "dire_bear_form": {
+      "icon_key": "ability_racial_bearform",
+      "name": "Dire Bear Form"
+    },
+    "enrage": {
+      "icon_key": "ability_druid_enrage",
+      "name": "Enrage"
+    },
+    "entangling_roots": {
+      "icon_key": "spell_nature_stranglevines",
+      "name": "Entangling Roots"
+    },
+    "faerie_fire": {
+      "icon_key": "spell_nature_faeriefire",
+      "name": "Faerie Fire"
+    },
+    "feline_grace": {
+      "icon_key": "inv_feather_01",
+      "name": "Feline Grace"
+    },
+    "feral_charge": {
+      "icon_key": "ability_hunter_pet_bear",
+      "name": "Feral Charge"
+    },
+    "ferocious_bite": {
+      "icon_key": "ability_druid_ferociousbite",
+      "name": "Ferocious Bite"
+    },
+    "frenzied_regeneration": {
+      "icon_key": "ability_bullrush",
+      "name": "Frenzied Regeneration"
+    },
+    "gift_of_the_wild": {
+      "icon_key": "spell_nature_regeneration",
+      "name": "Gift of the Wild"
+    },
+    "growl": {
+      "icon_key": "ability_physical_taunt",
+      "name": "Growl"
+    },
+    "healing_touch": {
+      "icon_key": "spell_nature_healingtouch",
+      "name": "Healing Touch"
+    },
+    "hibernate": {
+      "icon_key": "spell_nature_sleep",
+      "name": "Hibernate"
+    },
+    "hurricane": {
+      "icon_key": "spell_nature_cyclone",
+      "name": "Hurricane"
+    },
+    "innervate": {
+      "icon_key": "spell_nature_lightning",
+      "name": "Innervate"
+    },
+    "insect_swarm": {
+      "icon_key": "spell_nature_insectswarm",
+      "name": "Insect Swarm"
+    },
+    "lacerate": {
+      "icon_key": "ability_druid_lacerate",
+      "name": "Lacerate"
+    },
+    "mark_of_the_wild": {
+      "icon_key": "spell_nature_regeneration",
+      "name": "Mark of the Wild"
+    },
+    "maul": {
+      "icon_key": "ability_druid_maul",
+      "name": "Maul"
+    },
+    "moonfire": {
+      "icon_key": "spell_nature_starfall",
+      "name": "Moonfire"
+    },
+    "moonkin_form": {
+      "icon_key": "spell_nature_forceofnature",
+      "name": "Moonkin Form"
+    },
+    "natures_grasp": {
+      "icon_key": "spell_nature_natureswrath",
+      "name": "Nature's Grasp"
+    },
+    "natures_swiftness": {
+      "icon_key": "spell_nature_ravenform",
+      "name": "Nature's Swiftness"
+    },
+    "omen_of_clarity": {
+      "icon_key": "spell_nature_crystalball",
+      "name": "Omen of Clarity"
+    },
+    "pounce": {
+      "icon_key": "ability_druid_supriseattack",
+      "name": "Pounce"
+    },
+    "primal_bite": {
+      "icon_key": "ability_racial_cannibalize",
+      "name": "Primal Bite"
+    },
+    "prowl": {
+      "icon_key": "ability_ambush",
+      "name": "Prowl"
+    },
+    "rake": {
+      "icon_key": "ability_druid_disembowel",
+      "name": "Rake"
+    },
+    "ravage": {
+      "icon_key": "ability_druid_ravage",
+      "name": "Ravage"
+    },
+    "rebirth": {
+      "icon_key": "spell_nature_reincarnation",
+      "name": "Rebirth"
+    },
+    "regrowth": {
+      "icon_key": "spell_nature_resistnature",
+      "name": "Regrowth"
+    },
+    "rejuvenation": {
+      "icon_key": "spell_nature_rejuvenation",
+      "name": "Rejuvenation"
+    },
+    "remove_curse": {
+      "icon_key": "spell_holy_removecurse",
+      "name": "Remove Curse"
+    },
+    "revive": {
+      "icon_key": "ability_druid_lunarguidance",
+      "name": "Revive"
+    },
+    "rip": {
+      "icon_key": "ability_ghoulfrenzy",
+      "name": "Rip"
+    },
+    "shred": {
+      "icon_key": "spell_shadow_vampiricaura",
+      "name": "Shred"
+    },
+    "soothe_animal": {
+      "icon_key": "ability_hunter_beastsoothe",
+      "name": "Soothe Animal"
+    },
+    "starfire": {
+      "icon_key": "spell_arcane_starfire",
+      "name": "Starfire"
+    },
+    "swiftmend": {
+      "icon_key": "inv_relics_idolofrejuvenation",
+      "name": "Swiftmend"
+    },
+    "swipe": {
+      "icon_key": "inv_misc_monsterclaw_03",
+      "name": "Swipe"
+    },
+    "teleport_moonglade": {
+      "icon_key": "spell_arcane_teleportmoonglade",
+      "name": "Teleport: Moonglade"
+    },
+    "thorns": {
+      "icon_key": "spell_nature_thorns",
+      "name": "Thorns"
+    },
+    "tigers_fury": {
+      "icon_key": "ability_mount_jungletiger",
+      "name": "Tiger's Fury"
+    },
+    "track_humanoids": {
+      "icon_key": "ability_tracking",
+      "name": "Track Humanoids"
+    },
+    "tranquility": {
+      "icon_key": "spell_nature_tranquility",
+      "name": "Tranquility"
+    },
+    "travel_form": {
+      "icon_key": "ability_druid_travelform",
+      "name": "Travel Form"
+    },
+    "wild_growth": {
+      "icon_key": "ability_druid_flourish",
+      "name": "Wild Growth"
+    },
+    "wrath": {
+      "icon_key": "spell_nature_abolishmagic",
+      "name": "Wrath"
+    }
+  },
+  "talents": {
+    "berserk": {
+      "icon_key": "ability_druid_berserk",
+      "name": "Berserk"
+    },
+    "blood_frenzy": {
+      "icon_key": "ability_ghoulfrenzy",
+      "name": "Blood Frenzy"
+    },
+    "brutal_impact": {
+      "icon_key": "ability_druid_bash",
+      "name": "Brutal Impact"
+    },
+    "eclipse": {
+      "icon_key": "ability_druid_eclipse",
+      "name": "Eclipse"
+    },
+    "feral_charge": {
+      "icon_key": "ability_hunter_pet_bear",
+      "name": "Feral Charge"
+    },
+    "feral_instinct": {
+      "icon_key": "ability_ambush",
+      "name": "Feral Instinct"
+    },
+    "feral_swiftness": {
+      "icon_key": "spell_nature_spiritwolf",
+      "name": "Feral Swiftness"
+    },
+    "ferocity": {
+      "icon_key": "ability_hunter_pet_hyena",
+      "name": "Ferocity"
+    },
+    "furor": {
+      "icon_key": "spell_holy_blessingofstamina",
+      "name": "Furor"
+    },
+    "genesis": {
+      "icon_key": "spell_arcane_arcane03",
+      "name": "Genesis"
+    },
+    "gift_of_nature": {
+      "icon_key": "spell_nature_protectionformnature",
+      "name": "Gift of Nature"
+    },
+    "gift_of_the_earthmother": {
+      "icon_key": "spell_nature_spiritarmor",
+      "name": "Gift of the Earthmother"
+    },
+    "heart_of_the_wild": {
+      "icon_key": "spell_holy_blessingofagility",
+      "name": "Heart of the Wild"
+    },
+    "improved_entangling_roots": {
+      "icon_key": "spell_nature_stranglevines",
+      "name": "Improved Entangling Roots"
+    },
+    "improved_moonfire": {
+      "icon_key": "spell_nature_starfall",
+      "name": "Improved Moonfire"
+    },
+    "improved_regrowth": {
+      "icon_key": "spell_nature_resistnature",
+      "name": "Improved Regrowth"
+    },
+    "improved_rejuvenation": {
+      "icon_key": "spell_nature_rejuvenation",
+      "name": "Improved Rejuvenation"
+    },
+    "improved_starfire": {
+      "icon_key": "spell_arcane_starfire",
+      "name": "Improved Starfire"
+    },
+    "improved_tranquility": {
+      "icon_key": "spell_nature_tranquility",
+      "name": "Improved Tranquility"
+    },
+    "improved_wrath": {
+      "icon_key": "spell_nature_abolishmagic",
+      "name": "Improved Wrath"
+    },
+    "insect_swarm": {
+      "icon_key": "spell_nature_insectswarm",
+      "name": "Insect Swarm"
+    },
+    "king_of_the_jungle": {
+      "icon_key": "ability_druid_kingofthejungle",
+      "name": "King of the Jungle"
+    },
+    "leader_of_the_pack": {
+      "icon_key": "spell_nature_unyeildingstamina",
+      "name": "Leader of the Pack"
+    },
+    "living_spirit": {
+      "icon_key": "spell_nature_giftofthewaterspirit",
+      "name": "Living Spirit"
+    },
+    "moonfury": {
+      "icon_key": "spell_nature_moonglow",
+      "name": "Moonfury"
+    },
+    "moonglow": {
+      "icon_key": "spell_nature_sentinal",
+      "name": "Moonglow"
+    },
+    "moonkin_form": {
+      "icon_key": "spell_nature_forceofnature",
+      "name": "Moonkin Form"
+    },
+    "natural_reaction": {
+      "icon_key": "ability_bullrush",
+      "name": "Natural Reaction"
+    },
+    "natural_shapeshifter": {
+      "icon_key": "spell_nature_wispsplode",
+      "name": "Natural Shapeshifter"
+    },
+    "naturalist": {
+      "icon_key": "spell_nature_healingtouch",
+      "name": "Naturalist"
+    },
+    "natures_focus": {
+      "icon_key": "spell_nature_healingwavegreater",
+      "name": "Nature's Focus"
+    },
+    "natures_grace": {
+      "icon_key": "spell_nature_naturesblessing",
+      "name": "Nature's Grace"
+    },
+    "natures_majesty": {
+      "icon_key": "inv_staff_01",
+      "name": "Nature's Majesty"
+    },
+    "natures_reach": {
+      "icon_key": "spell_nature_naturetouchgrow",
+      "name": "Nature's Reach"
+    },
+    "natures_splendor": {
+      "icon_key": "spell_nature_natureresistancetotem",
+      "name": "Nature's Splendor"
+    },
+    "natures_swiftness": {
+      "icon_key": "spell_nature_ravenform",
+      "name": "Nature's Swiftness"
+    },
+    "overgrowth": {
+      "icon_key": "inv_misc_herb_15",
+      "name": "Overgrowth"
+    },
+    "predatory_instincts": {
+      "icon_key": "ability_druid_predatoryinstincts",
+      "name": "Predatory Instincts"
+    },
+    "predatory_strikes": {
+      "icon_key": "ability_hunter_pet_cat",
+      "name": "Predatory Strikes"
+    },
+    "primal_bite": {
+      "icon_key": "ability_racial_cannibalize",
+      "name": "Primal Bite"
+    },
+    "reflection": {
+      "icon_key": "spell_frost_windwalkon",
+      "name": "Reflection"
+    },
+    "rend_and_tear": {
+      "icon_key": "ability_druid_primalagression",
+      "name": "Rend and Tear"
+    },
+    "savage_fury": {
+      "icon_key": "ability_druid_ravage",
+      "name": "Savage Fury"
+    },
+    "sharpened_claws": {
+      "icon_key": "inv_misc_monsterclaw_04",
+      "name": "Sharpened Claws"
+    },
+    "shredding_attacks": {
+      "icon_key": "spell_shadow_vampiricaura",
+      "name": "Shredding Attacks"
+    },
+    "subtlety": {
+      "icon_key": "ability_eyeoftheowl",
+      "name": "Subtlety"
+    },
+    "swiftmend": {
+      "icon_key": "inv_relics_idolofrejuvenation",
+      "name": "Swiftmend"
+    },
+    "thick_hide": {
+      "icon_key": "inv_misc_pelt_bear_03",
+      "name": "Thick Hide"
+    },
+    "tranquil_spirit": {
+      "icon_key": "spell_holy_elunesgrace",
+      "name": "Tranquil Spirit"
+    },
+    "vengeance": {
+      "icon_key": "spell_nature_purge",
+      "name": "Vengeance"
+    },
+    "wild_growth": {
+      "icon_key": "ability_druid_flourish",
+      "name": "Wild Growth"
+    }
+  }
+}

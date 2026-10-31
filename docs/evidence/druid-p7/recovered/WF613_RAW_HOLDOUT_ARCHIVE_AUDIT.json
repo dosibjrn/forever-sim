@@ -1,0 +1,39 @@
+{
+  "audit_date": "2026-10-30",
+  "evidence_kind": "original archived MythicSim Go + gsim-2D Feral Cat, NOT native Rust",
+  "provenance": "Read-only independent audit of original local SHA-pinned archives; full raw files still must be imported into GitHub for self-contained PR review",
+  "wf607_archive": {
+    "name": "WoW_Forever_Cat_L60_P7_WF607_LOCAL_2026-10-28.zip",
+    "sha256": "434e1e14f6145131f396b4dda21d0baa0b010f829daea5ed86da50c90c718674",
+    "p74_gate_member": "WoW_Forever_Cat_WF607/WF607_P74_FINAL_GATE.json",
+    "p74_gate_sha256": "9e352e8d270d664228dd99aa423e45fb8e43b3fc956487672c5138d495811e4a",
+    "p74_original_accepted_mean_dps": 845.5219526091071,
+    "p74_search_source_sha256": "5d7c0ae9021838684eb7c92ab1ead49f078f61e4245838c9ad829283a26573ac"
+  },
+  "wf613_archive": {
+    "name": "WF613_COMPATIBILITY_REPAIR_P75_FAIL_2026-10-28(2).zip",
+    "sha256": "a95e89f1bbd36d3cccb3c605fb9c8c90490bdd857112fc2c6bb83ceac1785e5f",
+    "raw_member": "WF612/WF613_P75_HOLDOUT_1000.json",
+    "raw_member_sha256": "0a69446c09a63e638d632586f5b14907a3241dbacc6f57b5b3a3ea3a3dff646e",
+    "source_member": "WF612/p75_joint_search_wf612.py",
+    "source_member_sha256": "d4f2c6202b6e61c5d0af439993fd39b90a11e2ced4be42589f136d2f7bed507b",
+    "original_status": "FAIL",
+    "original_status_reason": "historical one-sided 95% lower-bound criterion, superseded by approved PROCESS v2.10",
+    "holdout_n": 1000,
+    "seed_first": 92000001,
+    "seed_last": 92001000,
+    "recomputed_mean_dps": 848.7643621918036,
+    "recomputed_sample_std_dps": 30.18222914872394,
+    "reference_dps": 811.0237260012982,
+    "stronger_historical_p74_dps": 853.9305465836047,
+    "conditional_numeric_floor": 845.3912411177687,
+    "conditional_mean_numeric_pass": true
+  },
+  "full_process_certified": false,
+  "blockers": [
+    "Original full raw WF607/WF613 artifacts and search sources not yet in this PR",
+    "Independent strongest accepted compatible prior provenance review",
+    "Source legality and live causal execution verification"
+  ],
+  "reproducibility": "python tools/audit_feral_p7_holdout.py 'WF613_COMPATIBILITY_REPAIR_P75_FAIL_2026-10-28(2).zip'"
+}

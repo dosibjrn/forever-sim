@@ -1,0 +1,56 @@
+{
+  "L0_ranks_potential": 65,
+  "L0_sourced_effect_role_or_IR": 44,
+  "L0_unassessed_or_legal_unknown": 21,
+  "PASS1": false,
+  "PASS2": false,
+  "PASS3": false,
+  "PASS4": false,
+  "PASS5": false,
+  "PASS6": false,
+  "accepted_checkpoints": 0,
+  "checkpoint": "druid_L20_unrestricted",
+  "geared_known_winner_100_mob_replay": {
+    "delta_s": 0.0,
+    "events": 7282,
+    "independent_joint_search": false,
+    "mob_count": 100,
+    "old_reference_s_per_mob": 13.46412880141965,
+    "old_winner_was_seeded": true,
+    "s_per_mob": 13.46412880141965,
+    "status": "COMPLETE"
+  },
+  "legal_universe_proven_complete": false,
+  "limitations": [
+    "miss-resource refund/attack-table details not independently client verified",
+    "remaining source rank acquisition/effects incomplete",
+    "no measured independent 30/300s winner saturation"
+  ],
+  "paid_l2_opening_probe": {
+    "attempted": 160,
+    "blocked": 66,
+    "elapsed_cpu_s": 3.2245635749999995,
+    "elapsed_wall_s": 3.2277739219998693,
+    "evaluated": 94,
+    "maul_paid_executed_count": 2,
+    "maul_paid_executed_prefixes": [
+      [
+        "bear_form:5487",
+        "enrage:5229",
+        "source_queued_swing:6807"
+      ],
+      [
+        "bear_form:5487",
+        "enrage:5229",
+        "source_queued_swing:6808"
+      ]
+    ],
+    "not_a_joint_gear_talent_optimization": true,
+    "single_mob_scores_not_comparable_to_geared_100mob": true
+  },
+  "schema": "wf330_source_queued_swing_v1",
+  "source_observations_verified_raw_html": false,
+  "source_rank_paid_search_admitted": 17,
+  "source_snapshot": "isolated_WF322_beta_70338_plus_WF321_Bash_plus_WF330_Maul",
+  "strict_hard_30s_and_300s_joint": false
+}

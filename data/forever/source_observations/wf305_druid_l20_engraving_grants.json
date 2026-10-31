@@ -1,0 +1,46 @@
+{
+  "status": "MANUALLY_REVIEWED_WEB_TEXT_ONLY_NOT_VERIFIED_HTML_NOT_EXECUTABLE",
+  "retrieved_date": "2026-10-12",
+  "observations": [
+    {
+      "class_key": "druid", "source_spell_id": 410025, "referenced_spell_id": 409828,
+      "relationship": "engraving_recipe_grants_override_aura",
+      "source_url": "https://www.wowhead.com/forever/spell=410025/engrave-gloves-mangle",
+      "target_source_url": "https://www.wowhead.com/forever/spell=409828/mangle",
+      "literal_source_excerpt": "Engrave your gloves with the Mangle rune; gain the Mangle (Bear) ability and replace your Claw ability with Mangle (Cat).",
+      "target_requires_level": 1, "target_can_be_executed_as_cast": false,
+      "independent_acquisition_verified": false,
+      "source_note": "Engraving recipe is precombat setup; granted aura overrides abilities, not itself a combat cast."
+    },
+    {
+      "class_key": "druid", "source_spell_id": 409828, "referenced_spell_id": 407995,
+      "relationship": "actionbar_override_grants_bear_primal_bite",
+      "source_url": "https://www.wowhead.com/forever/spell=409828/mangle",
+      "target_source_url": "https://www.wowhead.com/forever/spell=407995/primal-bite",
+      "literal_source_excerpt": "Effect #1 Apply Aura: Overrides Actionbar Spell Primal Bite. Requires level 25, Bear Form, Dire Bear Form.",
+      "target_requires_level": 25, "target_can_be_executed_as_cast": true,
+      "independent_acquisition_verified": false,
+      "source_note": "Only this bear version is level 25; do NOT infer that other override ranks are inaccessible at level 20."
+    },
+    {
+      "class_key": "druid", "source_spell_id": 409828, "referenced_spell_id": 407993,
+      "relationship": "actionbar_override_references_spell_id_unresolved",
+      "source_url": "https://www.wowhead.com/forever/spell=409828/mangle",
+      "target_source_url": "https://www.wowhead.com/forever/spell=407993",
+      "literal_source_excerpt": "Effect #2-6 Apply Aura: Overrides Actionbar Spell Spell #407993.",
+      "target_requires_level": null, "target_can_be_executed_as_cast": null,
+      "independent_acquisition_verified": false,
+      "source_note": "Destination spell has no independently captured current Forever detail; cannot be silently excluded."
+    },
+    {
+      "class_key": "druid", "source_spell_id": 410023, "referenced_spell_id": 407988,
+      "relationship": "engraving_recipe_names_granted_effect",
+      "source_url": "https://www.wowhead.com/forever/spell=410023/engrave-pants-savage-roar",
+      "target_source_url": "https://www.wowhead.com/forever/spell=407988/savage-roar",
+      "literal_source_excerpt": "Engrave your pants with the Savage Roar rune; Savage Roar Requires level 44 and Cat Form.",
+      "target_requires_level": 44, "target_can_be_executed_as_cast": true,
+      "independent_acquisition_verified": false,
+      "source_note": "This target rank level is 44; do not infer all possible rune variants or level 20 legality."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+# Test suite
+
+`pytest.ini` at repository root sets `pythonpath = .` and `testpaths = tests`. The suite is being organized incrementally from the flat `tests/` root; see the [fixture tree](fixtures/) and grouped suites below. Counts in historical architecture snapshots may be outdated.
+
+Purpose-based groups now include [`release/`](release/README.md) (explicit, slow) and [`maintenance/`](maintenance/README.md) (normally collected tooling/layout regressions). The [`mechanics/mage/`](mechanics/mage/README.md) group contains 23 byte-for-byte relocated Classic/Forever Mage mechanics, gear, selection and scoring regressions. [`mechanics/hunter/`](mechanics/hunter/README.md) contains 14 source-preserving Hunter mechanics, item, pet and talent regressions. [`mechanics/paladin/`](mechanics/paladin/README.md) contains 10 Paladin gearing, spell, item and source-fidelity tests. [`mechanics/druid/`](mechanics/druid/README.md) groups 27 existing Druid talent, form, source and recovery regressions. [`generic/runtime/`](generic/runtime/README.md) contains generic combat engine mechanics and resource-model regressions. [`generic/classes/`](generic/classes/README.md) contains cross-class generic adapter regressions. [`generic/search/`](generic/search/README.md) contains generic talent/gear/policy search and frontier tests. [`generic/publication/`](generic/publication/README.md) covers registry-backed decision publication and route navigation. Other groups (`unit/`, `integration/`, `acceptance/`, `regression/`) remain candidates for independently tested moves. Test moves must preserve collection, relative fixture paths, module imports and any targeted `python -m pytest tests/test_...py` commands.
+
+**Release-only tests are deliberately excluded from normal collection.** `pytest.ini` uses `norecursedirs = release` so `python -m pytest -q` skips `tests/release/`. To run them explicitly, use `bash scripts/commands/run-release-smoke.sh`, the corresponding PowerShell wrapper, or `python -m pytest -q tests/release`. Keep the slower real MC ladder out of the default suite.
+
+**Production port PASS is not inferred from test count.** Refer to [PROCESS](../PROCESS.md), the exact gate command and the accepted [evidence index](../docs/evidence/README.md).
+
+[Repository structure guide](../docs/REPOSITORY_STRUCTURE.md).
+
+Run the maintenance contracts explicitly with `python -m pytest -q tests/maintenance` or `python -m unittest discover -s tests/maintenance -p 'test_root_launcher_*.py'`. Existing CI workflows reference the new paths. `tests/maintenance/` is **not** excluded from the normal test suite.

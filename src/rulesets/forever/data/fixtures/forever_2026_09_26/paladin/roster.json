@@ -1,0 +1,432 @@
+{
+  "attribution": "Talents Forever (talentsforever.com), WoW Forever beta client-derived icon keys",
+  "license": "CC-BY-4.0",
+  "source_generated": "2026-09-24",
+  "source_url": "https://talentsforever.com/data.json",
+  "spells": {
+    "blessing_of_freedom": {
+      "icon_key": "spell_holy_sealofvalor",
+      "name": "Blessing of Freedom"
+    },
+    "blessing_of_kings": {
+      "icon_key": "spell_magic_magearmor",
+      "name": "Blessing of Kings"
+    },
+    "blessing_of_light": {
+      "icon_key": "spell_holy_prayerofhealing02",
+      "name": "Blessing of Light"
+    },
+    "blessing_of_might": {
+      "icon_key": "spell_holy_fistofjustice",
+      "name": "Blessing of Might"
+    },
+    "blessing_of_protection": {
+      "icon_key": "spell_holy_sealofprotection",
+      "name": "Blessing of Protection"
+    },
+    "blessing_of_sacrifice": {
+      "icon_key": "spell_holy_sealofsacrifice",
+      "name": "Blessing of Sacrifice"
+    },
+    "blessing_of_salvation": {
+      "icon_key": "spell_holy_sealofsalvation",
+      "name": "Blessing of Salvation"
+    },
+    "blessing_of_wisdom": {
+      "icon_key": "spell_holy_sealofwisdom",
+      "name": "Blessing of Wisdom"
+    },
+    "cleanse": {
+      "icon_key": "spell_holy_renew",
+      "name": "Cleanse"
+    },
+    "concentration_aura": {
+      "icon_key": "spell_holy_mindsooth",
+      "name": "Concentration Aura"
+    },
+    "consecration": {
+      "icon_key": "spell_holy_innerfire",
+      "name": "Consecration"
+    },
+    "devotion_aura": {
+      "icon_key": "spell_holy_devotionaura",
+      "name": "Devotion Aura"
+    },
+    "divine_favor": {
+      "icon_key": "spell_holy_heal",
+      "name": "Divine Favor"
+    },
+    "divine_intervention": {
+      "icon_key": "spell_nature_timestop",
+      "name": "Divine Intervention"
+    },
+    "divine_protection": {
+      "icon_key": "spell_holy_restoration",
+      "name": "Divine Protection"
+    },
+    "divine_shield": {
+      "icon_key": "spell_holy_divineintervention",
+      "name": "Divine Shield"
+    },
+    "exorcism": {
+      "icon_key": "spell_holy_excorcism_02",
+      "name": "Exorcism"
+    },
+    "fire_resistance_aura": {
+      "icon_key": "spell_fire_sealoffire",
+      "name": "Fire Resistance Aura"
+    },
+    "flash_of_light": {
+      "icon_key": "spell_holy_flashheal",
+      "name": "Flash of Light"
+    },
+    "frost_resistance_aura": {
+      "icon_key": "spell_frost_wizardmark",
+      "name": "Frost Resistance Aura"
+    },
+    "greater_blessing_of_kings": {
+      "icon_key": "spell_magic_greaterblessingofkings",
+      "name": "Greater Blessing of Kings"
+    },
+    "greater_blessing_of_light": {
+      "icon_key": "spell_holy_greaterblessingoflight",
+      "name": "Greater Blessing of Light"
+    },
+    "greater_blessing_of_might": {
+      "icon_key": "spell_holy_greaterblessingofkings",
+      "name": "Greater Blessing of Might"
+    },
+    "greater_blessing_of_salvation": {
+      "icon_key": "spell_holy_greaterblessingofsalvation",
+      "name": "Greater Blessing of Salvation"
+    },
+    "greater_blessing_of_wisdom": {
+      "icon_key": "spell_holy_greaterblessingofwisdom",
+      "name": "Greater Blessing of Wisdom"
+    },
+    "hammer_of_justice": {
+      "icon_key": "spell_holy_sealofmight",
+      "name": "Hammer of Justice"
+    },
+    "hammer_of_wrath": {
+      "icon_key": "ability_thunderclap",
+      "name": "Hammer of Wrath"
+    },
+    "holy_light": {
+      "icon_key": "spell_holy_holybolt",
+      "name": "Holy Light"
+    },
+    "holy_shield": {
+      "icon_key": "spell_holy_blessingofprotection",
+      "name": "Holy Shield"
+    },
+    "holy_shock": {
+      "icon_key": "spell_holy_searinglight",
+      "name": "Holy Shock"
+    },
+    "holy_strike": {
+      "icon_key": "classicon_paladin",
+      "name": "Holy Strike"
+    },
+    "holy_wrath": {
+      "icon_key": "spell_holy_excorcism",
+      "name": "Holy Wrath"
+    },
+    "judgement": {
+      "icon_key": "spell_holy_righteousfury",
+      "name": "Judgement"
+    },
+    "lay_on_hands": {
+      "icon_key": "spell_holy_layonhands",
+      "name": "Lay on Hands"
+    },
+    "lights_vigil": {
+      "icon_key": "ability_paladin_judgementofthepure",
+      "name": "Light's Vigil"
+    },
+    "purify": {
+      "icon_key": "spell_holy_purify",
+      "name": "Purify"
+    },
+    "redemption": {
+      "icon_key": "spell_holy_resurrection",
+      "name": "Redemption"
+    },
+    "repentance": {
+      "icon_key": "spell_holy_prayerofhealing",
+      "name": "Repentance"
+    },
+    "retribution_aura": {
+      "icon_key": "spell_holy_auraoflight",
+      "name": "Retribution Aura"
+    },
+    "righteous_fury": {
+      "icon_key": "spell_holy_sealoffury",
+      "name": "Righteous Fury"
+    },
+    "seal_of_command": {
+      "icon_key": "ability_warrior_innerrage",
+      "name": "Seal of Command"
+    },
+    "seal_of_fury": {
+      "icon_key": "spell_holy_retributionaura",
+      "name": "Seal of Fury"
+    },
+    "seal_of_justice": {
+      "icon_key": "spell_holy_sealofwrath",
+      "name": "Seal of Justice"
+    },
+    "seal_of_light": {
+      "icon_key": "spell_holy_healingaura",
+      "name": "Seal of Light"
+    },
+    "seal_of_righteousness": {
+      "icon_key": "ability_thunderbolt",
+      "name": "Seal of Righteousness"
+    },
+    "seal_of_the_crusader": {
+      "icon_key": "spell_holy_holysmite",
+      "name": "Seal of the Crusader"
+    },
+    "seal_of_wisdom": {
+      "icon_key": "spell_holy_righteousnessaura",
+      "name": "Seal of Wisdom"
+    },
+    "sense_undead": {
+      "icon_key": "spell_holy_senseundead",
+      "name": "Sense Undead"
+    },
+    "shadow_resistance_aura": {
+      "icon_key": "spell_shadow_sealofkings",
+      "name": "Shadow Resistance Aura"
+    },
+    "swift_judgement": {
+      "icon_key": "ability_paladin_judgementred",
+      "name": "Swift Judgement"
+    },
+    "templars_bulwark": {
+      "icon_key": "ability_paladin_shieldofthetemplar",
+      "name": "Templar's Bulwark"
+    },
+    "turn_undead": {
+      "icon_key": "spell_holy_turnundead",
+      "name": "Turn Undead"
+    },
+    "voice_of_truth": {
+      "icon_key": "inv_misc_horn_03",
+      "name": "Voice of Truth"
+    }
+  },
+  "talents": {
+    "anticipation": {
+      "icon_key": "spell_magic_lesserinvisibilty",
+      "name": "Anticipation"
+    },
+    "benediction": {
+      "icon_key": "spell_frost_windwalkon",
+      "name": "Benediction"
+    },
+    "champion_of_the_light": {
+      "icon_key": "ability_paladin_enlightenedjudgements",
+      "name": "Champion of the Light"
+    },
+    "consecrated_ground": {
+      "icon_key": "spell_holy_innerfire",
+      "name": "Consecrated Ground"
+    },
+    "conviction": {
+      "icon_key": "spell_holy_retributionaura",
+      "name": "Conviction"
+    },
+    "crusade": {
+      "historical_snapshot": true,
+      "icon_key": "spell_holy_crusade",
+      "name": "Crusade"
+    },
+    "deflection": {
+      "icon_key": "ability_parry",
+      "name": "Deflection"
+    },
+    "divine_favor": {
+      "icon_key": "spell_holy_heal",
+      "name": "Divine Favor"
+    },
+    "divine_intellect": {
+      "icon_key": "spell_nature_sleep",
+      "name": "Divine Intellect"
+    },
+    "divine_precision": {
+      "icon_key": "spell_holy_healingfocus",
+      "name": "Divine Precision"
+    },
+    "divine_strength": {
+      "icon_key": "ability_golemthunderclap",
+      "name": "Divine Strength"
+    },
+    "eye_for_an_eye": {
+      "icon_key": "spell_holy_eyeforaneye",
+      "name": "Eye for an Eye"
+    },
+    "guardians_favor": {
+      "icon_key": "spell_holy_sealofprotection",
+      "name": "Guardian's Favor"
+    },
+    "healing_light": {
+      "icon_key": "spell_holy_holybolt",
+      "name": "Healing Light"
+    },
+    "holy_conduit": {
+      "icon_key": "spell_holy_devineaegis",
+      "name": "Holy Conduit"
+    },
+    "holy_power": {
+      "icon_key": "spell_holy_power",
+      "name": "Holy Power"
+    },
+    "holy_shield": {
+      "icon_key": "spell_holy_blessingofprotection",
+      "name": "Holy Shield"
+    },
+    "holy_shock": {
+      "icon_key": "spell_holy_searinglight",
+      "name": "Holy Shock"
+    },
+    "illumination": {
+      "icon_key": "spell_holy_greaterheal",
+      "name": "Illumination"
+    },
+    "improved_hammer_of_justice": {
+      "icon_key": "spell_holy_sealofmight",
+      "name": "Improved Hammer of Justice"
+    },
+    "improved_holy_strike": {
+      "historical_snapshot": true,
+      "icon_key": "classicon_paladin",
+      "name": "Improved Holy Strike"
+    },
+    "improved_judgement": {
+      "icon_key": "spell_holy_righteousfury",
+      "name": "Improved Judgement"
+    },
+    "improved_righteous_fury": {
+      "icon_key": "spell_holy_sealoffury",
+      "name": "Improved Righteous Fury"
+    },
+    "improved_seal_of_fury": {
+      "icon_key": "spell_holy_righteousnessaura",
+      "name": "Improved Seal of Fury"
+    },
+    "improved_seals": {
+      "icon_key": "ability_thunderbolt",
+      "name": "Improved Seals"
+    },
+    "infusion_of_light": {
+      "icon_key": "ability_paladin_infusionoflight",
+      "name": "Infusion of Light"
+    },
+    "instrument_of_law": {
+      "icon_key": "spell_holy_divinepurpose",
+      "name": "Instrument of Law"
+    },
+    "iron_creed": {
+      "icon_key": "spell_holy_improvedresistanceauras",
+      "name": "Iron Creed"
+    },
+    "lights_vigil": {
+      "icon_key": "ability_paladin_judgementofthepure",
+      "name": "Light's Vigil"
+    },
+    "one_handed_weapon_specialization": {
+      "icon_key": "inv_sword_20",
+      "name": "One-Handed Weapon Specialization"
+    },
+    "precision": {
+      "icon_key": "ability_rogue_ambush",
+      "name": "Precision"
+    },
+    "purifying_power": {
+      "icon_key": "spell_holy_purifyingpower",
+      "name": "Purifying Power"
+    },
+    "pursuit_of_justice": {
+      "icon_key": "spell_holy_persuitofjustice",
+      "name": "Pursuit of Justice"
+    },
+    "reckoning": {
+      "icon_key": "spell_holy_blessingofstrength",
+      "name": "Reckoning"
+    },
+    "redoubt": {
+      "icon_key": "ability_defend",
+      "name": "Redoubt"
+    },
+    "repentance": {
+      "icon_key": "spell_holy_prayerofhealing",
+      "name": "Repentance"
+    },
+    "reverence": {
+      "icon_key": "spell_holy_divineillumination",
+      "name": "Reverence"
+    },
+    "sacred_arbiter": {
+      "icon_key": "inv_sword_08",
+      "name": "Sacred Arbiter"
+    },
+    "sacred_duty": {
+      "icon_key": "spell_holy_divineintervention",
+      "name": "Sacred Duty"
+    },
+    "sanctified_judgement": {
+      "icon_key": "ability_paladin_judgementblue",
+      "name": "Sanctified Judgement"
+    },
+    "seal_of_command": {
+      "icon_key": "ability_warrior_innerrage",
+      "name": "Seal of Command"
+    },
+    "shield_specialization": {
+      "icon_key": "inv_shield_06",
+      "name": "Shield Specialization"
+    },
+    "spiritual_focus": {
+      "icon_key": "spell_arcane_blink",
+      "name": "Spiritual Focus"
+    },
+    "swift_judgement": {
+      "icon_key": "ability_paladin_judgementred",
+      "name": "Swift Judgement"
+    },
+    "templars_bulwark": {
+      "icon_key": "ability_paladin_shieldofthetemplar",
+      "name": "Templar's Bulwark"
+    },
+    "toughness": {
+      "icon_key": "spell_holy_devotion",
+      "name": "Toughness"
+    },
+    "twist_of_light": {
+      "icon_key": "spell_holy_blessedresillience",
+      "name": "Twist of Light"
+    },
+    "two_handed_weapon_specialization": {
+      "icon_key": "inv_hammer_04",
+      "name": "Two-Handed Weapon Specialization"
+    },
+    "unyielding_faith": {
+      "icon_key": "spell_holy_unyieldingfaith",
+      "name": "Unyielding Faith"
+    },
+    "vengeance": {
+      "icon_key": "ability_racial_avatar",
+      "name": "Vengeance"
+    },
+    "vindication": {
+      "icon_key": "spell_holy_vindication",
+      "name": "Vindication"
+    },
+    "voice_of_truth": {
+      "icon_key": "inv_misc_horn_03",
+      "name": "Voice of Truth"
+    }
+  }
+}
