@@ -1,0 +1,486 @@
+{
+  "schema_version": 2,
+  "class": "druid",
+  "source": {
+    "provider": "Talents Forever",
+    "provider_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+    "attribution_url": "https://talentsforever.com/",
+    "popularity_snapshot_build": "1.60.1.70009",
+    "popularity_snapshot_as_of": "2026-10-02",
+    "current_talent_source_build": "1.60.1.70170",
+    "license": "CC BY 4.0",
+    "ranking_semantics": "families within a few talent points are grouped; ranking uses shared/saved/opened activity",
+    "surface_limit": "public Popular Builds fold exposes five families overall, not top three per specialization"
+  },
+  "requested_per_build_type": 3,
+  "groups": {
+    "balance": {
+      "label": "Balance",
+      "requested": 3,
+      "available": 1,
+      "coverage_complete": false,
+      "builds": [
+        {
+          "id": "tf-druid-balance-36-0-15",
+          "build_type": "balance",
+          "label": "#3 overall · 36/0/15",
+          "overall_rank": 3,
+          "level": 60,
+          "tree_points": {
+            "balance": 36,
+            "feral": 0,
+            "restoration": 15
+          },
+          "split": [
+            36,
+            0,
+            15
+          ],
+          "popularity": {
+            "shared": 35,
+            "saved": 144,
+            "opened": 879,
+            "close_builds": 54
+          },
+          "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+          "allocation_detail_status": "exact",
+          "talent_ranks": {
+            "improved_wrath": 5,
+            "moonglow": 3,
+            "improved_moonfire": 2,
+            "natures_majesty": 2,
+            "natures_reach": 2,
+            "natures_splendor": 1,
+            "insect_swarm": 1,
+            "vengeance": 5,
+            "improved_starfire": 5,
+            "natures_grace": 1,
+            "eclipse": 3,
+            "moonfury": 5,
+            "moonkin_form": 1,
+            "natures_focus": 5,
+            "naturalist": 5,
+            "subtlety": 2,
+            "reflection": 3
+          },
+          "score_status": "not_scored_reference_only",
+          "note": "Exact talent ranks available from the shared build URL; reference is not optimizer authority.",
+          "progression_status": "exact_source_visible",
+          "leveling_order": [
+            "improved_wrath",
+            "improved_wrath",
+            "improved_wrath",
+            "improved_wrath",
+            "improved_wrath",
+            "moonglow",
+            "moonglow",
+            "moonglow",
+            "improved_moonfire",
+            "improved_moonfire",
+            "natures_majesty",
+            "natures_majesty",
+            "natures_reach",
+            "natures_reach",
+            "natures_splendor",
+            "insect_swarm",
+            "vengeance",
+            "vengeance",
+            "vengeance",
+            "vengeance",
+            "vengeance",
+            "improved_starfire",
+            "improved_starfire",
+            "improved_starfire",
+            "improved_starfire",
+            "improved_starfire",
+            "natures_grace",
+            "eclipse",
+            "eclipse",
+            "eclipse",
+            "moonfury",
+            "moonfury",
+            "moonfury",
+            "moonfury",
+            "moonfury",
+            "moonkin_form",
+            "natures_focus",
+            "natures_focus",
+            "natures_focus",
+            "natures_focus",
+            "natures_focus",
+            "naturalist",
+            "naturalist",
+            "naturalist",
+            "naturalist",
+            "naturalist",
+            "subtlety",
+            "subtlety",
+            "reflection",
+            "reflection",
+            "reflection"
+          ],
+          "progression_note": "Exact point-by-point leveling order captured from the TalentsForever build page; prefixes are source-backed and may be compared per level."
+        }
+      ]
+    },
+    "feral": {
+      "label": "Feral Combat",
+      "requested": 3,
+      "available": 3,
+      "coverage_complete": true,
+      "builds": [
+        {
+          "id": "tf-druid-feral-9-37-5",
+          "build_type": "feral",
+          "label": "#2 overall · 9/37/5",
+          "overall_rank": 2,
+          "level": 60,
+          "tree_points": {
+            "balance": 9,
+            "feral": 37,
+            "restoration": 5
+          },
+          "split": [
+            9,
+            37,
+            5
+          ],
+          "popularity": {
+            "shared": 131,
+            "saved": 248,
+            "opened": 1963,
+            "close_builds": 108
+          },
+          "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+          "allocation_detail_status": "family_split_only",
+          "talent_ranks": {},
+          "score_status": "not_scored_reference_only",
+          "note": "TalentsForever exposes this popular family split but not its representative exact URL in the public fold; no ranks are guessed."
+        },
+        {
+          "id": "tf-druid-feral-9-42-0",
+          "build_type": "feral",
+          "label": "#4 overall · 9/42/0",
+          "overall_rank": 4,
+          "level": 60,
+          "tree_points": {
+            "balance": 9,
+            "feral": 42,
+            "restoration": 0
+          },
+          "split": [
+            9,
+            42,
+            0
+          ],
+          "popularity": {
+            "shared": 70,
+            "saved": 158,
+            "opened": 1351,
+            "close_builds": 63
+          },
+          "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+          "allocation_detail_status": "family_split_only",
+          "talent_ranks": {},
+          "score_status": "not_scored_reference_only",
+          "note": "TalentsForever exposes this popular family split but not its representative exact URL in the public fold; no ranks are guessed."
+        },
+        {
+          "id": "tf-druid-feral-0-46-5",
+          "build_type": "feral",
+          "label": "#5 overall · 0/46/5",
+          "overall_rank": 5,
+          "level": 60,
+          "tree_points": {
+            "balance": 0,
+            "feral": 46,
+            "restoration": 5
+          },
+          "split": [
+            0,
+            46,
+            5
+          ],
+          "popularity": {
+            "shared": 44,
+            "saved": 104,
+            "opened": 715,
+            "close_builds": 40
+          },
+          "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+          "allocation_detail_status": "family_split_only",
+          "talent_ranks": {},
+          "score_status": "not_scored_reference_only",
+          "note": "TalentsForever exposes this popular family split but not its representative exact URL in the public fold; no ranks are guessed."
+        }
+      ]
+    },
+    "restoration": {
+      "label": "Restoration",
+      "requested": 3,
+      "available": 1,
+      "coverage_complete": false,
+      "builds": [
+        {
+          "id": "tf-druid-restoration-11-5-35",
+          "build_type": "restoration",
+          "label": "#1 overall · 11/5/35",
+          "overall_rank": 1,
+          "level": 60,
+          "tree_points": {
+            "balance": 11,
+            "feral": 5,
+            "restoration": 35
+          },
+          "split": [
+            11,
+            5,
+            35
+          ],
+          "popularity": {
+            "shared": 157,
+            "saved": 422,
+            "opened": 3280,
+            "close_builds": 49
+          },
+          "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+          "allocation_detail_status": "family_split_only",
+          "talent_ranks": {},
+          "score_status": "not_scored_reference_only",
+          "note": "TalentsForever exposes this popular family split but not its representative exact URL in the public fold; no ranks are guessed."
+        }
+      ]
+    }
+  },
+  "builds": [
+    {
+      "id": "tf-druid-restoration-11-5-35",
+      "build_type": "restoration",
+      "label": "#1 overall · 11/5/35",
+      "overall_rank": 1,
+      "level": 60,
+      "tree_points": {
+        "balance": 11,
+        "feral": 5,
+        "restoration": 35
+      },
+      "split": [
+        11,
+        5,
+        35
+      ],
+      "popularity": {
+        "shared": 157,
+        "saved": 422,
+        "opened": 3280,
+        "close_builds": 49
+      },
+      "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+      "allocation_detail_status": "family_split_only",
+      "talent_ranks": {},
+      "score_status": "not_scored_reference_only",
+      "note": "TalentsForever exposes this popular family split but not its representative exact URL in the public fold; no ranks are guessed."
+    },
+    {
+      "id": "tf-druid-feral-9-37-5",
+      "build_type": "feral",
+      "label": "#2 overall · 9/37/5",
+      "overall_rank": 2,
+      "level": 60,
+      "tree_points": {
+        "balance": 9,
+        "feral": 37,
+        "restoration": 5
+      },
+      "split": [
+        9,
+        37,
+        5
+      ],
+      "popularity": {
+        "shared": 131,
+        "saved": 248,
+        "opened": 1963,
+        "close_builds": 108
+      },
+      "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+      "allocation_detail_status": "family_split_only",
+      "talent_ranks": {},
+      "score_status": "not_scored_reference_only",
+      "note": "TalentsForever exposes this popular family split but not its representative exact URL in the public fold; no ranks are guessed."
+    },
+    {
+      "id": "tf-druid-balance-36-0-15",
+      "build_type": "balance",
+      "label": "#3 overall · 36/0/15",
+      "overall_rank": 3,
+      "level": 60,
+      "tree_points": {
+        "balance": 36,
+        "feral": 0,
+        "restoration": 15
+      },
+      "split": [
+        36,
+        0,
+        15
+      ],
+      "popularity": {
+        "shared": 35,
+        "saved": 144,
+        "opened": 879,
+        "close_builds": 54
+      },
+      "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+      "allocation_detail_status": "exact",
+      "talent_ranks": {
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "improved_moonfire": 2,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "insect_swarm": 1,
+        "vengeance": 5,
+        "improved_starfire": 5,
+        "natures_grace": 1,
+        "eclipse": 3,
+        "moonfury": 5,
+        "moonkin_form": 1,
+        "natures_focus": 5,
+        "naturalist": 5,
+        "subtlety": 2,
+        "reflection": 3
+      },
+      "score_status": "not_scored_reference_only",
+      "note": "Exact talent ranks available from the shared build URL; reference is not optimizer authority.",
+      "progression_status": "exact_source_visible",
+      "leveling_order": [
+        "improved_wrath",
+        "improved_wrath",
+        "improved_wrath",
+        "improved_wrath",
+        "improved_wrath",
+        "moonglow",
+        "moonglow",
+        "moonglow",
+        "improved_moonfire",
+        "improved_moonfire",
+        "natures_majesty",
+        "natures_majesty",
+        "natures_reach",
+        "natures_reach",
+        "natures_splendor",
+        "insect_swarm",
+        "vengeance",
+        "vengeance",
+        "vengeance",
+        "vengeance",
+        "vengeance",
+        "improved_starfire",
+        "improved_starfire",
+        "improved_starfire",
+        "improved_starfire",
+        "improved_starfire",
+        "natures_grace",
+        "eclipse",
+        "eclipse",
+        "eclipse",
+        "moonfury",
+        "moonfury",
+        "moonfury",
+        "moonfury",
+        "moonfury",
+        "moonkin_form",
+        "natures_focus",
+        "natures_focus",
+        "natures_focus",
+        "natures_focus",
+        "natures_focus",
+        "naturalist",
+        "naturalist",
+        "naturalist",
+        "naturalist",
+        "naturalist",
+        "subtlety",
+        "subtlety",
+        "reflection",
+        "reflection",
+        "reflection"
+      ],
+      "progression_note": "Exact point-by-point leveling order captured from the TalentsForever build page; prefixes are source-backed and may be compared per level."
+    },
+    {
+      "id": "tf-druid-feral-9-42-0",
+      "build_type": "feral",
+      "label": "#4 overall · 9/42/0",
+      "overall_rank": 4,
+      "level": 60,
+      "tree_points": {
+        "balance": 9,
+        "feral": 42,
+        "restoration": 0
+      },
+      "split": [
+        9,
+        42,
+        0
+      ],
+      "popularity": {
+        "shared": 70,
+        "saved": 158,
+        "opened": 1351,
+        "close_builds": 63
+      },
+      "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+      "allocation_detail_status": "family_split_only",
+      "talent_ranks": {},
+      "score_status": "not_scored_reference_only",
+      "note": "TalentsForever exposes this popular family split but not its representative exact URL in the public fold; no ranks are guessed."
+    },
+    {
+      "id": "tf-druid-feral-0-46-5",
+      "build_type": "feral",
+      "label": "#5 overall · 0/46/5",
+      "overall_rank": 5,
+      "level": 60,
+      "tree_points": {
+        "balance": 0,
+        "feral": 46,
+        "restoration": 5
+      },
+      "split": [
+        0,
+        46,
+        5
+      ],
+      "popularity": {
+        "shared": 44,
+        "saved": 104,
+        "opened": 715,
+        "close_builds": 40
+      },
+      "source_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6",
+      "allocation_detail_status": "family_split_only",
+      "talent_ranks": {},
+      "score_status": "not_scored_reference_only",
+      "note": "TalentsForever exposes this popular family split but not its representative exact URL in the public fold; no ranks are guessed."
+    }
+  ],
+  "comparison_semantics": {
+    "search_authority": false,
+    "route_authority": false,
+    "tree_split_comparison": true,
+    "exact_talent_diff_when_available": true,
+    "throughput_comparison": false,
+    "throughput_note": "Reference throughput is intentionally absent until an exact allocation is scored by the same class model/build context."
+  },
+  "capture": {
+    "provider": "Talents Forever",
+    "capture_backend": "seeded_from_source_visible_v0.11.48.83",
+    "captured_at": "2026-10-03T00:00:00Z",
+    "generated_at": "2026-10-03T00:00:00Z",
+    "provenance_url": "https://talentsforever.com/druid/60/5032220115501351--505203-6"
+  },
+  "content_sha256": "0f0fbef8b85c25623436e1220d91c6d68bea21428b1df859a885c4ed50279ebc"
+}

@@ -1,0 +1,44 @@
+{
+  "availability_floor_model": {
+    "degree": 2,
+    "excluded_low_outliers": 403,
+    "intercept_c": -5.104765149050424,
+    "linear_b": 1.0067428172612602,
+    "lower_sigma": 2.5,
+    "observed_sample_count": 7054,
+    "quadratic_a": -1.306252055467607e-05,
+    "retained_sample_count": 6651,
+    "rmse": 0.9949543097920236,
+    "source_catalogue_hash": "da490925b44b488fb2de7d0ea940b1925f8cde90cadddf9b0ae30f1860bb6ad1"
+  },
+  "canonical_items": 7597,
+  "captured_at": "2026-09-29T10:28:08.530145Z",
+  "catalogue_hash": "55bc95e14785f214b1b4f6574dbc3463a90bfb72f68dea861ffe2a948bfd38b6",
+  "class_eligibility_rows": 14931,
+  "inferred_required_level": 543,
+  "leaf_counts": {
+    "druid": 6,
+    "mage": 6,
+    "paladin": 11
+  },
+  "merged_rows": {
+    "druid": 35065,
+    "mage": 22231,
+    "paladin": 56437
+  },
+  "observed_required_level": 7054,
+  "schema": "forever-item-catalogue-capture-import-v1",
+  "source_manifest_sha256": "1a633f0849aab99cb1ec50da621108a615117bf399650146b2faaa25633d91ad",
+  "union_unique_ids": 7597,
+  "unique_ids_by_class": {
+    "druid": 4830,
+    "mage": 3252,
+    "paladin": 6849
+  },
+  "unresolved_required_level": 0,
+  "variant_rows_by_class": {
+    "druid": 30235,
+    "mage": 18979,
+    "paladin": 49588
+  }
+}
