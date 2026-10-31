@@ -1,16 +1,13 @@
 # INSTALL in PUBLIC dosibjrn/forever-sim at .github/workflows/restore-private-source.yml.
 # Add PUBLIC Actions secret FOREVER_SIM_PRIVATE_READ_TOKEN granting read-only Contents
 # access to the PRIVATE dosibjrn/mage-level-sim repo (and its LFS objects).
-# Run Actions -> Restore private source to public Forever Sim -> mode=audit,
+# MANUAL-ONLY: never publish on push. Run Actions -> Restore private source to public Forever Sim -> mode=audit,
 # verify the private repository contains only material licensed/approved for PUBLIC release,
 # then mode=publish with exact audited private main SHA.
 # Public GITHUB_TOKEN handles destination writes. NO private audit path lists are uploaded.
 # Existing public main-only governance/docs, existing PRs and the manual smoke are kept.
 name: Restore private source to public Forever Sim
 on:
-  push:
-    paths:
-      - '.github/workflows/restore-private-source.yml'
   workflow_dispatch:
     inputs:
       mode:
@@ -34,7 +31,7 @@ jobs:
     timeout-minutes: 30
     if: github.repository == 'dosibjrn/forever-sim'
     env:
-      MIGRATION_MODE: ${{ github.event_name == 'push' && 'publish' || inputs.mode }}
+      MIGRATION_MODE: ${{ inputs.mode }}
       APPROVED_SOURCE_SHA: ${{ inputs.approved_source_sha }}
       PRIVATE_READ_TOKEN: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN }}
     steps:
@@ -78,7 +75,11 @@ jobs:
             echo 'Run from public main branch, not from a PR or another branch.' >&2
             exit 10
           fi
-          if [[ "$mode" == 'publish' && "$GITHUB_EVENT_NAME" != 'push' ]]; then
+          if [[ "$mode" != 'audit' && "$mode" != 'publish' ]]; then
+            echo 'Explicit audit or publish mode is required.' >&2
+            exit 12
+          fi
+          if [[ "$mode" == 'publish' ]]; then
             if [[ "$APPROVED_SOURCE_SHA" != "$source_sha" || ! "$APPROVED_SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]; then
               echo 'Approval SHA does not match this exact private main checkout. Audit and approve the current SHA first.' >&2
               exit 11
