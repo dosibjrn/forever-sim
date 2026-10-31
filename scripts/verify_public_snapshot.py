@@ -54,6 +54,21 @@ def protected(path):
     return path in PROTECTED_EXACT or any(path.startswith(p) for p in PROTECTED_PREFIX)
 
 
+def selected_source_paths(source):
+    """Emit only Git-indexed, non-protected source paths for safe snapshot copying."""
+    result = []
+    for rel, mode in sorted(git_index(source).items()):
+        if protected(rel):
+            continue
+        p = PurePosixPath(rel)
+        if p.is_absolute() or '..' in p.parts or not rel:
+            raise ValueError(f'UNSAFE_PATH {rel!r}')
+        if mode not in ('100644', '100755', '120000'):
+            raise ValueError(f'UNSUPPORTED_SOURCE_MODE {mode} {rel}')
+        result.append(rel)
+    return result
+
+
 def verify(source, target, require_staged=True):
     source_index = git_index(source)
     target_index = git_index(target) if require_staged else {}
@@ -105,9 +120,21 @@ def verify(source, target, require_staged=True):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--source', required=True, type=Path, help='hydrated private source checkout')
-    ap.add_argument('--target', required=True, type=Path, help='staged public destination checkout')
+    ap.add_argument('--target', type=Path, help='staged public destination checkout')
+    ap.add_argument('--emit-selected-paths', action='store_true',
+                    help='write NUL-delimited tracked, non-protected paths for tar/git add')
     ap.add_argument('--no-stage-check', action='store_true', help='only compare working bytes (before git add)')
     args = ap.parse_args(argv)
+    if args.emit_selected_paths:
+        try:
+            for path in selected_source_paths(args.source):
+                sys.stdout.buffer.write(os.fsencode(path) + b'\0')
+        except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+            print(f'PREPUBLICATION_SELECTION_ERROR: {exc}', file=sys.stderr)
+            return 2
+        return 0
+    if args.target is None:
+        ap.error('--target is required unless --emit-selected-paths is used')
     try:
         compared, excluded, errors = verify(args.source, args.target, not args.no_stage_check)
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
