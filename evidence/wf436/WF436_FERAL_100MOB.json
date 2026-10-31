@@ -1,0 +1,50 @@
+{
+  "natural2": [
+    {
+      "mobs": 100,
+      "complete": true,
+      "seconds_per_mob": 10.446774193548409,
+      "combat_s": 400.9999999999999,
+      "recovery_s": 643.6774193548409,
+      "events": 2999,
+      "claw_casts": 99,
+      "wall_s": 0.16620141700013846,
+      "cpu_s": 0.1661981720000001
+    },
+    {
+      "mobs": 100,
+      "complete": true,
+      "seconds_per_mob": 10.446774193548409,
+      "combat_s": 400.9999999999999,
+      "recovery_s": 643.6774193548409,
+      "events": 2999,
+      "claw_casts": 99,
+      "wall_s": 0.17231366000009984,
+      "cpu_s": 0.17230461499999983
+    }
+  ],
+  "leader1": [
+    {
+      "mobs": 100,
+      "complete": true,
+      "seconds_per_mob": 10.446774193548409,
+      "combat_s": 400.9999999999999,
+      "recovery_s": 643.6774193548409,
+      "events": 2999,
+      "claw_casts": 99,
+      "wall_s": 0.17478244399990217,
+      "cpu_s": 0.174779432
+    },
+    {
+      "mobs": 100,
+      "complete": true,
+      "seconds_per_mob": 10.446774193548409,
+      "combat_s": 400.9999999999999,
+      "recovery_s": 643.6774193548409,
+      "events": 2999,
+      "claw_casts": 99,
+      "wall_s": 0.17562231099987002,
+      "cpu_s": 0.17562250499999998
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+[
+  {
+    "gear": "spell_power",
+    "swaps": {
+      "head": 252456,
+      "neck": 23169,
+      "shoulder": 7684,
+      "back": 274149,
+      "chest": 1486,
+      "wrist": 9448,
+      "hands": 16741,
+      "waist": 6911,
+      "legs": 270031,
+      "feet": 254001,
+      "ring1": 9622,
+      "ring2": 19521,
+      "weapon": 273841
+    },
+    "samples": [
+      {
+        "status": "COMPLETE",
+        "count": 100,
+        "mean_s_per_mob": 11.728208837635073,
+        "events": 3710,
+        "elapsed_wall_s": 4.99323064500004,
+        "elapsed_cpu_s": 4.991730028000001,
+        "source_action_counts": {
+          "wrath:5180": 601
+        }
+      },
+      {
+        "status": "COMPLETE",
+        "count": 100,
+        "mean_s_per_mob": 11.728208837635073,
+        "events": 3710,
+        "elapsed_wall_s": 5.01125386199999,
+        "elapsed_cpu_s": 5.010598289000001,
+        "source_action_counts": {
+          "wrath:5180": 601
+        }
+      }
+    ],
+    "actor_stats": {
+      "spell_power": 125.0,
+      "spell_crit_chance": null,
+      "melee_crit_chance": 0.0145
+    }
+  },
+  {
+    "gear": "spell_power+crit",
+    "swaps": {
+      "head": 252456,
+      "neck": 23169,
+      "shoulder": 284399,
+      "back": 274149,
+      "chest": 1486,
+      "wrist": 9448,
+      "hands": 16741,
+      "waist": 6911,
+      "legs": 270031,
+      "feet": 254001,
+      "ring1": 9622,
+      "ring2": 19521,
+      "weapon": 273841
+    },
+    "samples": [
+      {
+        "status": "COMPLETE",
+        "count": 100,
+        "mean_s_per_mob": 14.529776779660997,
+        "events": 4406,
+        "elapsed_wall_s": 5.203558616000009,
+        "elapsed_cpu_s": 5.202461219,
+        "source_action_counts": {
+          "wrath:5180": 700
+        }
+      },
+      {
+        "status": "COMPLETE",
+        "count": 100,
+        "mean_s_per_mob": 14.529776779660997,
+        "events": 4406,
+        "elapsed_wall_s": 5.3148651340000015,
+        "elapsed_cpu_s": 5.313467553999999,
+        "source_action_counts": {
+          "wrath:5180": 700
+        }
+      }
+    ],
+    "actor_stats": {
+      "spell_power": 116.0,
+      "spell_crit_chance": 0.005,
+      "melee_crit_chance": 0.0195
+    }
+  }
+]
