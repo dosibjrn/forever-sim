@@ -1,0 +1,130 @@
+{
+  "control_proc_resolution": "sha256_event_key_deterministic_Bernoulli_one_seed",
+  "cpu_s": 3.4189291539999997,
+  "gear_source": "canonical_sqlite_legal_spell_power_package",
+  "improvement_percent": 9.81349232197897,
+  "parent": "WF429",
+  "rank_missing_executor": 34,
+  "results": {
+    "improved_starfire5": {
+      "action_id": "source_spell:8949",
+      "allocation": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_starfire": 5,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      },
+      "cast_time_s": 3.0,
+      "concurrent_2d_100mob": {
+        "count": 100,
+        "elapsed_cpu_s": 0.25661759300000053,
+        "elapsed_wall_s": 0.2566133139998783,
+        "events": 3228,
+        "incoming_attacks_scheduled": true,
+        "mean_s_per_mob": 18.348997833810802,
+        "spatial_mode": "simultaneous_2d_pack",
+        "status": "COMPLETE"
+      },
+      "runs": [
+        {
+          "combat_s": 1200.0,
+          "count": 100,
+          "elapsed_cpu_s": 0.3509623660000001,
+          "elapsed_wall_s": 0.35096240999996553,
+          "events": 3459,
+          "mean_s_per_mob": 18.380104598652032,
+          "recovery_s": 630.5104598652033,
+          "source_action_counts": {
+            "source_spell:8949": 400
+          },
+          "source_control_proc_attempts": 400,
+          "source_control_proc_triggered": 45,
+          "status": "COMPLETE"
+        },
+        {
+          "combat_s": 1200.0,
+          "count": 100,
+          "elapsed_cpu_s": 0.32649636500000057,
+          "elapsed_wall_s": 0.3265121490001093,
+          "events": 3459,
+          "mean_s_per_mob": 18.380104598652032,
+          "recovery_s": 630.5104598652033,
+          "source_action_counts": {
+            "source_spell:8949": 400
+          },
+          "source_control_proc_attempts": 400,
+          "source_control_proc_triggered": 45,
+          "status": "COMPLETE"
+        }
+      ]
+    },
+    "without_improved_starfire": {
+      "action_id": "source_spell:8949",
+      "allocation": {
+        "ferocity": 5,
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      },
+      "cast_time_s": 3.5,
+      "concurrent_2d_100mob": {
+        "count": 100,
+        "elapsed_cpu_s": 0.26964869100000044,
+        "elapsed_wall_s": 0.26965597100002014,
+        "events": 3221,
+        "incoming_attacks_scheduled": true,
+        "mean_s_per_mob": 20.380104598652036,
+        "spatial_mode": "simultaneous_2d_pack",
+        "status": "COMPLETE"
+      },
+      "runs": [
+        {
+          "combat_s": 1400.0,
+          "count": 100,
+          "elapsed_cpu_s": 0.4363320439999998,
+          "elapsed_wall_s": 0.4363637060000656,
+          "events": 3407,
+          "mean_s_per_mob": 20.380104598652032,
+          "recovery_s": 630.5104598652033,
+          "source_action_counts": {
+            "source_spell:8949": 400
+          },
+          "source_control_proc_attempts": 0,
+          "source_control_proc_triggered": 0,
+          "status": "COMPLETE"
+        },
+        {
+          "combat_s": 1400.0,
+          "count": 100,
+          "elapsed_cpu_s": 0.38332989699999986,
+          "elapsed_wall_s": 0.38335445799998524,
+          "events": 3407,
+          "mean_s_per_mob": 20.380104598652032,
+          "recovery_s": 630.5104598652033,
+          "source_action_counts": {
+            "source_spell:8949": 400
+          },
+          "source_control_proc_attempts": 0,
+          "source_control_proc_triggered": 0,
+          "status": "COMPLETE"
+        }
+      ]
+    }
+  },
+  "scenario": "CMANGOS_LEVEL_CLASS_HP_PROXY_NOT_NAMED_FOREVER_NPC",
+  "source_build": "1.60.1.70338",
+  "source_db_sha256": "b09f57d416ff2dcda7585e6921ed5f461aae992ea7e83caadd2752a0aec098ef",
+  "talent_points": 26,
+  "talented_enabled": true,
+  "wall_s": 3.4194558159999815
+}

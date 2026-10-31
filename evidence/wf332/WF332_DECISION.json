@@ -1,0 +1,94 @@
+{
+  "PASS1": false,
+  "PASS2": false,
+  "PASS3": false,
+  "PASS4": false,
+  "PASS5": false,
+  "PASS6": false,
+  "accepted_checkpoints": 0,
+  "checkpoint": "druid_L20_unrestricted",
+  "exact_ir_index_matches": 23,
+  "exact_ir_source_spell_ids": [
+    339,
+    768,
+    770,
+    779,
+    782,
+    1062,
+    1079,
+    1082,
+    1430,
+    2912,
+    5178,
+    5186,
+    5187,
+    5188,
+    5211,
+    5229,
+    5487,
+    6756,
+    6807,
+    6808,
+    8925,
+    8936,
+    8938
+  ],
+  "full_L2_legal_action_set_proven": false,
+  "index_rows": 279,
+  "known_winner_100_mob_replay": {
+    "cpu_s": 1.4864524789999995,
+    "events": 7282,
+    "independent_joint_search": false,
+    "known_prior_winner_seeded": true,
+    "mobs": 100,
+    "s_per_mob": 13.46412880141965,
+    "status": "COMPLETE",
+    "wall_s": 1.4867651959999648
+  },
+  "new_exact_bindings": [
+    1430,
+    5188
+  ],
+  "paid_L2_single_mob_diagnostic": {
+    "NOT_100_MOB_AND_NOT_JOINT": true,
+    "attempts": 160,
+    "best_prefix": [
+      "cat_form:768",
+      "claw:20"
+    ],
+    "best_s_per_mob": 26.89064481103989,
+    "blocked": 66,
+    "cpu_s": 3.0223907899999998,
+    "evaluated": 94,
+    "events": 11639,
+    "wall_s": 3.0232866400000376
+  },
+  "positive_nonengraving_potential": 65,
+  "semantically_assessed": 65,
+  "source_acquisition": {
+    "checkpoint": {
+      "class_key": "druid",
+      "level": 20
+    },
+    "detail_observed_npc_count": 1,
+    "legal_active_denominator_proven": false,
+    "no_acquisition_hint_count": 24,
+    "no_free_rune_or_internal_grants": true,
+    "setup_not_combat_cast_count": 37,
+    "source_hint_unverified_count": 40,
+    "source_role_counts": {
+      "DETAIL_OBSERVED_NPC_TEACHING_NOT_POSSESSION": 1,
+      "EQUIPMENT_RUNE_SETUP_NOT_COMBAT_CAST": 37,
+      "NO_ACQUISITION_HINT_POSSIBLE_INTERNAL_OR_GRANTED_ACTION": 24,
+      "PASSIVE_OR_TALENT_NOT_FREE_CAST": 17,
+      "REMOVED_PENDING_PATCH_APPLICABILITY": 5,
+      "SOURCE_INDEX_ACQUISITION_HINT_UNVERIFIED": 40
+    },
+    "source_rows_at_or_below_level": 124
+  },
+  "source_acquisition_proof_gap": true,
+  "source_rank_paid_search_admitted": 17,
+  "source_snapshot": "canonical Oct8 plus isolated WF322/WF321/WF330/WF331 evidence",
+  "sqlite_integrity": "ok",
+  "strict_30s_300s_saturation_not_run": true
+}

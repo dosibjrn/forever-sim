@@ -1,0 +1,53 @@
+{
+  "capture_id": "wf288_classic_proxy_target_hp_20261012",
+  "source_url": "https://raw.githubusercontent.com/mangoszero/database/325948a78015794e6cc626212bc19fee70c805b2/World/Setup/FullDB/creature_template_classlevelstats.sql",
+  "source_commit": "325948a78015794e6cc626212bc19fee70c805b2",
+  "source_table": "creature_template_classlevelstats",
+  "unit_class": 1,
+  "column": "BaseHealthExp0",
+  "source_status": "CLASSIC_PROXY_NOT_FOREVER_SERVER_VERIFIED",
+  "rows": [
+    {
+      "level": 1,
+      "base_health": 42
+    },
+    {
+      "level": 2,
+      "base_health": 55
+    },
+    {
+      "level": 3,
+      "base_health": 71
+    },
+    {
+      "level": 4,
+      "base_health": 86
+    },
+    {
+      "level": 5,
+      "base_health": 102
+    },
+    {
+      "level": 6,
+      "base_health": 120
+    },
+    {
+      "level": 7,
+      "base_health": 137
+    },
+    {
+      "level": 8,
+      "base_health": 156
+    },
+    {
+      "level": 9,
+      "base_health": 176
+    },
+    {
+      "level": 10,
+      "base_health": 198
+    }
+  ],
+  "validation": "matches preexisting L11=222 and L20=484 in same source table",
+  "previous_bug": "mob_hp() clamped all levels 1-10 to L11=222"
+}

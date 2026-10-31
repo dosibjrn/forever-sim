@@ -1,0 +1,30 @@
+{
+  "ability_db_sha256": "63c56b316c9ed6ba175c5f895870c372fb553fc78962fc8ee15c1e8cd5423244",
+  "accepted_checkpoints": "1/148",
+  "catalogue_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "checkpoint": "druid:L30:unrestricted",
+  "elapsed_wall_s": 28.111242389999916,
+  "l0_item_count": 1974,
+  "limitations": [
+    "build-local stat weights, not proof of global optima",
+    "unknown item effects are explicit, not zero",
+    "P4/P5 independent deadline-bound searches not run"
+  ],
+  "measured_stat_axes": 6,
+  "p1": "PASS",
+  "p2": "PASS",
+  "p3_l0": true,
+  "p3_status": "PARTIAL_MEASURED_CONTEXT_NOT_ALL_AXIS_WEIGHTS",
+  "p3_user_contract_pass": false,
+  "p4_p5_p6": "NOT RUN",
+  "seed_100mob_events": 10011,
+  "seed_100mob_s_per_mob": 19.02888801859612,
+  "seed_attempts": 85,
+  "seed_discovery": "independent bounded L30 joint, no historical seed",
+  "seed_events": 12612,
+  "seed_l2_evaluations": 67,
+  "slots": 18,
+  "source_context_sha256": "9af10712f14741141111b16f27d7b8de2b38ec257a31562908e5a714838b093e",
+  "uncertain_weight_ranking_items": 1869,
+  "unknown_effect_items": 73
+}

@@ -1,0 +1,39 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+_____ test_source_stun_proc_freezes_real_2d_approach_and_resumes[1.0-True] _____
+
+chance = 1.0, should_freeze = True
+
+    @pytest.mark.parametrize('chance,should_freeze',[(0.,False),(1.,True)])
+    def test_source_stun_proc_freezes_real_2d_approach_and_resumes(chance,should_freeze):
+        actor=ActorState.from_ir(ActorDefinition('hero','player',base_stats={}),
+            (ResourceDefinition('health','Health','hero',initial_amount=500,capacity=500),),())
+        targets=[TargetState.with_health('m0',500),TargetState.with_health('m1',500)]
+        rt=CombatRuntime(actor=actor,target=targets[0],other_targets=(targets[1],),
+            spatial_positions_yards={'m0':(0.,0.),'m1':(20.,0.)},
+            enemy_move_speed_yards_s=5.,melee_radius_yards=5.)
+        rt.engage_target('m1');rt.select_target('m1');rt.advance_to(1.)
+        assert rt._enemy_distance('m1')==pytest.approx(15.)
+        action=ActionDefinition('proc','proc','proc','hero',requirements=(),costs=(),
+            cast_time_s=0.,gcd_s=0.,cooldown_s=0.,
+            effects=(ControlEffect('control','stun','enemy',3.,
+                prevents_enemy_actions=True,proc_chance=chance),),provenance=(),
+            metadata={'range_yards':30.})
+        rt.schedule_action(action)
+        rt.advance_to(3.5)
+        if should_freeze:
+>           assert rt._enemy_distance('m1')==pytest.approx(15.)
+E           assert 5.0 == 15.0 ± 1.5e-05
+E             
+E             comparison failed
+E             Obtained: 5.0
+E             Expected: 15.0 ± 1.5e-05
+
+tests/test_wf430_source_compound_stun_tdd.py:174: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_wf430_source_compound_stun_tdd.py::test_source_stun_proc_freezes_real_2d_approach_and_resumes[1.0-True] - assert 5.0 == 15.0 ± 1.5e-05
+  
+  comparison failed
+  Obtained: 5.0
+  Expected: 15.0 ± 1.5e-05
+1 failed, 1 passed in 0.48s

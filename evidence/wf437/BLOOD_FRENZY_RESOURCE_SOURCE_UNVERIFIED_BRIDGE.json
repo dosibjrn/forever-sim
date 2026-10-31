@@ -1,0 +1,17 @@
+{
+  "schema":"forever_dual_critical_resource_observation_v1",
+  "records":[{
+    "class_key":"druid",
+    "talent_id":"blood_frenzy",
+    "target_build":"1.60.1.70338",
+    "source_url":"https://theforeverera.com/en/talents/druid/blood-frenzy/",
+    "resource_amount_source_url":"https://theforeverera.com/en/talents/druid/blood-frenzy/",
+    "resource_amount_source_build":"1.60.1.70374",
+    "resource_bridge_verified":false,
+    "bear_resource":"rage",
+    "bear_amount":5,
+    "cat_resource":"combo_points",
+    "cat_amount":1,
+    "provenance_note":"The 70338 staged catalogue attests 50/100pct proc chances. A later 70374 web page attests +5 Rage and +1 Combo Point. Build transition is NOT source-verified; P2 must remain RED."
+  }]
+}

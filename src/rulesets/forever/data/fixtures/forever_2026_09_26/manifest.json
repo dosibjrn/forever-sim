@@ -1,0 +1,101 @@
+{
+  "classes": [
+    "mage",
+    "paladin",
+    "druid",
+    "warrior"
+  ],
+  "counts": {
+    "druid": {
+      "class_level_stat_rows": 60,
+      "source_roster_spells": 60,
+      "source_roster_talents": 51,
+      "spell_rank_records": 12,
+      "talent_records": 8,
+      "unresolved_records": 92
+    },
+    "mage": {
+      "source_roster_spells": 70,
+      "source_roster_talents": 54,
+      "spell_rank_records": 13,
+      "talent_records": 39,
+      "unresolved_records": 77
+    },
+    "paladin": {
+      "class_level_stat_rows": 60,
+      "source_roster_spells": 53,
+      "source_roster_talents": 52,
+      "spell_rank_records": 17,
+      "talent_records": 36,
+      "unresolved_records": 59
+    },
+    "warrior": {
+      "source_roster_spells": 42,
+      "source_roster_talents": 53,
+      "spell_rank_records": 1,
+      "talent_records": 3,
+      "unresolved_records": 91
+    }
+  },
+  "file_sha256": {
+    "druid/roster.json": "51bec818a71fb4571404b571522109ed96dc03058a0061f163053b211152861b",
+    "druid/spells.json": "19d8abe59c0266f53fc92633fee9a8f8cf65cbcc6d2884943b3b438c70468aa1",
+    "druid/talents.json": "5e9059ac865122917634293940d87a78499931d88ef2803ff830e80d31e63bab",
+    "druid/unresolved.json": "b95250cb5dd8ef65088c5dd8b3245eea64426c13aa2476db6aa26931c9c6c4c1",
+    "mage/roster.json": "2cfa25fc213ff4150f7a7d5d6ef365510b59feb57522cb1bb2017847bb75d154",
+    "mage/spells.json": "99bca6f7e06c7a9f813683cacfb6aad272e2fcac91c3f605731e1588dacf9903",
+    "mage/talents.json": "48ef5398ee1853639595afa04e7585ba55da8053841facf70e59b5203aa78abd",
+    "mage/unresolved.json": "0510e18452bbeb13dac9e0e15d2b10ceff18c1c2645a35e054b199099f521ada",
+    "paladin/roster.json": "7e5c8df23b453429c9f5e5e677ac97e84ce92c373e67116028978701e7c14a6f",
+    "paladin/spells.json": "8f6d2a5211b692dfb892a2001d12842165305dabcee54fe6a10d868bd680fe9e",
+    "paladin/talents.json": "6fe37a4859918b8d47ed6a4f1ca65008d40181831933b0f2f30ce3c82239e55b",
+    "paladin/unresolved.json": "9a91ac757a1aa98489818466ba3a5773ba19997781c6e7bfdc30fd5535b88a1c",
+    "shared/class_level_stats.json": "69063404355affcf8f7eea816bb83c0746e256767ee86ac55ae708986a882759",
+    "warrior/roster.json": "ec9d72697d935b532c863653053a0232feef222dfc5acb8f433426bc1642a046",
+    "warrior/spells.json": "6307b76e00d7e8d591a6892682ee5acbbe5baa6a14205923abeeac5f69714f80",
+    "warrior/talents.json": "803fcb1081697f38f513ea4f4ad1e45fcf707a0460cac7bfefd85e8ac40dc82a",
+    "warrior/unresolved.json": "40d5300642545c1a4e2a8bc8d7c51b55515618e34c1f4394babe7a350e272329"
+  },
+  "normalized_fingerprint": "e3e94ab7eeac17c4d8e5c61a5482124bcb581e5c2ab9386e61c63df3aca12e88",
+  "parser_version": "forever-source-v1",
+  "providers": [
+    "wowhead",
+    "talentsforever",
+    "cmangos"
+  ],
+  "retrieved_at": "2026-09-26",
+  "ruleset": "forever",
+  "schema_version": 1,
+  "snapshot_id": "forever_2026_09_26",
+  "source_index_urls": [
+    "https://www.wowhead.com/forever/spells",
+    "https://talentsforever.com/data.json",
+    "https://github.com/cmangos/mangos-classic/blob/8ec338a1704e7dcb1c0213eb7ed58f9231ade40f/sql/archive/0.12.2/z0144_xxx_01_mangos_player_classlevelstats.sql"
+  ],
+  "source_metadata": {
+    "cmangos": {
+      "blob_sha": "bc3573839e6134f38211420ee75ade1fe09f4d9d",
+      "commit": "8ec338a1704e7dcb1c0213eb7ed58f9231ade40f",
+      "note": "Pinned vanilla/classic player_classlevelstats foundation used for supported Forever class base-mana authority unless target-server data publishes an override.",
+      "repository": "cmangos/mangos-classic"
+    },
+    "talentsforever": {
+      "generated": "2026-09-24",
+      "note": "Client-derived roster/icon snapshot; public export currently contains mixed beta build metadata, so no single build is asserted here."
+    },
+    "wowhead": {
+      "build": null,
+      "note": "Exact entity pages audited through 2026-09-26; build not asserted. M46 refresh corrects Anticipation trait identity/effects and Seal of Command rank/Judgement semantics.",
+      "patch": "1.60.1"
+    }
+  },
+  "warnings": [
+    "Multi-rank legacy talent anchors do not imply complete rank-ID mapping.",
+    "Unresolved source entities are explicit per class.",
+    "M43 normalizes a bounded set of source effects; unsupported/server-scripted semantics remain explicit overrides.",
+    "Warrior is an M45 thin onboarding proof only; its source coverage is explicit but mechanics fidelity is intentionally low.",
+    "M46 2026-09-26 refresh corrects Paladin Anticipation to Forever spell 20096 / trait 135161 and source-normalizes all five Seal of Command ranks.",
+    "M46 pins the inherited Paladin class-level base-mana foundation with exact CMaNGOS provenance; Forever-specific overrides remain source-layer replacements rather than handwritten class fallbacks.",
+    "G05 extends the pinned inherited class-level base-mana foundation to Druid; actor starting state remains source-backed and Forever overrides replace this layer explicitly."
+  ]
+}

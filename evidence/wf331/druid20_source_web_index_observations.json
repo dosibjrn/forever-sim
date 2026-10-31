@@ -1,0 +1,298 @@
+{
+  "schema": "checkpoint_web_l0_v1",
+  "class_key": "druid",
+  "checkpoint_level": 20,
+  "observations": [
+    {
+      "spell_id": 2637,
+      "class_key": "druid",
+      "name": "Hibernate",
+      "source_url": "https://www.wowhead.com/forever/spell=2637",
+      "source_index_sha256": "fb70dd83d644971da6728eca7da77db9926dd068ce893cae89de9725e93f25c9",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/it/spell=2637/hibernate",
+      "observed_at": "2026-10-13",
+      "observed_text": "Forces a Beast or Dragonkin enemy to sleep for up to 20 sec; damage wakes the target.",
+      "source_flags": [
+        "target_type_restriction"
+      ]
+    },
+    {
+      "spell_id": 5215,
+      "class_key": "druid",
+      "name": "Prowl",
+      "source_url": "https://www.wowhead.com/forever/spell=5215",
+      "source_index_sha256": "f4fd74e1d80d55ccf9eb86e8c0c2421de3e630ef968d8f6a314436f37986c2f9",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=5215/prowl",
+      "observed_at": "2026-10-13",
+      "observed_text": "Allows the Druid to prowl in Cat Form, stealthed with 40% lower movement speed. Cannot be used in combat.",
+      "source_flags": [
+        "precombat_only"
+      ]
+    },
+    {
+      "spell_id": 8946,
+      "class_key": "druid",
+      "name": "Cure Poison",
+      "source_url": "https://www.wowhead.com/forever/spell=8946",
+      "source_index_sha256": "a03615c861fbfd7ebcb4d0d9efe498d419002fc247b1078c76c713f6a33fc43e",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=8946/cure-poison",
+      "observed_at": "2026-10-13",
+      "observed_text": "Cures 1 poison effect on the target, using 16% base mana.",
+      "source_flags": [
+        "quest_acquisition_mentioned_in_comments_not_proven"
+      ]
+    },
+    {
+      "spell_id": 16979,
+      "class_key": "druid",
+      "name": "Feral Charge (Bear)",
+      "source_url": "https://www.wowhead.com/forever/spell=16979",
+      "source_index_sha256": "66e11aff8f3ae2c6502e7853810a202c9b57f0e6e14a256d35b9b95d76c6a0db",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=16979/feral-charge-bear",
+      "observed_at": "2026-10-13",
+      "observed_text": "Charge an enemy in Bear Form from 8 to 25 yards, immobilizing and interrupting spells for 4 sec; 5 Rage and 15 sec cooldown.",
+      "source_flags": [
+        "talent_grant_must_be_checked"
+      ]
+    },
+    {
+      "spell_id": 18960,
+      "class_key": "druid",
+      "name": "Teleport: Moonglade",
+      "source_url": "https://www.wowhead.com/forever/spell=18960",
+      "source_index_sha256": "f547a6ab5ef3a549471fbad539ff41f647343091ce780de6f8d6385db62d76fe",
+      "capture_kind": "forever_wowhead_quest_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/quest=94914/moonglade",
+      "observed_at": "2026-10-13",
+      "observed_text": "Teleport to Moonglade is taught for travel during a Druid quest.",
+      "source_flags": [
+        "quest_only_role",
+        "not_spell_detail"
+      ]
+    },
+    {
+      "spell_id": 20484,
+      "class_key": "druid",
+      "name": "Rebirth",
+      "source_url": "https://www.wowhead.com/forever/spell=20484",
+      "source_index_sha256": "62a33a9783a44a4323f702682414e142232faae76d658218d7a6efef55a9362a",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/it/spell=20484/rebirth",
+      "observed_at": "2026-10-13",
+      "observed_text": "Returns the spirit of a dead target to the body, restoring 400 health and 700 mana; uses Maple Seed and has 30 min cooldown.",
+      "source_flags": [
+        "dead_ally_required"
+      ]
+    },
+    {
+      "spell_id": 408124,
+      "class_key": "druid",
+      "name": "Lifebloom",
+      "source_url": "https://www.wowhead.com/forever/spell=408124",
+      "source_index_sha256": "ccd2084f8960a7e0ea2ec3732243350de03690b551fea8ebf7b14f3fd9fdd86b",
+      "capture_kind": "secondary_forever_client_description",
+      "observed_url": "https://foreverdb.net/spell/408124",
+      "observed_at": "2026-10-13",
+      "observed_text": "Heals a target over 7 sec and heals again when the effect ends, restoring part of the mana cost. Secondary source considers this a possible unlearned Season of Discovery leftover.",
+      "source_flags": [
+        "secondary_speculation",
+        "rune_grant_unverified"
+      ]
+    },
+    {
+      "spell_id": 408245,
+      "class_key": "druid",
+      "name": "Lifebloom",
+      "source_url": "https://www.wowhead.com/forever/spell=408245",
+      "source_index_sha256": "bea6e5f6b70297292763bd3711ee387f506f9ec5c9f458a5c98e0eb5a84f4c79",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=408245/lifebloom",
+      "observed_at": "2026-10-13",
+      "observed_text": "Heals a target over 7 sec and heals again when it ends; the page flags this effect as Not an Action.",
+      "source_flags": [
+        "not_an_action",
+        "grant_or_trigger_unverified"
+      ]
+    },
+    {
+      "spell_id": 408247,
+      "class_key": "druid",
+      "name": "Nourish",
+      "source_url": "https://www.wowhead.com/forever/spell=408247",
+      "source_index_sha256": "aaf6fd981c4b47f856870c9f6bfdf689f70d6b6beb9af482015db36e8e4fec71",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=408247/nourish",
+      "observed_at": "2026-10-13",
+      "observed_text": "Heals a friendly target, with a 20% bonus if a related heal over time is active; 2 sec cast.",
+      "source_flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ]
+    },
+    {
+      "spell_id": 410176,
+      "class_key": "druid",
+      "name": "Skull Bash",
+      "source_url": "https://www.wowhead.com/forever/spell=410176",
+      "source_index_sha256": "f01cee01586a58193dc88853e730aa3f05560099a791bc432b84793dc83419f3",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=410176/skull-bash",
+      "observed_at": "2026-10-13",
+      "observed_text": "Charge a target within 13 yards and interrupt spellcasting for 2 sec; 25 Energy or 10 Rage, Cat or Bear Form.",
+      "source_flags": [
+        "rune_grant_unverified"
+      ]
+    },
+    {
+      "spell_id": 411128,
+      "class_key": "druid",
+      "name": "Swipe",
+      "source_url": "https://www.wowhead.com/forever/spell=411128",
+      "source_index_sha256": "c656c0a79f0761cfdf9477f88acbf44dab293ac542a1b9351ce9389ac7417c62",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=411128/swipe",
+      "observed_at": "2026-10-13",
+      "observed_text": "Swipe nearby enemies for 250% weapon damage in Cat Form and generate 1 combo point; 50 Energy.",
+      "source_flags": [
+        "rank_5_level1_not_acquisition_proof"
+      ]
+    },
+    {
+      "spell_id": 414647,
+      "class_key": "druid",
+      "name": "Lacerate",
+      "source_url": "https://www.wowhead.com/forever/spell=414647",
+      "source_index_sha256": "6bd1e16d8007f6e4b08c4093e95d1266451567791c46f709737a6cca0d96cec6",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=414647/lacerate",
+      "observed_at": "2026-10-13",
+      "observed_text": "Weapon Damage - % effect, value 21, without a standalone learned rank or acquisition shown.",
+      "source_flags": [
+        "trigger_or_component_unverified"
+      ]
+    },
+    {
+      "spell_id": 414683,
+      "class_key": "druid",
+      "name": "Living Seed",
+      "source_url": "https://www.wowhead.com/forever/spell=414683",
+      "source_index_sha256": "8c56bb2011efa6c6eded286eda1c348330aeb9b8e12d41beecb17468bf261c22",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=414683/living-seed",
+      "observed_at": "2026-10-13",
+      "observed_text": "Heals a friendly target for 100, with no independent acquisition evidence.",
+      "source_flags": [
+        "proc_or_trigger_unverified"
+      ]
+    },
+    {
+      "spell_id": 414684,
+      "class_key": "druid",
+      "name": "Sunfire",
+      "source_url": "https://www.wowhead.com/forever/spell=414684",
+      "source_index_sha256": "69b522c92b370870812ee078336112a5f35d8a21c513db2558b9006ad0c8e684",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=414684/sunfire",
+      "observed_at": "2026-10-13",
+      "observed_text": "Burns an enemy for Nature damage and then additional Nature damage over 12 sec; uses 21% base mana.",
+      "source_flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ]
+    },
+    {
+      "spell_id": 414687,
+      "class_key": "druid",
+      "name": "Sunfire",
+      "source_url": "https://www.wowhead.com/forever/spell=414687",
+      "source_index_sha256": "2c21614772a0e923515765814719e97faca9f5defa79853b6c8f282f9fa3f6b7",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=414687/sunfire",
+      "observed_at": "2026-10-13",
+      "observed_text": "Burns an enemy for Nature damage and then additional Nature damage over 12 sec in Bear Form; 20 Rage.",
+      "source_flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ]
+    },
+    {
+      "spell_id": 414689,
+      "class_key": "druid",
+      "name": "Sunfire",
+      "source_url": "https://www.wowhead.com/forever/spell=414689",
+      "source_index_sha256": "97dd69735ab29516b2af564d662d4ae3da253d366a720a409fda31c5bf3d26cf",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=414689/sunfire",
+      "observed_at": "2026-10-13",
+      "observed_text": "Burns an enemy for Nature damage and then additional Nature damage over 12 sec in Cat Form; 40 Energy and awards 1 combo point.",
+      "source_flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ]
+    },
+    {
+      "spell_id": 417123,
+      "class_key": "druid",
+      "name": "Enhanced Restoration",
+      "source_url": "https://www.wowhead.com/forever/spell=417123",
+      "source_index_sha256": "9527da7c01bc92fd4587bc44aabbbd0328a3684038a9af08cc951c396708b176",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=417123/enhanced-restoration",
+      "observed_at": "2026-10-13",
+      "observed_text": "Rejuvenation and Regrowth can now be active on targets affected by another Druid; overrides actionbar spell behavior.",
+      "source_flags": [
+        "passive_modifier",
+        "rune_grant_unverified"
+      ]
+    },
+    {
+      "spell_id": 417148,
+      "class_key": "druid",
+      "name": "Efflorescence",
+      "source_url": "https://www.wowhead.com/forever/spell=417148",
+      "source_index_sha256": "1a848549fbd537d6e37f026d94c5f844682564db3fb467e5f1a0759f7e16f743",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=417148/efflorescence",
+      "observed_at": "2026-10-13",
+      "observed_text": "Heals all party members within 15 yards of a target; effect is a triggered party heal.",
+      "source_flags": [
+        "trigger_or_component_unverified"
+      ]
+    },
+    {
+      "spell_id": 417157,
+      "class_key": "druid",
+      "name": "Starsurge",
+      "source_url": "https://www.wowhead.com/forever/spell=417157",
+      "source_index_sha256": "5cd7fe10fec76bc8c93a77bf81e240d0f68283d4fc036b5da131984d1b22c48d",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=417157/starsurge",
+      "observed_at": "2026-10-13",
+      "observed_text": "Deals Arcane damage and increases damage done by your next Starfire cast by 80% for 15 sec; 6 sec cooldown.",
+      "source_flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ]
+    },
+    {
+      "spell_id": 439748,
+      "class_key": "druid",
+      "name": "Starfall",
+      "source_url": "https://www.wowhead.com/forever/spell=439748",
+      "source_index_sha256": "ab1e70a06ed64f13ea557145ba2cb989f1456be5ef25a1e32bae3efb5d28397d",
+      "capture_kind": "forever_wowhead_search_indexed",
+      "observed_url": "https://www.wowhead.com/forever/spell=439748/starfall",
+      "observed_at": "2026-10-13",
+      "observed_text": "Summon a flurry of stars for 10 sec, periodically triggering Arcane damage on nearby targets, up to 20 stars.",
+      "source_flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ]
+    }
+  ],
+  "notes": "Indexed search text, NOT fetched raw HTML. Not evidence of trainer/rune acquisition, live client build or legal L2. 439756 has no reliable same-ID observation and is intentionally unassessed."
+}

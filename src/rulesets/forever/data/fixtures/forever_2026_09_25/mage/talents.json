@@ -1,0 +1,1678 @@
+[
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_shadow_manaburn",
+    "local_key": "arcane_concentration",
+    "max_rank": 5,
+    "name": "Arcane Concentration",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "7a2bc8927f94d3edca118e71406d6425df44895f39274b228fe8df2cc2efce8b",
+        "entity_id": 11213,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11213/arcane-concentration"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "inv_ability_mage_radiantspark",
+    "local_key": "arcane_geometry",
+    "max_rank": 2,
+    "name": "Arcane Geometry",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "4d84984db7e3583a30dc3ef4611297821bc965d8618536be00314f10a53bf04c",
+        "entity_id": 11247,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11247/arcane-geometry"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_nature_wispsplode",
+    "local_key": "arcane_impact",
+    "max_rank": 3,
+    "name": "Arcane Impact",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "5c4e129bfe1cdb730c78236dee4cbf794e92bb5c36ad715ad54f4969a8b3523c",
+        "entity_id": 11242,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11242/arcane-impact"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_shadow_teleport",
+    "local_key": "arcane_instability",
+    "max_rank": 3,
+    "name": "Arcane Instability",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "203280b5fff6bdc69996589604da5d97c3e1034f9eac138a90cf9ae318954067",
+        "entity_id": 15060,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=15060/arcane-instability"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_shadow_siphonmana",
+    "local_key": "arcane_meditation",
+    "max_rank": 3,
+    "name": "Arcane Meditation",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "a82f0e0b396d92661eaf8c4d50de5d3f129cb8deb3edbb951fa93776a1ba6fd4",
+        "entity_id": 18464,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=18464/arcane-meditation"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_shadow_charm",
+    "local_key": "arcane_mind",
+    "max_rank": 5,
+    "name": "Arcane Mind",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "c2c1e62f93bfb04dce936a9593c32361f7480217285d30d15a77f926a1dbb748",
+        "entity_id": 11232,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11232/arcane-mind"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_nature_lightning",
+    "local_key": "arcane_power",
+    "max_rank": 1,
+    "name": "Arcane Power",
+    "prerequisite": "presence_of_mind",
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "6ad70410f8f24fbb75254b413267fe041fbb4c917a505498241020b1ccbb14ca",
+          "entity_id": 12042,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=12042/arcane-power"
+        },
+        "spell_id": 12042,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "6ad70410f8f24fbb75254b413267fe041fbb4c917a505498241020b1ccbb14ca",
+        "entity_id": 12042,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12042/arcane-power"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_arcane_arcaneresilience",
+    "local_key": "arcane_resilience",
+    "max_rank": 2,
+    "name": "Arcane Resilience",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "521fd9d15ef902be006707265e9540562f11904687b182ea155dac0160b04012",
+        "entity_id": 28574,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=28574/arcane-resilience"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_shadow_detectlesserinvisibility",
+    "local_key": "arcane_shielding",
+    "max_rank": 2,
+    "name": "Arcane Shielding",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "f47da75e2684d6558b643f9f3f6e70cc2b8c1063d7b01154a7dad1cce87a5b19",
+        "entity_id": 11252,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11252/arcane-shielding"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_shadow_darkritual",
+    "local_key": "arctic_reach",
+    "max_rank": 2,
+    "name": "Arctic Reach",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "2270b5cdf5f412b948f434331c04135787367614165dedc2cd488356deb0f29d",
+        "entity_id": 16758,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=16758/arctic-reach"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_holy_excorcism_02",
+    "local_key": "blast_wave",
+    "max_rank": 1,
+    "name": "Blast Wave",
+    "prerequisite": "pyroblast",
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "dd69029e8819cc24dc8b5dcb34f76de346ac9649f17367b95ee279754d044031",
+          "entity_id": 11113,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=11113/blast-wave"
+        },
+        "spell_id": 11113,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "dd69029e8819cc24dc8b5dcb34f76de346ac9649f17367b95ee279754d044031",
+        "entity_id": 11113,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11113/blast-wave"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "fire"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_wizardmark",
+    "local_key": "cold_snap",
+    "max_rank": 1,
+    "name": "Cold Snap",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "63e9afc6a0e58d5bd58e85aee1496b51e8c64358fd999b5eb3482801102baa2a",
+          "entity_id": 12472,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=12472/cold-snap"
+        },
+        "spell_id": 12472,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "63e9afc6a0e58d5bd58e85aee1496b51e8c64358fd999b5eb3482801102baa2a",
+        "entity_id": 12472,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12472/cold-snap"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_fire_sealoffire",
+    "local_key": "combustion",
+    "max_rank": 1,
+    "name": "Combustion",
+    "prerequisite": "critical_mass",
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "d48b1beea0e35ed627306b4fc0c00f31beac1b7cd1baf225d23a8eb8a97cab55",
+          "entity_id": 11129,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=11129/combustion"
+        },
+        "spell_id": 11129,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "d48b1beea0e35ed627306b4fc0c00f31beac1b7cd1baf225d23a8eb8a97cab55",
+        "entity_id": 11129,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11129/combustion"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "fire"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_nature_wispheal",
+    "local_key": "critical_mass",
+    "max_rank": 3,
+    "name": "Critical Mass",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "ff4916a5e52c8965d68ee17c1c5cc35f1426eebd9f5fefff9422ed9a2f9057d9",
+        "entity_id": 11369,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11369/critical-mass"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "fire"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_ice_magicdamage",
+    "local_key": "elemental_precision",
+    "max_rank": 5,
+    "name": "Elemental Precision",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "f0330ff633935695192ef6283a9224b33639d7d703a5cbe3974fb7a63f310567",
+        "entity_id": 29438,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=29438/elemental-precision"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "ability_mage_wintersgrasp",
+    "local_key": "fingers_of_frost",
+    "max_rank": 2,
+    "name": "Fingers of Frost",
+    "prerequisite": "ice_lance",
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "1a0589172c362026919e9e2d9fd02b53eb6362213c2aabb55fc74e38d278e195",
+        "entity_id": 400647,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=400647/fingers-of-frost"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_stun",
+    "local_key": "frost_channeling",
+    "max_rank": 3,
+    "name": "Frost Channeling",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "ff802bd46d305befba65a4c0d7b186e486dec8e0b0712686494a479ba8a66616",
+        "entity_id": 12519,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12519/frost-channeling"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_frostward",
+    "local_key": "frost_warding",
+    "max_rank": 2,
+    "name": "Frost Warding",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "27647847799e07dc987ca771203373bc9ea8ffc295522257a5af05f5a19718dd",
+        "entity_id": 11189,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11189/frost-warding"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_frostarmor",
+    "local_key": "frostbite",
+    "max_rank": 3,
+    "name": "Frostbite",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "6d69127d56f346ed366965e7d863a9c2561afa4fcdccab7a855c265f75b8641d",
+        "entity_id": 12497,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12497/frostbite"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "ability_mage_hotstreak",
+    "local_key": "hot_streak",
+    "max_rank": 1,
+    "name": "Hot Streak",
+    "prerequisite": "pyroblast",
+    "rank_records": [
+      {
+        "effects": [
+          {
+            "base_value": 0.25,
+            "coefficient": null,
+            "metadata": {
+              "duration_s": 15.0,
+              "max_stacks": 3,
+              "target": "pyroblast",
+              "trigger_spells": [
+                "fireball",
+                "frostfire_bolt",
+                "fire_blast",
+                "scorch"
+              ]
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "cast_time_reduction_per_stack",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Each qualifying non-periodic critical grants a 15s stack; each stack reduces Pyroblast cast time by 25%, up to 3.",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "57c67118c51a07e2e34dd95ee57468c9d15043e376e5f370f328705cc8e8ead8",
+          "entity_id": 400624,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=400624/hot-streak"
+        },
+        "spell_id": 400624,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "57c67118c51a07e2e34dd95ee57468c9d15043e376e5f370f328705cc8e8ead8",
+        "entity_id": 400624,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=400624/hot-streak"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "fire"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_ice_lament",
+    "local_key": "ice_barrier",
+    "max_rank": 1,
+    "name": "Ice Barrier",
+    "prerequisite": "cold_snap",
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "4432ae419e29020fad3ae8f6250f448f205383e5ee8824282a96a9bdd4580f10",
+          "entity_id": 11426,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=11426/ice-barrier"
+        },
+        "spell_id": 11426,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "4432ae419e29020fad3ae8f6250f448f205383e5ee8824282a96a9bdd4580f10",
+        "entity_id": 11426,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11426/ice-barrier"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_frost",
+    "local_key": "ice_block",
+    "max_rank": 1,
+    "name": "Ice Block",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "754a45b553d28e2bb89d589dfe350bd8284ba8d70a0e31d18a87d1a994ea7c7c",
+          "entity_id": 11958,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=11958/ice-block"
+        },
+        "spell_id": 11958,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "754a45b553d28e2bb89d589dfe350bd8284ba8d70a0e31d18a87d1a994ea7c7c",
+        "entity_id": 11958,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11958/ice-block"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_iceshard",
+    "local_key": "ice_shards",
+    "max_rank": 5,
+    "name": "Ice Shards",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "2af5443cf480e5f5ae4d1e587c58380ec12b1cc590e3d6a874570d31c13ec824",
+        "entity_id": 15053,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=15053/ice-shards"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_freezingbreath",
+    "local_key": "imp_frost_nova",
+    "max_rank": 2,
+    "name": "Improved Frost Nova",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "27af1b42d14446fdbfd63aeedd687ad46b50d42ca906413d662e037de9182070",
+        "entity_id": 12475,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12475/improved-frost-nova"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_icestorm",
+    "local_key": "improved_blizzard",
+    "max_rank": 3,
+    "name": "Improved Blizzard",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "0f99bea69b671bf70da0e89b2da86e62101a64c031d31d1a52af6ed1c9cf3d38",
+        "entity_id": 12488,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12488/improved-blizzard"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_nature_starfall",
+    "local_key": "improved_channeling",
+    "max_rank": 5,
+    "name": "Improved Channeling",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "faa063630c6a6a8311647c9f1cf7997418d084e2610763d2e77cc70217e0fa01",
+        "entity_id": 11237,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11237/improved-channeling"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_glacier",
+    "local_key": "improved_cone_of_cold",
+    "max_rank": 3,
+    "name": "Improved Cone of Cold",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "24184f730cea5773aef2fd6de913e6cd5b9ed153a615fe7bcaefbb1e000f82fa",
+        "entity_id": 11190,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11190/improved-cone-of-cold"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_iceshock",
+    "local_key": "improved_counterspell",
+    "max_rank": 2,
+    "name": "Improved Counterspell",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "13be8aba0029ff9579c5f330bb04a3705f660d9779225a8b758dc3d1bb81cf77",
+        "entity_id": 12598,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12598/improved-counterspell"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_fire_flameshock",
+    "local_key": "incineration",
+    "max_rank": 3,
+    "name": "Incineration",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "9b6ae724c4ff975e65880d82757dc487d98b56a06a74b91be4fe4808a0841a32",
+        "entity_id": 18459,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=18459/incineration"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "fire"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_nature_astralrecalgroup",
+    "local_key": "magic_absorption",
+    "max_rank": 2,
+    "name": "Magic Absorption",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "ff5210bcd7fdfea8641d0b29e9742e2268422e5ed93513f6426442656424dbb7",
+        "entity_id": 29441,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=29441/magic-absorption"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_fire_masterofelements",
+    "local_key": "master_elements",
+    "max_rank": 3,
+    "name": "Master of Elements",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "a129ac0a9112605183429b65cf70b4bac7128389535ad81874018fecae50528d",
+        "entity_id": 29074,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=29074/master-of-elements"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "fire"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "ability_mage_missilebarrage",
+    "local_key": "missile_barrage",
+    "max_rank": 1,
+    "name": "Missile Barrage",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [
+          {
+            "normalization_status": "ambiguous",
+            "proc_chance": 0.5,
+            "raw_text_summary": "Arcane Blast 40%; Fireball/Frostbolt/Frostfire Bolt 20%; page aura proc chance 50%",
+            "source_effect_index": 1,
+            "source_effect_type": "proc_trigger_spell"
+          },
+          {
+            "normalization_status": "unsupported",
+            "raw_text_summary": "Missile Barrage behavior includes server-side script",
+            "server_side_script": true,
+            "source_effect_index": 2,
+            "source_effect_type": "dummy"
+          }
+        ],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "1443ca2e56e4ba2dc6d099d8c10768042752e3bf51860e71a1bdf57c1febdab7",
+          "entity_id": 400588,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=400588/missile-barrage"
+        },
+        "spell_id": 400588,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "1443ca2e56e4ba2dc6d099d8c10768042752e3bf51860e71a1bdf57c1febdab7",
+        "entity_id": 400588,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=400588/missile-barrage"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_wisp",
+    "local_key": "permafrost",
+    "max_rank": 3,
+    "name": "Permafrost",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "db4bb3cfc550a968cacc6684872e7f7a1e79771bb07c4be91a5871d4b35e14ac",
+        "entity_id": 11175,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11175/permafrost"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_frostbolt",
+    "local_key": "piercing_ice",
+    "max_rank": 3,
+    "name": "Piercing Ice",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [
+          {
+            "base_value": 0.02,
+            "coefficient": null,
+            "metadata": {
+              "target": "frost_spells"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "school_damage_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Piercing Ice rank 1: +2% Frost spell damage",
+            "school": "frost",
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "998f87c36eb613b750a93753e0a065004fed6467f0db9c402057b25b9a0c99ac",
+          "entity_id": 11151,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; normalized rank effects audited for M43."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=11151/piercing-ice"
+        },
+        "spell_id": 11151,
+        "trait_id": 135303
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.04,
+            "coefficient": null,
+            "metadata": {
+              "target": "frost_spells"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "school_damage_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Piercing Ice rank 2: +4% Frost spell damage",
+            "school": "frost",
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 2,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "998f87c36eb613b750a93753e0a065004fed6467f0db9c402057b25b9a0c99ac",
+          "entity_id": 11151,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; normalized rank effects audited for M43."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=11151/piercing-ice"
+        },
+        "spell_id": null,
+        "trait_id": 135303
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.06,
+            "coefficient": null,
+            "metadata": {
+              "target": "frost_spells"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "school_damage_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Piercing Ice rank 3: +6% Frost spell damage",
+            "school": "frost",
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 3,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "998f87c36eb613b750a93753e0a065004fed6467f0db9c402057b25b9a0c99ac",
+          "entity_id": 11151,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; normalized rank effects audited for M43."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=11151/piercing-ice"
+        },
+        "spell_id": null,
+        "trait_id": 135303
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "998f87c36eb613b750a93753e0a065004fed6467f0db9c402057b25b9a0c99ac",
+        "entity_id": 11151,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; normalized rank effects audited for M43."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11151/piercing-ice"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_nature_enchantarmor",
+    "local_key": "presence_of_mind",
+    "max_rank": 1,
+    "name": "Presence of Mind",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "d7c2e67121d38c48fda97d0914970cbb4d76fda621f8b3076704c774dfe40941",
+          "entity_id": 12043,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=12043/presence-of-mind"
+        },
+        "spell_id": 12043,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "d7c2e67121d38c48fda97d0914970cbb4d76fda621f8b3076704c774dfe40941",
+        "entity_id": 12043,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12043/presence-of-mind"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_frostshock",
+    "local_key": "shatter",
+    "max_rank": 3,
+    "name": "Shatter",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "f27c066c3365b9f9981875ea1d8f23e2e544aba4f735918fefca1fc3a1d23d46",
+        "entity_id": 11170,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11170/shatter"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_fire_lavaspawn",
+    "local_key": "wake_of_fire",
+    "max_rank": 2,
+    "name": "Wake of Fire",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "fd41c65676ded89a6e64f64ee660950ee36a2e3bef16584a29f25994f5ad6cfa",
+        "entity_id": 11078,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=11078/wake-of-fire"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "fire"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "inv_wand_01",
+    "local_key": "wand_specialization",
+    "max_rank": 2,
+    "name": "Wand Specialization",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "1b74e386ac96f46c2b60dd79ce650c9051cac6a89ae933959805a7bcc021c7c0",
+        "entity_id": 6089,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=6089/wand-specialization"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arcane"
+  },
+  {
+    "aliases": [],
+    "class_key": "mage",
+    "col": null,
+    "icon_key": "spell_frost_chillingblast",
+    "local_key": "winters_chill",
+    "max_rank": 5,
+    "name": "Winter's Chill",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "edaa041cf6f5f151846336bfb43c04c004cff9944a3067a274fd22374089580e",
+        "entity_id": 28595,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=28595/winter-s-chill"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "frost"
+  }
+]

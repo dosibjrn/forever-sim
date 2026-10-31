@@ -1,0 +1,22 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_party_aura_partial_semantics_explicitly_blocks_p2_certification _____
+
+    def test_party_aura_partial_semantics_explicitly_blocks_p2_certification():
+        from tests.test_wf430_p2_whole_gate_26point_tdd import audit
+        report=audit()
+        leader=next(row for row in report['structural_witnesses']
+                    if row['talent_id']=='leader_of_the_pack' and row['rank']==1)
+>       assert leader['status']=='SOURCE_RANK_PARTIAL_RUNTIME_SEMANTICS'
+E       AssertionError: assert 'MODIFIER_PRE...TY_NOT_PROVEN' == 'SOURCE_RANK_...IME_SEMANTICS'
+E         
+E         - SOURCE_RANK_PARTIAL_RUNTIME_SEMANTICS
+E         + MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN
+
+tests/test_wf436_feral_conditional_crit_healing_p2_tdd.py:148: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_wf436_feral_conditional_crit_healing_p2_tdd.py::test_party_aura_partial_semantics_explicitly_blocks_p2_certification - AssertionError: assert 'MODIFIER_PRE...TY_NOT_PROVEN' == 'SOURCE_RANK_...IME_SEMANTICS'
+  
+  - SOURCE_RANK_PARTIAL_RUNTIME_SEMANTICS
+  + MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN
+1 failed, 7 deselected in 0.59s

@@ -1,0 +1,41 @@
+{
+  "L0_is_joint_search_score": false,
+  "PASS1": false,
+  "PASS2": false,
+  "PASS3": false,
+  "PASS4": false,
+  "PASS5": false,
+  "PASS6": false,
+  "accepted_checkpoints": 0,
+  "assessed_by_numeric_ir_or_text_role": 52,
+  "auxiliary_nonbuttons_needing_parent_coverage": 4,
+  "checkpoint": "Druid L20 unrestricted",
+  "index_scope_by_type": {
+    "AUXILIARY_OR_PASSIVE_NOT_STANDALONE_ACTION": 4,
+    "IR_CONTEXT_ONLY_NOT_SOURCE_INDEX_ROW": 2,
+    "PASSIVE_OR_TALENT_UNRESOLVED": 17,
+    "POTENTIALLY_LEGAL_RANK_ACQUISITION_UNRESOLVED": 52,
+    "REMOVED_CHANGESET_BUILD_APPLICABILITY_UNRESOLVED": 5,
+    "RUNE_CONDITIONAL_GRANT_DISABLED_TALENT_PATH_UNVERIFIED": 9,
+    "RUNE_ENGRAVING_DISABLED_BY_DEFAULT": 37
+  },
+  "ingested_source_observations": {
+    "L2_legal_action_promotion": 0,
+    "canonical_database_mutated": false,
+    "capture_kind_counts": {
+      "forever_wowhead_quest_search_indexed": 1,
+      "forever_wowhead_search_indexed": 18,
+      "secondary_forever_client_description": 1
+    },
+    "observations_ingested": 20
+  },
+  "legal_acquisition_and_parent_effect_missing": true,
+  "no_new_geared_discovery": true,
+  "paid_search_admitted": 17,
+  "potentially_legal_positive_ranks": 52,
+  "rune_conditional_grants_blocked_without_talent": 9,
+  "rune_engraving_rows_disabled": 37,
+  "schema": "wf332_rune_default_and_l0_gate_v1",
+  "unknown_effect_roles": 0,
+  "use_runes_default": false
+}

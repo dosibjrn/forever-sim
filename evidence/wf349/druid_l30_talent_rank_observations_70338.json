@@ -1,0 +1,449 @@
+{
+  "schema": "forever_talent_l0_external_rank_observations_v1",
+  "class_key": "druid",
+  "source_build": "1.60.1.70338",
+  "as_of": "2026-10-13",
+  "method": "forever_era_current_70338_observations_plus_wf336_level20",
+  "observations": [
+    {
+      "talent_id": "natures_focus",
+      "tree_key": "restoration",
+      "row": 0,
+      "max_rank": 5,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "effect_domain": "casting_pushback_avoidance_probability",
+      "target": "arcane_and_nature_casts",
+      "rank_values": [
+        0.14,
+        0.28,
+        0.42,
+        0.56,
+        0.7
+      ],
+      "condition": "incoming_damage_while_casting"
+    },
+    {
+      "talent_id": "brutal_impact",
+      "tree_key": "feral",
+      "row": 1,
+      "max_rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "effect_domain": "stun_duration_bonus_seconds",
+      "target": "bash_and_pounce",
+      "rank_values": [
+        0.5,
+        1.0
+      ],
+      "additional_effect_domain": "bash_cooldown_reduction_seconds",
+      "additional_rank_values": [
+        15.0,
+        30.0
+      ],
+      "condition": "control_ability_available",
+      "additional_target": "bash"
+    },
+    {
+      "talent_id": "subtlety",
+      "tree_key": "restoration",
+      "row": 1,
+      "max_rank": 3,
+      "source_url": "https://theforeverera.com/en/talents/druid/subtlety/",
+      "effect_domain": "spell_threat_reduction_fraction",
+      "target": "nature_and_arcane_spells",
+      "rank_values": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "condition": "competing_threat_target"
+    },
+    {
+      "talent_id": "shredding_attacks",
+      "tree_key": "feral",
+      "row": 2,
+      "max_rank": 3,
+      "source_url": "https://theforeverera.com/en/talents/druid/shredding-attacks/",
+      "effect_domain": "shred_energy_cost_reduction",
+      "target": "shred",
+      "rank_values": [
+        6.0,
+        12.0,
+        18.0
+      ],
+      "additional_effect_domain": "lacerate_rage_cost_reduction",
+      "additional_rank_values": [
+        1.0,
+        2.0,
+        3.0
+      ],
+      "condition": "relevant_ability_learned_and_executable",
+      "additional_target": "lacerate"
+    },
+    {
+      "talent_id": "feral_charge",
+      "tree_key": "feral",
+      "row": 2,
+      "max_rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-charge/",
+      "effect_domain": "charge_immobilize_interrupt_seconds",
+      "target": "feral_charge_talent_grant",
+      "rank_values": [
+        4.0
+      ],
+      "condition": "bear_form_5_rage_or_cat_form_positioning"
+    },
+    {
+      "talent_id": "insect_swarm",
+      "tree_key": "balance",
+      "row": 3,
+      "max_rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/insect-swarm/",
+      "effect_domain": "nature_dot_base_damage",
+      "target": "insect_swarm",
+      "rank_values": [
+        48
+      ],
+      "condition": "cast_when_talent_learned",
+      "additional_effect_domain": "target_hit_chance_reduction_fraction",
+      "additional_target": "insect_swarm",
+      "additional_rank_values": [
+        0.02
+      ]
+    },
+    {
+      "talent_id": "improved_starfire",
+      "tree_key": "balance",
+      "row": 3,
+      "max_rank": 5,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+      "effect_domain": "starfire_cast_time_reduction_seconds",
+      "target": "starfire",
+      "rank_values": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5
+      ],
+      "condition": "starfire_is_cast",
+      "additional_effect_domain": "starfire_stun_chance",
+      "additional_target": "starfire",
+      "additional_rank_values": [
+        0.03,
+        0.06,
+        0.09,
+        0.12,
+        0.15
+      ]
+    },
+    {
+      "talent_id": "vengeance",
+      "tree_key": "balance",
+      "row": 3,
+      "max_rank": 5,
+      "source_url": "https://theforeverera.com/en/talents/druid/vengeance/",
+      "effect_domain": "spell_critical_damage_bonus_fraction",
+      "target": "arcane_and_nature_spells",
+      "rank_values": [
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        1.0
+      ],
+      "condition": "crit_and_cast_relevant_spell",
+      "prerequisite": {
+        "talent_id": "improved_moonfire",
+        "required_rank": 2
+      }
+    },
+    {
+      "talent_id": "natures_grace",
+      "tree_key": "balance",
+      "row": 4,
+      "max_rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-grace/",
+      "effect_domain": "on_spell_crit_cast_speed_bonus_fraction",
+      "target": "nonperiodic_spell_crit",
+      "rank_values": [
+        0.1
+      ],
+      "condition": "critical_hit_then_next_3s",
+      "additional_effect_domain": "on_spell_crit_gcd_reduction_fraction",
+      "additional_target": "nonperiodic_spell_crit",
+      "additional_rank_values": [
+        0.1
+      ]
+    },
+    {
+      "talent_id": "eclipse",
+      "tree_key": "balance",
+      "row": 4,
+      "max_rank": 3,
+      "source_url": "https://theforeverera.com/en/talents/druid/eclipse/",
+      "effect_domain": "starfire_cast_time_reduction_seconds_per_charge",
+      "target": "wrath_then_starfire",
+      "rank_values": [
+        0.17,
+        0.33,
+        0.5
+      ],
+      "condition": "two_starfires_per_wrath_up_to_4_charges"
+    },
+    {
+      "talent_id": "overgrowth",
+      "tree_key": "balance",
+      "row": 4,
+      "max_rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/overgrowth/",
+      "effect_domain": "extra_concurrent_rooted_targets",
+      "target": "entangling_roots",
+      "rank_values": [
+        1,
+        2
+      ],
+      "condition": "root_multi_target_availability"
+    },
+    {
+      "talent_id": "primal_bite",
+      "tree_key": "feral",
+      "row": 3,
+      "max_rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/primal-bite/",
+      "effect_domain": "attack_flat_weapon_addition",
+      "target": "primal_bite",
+      "rank_values": [
+        26
+      ],
+      "condition": "primal_bite_ability",
+      "additional_effect_domain": "normal_weapon_damage_multiplier",
+      "additional_target": "primal_bite",
+      "additional_rank_values": [
+        1.0
+      ],
+      "prerequisite": {
+        "talent_id": "savage_fury",
+        "required_rank": 2
+      }
+    },
+    {
+      "talent_id": "shifting_power",
+      "tree_key": "feral",
+      "row": 3,
+      "max_rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/shifting-power/",
+      "effect_domain": "on_use_energy_restoration",
+      "target": "shifting_power",
+      "rank_values": [
+        40
+      ],
+      "condition": "need_energy_not_full",
+      "prerequisite": {
+        "talent_id": "shredding_attacks",
+        "required_rank": 3
+      }
+    },
+    {
+      "talent_id": "predatory_strikes",
+      "tree_key": "feral",
+      "row": 3,
+      "max_rank": 3,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "effect_domain": "form_melee_attack_power_from_level",
+      "target": "cat_bear_direbear",
+      "rank_values": [
+        15,
+        30,
+        45
+      ],
+      "condition": "in_feral_form",
+      "source_formula": "0.5 * talent_rank * player_level ; evaluated at L30"
+    },
+    {
+      "talent_id": "blood_frenzy",
+      "tree_key": "feral",
+      "row": 3,
+      "max_rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+      "effect_domain": "critical_bear_rage_proc_probability",
+      "target": "bear_direbear",
+      "rank_values": [
+        0.5,
+        1.0
+      ],
+      "condition": "bear_or_cat_crit",
+      "additional_effect_domain": "critical_cat_bonus_combo_point_proc_probability",
+      "additional_target": "cat_combo_generators",
+      "additional_rank_values": [
+        0.5,
+        1.0
+      ],
+      "prerequisite": {
+        "talent_id": "sharpened_claws",
+        "required_rank": 2
+      }
+    },
+    {
+      "talent_id": "improved_shifting_power",
+      "tree_key": "feral",
+      "row": 4,
+      "max_rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+      "effect_domain": "shifting_power_cooldown_reduction_seconds",
+      "target": "shifting_power",
+      "rank_values": [
+        4,
+        8
+      ],
+      "condition": "when_shifting_power_learned",
+      "prerequisite": {
+        "talent_id": "shifting_power",
+        "required_rank": 1
+      }
+    },
+    {
+      "talent_id": "leader_of_the_pack",
+      "tree_key": "feral",
+      "row": 4,
+      "max_rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/leader-of-the-pack/",
+      "effect_domain": "form_party_crit_chance_fraction",
+      "target": "party_cat_bear_direbear",
+      "rank_values": [
+        0.03
+      ],
+      "condition": "druid_in_feral_form"
+    },
+    {
+      "talent_id": "swiftmend",
+      "tree_key": "restoration",
+      "row": 3,
+      "max_rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/swiftmend/",
+      "effect_domain": "instant_hot_full_remaining_heal_multiplier",
+      "target": "rejuvenation_or_regrowth",
+      "rank_values": [
+        1.0
+      ],
+      "condition": "requires_active_regrowth_or_rejuvenation"
+    },
+    {
+      "talent_id": "improved_tranquility",
+      "tree_key": "restoration",
+      "row": 4,
+      "max_rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+      "effect_domain": "tranquility_cooldown_reduction_fraction",
+      "target": "tranquility",
+      "rank_values": [
+        0.3,
+        0.6
+      ],
+      "condition": "trained_tranquility",
+      "additional_effect_domain": "tranquility_threat_reduction_fraction",
+      "additional_target": "tranquility",
+      "additional_rank_values": [
+        0.5,
+        1.0
+      ]
+    },
+    {
+      "talent_id": "living_spirit",
+      "tree_key": "restoration",
+      "row": 4,
+      "max_rank": 3,
+      "source_url": "https://theforeverera.com/en/talents/druid/living-spirit/",
+      "effect_domain": "spirit_stat_increase_fraction",
+      "target": "spirit",
+      "rank_values": [
+        0.05,
+        0.1,
+        0.15
+      ],
+      "condition": "always"
+    },
+    {
+      "talent_id": "natures_swiftness",
+      "tree_key": "restoration",
+      "row": 4,
+      "max_rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-swiftness/",
+      "effect_domain": "instant_next_nature_cast_count",
+      "target": "nature_spell",
+      "rank_values": [
+        1
+      ],
+      "condition": "active_and_cast",
+      "prerequisite": {
+        "talent_id": "naturalist",
+        "required_rank": 5
+      }
+    }
+  ],
+  "observed_unreachable_talent_positions": [
+    {
+      "indexed_talent_id": "moonkin_form",
+      "tree_key": "balance",
+      "row": 6,
+      "source_url": "https://theforeverera.com/en/talents/druid/moonkin-form/",
+      "client_build": "1.60.1.70338",
+      "identity_status": "SOURCE_NAME_IDENTICAL",
+      "min_level_without_legacy": 40
+    },
+    {
+      "indexed_talent_id": "natural_reaction",
+      "tree_key": "feral",
+      "row": 5,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "client_build": "1.60.1.70338",
+      "identity_status": "SOURCE_NAME_IDENTICAL",
+      "min_level_without_legacy": 35
+    },
+    {
+      "indexed_talent_id": "predatory_instincts",
+      "tree_key": "feral",
+      "row": 4,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "client_build": "1.60.1.70338",
+      "identity_status": "STALE_OLD_TALENT_NAME_REPLACED_WITH_NATURAL_INSTINCT",
+      "min_level_without_legacy": 30
+    },
+    {
+      "indexed_talent_id": "rend_and_tear",
+      "tree_key": "feral",
+      "row": 5,
+      "source_url": "https://theforeverera.com/en/talents/druid/rend-and-tear/",
+      "client_build": "1.60.1.70338",
+      "identity_status": "SOURCE_NAME_IDENTICAL",
+      "min_level_without_legacy": 35
+    },
+    {
+      "indexed_talent_id": "berserk",
+      "tree_key": "feral",
+      "row": 6,
+      "source_url": "https://theforeverera.com/en/talents/druid/berserk/",
+      "client_build": "1.60.1.70338",
+      "identity_status": "SOURCE_NAME_IDENTICAL",
+      "min_level_without_legacy": 40
+    },
+    {
+      "indexed_talent_id": "improved_regrowth",
+      "tree_key": "restoration",
+      "row": 5,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "client_build": "1.60.1.70338",
+      "identity_status": "SOURCE_NAME_IDENTICAL",
+      "min_level_without_legacy": 35
+    },
+    {
+      "indexed_talent_id": "wild_growth",
+      "tree_key": "restoration",
+      "row": 6,
+      "source_url": "https://theforeverera.com/en/talents/druid/wild-growth/",
+      "client_build": "1.60.1.70338",
+      "identity_status": "SOURCE_NAME_IDENTICAL",
+      "min_level_without_legacy": 40
+    }
+  ],
+  "level_scope": 30
+}

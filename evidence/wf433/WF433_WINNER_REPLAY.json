@@ -1,0 +1,24 @@
+[
+  {
+    "status": "COMPLETE",
+    "count": 100,
+    "mean_s_per_mob": 11.623120172935218,
+    "events": 3115,
+    "elapsed_wall_s": 1.0410349630000155,
+    "elapsed_cpu_s": 1.040972865,
+    "source_action_counts": {
+      "wrath:5180": 601
+    }
+  },
+  {
+    "status": "COMPLETE",
+    "count": 100,
+    "mean_s_per_mob": 11.623120172935218,
+    "events": 3115,
+    "elapsed_wall_s": 1.059973795000019,
+    "elapsed_cpu_s": 1.0599880680000004,
+    "source_action_counts": {
+      "wrath:5180": 601
+    }
+  }
+]

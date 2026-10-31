@@ -1,0 +1,21 @@
+{
+  "capture_id": "wf309_classic_inherited_intellect_mana_20261013",
+  "scope": "forever_client_tooltip_source_stat_rule_not_server_verified_dynamic_mana",
+  "source_url": "https://foreverdb.net/stats/mage",
+  "crosscheck_url": "https://foreverdb.net/stats/priest",
+  "captured_at_utc": "2026-10-12T22:37:00Z",
+  "evidence": "ForeverDB Mage and Priest stats pages (Forever beta client build 1.60.1.70291): each Intellect above the first 20 adds 15 mana; each of the first 20 adds 1 mana. This same rule already drives the project player_state and gear; this source row makes timed auras use the identical data-driven conversion. Server-specific dynamic mana/current-resource behavior remains qualified.",
+  "record": {
+    "class_key": "*",
+    "source_stat": "intellect",
+    "target_type": "resource_capacity",
+    "target_id": "mana",
+    "coefficient": 15.0,
+    "baseline": "delta_only",
+    "operation": "threshold_linear",
+    "threshold": 20.0,
+    "below_coefficient": 1.0,
+    "authority": "foreverdb_forever_client_tooltip_stat_rule",
+    "source_date": "2026-10-13"
+  }
+}

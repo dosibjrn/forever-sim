@@ -1,0 +1,2839 @@
+{
+  "authority": "WF288-heldout-reference-replayed-on-WF289-production-executor",
+  "class_key": "druid",
+  "cpu_ns": 7559138646,
+  "full_source_complete_checkpoints": 0,
+  "full_world_legal_leveling_routes": 0,
+  "gear_acquisition_verified": false,
+  "independent_forever_fidelity_verified": false,
+  "independent_joint_search_performed": false,
+  "replayed_levels": 60,
+  "software_version": "0.11.48.289",
+  "status": "EVALUATED_BOUNDED_CONTIGUOUS_SOURCE_SCENARIO",
+  "steps": [
+    {
+      "continuation_fallback": "wrath:5176",
+      "full_cycle_s_per_mob": 5.840214267472548,
+      "guarded_action": null,
+      "level": 1,
+      "policy_prefix": [
+        "wrath:5176"
+      ],
+      "real_full_executor_events": 8,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5176"
+      ],
+      "source_context": "33c70bfdae3b51d150a2a2d8b2cccff7be90ac1e89c233405c1983a2e1be9ce5",
+      "source_legal_transition": null,
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5176",
+      "full_cycle_s_per_mob": 10.637108550636748,
+      "guarded_action": null,
+      "level": 2,
+      "policy_prefix": [
+        "wrath:5176"
+      ],
+      "real_full_executor_events": 12,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5176"
+      ],
+      "source_context": "3a9fc6a7b79ffff7aad5e4d35e4cdfee62d855b32fb640a396832ddd4dadac15",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 1,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 0,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {},
+        "to_level": 2
+      },
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5176",
+      "full_cycle_s_per_mob": 11.091094486575123,
+      "guarded_action": null,
+      "level": 3,
+      "policy_prefix": [
+        "wrath:5176"
+      ],
+      "real_full_executor_events": 12,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5176"
+      ],
+      "source_context": "f1188803f9c5a35d9118264a1aff8fc45d2477f34d55586aa103f3cfd38a43ea",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 2,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 0,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {},
+        "to_level": 3
+      },
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5176",
+      "full_cycle_s_per_mob": 16.564668822285782,
+      "guarded_action": null,
+      "level": 4,
+      "policy_prefix": [
+        "wrath:5176"
+      ],
+      "real_full_executor_events": 16,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5176"
+      ],
+      "source_context": "5514ba77bd7d74bd832e38e9be91a33928a6e56a686949565f38120cf07a098e",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 3,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 0,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {},
+        "to_level": 4
+      },
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5176",
+      "full_cycle_s_per_mob": 10.79462174320211,
+      "guarded_action": null,
+      "level": 5,
+      "policy_prefix": [
+        "wrath:5176"
+      ],
+      "real_full_executor_events": 19,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5176"
+      ],
+      "source_context": "d0ef4fea7ef98239d4a8fcb5d7e7ff9ca021ffca3836ee482702f6a9b185f316",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 4,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 0,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {},
+        "to_level": 5
+      },
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5177",
+      "full_cycle_s_per_mob": 10.292200222469408,
+      "guarded_action": null,
+      "level": 6,
+      "policy_prefix": [
+        "wrath:5177"
+      ],
+      "real_full_executor_events": 16,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5177"
+      ],
+      "source_context": "85565c037cd8c03c922851c784ae26c44690274cc587ac0693e5026d0cd4c6e1",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 5,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 0,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {},
+        "to_level": 6
+      },
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5177",
+      "full_cycle_s_per_mob": 10.489382971087315,
+      "guarded_action": null,
+      "level": 7,
+      "policy_prefix": [
+        "wrath:5177"
+      ],
+      "real_full_executor_events": 16,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5177"
+      ],
+      "source_context": "7e8609a415a5d7e1a8af04c329334cc32c43d5550e421a0241448e7c9ae7945a",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 6,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 0,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {},
+        "to_level": 7
+      },
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5177",
+      "full_cycle_s_per_mob": 13.681664610929374,
+      "guarded_action": null,
+      "level": 8,
+      "policy_prefix": [
+        "wrath:5177"
+      ],
+      "real_full_executor_events": 20,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5177"
+      ],
+      "source_context": "ce15f4259b02c68a99e858ce0c1d427e00f5ce11c5ecf41dcbb38eaffaa1b969",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 7,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 0,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {},
+        "to_level": 8
+      },
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5177",
+      "full_cycle_s_per_mob": 13.933135168395406,
+      "guarded_action": null,
+      "level": 9,
+      "policy_prefix": [
+        "wrath:5177"
+      ],
+      "real_full_executor_events": 20,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5177"
+      ],
+      "source_context": "f79035c1b1c9fcd1c2a324221a4a85e8ba770b997a40a46a47725e32e3d9a0cb",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 8,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 0,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {},
+        "to_level": 9
+      },
+      "source_scenario_race": "tauren",
+      "talents": {}
+    },
+    {
+      "continuation_fallback": "wrath:5177",
+      "full_cycle_s_per_mob": 14.374193548387098,
+      "guarded_action": null,
+      "level": 10,
+      "policy_prefix": [
+        "wrath:5177"
+      ],
+      "real_full_executor_events": 23,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5177"
+      ],
+      "source_context": "b0aab27a28eb3c5439ff9aebfbb1f550c7681d38f5a88cc4850ea01bdbe825ac",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 9,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_wrath": 1
+        },
+        "to_level": 10
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "improved_wrath": 1
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5177",
+      "full_cycle_s_per_mob": 13.738936725811843,
+      "guarded_action": null,
+      "level": 11,
+      "policy_prefix": [
+        "wrath:5177"
+      ],
+      "real_full_executor_events": 23,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5177"
+      ],
+      "source_context": "fbd8e2d83081e4621bb613787c83eb4ce5fae1072c8a3b81c8e83ac257924cc0",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 10,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_wrath": 1
+        },
+        "to_level": 11
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "improved_wrath": 2
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5177",
+      "full_cycle_s_per_mob": 16.5,
+      "guarded_action": null,
+      "level": 12,
+      "policy_prefix": [
+        "moonfire:8924"
+      ],
+      "real_full_executor_events": 35,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:8924",
+        "wrath:5177"
+      ],
+      "source_context": "5c11cd8fa2681d6231d9dec7ad7da197dbaa1e93bc5670ed961e3a89406f2c63",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 11,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "genesis": 1
+        },
+        "to_level": 12
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "genesis": 1,
+        "improved_wrath": 2
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5177",
+      "full_cycle_s_per_mob": 18.0,
+      "guarded_action": null,
+      "level": 13,
+      "policy_prefix": [
+        "moonfire:8924"
+      ],
+      "real_full_executor_events": 38,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:8924",
+        "wrath:5177"
+      ],
+      "source_context": "2a660997709520ee8621925cecf712e8e9d2e4fc9fa7ca2bce3b855a550593ed",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 12,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_wrath": 1
+        },
+        "to_level": 13
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "genesis": 1,
+        "improved_wrath": 3
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5178",
+      "full_cycle_s_per_mob": 17.824203821656052,
+      "guarded_action": null,
+      "level": 14,
+      "policy_prefix": [
+        "wrath:5178"
+      ],
+      "real_full_executor_events": 27,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5178"
+      ],
+      "source_context": "6f7ced18134b2b7cb9a72c84d8c4bceffcd27d123f9b33d24690f58aea933b85",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 13,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_wrath": 1
+        },
+        "to_level": 14
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "genesis": 1,
+        "improved_wrath": 4
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5178",
+      "full_cycle_s_per_mob": 15.476043956043952,
+      "guarded_action": null,
+      "level": 15,
+      "policy_prefix": [
+        "wrath:5178"
+      ],
+      "real_full_executor_events": 27,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5178"
+      ],
+      "source_context": "a08057a069821f6e2faed13786287d9b4fc7d2e31f4cbda2f8a737690a27c89b",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 14,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "moonglow": 1
+        },
+        "to_level": 15
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "genesis": 1,
+        "improved_wrath": 4,
+        "moonglow": 1
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5178",
+      "full_cycle_s_per_mob": 15.657302938196551,
+      "guarded_action": null,
+      "level": 16,
+      "policy_prefix": [
+        "wrath:5178",
+        "moonfire:8925"
+      ],
+      "real_full_executor_events": 35,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5178",
+        "moonfire:8925"
+      ],
+      "source_context": "2f2780bc5dcd5343741cbc09d258010b8eccda89d6838368ea767cc786ab1f9a",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 15,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "ferocity": 1
+        },
+        "to_level": 16
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "genesis": 1,
+        "improved_wrath": 4,
+        "moonglow": 1
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5178",
+      "full_cycle_s_per_mob": 17.6574405543953,
+      "guarded_action": null,
+      "level": 17,
+      "policy_prefix": [
+        "moonfire:8925"
+      ],
+      "real_full_executor_events": 40,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:8925",
+        "wrath:5178"
+      ],
+      "source_context": "9f833d36165a796456919adcc0fd70a6ffa394ca8ac2ce550b4e2bade9b8f96d",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 16,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "natures_majesty": 1
+        },
+        "to_level": 17
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "genesis": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 1
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5178",
+      "full_cycle_s_per_mob": 18.505676855895192,
+      "guarded_action": null,
+      "level": 18,
+      "policy_prefix": [
+        "moonfire:8925",
+        "moonfire:8925"
+      ],
+      "real_full_executor_events": 51,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:8925",
+        "wrath:5178"
+      ],
+      "source_context": "ffb904dbb6fafe81bb8e39b3dc7ce0030ae2970c715839b9246375102a46961a",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 17,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_moonfire": 1
+        },
+        "to_level": 18
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "genesis": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 1
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5178",
+      "full_cycle_s_per_mob": 19.64268410210479,
+      "guarded_action": null,
+      "level": 19,
+      "policy_prefix": [
+        "wrath:5178",
+        "moonfire:8925"
+      ],
+      "real_full_executor_events": 43,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5178",
+        "moonfire:8925"
+      ],
+      "source_context": "bbd7cc07b47d3932acdca6538de745d9940abfcfde25ffaab49dbb41eddea8c4",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 18,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "natures_reach": 1
+        },
+        "to_level": 19
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "genesis": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 1,
+        "natures_reach": 1
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5178",
+      "full_cycle_s_per_mob": 21.270434782608696,
+      "guarded_action": null,
+      "level": 20,
+      "policy_prefix": [
+        "wrath:5178",
+        "moonfire:8925"
+      ],
+      "real_full_executor_events": 46,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5178",
+        "moonfire:8925"
+      ],
+      "source_context": "abdc7c66eb8b159970203e58e6575fd10976182f2dc6611ed1749575e476d0f1",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 19,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "furor": 1
+        },
+        "to_level": 20
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 1,
+        "natures_reach": 1
+      }
+    },
+    {
+      "continuation_fallback": "wrath:5178",
+      "full_cycle_s_per_mob": 23.298641010575793,
+      "guarded_action": null,
+      "level": 21,
+      "policy_prefix": [
+        "moonfire:8925",
+        "moonfire:8925"
+      ],
+      "real_full_executor_events": 61,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:8925",
+        "wrath:5178"
+      ],
+      "source_context": "9acce441d33b6ad50ec96d67331e6582c9539f6fe90c9c9487670959d8884680",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 20,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "heart_of_the_wild": 1
+        },
+        "to_level": 21
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 1,
+        "natures_reach": 1
+      }
+    },
+    {
+      "continuation_fallback": "claw:20",
+      "full_cycle_s_per_mob": 32.03986031080845,
+      "guarded_action": null,
+      "level": 22,
+      "policy_prefix": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "real_full_executor_events": 121,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "source_context": "61276f4ce83936157a9d0e899ff28c152dd0b3f883298487b3883e940b5b3f9c",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 21,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "natures_reach": 1
+        },
+        "to_level": 22
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 1,
+        "natures_reach": 2
+      }
+    },
+    {
+      "continuation_fallback": "claw:20",
+      "full_cycle_s_per_mob": 34.487995394037554,
+      "guarded_action": null,
+      "level": 23,
+      "policy_prefix": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "real_full_executor_events": 131,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "source_context": "011c4d2edbb729d4e2303b69bba25061d80df7c691619a57f17fbc0187dde165",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 22,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_entangling_roots": 1
+        },
+        "to_level": 23
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 1,
+        "natures_reach": 2
+      }
+    },
+    {
+      "continuation_fallback": "claw:20",
+      "full_cycle_s_per_mob": 31.679956750400162,
+      "guarded_action": null,
+      "level": 24,
+      "policy_prefix": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "real_full_executor_events": 137,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "source_context": "0ca20f473651ab3dce52579027d11f5fc317d9321cd333f027acd06b681abcbd",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 23,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "natures_splendor": 1
+        },
+        "to_level": 24
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 1,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "claw:20",
+      "full_cycle_s_per_mob": 31.364364618559392,
+      "guarded_action": null,
+      "level": 25,
+      "policy_prefix": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "real_full_executor_events": 148,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "source_context": "cd1d627115bb5b7bda0d0689d089815d6ac1b061222b085b60589f303c7bc985",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 24,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "natures_majesty": 1
+        },
+        "to_level": 25
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 1,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "claw:20",
+      "full_cycle_s_per_mob": 31.619683577720266,
+      "guarded_action": null,
+      "level": 26,
+      "policy_prefix": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "real_full_executor_events": 153,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "cat_form:768",
+        "claw:20"
+      ],
+      "source_context": "ace4b8b5b426b9167e35278a0e119a52ccbb97a8eeba9814a1ced0001c7caa32",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 25,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "moonglow": 1
+        },
+        "to_level": 26
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 2,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8926",
+      "full_cycle_s_per_mob": 32.40437601296597,
+      "guarded_action": null,
+      "level": 27,
+      "policy_prefix": [
+        "wrath:5179",
+        "moonfire:8926"
+      ],
+      "real_full_executor_events": 138,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5179",
+        "moonfire:8926"
+      ],
+      "source_context": "d6940f608e98328884c3913796c1ea3ceed264b01a7dd03d0573e29d1873bb6f",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 26,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "moonglow": 1
+        },
+        "to_level": 27
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 1,
+        "improved_wrath": 4,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8927",
+      "full_cycle_s_per_mob": 27.027184466019417,
+      "guarded_action": null,
+      "level": 28,
+      "policy_prefix": [
+        "wrath:5179",
+        "moonfire:8927"
+      ],
+      "real_full_executor_events": 86,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5179",
+        "moonfire:8927"
+      ],
+      "source_context": "ecfa76f1be94f2cc41de718b085ab68515d9febd87c60b3fcfc9eb550f6eb2cb",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 27,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_moonfire": 1
+        },
+        "to_level": 28
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 4,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8927",
+      "full_cycle_s_per_mob": 28.84248788368336,
+      "guarded_action": null,
+      "level": 29,
+      "policy_prefix": [
+        "wrath:5179",
+        "moonfire:8927"
+      ],
+      "real_full_executor_events": 97,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5179",
+        "moonfire:8927"
+      ],
+      "source_context": "8cee08b94e43f09834de0310b39c504ed7855302711264627418e36e2d9dd88c",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 28,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_wrath": 1
+        },
+        "to_level": 29
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8927",
+      "full_cycle_s_per_mob": 29.939516129032253,
+      "guarded_action": null,
+      "level": 30,
+      "policy_prefix": [
+        "wrath:5180",
+        "moonfire:8927"
+      ],
+      "real_full_executor_events": 105,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5180",
+        "moonfire:8927"
+      ],
+      "source_context": "5d37655cdd299bd35c5df51256ff740dd933aec0ff9c493b1d2dd5aa06d26db5",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 29,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_entangling_roots": 1
+        },
+        "to_level": 30
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 1,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8927",
+      "full_cycle_s_per_mob": 30.72705314009662,
+      "guarded_action": null,
+      "level": 31,
+      "policy_prefix": [
+        "wrath:5180",
+        "moonfire:8927"
+      ],
+      "real_full_executor_events": 102,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5180",
+        "moonfire:8927"
+      ],
+      "source_context": "5634eb93d4236cfa2832eecbba5619e22990085ca556381bad602eb06bad7fff",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 30,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "heart_of_the_wild": 1
+        },
+        "to_level": 31
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 2,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8927",
+      "full_cycle_s_per_mob": 33.20016077170418,
+      "guarded_action": null,
+      "level": 32,
+      "policy_prefix": [
+        "wrath:5180",
+        "moonfire:8927"
+      ],
+      "real_full_executor_events": 125,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5180",
+        "moonfire:8927"
+      ],
+      "source_context": "aaea6fc95bb3e27aed89c6f31424e2f355a62239444bd313173719233bc01c85",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 31,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "heart_of_the_wild": 1
+        },
+        "to_level": 32
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 3,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8927",
+      "full_cycle_s_per_mob": 34.47913322632424,
+      "guarded_action": null,
+      "level": 33,
+      "policy_prefix": [
+        "wrath:5180",
+        "moonfire:8927"
+      ],
+      "real_full_executor_events": 118,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5180",
+        "moonfire:8927"
+      ],
+      "source_context": "039866a2dce01793a15b990c136e0bdff15987d61cc012fa90d83cdb7d269522",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 32,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "heart_of_the_wild": 1
+        },
+        "to_level": 33
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8928",
+      "full_cycle_s_per_mob": 33.68990384615385,
+      "guarded_action": null,
+      "level": 34,
+      "policy_prefix": [
+        "wrath:5180",
+        "moonfire:8928"
+      ],
+      "real_full_executor_events": 105,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5180",
+        "moonfire:8928"
+      ],
+      "source_context": "f54be580145a5b5c6b74760336b0c966c5f6d125186dbc75cc933325e898b633",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 33,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "feral_instinct": 1
+        },
+        "to_level": 34
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8928",
+      "full_cycle_s_per_mob": 32.74399494310998,
+      "guarded_action": null,
+      "level": 35,
+      "policy_prefix": [
+        "wrath:5180",
+        "moonfire:8928"
+      ],
+      "real_full_executor_events": 131,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5180",
+        "moonfire:8928"
+      ],
+      "source_context": "f801b5be2c610c1a589e87d92a9cf473df6e08f52670cb80dd2d67eb40693697",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 34,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "feral_swiftness": 1
+        },
+        "to_level": 35
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8928",
+      "full_cycle_s_per_mob": 32.52462121212121,
+      "guarded_action": null,
+      "level": 36,
+      "policy_prefix": [
+        "wrath:5180",
+        "moonfire:8928"
+      ],
+      "real_full_executor_events": 113,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5180",
+        "moonfire:8928"
+      ],
+      "source_context": "6a290b5008a46bfbbba90b5e2286f61b0a5b11c1af8e77f1f4023266917cc685",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 35,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "thick_hide": 1
+        },
+        "to_level": 36
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "thick_hide": 1
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8928",
+      "full_cycle_s_per_mob": 33.00378310214376,
+      "guarded_action": null,
+      "level": 37,
+      "policy_prefix": [
+        "wrath:5180",
+        "moonfire:8928"
+      ],
+      "real_full_executor_events": 125,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:5180",
+        "moonfire:8928"
+      ],
+      "source_context": "fc9bee02a370803b0fa1c51e6d72b72b93ac1f90ab19d9617fc6aae5c1e72a34",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 36,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "thick_hide": 1
+        },
+        "to_level": 37
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "thick_hide": 2
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8928",
+      "full_cycle_s_per_mob": 36.03022670025189,
+      "guarded_action": null,
+      "level": 38,
+      "policy_prefix": [
+        "wrath:6780",
+        "moonfire:8928"
+      ],
+      "real_full_executor_events": 148,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:6780",
+        "moonfire:8928"
+      ],
+      "source_context": "45453c5b4eced77e66ebae29b58f9e46d2fc6b18ef5b37fbfa33fa78a1e41499",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 37,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "thick_hide": 1
+        },
+        "to_level": 38
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8928",
+      "full_cycle_s_per_mob": 36.255959849435385,
+      "guarded_action": null,
+      "level": 39,
+      "policy_prefix": [
+        "wrath:6780",
+        "moonfire:8928"
+      ],
+      "real_full_executor_events": 145,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:6780",
+        "moonfire:8928"
+      ],
+      "source_context": "f95aa9dd955d6b4239909af3b6ae162bc9e517ea3d94a51317e6e3e45c13e648",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 38,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "savage_fury": 1
+        },
+        "to_level": 39
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8929",
+      "full_cycle_s_per_mob": 36.0,
+      "guarded_action": null,
+      "level": 40,
+      "policy_prefix": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "real_full_executor_events": 131,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "source_context": "bf9787713ae10bf38fdedefe5cb8092b84dbf8e2761ad5d50d476e3f64b851aa",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 39,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "sharpened_claws": 1
+        },
+        "to_level": 40
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 1,
+        "sharpened_claws": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8929",
+      "full_cycle_s_per_mob": 35.93275217932752,
+      "guarded_action": null,
+      "level": 41,
+      "policy_prefix": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "real_full_executor_events": 131,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "source_context": "f3d939809879c51327495ec4cdbf994d309730b608ee9e98b38f710fbab0332d",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 40,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "shredding_attacks": 1
+        },
+        "to_level": 41
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 1,
+        "sharpened_claws": 1,
+        "shredding_attacks": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8929",
+      "full_cycle_s_per_mob": 36.55272952853598,
+      "guarded_action": null,
+      "level": 42,
+      "policy_prefix": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "real_full_executor_events": 125,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "source_context": "101b3ae7d27fd26041395e00085d94e7c94c8e6916ac83ed6cc7f6fcebc4ff9c",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 41,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "shredding_attacks": 1
+        },
+        "to_level": 42
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 1,
+        "sharpened_claws": 1,
+        "shredding_attacks": 2,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8929",
+      "full_cycle_s_per_mob": 39.47836835599506,
+      "guarded_action": null,
+      "level": 43,
+      "policy_prefix": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "real_full_executor_events": 148,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "source_context": "5dabde4ed6a65e3ffd20c296f3b3f3b4bd4ad05993471e2ee6654e1a7eb03bc4",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 42,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "shredding_attacks": 1
+        },
+        "to_level": 43
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 1,
+        "sharpened_claws": 1,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8929",
+      "full_cycle_s_per_mob": 40.07512315270936,
+      "guarded_action": null,
+      "level": 44,
+      "policy_prefix": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "real_full_executor_events": 145,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "wrath:6780",
+        "moonfire:8929"
+      ],
+      "source_context": "261b854f4996096e4b9e52918de052d9420d1e250b8e2f407c90e132fcd59bc2",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 43,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "sharpened_claws": 1
+        },
+        "to_level": 44
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 1,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:8929",
+      "full_cycle_s_per_mob": 38.111160318866254,
+      "guarded_action": null,
+      "level": 45,
+      "policy_prefix": [
+        "moonfire:8929",
+        "moonfire:8929"
+      ],
+      "real_full_executor_events": 184,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:8929"
+      ],
+      "source_context": "68bff7ca231a50984986bf26102d36de83405133067e75544450ed8301c15a87",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 44,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "savage_fury": 1
+        },
+        "to_level": 45
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 2,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9833",
+      "full_cycle_s_per_mob": 32.696113074204945,
+      "guarded_action": null,
+      "level": 46,
+      "policy_prefix": [
+        "moonfire:9833",
+        "moonfire:9833"
+      ],
+      "real_full_executor_events": 122,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9833"
+      ],
+      "source_context": "3e5a350d7ec4299d56341f3857f79d50f7c939487e8a236fdfcdfe572b084644",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 45,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "improved_entangling_roots": 1
+        },
+        "to_level": 46
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 4,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9833",
+      "full_cycle_s_per_mob": 34.651982378854626,
+      "guarded_action": null,
+      "level": 47,
+      "policy_prefix": [
+        "moonfire:9833",
+        "moonfire:9833"
+      ],
+      "real_full_executor_events": 145,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9833"
+      ],
+      "source_context": "8eb26f25ee6b3674db46373a3af47a0d962e9df9dd44146bac2ba877ecb8c321",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 46,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "heart_of_the_wild": 1
+        },
+        "to_level": 47
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 1,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9833",
+      "full_cycle_s_per_mob": 34.95342706502636,
+      "guarded_action": null,
+      "level": 48,
+      "policy_prefix": [
+        "moonfire:9833",
+        "moonfire:9833"
+      ],
+      "real_full_executor_events": 139,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9833"
+      ],
+      "source_context": "86342731c362789753004d0afd40ca564250270f27ce6cf94f2cb26e3128ba55",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 47,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "genesis": 1
+        },
+        "to_level": 48
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 2,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9833",
+      "full_cycle_s_per_mob": 37.90490797546012,
+      "guarded_action": null,
+      "level": 49,
+      "policy_prefix": [
+        "moonfire:9833",
+        "moonfire:9833"
+      ],
+      "real_full_executor_events": 162,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9833"
+      ],
+      "source_context": "b884ca8624a9effea42203899a81b512f0a27cf5673393241641c43b6d853e1a",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 48,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "genesis": 1
+        },
+        "to_level": 49
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 3,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9833",
+      "full_cycle_s_per_mob": 37.85664335664336,
+      "guarded_action": null,
+      "level": 50,
+      "policy_prefix": [
+        "moonfire:9833",
+        "moonfire:9833"
+      ],
+      "real_full_executor_events": 162,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9833"
+      ],
+      "source_context": "946ecfb7917fd1d0d5e508a232774fda320a4c57345a46e87746c11b9eb0294d",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 49,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "genesis": 1
+        },
+        "to_level": 50
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 1,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9833",
+      "full_cycle_s_per_mob": 38.13949433304272,
+      "guarded_action": null,
+      "level": 51,
+      "policy_prefix": [
+        "moonfire:9833",
+        "moonfire:9833"
+      ],
+      "real_full_executor_events": 159,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9833"
+      ],
+      "source_context": "653b09d36602dddbbf162146706935aa107dab8bf7c9cea7688a9302466e3760",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 50,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "furor": 1
+        },
+        "to_level": 51
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 2,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9834",
+      "full_cycle_s_per_mob": 37.076086956521735,
+      "guarded_action": null,
+      "level": 52,
+      "policy_prefix": [
+        "moonfire:9834",
+        "moonfire:9834"
+      ],
+      "real_full_executor_events": 145,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9834"
+      ],
+      "source_context": "c66a9af5c69d9493a5a3f15959c535225df7722c45acf68403c2ed2c545ab310",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 51,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "furor": 1
+        },
+        "to_level": 52
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 3,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9834",
+      "full_cycle_s_per_mob": 37.64050303555941,
+      "guarded_action": null,
+      "level": 53,
+      "policy_prefix": [
+        "moonfire:9834",
+        "moonfire:9834"
+      ],
+      "real_full_executor_events": 139,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9834"
+      ],
+      "source_context": "ab656a5c204f098b31391646a3ad3845268adb504ef2e9fb17f1ddf3f4058edf",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 52,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "furor": 1
+        },
+        "to_level": 53
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 4,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9834",
+      "full_cycle_s_per_mob": 40.58564013840831,
+      "guarded_action": null,
+      "level": 54,
+      "policy_prefix": [
+        "moonfire:9834",
+        "moonfire:9834"
+      ],
+      "real_full_executor_events": 162,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9834"
+      ],
+      "source_context": "5e3f6608fce22532630a9c95d8ae0d18e3421333501118c75ac150759db77d21",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 53,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "furor": 1
+        },
+        "to_level": 54
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 5,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9834",
+      "full_cycle_s_per_mob": 40.53106125970665,
+      "guarded_action": null,
+      "level": 55,
+      "policy_prefix": [
+        "moonfire:9834",
+        "moonfire:9834"
+      ],
+      "real_full_executor_events": 162,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9834"
+      ],
+      "source_context": "1c1d464044ad72efba27d3d750791d4108ff8f29846bc94854c641766f3286c0",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 54,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "naturalist": 1
+        },
+        "to_level": 55
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 5,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "naturalist": 1,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9834",
+      "full_cycle_s_per_mob": 42.976764199655776,
+      "guarded_action": null,
+      "level": 56,
+      "policy_prefix": [
+        "moonfire:9834",
+        "moonfire:9834"
+      ],
+      "real_full_executor_events": 176,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9834"
+      ],
+      "source_context": "06cd1a652db392c847392a513bc5895b214db508b56389eac8d3cc3edb2d95e5",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 55,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "naturalist": 1
+        },
+        "to_level": 56
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 5,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "naturalist": 2,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9834",
+      "full_cycle_s_per_mob": 41.01502145922746,
+      "guarded_action": null,
+      "level": 57,
+      "policy_prefix": [
+        "moonfire:9834",
+        "moonfire:9834"
+      ],
+      "real_full_executor_events": 159,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9834"
+      ],
+      "source_context": "462aff063740c2877c4105bd36c03c2f8a46f7c2edc778a24170ab5092b59674",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 56,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "natural_shapeshifter": 1
+        },
+        "to_level": 57
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 5,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natural_shapeshifter": 1,
+        "naturalist": 2,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9835",
+      "full_cycle_s_per_mob": 40.57962328767123,
+      "guarded_action": null,
+      "level": 58,
+      "policy_prefix": [
+        "moonfire:9835",
+        "moonfire:9835"
+      ],
+      "real_full_executor_events": 139,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9835"
+      ],
+      "source_context": "dae87c0c95d36681d49b057c539e1e41223834faf20f07e03175cc78ed5dfa84",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 57,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "naturalist": 1
+        },
+        "to_level": 58
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 5,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natural_shapeshifter": 1,
+        "naturalist": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9835",
+      "full_cycle_s_per_mob": 40.51793339026473,
+      "guarded_action": null,
+      "level": 59,
+      "policy_prefix": [
+        "moonfire:9835",
+        "moonfire:9835"
+      ],
+      "real_full_executor_events": 139,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9835"
+      ],
+      "source_context": "dd0ce1873af4cf089d432705fd78f0f7b6860882fe98c12ba8dd0be9427d5fcb",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 58,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "naturalist": 1
+        },
+        "to_level": 59
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 5,
+        "genesis": 4,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natural_shapeshifter": 1,
+        "naturalist": 4,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    },
+    {
+      "continuation_fallback": "moonfire:9835",
+      "full_cycle_s_per_mob": 43.456558773424184,
+      "guarded_action": null,
+      "level": 60,
+      "policy_prefix": [
+        "moonfire:9835",
+        "moonfire:9835"
+      ],
+      "real_full_executor_events": 162,
+      "scratch_replayed_real_executor": true,
+      "source_action_ids": [
+        "moonfire:9835"
+      ],
+      "source_context": "f6c30832c78e0597847016e0cc21e8e0ad1470afecc4127e6ce82bf4997768b3",
+      "source_legal_transition": {
+        "available_unspent_after": 0,
+        "class_key": "druid",
+        "from_level": 59,
+        "gear_status": "naked_only",
+        "optimization_ready": false,
+        "race_key": "tauren",
+        "race_status": "representative_scenario_only",
+        "resource_carry_forward_proven": false,
+        "route_complete": false,
+        "ruleset": "forever",
+        "spent_new_points": 1,
+        "status": "LEGAL_SOURCE_TRANSITION",
+        "talent_changes": {
+          "gift_of_nature": 1
+        },
+        "to_level": 60
+      },
+      "source_scenario_race": "tauren",
+      "talents": {
+        "feral_instinct": 1,
+        "feral_swiftness": 1,
+        "ferocity": 1,
+        "furor": 5,
+        "genesis": 4,
+        "gift_of_nature": 1,
+        "heart_of_the_wild": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natural_shapeshifter": 1,
+        "naturalist": 4,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "shredding_attacks": 3,
+        "thick_hide": 3
+      }
+    }
+  ],
+  "sum_event_transitions": 5952,
+  "trainer_quest_rune_verified": false,
+  "xp_travel_and_resource_carry_verified": false
+}

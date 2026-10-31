@@ -1,0 +1,39 @@
+{
+  "status": "NO_COMPLETE_100MOB_JOINT_CANDIDATE",
+  "wall_s": 27.057451734999972,
+  "parent_cpu_s": 5.599762280999999,
+  "worker_cpu_s_reported": 8.603827302,
+  "events": 17424,
+  "paid_candidates": 48,
+  "unique_full_builds": 47,
+  "screen_complete_candidates": 40,
+  "complete_100mob_candidates": 0,
+  "full_evaluated_candidates": 4,
+  "screen_phase_wall_s": 15.00346761700007,
+  "finalist_phase_wall_s": 12.05233422799995,
+  "hybrid_paid": [
+    {
+      "attempt": 11,
+      "gear_move": "source_stat_package:spell_power+crit",
+      "screen_status": "COMPLETE",
+      "screen_s_per_mob": 15.5174172591007,
+      "status": "OS_TIMEOUT",
+      "seconds_per_mob": null,
+      "source_action_counts": {
+        "wrath:5180": 28
+      }
+    },
+    {
+      "attempt": 12,
+      "gear_move": "source_stat_package:spell_power+crit",
+      "screen_status": "COMPLETE",
+      "screen_s_per_mob": 16.00995507373696,
+      "status": "OS_TIMEOUT",
+      "seconds_per_mob": null,
+      "source_action_counts": {
+        "wrath:5180": 28
+      }
+    }
+  ],
+  "winner": null
+}

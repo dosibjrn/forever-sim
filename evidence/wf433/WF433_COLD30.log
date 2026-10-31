@@ -1,0 +1,16 @@
+{
+  "status": "BOUNDED_JOINT_PAID_DIAGNOSTIC",
+  "wall_s": 22.541303255999992,
+  "parent_cpu_s": 3.762191188,
+  "worker_cpu_s_reported": 11.588374881,
+  "events": 43083,
+  "paid_candidates": 104,
+  "unique_full_builds": 104,
+  "screen_complete_candidates": 84,
+  "complete_100mob_candidates": 2,
+  "full_evaluated_candidates": 4,
+  "screen_phase_wall_s": 15.027227354000047,
+  "finalist_phase_wall_s": 7.512139790999981
+}
+winner {'allocation': {'genesis': 5, 'improved_wrath': 5, 'improved_moonfire': 2, 'moonglow': 3, 'insect_swarm': 1, 'natures_majesty': 2, 'natures_reach': 2, 'improved_entangling_roots': 3, 'natures_splendor': 1, 'improved_starfire': 2}, 'gear_move': 'source_stat_package:spell_power', 'policy': 'talent_modified:improved_wrath:wrath:5180', 'recovery': 'threshold_0.50_0.10', 'policy_origin': 'talent_modified:improved_wrath:wrath:5180', 'is_control': False, 'policy_signature': 'bd107a954c135386', 'policy_ir': {'id': 'forever:druid:caster-healing-slice@30:talents:apl:source_talent_modified_action', 'kind': 'priority_policy', 'label': 'Source-generated adaptive priority list', 'rules': [{'id': 'apl:0', 'phase': 'combat', 'action_id': 'wrath:5180', 'conditions': [{'kind': 'resource_threshold', 'resource_id': 'mana', 'operator': 'gte', 'threshold_source': 'action_cost'}], 'provenance': {'origin': 'source_talent_modified_action'}}], 'maintenance': [], 'provenance': {'authority': 'generic_policy_evolution', 'origin': 'source_talent_modified_action', 'source_game_ir': 'forever:druid:caster-healing-slice@30:talents', 'source_policy_seeded': False}}, 'policy_uncertainties': [{'action_id': 'wrath:5180', 'effect_index': 0, 'source_record': {'code': 'approximate_tuning_magnitude', 'field_path': 'effects.0.base_min', 'status': 'explicit_approximation', 'detail': 'Source describes the tuning magnitude approximately; executable IR uses the published approximate multiplier until an exact server value is sourced.', 'source_note': 'Wrath base damage increased ~50% in the September 24 beta build.'}}, {'action_id': 'wrath:5180', 'effect_index': 0, 'source_record': {'code': 'approximate_tuning_magnitude', 'field_path': 'effects.0.base_max', 'status': 'explicit_approximation', 'detail': 'Source describes the tuning magnitude approximately; executable IR uses the published approximate multiplier until an exact server value is sourced.', 'source_note': 'Wrath base damage increased ~50% in the September 24 beta build.'}}], 'screen_status': 'COMPLETE', 'screen_s_per_mob': 13.270389931786765, 'source_action_counts': {'wrath:5180': 24}, 'worker_cpu_s': 1.185187714, 'status': 'COMPLETE', 'parent_cpu_s': 0.023535760000000572, 'mobs': 100, 'seconds_per_mob': 11.623120172935218, 'full_events': 3115}
+overgrowth 0

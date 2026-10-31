@@ -1,0 +1,1723 @@
+{
+  "schema": "forever_source_talent_positions_v1",
+  "class_key": "mage",
+  "source_build": "1.60.1.70374",
+  "source_generated": "2026-10-14",
+  "source_url": "https://wow-forever.gg/developers/talents.json",
+  "capture_method": "manual_metadata_transcription_from_published_source_not_original_JSON_export",
+  "source_status": "position_rank_cap_prerequisite_plus_contextual_numeric_tooltip_L0; no L2 execution claim",
+  "points_per_row": 5,
+  "talents": [
+    {
+      "source_talent_id": 105815,
+      "talent_id": "wand_specialization",
+      "name": "Wand Specialization",
+      "tree_key": "arcane",
+      "row": 0,
+      "column": 0,
+      "max_rank": 2,
+      "spell_id": 6057,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105814,
+      "talent_id": "arcane_focus",
+      "name": "Arcane Focus",
+      "tree_key": "arcane",
+      "row": 0,
+      "column": 1,
+      "max_rank": 5,
+      "spell_id": 11222,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105813,
+      "talent_id": "improved_channeling",
+      "name": "Improved Channeling",
+      "tree_key": "arcane",
+      "row": 0,
+      "column": 2,
+      "max_rank": 5,
+      "spell_id": 11237,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105812,
+      "talent_id": "arcane_subtlety",
+      "name": "Arcane Subtlety",
+      "tree_key": "arcane",
+      "row": 1,
+      "column": 0,
+      "max_rank": 2,
+      "spell_id": 11210,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105811,
+      "talent_id": "magic_absorption",
+      "name": "Magic Absorption",
+      "tree_key": "arcane",
+      "row": 1,
+      "column": 1,
+      "max_rank": 2,
+      "spell_id": 29441,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105810,
+      "talent_id": "arcane_concentration",
+      "name": "Arcane Concentration",
+      "tree_key": "arcane",
+      "row": 1,
+      "column": 2,
+      "max_rank": 5,
+      "spell_id": 11213,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105809,
+      "talent_id": "arcane_resilience",
+      "name": "Arcane Resilience",
+      "tree_key": "arcane",
+      "row": 1,
+      "column": 3,
+      "max_rank": 2,
+      "spell_id": 28574,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105808,
+      "talent_id": "arcane_geometry",
+      "name": "Arcane Geometry",
+      "tree_key": "arcane",
+      "row": 2,
+      "column": 0,
+      "max_rank": 2,
+      "spell_id": 11247,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105807,
+      "talent_id": "arcane_impact",
+      "name": "Arcane Impact",
+      "tree_key": "arcane",
+      "row": 2,
+      "column": 1,
+      "max_rank": 3,
+      "spell_id": 11242,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105806,
+      "talent_id": "arcane_blast",
+      "name": "Arcane Blast",
+      "tree_key": "arcane",
+      "row": 2,
+      "column": 3,
+      "max_rank": 1,
+      "spell_id": 400574,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105805,
+      "talent_id": "arcane_shielding",
+      "name": "Arcane Shielding",
+      "tree_key": "arcane",
+      "row": 3,
+      "column": 0,
+      "max_rank": 2,
+      "spell_id": 11252,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105804,
+      "talent_id": "improved_counterspell",
+      "name": "Improved Counterspell",
+      "tree_key": "arcane",
+      "row": 3,
+      "column": 1,
+      "max_rank": 2,
+      "spell_id": 11255,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105803,
+      "talent_id": "arcane_meditation",
+      "name": "Arcane Meditation",
+      "tree_key": "arcane",
+      "row": 3,
+      "column": 2,
+      "max_rank": 3,
+      "spell_id": 18462,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": [
+        "arcane_concentration"
+      ]
+    },
+    {
+      "source_talent_id": 105802,
+      "talent_id": "missile_barrage",
+      "name": "Missile Barrage",
+      "tree_key": "arcane",
+      "row": 3,
+      "column": 3,
+      "max_rank": 1,
+      "spell_id": 400588,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105801,
+      "talent_id": "presence_of_mind",
+      "name": "Presence of Mind",
+      "tree_key": "arcane",
+      "row": 4,
+      "column": 1,
+      "max_rank": 1,
+      "spell_id": 12043,
+      "points_required": 20,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105800,
+      "talent_id": "arcane_mind",
+      "name": "Arcane Mind",
+      "tree_key": "arcane",
+      "row": 4,
+      "column": 2,
+      "max_rank": 5,
+      "spell_id": 11232,
+      "points_required": 20,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105799,
+      "talent_id": "arcane_instability",
+      "name": "Arcane Instability",
+      "tree_key": "arcane",
+      "row": 5,
+      "column": 2,
+      "max_rank": 3,
+      "spell_id": 15058,
+      "points_required": 25,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105798,
+      "talent_id": "arcane_power",
+      "name": "Arcane Power",
+      "tree_key": "arcane",
+      "row": 6,
+      "column": 1,
+      "max_rank": 1,
+      "spell_id": 12042,
+      "points_required": 30,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": [
+        "presence_of_mind"
+      ]
+    },
+    {
+      "source_talent_id": 105797,
+      "talent_id": "wake_of_fire",
+      "name": "Wake of Fire",
+      "tree_key": "fire",
+      "row": 0,
+      "column": 0,
+      "max_rank": 2,
+      "spell_id": 11078,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105796,
+      "talent_id": "incineration",
+      "name": "Incineration",
+      "tree_key": "fire",
+      "row": 0,
+      "column": 1,
+      "max_rank": 3,
+      "spell_id": 18459,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105795,
+      "talent_id": "improved_fireball",
+      "name": "Improved Fireball",
+      "tree_key": "fire",
+      "row": 0,
+      "column": 2,
+      "max_rank": 5,
+      "spell_id": 11069,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105794,
+      "talent_id": "ignite",
+      "name": "Ignite",
+      "tree_key": "fire",
+      "row": 1,
+      "column": 0,
+      "max_rank": 5,
+      "spell_id": 11119,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105793,
+      "talent_id": "flame_throwing",
+      "name": "Flame Throwing",
+      "tree_key": "fire",
+      "row": 1,
+      "column": 1,
+      "max_rank": 2,
+      "spell_id": 11100,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105792,
+      "talent_id": "impact",
+      "name": "Impact",
+      "tree_key": "fire",
+      "row": 1,
+      "column": 2,
+      "max_rank": 3,
+      "spell_id": 11103,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105789,
+      "talent_id": "burning_soul",
+      "name": "Burning Soul",
+      "tree_key": "fire",
+      "row": 2,
+      "column": 0,
+      "max_rank": 3,
+      "spell_id": 11083,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105791,
+      "talent_id": "improved_flamestrike",
+      "name": "Improved Flamestrike",
+      "tree_key": "fire",
+      "row": 2,
+      "column": 1,
+      "max_rank": 3,
+      "spell_id": 11108,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105790,
+      "talent_id": "pyroblast",
+      "name": "Pyroblast",
+      "tree_key": "fire",
+      "row": 2,
+      "column": 2,
+      "max_rank": 1,
+      "spell_id": 11366,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105788,
+      "talent_id": "improved_scorch",
+      "name": "Improved Scorch",
+      "tree_key": "fire",
+      "row": 3,
+      "column": 0,
+      "max_rank": 3,
+      "spell_id": 11095,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105787,
+      "talent_id": "improved_fire_ward",
+      "name": "Improved Fire Ward",
+      "tree_key": "fire",
+      "row": 3,
+      "column": 1,
+      "max_rank": 2,
+      "spell_id": 11094,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105786,
+      "talent_id": "heating_up",
+      "name": "Heating Up",
+      "tree_key": "fire",
+      "row": 3,
+      "column": 2,
+      "max_rank": 1,
+      "spell_id": 400624,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": [
+        "pyroblast"
+      ]
+    },
+    {
+      "source_talent_id": 105785,
+      "talent_id": "master_of_elements",
+      "name": "Master of Elements",
+      "tree_key": "fire",
+      "row": 3,
+      "column": 3,
+      "max_rank": 3,
+      "spell_id": 29074,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105784,
+      "talent_id": "critical_mass",
+      "name": "Critical Mass",
+      "tree_key": "fire",
+      "row": 4,
+      "column": 1,
+      "max_rank": 3,
+      "spell_id": 11115,
+      "points_required": 20,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105783,
+      "talent_id": "blast_wave",
+      "name": "Blast Wave",
+      "tree_key": "fire",
+      "row": 4,
+      "column": 2,
+      "max_rank": 1,
+      "spell_id": 11113,
+      "points_required": 20,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105782,
+      "talent_id": "fire_power",
+      "name": "Fire Power",
+      "tree_key": "fire",
+      "row": 5,
+      "column": 2,
+      "max_rank": 5,
+      "spell_id": 11124,
+      "points_required": 25,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105781,
+      "talent_id": "combustion",
+      "name": "Combustion",
+      "tree_key": "fire",
+      "row": 6,
+      "column": 1,
+      "max_rank": 1,
+      "spell_id": 11129,
+      "points_required": 30,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": [
+        "critical_mass"
+      ]
+    },
+    {
+      "source_talent_id": 105780,
+      "talent_id": "frost_warding",
+      "name": "Frost Warding",
+      "tree_key": "frost",
+      "row": 0,
+      "column": 0,
+      "max_rank": 2,
+      "spell_id": 11189,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105779,
+      "talent_id": "improved_frostbolt",
+      "name": "Improved Frostbolt",
+      "tree_key": "frost",
+      "row": 0,
+      "column": 1,
+      "max_rank": 5,
+      "spell_id": 11070,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105778,
+      "talent_id": "elemental_precision",
+      "name": "Elemental Precision",
+      "tree_key": "frost",
+      "row": 0,
+      "column": 2,
+      "max_rank": 5,
+      "spell_id": 29438,
+      "points_required": 0,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105777,
+      "talent_id": "ice_shards",
+      "name": "Ice Shards",
+      "tree_key": "frost",
+      "row": 1,
+      "column": 0,
+      "max_rank": 5,
+      "spell_id": 11207,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105776,
+      "talent_id": "permafrost",
+      "name": "Permafrost",
+      "tree_key": "frost",
+      "row": 1,
+      "column": 1,
+      "max_rank": 3,
+      "spell_id": 11175,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105775,
+      "talent_id": "improved_frost_nova",
+      "name": "Improved Frost Nova",
+      "tree_key": "frost",
+      "row": 1,
+      "column": 2,
+      "max_rank": 2,
+      "spell_id": 11165,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105774,
+      "talent_id": "frostbite",
+      "name": "Frostbite",
+      "tree_key": "frost",
+      "row": 1,
+      "column": 3,
+      "max_rank": 3,
+      "spell_id": 11071,
+      "points_required": 5,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105773,
+      "talent_id": "piercing_ice",
+      "name": "Piercing Ice",
+      "tree_key": "frost",
+      "row": 2,
+      "column": 0,
+      "max_rank": 3,
+      "spell_id": 11151,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105772,
+      "talent_id": "frost_channeling",
+      "name": "Frost Channeling",
+      "tree_key": "frost",
+      "row": 2,
+      "column": 1,
+      "max_rank": 3,
+      "spell_id": 11160,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105767,
+      "talent_id": "ice_lance",
+      "name": "Ice Lance",
+      "tree_key": "frost",
+      "row": 2,
+      "column": 2,
+      "max_rank": 1,
+      "spell_id": 1312002,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105771,
+      "talent_id": "improved_blizzard",
+      "name": "Improved Blizzard",
+      "tree_key": "frost",
+      "row": 2,
+      "column": 3,
+      "max_rank": 3,
+      "spell_id": 11185,
+      "points_required": 10,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105770,
+      "talent_id": "arctic_reach",
+      "name": "Arctic Reach",
+      "tree_key": "frost",
+      "row": 3,
+      "column": 0,
+      "max_rank": 2,
+      "spell_id": 16757,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105769,
+      "talent_id": "ice_block",
+      "name": "Ice Block",
+      "tree_key": "frost",
+      "row": 3,
+      "column": 1,
+      "max_rank": 1,
+      "spell_id": 11958,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105768,
+      "talent_id": "shatter",
+      "name": "Shatter",
+      "tree_key": "frost",
+      "row": 3,
+      "column": 3,
+      "max_rank": 3,
+      "spell_id": 11170,
+      "points_required": 15,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105765,
+      "talent_id": "improved_cone_of_cold",
+      "name": "Improved Cone of Cold",
+      "tree_key": "frost",
+      "row": 4,
+      "column": 0,
+      "max_rank": 3,
+      "spell_id": 11190,
+      "points_required": 20,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105766,
+      "talent_id": "cold_snap",
+      "name": "Cold Snap",
+      "tree_key": "frost",
+      "row": 4,
+      "column": 1,
+      "max_rank": 1,
+      "spell_id": 12472,
+      "points_required": 20,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105764,
+      "talent_id": "fingers_of_frost",
+      "name": "Fingers of Frost",
+      "tree_key": "frost",
+      "row": 4,
+      "column": 2,
+      "max_rank": 2,
+      "spell_id": 400647,
+      "points_required": 20,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": [
+        "ice_lance"
+      ]
+    },
+    {
+      "source_talent_id": 105763,
+      "talent_id": "winters_chill",
+      "name": "Winter's Chill",
+      "tree_key": "frost",
+      "row": 5,
+      "column": 2,
+      "max_rank": 5,
+      "spell_id": 11180,
+      "points_required": 25,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": []
+    },
+    {
+      "source_talent_id": 105762,
+      "talent_id": "ice_barrier",
+      "name": "Ice Barrier",
+      "tree_key": "frost",
+      "row": 6,
+      "column": 1,
+      "max_rank": 1,
+      "spell_id": 11426,
+      "points_required": 30,
+      "source_url": "https://wow-forever.gg/developers/talents.json",
+      "requires": [
+        "cold_snap"
+      ]
+    }
+  ],
+  "min_level": 30,
+  "rank_l0": {
+    "wand_specialization": {
+      "features": [
+        {
+          "domain": "wand_damage_pct",
+          "target": "wand",
+          "rank_values": [
+            13.0,
+            25.0
+          ],
+          "condition": "wand_equipped"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_focus": {
+      "features": [
+        {
+          "domain": "spell_hit_bonus_pct",
+          "target": "arcane_spells",
+          "rank_values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          "condition": "arcane_spell_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_channeling": {
+      "features": [
+        {
+          "domain": "interrupt_avoidance_pct",
+          "target": "arcane_missiles",
+          "rank_values": [
+            20.0,
+            40.0,
+            60.0,
+            80.0,
+            100.0
+          ],
+          "condition": "incoming_damage_during_channel"
+        },
+        {
+          "domain": "interrupt_avoidance_pct",
+          "target": "arcane_blast",
+          "rank_values": [
+            14.0,
+            28.0,
+            42.0,
+            56.0,
+            70.0
+          ],
+          "condition": "incoming_damage_during_channel"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_subtlety": {
+      "features": [
+        {
+          "domain": "target_resistance_ignored",
+          "target": "all_spells",
+          "rank_values": [
+            8.0,
+            15.0
+          ],
+          "condition": "enemy_spell_resistance"
+        },
+        {
+          "domain": "threat_reduction_pct",
+          "target": "arcane_spells",
+          "rank_values": [
+            15.0,
+            30.0
+          ],
+          "condition": "enemy_spell_resistance"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "magic_absorption": {
+      "features": [
+        {
+          "domain": "resistance_bonus",
+          "target": "all_resistances",
+          "rank_values": [
+            5.0,
+            10.0
+          ],
+          "condition": "incoming_spell_damage"
+        },
+        {
+          "domain": "mana_restored_pct_on_full_resist",
+          "target": "mana",
+          "rank_values": [
+            1.0,
+            2.0
+          ],
+          "condition": "incoming_spell_damage"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_concentration": {
+      "features": [
+        {
+          "domain": "clearcasting_proc_chance_pct",
+          "target": "damage_spells",
+          "rank_values": [
+            2.0,
+            4.0,
+            6.0,
+            8.0,
+            10.0
+          ],
+          "condition": "successful_damage_spell_hit"
+        },
+        {
+          "domain": "next_spell_mana_cost_reduction_pct",
+          "target": "damage_spells",
+          "rank_values": [
+            100.0,
+            100.0,
+            100.0,
+            100.0,
+            100.0
+          ],
+          "condition": "successful_damage_spell_hit"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_resilience": {
+      "features": [
+        {
+          "domain": "armor_from_intellect_pct",
+          "target": "actor_armor",
+          "rank_values": [
+            25.0,
+            50.0
+          ],
+          "condition": "incoming_physical_damage"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_geometry": {
+      "features": [
+        {
+          "domain": "range_bonus_yards",
+          "target": "arcane_spells",
+          "rank_values": [
+            3.0,
+            6.0
+          ],
+          "condition": "target_outside_base_spell_range"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_impact": {
+      "features": [
+        {
+          "domain": "critical_chance_bonus_pct",
+          "target": "arcane_spells",
+          "rank_values": [
+            2.0,
+            4.0,
+            6.0
+          ],
+          "condition": "arcane_damage_spell"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_blast": {
+      "features": [
+        {
+          "domain": "spell_direct_damage_average",
+          "target": "arcane_blast",
+          "rank_values": [
+            54.0
+          ],
+          "condition": "talent_unlocked_arcane_blast_cast"
+        },
+        {
+          "domain": "other_spells_damage_bonus_per_stack_pct",
+          "target": "other_damage_spells",
+          "rank_values": [
+            10.0
+          ],
+          "condition": "talent_unlocked_arcane_blast_cast"
+        },
+        {
+          "domain": "arcane_blast_mana_cost_increase_per_stack_pct",
+          "target": "arcane_blast",
+          "rank_values": [
+            175.0
+          ],
+          "condition": "talent_unlocked_arcane_blast_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_shielding": {
+      "features": [
+        {
+          "domain": "mana_shield_mana_loss_reduction_pct",
+          "target": "mana_shield",
+          "rank_values": [
+            17.0,
+            33.0
+          ],
+          "condition": "mana_shield_active"
+        },
+        {
+          "domain": "mage_armor_resistance_bonus_pct",
+          "target": "mage_armor",
+          "rank_values": [
+            25.0,
+            50.0
+          ],
+          "condition": "mana_shield_active"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_counterspell": {
+      "features": [
+        {
+          "domain": "silence_duration_s",
+          "target": "counterspell",
+          "rank_values": [
+            2.0,
+            4.0
+          ],
+          "condition": "counterspell_hits_target"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_meditation": {
+      "features": [
+        {
+          "domain": "casting_mana_regeneration_pct",
+          "target": "mana",
+          "rank_values": [
+            17.0,
+            33.0,
+            50.0
+          ],
+          "condition": "casting_spell"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "missile_barrage": {
+      "features": [
+        {
+          "domain": "proc_chance_pct",
+          "target": "arcane_blast",
+          "rank_values": [
+            40.0
+          ],
+          "condition": "arcane_blast_hits"
+        },
+        {
+          "domain": "proc_chance_pct",
+          "target": "fireball_frostbolt_frostfire_bolt",
+          "rank_values": [
+            20.0
+          ],
+          "condition": "arcane_blast_hits"
+        },
+        {
+          "domain": "arcane_missiles_channel_duration_reduction_pct",
+          "target": "arcane_missiles",
+          "rank_values": [
+            50.0
+          ],
+          "condition": "arcane_blast_hits"
+        },
+        {
+          "domain": "arcane_missiles_mana_cost_reduction_pct",
+          "target": "arcane_missiles",
+          "rank_values": [
+            100.0
+          ],
+          "condition": "arcane_blast_hits"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "presence_of_mind": {
+      "features": [
+        {
+          "domain": "instant_cast_charges",
+          "target": "mage_spells",
+          "rank_values": [
+            1.0
+          ],
+          "condition": "next_eligible_cast_time_below_10_seconds"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arcane_mind": {
+      "features": [
+        {
+          "domain": "intellect_bonus_pct",
+          "target": "actor_intellect",
+          "rank_values": [
+            2.0,
+            4.0,
+            6.0,
+            8.0,
+            10.0
+          ],
+          "condition": "actor_has_intellect"
+        },
+        {
+          "domain": "arcane_crit_damage_bonus_pct",
+          "target": "arcane_spells",
+          "rank_values": [
+            20.0,
+            40.0,
+            60.0,
+            80.0,
+            100.0
+          ],
+          "condition": "actor_has_intellect"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "wake_of_fire": {
+      "features": [
+        {
+          "domain": "cooldown_reduction_s",
+          "target": "fire_blast",
+          "rank_values": [
+            1.0,
+            2.0
+          ],
+          "condition": "fire_blast_available"
+        },
+        {
+          "domain": "next_fire_blast_crit_chance_after_kill_pct",
+          "target": "fire_blast",
+          "rank_values": [
+            25.0,
+            50.0
+          ],
+          "condition": "fire_blast_available"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "incineration": {
+      "features": [
+        {
+          "domain": "critical_chance_bonus_pct",
+          "target": "fire_blast_ice_lance_arcane_blast_scorch",
+          "rank_values": [
+            2.0,
+            4.0,
+            6.0
+          ],
+          "condition": "named_damage_spell"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_fireball": {
+      "features": [
+        {
+          "domain": "cast_time_reduction_s",
+          "target": "fireball_frostfire_bolt",
+          "rank_values": [
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5
+          ],
+          "condition": "named_spell_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "ignite": {
+      "features": [
+        {
+          "domain": "critical_fire_damage_dot_pct",
+          "target": "fire_spells",
+          "rank_values": [
+            8.0,
+            16.0,
+            24.0,
+            32.0,
+            40.0
+          ],
+          "condition": "nonperiodic_fire_critical_hit"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "flame_throwing": {
+      "features": [
+        {
+          "domain": "range_bonus_yards",
+          "target": "fire_spells",
+          "rank_values": [
+            3.0,
+            6.0
+          ],
+          "condition": "target_outside_base_spell_range"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "impact": {
+      "features": [
+        {
+          "domain": "stun_proc_chance_pct",
+          "target": "fire_spells",
+          "rank_values": [
+            3.0,
+            7.0,
+            10.0
+          ],
+          "condition": "fire_spell_hits"
+        },
+        {
+          "domain": "stun_duration_s",
+          "target": "target",
+          "rank_values": [
+            2.0,
+            2.0,
+            2.0
+          ],
+          "condition": "fire_spell_hits"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "burning_soul": {
+      "features": [
+        {
+          "domain": "interrupt_avoidance_pct",
+          "target": "fire_spells",
+          "rank_values": [
+            23.0,
+            47.0,
+            70.0
+          ],
+          "condition": "incoming_damage_during_fire_cast"
+        },
+        {
+          "domain": "threat_reduction_pct",
+          "target": "fire_spells",
+          "rank_values": [
+            10.0,
+            20.0,
+            30.0
+          ],
+          "condition": "incoming_damage_during_fire_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_flamestrike": {
+      "features": [
+        {
+          "domain": "critical_chance_bonus_pct",
+          "target": "flamestrike",
+          "rank_values": [
+            5.0,
+            10.0,
+            15.0
+          ],
+          "condition": "flamestrike_hits"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "pyroblast": {
+      "features": [
+        {
+          "domain": "spell_direct_damage_average",
+          "target": "pyroblast",
+          "rank_values": [
+            110.0
+          ],
+          "condition": "talent_unlocked_pyroblast_cast"
+        },
+        {
+          "domain": "periodic_damage_total",
+          "target": "pyroblast",
+          "rank_values": [
+            44.0
+          ],
+          "condition": "talent_unlocked_pyroblast_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_scorch": {
+      "features": [
+        {
+          "domain": "fire_vulnerability_proc_chance_pct",
+          "target": "scorch",
+          "rank_values": [
+            33.0,
+            67.0,
+            100.0
+          ],
+          "condition": "scorch_hits"
+        },
+        {
+          "domain": "fire_vulnerability_damage_bonus_per_stack_pct",
+          "target": "target",
+          "rank_values": [
+            3.0,
+            3.0,
+            3.0
+          ],
+          "condition": "scorch_hits"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_fire_ward": {
+      "features": [
+        {
+          "domain": "fire_spell_reflect_chance_pct",
+          "target": "fire_ward",
+          "rank_values": [
+            10.0,
+            20.0
+          ],
+          "condition": "fire_ward_active_and_incoming_fire_spell"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "heating_up": {
+      "features": [
+        {
+          "domain": "pyroblast_cast_time_reduction_per_stack_pct",
+          "target": "pyroblast",
+          "rank_values": [
+            25.0
+          ],
+          "condition": "nonperiodic_fire_spell_critical_hit"
+        },
+        {
+          "domain": "maximum_heating_up_stacks",
+          "target": "pyroblast",
+          "rank_values": [
+            3.0
+          ],
+          "condition": "nonperiodic_fire_spell_critical_hit"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "master_of_elements": {
+      "features": [
+        {
+          "domain": "mana_refund_pct",
+          "target": "fire_and_frost_spells",
+          "rank_values": [
+            10.0,
+            20.0,
+            30.0
+          ],
+          "condition": "fire_or_frost_spell_critical_hit"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "critical_mass": {
+      "features": [
+        {
+          "domain": "critical_chance_bonus_pct",
+          "target": "fire_spells",
+          "rank_values": [
+            2.0,
+            4.0,
+            6.0
+          ],
+          "condition": "fire_spell_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "blast_wave": {
+      "features": [
+        {
+          "domain": "spell_direct_damage_average",
+          "target": "blast_wave",
+          "rank_values": [
+            163.0
+          ],
+          "condition": "talent_unlocked_aoe_target_in_range"
+        },
+        {
+          "domain": "movement_slow_pct",
+          "target": "enemy_targets",
+          "rank_values": [
+            50.0
+          ],
+          "condition": "talent_unlocked_aoe_target_in_range"
+        },
+        {
+          "domain": "movement_slow_duration_s",
+          "target": "enemy_targets",
+          "rank_values": [
+            6.0
+          ],
+          "condition": "talent_unlocked_aoe_target_in_range"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "frost_warding": {
+      "features": [
+        {
+          "domain": "frost_armor_resistance_bonus_pct",
+          "target": "frost_armor_ice_armor",
+          "rank_values": [
+            15.0,
+            30.0
+          ],
+          "condition": "armor_active"
+        },
+        {
+          "domain": "frost_ward_reflect_chance_pct",
+          "target": "frost_ward",
+          "rank_values": [
+            10.0,
+            20.0
+          ],
+          "condition": "armor_active"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_frostbolt": {
+      "features": [
+        {
+          "domain": "cast_time_reduction_s",
+          "target": "frostbolt",
+          "rank_values": [
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5
+          ],
+          "condition": "frostbolt_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "elemental_precision": {
+      "features": [
+        {
+          "domain": "spell_hit_bonus_pct",
+          "target": "frost_and_fire_spells",
+          "rank_values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          "condition": "frost_or_fire_spell_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "ice_shards": {
+      "features": [
+        {
+          "domain": "frost_critical_damage_bonus_pct",
+          "target": "frost_spells",
+          "rank_values": [
+            20.0,
+            40.0,
+            60.0,
+            80.0,
+            100.0
+          ],
+          "condition": "frost_spell_critical_hit"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "permafrost": {
+      "features": [
+        {
+          "domain": "chill_duration_bonus_pct",
+          "target": "chill_effects",
+          "rank_values": [
+            11.0,
+            22.0,
+            33.0
+          ],
+          "condition": "chill_effect_applied"
+        },
+        {
+          "domain": "additional_movement_slow_pct",
+          "target": "chill_effects",
+          "rank_values": [
+            3.0,
+            7.0,
+            10.0
+          ],
+          "condition": "chill_effect_applied"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_frost_nova": {
+      "features": [
+        {
+          "domain": "cooldown_reduction_s",
+          "target": "frost_nova",
+          "rank_values": [
+            2.0,
+            4.0
+          ],
+          "condition": "frost_nova_used"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "frostbite": {
+      "features": [
+        {
+          "domain": "freeze_proc_chance_pct",
+          "target": "chill_effects",
+          "rank_values": [
+            5.0,
+            10.0,
+            15.0
+          ],
+          "condition": "chill_effect_applied"
+        },
+        {
+          "domain": "freeze_duration_s",
+          "target": "enemy_target",
+          "rank_values": [
+            5.0,
+            5.0,
+            5.0
+          ],
+          "condition": "chill_effect_applied"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "piercing_ice": {
+      "features": [
+        {
+          "domain": "frost_damage_bonus_pct",
+          "target": "frost_spells",
+          "rank_values": [
+            2.0,
+            4.0,
+            6.0
+          ],
+          "condition": "frost_spell_damage"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "frost_channeling": {
+      "features": [
+        {
+          "domain": "mana_cost_reduction_pct",
+          "target": "frost_spells",
+          "rank_values": [
+            5.0,
+            10.0,
+            15.0
+          ],
+          "condition": "frost_spell_cast"
+        },
+        {
+          "domain": "threat_reduction_pct",
+          "target": "frost_spells",
+          "rank_values": [
+            10.0,
+            20.0,
+            30.0
+          ],
+          "condition": "frost_spell_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "ice_lance": {
+      "features": [
+        {
+          "domain": "damage_against_frozen_pct",
+          "target": "ice_lance",
+          "rank_values": [
+            300.0
+          ],
+          "condition": "target_frozen_and_ice_lance_cast"
+        },
+        {
+          "domain": "spell_direct_damage_average",
+          "target": "ice_lance",
+          "rank_values": [
+            28.0
+          ],
+          "condition": "target_frozen_and_ice_lance_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_blizzard": {
+      "features": [
+        {
+          "domain": "movement_slow_pct",
+          "target": "blizzard",
+          "rank_values": [
+            15.0,
+            25.0,
+            40.0
+          ],
+          "condition": "blizzard_target_hit"
+        },
+        {
+          "domain": "chill_duration_s",
+          "target": "blizzard",
+          "rank_values": [
+            1.5,
+            1.5,
+            1.5
+          ],
+          "condition": "blizzard_target_hit"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "arctic_reach": {
+      "features": [
+        {
+          "domain": "range_radius_bonus_pct",
+          "target": "frostbolt_blizzard_frost_nova_cone_of_cold",
+          "rank_values": [
+            10.0,
+            20.0
+          ],
+          "condition": "named_frost_spell_cast"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "ice_block": {
+      "features": [
+        {
+          "domain": "immunity_duration_s",
+          "target": "self",
+          "rank_values": [
+            10.0
+          ],
+          "condition": "talent_unlocked_ice_block_activated"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "shatter": {
+      "features": [
+        {
+          "domain": "critical_chance_bonus_pct",
+          "target": "spells_against_frozen_targets",
+          "rank_values": [
+            17.0,
+            33.0,
+            50.0
+          ],
+          "condition": "target_frozen"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "improved_cone_of_cold": {
+      "features": [
+        {
+          "domain": "damage_bonus_pct",
+          "target": "cone_of_cold",
+          "rank_values": [
+            12.0,
+            23.0,
+            35.0
+          ],
+          "condition": "cone_of_cold_hits"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "cold_snap": {
+      "features": [
+        {
+          "domain": "frost_cooldown_resets",
+          "target": "frost_spells",
+          "rank_values": [
+            1.0
+          ],
+          "condition": "talent_unlocked_cold_snap_activated"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    },
+    "fingers_of_frost": {
+      "features": [
+        {
+          "domain": "frozen_treatment_proc_chance_pct",
+          "target": "chill_effects",
+          "rank_values": [
+            15.0,
+            15.0
+          ],
+          "condition": "chill_effect_applied"
+        },
+        {
+          "domain": "next_spells_treated_as_frozen",
+          "target": "mage_spells",
+          "rank_values": [
+            1.0,
+            2.0
+          ],
+          "condition": "chill_effect_applied"
+        }
+      ],
+      "context_uncertainty": "SOURCE_TOOLTIP_NUMERIC_L0_ONLY_NOT_CALIBRATED_TO_100MOB; secondary/trigger mechanics may remain unexecuted",
+      "source_url": "https://wow-forever.gg/developers/talents.json"
+    }
+  }
+}

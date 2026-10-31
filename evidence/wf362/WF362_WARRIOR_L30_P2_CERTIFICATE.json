@@ -1,0 +1,3540 @@
+{
+  "P4_P5_P6_measurements": "NOT_RUN: wall/CPU/events/attempts/uniques/forecast/actual unavailable",
+  "checkpoint": {
+    "class_key": "warrior",
+    "level": 30,
+    "profile": "unrestricted",
+    "use_runes": false
+  },
+  "gates": {
+    "P1": {
+      "legal": 54,
+      "scored": 54,
+      "status": "PASS"
+    },
+    "P2": {
+      "legal": 117,
+      "scored": 117,
+      "status": "PASS"
+    },
+    "P3": {
+      "status": "NOT_RUN"
+    },
+    "P4": {
+      "status": "NOT_RUN"
+    },
+    "P5": {
+      "status": "NOT_RUN"
+    },
+    "P6": {
+      "status": "NOT_RUN"
+    }
+  },
+  "next": "Warrior L30 unrestricted P3: source-legal equipment universe and contextual Top 5 per slot.",
+  "p2": {
+    "blocked": [],
+    "context_zero_effects": 6,
+    "hybrid_full_allocations_replayed": 600,
+    "l0_scored_reachable_ranks": 117,
+    "l2_unsupported_scored_rank_count": 114,
+    "legal_reachable_ranks": 117,
+    "legal_witnesses_replayed": 117,
+    "observed_reachable_families": 44,
+    "random_legal_full_allocations_replayed": 600,
+    "rank_rows": [
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "heroic_strike"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_heroic_strike",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "improved_heroic_strike": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "heroic_strike"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_heroic_strike",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "improved_heroic_strike": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "heroic_strike"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_heroic_strike",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "improved_heroic_strike": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "parry_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "incoming_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "deflection",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "parry_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "incoming_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "deflection",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "parry_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "incoming_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "deflection",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "parry_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "incoming_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "deflection",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 4
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "parry_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "incoming_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "deflection",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 12.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "effect_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 12.0,
+            "target": "rend"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": true,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_rend",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "improved_rend": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 23.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "effect_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 23.0,
+            "target": "rend"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": true,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_rend",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "improved_rend": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 35.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "effect_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 35.0,
+            "target": "rend"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": true,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_rend",
+        "tier_row": 0,
+        "tree_key": "arms",
+        "witness": {
+          "improved_rend": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_generation_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "charge"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_charge",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_charge": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 6.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_generation_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 6.0,
+            "target": "charge"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_charge",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_charge": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stance_retained_rage",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "stance_change"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_tactical_mastery",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_tactical_mastery": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 6.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stance_retained_rage",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 6.0,
+            "target": "stance_change"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_tactical_mastery",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_tactical_mastery": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 9.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stance_retained_rage",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 9.0,
+            "target": "stance_change"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_tactical_mastery",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_tactical_mastery": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 12.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stance_retained_rage",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 12.0,
+            "target": "stance_change"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_tactical_mastery",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_tactical_mastery": 4
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 15.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stance_retained_rage",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 15.0,
+            "target": "stance_change"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_tactical_mastery",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_tactical_mastery": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 25.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "critical_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 25.0,
+            "target": "overpower"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_overpower",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_overpower": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 50.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "critical_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 50.0,
+            "target": "overpower"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_overpower",
+        "tier_row": 1,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_overpower": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rage_per_3s_combat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "rage"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "out_of_combat_rage_loss_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "rage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "anger_management",
+        "tier_row": 2,
+        "tree_key": "arms",
+        "witness": {
+          "anger_management": 1,
+          "deflection": 5,
+          "improved_tactical_mastery": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "crit_proc_weapon_bleed_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "melee_critical"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "deep_wounds",
+        "tier_row": 2,
+        "tree_key": "arms",
+        "witness": {
+          "deep_wounds": 1,
+          "deflection": 5,
+          "improved_heroic_strike": 2,
+          "improved_rend": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 40.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "crit_proc_weapon_bleed_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 40.0,
+            "target": "melee_critical"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "deep_wounds",
+        "tier_row": 2,
+        "tree_key": "arms",
+        "witness": {
+          "deep_wounds": 2,
+          "deflection": 5,
+          "improved_heroic_strike": 2,
+          "improved_rend": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 60.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "crit_proc_weapon_bleed_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 60.0,
+            "target": "melee_critical"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "deep_wounds",
+        "tier_row": 2,
+        "tree_key": "arms",
+        "witness": {
+          "deep_wounds": 3,
+          "deflection": 5,
+          "improved_heroic_strike": 2,
+          "improved_rend": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 40.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "weapon_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 40.0,
+            "target": "spearing_strike"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 80.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "bonus_weapon_damage_pct_vs_giant_dragonkin_mounted",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 80.0,
+            "target": "conditional_enemy_type"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "spearing_strike",
+        "tier_row": 3,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_charge": 2,
+          "improved_heroic_strike": 3,
+          "improved_overpower": 2,
+          "improved_rend": 3,
+          "spearing_strike": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "two_handed_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "two_handed_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "two_handed_weapon_specialization",
+        "tier_row": 3,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_charge": 2,
+          "improved_heroic_strike": 3,
+          "improved_overpower": 2,
+          "improved_rend": 3,
+          "two_handed_weapon_specialization": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "two_handed_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "two_handed_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "two_handed_weapon_specialization",
+        "tier_row": 3,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_charge": 2,
+          "improved_heroic_strike": 3,
+          "improved_overpower": 2,
+          "improved_rend": 3,
+          "two_handed_weapon_specialization": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "two_handed_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "two_handed_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "two_handed_weapon_specialization",
+        "tier_row": 3,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_charge": 2,
+          "improved_heroic_strike": 3,
+          "improved_overpower": 2,
+          "improved_rend": 3,
+          "two_handed_weapon_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 10.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "critical_damage_bonus_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "abilities"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "impale",
+        "tier_row": 3,
+        "tree_key": "arms",
+        "witness": {
+          "deep_wounds": 3,
+          "deflection": 5,
+          "impale": 1,
+          "improved_charge": 1,
+          "improved_heroic_strike": 3,
+          "improved_rend": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "critical_damage_bonus_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "abilities"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "impale",
+        "tier_row": 3,
+        "tree_key": "arms",
+        "witness": {
+          "deep_wounds": 3,
+          "deflection": 5,
+          "impale": 2,
+          "improved_charge": 1,
+          "improved_heroic_strike": 3,
+          "improved_rend": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rend_overpower_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "rend_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "bloodthrill",
+        "tier_row": 4,
+        "tree_key": "arms",
+        "witness": {
+          "bloodthrill": 1,
+          "deflection": 5,
+          "improved_charge": 2,
+          "improved_heroic_strike": 3,
+          "improved_overpower": 2,
+          "improved_rend": 3,
+          "improved_tactical_mastery": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "competing_threat_target",
+            "context_l0_value": 0.0,
+            "context_status": "ZERO_SOLO_NO_COMPETING_THREAT_TARGET",
+            "domain": "additional_target_attacks",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "sweeping_strikes"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "sweeping_strikes",
+        "tier_row": 4,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_charge": 2,
+          "improved_heroic_strike": 3,
+          "improved_overpower": 2,
+          "improved_rend": 3,
+          "improved_tactical_mastery": 5,
+          "sweeping_strikes": 1
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "weapon_conditional_crit_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "weapon_type"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "weapon_conditional_armor_ignore_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "mace_staff"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+            "domain": "weapon_conditional_extra_attack_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "sword"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "weaponmaster",
+        "tier_row": 4,
+        "tree_key": "arms",
+        "witness": {
+          "deflection": 5,
+          "improved_charge": 2,
+          "improved_heroic_strike": 3,
+          "improved_overpower": 2,
+          "improved_rend": 3,
+          "improved_tactical_mastery": 5,
+          "weaponmaster": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_rage_cost_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "shouts"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 10.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_area_increase_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "shouts"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "booming_voice",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 10.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_rage_cost_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "shouts"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_area_increase_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "shouts"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "booming_voice",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 15.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_rage_cost_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 15.0,
+            "target": "shouts"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_area_increase_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "shouts"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "booming_voice",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_rage_cost_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "shouts"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 40.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_area_increase_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 40.0,
+            "target": "shouts"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "booming_voice",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 4
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 25.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_rage_cost_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 25.0,
+            "target": "shouts"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 50.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shout_area_increase_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 50.0,
+            "target": "shouts"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "booming_voice",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "melee_crit_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "cruelty",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "cruelty": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "melee_crit_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "cruelty",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "cruelty": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "melee_crit_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "cruelty",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "cruelty": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "melee_crit_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "cruelty",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "cruelty": 4
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "melee_crit_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "cruelty",
+        "tier_row": 0,
+        "tree_key": "fury",
+        "witness": {
+          "cruelty": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "out_of_combat_rage_decay_delay_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "rage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "lingering_rage",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "lingering_rage": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "out_of_combat_rage_decay_delay_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "rage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "lingering_rage",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "lingering_rage": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 6.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "out_of_combat_rage_decay_delay_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 6.0,
+            "target": "rage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "lingering_rage",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "lingering_rage": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 8.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "out_of_combat_rage_decay_delay_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 8.0,
+            "target": "rage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "lingering_rage",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "lingering_rage": 4
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 10.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "out_of_combat_rage_decay_delay_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "rage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "lingering_rage",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 12.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 12.0,
+            "target": "weapon_melee"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "rage_amount_per_proc",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "weapon_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "unbridled_wrath",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "unbridled_wrath": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 24.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 24.0,
+            "target": "weapon_melee"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "rage_amount_per_proc",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "weapon_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "unbridled_wrath",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "unbridled_wrath": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 36.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 36.0,
+            "target": "weapon_melee"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "rage_amount_per_proc",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "weapon_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "unbridled_wrath",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "unbridled_wrath": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 48.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 48.0,
+            "target": "weapon_melee"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "rage_amount_per_proc",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "weapon_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "unbridled_wrath",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "unbridled_wrath": 4
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 60.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 60.0,
+            "target": "weapon_melee"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "rage_amount_per_proc",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "weapon_melee"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "unbridled_wrath",
+        "tier_row": 1,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "unbridled_wrath": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_hit_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "offhand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "furious_precision",
+        "tier_row": 2,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "furious_precision": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 7.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_hit_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 7.0,
+            "target": "offhand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "furious_precision",
+        "tier_row": 2,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "furious_precision": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 10.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_hit_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "offhand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "furious_precision",
+        "tier_row": 2,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "furious_precision": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "competing_threat_target",
+            "context_l0_value": 0.0,
+            "context_status": "ZERO_SOLO_NO_COMPETING_THREAT_TARGET",
+            "domain": "movement_slow_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 50.0,
+            "target": "enemy_movement"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "piercing_howl",
+        "tier_row": 2,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "piercing_howl": 1
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "conditional_health_regen_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "incoming_critical_or_heavy"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "blood_craze",
+        "tier_row": 2,
+        "tree_key": "fury",
+        "witness": {
+          "blood_craze": 1,
+          "booming_voice": 5,
+          "cruelty": 5
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "conditional_health_regen_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "incoming_critical_or_heavy"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "blood_craze",
+        "tier_row": 2,
+        "tree_key": "fury",
+        "witness": {
+          "blood_craze": 2,
+          "booming_voice": 5,
+          "cruelty": 5
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "conditional_health_regen_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "incoming_critical_or_heavy"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "blood_craze",
+        "tier_row": 2,
+        "tree_key": "fury",
+        "witness": {
+          "blood_craze": 3,
+          "booming_voice": 5,
+          "cruelty": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "offhand"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 10.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_rage_generation_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "offhand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "dual_wield_specialization",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "dual_wield_specialization": 1,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 10.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "offhand"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_rage_generation_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "offhand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "dual_wield_specialization",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "dual_wield_specialization": 2,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 15.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 15.0,
+            "target": "offhand"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_rage_generation_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "offhand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "dual_wield_specialization",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "dual_wield_specialization": 3,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "offhand"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 40.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_rage_generation_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 40.0,
+            "target": "offhand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "dual_wield_specialization",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "dual_wield_specialization": 4,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 25.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 25.0,
+            "target": "offhand"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 50.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "offhand_rage_generation_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 50.0,
+            "target": "offhand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "dual_wield_specialization",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "dual_wield_specialization": 5,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 0.0,
+            "context_status": "ZERO_TARGET_NOT_LEARNED_IN_PINNED_SPELLBOOK",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "cleave_whirlwind"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "raging_blows",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "lingering_rage": 5,
+          "raging_blows": 1
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "conditional_physical_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "incoming_hit_proc"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "incoming_hit_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "incoming_hit"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "enrage",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "enrage": 1,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "conditional_physical_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "incoming_hit_proc"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "incoming_hit_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "incoming_hit"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "enrage",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "enrage": 2,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 6.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "conditional_physical_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 6.0,
+            "target": "incoming_hit_proc"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "incoming_hit_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "incoming_hit"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "enrage",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "enrage": 3,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 8.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "conditional_physical_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 8.0,
+            "target": "incoming_hit_proc"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "incoming_hit_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "incoming_hit"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "enrage",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "enrage": 4,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 10.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "conditional_physical_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "incoming_hit_proc"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "incoming_hit_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "incoming_hit"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "enrage",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "enrage": 5,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "execute"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_execute",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "improved_execute": 1,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "execute"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_execute",
+        "tier_row": 3,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "improved_execute": 2,
+          "lingering_rage": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_generation_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "berserker_rage"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 50.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "context_uncertainty": null,
+            "domain": "movement_impair_removal_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 50.0,
+            "target": "berserker_rage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_berserker_rage",
+        "tier_row": 4,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "improved_berserker_rage": 1,
+          "lingering_rage": 5,
+          "unbridled_wrath": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "physical_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "death_wish"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "incoming_damage_increase_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "incoming_damage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "death_wish",
+        "tier_row": 4,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "death_wish": 1,
+          "lingering_rage": 5,
+          "unbridled_wrath": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "cooldown_reduction_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "intercept"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_intercept",
+        "tier_row": 4,
+        "tree_key": "fury",
+        "witness": {
+          "booming_voice": 5,
+          "cruelty": 5,
+          "improved_intercept": 1,
+          "lingering_rage": 5,
+          "unbridled_wrath": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 25.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rage_generation_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 25.0,
+            "target": "bloodrage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_bloodrage",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 50.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "rage_generation_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 50.0,
+            "target": "bloodrage"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_bloodrage",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "shield_block"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "shield_block"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "shield_specialization",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "shield_specialization": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "shield_block"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 40.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 40.0,
+            "target": "shield_block"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "shield_specialization",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "shield_specialization": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "shield_block"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 60.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 60.0,
+            "target": "shield_block"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "shield_specialization",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "shield_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "shield_block"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 80.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 80.0,
+            "target": "shield_block"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "shield_specialization",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "shield_specialization": 4
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "shield_block"
+          },
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 100.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "block_rage_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 100.0,
+            "target": "shield_block"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "shield_specialization",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stun_fear_duration_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "incoming_control"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "iron_will",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "iron_will": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 6.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stun_fear_duration_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 6.0,
+            "target": "incoming_control"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "iron_will",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "iron_will": 2
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 9.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stun_fear_duration_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 9.0,
+            "target": "incoming_control"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "iron_will",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 12.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stun_fear_duration_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 12.0,
+            "target": "incoming_control"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "iron_will",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "iron_will": 4
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 15.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stun_fear_duration_reduction_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 15.0,
+            "target": "incoming_control"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "iron_will",
+        "tier_row": 0,
+        "tree_key": "protection",
+        "witness": {
+          "iron_will": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "defense_skill_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "defense"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "anticipation",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 1,
+          "improved_bloodrage": 2,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 8.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "defense_skill_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 8.0,
+            "target": "defense"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "anticipation",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 2,
+          "improved_bloodrage": 2,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 12.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "defense_skill_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 12.0,
+            "target": "defense"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "anticipation",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 3,
+          "improved_bloodrage": 2,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 16.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "defense_skill_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 16.0,
+            "target": "defense"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 4,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "anticipation",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 4,
+          "improved_bloodrage": 2,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "defense_skill_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "defense"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 5,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "anticipation",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 5,
+          "improved_bloodrage": 2,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "effect_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "revenge"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_revenge",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_revenge": 1,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 40.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "effect_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 40.0,
+            "target": "revenge"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_revenge",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_revenge": 2,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 60.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "effect_damage_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 60.0,
+            "target": "revenge"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_revenge",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_revenge": 3,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "thunder_clap"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_thunder_clap",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_thunder_clap": 1,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 4.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 4.0,
+            "target": "thunder_clap"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_thunder_clap",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_thunder_clap": 2,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 6.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 6.0,
+            "target": "thunder_clap"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_thunder_clap",
+        "tier_row": 1,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_thunder_clap": 3,
+          "iron_will": 3
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 30.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "temporary_max_health_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 30.0,
+            "target": "last_stand"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "last_stand",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "iron_will": 5,
+          "last_stand": 1,
+          "shield_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 50.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shield_dodge_parry_rage_proc_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 50.0,
+            "target": "incoming_avoidance"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "rage_amount_per_proc",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "incoming_avoidance"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "master_of_defense",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "iron_will": 3,
+          "master_of_defense": 1,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 100.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "shield_dodge_parry_rage_proc_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 100.0,
+            "target": "incoming_avoidance"
+          },
+          {
+            "condition": "source_context_conditional",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "context_uncertainty": null,
+            "domain": "rage_amount_per_proc",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "incoming_avoidance"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "master_of_defense",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "iron_will": 3,
+          "master_of_defense": 2,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 7.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "cooldown_reduction_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 7.0,
+            "target": "disarm"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_disarm",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_disarm": 1,
+          "iron_will": 5,
+          "shield_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 13.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "cooldown_reduction_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 13.0,
+            "target": "disarm"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_disarm",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_disarm": 2,
+          "iron_will": 5,
+          "shield_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 20.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "cooldown_reduction_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 20.0,
+            "target": "disarm"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_disarm",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "improved_bloodrage": 2,
+          "improved_disarm": 3,
+          "iron_will": 5,
+          "shield_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "competing_threat_target",
+            "context_l0_value": 0.0,
+            "context_status": "ZERO_SOLO_NO_COMPETING_THREAT_TARGET",
+            "domain": "shield_defensive_stance_threat_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "threat"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "defiance",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "defiance": 1,
+          "improved_bloodrage": 2,
+          "iron_will": 5,
+          "shield_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "competing_threat_target",
+            "context_l0_value": 0.0,
+            "context_status": "ZERO_SOLO_NO_COMPETING_THREAT_TARGET",
+            "domain": "shield_defensive_stance_threat_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 10.0,
+            "target": "threat"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "defiance",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "defiance": 2,
+          "improved_bloodrage": 2,
+          "iron_will": 5,
+          "shield_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "competing_threat_target",
+            "context_l0_value": 0.0,
+            "context_status": "ZERO_SOLO_NO_COMPETING_THREAT_TARGET",
+            "domain": "shield_defensive_stance_threat_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 15.0,
+            "target": "threat"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "defiance",
+        "tier_row": 2,
+        "tree_key": "protection",
+        "witness": {
+          "defiance": 3,
+          "improved_bloodrage": 2,
+          "iron_will": 5,
+          "shield_specialization": 3
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "sunder_armor"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_sunder_armor",
+        "tier_row": 3,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 3,
+          "improved_bloodrage": 2,
+          "improved_sunder_armor": 1,
+          "iron_will": 5,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 2.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 2.0,
+            "target": "sunder_armor"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_sunder_armor",
+        "tier_row": 3,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 3,
+          "improved_bloodrage": 2,
+          "improved_sunder_armor": 2,
+          "iron_will": 5,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 3.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 3.0,
+            "target": "sunder_armor"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 3,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_sunder_armor",
+        "tier_row": 3,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 3,
+          "improved_bloodrage": 2,
+          "improved_sunder_armor": 3,
+          "iron_will": 5,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stance_permission_boolean",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "defensive_charge"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "vanguard",
+        "tier_row": 3,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 3,
+          "improved_bloodrage": 2,
+          "iron_will": 5,
+          "shield_specialization": 5,
+          "vanguard": 1
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 50.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "silence_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 50.0,
+            "target": "shield_bash"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_shield_bash",
+        "tier_row": 3,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 3,
+          "improved_bloodrage": 2,
+          "improved_shield_bash": 1,
+          "iron_will": 5,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 100.0,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "silence_proc_chance_pct",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 100.0,
+            "target": "shield_bash"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 2,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_shield_bash",
+        "tier_row": 3,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 3,
+          "improved_bloodrage": 2,
+          "improved_shield_bash": 2,
+          "iron_will": 5,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "relevant_ability_learned_and_executable",
+            "context_l0_value": 5.5,
+            "context_status": "POTENTIAL_CONDITIONAL_VALUE",
+            "domain": "cooldown_reduction_minutes",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.5,
+            "target": "shield_wall"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "improved_shield_wall",
+        "tier_row": 4,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 5,
+          "improved_bloodrage": 2,
+          "improved_revenge": 3,
+          "improved_shield_wall": 1,
+          "iron_will": 5,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 5.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "stun_duration_s",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 5.0,
+            "target": "concussion_blow"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "concussion_blow",
+        "tier_row": 4,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 5,
+          "concussion_blow": 1,
+          "improved_bloodrage": 2,
+          "improved_revenge": 3,
+          "iron_will": 5,
+          "shield_specialization": 5
+        }
+      },
+      {
+        "context_uncertainty": null,
+        "l0_effects": [
+          {
+            "condition": "context_dependent_source_proxy",
+            "context_l0_value": 1.0,
+            "context_status": "POTENTIAL_SOURCE_EFFECT",
+            "domain": "resource_cost_flat",
+            "source": "https://talentsforever.com/export/warrior.json",
+            "sourced_value": 1.0,
+            "target": "offensive_abilities"
+          }
+        ],
+        "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+        "l2_supported": false,
+        "potentially_contextual": true,
+        "rank": 1,
+        "source_url": "https://talentsforever.com/export/warrior.json",
+        "talent_id": "focused_rage",
+        "tier_row": 4,
+        "tree_key": "protection",
+        "witness": {
+          "anticipation": 5,
+          "focused_rage": 1,
+          "improved_bloodrage": 2,
+          "improved_revenge": 3,
+          "iron_will": 5,
+          "shield_specialization": 5
+        }
+      }
+    ],
+    "retired_stale_indexed_families": 4,
+    "source_only_l0_rank_count": 117,
+    "source_rank_mismatches": [],
+    "talent_families": 52,
+    "tree_rank_counts": {
+      "arms": 33,
+      "fury": 43,
+      "protection": 41
+    },
+    "uncertainty": "L0 source tooltip vectors are not calibrated s/mob and do not confer L2 runtime support; gear/stance/target/proc context remains conditional.",
+    "unknown_positions": [],
+    "unreachable_families": 8
+  },
+  "parent": "WF361",
+  "schema": "wf362_warrior_l30_p2_acceptance_v1",
+  "scoreboard": "2/148",
+  "source": {
+    "checked_against": "1.60.1.70338",
+    "details_url": "https://talentsforever.com/warrior/talents",
+    "license": "CC BY 4.0",
+    "source_sha256": "6687446b8172eb54c116cd5f33fec58834e539c4199173772a4b2ac09425dee5",
+    "staged_sqlite_sha256": "49c2880fe226462f4f48b2231e156ab171bbe00f99aba96116837e596c38512e",
+    "talent_client_build": "1.60.1.70291",
+    "url": "https://talentsforever.com/export/warrior.json"
+  },
+  "sqlite_integrity": "ok",
+  "timing": {
+    "cpu_s": 11.804329202,
+    "wall_s": 11.806174064000004
+  }
+}

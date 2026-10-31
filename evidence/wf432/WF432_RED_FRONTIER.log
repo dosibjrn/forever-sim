@@ -1,0 +1,26 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_cold_64_full_point_frontier_reserves_source_charge_mechanism _______
+
+    def test_cold_64_full_point_frontier_reserves_source_charge_mechanism():
+        from src.v2.source_bounded_joint_frontier import bounded_full_point_talent_frontier
+        from src.game.talents import validate_talent_selection
+        ir=_ir()
+        charges={t.id for t in ir.talents if any(
+            m.kind=='cast_charge_exchange' for r in t.ranks for m in r.modifiers)}
+        assert charges
+        allocations,ledger=bounded_full_point_talent_frontier(ir,level=30,
+            max_frontier=64,bonus_talent_points=5)
+        for talent_id in charges:
+            talent=next(t for t in ir.talents if t.id==talent_id)
+>           assert any(a.get(talent_id)==talent.max_rank for a in allocations),talent_id
+E           AssertionError: eclipse
+E           assert False
+E            +  where False = any(<generator object test_cold_64_full_point_frontier_reserves_source_charge_mechanism.<locals>.<genexpr> at 0x7fd0539c51c0>)
+
+tests/test_wf432_eclipse_charge_26pt_tdd.py:166: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_wf432_eclipse_charge_26pt_tdd.py::test_cold_64_full_point_frontier_reserves_source_charge_mechanism - AssertionError: eclipse
+assert False
+ +  where False = any(<generator object test_cold_64_full_point_frontier_reserves_source_charge_mechanism.<locals>.<genexpr> at 0x7fd0539c51c0>)
+1 failed in 1.14s

@@ -1,0 +1,49 @@
+{
+  "continuous_bear_2_mob_stable": false,
+  "note": "Legal sourced Primal Bite allocation on same fixed gear; one-mob action diagnostic, NOT joint optimum",
+  "profiles": {
+    "primal_bite:25": {
+      "1": {
+        "combat_s": 17.5,
+        "events": 102,
+        "mean_s_per_mob": 30.189792672440976,
+        "mob": null,
+        "reason": null,
+        "recovery_s": 9.689792672440976,
+        "status": "COMPLETE"
+      },
+      "2": {
+        "combat_s": null,
+        "events": 189,
+        "mean_s_per_mob": null,
+        "mob": 2,
+        "reason": "death_or_empty_policy",
+        "recovery_s": null,
+        "status": "BLOCKED_COMBAT"
+      }
+    },
+    "swipe:24": {
+      "1": {
+        "combat_s": 22.5,
+        "events": 122,
+        "mean_s_per_mob": 35.18979267244097,
+        "mob": null,
+        "reason": null,
+        "recovery_s": 9.689792672440973,
+        "status": "COMPLETE"
+      },
+      "2": {
+        "combat_s": null,
+        "events": 209,
+        "mean_s_per_mob": null,
+        "mob": 2,
+        "reason": "death_or_empty_policy",
+        "recovery_s": null,
+        "status": "BLOCKED_COMBAT"
+      }
+    }
+  },
+  "schema": "wf365_druid_l30_bear_action_diagnostic_v1",
+  "single_mob_primal_faster_than_swipe": true,
+  "source_db_sha256": "63c56b316c9ed6ba175c5f895870c372fb553fc78962fc8ee15c1e8cd5423244"
+}

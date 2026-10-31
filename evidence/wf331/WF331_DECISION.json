@@ -1,0 +1,332 @@
+{
+  "L2_promotion": 0,
+  "PASS1": false,
+  "PASS2": false,
+  "PASS3": false,
+  "PASS4": false,
+  "PASS5": false,
+  "PASS6": false,
+  "accepted_checkpoints": 0,
+  "after": {
+    "l0_semantic_assessed": 65,
+    "l0_unassessed": 0,
+    "paid_search_admitted": 17,
+    "potential_positive_ranks": 65,
+    "web_l0_observation_count": 20,
+    "web_semantic_roles_count": 20
+  },
+  "before": {
+    "l0_semantic_assessed": 47,
+    "l0_unassessed": 18,
+    "paid_search_admitted": 17,
+    "potential_positive_ranks": 65
+  },
+  "canonical_db_unchanged": true,
+  "checkpoint": "Druid L20 unrestricted",
+  "ingestion": {
+    "L2_legal_action_promotion": 0,
+    "canonical_database_mutated": false,
+    "capture_kind_counts": {
+      "forever_wowhead_quest_search_indexed": 1,
+      "forever_wowhead_search_indexed": 18,
+      "secondary_forever_client_description": 1
+    },
+    "observations_ingested": 20
+  },
+  "paid_l2_diagnostic": {
+    "100_mob_comparison": false,
+    "attempts": 160,
+    "best_prefix": [
+      "cat_form:768",
+      "claw:20"
+    ],
+    "best_single_mob_s_per_mob": 26.89064481103989,
+    "blocked": 66,
+    "cpu_s": 2.7821668099999997,
+    "evaluated": 94,
+    "executor_events_successes": 11639,
+    "wall_s": 2.78661794300001
+  },
+  "remaining_unassessed": [],
+  "source": "canonical source-index SHA plus web search-indexed text; not raw HTML",
+  "sqlite_integrity": "ok",
+  "strict_30_300_not_run": true,
+  "web_scored": [
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "conditional_sleep_control"
+      ],
+      "flags": [
+        "target_type_restriction"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Hibernate",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 2637
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "precombat_stealth"
+      ],
+      "flags": [
+        "precombat_only"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Prowl",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 5215
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "poison_dispel"
+      ],
+      "flags": [
+        "quest_acquisition_mentioned_in_comments_not_proven"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Cure Poison",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 8946
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "distance_closing",
+        "movement_root",
+        "spell_interrupt"
+      ],
+      "flags": [
+        "talent_grant_must_be_checked"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Feral Charge (Bear)",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 16979
+    },
+    {
+      "capture_kind": "forever_wowhead_quest_search_indexed",
+      "effect_roles": [
+        "out_of_combat_teleport"
+      ],
+      "flags": [
+        "quest_only_role",
+        "not_spell_detail"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Teleport: Moonglade",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 18960
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "resurrection"
+      ],
+      "flags": [
+        "dead_ally_required"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Rebirth",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 20484
+    },
+    {
+      "capture_kind": "secondary_forever_client_description",
+      "effect_roles": [
+        "healing_potential"
+      ],
+      "flags": [
+        "secondary_speculation",
+        "rune_grant_unverified"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Lifebloom",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 408124
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "healing_potential",
+        "non_independent_action_flag"
+      ],
+      "flags": [
+        "not_an_action",
+        "grant_or_trigger_unverified"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Lifebloom",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 408245
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "healing_potential"
+      ],
+      "flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Nourish",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 408247
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "spell_interrupt"
+      ],
+      "flags": [
+        "rune_grant_unverified"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Skull Bash",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 410176
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "combo_generation",
+        "damage_potential"
+      ],
+      "flags": [
+        "rank_5_level1_not_acquisition_proof"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Swipe",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 411128
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "damage_potential"
+      ],
+      "flags": [
+        "trigger_or_component_unverified"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Lacerate",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 414647
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "healing_potential"
+      ],
+      "flags": [
+        "proc_or_trigger_unverified"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Living Seed",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 414683
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "damage_potential"
+      ],
+      "flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Sunfire",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 414684
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "damage_potential"
+      ],
+      "flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Sunfire",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 414687
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "combo_generation",
+        "damage_potential"
+      ],
+      "flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Sunfire",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 414689
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "conditional_spell_modifier"
+      ],
+      "flags": [
+        "passive_modifier",
+        "rune_grant_unverified"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Enhanced Restoration",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 417123
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "healing_potential"
+      ],
+      "flags": [
+        "trigger_or_component_unverified"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Efflorescence",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 417148
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "damage_potential",
+        "next_cast_amplifier"
+      ],
+      "flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Starsurge",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 417157
+    },
+    {
+      "capture_kind": "forever_wowhead_search_indexed",
+      "effect_roles": [
+        "periodic_multi_target_proc"
+      ],
+      "flags": [
+        "rune_grant_unverified",
+        "level_60_scaling_example_not_level20"
+      ],
+      "legal_acquisition_proven": false,
+      "name": "Starfall",
+      "paid_search_admission": "NO_EXECUTABLE_IR_FOR_SOURCE_RANK",
+      "spell_id": 439748
+    }
+  ]
+}

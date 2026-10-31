@@ -1,0 +1,78 @@
+{
+  "capture_id": "wf255_paladin_command_weapon_speed_20261011",
+  "captured_at": "2026-10-11T11:48:42Z",
+  "class_key": "paladin",
+  "talent": {
+    "spell_id": 20375,
+    "name": "Seal of Command",
+    "rank": 1,
+    "max_rank": 1,
+    "tree_key": "source_spec:381",
+    "tree_row_zero_indexed": 2,
+    "tree_col_zero_indexed": 2,
+    "tree_source_url": "https://theforeverera.com/en/talents/paladin/seal-of-command/",
+    "client_build": "1.60.1.70245",
+    "tooltip": "Gives the Paladin a chance to deal additional Holy damage equal to 70% of normal weapon damage. Only one Seal can be active on the Paladin at any one time. Lasts 30 sec. Unleashing this Seal's energy will judge an enemy, instantly causing 48.5 Holy damage, 97 if the target is stunned or incapacitated.",
+    "required_level": 20,
+    "mana_cost": 65,
+    "duration_s": 30,
+    "gcd_s": 1.5,
+    "aura_id": "seal:command",
+    "exclusive_group": "paladin_seal",
+    "family_key": "seal_of_command",
+    "school": "holy",
+    "weapon_damage_multiplier": 0.7,
+    "proc_reference_speed_s": 8.571428571428571,
+    "proc_authority": "CLASSIC_7_PPM_PROXY_NOT_VERIFIED_FOR_FOREVER",
+    "proc_source_url": "https://www.wowhead.com/classic/es/forums/topic/seal-of-command-66676",
+    "source_url": "https://theforeverera.com/en/talents/paladin/seal-of-command/",
+    "crosscheck_url": "https://www.wowhead.com/forever/spell=20375",
+    "judge_damage_base": 48.5,
+    "judge_damage_status": "SOURCE_VERIFIED_BUT_NOT_IMPLEMENTED_UNTIL_GENERIC_AURA_CONSUMER_TRIGGER",
+    "caveats": [
+      "Proc frequency is a sourced Classic 7 PPM proxy, not verified on Forever 1.60.1.70338",
+      "Stunned/incapacitated double Judgement damage not in current target scenario",
+      "Server-side Seal Command SP coefficient unverified"
+    ]
+  },
+  "other_seal_exclusivity": {
+    "source_url": "https://theforeverera.com/en/talents/paladin/seal-of-command/",
+    "text": "Only one Seal can be active on the Paladin at any one time.",
+    "aura_id": "seal:righteousness",
+    "exclusive_group": "paladin_seal"
+  },
+  "weapon_speed_facts": [
+    {
+      "class_key": "paladin",
+      "mode_label": "Ordinary Weapon",
+      "source_item_slot": "weapon",
+      "weapon_speed_semantics": "equipped",
+      "source_url": "https://www.wowhead.com/forever/spell=1866",
+      "evidence": "Ordinary melee swing follows the equipped named weapon speed; item payload has sourced weapon_speed."
+    },
+    {
+      "class_key": "hunter",
+      "mode_label": "Ordinary Weapon",
+      "source_item_slot": "ranged",
+      "weapon_speed_semantics": "equipped",
+      "source_url": "https://www.wowhead.com/forever/spell=75",
+      "evidence": "Auto Shot uses equipped ranged weapon speed; item payload has sourced weapon_speed."
+    },
+    {
+      "class_key": "druid",
+      "mode_label": "Cat Form",
+      "source_item_slot": "weapon",
+      "weapon_speed_semantics": "form_fixed",
+      "source_url": "https://worldofwarcraft.blizzard.com/en-us/news/24301515/",
+      "evidence": "Blizzard explicitly changes shapeshifted DPS to equipped weapon DPS, not the form auto-attack swing timer."
+    },
+    {
+      "class_key": "druid",
+      "mode_label": "Bear Form",
+      "source_item_slot": "weapon",
+      "weapon_speed_semantics": "form_fixed",
+      "source_url": "https://worldofwarcraft.blizzard.com/en-us/news/24301515/",
+      "evidence": "Blizzard explicitly changes shapeshifted DPS to equipped weapon DPS, not the form auto-attack swing timer."
+    }
+  ]
+}

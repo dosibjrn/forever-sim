@@ -1,0 +1,169 @@
+{
+  "class_key": "paladin",
+  "client_build": "1.60.1.70009",
+  "captured_at": "2026-10-11T10:43:00Z",
+  "capture_id": "wf254_paladin_rank_batch_20261011",
+  "calculator_url": "https://foreverdiff.com/talents/paladin/calculator/",
+  "families": [
+    {
+      "spell_id": 20101,
+      "name": "Benediction",
+      "max_rank": 5,
+      "source_url": "https://foreverdiff.com/talents/paladin/benediction-1407/",
+      "tree_row": 0,
+      "tree_col": null,
+      "tree_authority": "qualified_inherited_classic_position",
+      "tree_evidence": "Provisional unchanged Classic tree tier; current calculator node position not independently mapped",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Reduces the Mana cost of all instant cast spells and abilities by 2%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Reduces the Mana cost of all instant cast spells and abilities by 4%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Reduces the Mana cost of all instant cast spells and abilities by 6%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Reduces the Mana cost of all instant cast spells and abilities by 8%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Reduces the Mana cost of all instant cast spells and abilities by 10%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        }
+      ]
+    },
+    {
+      "spell_id": 20117,
+      "name": "Conviction",
+      "max_rank": 5,
+      "source_url": "https://foreverdiff.com/talents/paladin/conviction-1411/",
+      "tree_row": 1,
+      "tree_col": 2,
+      "tree_authority": "foreverdiff_explicit_row_change",
+      "tree_evidence": "Explicit ForeverDiff row change",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Improves your chance to get a critical strike with melee attacks by 1%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Improves your chance to get a critical strike with melee attacks by 2%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Improves your chance to get a critical strike with melee attacks by 3%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Improves your chance to get a critical strike with melee attacks by 4%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Improves your chance to get a critical strike with melee attacks by 5%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        }
+      ]
+    },
+    {
+      "spell_id": 25956,
+      "name": "Improved Judgement",
+      "max_rank": 2,
+      "source_url": "https://foreverdiff.com/talents/paladin/improved-judgement-1631/",
+      "tree_row": 1,
+      "tree_col": null,
+      "tree_authority": "qualified_inherited_classic_position",
+      "tree_evidence": "Provisional unchanged Classic tree tier; current calculator node position not independently mapped",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Decreases the cooldown of your Judgement ability by 1 sec.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Decreases the cooldown of your Judgement ability by 2 sec.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        }
+      ]
+    },
+    {
+      "spell_id": 20224,
+      "name": "Improved Seals",
+      "max_rank": 3,
+      "source_url": "https://foreverdiff.com/talents/paladin/improved-seals-1463/",
+      "tree_row": 1,
+      "tree_col": null,
+      "tree_authority": "qualified_inherited_classic_position",
+      "tree_evidence": "Provisional unchanged Classic tree tier; current calculator node position not independently mapped",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Increases the damage done by your Seals and Judgements by 5%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Increases the damage done by your Seals and Judgements by 10%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Increases the damage done by your Seals and Judgements by 15%.",
+          "authority": "foreverdiff_client_70009_rank_text"
+        }
+      ]
+    },
+    {
+      "spell_id": 20262,
+      "name": "Divine Strength",
+      "max_rank": 5,
+      "source_url": "https://www.wowhead.com/forever/spell=20266",
+      "tree_row": 0,
+      "tree_col": null,
+      "tree_authority": "qualified_inherited_classic_position",
+      "tree_evidence": "Provisional unchanged Classic tree tier; current calculator node position not independently mapped",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Increases your Strength by 2%.",
+          "authority": "qualified_unchanged_classic_rank_curve_forever_rank5_crosscheck"
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Increases your Strength by 4%.",
+          "authority": "qualified_unchanged_classic_rank_curve_forever_rank5_crosscheck"
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Increases your Strength by 6%.",
+          "authority": "qualified_unchanged_classic_rank_curve_forever_rank5_crosscheck"
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Increases your Strength by 8%.",
+          "authority": "qualified_unchanged_classic_rank_curve_forever_rank5_crosscheck"
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Increases your Strength by 10%.",
+          "authority": "qualified_unchanged_classic_rank_curve_forever_rank5_crosscheck"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_______ test_source_compound_five_ranks_and_duration_are_all_executable ________
+
+    def test_source_compound_five_ranks_and_duration_are_all_executable():
+        ir,coverage=_compiled()
+        t=next(t for t in ir.talents if t.id=='improved_starfire')
+>       assert coverage['rank_missing_executor']==34  # WF429 39 -> 34, not a P2 PASS
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 39 == 34
+
+tests/test_wf430_source_compound_stun_tdd.py:22: AssertionError
+________ test_legal_26_point_selection_applies_only_starfire_not_wrath _________
+
+    def test_legal_26_point_selection_applies_only_starfire_not_wrath():
+        ir,_=_compiled()
+        base={'genesis':5,'improved_wrath':5,'improved_moonfire':2,
+              'natures_majesty':2,'moonglow':3,'natures_reach':2,
+              'natures_splendor':1,'insect_swarm':1,'ferocity':5}
+        selected=dict(base); selected.pop('ferocity');selected['improved_starfire']=5
+        assert sum(base.values())==sum(selected.values())==26
+        before,_=apply_talent_selection(ir,base,level=30,bonus_talent_points=5)
+>       after,_=apply_talent_selection(ir,selected,level=30,bonus_talent_points=5)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_wf430_source_compound_stun_tdd.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'genesis': 5, 'improved_moonfire': 2, 'improved_starfire': 5, 'improved_wrath': 5, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for improved_starfire rank 5; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+____________ test_generic_control_proc_zero_and_one_and_paid_swing _____________
+
+    def test_generic_control_proc_zero_and_one_and_paid_swing():
+        for chance in (0.,1.):
+>           rt,attack=_runtime(chance)
+                      ^^^^^^^^^^^^^^^^
+
+tests/test_wf430_source_compound_stun_tdd.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+chance = 0.0
+
+    def _runtime(chance):
+        actor=ActorState.from_ir(ActorDefinition('hero','player',base_stats={}),
+            (ResourceDefinition('health','Health','hero',initial_amount=500,capacity=500),),())
+        rt=CombatRuntime(actor=actor,target=TargetState.with_health('mob',1000))
+        action=ActionDefinition('source_proc','source_proc','source_proc','hero',
+            requirements=(),costs=(),cast_time_s=0,gcd_s=0,cooldown_s=0,
+>           effects=(ControlEffect('control','stun','enemy',3.,prevents_enemy_actions=True,
+                proc_chance=chance),))
+E       TypeError: ControlEffect.__init__() got an unexpected keyword argument 'proc_chance'
+
+tests/test_wf430_source_compound_stun_tdd.py:64: TypeError
+_________ test_compound_fail_closed_if_duration_missing_or_conflicting _________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_compound_fail_closed_if_d0')
+
+    def test_compound_fail_closed_if_duration_missing_or_conflicting(tmp_path):
+        import sqlite3,shutil
+        path=tmp_path/'without_control_duration.sqlite'
+        shutil.copy2(DB,path)
+        with sqlite3.connect(path) as conn:
+>           conn.execute("DELETE FROM sourced_talent_proc_control_facts WHERE talent_id='improved_starfire'")
+E           sqlite3.OperationalError: no such table: sourced_talent_proc_control_facts
+
+tests/test_wf430_source_compound_stun_tdd.py:91: OperationalError
+=========================== short test summary info ============================
+FAILED tests/test_wf430_source_compound_stun_tdd.py::test_source_compound_five_ranks_and_duration_are_all_executable - assert 39 == 34
+FAILED tests/test_wf430_source_compound_stun_tdd.py::test_legal_26_point_selection_applies_only_starfire_not_wrath - ValueError: unsupported talent effect for improved_starfire rank 5; refusing no-op selection
+FAILED tests/test_wf430_source_compound_stun_tdd.py::test_generic_control_proc_zero_and_one_and_paid_swing - TypeError: ControlEffect.__init__() got an unexpected keyword argument 'proc_chance'
+FAILED tests/test_wf430_source_compound_stun_tdd.py::test_compound_fail_closed_if_duration_missing_or_conflicting - sqlite3.OperationalError: no such table: sourced_talent_proc_control_facts
+4 failed in 1.61s

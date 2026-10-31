@@ -1,0 +1,47 @@
+{
+  "contract": "Source legal L0 + nondegenerate actual 100mob context weights + Top5 contributions, uncertainty disclosed",
+  "failures": [],
+  "gate": "P3",
+  "legal_items": 1974,
+  "limits": [
+    "NOT all item effects executable in L2",
+    "L0 local marginal weights not a global optimum guarantee",
+    "Unknown item effects, resistances and rank changes can reorder the Top5",
+    "Tested zero over a short finite-difference range does not prove universal zero"
+  ],
+  "measured_or_context_zero_axes": [
+    "agility",
+    "armor",
+    "attack_power",
+    "crit",
+    "defense",
+    "health_regeneration_per_5s",
+    "intellect",
+    "mp5",
+    "spell_power",
+    "spirit",
+    "stamina",
+    "strength",
+    "weapon_dps",
+    "weapon_speed"
+  ],
+  "nonzero_build_specific_axes": [
+    "agility",
+    "armor",
+    "attack_power",
+    "crit",
+    "defense",
+    "health_regeneration_per_5s",
+    "intellect",
+    "mp5",
+    "spirit",
+    "strength",
+    "weapon_dps"
+  ],
+  "pass": true,
+  "slots": 18,
+  "status": "PASS_L0_WITH_EXPLICIT_UNCERTAINTY",
+  "top5_rows": 83,
+  "unknown_item_components_remain_explicit": true,
+  "unknown_weighted_ranking_items": 95
+}

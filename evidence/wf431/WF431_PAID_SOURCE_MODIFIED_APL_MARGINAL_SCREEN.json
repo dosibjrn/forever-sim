@@ -1,0 +1,88 @@
+{
+  "enemy_authority": "CMANGOS_CLASSIC_PROXY_NOT_VERIFIED_FOREVER_NPC",
+  "independent_100mob_spell_power_witness": [
+    {
+      "count": 100,
+      "elapsed_cpu_s": 0.19841102699999968,
+      "elapsed_wall_s": 0.19841740299989397,
+      "events": 3560,
+      "mean_s_per_mob": 19.610104598652033,
+      "source_action_counts": {
+        "source_spell:8949": 400
+      },
+      "source_control_proc_attempts": 400,
+      "source_control_proc_triggered": 59,
+      "status": "COMPLETE"
+    },
+    {
+      "count": 100,
+      "elapsed_cpu_s": 0.19416296400000022,
+      "elapsed_wall_s": 0.19417527600012363,
+      "events": 3560,
+      "mean_s_per_mob": 19.610104598652033,
+      "source_action_counts": {
+        "source_spell:8949": 400
+      },
+      "source_control_proc_attempts": 400,
+      "source_control_proc_triggered": 59,
+      "status": "COMPLETE"
+    }
+  ],
+  "overall_parent_cpu_s": 4.249668270000001,
+  "overall_wall_s": 28.722068658000126,
+  "parent": "WF430",
+  "rank_missing_executor": 34,
+  "searches": {
+    "marginal_screen": {
+      "complete_100mob_candidates": 0,
+      "events": 24997,
+      "finalist_phase_wall_s": 12.034536032999995,
+      "full_evaluated_candidates": 4,
+      "paid_candidates": 67,
+      "parent_cpu_s": 2.568348042,
+      "proposal_strategy": "marginal_screen",
+      "screen_complete_candidates": 66,
+      "screen_phase_wall_s": 15.00561896399995,
+      "source_modified_witness_casts": 28,
+      "source_modified_witness_completed_screens": 1,
+      "source_modified_witness_first_attempt": 7,
+      "source_modified_witness_paid_attempts": 1,
+      "status": "NO_COMPLETE_100MOB_JOINT_CANDIDATE",
+      "unique_full_builds": 67,
+      "wall_s": 27.040752816999884,
+      "winner": null,
+      "witness_rows": [
+        {
+          "gear_move": "incumbent",
+          "policy_origin": "talent_modified:improved_starfire:source_spell:8949",
+          "screen_s_per_mob": 36.60310747991658,
+          "screen_status": "COMPLETE",
+          "seconds_per_mob": null,
+          "source_action_counts": {
+            "source_spell:8949": 28
+          },
+          "status": "SCREEN_COMPLETE_NOT_PROMOTED"
+        }
+      ],
+      "worker_cpu_s_reported": 12.057763587
+    }
+  },
+  "source_build": "1.60.1.70338",
+  "source_db_sha256": "b09f57d416ff2dcda7585e6921ed5f461aae992ea7e83caadd2752a0aec098ef",
+  "talented_points": 26,
+  "witness": {
+    "action_id": "source_spell:8949",
+    "allocation": {
+      "genesis": 5,
+      "improved_entangling_roots": 2,
+      "improved_moonfire": 2,
+      "improved_starfire": 5,
+      "improved_wrath": 5,
+      "moonglow": 3,
+      "natures_majesty": 2,
+      "natures_reach": 2
+    },
+    "label": "talent_modified:improved_starfire:source_spell:8949",
+    "talent_index": 4
+  }
+}

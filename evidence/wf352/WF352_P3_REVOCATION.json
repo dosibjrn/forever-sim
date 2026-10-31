@@ -1,0 +1,166 @@
+{
+  "accepted_checkpoints": "1/148",
+  "checkpoint": "druid:L30:unrestricted",
+  "criticisms": [
+    "old weapon DPS unknown was fixed by WF352, but source was version-ambiguous",
+    "negative one-step agility slope mislabeled as reliable ranking penalty",
+    "weapon DPS marginal coefficient unusable across item delta thresholds",
+    "WF352 was derived for superseded 16-talent-point seed, not best known L30 build"
+  ],
+  "current_best_context": {
+    "finding": "19.0289 seed 16 talent points vs 18.0713 winner 21 talent points, nine different equipped item IDs",
+    "newer_100mob_finder_score_s_per_mob": 18.0712926573722,
+    "newer_finder_context": "WF353 local independent P4/P5 WIP; not yet an accepted checkpoint",
+    "requires": "redo gear Top5 in up-to-date best-build context before any new P3 acceptance",
+    "stale_report_seed_s_per_mob": 19.02888801859612
+  },
+  "multiscale_100mob": {
+    "axes": {
+      "agility": {
+        "issues": [
+          "ADVERSE_POSITIVE_STAT_PERTURBATION",
+          "NONLINEAR_SLOPE_EXTRAPOLATION_UNSAFE"
+        ],
+        "points": [
+          {
+            "delta": -10.0,
+            "improvement_s_per_mob": -0.6271152368534239,
+            "s_per_mob": 19.656003255449544,
+            "slope_s_saved_per_mob_per_unit": 0.06271152368534239
+          },
+          {
+            "delta": -5.0,
+            "improvement_s_per_mob": -0.6250849628619015,
+            "s_per_mob": 19.653972981458022,
+            "slope_s_saved_per_mob_per_unit": 0.1250169925723803
+          },
+          {
+            "delta": 5.0,
+            "improvement_s_per_mob": -0.009740642481787631,
+            "s_per_mob": 19.038628661077908,
+            "slope_s_saved_per_mob_per_unit": -0.0019481284963575262
+          },
+          {
+            "delta": 10.0,
+            "improvement_s_per_mob": 0.03949961752187292,
+            "s_per_mob": 18.989388401074248,
+            "slope_s_saved_per_mob_per_unit": 0.003949961752187292
+          },
+          {
+            "delta": 20.0,
+            "improvement_s_per_mob": 0.04192682349765775,
+            "s_per_mob": 18.986961195098463,
+            "slope_s_saved_per_mob_per_unit": 0.0020963411748828875
+          },
+          {
+            "delta": 40.0,
+            "improvement_s_per_mob": 0.9563267659148664,
+            "s_per_mob": 18.072561252681254,
+            "slope_s_saved_per_mob_per_unit": 0.02390816914787166
+          }
+        ],
+        "safe_scalar_weight": false,
+        "source_weight_s_saved_per_mob_per_unit": -0.0019481284963575262
+      },
+      "weapon_dps": {
+        "issues": [
+          "ASYMMETRIC_ITEM_STAT_THRESHOLD",
+          "NONLINEAR_SLOPE_EXTRAPOLATION_UNSAFE"
+        ],
+        "points": [
+          {
+            "delta": -2.0,
+            "improvement_s_per_mob": -0.93306377048998,
+            "s_per_mob": 19.9619517890861,
+            "slope_s_saved_per_mob_per_unit": 0.46653188524499
+          },
+          {
+            "delta": 2.0,
+            "improvement_s_per_mob": 0.03704852172349149,
+            "s_per_mob": 18.99183949687263,
+            "slope_s_saved_per_mob_per_unit": 0.018524260861745745
+          },
+          {
+            "delta": 4.0,
+            "improvement_s_per_mob": 0.9545699608533376,
+            "s_per_mob": 18.074318057742783,
+            "slope_s_saved_per_mob_per_unit": 0.2386424902133344
+          }
+        ],
+        "safe_scalar_weight": false,
+        "source_weight_s_saved_per_mob_per_unit": 0.018524260861745745
+      }
+    },
+    "base_s_per_mob": 19.02888801859612,
+    "build_identity_sha256": "360a386f047335f12524feadcbc7b7d9d8d4bac717602b021c2eeb68f6671b4b",
+    "failures": [
+      "agility:ADVERSE_POSITIVE_STAT_PERTURBATION",
+      "agility:NONLINEAR_SLOPE_EXTRAPOLATION_UNSAFE",
+      "weapon_dps:ASYMMETRIC_ITEM_STAT_THRESHOLD",
+      "weapon_dps:NONLINEAR_SLOPE_EXTRAPOLATION_UNSAFE"
+    ],
+    "impact_floor_s_per_mob": 0.005,
+    "interpretation": "NO_CLAIM_OF_LINEAR_WEIGHT_OUTSIDE_ACTUAL_PROBED_REGION",
+    "mobs": 100,
+    "pass": false,
+    "slope_ratio_limit": 4.0,
+    "status": "FAIL"
+  },
+  "next": "Recompute candidate-context marginal curves and replay high-ranked item swaps at the actual 100mob objective; mark unresolved Top5 ranking uncertainty; reject until reranked and calibrated.",
+  "p1_status": "PASS_CARRIED",
+  "p2_status": "PASS_CARRIED",
+  "p3_status": "FAIL_REVOKED",
+  "p4_p5_p6_status": "NOT_CERTIFIED_BY_THIS_AUDIT",
+  "recomputed_certificate": {
+    "contract": "Source legal L0 + nondegenerate actual 100mob context weights + Top5 contributions, uncertainty disclosed",
+    "failures": [
+      "NONLINEAR_STAT_WEIGHTS_INVALIDATE_TOP5",
+      "UNVALIDATED_NEGATIVE_GEAR_WEIGHT"
+    ],
+    "gate": "P3",
+    "legal_items": 1974,
+    "limits": [
+      "NOT all item effects executable in L2",
+      "L0 local marginal weights not a global optimum guarantee",
+      "Unknown item effects, resistances and rank changes can reorder the Top5",
+      "Tested zero over a short finite-difference range does not prove universal zero"
+    ],
+    "measured_or_context_zero_axes": [
+      "agility",
+      "armor",
+      "attack_power",
+      "crit",
+      "defense",
+      "health_regeneration_per_5s",
+      "intellect",
+      "mp5",
+      "spell_power",
+      "spirit",
+      "stamina",
+      "strength",
+      "weapon_dps",
+      "weapon_speed"
+    ],
+    "nonzero_build_specific_axes": [
+      "agility",
+      "armor",
+      "attack_power",
+      "crit",
+      "defense",
+      "health_regeneration_per_5s",
+      "intellect",
+      "mp5",
+      "spirit",
+      "strength",
+      "weapon_dps"
+    ],
+    "pass": false,
+    "slots": 18,
+    "status": "FAIL",
+    "top5_rows": 83,
+    "unknown_item_components_remain_explicit": true,
+    "unknown_weighted_ranking_items": 95
+  },
+  "report": "WF352_P3_REVOCATION",
+  "supersedes_certificate": "WF352_P3_ACCEPTANCE.json"
+}

@@ -1,0 +1,404 @@
+{
+  "all_four_positive": true,
+  "catalogue_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "checkpoint_accepted": false,
+  "measured_wall_s": 23.81890850000036,
+  "notes": [
+    "WF325 and WF347 gear/policy builds differ; this proof must NOT be pasted into WF347 stat-weight vector.",
+    "P3 uses a fast separately cached scoring test; expensive paid sensitivity is generated only on demand.",
+    "No global optimum guarantee; policy frontier is exactly the recorded two source-legal recoveries."
+  ],
+  "recovery_sensitivity": {
+    "mp5": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 7716,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.569776613982858,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.97766139828593,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 13,
+          "context": "before",
+          "events": 7707,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.573097845368057,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.3097845368056,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 10.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "before",
+          "events": 7707,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.573097845368057,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.3097845368056,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 18,
+          "context": "before",
+          "events": 7912,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.818738086171697,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 200.8738086171697,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 7716,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.569776613982858,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.97766139828593,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 20,
+          "context": "after",
+          "events": 7761,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.95569667989165,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 207.5696679891652,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "mp5",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0003321231385198686
+    },
+    "spell_power": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 7699,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.489601756603413,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 162.9601756603413,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 13,
+          "context": "before",
+          "events": 7707,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.573097845368057,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.3097845368056,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 30.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "before",
+          "events": 7707,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.573097845368057,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.3097845368056,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 18,
+          "context": "before",
+          "events": 7912,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.818738086171697,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 200.8738086171697,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 7699,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.489601756603413,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 162.9601756603413,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 17,
+          "context": "after",
+          "events": 7923,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.69774028023199,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 190.77402802319887,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "spell_power",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0027832029588214626
+    },
+    "spirit": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 7716,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.569776613982858,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.97766139828593,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 13,
+          "context": "before",
+          "events": 7707,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.573097845368057,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.3097845368056,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "before",
+          "events": 7707,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.573097845368057,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.3097845368056,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 18,
+          "context": "before",
+          "events": 7912,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.818738086171697,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 200.8738086171697,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 7716,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.569776613982858,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.97766139828593,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 20,
+          "context": "after",
+          "events": 7761,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.95569667989165,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 207.5696679891652,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "spirit",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0001660615692599343
+    },
+    "stamina": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 11,
+          "context": "after",
+          "events": 7724,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.48885591455181,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 162.88559145518096,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 13,
+          "context": "before",
+          "events": 7707,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.573097845368057,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.3097845368056,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "before",
+          "events": 7707,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.573097845368057,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 170.3097845368056,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 18,
+          "context": "before",
+          "events": 7912,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.818738086171697,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 200.8738086171697,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 11,
+          "context": "after",
+          "events": 7724,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.48885591455181,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 162.88559145518096,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 17,
+          "context": "after",
+          "events": 7699,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.785213119389985,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 195.52131193899845,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "stamina",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.004212096540812382
+    }
+  },
+  "release": "WF412",
+  "sample_build_allocation": {
+    "feral_swiftness": 1,
+    "ferocity": 5,
+    "heart_of_the_wild": 5
+  },
+  "source_stage": "wf325_actual_source_discovered_checkpoint_stage",
+  "stage_sha256": "fbd23bb4e1221970e6369aa6cd1c390c41cc63c860fe8cd9bf7fca6577f38cec",
+  "status": "SOURCE_PAID_DIAGNOSTIC_NOT_P3_ACCEPTED",
+  "weapon": {
+    "claw_runtime_flat_dps": 19.71,
+    "equipped_mean_hit_dependence": false,
+    "observed_item_id": 7230,
+    "observed_weapon_dps": 19.71,
+    "plus_10_dps_100mob": {
+      "after": 12.065121161034245,
+      "after_events": 6233,
+      "before": 13.46412880141965,
+      "before_events": 7283,
+      "weight_s_saved_per_mob_per_dps": 0.13990076403854043
+    },
+    "positive_equipped_weapon_dps_dependence": true
+  }
+}

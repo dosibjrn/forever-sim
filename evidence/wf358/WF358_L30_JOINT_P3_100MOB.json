@@ -1,0 +1,494 @@
+{
+  "attempts": 12,
+  "baseline_s_per_mob": 16.643524161926152,
+  "best_s_per_mob": 16.287595825231314,
+  "checkpoint": "druid:L30:unrestricted",
+  "complete": 11,
+  "cpu_s": 0.1362572120000003,
+  "results": [
+    {
+      "result": {
+        "between_pull_full_recoveries": 15,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 116,
+        "carried_hot_heals_in_combat": 32,
+        "carried_hot_ticks_at_pull": 32,
+        "combat_s": 1444.5,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.4651973000000003,
+        "elapsed_wall_s": 3.4724840129999848,
+        "end_to_end_child_cpu_s": 3.9647403000000003,
+        "end_to_end_child_wall_s": 3.973639208999998,
+        "events": 9977,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 24,
+        "maintenance_s": 7.0,
+        "mean_s_per_mob": 16.455858877729113,
+        "outer_wall_s": 4.8720228419999785,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 194.08588777291124,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1645.5858877729113
+      },
+      "screened_independent_gain_s_per_mob": 0.8220072061820183,
+      "swaps": {
+        "chest": 252508,
+        "legs": 252445,
+        "neck": 13084,
+        "ring1": 285190
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 14,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 108,
+        "carried_hot_heals_in_combat": 32,
+        "carried_hot_ticks_at_pull": 32,
+        "combat_s": 1448.0,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.318666453,
+        "elapsed_wall_s": 3.325898850000044,
+        "end_to_end_child_cpu_s": 3.806983824,
+        "end_to_end_child_wall_s": 3.8148501029999125,
+        "events": 9979,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 28,
+        "maintenance_s": 9.0,
+        "mean_s_per_mob": 16.287595825231314,
+        "outer_wall_s": 4.691610539999942,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 171.75958252313148,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1628.7595825231315
+      },
+      "screened_independent_gain_s_per_mob": 0.7825843172400688,
+      "swaps": {
+        "back": 14149,
+        "legs": 252445,
+        "neck": 13084,
+        "ring1": 285190
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 14,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 108,
+        "carried_hot_heals_in_combat": 25,
+        "carried_hot_ticks_at_pull": 25,
+        "combat_s": 1450.0,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.4511976220000005,
+        "elapsed_wall_s": 3.4549894609999683,
+        "end_to_end_child_cpu_s": 3.9503859130000003,
+        "end_to_end_child_wall_s": 3.9547597209999594,
+        "events": 9966,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 30,
+        "maintenance_s": 9.0,
+        "mean_s_per_mob": 16.38885811172765,
+        "outer_wall_s": 4.821952029000045,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 179.885811172765,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1638.885811172765
+      },
+      "screened_independent_gain_s_per_mob": 0.7802110479793392,
+      "swaps": {
+        "back": 14149,
+        "chest": 252508,
+        "legs": 252445,
+        "neck": 13084
+      }
+    },
+    {
+      "result": {
+        "elapsed_wall_s": 1.9836376549999386,
+        "end_to_end_child_cpu_s": 2.498172203,
+        "end_to_end_child_wall_s": 2.498808496000038,
+        "events": 6592,
+        "mob": 66,
+        "outer_wall_s": 3.364065316000051,
+        "reason": "no legal policy action",
+        "status": "BLOCKED_COMBAT"
+      },
+      "screened_independent_gain_s_per_mob": 0.7739603686535652,
+      "swaps": {
+        "back": 14149,
+        "chest": 252508,
+        "legs": 252445,
+        "ring1": 285190
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 13,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 100,
+        "carried_hot_heals_in_combat": 18,
+        "carried_hot_ticks_at_pull": 18,
+        "combat_s": 1468.0000000000002,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.7744424899999998,
+        "elapsed_wall_s": 3.7930376620000743,
+        "end_to_end_child_cpu_s": 4.288361828,
+        "end_to_end_child_wall_s": 4.307436535999955,
+        "events": 10113,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 24,
+        "maintenance_s": 7.0,
+        "mean_s_per_mob": 16.47087728781557,
+        "outer_wall_s": 5.2949926829999185,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 172.08772878155656,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1647.0877287815567
+      },
+      "screened_independent_gain_s_per_mob": 0.7684398913025099,
+      "swaps": {
+        "legs": 252445,
+        "neck": 13084,
+        "ring1": 285190,
+        "shoulder": 273047
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 13,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 100,
+        "carried_hot_heals_in_combat": 26,
+        "carried_hot_ticks_at_pull": 26,
+        "combat_s": 1468.0,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.3933450260000004,
+        "elapsed_wall_s": 3.3952581550000787,
+        "end_to_end_child_cpu_s": 3.9102794159999994,
+        "end_to_end_child_wall_s": 3.912871885999948,
+        "events": 10131,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 24,
+        "maintenance_s": 7.0,
+        "mean_s_per_mob": 16.456405739805327,
+        "outer_wall_s": 4.912623263,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 170.6405739805325,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1645.6405739805325
+      },
+      "screened_independent_gain_s_per_mob": 0.7660666220417802,
+      "swaps": {
+        "chest": 252508,
+        "legs": 252445,
+        "neck": 13084,
+        "shoulder": 273047
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 13,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 100,
+        "carried_hot_heals_in_combat": 26,
+        "carried_hot_ticks_at_pull": 26,
+        "combat_s": 1467.9999999999998,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.3558754889999998,
+        "elapsed_wall_s": 3.3607556959999556,
+        "end_to_end_child_cpu_s": 3.867255054,
+        "end_to_end_child_wall_s": 3.8729420659999505,
+        "events": 10131,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 24,
+        "maintenance_s": 7.0,
+        "mean_s_per_mob": 16.462931238544925,
+        "outer_wall_s": 4.816351378000036,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 171.29312385449265,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1646.2931238544925
+      },
+      "screened_independent_gain_s_per_mob": 0.7598159427160063,
+      "swaps": {
+        "chest": 252508,
+        "legs": 252445,
+        "ring1": 285190,
+        "shoulder": 273047
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 14,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 108,
+        "carried_hot_heals_in_combat": 29,
+        "carried_hot_ticks_at_pull": 29,
+        "combat_s": 1466.5000000000002,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.5561426330000003,
+        "elapsed_wall_s": 3.5628688399999646,
+        "end_to_end_child_cpu_s": 4.07605991,
+        "end_to_end_child_wall_s": 4.08352319200003,
+        "events": 10158,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 30,
+        "maintenance_s": 9.0,
+        "mean_s_per_mob": 16.605694678030495,
+        "outer_wall_s": 5.096334282999919,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 185.06946780304935,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1660.5694678030495
+      },
+      "screened_independent_gain_s_per_mob": 0.7430947209927083,
+      "swaps": {
+        "back": 14149,
+        "chest": 252508,
+        "neck": 13084,
+        "ring1": 285190
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 13,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 100,
+        "carried_hot_heals_in_combat": 26,
+        "carried_hot_ticks_at_pull": 26,
+        "combat_s": 1468.0,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.5344918979999997,
+        "elapsed_wall_s": 3.5422897060000196,
+        "end_to_end_child_cpu_s": 4.066786833,
+        "end_to_end_child_wall_s": 4.077055228000063,
+        "events": 10133,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 24,
+        "maintenance_s": 7.0,
+        "mean_s_per_mob": 16.451342341348724,
+        "outer_wall_s": 5.167780597999922,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 170.13423413487237,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1645.1342341348723
+      },
+      "screened_independent_gain_s_per_mob": 0.7289502950551494,
+      "swaps": {
+        "chest": 252508,
+        "neck": 13084,
+        "ring1": 285190,
+        "shoulder": 273047
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 12,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 92,
+        "carried_hot_heals_in_combat": 25,
+        "carried_hot_ticks_at_pull": 25,
+        "combat_s": 1465.5,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.0491062270000002,
+        "elapsed_wall_s": 3.0494023640000023,
+        "end_to_end_child_cpu_s": 3.623355033,
+        "end_to_end_child_wall_s": 3.6240188000000444,
+        "events": 10127,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 26,
+        "maintenance_s": 8.5,
+        "mean_s_per_mob": 16.29423891865926,
+        "outer_wall_s": 4.653299575999995,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 155.42389186592587,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1629.423891865926
+      },
+      "screened_independent_gain_s_per_mob": 0.7266437330998308,
+      "swaps": {
+        "back": 14149,
+        "legs": 252445,
+        "neck": 13084,
+        "shoulder": 273047
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 12,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 92,
+        "carried_hot_heals_in_combat": 25,
+        "carried_hot_ticks_at_pull": 25,
+        "combat_s": 1465.5,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 3.039067782,
+        "elapsed_wall_s": 3.0425387730000466,
+        "end_to_end_child_cpu_s": 3.575475003,
+        "end_to_end_child_wall_s": 3.598134087000062,
+        "events": 10125,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 26,
+        "maintenance_s": 8.5,
+        "mean_s_per_mob": 16.301752908794246,
+        "outer_wall_s": 4.687448621000044,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 156.1752908794245,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1630.1752908794244
+      },
+      "screened_independent_gain_s_per_mob": 0.7203930537740568,
+      "swaps": {
+        "back": 14149,
+        "legs": 252445,
+        "ring1": 285190,
+        "shoulder": 273047
+      }
+    },
+    {
+      "result": {
+        "between_pull_full_recoveries": 12,
+        "between_pull_hot_casts": 0,
+        "between_pull_runtime_events": 92,
+        "carried_hot_heals_in_combat": 25,
+        "carried_hot_ticks_at_pull": 25,
+        "combat_s": 1466.0,
+        "continuous_actor_state": true,
+        "count": 100,
+        "elapsed_cpu_s": 2.990519225,
+        "elapsed_wall_s": 2.990592365999987,
+        "end_to_end_child_cpu_s": 3.4820245519999995,
+        "end_to_end_child_wall_s": 3.4821014970000306,
+        "events": 10124,
+        "maintenance_casts": 4,
+        "maintenance_runtime_events": 26,
+        "maintenance_s": 8.5,
+        "mean_s_per_mob": 16.308269811074005,
+        "outer_wall_s": 4.368855350999979,
+        "recovery_policy": {
+          "exit_action_id": "cancel_mode:cat",
+          "health_fraction": 0.25,
+          "hot_action_id": null,
+          "hot_min_missing_health_fraction": 0.0,
+          "mana_fraction": 0.1,
+          "reentry_action_id": "cat_form:768"
+        },
+        "recovery_s": 156.32698110740066,
+        "skipped_satisfied_mode_prefixes": 97,
+        "source_only": true,
+        "status": "COMPLETE",
+        "total_s": 1630.8269811074006
+      },
+      "screened_independent_gain_s_per_mob": 0.7180197845133272,
+      "swaps": {
+        "back": 14149,
+        "chest": 252508,
+        "legs": 252445,
+        "shoulder": 273047
+      }
+    }
+  ],
+  "source_stage": "evidence/wf357/WF357_L30_BEST_P3_STAGE.json",
+  "status": "P3_JOINT_CALIBRATION_NOT_P4_P5",
+  "wall_s": 56.85201515599999
+}

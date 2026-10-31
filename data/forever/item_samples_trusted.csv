@@ -1,0 +1,10 @@
+sample_group,item_name,slot,type,damage_min,damage_max,speed,dps,armor,required_level,strength,agility,stamina,intellect,spirit,hp5,trust_basis
+AH L20,Bronze Warhammer,Two-Hand,Mace,47,71,3.5,16.9,,20,6,,6,,,,Observed stats + required level
+AH L20,Silvered Bronze Shoulders,Shoulder,Mail,,,,,137,20,3,,3,,3,,Observed stats + required level
+L20 character/reference,Cobrahn's Grasp,Waist,Mail,,,,,107,17,7,3,,,,,Observed stats + required level
+L20 character/reference,Brackwater Vest,Chest,Mail,,,,,162,13,4,,3,,,,Observed stats + required level
+L20 character/reference,Compact Shotgun,Ranged,Gun,7,14,2.0,5.2,,8,,,1,,,,Observed stats + required level
+L20 character/reference,Savage Trodders,Feet,Mail,,,,,134,18,,,7,,,6,Observed stats + required level
+L20 character/reference,Runed Copper Bracers,Wrist,Mail,,,,,72,14,2,,2,,,,Observed stats + required level
+L20 character/reference,Rough Bronze Shoulders,Shoulder,Mail,,,,,130,17,3,,4,,,,Observed stats + required level
+L20 character/reference,Subterranean Cape,Back,,,,,,17,13,3,,,,,5,Observed stats + required level

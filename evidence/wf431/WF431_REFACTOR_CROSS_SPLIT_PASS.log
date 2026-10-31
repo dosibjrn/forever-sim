@@ -1,0 +1,25 @@
+== tests/test_wf415_rend_and_tear_paid_tdd.py ==
+......                                                                   [100%]
+6 passed in 8.50s
+== tests/test_wf409_talent_unlock_paid_witness_tdd.py ==
+......                                                                   [100%]
+=============================== warnings summary ===============================
+tests/test_wf409_talent_unlock_paid_witness_tdd.py::test_paid_joint_search_actually_screens_talent_unlocked_action
+tests/test_wf409_talent_unlock_paid_witness_tdd.py::test_paid_joint_search_actually_screens_talent_unlocked_action
+tests/test_wf409_talent_unlock_paid_witness_tdd.py::test_paid_joint_search_actually_screens_talent_unlocked_action
+tests/test_wf409_talent_unlock_paid_witness_tdd.py::test_paid_joint_search_actually_screens_talent_unlocked_action
+tests/test_wf409_talent_unlock_paid_witness_tdd.py::test_paid_joint_search_actually_screens_talent_unlocked_action
+tests/test_wf409_talent_unlock_paid_witness_tdd.py::test_complete_unlock_screen_can_claim_paid_p4_coverage
+tests/test_wf409_talent_unlock_paid_witness_tdd.py::test_complete_unlock_screen_can_claim_paid_p4_coverage
+tests/test_wf409_talent_unlock_paid_witness_tdd.py::test_complete_unlock_screen_can_claim_paid_p4_coverage
+  /usr/lib/python3.13/multiprocessing/popen_fork.py:67: DeprecationWarning: This process (pid=9681) is multi-threaded, use of fork() may lead to deadlocks in the child.
+    self.pid = os.fork()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6 passed, 8 warnings in 7.40s
+== tests/test_wf401_marginal_source_scheduler_tdd.py ==
+.....                                                                    [100%]
+5 passed in 0.25s
+== tests/test_wf402_resumable_paid_2d_frontier_tdd.py::test_marginal_source_scheduler_resume_matches_independent_uninterrupted_search ==
+.                                                                        [100%]
+1 passed in 2.52s

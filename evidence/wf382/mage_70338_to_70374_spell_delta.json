@@ -1,0 +1,19 @@
+{
+  "changed_spell_records": 0,
+  "changed_talent_records": 0,
+  "class_key": "mage",
+  "compared_on": "2026-10-13",
+  "from_build": "1.60.1.70338",
+  "new_spells_by_category": {
+    "other": 1
+  },
+  "new_talent_records": 0,
+  "removed_spell_records": 0,
+  "removed_talent_records": 0,
+  "schema": "forever_client_build_delta_class_bridge_v1",
+  "source_claim": "one new Other spell; zero changed or removed spell records; zero changed talent records",
+  "source_url": "https://wow-forever.gg/changelog/1.60.1.70338__1.60.1.70374/",
+  "to_build": "1.60.1.70374",
+  "uncertainty": "Fan-made client-build changelog, not server gameplay verification.",
+  "unchanged_source_sha256": "faca90c88f020802bde9457a395af7ccd19494e609d576f1834c71ec7686a917"
+}

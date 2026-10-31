@@ -1,0 +1,40 @@
+{
+  "schema": "forever_secondary_client_talent_rank_capture_v1",
+  "class_key": "druid",
+  "capture_id": "secondary_druid_naturalist_20261010_70291",
+  "captured_at": "2026-10-10",
+  "client_build_claim": "1.60.1.70291",
+  "authority_note": "Secondary client text transcription; Wowhead indexed spell ID retained; no fabricated trait IDs.",
+  "entries": [
+    {
+      "spell_id": 17069,
+      "name": "Naturalist",
+      "tree_row": 1,
+      "tree_col": 0,
+      "max_rank": 5,
+      "tooltip_source_url": "https://wowforevertalents.com/druid/talents/naturalist/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Reduces the cast time of your Healing Touch spell by 0.1 sec and increases all damage you deal by 1%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Reduces the cast time of your Healing Touch spell by 0.2 sec and increases all damage you deal by 2%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Reduces the cast time of your Healing Touch spell by 0.3 sec and increases all damage you deal by 3%."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Reduces the cast time of your Healing Touch spell by 0.4 sec and increases all damage you deal by 4%."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Reduces the cast time of your Healing Touch spell by 0.5 sec and increases all damage you deal by 5%."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "wf339_weighted_slot_pilot_v1",
+  "status": "BOUNDED_COORDINATE_SEARCH",
+  "is_p4": false,
+  "is_p3_pass": false,
+  "p3_weighted_priority_used": true,
+  "attempts": 17,
+  "full_100mob_evaluations": 4,
+  "initial_s_per_mob": 13.46412880141965,
+  "best_s_per_mob": 13.46412880141965,
+  "events": 39393,
+  "wall_s": 10.03753143600261,
+  "cpu_s": 10.010503669,
+  "rounds": [
+    {
+      "round": 1,
+      "available_per_slot": {
+        "back": 120,
+        "chest": 156,
+        "feet": 118,
+        "hands": 117,
+        "head": 15,
+        "legs": 117,
+        "neck": 7,
+        "relic": 5,
+        "ring1": 34,
+        "ring2": 34,
+        "shirt": 2,
+        "shoulder": 29,
+        "trinket1": 1,
+        "trinket2": 1,
+        "waist": 108,
+        "weapon": 207,
+        "wrist": 93
+      },
+      "proposed": 17,
+      "screen_completed": 17,
+      "full_completed": 3,
+      "best_candidate_s_per_mob": 13.464432321298764,
+      "improved": false
+    }
+  ]
+}

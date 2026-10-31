@@ -1,0 +1,1417 @@
+{
+  "catalogue": [
+    {
+      "max_rank": 3,
+      "name": "Improved Heroic Strike",
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_heroic_strike",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 5,
+      "name": "Deflection",
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "deflection",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 3,
+      "name": "Improved Rend",
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_rend",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Charge",
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_charge",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 5,
+      "name": "Improved Tactical Mastery",
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_tactical_mastery",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Overpower",
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_overpower",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 1,
+      "name": "Anger Management",
+      "prerequisite": {
+        "required_rank": 5,
+        "talent_id": "improved_tactical_mastery"
+      },
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "anger_management",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 3,
+      "name": "Deep Wounds",
+      "prerequisite": {
+        "required_rank": 3,
+        "talent_id": "improved_rend"
+      },
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "deep_wounds",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 1,
+      "name": "Spearing Strike",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "spearing_strike",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 3,
+      "name": "Two-Handed Weapon Specialization",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "two_handed_weapon_specialization",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 2,
+      "name": "Impale",
+      "prerequisite": {
+        "required_rank": 3,
+        "talent_id": "deep_wounds"
+      },
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "impale",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 5,
+      "name": "Bloodthrill",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "bloodthrill",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 1,
+      "name": "Sweeping Strikes",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "sweeping_strikes",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 5,
+      "name": "Weaponmaster",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "weaponmaster",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Slam",
+      "row": 5,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_slam",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 3,
+      "name": "Improved Hamstring",
+      "row": 5,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_hamstring",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 1,
+      "name": "Mortal Strike",
+      "prerequisite": {
+        "required_rank": 1,
+        "talent_id": "sweeping_strikes"
+      },
+      "row": 6,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "mortal_strike",
+      "tree_key": "arms"
+    },
+    {
+      "max_rank": 5,
+      "name": "Booming Voice",
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "booming_voice",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 5,
+      "name": "Cruelty",
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "cruelty",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 5,
+      "name": "Lingering Rage",
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "lingering_rage",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 5,
+      "name": "Unbridled Wrath",
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "unbridled_wrath",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 3,
+      "name": "Furious Precision",
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "furious_precision",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 1,
+      "name": "Piercing Howl",
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "piercing_howl",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 3,
+      "name": "Blood Craze",
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "blood_craze",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 5,
+      "name": "Dual Wield Specialization",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "dual_wield_specialization",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 1,
+      "name": "Raging Blows",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "raging_blows",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 5,
+      "name": "Enrage",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "enrage",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Execute",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_execute",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Berserker Rage",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_berserker_rage",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 1,
+      "name": "Death Wish",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "death_wish",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Intercept",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_intercept",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 5,
+      "name": "Flurry",
+      "prerequisite": {
+        "required_rank": 1,
+        "talent_id": "death_wish"
+      },
+      "row": 5,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "flurry",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 2,
+      "name": "Gore Drinker",
+      "prerequisite": {
+        "required_rank": 5,
+        "talent_id": "enrage"
+      },
+      "row": 5,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "gore_drinker",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 1,
+      "name": "Bloodthirst",
+      "row": 6,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "bloodthirst",
+      "tree_key": "fury"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Bloodrage",
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_bloodrage",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 5,
+      "name": "Shield Specialization",
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "shield_specialization",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 5,
+      "name": "Iron Will",
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "iron_will",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 5,
+      "name": "Anticipation",
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "anticipation",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 3,
+      "name": "Improved Revenge",
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_revenge",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 3,
+      "name": "Improved Thunder Clap",
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_thunder_clap",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 1,
+      "name": "Last Stand",
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "last_stand",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 2,
+      "name": "Master of Defense",
+      "prerequisite": {
+        "required_rank": 5,
+        "talent_id": "shield_specialization"
+      },
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "master_of_defense",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 3,
+      "name": "Improved Disarm",
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_disarm",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 3,
+      "name": "Defiance",
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "defiance",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 3,
+      "name": "Improved Sunder Armor",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_sunder_armor",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 1,
+      "name": "Vanguard",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "vanguard",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Shield Bash",
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_shield_bash",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 2,
+      "name": "Improved Shield Wall",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_shield_wall",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 1,
+      "name": "Concussion Blow",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "concussion_blow",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 3,
+      "name": "Focused Rage",
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "focused_rage",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 5,
+      "name": "Bastion",
+      "row": 5,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "bastion",
+      "tree_key": "protection"
+    },
+    {
+      "max_rank": 1,
+      "name": "Shield Slam",
+      "prerequisite": {
+        "required_rank": 1,
+        "talent_id": "concussion_blow"
+      },
+      "row": 6,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "shield_slam",
+      "tree_key": "protection"
+    }
+  ],
+  "class_key": "warrior",
+  "limitations": "Numeric rank vectors are source tooltip features, not 100-mob forecasts. Weapon, enemy, ability, stance, group and proc context may suppress or change value. Eight post-level-30 talents have identities but no L30 rank score because unreachable.",
+  "min_level": 30,
+  "observations": [
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "resource_cost_flat",
+      "max_rank": 3,
+      "name": "Improved Heroic Strike",
+      "rank_values": [
+        1,
+        2,
+        3
+      ],
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_heroic_strike",
+      "target": "heroic_strike",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "parry_chance_pct",
+      "max_rank": 5,
+      "name": "Deflection",
+      "rank_values": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "deflection",
+      "target": "incoming_melee",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "effect_damage_pct",
+      "max_rank": 3,
+      "name": "Improved Rend",
+      "rank_values": [
+        12,
+        23,
+        35
+      ],
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_rend",
+      "target": "rend",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "resource_generation_flat",
+      "max_rank": 2,
+      "name": "Improved Charge",
+      "rank_values": [
+        3,
+        6
+      ],
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_charge",
+      "target": "charge",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "stance_retained_rage",
+      "max_rank": 5,
+      "name": "Improved Tactical Mastery",
+      "rank_values": [
+        3,
+        6,
+        9,
+        12,
+        15
+      ],
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_tactical_mastery",
+      "target": "stance_change",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "critical_chance_pct",
+      "max_rank": 2,
+      "name": "Improved Overpower",
+      "rank_values": [
+        25,
+        50
+      ],
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_overpower",
+      "target": "overpower",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "rage_per_3s_combat",
+      "extra_effects": [
+        {
+          "condition": "source_context_conditional",
+          "effect_domain": "out_of_combat_rage_loss_reduction_pct",
+          "rank_values": [
+            30
+          ],
+          "target": "rage"
+        }
+      ],
+      "max_rank": 1,
+      "name": "Anger Management",
+      "prerequisite": {
+        "required_rank": 5,
+        "talent_id": "improved_tactical_mastery"
+      },
+      "rank_values": [
+        1
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "anger_management",
+      "target": "rage",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "crit_proc_weapon_bleed_pct",
+      "max_rank": 3,
+      "name": "Deep Wounds",
+      "prerequisite": {
+        "required_rank": 3,
+        "talent_id": "improved_rend"
+      },
+      "rank_values": [
+        20,
+        40,
+        60
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "deep_wounds",
+      "target": "melee_critical",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "weapon_damage_pct",
+      "extra_effects": [
+        {
+          "condition": "source_context_conditional",
+          "effect_domain": "bonus_weapon_damage_pct_vs_giant_dragonkin_mounted",
+          "rank_values": [
+            80
+          ],
+          "target": "conditional_enemy_type"
+        }
+      ],
+      "max_rank": 1,
+      "name": "Spearing Strike",
+      "rank_values": [
+        40
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "spearing_strike",
+      "target": "spearing_strike",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "two_handed_damage_pct",
+      "max_rank": 3,
+      "name": "Two-Handed Weapon Specialization",
+      "rank_values": [
+        1,
+        2,
+        3
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "two_handed_weapon_specialization",
+      "target": "two_handed_melee",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "critical_damage_bonus_pct",
+      "max_rank": 2,
+      "name": "Impale",
+      "prerequisite": {
+        "required_rank": 3,
+        "talent_id": "deep_wounds"
+      },
+      "rank_values": [
+        10,
+        20
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "impale",
+      "target": "abilities",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "rend_overpower_proc_chance_pct",
+      "max_rank": 5,
+      "name": "Bloodthrill",
+      "rank_values": [
+        4,
+        8,
+        12,
+        16,
+        20
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "bloodthrill",
+      "target": "rend_melee",
+      "tree_key": "arms"
+    },
+    {
+      "condition": "competing_threat_target",
+      "effect_domain": "additional_target_attacks",
+      "max_rank": 1,
+      "name": "Sweeping Strikes",
+      "rank_values": [
+        5
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "sweeping_strikes",
+      "target": "sweeping_strikes",
+      "tree_key": "arms"
+    },
+    {
+      "additional_effect_domain": "weapon_conditional_armor_ignore_pct",
+      "additional_rank_values": [
+        3,
+        6,
+        9,
+        12,
+        15
+      ],
+      "additional_target": "mace_staff",
+      "condition": "context_dependent_source_proxy",
+      "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+      "effect_domain": "weapon_conditional_crit_pct",
+      "extra_effects": [
+        {
+          "condition": "source_context_conditional",
+          "effect_domain": "weapon_conditional_extra_attack_chance_pct",
+          "rank_values": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "target": "sword"
+        }
+      ],
+      "max_rank": 5,
+      "name": "Weaponmaster",
+      "rank_values": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "weaponmaster",
+      "target": "weapon_type",
+      "tree_key": "arms"
+    },
+    {
+      "additional_effect_domain": "shout_area_increase_pct",
+      "additional_rank_values": [
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "additional_target": "shouts",
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "shout_rage_cost_reduction_pct",
+      "max_rank": 5,
+      "name": "Booming Voice",
+      "rank_values": [
+        5,
+        10,
+        15,
+        20,
+        25
+      ],
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "booming_voice",
+      "target": "shouts",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "melee_crit_chance_pct",
+      "max_rank": 5,
+      "name": "Cruelty",
+      "rank_values": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "cruelty",
+      "target": "melee",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "out_of_combat_rage_decay_delay_s",
+      "max_rank": 5,
+      "name": "Lingering Rage",
+      "rank_values": [
+        2,
+        4,
+        6,
+        8,
+        10
+      ],
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "lingering_rage",
+      "target": "rage",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "rage_proc_chance_pct",
+      "extra_effects": [
+        {
+          "condition": "source_context_conditional",
+          "effect_domain": "rage_amount_per_proc",
+          "rank_values": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "target": "weapon_melee"
+        }
+      ],
+      "max_rank": 5,
+      "name": "Unbridled Wrath",
+      "rank_values": [
+        12,
+        24,
+        36,
+        48,
+        60
+      ],
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "unbridled_wrath",
+      "target": "weapon_melee",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "offhand_hit_chance_pct",
+      "max_rank": 3,
+      "name": "Furious Precision",
+      "rank_values": [
+        4,
+        7,
+        10
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "furious_precision",
+      "target": "offhand",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "competing_threat_target",
+      "effect_domain": "movement_slow_pct",
+      "max_rank": 1,
+      "name": "Piercing Howl",
+      "rank_values": [
+        50
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "piercing_howl",
+      "target": "enemy_movement",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+      "effect_domain": "conditional_health_regen_pct",
+      "max_rank": 3,
+      "name": "Blood Craze",
+      "rank_values": [
+        1,
+        2,
+        3
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "blood_craze",
+      "target": "incoming_critical_or_heavy",
+      "tree_key": "fury"
+    },
+    {
+      "additional_effect_domain": "offhand_rage_generation_pct",
+      "additional_rank_values": [
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "additional_target": "offhand",
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "offhand_damage_pct",
+      "max_rank": 5,
+      "name": "Dual Wield Specialization",
+      "rank_values": [
+        5,
+        10,
+        15,
+        20,
+        25
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "dual_wield_specialization",
+      "target": "offhand",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "resource_cost_flat",
+      "max_rank": 1,
+      "name": "Raging Blows",
+      "rank_values": [
+        3
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "raging_blows",
+      "target": "cleave_whirlwind",
+      "tree_key": "fury"
+    },
+    {
+      "additional_effect_domain": "incoming_hit_proc_chance_pct",
+      "additional_rank_values": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "additional_target": "incoming_hit",
+      "condition": "context_dependent_source_proxy",
+      "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+      "effect_domain": "conditional_physical_damage_pct",
+      "max_rank": 5,
+      "name": "Enrage",
+      "rank_values": [
+        2,
+        4,
+        6,
+        8,
+        10
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "enrage",
+      "target": "incoming_hit_proc",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "resource_cost_flat",
+      "max_rank": 2,
+      "name": "Improved Execute",
+      "rank_values": [
+        3,
+        5
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_execute",
+      "target": "execute",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "resource_generation_flat",
+      "extra_effects": [
+        {
+          "condition": "source_context_conditional",
+          "effect_domain": "movement_impair_removal_chance_pct",
+          "rank_values": [
+            50,
+            100
+          ],
+          "target": "berserker_rage"
+        }
+      ],
+      "max_rank": 2,
+      "name": "Improved Berserker Rage",
+      "rank_values": [
+        5,
+        10
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_berserker_rage",
+      "target": "berserker_rage",
+      "tree_key": "fury"
+    },
+    {
+      "additional_effect_domain": "incoming_damage_increase_pct",
+      "additional_rank_values": [
+        5
+      ],
+      "additional_target": "incoming_damage",
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "physical_damage_pct",
+      "max_rank": 1,
+      "name": "Death Wish",
+      "rank_values": [
+        20
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "death_wish",
+      "target": "death_wish",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "cooldown_reduction_s",
+      "max_rank": 2,
+      "name": "Improved Intercept",
+      "rank_values": [
+        5,
+        10
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_intercept",
+      "target": "intercept",
+      "tree_key": "fury"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "rage_generation_pct",
+      "max_rank": 2,
+      "name": "Improved Bloodrage",
+      "rank_values": [
+        25,
+        50
+      ],
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_bloodrage",
+      "target": "bloodrage",
+      "tree_key": "protection"
+    },
+    {
+      "additional_effect_domain": "block_rage_proc_chance_pct",
+      "additional_rank_values": [
+        20,
+        40,
+        60,
+        80,
+        100
+      ],
+      "additional_target": "shield_block",
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "block_chance_pct",
+      "max_rank": 5,
+      "name": "Shield Specialization",
+      "rank_values": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "shield_specialization",
+      "target": "shield_block",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "stun_fear_duration_reduction_pct",
+      "max_rank": 5,
+      "name": "Iron Will",
+      "rank_values": [
+        3,
+        6,
+        9,
+        12,
+        15
+      ],
+      "row": 0,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "iron_will",
+      "target": "incoming_control",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "defense_skill_flat",
+      "max_rank": 5,
+      "name": "Anticipation",
+      "rank_values": [
+        4,
+        8,
+        12,
+        16,
+        20
+      ],
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "anticipation",
+      "target": "defense",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "effect_damage_pct",
+      "max_rank": 3,
+      "name": "Improved Revenge",
+      "rank_values": [
+        20,
+        40,
+        60
+      ],
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_revenge",
+      "target": "revenge",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "resource_cost_flat",
+      "max_rank": 3,
+      "name": "Improved Thunder Clap",
+      "rank_values": [
+        2,
+        4,
+        6
+      ],
+      "row": 1,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_thunder_clap",
+      "target": "thunder_clap",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+      "effect_domain": "temporary_max_health_pct",
+      "max_rank": 1,
+      "name": "Last Stand",
+      "rank_values": [
+        30
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "last_stand",
+      "target": "last_stand",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "shield_dodge_parry_rage_proc_pct",
+      "extra_effects": [
+        {
+          "condition": "source_context_conditional",
+          "effect_domain": "rage_amount_per_proc",
+          "rank_values": [
+            5,
+            5
+          ],
+          "target": "incoming_avoidance"
+        }
+      ],
+      "max_rank": 2,
+      "name": "Master of Defense",
+      "prerequisite": {
+        "required_rank": 5,
+        "talent_id": "shield_specialization"
+      },
+      "rank_values": [
+        50,
+        100
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "master_of_defense",
+      "target": "incoming_avoidance",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "cooldown_reduction_s",
+      "max_rank": 3,
+      "name": "Improved Disarm",
+      "rank_values": [
+        7,
+        13,
+        20
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_disarm",
+      "target": "disarm",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "competing_threat_target",
+      "effect_domain": "shield_defensive_stance_threat_pct",
+      "max_rank": 3,
+      "name": "Defiance",
+      "rank_values": [
+        5,
+        10,
+        15
+      ],
+      "row": 2,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "defiance",
+      "target": "threat",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "resource_cost_flat",
+      "max_rank": 3,
+      "name": "Improved Sunder Armor",
+      "rank_values": [
+        1,
+        2,
+        3
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_sunder_armor",
+      "target": "sunder_armor",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "context_uncertainty": "CONDITIONAL_EFFECT_REQUIRES_COMBAT_OR_GEAR_CONTEXT",
+      "effect_domain": "stance_permission_boolean",
+      "max_rank": 1,
+      "name": "Vanguard",
+      "rank_values": [
+        1
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "vanguard",
+      "target": "defensive_charge",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "silence_proc_chance_pct",
+      "max_rank": 2,
+      "name": "Improved Shield Bash",
+      "rank_values": [
+        50,
+        100
+      ],
+      "row": 3,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_shield_bash",
+      "target": "shield_bash",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "relevant_ability_learned_and_executable",
+      "effect_domain": "cooldown_reduction_minutes",
+      "max_rank": 2,
+      "name": "Improved Shield Wall",
+      "rank_values": [
+        5.5,
+        11
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "improved_shield_wall",
+      "target": "shield_wall",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "stun_duration_s",
+      "max_rank": 1,
+      "name": "Concussion Blow",
+      "rank_values": [
+        5
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "concussion_blow",
+      "target": "concussion_blow",
+      "tree_key": "protection"
+    },
+    {
+      "condition": "context_dependent_source_proxy",
+      "effect_domain": "resource_cost_flat",
+      "max_rank": 3,
+      "name": "Focused Rage",
+      "rank_values": [
+        1,
+        2,
+        3
+      ],
+      "row": 4,
+      "source_detail_url": "https://talentsforever.com/warrior/talents",
+      "source_url": "https://talentsforever.com/export/warrior.json",
+      "talent_id": "focused_rage",
+      "target": "offensive_abilities",
+      "tree_key": "protection"
+    }
+  ],
+  "observed_unreachable_talent_positions": [],
+  "points_per_row": 5,
+  "replace_indexed_catalogue": true,
+  "retired_indexed_talent_ids": [
+    "toughness",
+    "improved_cleave",
+    "precision",
+    "boundless_rage"
+  ],
+  "schema": "forever_checkpoint_talent_catalogue_source_v1",
+  "source_build": "1.60.1.70338",
+  "source_credit": "Talents Forever, Chris Baldwin, CC BY 4.0",
+  "source_detail_url": "https://talentsforever.com/warrior/talents",
+  "source_tree_id_to_key": {
+    "161": "arms",
+    "163": "protection",
+    "164": "fury"
+  },
+  "source_url": "https://talentsforever.com/export/warrior.json",
+  "talent_checked_against_build": "1.60.1.70338",
+  "talent_source_client_build": "1.60.1.70291"
+}

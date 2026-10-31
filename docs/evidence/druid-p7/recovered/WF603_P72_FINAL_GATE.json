@@ -1,0 +1,13 @@
+{
+  "gate": "P7.2",
+  "status": "PASS",
+  "evidence": "live-gsim-2D-native-Go-300s-cold-search",
+  "paid": 618,
+  "real_wall_seconds": 298.06590328100015,
+  "final_n": 187,
+  "final_mean_dps": 825.1689865504235,
+  "ref_dps": 811.0237260012982,
+  "lower_95_delta": 10.571097573310041,
+  "winning_rotation_hash": "6f133014350bdeffca9e16e2b509ea022281e27743ea0705c1bdf75176c83ac9",
+  "causal_ack": 238
+}

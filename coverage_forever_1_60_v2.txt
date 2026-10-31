@@ -1,0 +1,13 @@
+WF-P00a native Forever 1–60 coverage • 0.11.48.199
+class       source  queue  evaluated  optimized  route  validated
+druid         60      2          5          0      0          0
+hunter         0      0          0          0      0          0
+mage          11      1          0          0      0          0
+paladin        0      0          0          0      0          0
+priest        11      1          0          0      0          0
+rogue         11      1          5          0      0          0
+shaman        11      1          0          0      0          0
+warlock       11      1          0          0      0          0
+warrior       11      1          3          0      0          0
+Contradictory default declarations: []
+Evaluated means a bounded scored native route, NOT full leveling optimization.

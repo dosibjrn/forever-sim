@@ -1,0 +1,1742 @@
+[
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_magic_lesserinvisibilty",
+    "local_key": "anticipation",
+    "max_rank": 5,
+    "name": "Anticipation",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "15d123db9277b4e21c0cd7f19e08851bc90f84653d81fb459415c3830f27ede9",
+        "entity_id": 20100,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20100/anticipation"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_frost_windwalkon",
+    "local_key": "benediction",
+    "max_rank": 5,
+    "name": "Benediction",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "053474027354cbdc1572b6889035b9461500b79ef6fef1e6857557f7660d5579",
+        "entity_id": 20101,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20101/benediction"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "ability_paladin_enlightenedjudgements",
+    "local_key": "champion_of_the_light",
+    "max_rank": 3,
+    "name": "Champion of the Light",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "72fabac2fe4263b3b265db23ab664d760234f6b803a426ea8aa0a0fc8b366a24",
+        "entity_id": 1311084,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1311084/champion-of-the-light"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_retributionaura",
+    "local_key": "conviction",
+    "max_rank": 5,
+    "name": "Conviction",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "3e8bf9e9dad6bc765527b00fcae1b54c74b220776b67f1d5b0768e760a92fca3",
+        "entity_id": 20121,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20121/conviction"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_crusade",
+    "local_key": "crusade",
+    "max_rank": 2,
+    "name": "Crusade",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "29633f044886cb12f9a122aff610be495b8a4f129539104b6c51f45e18bcf54c",
+        "entity_id": 1311083,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1311083/crusade"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "ability_parry",
+    "local_key": "deflection",
+    "max_rank": 5,
+    "name": "Deflection",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "4311a631444b8e49f2a0327890ec489144568512bbac504f07943eef2f84d94a",
+        "entity_id": 20064,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20064/deflection"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_heal",
+    "local_key": "divine_favor",
+    "max_rank": 1,
+    "name": "Divine Favor",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "d31e898eff1353d0aa72d217ea8e8373791e632a6b0cfd2f27c883b7d04f641d",
+          "entity_id": 20216,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20216/divine-favor"
+        },
+        "spell_id": 20216,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "d31e898eff1353d0aa72d217ea8e8373791e632a6b0cfd2f27c883b7d04f641d",
+        "entity_id": 20216,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20216/divine-favor"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_nature_sleep",
+    "local_key": "divine_intellect",
+    "max_rank": 5,
+    "name": "Divine Intellect",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "9baf8ec45b77154a0a39c71f883ae3f1392563b08cc2f2a5019c0f103355abd6",
+        "entity_id": 20257,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20257/divine-intellect"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_healingfocus",
+    "local_key": "divine_precision",
+    "max_rank": 3,
+    "name": "Divine Precision",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "7dc3c08b9f302e847a4bf0ada2272925c4e97ca6e791712637f68e01d6eb945e",
+        "entity_id": 1310904,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1310904/divine-precision"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "ability_golemthunderclap",
+    "local_key": "divine_strength",
+    "max_rank": 5,
+    "name": "Divine Strength",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [
+          {
+            "base_value": 0.02,
+            "coefficient": null,
+            "metadata": {
+              "target": "strength"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "stat_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Divine Strength rank 1: 2%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "57d716058d0732253b3e1cc04df15af1b0139dac1e751122796320b9529aaf10",
+          "entity_id": 20262,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20262/divine-strength"
+        },
+        "spell_id": 20262,
+        "trait_id": 135164
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.04,
+            "coefficient": null,
+            "metadata": {
+              "target": "strength"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "stat_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Divine Strength rank 2: 4%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 2,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "57d716058d0732253b3e1cc04df15af1b0139dac1e751122796320b9529aaf10",
+          "entity_id": 20262,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20262/divine-strength"
+        },
+        "spell_id": null,
+        "trait_id": 135164
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.06,
+            "coefficient": null,
+            "metadata": {
+              "target": "strength"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "stat_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Divine Strength rank 3: 6%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 3,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "57d716058d0732253b3e1cc04df15af1b0139dac1e751122796320b9529aaf10",
+          "entity_id": 20262,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20262/divine-strength"
+        },
+        "spell_id": null,
+        "trait_id": 135164
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.08,
+            "coefficient": null,
+            "metadata": {
+              "target": "strength"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "stat_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Divine Strength rank 4: 8%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 4,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "57d716058d0732253b3e1cc04df15af1b0139dac1e751122796320b9529aaf10",
+          "entity_id": 20262,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20262/divine-strength"
+        },
+        "spell_id": null,
+        "trait_id": 135164
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.1,
+            "coefficient": null,
+            "metadata": {
+              "target": "strength"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "stat_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Divine Strength rank 5: 10%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 5,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "57d716058d0732253b3e1cc04df15af1b0139dac1e751122796320b9529aaf10",
+          "entity_id": 20262,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20262/divine-strength"
+        },
+        "spell_id": null,
+        "trait_id": 135164
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "57d716058d0732253b3e1cc04df15af1b0139dac1e751122796320b9529aaf10",
+        "entity_id": 20262,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20262/divine-strength"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_sealofprotection",
+    "local_key": "guardians_favor",
+    "max_rank": 2,
+    "name": "Guardian's Favor",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "94fa30bae819206c0f5bdd7f723cf54186529509eded0b28efa31ad1401c49bc",
+        "entity_id": 20174,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20174/guardian-s-favor"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_holybolt",
+    "local_key": "healing_light",
+    "max_rank": 3,
+    "name": "Healing Light",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "54744c4ffecc902e79b63dc379031763fb60956cb6c9543c238a56a107658617",
+        "entity_id": 20237,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20237/healing-light"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_devineaegis",
+    "local_key": "holy_conduit",
+    "max_rank": 2,
+    "name": "Holy Conduit",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "684401b2329b11c6bb781a047c4a62a29d9410b386f9a3e1cb80b99fd6391ea6",
+        "entity_id": 1237268,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1237268/holy-conduit"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_greaterheal",
+    "local_key": "illumination",
+    "max_rank": 5,
+    "name": "Illumination",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "7c696662272b1a8cf4a5f5a387268ef396454cd2b7aad203def9d0626ddd6090",
+        "entity_id": 20210,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20210/illumination"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_sealofmight",
+    "local_key": "improved_hammer_of_justice",
+    "max_rank": 3,
+    "name": "Improved Hammer of Justice",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "2d5d2d79354dc37bbc6744001eb2b575112ef2295f424ffe0e9ad30288c37b5c",
+        "entity_id": 20487,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20487/improved-hammer-of-justice"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "classicon_paladin",
+    "local_key": "improved_holy_strike",
+    "max_rank": 2,
+    "name": "Improved Holy Strike",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "e5afa6df89b66ae20f1e533171bdda56118d29a84999c27275318c824ac63631",
+        "entity_id": 1310902,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1310902/improved-holy-strike"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_righteousfury",
+    "local_key": "improved_judgement",
+    "max_rank": 2,
+    "name": "Improved Judgement",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "257f32bec6fcf1f1cdc6ea5d4e885e571d796fe5e1c207d874862346395ed871",
+        "entity_id": 25956,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=25956/improved-judgement"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_sealoffury",
+    "local_key": "improved_righteous_fury",
+    "max_rank": 3,
+    "name": "Improved Righteous Fury",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "26d6a84fbed263d1318ea490fac1e4b61a476645ff3f66b84c664fb28983514b",
+        "entity_id": 20468,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20468/improved-righteous-fury"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_righteousnessaura",
+    "local_key": "improved_seal_of_fury",
+    "max_rank": 1,
+    "name": "Improved Seal of Fury",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "335037acc02c302398e600403064712bc94165c6d7934575d68799c9dff911c6",
+          "entity_id": 1314103,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=1314103/improved-seal-of-fury"
+        },
+        "spell_id": 1314103,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "335037acc02c302398e600403064712bc94165c6d7934575d68799c9dff911c6",
+        "entity_id": 1314103,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1314103/improved-seal-of-fury"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "ability_thunderbolt",
+    "local_key": "improved_seals",
+    "max_rank": 3,
+    "name": "Improved Seals",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "83db198baa8321ae5d636dc333b035f65dd5da176f4de0691d6a5bb4da624338",
+        "entity_id": 20224,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20224/improved-seals"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "inv_sword_20",
+    "local_key": "one_handed_weapon_specialization",
+    "max_rank": 3,
+    "name": "One-Handed Weapon Specialization",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "94e09f108e0c7e3fb49499eacba60ef7c0b2552474e39238d3b15a794bda808a",
+        "entity_id": 20196,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20196/one-handed-weapon-specialization"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_purifyingpower",
+    "local_key": "purifying_power",
+    "max_rank": 2,
+    "name": "Purifying Power",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "60ee4860beaad2435e7c509f7585e6123f0f7b92c898659b8a6802890fd52efb",
+        "entity_id": 429144,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=429144/purifying-power"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_persuitofjustice",
+    "local_key": "pursuit_of_justice",
+    "max_rank": 2,
+    "name": "Pursuit of Justice",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "2a37a0508d17048258fb7cae9977d8476a05adcccc72032b7ec052cef6145fa5",
+        "entity_id": 26023,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=26023/pursuit-of-justice"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "ability_defend",
+    "local_key": "redoubt",
+    "max_rank": 5,
+    "name": "Redoubt",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "9f3ce6c3c8e406fe4c0b230ce979f5aabbd6020c292d14895819ebe4d070fd65",
+        "entity_id": 20137,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20137/redoubt"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_divineillumination",
+    "local_key": "reverence",
+    "max_rank": 3,
+    "name": "Reverence",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "782f3ab5601d3a4fc73b9960086050d6f4d755489d27acf2e09f62231e2231f0",
+        "entity_id": 1310899,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1310899/reverence"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "inv_sword_08",
+    "local_key": "sacred_arbiter",
+    "max_rank": 1,
+    "name": "Sacred Arbiter",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "befa9e76b157b1cf6b9a1bfff8873749d411d27a24ff0940af42efc78ab9e3bc",
+          "entity_id": 1311087,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=1311087/sacred-arbiter"
+        },
+        "spell_id": 1311087,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "befa9e76b157b1cf6b9a1bfff8873749d411d27a24ff0940af42efc78ab9e3bc",
+        "entity_id": 1311087,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1311087/sacred-arbiter"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_divineintervention",
+    "local_key": "sacred_duty",
+    "max_rank": 2,
+    "name": "Sacred Duty",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "a0262443e1e0da7146816d85818a49bd57d47ef88ec7f4e2866b96dd49e3255e",
+        "entity_id": 1224697,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1224697/sacred-duty"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "ability_paladin_judgementblue",
+    "local_key": "sanctified_judgement",
+    "max_rank": 3,
+    "name": "Sanctified Judgement",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "f80eb4ba8c6dacd1b68637c93257933e40983a078a3fa49fcfe2af815e9408ee",
+        "entity_id": 1311074,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1311074/sanctified-judgement"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "ability_warrior_innerrage",
+    "local_key": "seal_of_command",
+    "max_rank": 1,
+    "name": "Seal of Command",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "eafa60d8eef82ba0fee82cd495e2b84e5cb4496b013ee425c06ff6e2c3347ead",
+          "entity_id": 20375,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20375/seal-of-command"
+        },
+        "spell_id": 20375,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "eafa60d8eef82ba0fee82cd495e2b84e5cb4496b013ee425c06ff6e2c3347ead",
+        "entity_id": 20375,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20375/seal-of-command"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "inv_shield_06",
+    "local_key": "shield_specialization",
+    "max_rank": 3,
+    "name": "Shield Specialization",
+    "prerequisite": "redoubt",
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "5d2fd0657ee5f4acb57f9b1e2d05072d5cd2b9497700e37fc42df9ae663878ed",
+        "entity_id": 20148,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20148/shield-specialization"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_arcane_blink",
+    "local_key": "spiritual_focus",
+    "max_rank": 2,
+    "name": "Spiritual Focus",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "a5bf373cb5497ddbaa097cfe3974fc4cc1825e6de0a5e8589708aadb3ad72c50",
+        "entity_id": 20209,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20209/spiritual-focus"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_devotion",
+    "local_key": "toughness",
+    "max_rank": 5,
+    "name": "Toughness",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [
+          {
+            "base_value": 0.02,
+            "coefficient": null,
+            "metadata": {
+              "target": "item_armor"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "item_armor_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Toughness rank 1: 2%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "94bdc3ec9fe8e00059702b9c3ce41b9154559d46a589b4a061df4e5dc7647fcd",
+          "entity_id": 20143,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20143/toughness"
+        },
+        "spell_id": 20143,
+        "trait_id": 135155
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.04,
+            "coefficient": null,
+            "metadata": {
+              "target": "item_armor"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "item_armor_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Toughness rank 2: 4%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 2,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "94bdc3ec9fe8e00059702b9c3ce41b9154559d46a589b4a061df4e5dc7647fcd",
+          "entity_id": 20143,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20143/toughness"
+        },
+        "spell_id": null,
+        "trait_id": 135155
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.06,
+            "coefficient": null,
+            "metadata": {
+              "target": "item_armor"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "item_armor_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Toughness rank 3: 6%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 3,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "94bdc3ec9fe8e00059702b9c3ce41b9154559d46a589b4a061df4e5dc7647fcd",
+          "entity_id": 20143,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20143/toughness"
+        },
+        "spell_id": null,
+        "trait_id": 135155
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.08,
+            "coefficient": null,
+            "metadata": {
+              "target": "item_armor"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "item_armor_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Toughness rank 4: 8%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 4,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "94bdc3ec9fe8e00059702b9c3ce41b9154559d46a589b4a061df4e5dc7647fcd",
+          "entity_id": 20143,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20143/toughness"
+        },
+        "spell_id": null,
+        "trait_id": 135155
+      },
+      {
+        "effects": [
+          {
+            "base_value": 0.1,
+            "coefficient": null,
+            "metadata": {
+              "target": "item_armor"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "item_armor_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Toughness rank 5: 10%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 5,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "94bdc3ec9fe8e00059702b9c3ce41b9154559d46a589b4a061df4e5dc7647fcd",
+          "entity_id": 20143,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=20143/toughness"
+        },
+        "spell_id": null,
+        "trait_id": 135155
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "94bdc3ec9fe8e00059702b9c3ce41b9154559d46a589b4a061df4e5dc7647fcd",
+        "entity_id": 20143,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20143/toughness"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "protection"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_unyieldingfaith",
+    "local_key": "unyielding_faith",
+    "max_rank": 2,
+    "name": "Unyielding Faith",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "c2e9ff623d6333e8dd48868997ff632a3d8cb1978fde7c1605fa938c0535ba22",
+        "entity_id": 9453,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=9453/unyielding-faith"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "ability_racial_avatar",
+    "local_key": "vengeance",
+    "max_rank": 3,
+    "name": "Vengeance",
+    "prerequisite": "sanctified_judgement",
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "06e42347e614e3419c51a914f7efc2c35168993bbeed206c33a61d0cd1844d86",
+        "entity_id": 20059,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=20059/vengeance"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "spell_holy_vindication",
+    "local_key": "vindication",
+    "max_rank": 3,
+    "name": "Vindication",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "4b1a1f4877cd6beb7536dac1421f0230c61c35ad607e73044417e99adfb08246",
+        "entity_id": 9452,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=9452/vindication"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "retribution"
+  },
+  {
+    "aliases": [],
+    "class_key": "paladin",
+    "col": null,
+    "icon_key": "inv_misc_horn_03",
+    "local_key": "voice_of_truth",
+    "max_rank": 1,
+    "name": "Voice of Truth",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "1a5ea4f45c605c8ce0d5293ed32036bc09de265c95c9666fdc6e4a0ffdb58dad",
+          "entity_id": 1310897,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=1310897/voice-of-truth"
+        },
+        "spell_id": 1310897,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "1a5ea4f45c605c8ce0d5293ed32036bc09de265c95c9666fdc6e4a0ffdb58dad",
+        "entity_id": 1310897,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=1310897/voice-of-truth"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "holy"
+  }
+]

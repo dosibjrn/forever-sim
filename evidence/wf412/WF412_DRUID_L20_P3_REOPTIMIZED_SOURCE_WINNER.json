@@ -1,0 +1,2286 @@
+{
+  "accepted_checkpoint": false,
+  "checkpoint": "druid:L20:unrestricted",
+  "historical_events": 7313,
+  "notes": [
+    "P3 test is fast; paid reranking weights are cached evidence.",
+    "New four weights come from exact item/talent/policy WF347 winner, with recovery re-selection.",
+    "Older remaining weights were sourced and measured on this same WF347 winning build.",
+    "WF347 historical event count differs by one event under current runtime, while objective score matches to 1e-9.",
+    "This is not a new independent cold P4/P5 search, no scoreboard increment."
+  ],
+  "old_wf347_fixed_full_recovery_100mob_s_per_mob": 12.861380973404744,
+  "p1_p2_status": "NOT_REVALIDATED_IN_WF412",
+  "p3_report": {
+    "blockers": [],
+    "checkpoint": "druid:L20",
+    "equipped_weapon_dps_relevant": true,
+    "legal_item_count": 1233,
+    "p3_pass": true,
+    "scope": "PROCESS_V2_FAST_P3_SMOKE_NOT_GLOBAL_BIS",
+    "slot_count": 19,
+    "slots": {
+      "back": {
+        "items": [
+          {
+            "contributions": {
+              "armor": 0.014623784763950454,
+              "intellect": 7.910329016524997e-05,
+              "stamina": 0.03709527281903302
+            },
+            "item_id": 6667,
+            "item_level": 27,
+            "name": "Engineer's Cloak",
+            "required_level": 16,
+            "score": 0.05179816087314872,
+            "source_url": "https://www.wowhead.com/forever/item=6667"
+          },
+          {
+            "contributions": {
+              "agility": 0.005022286529921871,
+              "armor": 0.014623784763950454,
+              "stamina": 0.022257163691419814
+            },
+            "item_id": 16990,
+            "item_level": 27,
+            "name": "Spritekin Cloak",
+            "required_level": 18,
+            "score": 0.04190323498529214,
+            "source_url": "https://www.wowhead.com/forever/item=16990"
+          },
+          {
+            "contributions": {
+              "agility": 0.005022286529921871,
+              "armor": 0.013892595525752931,
+              "stamina": 0.022257163691419814
+            },
+            "item_id": 3018,
+            "item_level": 25,
+            "name": "Hide of Lupos",
+            "required_level": 20,
+            "score": 0.04117204574709461,
+            "source_url": "https://www.wowhead.com/forever/item=3018"
+          },
+          {
+            "contributions": {
+              "armor": 0.013892595525752931,
+              "resistance_fire": 0.0
+            },
+            "item_id": 4790,
+            "item_level": 25,
+            "name": "Inferno Cloak",
+            "required_level": 20,
+            "score": 0.013892595525752931,
+            "source_url": "https://www.wowhead.com/forever/item=4790"
+          },
+          {
+            "contributions": {
+              "armor": 0.013892595525752931,
+              "resistance_fire": 0.0
+            },
+            "item_id": 4797,
+            "item_level": 25,
+            "name": "Fiery Cloak",
+            "required_level": 20,
+            "score": 0.013892595525752931,
+            "source_url": "https://www.wowhead.com/forever/item=4797"
+          }
+        ],
+        "legal_count": 121,
+        "selected_ids": [
+          6667,
+          16990,
+          3018,
+          4790,
+          4797
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "chest": {
+        "items": [
+          {
+            "contributions": {
+              "agility": 0.01130014469232421,
+              "armor": 0.06507584219957953,
+              "strength": 0.001812095030049754
+            },
+            "item_id": 6670,
+            "item_level": 27,
+            "name": "Panther Armor",
+            "required_level": 20,
+            "score": 0.07818808192195349,
+            "source_url": "https://www.wowhead.com/forever/item=6670"
+          },
+          {
+            "contributions": {
+              "armor": 0.06873178839056714,
+              "spirit": 0.007079251619023097,
+              "stamina": 0.059352436510452834,
+              "strength": 0.004530237575124385
+            },
+            "item_id": 1489,
+            "item_level": 25,
+            "name": "Gloomshroud Armor",
+            "required_level": 20,
+            "score": 0.13969371409516745,
+            "source_url": "https://www.wowhead.com/forever/item=1489"
+          },
+          {
+            "contributions": {
+              "armor": 0.028516380289703387,
+              "spell_power": 0.004199384461152889,
+              "spirit": 0.007079251619023097
+            },
+            "item_id": 2034,
+            "item_level": 25,
+            "name": "Scholarly Robes",
+            "required_level": 20,
+            "score": 0.03979501636987937,
+            "source_url": "https://www.wowhead.com/forever/item=2034"
+          },
+          {
+            "contributions": {
+              "armor": 0.03144113724249348,
+              "intellect": 0.00019775822541312493,
+              "stamina": 0.022257163691419814
+            },
+            "item_id": 2292,
+            "item_level": 25,
+            "name": "Necrology Robes",
+            "required_level": 20,
+            "score": 0.053896059159326416,
+            "source_url": "https://www.wowhead.com/forever/item=2292"
+          },
+          {
+            "contributions": {
+              "armor": 0.06288227448498696,
+              "spell_power": 0.016797537844611556,
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 5316,
+            "item_level": 25,
+            "name": "Barkshell Tunic",
+            "required_level": 17,
+            "score": 0.10935603058482493,
+            "source_url": "https://www.wowhead.com/forever/item=5316"
+          }
+        ],
+        "legal_count": 164,
+        "selected_ids": [
+          6670,
+          1489,
+          2034,
+          2292,
+          5316
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "feet": {
+        "items": [
+          {
+            "contributions": {
+              "armor": 0.04460254353004889,
+              "stamina": 0.03709527281903302,
+              "strength": 0.004530237575124385
+            },
+            "item_id": 6668,
+            "item_level": 27,
+            "name": "Draftsman Boots",
+            "required_level": 16,
+            "score": 0.0862280539242063,
+            "source_url": "https://www.wowhead.com/forever/item=6668"
+          },
+          {
+            "contributions": {
+              "armor": 0.03875302962446871
+            },
+            "item_id": 1796,
+            "item_level": 25,
+            "name": "Rawhide Boots",
+            "required_level": 20,
+            "score": 0.03875302962446871,
+            "source_url": "https://www.wowhead.com/forever/item=1796"
+          },
+          {
+            "contributions": {
+              "armor": 0.019742109431333112,
+              "spirit": 0.002654719357133661,
+              "stamina": 0.03709527281903302
+            },
+            "item_id": 2232,
+            "item_level": 25,
+            "name": "Dark Runner Boots",
+            "required_level": 20,
+            "score": 0.05949210160749979,
+            "source_url": "https://www.wowhead.com/forever/item=2232"
+          },
+          {
+            "contributions": {
+              "armor": 0.021204487907728158,
+              "intellect": 0.00015820658033049995,
+              "spell_power": 0.014697845614035112,
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 4320,
+            "item_level": 25,
+            "name": "Spidersilk Boots",
+            "required_level": 20,
+            "score": 0.06573675835732018,
+            "source_url": "https://www.wowhead.com/forever/item=4320"
+          },
+          {
+            "contributions": {
+              "armor": 0.019742109431333112
+            },
+            "item_id": 9792,
+            "item_level": 25,
+            "name": "Ivycloth Boots",
+            "required_level": 20,
+            "score": 0.019742109431333112,
+            "source_url": "https://www.wowhead.com/forever/item=9792"
+          }
+        ],
+        "legal_count": 123,
+        "selected_ids": [
+          6668,
+          1796,
+          2232,
+          4320,
+          9792
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "hands": {
+        "items": [
+          {
+            "contributions": {
+              "armor": 0.0160861632403455
+            },
+            "item_id": 1775,
+            "item_level": 25,
+            "name": "Brocade Gloves",
+            "required_level": 20,
+            "score": 0.0160861632403455,
+            "source_url": "https://www.wowhead.com/forever/item=1775"
+          },
+          {
+            "contributions": {
+              "agility": 0.005022286529921871,
+              "armor": 0.03875302962446871,
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 3058,
+            "item_level": 25,
+            "name": "Forest Leather Gloves",
+            "required_level": 20,
+            "score": 0.07345153440961699,
+            "source_url": "https://www.wowhead.com/forever/item=3058"
+          },
+          {
+            "contributions": {
+              "armor": 0.017548541716740546
+            },
+            "item_id": 4331,
+            "item_level": 25,
+            "name": "Phoenix Gloves",
+            "required_level": 20,
+            "score": 0.017548541716740546,
+            "source_url": "https://www.wowhead.com/forever/item=4331"
+          },
+          {
+            "contributions": {
+              "armor": 0.03875302962446871,
+              "crit": 0.0022651187875621925
+            },
+            "item_id": 7348,
+            "item_level": 25,
+            "name": "Fletcher's Gloves",
+            "required_level": 20,
+            "score": 0.0410181484120309,
+            "source_url": "https://www.wowhead.com/forever/item=7348"
+          },
+          {
+            "contributions": {
+              "armor": 0.017548541716740546
+            },
+            "item_id": 9771,
+            "item_level": 25,
+            "name": "Greenweave Gloves",
+            "required_level": 20,
+            "score": 0.017548541716740546,
+            "source_url": "https://www.wowhead.com/forever/item=9771"
+          }
+        ],
+        "legal_count": 118,
+        "selected_ids": [
+          1775,
+          3058,
+          4331,
+          7348,
+          9771
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "head": {
+        "items": [
+          {
+            "contributions": {
+              "armor": 0.025591623336913297
+            },
+            "item_id": 211500,
+            "item_level": 25,
+            "name": "Resilient Cloth Headband",
+            "required_level": 20,
+            "score": 0.025591623336913297,
+            "source_url": "https://www.wowhead.com/forever/item=211500"
+          },
+          {
+            "contributions": {
+              "armor": 0.055570382103011726
+            },
+            "item_id": 211857,
+            "item_level": 25,
+            "name": "Resilient Leather Mask",
+            "required_level": 20,
+            "score": 0.055570382103011726,
+            "source_url": "https://www.wowhead.com/forever/item=211857"
+          },
+          {
+            "contributions": {
+              "armor": 0.055570382103011726,
+              "stamina": 0.07419054563806604,
+              "strength": 0.007248380120199016
+            },
+            "item_id": 252447,
+            "item_level": 25,
+            "name": "Defender's Leather Hood",
+            "required_level": 20,
+            "score": 0.1370093078612768,
+            "source_url": "https://www.wowhead.com/forever/item=252447"
+          },
+          {
+            "contributions": {
+              "armor": 0.055570382103011726,
+              "spell_power": 0.018897230075188,
+              "stamina": 0.07419054563806604
+            },
+            "item_id": 252448,
+            "item_level": 25,
+            "name": "Totemic Leather Hood",
+            "required_level": 20,
+            "score": 0.14865815781626576,
+            "source_url": "https://www.wowhead.com/forever/item=252448"
+          },
+          {
+            "contributions": {
+              "agility": 0.010044573059843742,
+              "armor": 0.055570382103011726,
+              "stamina": 0.07419054563806604
+            },
+            "item_id": 252504,
+            "item_level": 25,
+            "name": "Brawler's Leather Hood",
+            "required_level": 20,
+            "score": 0.13980550080092152,
+            "source_url": "https://www.wowhead.com/forever/item=252504"
+          }
+        ],
+        "legal_count": 18,
+        "selected_ids": [
+          211500,
+          211857,
+          252447,
+          252448,
+          252504
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "legs": {
+        "items": [
+          {
+            "contributions": {
+              "armor": 0.024860434098715772,
+              "intellect": 0.00015820658033049995
+            },
+            "item_id": 4317,
+            "item_level": 25,
+            "name": "Phoenix Pants",
+            "required_level": 20,
+            "score": 0.025018640679046272,
+            "source_url": "https://www.wowhead.com/forever/item=4317"
+          },
+          {
+            "contributions": {
+              "armor": 0.024860434098715772
+            },
+            "item_id": 14165,
+            "item_level": 25,
+            "name": "Pagan Britches",
+            "required_level": 20,
+            "score": 0.024860434098715772,
+            "source_url": "https://www.wowhead.com/forever/item=14165"
+          },
+          {
+            "contributions": {
+              "armor": 0.027054001813308342,
+              "intellect": 0.0003164131606609999,
+              "spell_power": 0.018897230075188,
+              "stamina": 0.05193338194664623
+            },
+            "item_id": 23173,
+            "item_level": 25,
+            "name": "Abomination Skin Leggings",
+            "required_level": 20,
+            "score": 0.09820102699580358,
+            "source_url": "https://www.wowhead.com/forever/item=23173"
+          },
+          {
+            "contributions": {
+              "agility": 0.005022286529921871,
+              "armor": 0.09066746553649281,
+              "stamina": 0.04451432738283963,
+              "strength": 0.008154427635223893
+            },
+            "item_id": 252445,
+            "item_level": 25,
+            "name": "Defender's Leather Pants",
+            "required_level": 20,
+            "score": 0.1483585070844782,
+            "source_url": "https://www.wowhead.com/forever/item=252445"
+          },
+          {
+            "contributions": {
+              "armor": 0.059957517532196865,
+              "intellect": 0.00015820658033049995,
+              "spell_power": 0.014697845614035112,
+              "stamina": 0.029676218255226417,
+              "strength": 0.008154427635223893
+            },
+            "item_id": 252446,
+            "item_level": 25,
+            "name": "Totemic Leather Pants",
+            "required_level": 20,
+            "score": 0.1126442156170128,
+            "source_url": "https://www.wowhead.com/forever/item=252446"
+          }
+        ],
+        "legal_count": 121,
+        "selected_ids": [
+          4317,
+          14165,
+          23173,
+          252445,
+          252446
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "neck": {
+        "items": [
+          {
+            "contributions": {
+              "spirit": 0.0035396258095115483,
+              "stamina": 0.04451432738283963
+            },
+            "item_id": 277203,
+            "item_level": 25,
+            "name": "Scholarly Pendant",
+            "required_level": 1,
+            "score": 0.04805395319235117,
+            "source_url": "https://www.wowhead.com/forever/item=277203"
+          },
+          {
+            "contributions": {
+              "agility": 0.005022286529921871,
+              "stamina": 0.04451432738283963
+            },
+            "item_id": 277204,
+            "item_level": 25,
+            "name": "Erudite's Amulet",
+            "required_level": 1,
+            "score": 0.0495366139127615,
+            "source_url": "https://www.wowhead.com/forever/item=277204"
+          },
+          {
+            "contributions": {
+              "intellect": 0.00019775822541312493,
+              "strength": 0.004530237575124385
+            },
+            "item_id": 285331,
+            "item_level": 25,
+            "name": "Mark of the Pack Leader",
+            "required_level": 20,
+            "score": 0.00472799580053751,
+            "source_url": "https://www.wowhead.com/forever/item=285331"
+          },
+          {
+            "contributions": {
+              "agility": 0.007533429794882807,
+              "stamina": 0.014838109127613209
+            },
+            "item_id": 20442,
+            "item_level": 23,
+            "name": "Scout's Medallion",
+            "required_level": 18,
+            "score": 0.022371538922496013,
+            "source_url": "https://www.wowhead.com/forever/item=20442"
+          },
+          {
+            "contributions": {
+              "agility": 0.0012555716324804678,
+              "intellect": 3.9551645082624987e-05,
+              "resistance_arcane": 0.0,
+              "resistance_fire": 0.0,
+              "resistance_frost": 0.0,
+              "resistance_nature": 0.0,
+              "spirit": 0.0008849064523778871,
+              "stamina": 0.007419054563806604,
+              "strength": 0.000906047515024877
+            },
+            "item_id": 273088,
+            "item_level": 22,
+            "name": "Snake Eye Kaleidoscope",
+            "required_level": 17,
+            "score": 0.010505131808772461,
+            "source_url": "https://www.wowhead.com/forever/item=273088"
+          }
+        ],
+        "legal_count": 8,
+        "selected_ids": [
+          277203,
+          277204,
+          285331,
+          20442,
+          273088
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "offhand": {
+        "items": [
+          {
+            "contributions": {
+              "spirit": 0.002654719357133661
+            },
+            "item_id": 5323,
+            "item_level": 25,
+            "name": "Everglow Lantern",
+            "required_level": 19,
+            "score": 0.002654719357133661,
+            "source_url": "https://www.wowhead.com/forever/item=5323"
+          },
+          {
+            "contributions": {},
+            "item_id": 6363,
+            "item_level": 25,
+            "name": "26 Pound Catfish",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=6363"
+          },
+          {
+            "contributions": {},
+            "item_id": 6364,
+            "item_level": 25,
+            "name": "32 Pound Catfish",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=6364"
+          },
+          {
+            "contributions": {},
+            "item_id": 7558,
+            "item_level": 25,
+            "name": "Shimmering Stave",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=7558"
+          },
+          {
+            "contributions": {
+              "intellect": 0.00019775822541312493,
+              "spirit": 0.004424532261889436
+            },
+            "item_id": 274743,
+            "item_level": 25,
+            "name": "Defective Samophlange",
+            "required_level": 20,
+            "score": 0.0046222904873025605,
+            "source_url": "https://www.wowhead.com/forever/item=274743"
+          }
+        ],
+        "legal_count": 44,
+        "selected_ids": [
+          5323,
+          6363,
+          6364,
+          7558,
+          274743
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "relic": {
+        "items": [
+          {
+            "contributions": {},
+            "item_id": 249396,
+            "item_level": 25,
+            "name": "Mystic Mushroom",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=249396"
+          },
+          {
+            "contributions": {},
+            "item_id": 263435,
+            "item_level": 10,
+            "name": "Mark of Urs'endris",
+            "required_level": 5,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=263435"
+          }
+        ],
+        "legal_count": 2,
+        "selected_ids": [
+          249396,
+          263435
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "ring1": {
+        "items": [
+          {
+            "contributions": {
+              "spirit": 0.004424532261889436
+            },
+            "item_id": 281252,
+            "item_level": 26,
+            "name": "Harpy Claw Ring",
+            "required_level": 18,
+            "score": 0.004424532261889436,
+            "source_url": "https://www.wowhead.com/forever/item=281252"
+          },
+          {
+            "contributions": {},
+            "item_id": 1462,
+            "item_level": 25,
+            "name": "Ring of the Shadow",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=1462"
+          },
+          {
+            "contributions": {
+              "intellect": 0.00011865493524787496,
+              "stamina": 0.022257163691419814
+            },
+            "item_id": 3739,
+            "item_level": 25,
+            "name": "Skull Ring",
+            "required_level": 20,
+            "score": 0.02237581862666769,
+            "source_url": "https://www.wowhead.com/forever/item=3739"
+          },
+          {
+            "contributions": {
+              "intellect": 0.00011865493524787496,
+              "spirit": 0.002654719357133661
+            },
+            "item_id": 5313,
+            "item_level": 25,
+            "name": "Totemic Clan Ring",
+            "required_level": 17,
+            "score": 0.002773374292381536,
+            "source_url": "https://www.wowhead.com/forever/item=5313"
+          },
+          {
+            "contributions": {
+              "spell_power": 0.004199384461152889,
+              "spirit": 0.0035396258095115483
+            },
+            "item_id": 6669,
+            "item_level": 25,
+            "name": "Sacred Band",
+            "required_level": 20,
+            "score": 0.007739010270664437,
+            "source_url": "https://www.wowhead.com/forever/item=6669"
+          }
+        ],
+        "legal_count": 38,
+        "selected_ids": [
+          281252,
+          1462,
+          3739,
+          5313,
+          6669
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "ring2": {
+        "items": [
+          {
+            "contributions": {
+              "spirit": 0.004424532261889436
+            },
+            "item_id": 281252,
+            "item_level": 26,
+            "name": "Harpy Claw Ring",
+            "required_level": 18,
+            "score": 0.004424532261889436,
+            "source_url": "https://www.wowhead.com/forever/item=281252"
+          },
+          {
+            "contributions": {},
+            "item_id": 1462,
+            "item_level": 25,
+            "name": "Ring of the Shadow",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=1462"
+          },
+          {
+            "contributions": {
+              "intellect": 0.00011865493524787496,
+              "stamina": 0.022257163691419814
+            },
+            "item_id": 3739,
+            "item_level": 25,
+            "name": "Skull Ring",
+            "required_level": 20,
+            "score": 0.02237581862666769,
+            "source_url": "https://www.wowhead.com/forever/item=3739"
+          },
+          {
+            "contributions": {
+              "intellect": 0.00011865493524787496,
+              "spirit": 0.002654719357133661
+            },
+            "item_id": 5313,
+            "item_level": 25,
+            "name": "Totemic Clan Ring",
+            "required_level": 17,
+            "score": 0.002773374292381536,
+            "source_url": "https://www.wowhead.com/forever/item=5313"
+          },
+          {
+            "contributions": {
+              "spell_power": 0.004199384461152889,
+              "spirit": 0.0035396258095115483
+            },
+            "item_id": 6669,
+            "item_level": 25,
+            "name": "Sacred Band",
+            "required_level": 20,
+            "score": 0.007739010270664437,
+            "source_url": "https://www.wowhead.com/forever/item=6669"
+          }
+        ],
+        "legal_count": 38,
+        "selected_ids": [
+          281252,
+          1462,
+          3739,
+          5313,
+          6669
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "shirt": {
+        "items": [
+          {
+            "contributions": {},
+            "item_id": 6384,
+            "item_level": 25,
+            "name": "Stylish Blue Shirt",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=6384"
+          },
+          {
+            "contributions": {},
+            "item_id": 6385,
+            "item_level": 25,
+            "name": "Stylish Green Shirt",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=6385"
+          },
+          {
+            "contributions": {},
+            "item_id": 6833,
+            "item_level": 25,
+            "name": "White Tuxedo Shirt",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=6833"
+          },
+          {
+            "contributions": {},
+            "item_id": 4330,
+            "item_level": 22,
+            "name": "Stylish Red Shirt",
+            "required_level": 17,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=4330"
+          },
+          {
+            "contributions": {},
+            "item_id": 2587,
+            "item_level": 20,
+            "name": "Gray Woolen Shirt",
+            "required_level": 15,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=2587"
+          }
+        ],
+        "legal_count": 13,
+        "selected_ids": [
+          6384,
+          6385,
+          6833,
+          4330,
+          2587
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "shoulder": {
+        "items": [
+          {
+            "contributions": {
+              "armor": 0.024860434098715772,
+              "spell_power": 0.006299076691729333,
+              "spirit": 0.007964158071400983
+            },
+            "item_id": 3324,
+            "item_level": 27,
+            "name": "Ghostly Mantle",
+            "required_level": 18,
+            "score": 0.03912366886184609,
+            "source_url": "https://www.wowhead.com/forever/item=3324"
+          },
+          {
+            "contributions": {
+              "armor": 0.05337681438841916,
+              "spell_power": 0.006299076691729333,
+              "stamina": 0.06677149107425943
+            },
+            "item_id": 270023,
+            "item_level": 27,
+            "name": "Tanned Shoulderpads",
+            "required_level": 18,
+            "score": 0.12644738215440793,
+            "source_url": "https://www.wowhead.com/forever/item=270023"
+          },
+          {
+            "contributions": {
+              "armor": 0.021935677145925682,
+              "spirit": 0.004424532261889436,
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 6664,
+            "item_level": 26,
+            "name": "Voodoo Mantle",
+            "required_level": 20,
+            "score": 0.05603642766304154,
+            "source_url": "https://www.wowhead.com/forever/item=6664"
+          },
+          {
+            "contributions": {
+              "armor": 0.02412924486051825,
+              "intellect": 0.00023730987049574992,
+              "mp5": 0.0035396258095115483,
+              "stamina": 0.022257163691419814
+            },
+            "item_id": 10657,
+            "item_level": 26,
+            "name": "Talbar Mantle",
+            "required_level": 10,
+            "score": 0.050163344231945364,
+            "source_url": "https://www.wowhead.com/forever/item=10657"
+          },
+          {
+            "contributions": {
+              "armor": 0.042408975815456315
+            },
+            "item_id": 1801,
+            "item_level": 25,
+            "name": "Rawhide Shoulderpads",
+            "required_level": 20,
+            "score": 0.042408975815456315,
+            "source_url": "https://www.wowhead.com/forever/item=1801"
+          }
+        ],
+        "legal_count": 30,
+        "selected_ids": [
+          3324,
+          270023,
+          6664,
+          10657,
+          1801
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "tabard": {
+        "items": [
+          {
+            "contributions": {},
+            "item_id": 15197,
+            "item_level": 20,
+            "name": "Scout's Tabard",
+            "required_level": 15,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=15197"
+          },
+          {
+            "contributions": {},
+            "item_id": 19031,
+            "item_level": 20,
+            "name": "Frostwolf Battle Tabard",
+            "required_level": 15,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=19031"
+          },
+          {
+            "contributions": {},
+            "item_id": 19505,
+            "item_level": 20,
+            "name": "Warsong Battle Tabard",
+            "required_level": 15,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=19505"
+          },
+          {
+            "contributions": {},
+            "item_id": 215450,
+            "item_level": 20,
+            "name": "Tabard Project (Aidan)",
+            "required_level": 15,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=215450"
+          },
+          {
+            "contributions": {},
+            "item_id": 262764,
+            "item_level": 20,
+            "name": "Durotar Supply and Logistics Tabard",
+            "required_level": 15,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=262764"
+          }
+        ],
+        "legal_count": 11,
+        "selected_ids": [
+          15197,
+          19031,
+          19505,
+          215450,
+          262764
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "trinket1": {
+        "items": [
+          {
+            "contributions": {},
+            "item_id": 7506,
+            "item_level": 25,
+            "name": "Gnomish Universal Remote",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=7506"
+          },
+          {
+            "contributions": {
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 21566,
+            "item_level": 25,
+            "name": "Rune of Perfection",
+            "required_level": 20,
+            "score": 0.029676218255226417,
+            "source_url": "https://www.wowhead.com/forever/item=21566"
+          },
+          {
+            "contributions": {
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 21568,
+            "item_level": 25,
+            "name": "Rune of Duty",
+            "required_level": 20,
+            "score": 0.029676218255226417,
+            "source_url": "https://www.wowhead.com/forever/item=21568"
+          },
+          {
+            "contributions": {
+              "spirit": 0.0008849064523778871
+            },
+            "item_id": 273298,
+            "item_level": 23,
+            "name": "Lookie's Spyglass",
+            "required_level": 18,
+            "score": 0.0008849064523778871,
+            "source_url": "https://www.wowhead.com/forever/item=273298"
+          },
+          {
+            "contributions": {},
+            "item_id": 23714,
+            "item_level": 20,
+            "name": "Perpetual Purple Firework",
+            "required_level": 15,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=23714"
+          }
+        ],
+        "legal_count": 5,
+        "selected_ids": [
+          7506,
+          21566,
+          21568,
+          273298,
+          23714
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "trinket2": {
+        "items": [
+          {
+            "contributions": {},
+            "item_id": 7506,
+            "item_level": 25,
+            "name": "Gnomish Universal Remote",
+            "required_level": 20,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=7506"
+          },
+          {
+            "contributions": {
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 21566,
+            "item_level": 25,
+            "name": "Rune of Perfection",
+            "required_level": 20,
+            "score": 0.029676218255226417,
+            "source_url": "https://www.wowhead.com/forever/item=21566"
+          },
+          {
+            "contributions": {
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 21568,
+            "item_level": 25,
+            "name": "Rune of Duty",
+            "required_level": 20,
+            "score": 0.029676218255226417,
+            "source_url": "https://www.wowhead.com/forever/item=21568"
+          },
+          {
+            "contributions": {
+              "spirit": 0.0008849064523778871
+            },
+            "item_id": 273298,
+            "item_level": 23,
+            "name": "Lookie's Spyglass",
+            "required_level": 18,
+            "score": 0.0008849064523778871,
+            "source_url": "https://www.wowhead.com/forever/item=273298"
+          },
+          {
+            "contributions": {},
+            "item_id": 23714,
+            "item_level": 20,
+            "name": "Perpetual Purple Firework",
+            "required_level": 15,
+            "score": 0.0,
+            "source_url": "https://www.wowhead.com/forever/item=23714"
+          }
+        ],
+        "legal_count": 5,
+        "selected_ids": [
+          7506,
+          21566,
+          21568,
+          273298,
+          23714
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "waist": {
+        "items": [
+          {
+            "contributions": {
+              "armor": 0.036559461909876134,
+              "attack_power": 0.005436285090149262,
+              "intellect": 0.00019775822541312493,
+              "spirit": 0.0017698129047557742,
+              "stamina": 0.022257163691419814
+            },
+            "item_id": 16987,
+            "item_level": 27,
+            "name": "Screecher Belt",
+            "required_level": 18,
+            "score": 0.06622048182161411,
+            "source_url": "https://www.wowhead.com/forever/item=16987"
+          },
+          {
+            "contributions": {
+              "armor": 0.0160861632403455,
+              "intellect": 0.00019775822541312493,
+              "spirit": 0.0017698129047557742
+            },
+            "item_id": 3229,
+            "item_level": 25,
+            "name": "Tarantula Silk Sash",
+            "required_level": 20,
+            "score": 0.0180537343705144,
+            "source_url": "https://www.wowhead.com/forever/item=3229"
+          },
+          {
+            "contributions": {
+              "agility": 0.005022286529921871,
+              "armor": 0.03509708343348109,
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 4249,
+            "item_level": 25,
+            "name": "Dark Leather Belt",
+            "required_level": 20,
+            "score": 0.06979558821862938,
+            "source_url": "https://www.wowhead.com/forever/item=4249"
+          },
+          {
+            "contributions": {
+              "armor": 0.03509708343348109,
+              "spell_power": 0.008398768922305778,
+              "stamina": 0.029676218255226417
+            },
+            "item_id": 4250,
+            "item_level": 25,
+            "name": "Hillman's Belt",
+            "required_level": 20,
+            "score": 0.07317207061101329,
+            "source_url": "https://www.wowhead.com/forever/item=4250"
+          },
+          {
+            "contributions": {
+              "armor": 0.03509708343348109
+            },
+            "item_id": 9801,
+            "item_level": 25,
+            "name": "Superior Belt",
+            "required_level": 20,
+            "score": 0.03509708343348109,
+            "source_url": "https://www.wowhead.com/forever/item=9801"
+          }
+        ],
+        "legal_count": 109,
+        "selected_ids": [
+          16987,
+          3229,
+          4249,
+          4250,
+          9801
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "weapon": {
+        "items": [
+          {
+            "contributions": {
+              "strength": 0.008154427635223893,
+              "weapon_dps": 0.15955496739588085
+            },
+            "item_id": 5322,
+            "item_level": 26,
+            "name": "Demolition Hammer",
+            "required_level": 17,
+            "score": 0.16770939503110474,
+            "source_url": "https://www.wowhead.com/forever/item=5322"
+          },
+          {
+            "contributions": {
+              "stamina": 0.014838109127613209,
+              "strength": 0.007248380120199016,
+              "weapon_dps": 0.1518535635181694
+            },
+            "item_id": 911,
+            "item_level": 25,
+            "name": "Ironwood Treebranch",
+            "required_level": 20,
+            "score": 0.17394005276598162,
+            "source_url": "https://www.wowhead.com/forever/item=911"
+          },
+          {
+            "contributions": {
+              "agility": 0.005022286529921871,
+              "weapon_dps": 0.11597408192318426
+            },
+            "item_id": 920,
+            "item_level": 25,
+            "name": "Wicked Spiked Mace",
+            "required_level": 20,
+            "score": 0.12099636845310613,
+            "source_url": "https://www.wowhead.com/forever/item=920"
+          },
+          {
+            "contributions": {
+              "weapon_dps": 0.10709481627594046
+            },
+            "item_id": 925,
+            "item_level": 25,
+            "name": "Flail",
+            "required_level": 20,
+            "score": 0.10709481627594046,
+            "source_url": "https://www.wowhead.com/forever/item=925"
+          },
+          {
+            "contributions": {
+              "weapon_dps": 0.13744740802927385
+            },
+            "item_id": 928,
+            "item_level": 25,
+            "name": "Long Staff",
+            "required_level": 20,
+            "score": 0.13744740802927385,
+            "source_url": "https://www.wowhead.com/forever/item=928"
+          }
+        ],
+        "legal_count": 213,
+        "selected_ids": [
+          5322,
+          911,
+          920,
+          925,
+          928
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      },
+      "wrist": {
+        "items": [
+          {
+            "contributions": {
+              "armor": 0.013161406287555409,
+              "intellect": 0.00015820658033049995,
+              "stamina": 0.007419054563806604
+            },
+            "item_id": 270028,
+            "item_level": 27,
+            "name": "Harpy Bangles",
+            "required_level": 18,
+            "score": 0.020738667431692514,
+            "source_url": "https://www.wowhead.com/forever/item=270028"
+          },
+          {
+            "contributions": {
+              "agility": 0.005022286529921871,
+              "armor": 0.027054001813308342,
+              "stamina": 0.014838109127613209
+            },
+            "item_id": 4794,
+            "item_level": 25,
+            "name": "Wolf Bracers",
+            "required_level": 20,
+            "score": 0.04691439747084342,
+            "source_url": "https://www.wowhead.com/forever/item=4794"
+          },
+          {
+            "contributions": {
+              "armor": 0.027054001813308342,
+              "stamina": 0.03709527281903302
+            },
+            "item_id": 4795,
+            "item_level": 25,
+            "name": "Bear Bracers",
+            "required_level": 20,
+            "score": 0.06414927463234137,
+            "source_url": "https://www.wowhead.com/forever/item=4795"
+          },
+          {
+            "contributions": {
+              "armor": 0.027054001813308342,
+              "intellect": 0.00019775822541312493
+            },
+            "item_id": 4796,
+            "item_level": 25,
+            "name": "Owl Bracers",
+            "required_level": 20,
+            "score": 0.027251760038721467,
+            "source_url": "https://www.wowhead.com/forever/item=4796"
+          },
+          {
+            "contributions": {
+              "armor": 0.012430217049357886
+            },
+            "item_id": 9793,
+            "item_level": 25,
+            "name": "Ivycloth Bracelets",
+            "required_level": 20,
+            "score": 0.012430217049357886,
+            "source_url": "https://www.wowhead.com/forever/item=9793"
+          }
+        ],
+        "legal_count": 95,
+        "selected_ids": [
+          270028,
+          4794,
+          4795,
+          4796,
+          9793
+        ],
+        "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+      }
+    },
+    "source": "CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS",
+    "source_policy": {
+      "action_ids": [
+        "claw:20"
+      ],
+      "equipped_weapon_damage_relevant": true,
+      "equipped_weapon_dependency_derived_from_source_dps_stat_or_canonical_mode_facts": true,
+      "equipped_weapon_mean_hit_relevant": false,
+      "policy_id": "forever:druid:caster-healing-slice@20:talents:stateful:claw:20",
+      "source_ir_id": "forever:druid:caster-healing-slice@20:talents",
+      "weapon_damage_effect_derived_from_ir": true
+    },
+    "tested_item_count": 92,
+    "weapon_damage_dependent": false,
+    "weight_evidence_kind": "MEASURED_SOURCE_CONTEXT"
+  },
+  "p3_status": "PASS",
+  "p4_p5_p6_p7_status": "NOT_REVALIDATED_IN_WF412",
+  "release": "WF412",
+  "reoptimized_evidence": {
+    "mp5": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 10,
+          "context": "after",
+          "events": 7664,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.113914401857787,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 125.39144018577866,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 10,
+          "context": "before",
+          "events": 7665,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.131612530905345,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 126.16125309053459,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 10.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 10,
+          "context": "before",
+          "events": 7665,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.131612530905345,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 126.16125309053459,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 14,
+          "context": "before",
+          "events": 7732,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.366286408519928,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 146.62864085199266,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 10,
+          "context": "after",
+          "events": 7664,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.113914401857787,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 125.39144018577866,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 14,
+          "context": "after",
+          "events": 7738,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.314009588715008,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 141.40095887150056,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "mp5",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0017698129047557742
+    },
+    "spell_power": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 10,
+          "context": "after",
+          "events": 7682,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.068621763988052,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 120.86217639880513,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 10,
+          "context": "before",
+          "events": 7665,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.131612530905345,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 126.16125309053459,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 30.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 10,
+          "context": "before",
+          "events": 7665,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.131612530905345,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 126.16125309053459,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 14,
+          "context": "before",
+          "events": 7732,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.366286408519928,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 146.62864085199266,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 10,
+          "context": "after",
+          "events": 7682,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.068621763988052,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 120.86217639880513,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 7843,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.163206711068085,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 131.8206711068085,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "spell_power",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0020996922305764444
+    },
+    "spirit": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 10,
+          "context": "after",
+          "events": 7664,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.113914401857787,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 125.39144018577866,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 10,
+          "context": "before",
+          "events": 7665,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.131612530905345,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 126.16125309053459,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 10,
+          "context": "before",
+          "events": 7665,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.131612530905345,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 126.16125309053459,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 14,
+          "context": "before",
+          "events": 7732,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.366286408519928,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 146.62864085199266,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 10,
+          "context": "after",
+          "events": 7664,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.113914401857787,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 125.39144018577866,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 14,
+          "context": "after",
+          "events": 7738,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.314009588715008,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 141.40095887150056,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "spirit",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0008849064523778871
+    },
+    "stamina": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 8,
+          "context": "after",
+          "events": 7651,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 11.983231439629213,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 120.82314396292116,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 10,
+          "context": "before",
+          "events": 7665,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.131612530905345,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 126.16125309053459,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 10,
+          "context": "before",
+          "events": 7665,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.131612530905345,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 126.16125309053459,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 14,
+          "context": "before",
+          "events": 7732,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.366286408519928,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 146.62864085199266,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 8,
+          "context": "after",
+          "events": 7651,
+          "health_fraction": 0.25,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 11.983231439629213,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 120.82314396292116,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 7672,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 12.174925154596801,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 1,
+          "recovery_s": 134.99251545968013,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "stamina",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.007419054563806604
+    }
+  },
+  "replayed_wf347_events": 7314,
+  "replayed_wf347_fixed_full_recovery_100mob_s_per_mob": 12.861380973404744,
+  "replayed_wf347_gear_ids": {
+    "back": 6449,
+    "chest": 252490,
+    "feet": 1121,
+    "hands": 10413,
+    "head": 252447,
+    "legs": 252500,
+    "neck": 20442,
+    "relic": 249396,
+    "ring1": 20429,
+    "ring2": 285330,
+    "shirt": 3342,
+    "shoulder": 6461,
+    "trinket1": 21566,
+    "trinket2": 273298,
+    "waist": 6468,
+    "weapon": 7230,
+    "wrist": 3202
+  },
+  "replayed_wf347_policy_action_ids": [
+    "claw:20"
+  ],
+  "replayed_wf347_talents": {
+    "ferocity": 5,
+    "heart_of_the_wild": 5,
+    "savage_fury": 1
+  },
+  "source_catalogue_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "wall_s": 17.792192846000034,
+  "weight_certificate": {
+    "agility": {
+      "full_probes": [
+        {
+          "delta": 5.0,
+          "events": 7288,
+          "improvement_s_per_mob": -0.03289749905833972,
+          "mean_s_per_mob": 13.49702630047799
+        },
+        {
+          "delta": 10.0,
+          "events": 7284,
+          "improvement_s_per_mob": 0.012555716324804678,
+          "mean_s_per_mob": 13.451573085094845
+        }
+      ],
+      "interpretation": "coarse_search_prior_not_continuous_gradient",
+      "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+      "perturbed_s_per_mob": 13.451573085094845,
+      "probe_delta": 10.0,
+      "short_probes": [
+        {
+          "delta": 5.0,
+          "improvement_s_per_mob": 0.08985556963089891,
+          "mean_s_per_mob": 13.675941996097606
+        },
+        {
+          "delta": 10.0,
+          "improvement_s_per_mob": 0.09181979349103209,
+          "mean_s_per_mob": 13.673977772237473
+        },
+        {
+          "delta": 20.0,
+          "improvement_s_per_mob": 0.09571057632423141,
+          "mean_s_per_mob": 13.670086989404274
+        },
+        {
+          "delta": 40.0,
+          "improvement_s_per_mob": 0.1533448103592061,
+          "mean_s_per_mob": 13.612452755369299
+        }
+      ],
+      "status": "DISCRETE_SMOOTHED",
+      "weight_s_saved_per_mob_per_unit": 0.0012555716324804678
+    },
+    "armor": {
+      "full_probes": [
+        {
+          "delta": 100.0,
+          "events": 7290,
+          "improvement_s_per_mob": -0.02676225650412256,
+          "mean_s_per_mob": 13.490891057923772
+        },
+        {
+          "delta": 200.0,
+          "events": 7290,
+          "improvement_s_per_mob": 0.14623784763950454,
+          "mean_s_per_mob": 13.317890953780145
+        }
+      ],
+      "interpretation": "coarse_search_prior_not_continuous_gradient",
+      "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+      "perturbed_s_per_mob": 13.317890953780145,
+      "probe_delta": 200.0,
+      "short_probes": [
+        {
+          "delta": 100.0,
+          "improvement_s_per_mob": 0.09848325447277162,
+          "mean_s_per_mob": 13.667314311255733
+        },
+        {
+          "delta": 200.0,
+          "improvement_s_per_mob": 0.2114640066576179,
+          "mean_s_per_mob": 13.554333559070887
+        },
+        {
+          "delta": 400.0,
+          "improvement_s_per_mob": 0.39298888760024475,
+          "mean_s_per_mob": 13.37280867812826
+        },
+        {
+          "delta": 800.0,
+          "improvement_s_per_mob": 0.5574454126635207,
+          "mean_s_per_mob": 13.208352153064984
+        }
+      ],
+      "status": "DISCRETE_SMOOTHED",
+      "weight_s_saved_per_mob_per_unit": 0.0007311892381975227
+    },
+    "attack_power": {
+      "full_probes": [
+        {
+          "delta": 20.0,
+          "events": 7272,
+          "improvement_s_per_mob": -0.02430332405310054,
+          "mean_s_per_mob": 13.48843212547275
+        },
+        {
+          "delta": 40.0,
+          "events": 7253,
+          "improvement_s_per_mob": 0.01812095030049754,
+          "mean_s_per_mob": 13.446007851119152
+        }
+      ],
+      "interpretation": "coarse_search_prior_not_continuous_gradient",
+      "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+      "perturbed_s_per_mob": 13.446007851119152,
+      "probe_delta": 40.0,
+      "short_probes": [
+        {
+          "delta": 10.0,
+          "improvement_s_per_mob": 0.0,
+          "mean_s_per_mob": 13.765797565728505
+        },
+        {
+          "delta": 20.0,
+          "improvement_s_per_mob": 0.08787862823201564,
+          "mean_s_per_mob": 13.67791893749649
+        },
+        {
+          "delta": 40.0,
+          "improvement_s_per_mob": 0.13787862823201635,
+          "mean_s_per_mob": 13.627918937496489
+        },
+        {
+          "delta": 80.0,
+          "improvement_s_per_mob": 1.3703050099230119,
+          "mean_s_per_mob": 12.395492555805493
+        }
+      ],
+      "status": "DISCRETE_SMOOTHED",
+      "weight_s_saved_per_mob_per_unit": 0.0004530237575124385
+    },
+    "crit": {
+      "chance_sensitivity_status": "MEASURED_EXECUTOR_CHANCE_SENSITIVITY",
+      "display_percent_per_raw_point": 0.07142857142857142,
+      "no_level_scaled_tbc_conversion": true,
+      "source_urls": [
+        "https://theforeverera.com/en/recipes/leatherworking/fletchers-gloves/"
+      ],
+      "status": "SOURCE_DISPLAY_PERCENT_MEASURED_100MOB",
+      "unmodeled_channels": [
+        "spell_crit_scope_in_executor"
+      ],
+      "weight_s_saved_per_mob_per_unit": 0.00016179419911158517,
+      "weight_unit": "seconds_saved_per_mob_per_raw_catalogue_point"
+    },
+    "defense": {
+      "direct_probe": {
+        "full_probes": [
+          {
+            "delta": 32.0,
+            "events": 7290,
+            "improvement_s_per_mob": -0.027833111872434202,
+            "mean_s_per_mob": 13.491961913292084
+          },
+          {
+            "delta": 16.0,
+            "events": 7290,
+            "improvement_s_per_mob": -0.031068217962767264,
+            "mean_s_per_mob": 13.495197019382417
+          }
+        ],
+        "reason": "NO_POSITIVE_CONFIRMED_100MOB_PROBE",
+        "short_probes": [
+          {
+            "delta": 4.0,
+            "improvement_s_per_mob": 0.08901597021690044,
+            "mean_s_per_mob": 13.676781595511605
+          },
+          {
+            "delta": 8.0,
+            "improvement_s_per_mob": 0.09015331220178702,
+            "mean_s_per_mob": 13.675644253526718
+          },
+          {
+            "delta": 16.0,
+            "improvement_s_per_mob": 0.09242799617155129,
+            "mean_s_per_mob": 13.673369569556954
+          },
+          {
+            "delta": 32.0,
+            "improvement_s_per_mob": 0.09697736411108338,
+            "mean_s_per_mob": 13.668820201617422
+          }
+        ],
+        "status": "INCONCLUSIVE_DISCRETE_PROBES",
+        "weight_s_saved_per_mob_per_unit": null
+      },
+      "first_order_fallback_used": true,
+      "full_probes": [
+        {
+          "delta": 32.0,
+          "events": 7290,
+          "improvement_s_per_mob": -0.027833111872434202,
+          "mean_s_per_mob": 13.491961913292084
+        },
+        {
+          "delta": 16.0,
+          "events": 7290,
+          "improvement_s_per_mob": -0.031068217962767264,
+          "mean_s_per_mob": 13.495197019382417
+        }
+      ],
+      "method": "100mob_measured_dodge_sensitivity_times_0.0008_for_miss_and_dodge",
+      "no_level_scaled_tbc_conversion": true,
+      "reason": "NO_POSITIVE_CONFIRMED_100MOB_PROBE",
+      "short_probes": [
+        {
+          "delta": 4.0,
+          "improvement_s_per_mob": 0.08901597021690044,
+          "mean_s_per_mob": 13.676781595511605
+        },
+        {
+          "delta": 8.0,
+          "improvement_s_per_mob": 0.09015331220178702,
+          "mean_s_per_mob": 13.675644253526718
+        },
+        {
+          "delta": 16.0,
+          "improvement_s_per_mob": 0.09242799617155129,
+          "mean_s_per_mob": 13.673369569556954
+        },
+        {
+          "delta": 32.0,
+          "improvement_s_per_mob": 0.09697736411108338,
+          "mean_s_per_mob": 13.668820201617422
+        }
+      ],
+      "source_urls": [
+        "https://theforeverera.com/en/items/12985/",
+        "https://warcraft.wiki.gg/wiki/Defense"
+      ],
+      "status": "PARTIAL_DEFENSE_SKILL_FIRST_ORDER_AVOIDANCE_PROXY",
+      "unmodeled_channels": [
+        "parry_chance",
+        "block_chance",
+        "incoming_crit_suppression",
+        "weapon_skill_level_difference_and_client_rounding"
+      ],
+      "weight_s_saved_per_mob_per_unit": 0.0001090204974173048
+    },
+    "dodge": {
+      "chance_sensitivity_status": "MEASURED_EXECUTOR_CHANCE_SENSITIVITY",
+      "display_percent_per_raw_point": 0.08333333333333334,
+      "no_level_scaled_tbc_conversion": true,
+      "source_urls": [
+        "https://theforeverera.com/en/items/7920/"
+      ],
+      "status": "SOURCE_DISPLAY_PERCENT_MEASURED_100MOB",
+      "unmodeled_channels": [],
+      "weight_s_saved_per_mob_per_unit": 0.00011356301814302584,
+      "weight_unit": "seconds_saved_per_mob_per_raw_catalogue_point"
+    },
+    "healing": {
+      "reason": "NO_EXECUTABLE_SOURCE_STAT_SEMANTIC",
+      "status": "UNSUPPORTED_RUNTIME_AXIS",
+      "weight_s_saved_per_mob_per_unit": null
+    },
+    "health_regeneration_per_5s": {
+      "full_probes": [
+        {
+          "delta": 5.0,
+          "events": 7302,
+          "improvement_s_per_mob": 0.2890108605750079,
+          "mean_s_per_mob": 13.175117940844641
+        }
+      ],
+      "interpretation": "coarse_search_prior_not_continuous_gradient",
+      "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+      "not_global_optimality_proof": true,
+      "perturbed_s_per_mob": 13.175117940844641,
+      "probe_delta": 5.0,
+      "scope": "fixed sourced Druid L20 100mob CombatRuntime build; other builds require remeasurement",
+      "short_probes": [
+        {
+          "delta": 5.0,
+          "improvement_s_per_mob": 0.39792459876441555,
+          "mean_s_per_mob": 13.36787296696409
+        },
+        {
+          "delta": 10.0,
+          "improvement_s_per_mob": 0.6554786006235283,
+          "mean_s_per_mob": 13.110318965104977
+        },
+        {
+          "delta": 20.0,
+          "improvement_s_per_mob": 1.2857372387710093,
+          "mean_s_per_mob": 12.480060326957496
+        },
+        {
+          "delta": 40.0,
+          "improvement_s_per_mob": 1.5120945742844505,
+          "mean_s_per_mob": 12.253702991444055
+        }
+      ],
+      "source_field": "healthrgn",
+      "status": "MEASURED",
+      "weight_s_saved_per_mob_per_unit": 0.057802172115001584,
+      "weight_unit": "seconds_saved_per_mob_per_HP5"
+    },
+    "hit": {
+      "chance_sensitivity_status": "MEASURED_EXECUTOR_CHANCE_SENSITIVITY",
+      "display_percent_per_raw_point": 0.1,
+      "no_level_scaled_tbc_conversion": true,
+      "source_urls": [
+        "https://theforeverera.com/en/items/22383/"
+      ],
+      "status": "SOURCE_DISPLAY_PERCENT_MEASURED_100MOB",
+      "unmodeled_channels": [],
+      "weight_s_saved_per_mob_per_unit": 0.00036241900600995046,
+      "weight_unit": "seconds_saved_per_mob_per_raw_catalogue_point"
+    },
+    "intellect": {
+      "full_probes": [
+        {
+          "delta": 5.0,
+          "events": 7282,
+          "improvement_s_per_mob": 0.00019775822541312493,
+          "mean_s_per_mob": 13.463931043194236
+        }
+      ],
+      "interpretation": "coarse_search_prior_not_continuous_gradient",
+      "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+      "perturbed_s_per_mob": 13.463931043194236,
+      "probe_delta": 5.0,
+      "short_probes": [
+        {
+          "delta": 5.0,
+          "improvement_s_per_mob": 0.000988791127067401,
+          "mean_s_per_mob": 13.764808774601438
+        },
+        {
+          "delta": 10.0,
+          "improvement_s_per_mob": 0.0018114919192377954,
+          "mean_s_per_mob": 13.763986073809267
+        },
+        {
+          "delta": 20.0,
+          "improvement_s_per_mob": 0.003101941100439376,
+          "mean_s_per_mob": 13.762695624628066
+        },
+        {
+          "delta": 40.0,
+          "improvement_s_per_mob": 0.004818055946032018,
+          "mean_s_per_mob": 13.760979509782473
+        }
+      ],
+      "status": "MEASURED",
+      "weight_s_saved_per_mob_per_unit": 3.9551645082624987e-05
+    },
+    "mp5": {
+      "after_score": 12.113914401857787,
+      "before_score": 12.131612530905345,
+      "delta": 10.0,
+      "search_scope": "two_source_legal_recovery_threshold_policies",
+      "source": "WF412_PAID_100MOB_SAME_WF347_FULL_BUILD",
+      "status": "MEASURED_100MOB_REOPTIMIZED_RECOVERY",
+      "weight_s_saved_per_mob_per_unit": 0.0017698129047557742
+    },
+    "resistance_arcane": {
+      "not_a_global_item_stat_weight": true,
+      "on_build_or_enemy_change": "remeasure_using_100mob_runtime",
+      "reason": "No outgoing magical damage affected by penetration, no incoming magical damage mitigated by school resistance",
+      "scope": "WF325 pinned Cat Form -> Claw policy; ordinary physical-only incoming enemy; no sourced target school resistance",
+      "status": "CONTEXTUAL_ZERO_PHYSICAL_CAT_CLAW_MELEE_TARGET_ONLY",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    },
+    "resistance_fire": {
+      "not_a_global_item_stat_weight": true,
+      "on_build_or_enemy_change": "remeasure_using_100mob_runtime",
+      "reason": "No outgoing magical damage affected by penetration, no incoming magical damage mitigated by school resistance",
+      "scope": "WF325 pinned Cat Form -> Claw policy; ordinary physical-only incoming enemy; no sourced target school resistance",
+      "status": "CONTEXTUAL_ZERO_PHYSICAL_CAT_CLAW_MELEE_TARGET_ONLY",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    },
+    "resistance_frost": {
+      "not_a_global_item_stat_weight": true,
+      "on_build_or_enemy_change": "remeasure_using_100mob_runtime",
+      "reason": "No outgoing magical damage affected by penetration, no incoming magical damage mitigated by school resistance",
+      "scope": "WF325 pinned Cat Form -> Claw policy; ordinary physical-only incoming enemy; no sourced target school resistance",
+      "status": "CONTEXTUAL_ZERO_PHYSICAL_CAT_CLAW_MELEE_TARGET_ONLY",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    },
+    "resistance_holy": {
+      "not_a_global_item_stat_weight": true,
+      "on_build_or_enemy_change": "remeasure_using_100mob_runtime",
+      "reason": "No outgoing magical damage affected by penetration, no incoming magical damage mitigated by school resistance",
+      "scope": "WF325 pinned Cat Form -> Claw policy; ordinary physical-only incoming enemy; no sourced target school resistance",
+      "status": "CONTEXTUAL_ZERO_PHYSICAL_CAT_CLAW_MELEE_TARGET_ONLY",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    },
+    "resistance_nature": {
+      "not_a_global_item_stat_weight": true,
+      "on_build_or_enemy_change": "remeasure_using_100mob_runtime",
+      "reason": "No outgoing magical damage affected by penetration, no incoming magical damage mitigated by school resistance",
+      "scope": "WF325 pinned Cat Form -> Claw policy; ordinary physical-only incoming enemy; no sourced target school resistance",
+      "status": "CONTEXTUAL_ZERO_PHYSICAL_CAT_CLAW_MELEE_TARGET_ONLY",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    },
+    "spell_penetration": {
+      "not_a_global_item_stat_weight": true,
+      "on_build_or_enemy_change": "remeasure_using_100mob_runtime",
+      "reason": "No outgoing magical damage affected by penetration, no incoming magical damage mitigated by school resistance",
+      "scope": "WF325 pinned Cat Form -> Claw policy; ordinary physical-only incoming enemy; no sourced target school resistance",
+      "status": "CONTEXTUAL_ZERO_PHYSICAL_CAT_CLAW_MELEE_TARGET_ONLY",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    },
+    "spell_power": {
+      "after_score": 12.068621763988052,
+      "before_score": 12.131612530905345,
+      "delta": 30.0,
+      "search_scope": "two_source_legal_recovery_threshold_policies",
+      "source": "WF412_PAID_100MOB_SAME_WF347_FULL_BUILD",
+      "status": "MEASURED_100MOB_REOPTIMIZED_RECOVERY",
+      "weight_s_saved_per_mob_per_unit": 0.0020996922305764444
+    },
+    "spirit": {
+      "after_score": 12.113914401857787,
+      "before_score": 12.131612530905345,
+      "delta": 20.0,
+      "search_scope": "two_source_legal_recovery_threshold_policies",
+      "source": "WF412_PAID_100MOB_SAME_WF347_FULL_BUILD",
+      "status": "MEASURED_100MOB_REOPTIMIZED_RECOVERY",
+      "weight_s_saved_per_mob_per_unit": 0.0008849064523778871
+    },
+    "spirit_percent": {
+      "reason": "NO_EXECUTABLE_SOURCE_STAT_SEMANTIC",
+      "status": "UNSUPPORTED_RUNTIME_AXIS",
+      "weight_s_saved_per_mob_per_unit": null
+    },
+    "stamina": {
+      "after_score": 11.983231439629213,
+      "before_score": 12.131612530905345,
+      "delta": 20.0,
+      "search_scope": "two_source_legal_recovery_threshold_policies",
+      "source": "WF412_PAID_100MOB_SAME_WF347_FULL_BUILD",
+      "status": "MEASURED_100MOB_REOPTIMIZED_RECOVERY",
+      "weight_s_saved_per_mob_per_unit": 0.007419054563806604
+    },
+    "strength": {
+      "full_probes": [
+        {
+          "delta": 10.0,
+          "events": 7268,
+          "improvement_s_per_mob": -0.014303324053100752,
+          "mean_s_per_mob": 13.47843212547275
+        },
+        {
+          "delta": 20.0,
+          "events": 7253,
+          "improvement_s_per_mob": 0.01812095030049754,
+          "mean_s_per_mob": 13.446007851119152
+        }
+      ],
+      "interpretation": "coarse_search_prior_not_continuous_gradient",
+      "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+      "perturbed_s_per_mob": 13.446007851119152,
+      "probe_delta": 20.0,
+      "short_probes": [
+        {
+          "delta": 5.0,
+          "improvement_s_per_mob": 0.0,
+          "mean_s_per_mob": 13.765797565728505
+        },
+        {
+          "delta": 10.0,
+          "improvement_s_per_mob": 0.08787862823201564,
+          "mean_s_per_mob": 13.67791893749649
+        },
+        {
+          "delta": 20.0,
+          "improvement_s_per_mob": 0.13787862823201635,
+          "mean_s_per_mob": 13.627918937496489
+        },
+        {
+          "delta": 40.0,
+          "improvement_s_per_mob": 1.4578807355694146,
+          "mean_s_per_mob": 12.30791683015909
+        }
+      ],
+      "status": "DISCRETE_SMOOTHED",
+      "weight_s_saved_per_mob_per_unit": 0.000906047515024877
+    },
+    "wand_dps": {
+      "reason": "NO_EXECUTABLE_SOURCE_STAT_SEMANTIC",
+      "status": "UNSUPPORTED_RUNTIME_AXIS",
+      "weight_s_saved_per_mob_per_unit": null
+    },
+    "weapon_dps": {
+      "full_probes": [
+        {
+          "delta": 2.0,
+          "events": 7253,
+          "improvement_s_per_mob": 0.01812095030049754,
+          "mean_s_per_mob": 13.446007851119152
+        }
+      ],
+      "interpretation": "coarse_search_prior_not_continuous_gradient",
+      "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+      "perturbed_s_per_mob": 13.446007851119152,
+      "probe_delta": 2.0,
+      "short_probes": [
+        {
+          "delta": 2.0,
+          "improvement_s_per_mob": 0.13787862823201635,
+          "mean_s_per_mob": 13.627918937496489
+        },
+        {
+          "delta": 4.0,
+          "improvement_s_per_mob": 1.320305009923013,
+          "mean_s_per_mob": 12.445492555805492
+        },
+        {
+          "delta": 8.0,
+          "improvement_s_per_mob": 1.4578807355694146,
+          "mean_s_per_mob": 12.30791683015909
+        },
+        {
+          "delta": 16.0,
+          "improvement_s_per_mob": 1.6654946631428924,
+          "mean_s_per_mob": 12.100302902585613
+        }
+      ],
+      "status": "MEASURED",
+      "weight_s_saved_per_mob_per_unit": 0.00906047515024877
+    },
+    "weapon_speed": {
+      "source_semantics": "FORM_FIXED_WEAPON_SPEED_NO_ITEM_SENSITIVITY",
+      "status": "CONTEXTUAL_ZERO_FROM_SOURCE_FORM_FIXED",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    }
+  },
+  "wf347_weight_source_sha256": "7e922eae685ebe23a301fc159df466303032126a638b18da7cf152c52ca10b24"
+}

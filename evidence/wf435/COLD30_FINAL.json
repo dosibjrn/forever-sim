@@ -1,0 +1,47 @@
+{
+  "status": "BOUNDED_JOINT_PAID_DIAGNOSTIC",
+  "wall_s": 27.73239549600021,
+  "parent_cpu_s": 4.904179417,
+  "worker_cpu_s_reported": 22.001088198999998,
+  "events": 36000,
+  "paid_candidates": 60,
+  "unique_full_builds": 60,
+  "screen_complete_candidates": 49,
+  "complete_100mob_candidates": 4,
+  "full_evaluated_candidates": 4,
+  "screen_phase_wall_s": 15.00535789300011,
+  "finalist_phase_wall_s": 12.726272706999907,
+  "gear_move_quota": {
+    "stat": 5,
+    "weapon": 1,
+    "slot": 2
+  },
+  "stat_packages": [
+    "spell_power",
+    "crit",
+    "strength",
+    "agility",
+    "spell_power+crit"
+  ],
+  "hybrid_paid": [
+    {
+      "attempt": 11,
+      "gear_move": "source_stat_package:spell_power+crit",
+      "screen_status": "COMPLETE",
+      "screen_s_per_mob": 15.5174172591007,
+      "status": "COMPLETE",
+      "seconds_per_mob": 13.897995414916092,
+      "source_action_counts": {
+        "wrath:5180": 28
+      }
+    }
+  ],
+  "winner": {
+    "seconds_per_mob": 11.623120172935218,
+    "screen_s_per_mob": 13.270389931786765,
+    "gear_move": "source_stat_package:spell_power",
+    "policy_origin": "talent_modified:improved_wrath:wrath:5180",
+    "full_events": 3115,
+    "mobs": 100
+  }
+}
