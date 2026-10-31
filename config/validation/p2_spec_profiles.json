@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "authority": "PRODUCT_PROFILE_CONSTRAINT",
+  "description": "Product/optimizer selection policy, NOT a sourced WoW Forever game mechanic. Talent ranks, tier rules and prerequisites remain sourced and are validated by the canonical P2 executor.",
+  "profiles": [
+    {
+      "class_key": "druid",
+      "level": 60,
+      "spec": "balance",
+      "tree_key": "balance",
+      "minimum_points": 31,
+      "constraint_kind": "minimum_tree_points",
+      "contract_version": "druid-balance-l60-v1",
+      "source_binding": "CANONICAL_RUNTIME_TALENT_TREE",
+      "description": "A Balance-profile candidate invests at least 31 of its available talent points in the source-derived Balance tree. Remaining points are unrestricted subject to actual source talent legality. This is an explicit product search constraint, not a game rule."
+    }
+  ]
+}
