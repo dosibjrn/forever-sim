@@ -16,7 +16,7 @@ git -C "$work/old" lfs pull
 echo "[2/7] Clone destination public main"
 git clone --depth=1 --single-branch --branch main "$NEW_URL" "$work/new"
 echo "[3/7] Preflight: do not publish obvious embedded credentials"
-if git -C "$work/old" grep -I -nE 'gh[pousr]_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z0-9_]{40,}|-----BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY-----|AKIA[A-Z0-9]{16}' -- . ':!docs/validation' > "$work/secret-hits"; then
+if git -C "$work/old" grep -I -nE 'gh[pousr]_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z0-9_]{40,}|-----BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY-----|AKIA[A-Z0-9]{16}' -- . > "$work/secret-hits"; then
   echo "Potential credentials found. Review privately before publishing. Aborting."
   sed -E 's/:.*/: [redacted match]/' "$work/secret-hits" | head -30
   exit 4
