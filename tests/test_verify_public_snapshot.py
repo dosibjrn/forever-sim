@@ -164,9 +164,9 @@ class VerifyPublicSnapshotTest(unittest.TestCase):
         shim.mkdir()
         wrapper = shim / 'git'
         wrapper.write_text(
-            '#!/bin/sh\\n'
-            'if [ "$1" = "lfs" ]; then exit 0; fi\\n'
-            'exec ' + shutil.which('git') + ' "$@"\\n'
+            '#!/bin/sh\n'
+            'if [ "$1" = "lfs" ]; then exit 0; fi\n'
+            'exec ' + shutil.which('git') + ' "$@"\n'
         )
         wrapper.chmod(0o755)
         env = dict(os.environ, APPROVED_SOURCE_SHA='0' * 40,
