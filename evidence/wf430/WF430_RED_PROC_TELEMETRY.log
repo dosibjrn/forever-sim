@@ -1,0 +1,45 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_paid_100mob_starfire_proc_counts_and_independent_replay _________
+
+    def test_paid_100mob_starfire_proc_counts_and_independent_replay():
+        from src.v2.source_bounded_joint_frontier import (source_cold_start_stage,
+            _source_stat_package_proposals,_recovery_variants)
+        from src.game.data.forever.source_checkpoint_p3_swaps import substituted_multi_stage
+        from src.v2.source_persistent_joint_finalists import prepare_candidate,evaluate_persistent_candidate
+        from src.game.model import PolicyDefinition,PolicyRuleDefinition
+        ir,_=_compiled()
+        stage=source_cold_start_stage(class_key='druid',level=30,source_ir=ir,gear_role='druid_feral')
+        packs=dict(_source_stat_package_proposals(class_key='druid',level=30,
+            base=stage['gear_policy_result']['winner']['gear'],max_packages=4)[0])
+        stage=substituted_multi_stage(stage=stage,class_key='druid',level=30,swaps=packs['spell_power'])
+        rec=dict(_recovery_variants(ir,stage,2))['always']
+        base={'genesis':5,'improved_wrath':5,'improved_moonfire':2,
+              'natures_majesty':2,'moonglow':3,'natures_reach':2,
+              'natures_splendor':1,'insect_swarm':1,'ferocity':5}
+        source={**{k:v for k,v in base.items() if k!='ferocity'},'improved_starfire':5}
+        results={}
+        for label,allocation in [('baseline',base),('source_proc',source)]:
+            candidate=prepare_candidate(class_key='druid',level=30,stage=stage,
+                allocation_override=allocation,source_ir=ir,allow_partial_gear_stats=True,
+                bonus_talent_points=5)
+            starfire=next(a for a in candidate.ir.actions if a.family_key=='starfire')
+            policy=PolicyDefinition('starfire_only','Starfire only',
+                rules=(PolicyRuleDefinition('cast_starfire',starfire.id),),
+                provenance={'authority':'source_ir_mechanics_witness'})
+            candidate=replace(candidate,policy=policy,opening=())
+            first=evaluate_persistent_candidate(candidate,level=30,mobs=100,
+                max_total_events=250000,max_wall_s=30,max_cpu_s=30,recovery_policy=rec)
+            second=evaluate_persistent_candidate(candidate,level=30,mobs=100,
+                max_total_events=250000,max_wall_s=30,max_cpu_s=30,recovery_policy=rec)
+            assert first['status']==second['status']=='COMPLETE'
+            assert first['count']==second['count']==100
+            assert first['mean_s_per_mob']==pytest.approx(second['mean_s_per_mob'],abs=1e-10)
+>           assert first['source_control_proc_attempts']==second['source_control_proc_attempts']
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'source_control_proc_attempts'
+
+tests/test_wf430_source_compound_stun_tdd.py:131: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_wf430_source_compound_stun_tdd.py::test_paid_100mob_starfire_proc_counts_and_independent_replay - KeyError: 'source_control_proc_attempts'
+1 failed in 3.95s
