@@ -1,0 +1,27 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_stateful_source_mechanics_not_displaced_by_passive_rank_frontier _____
+
+    def test_stateful_source_mechanics_not_displaced_by_passive_rank_frontier():
+        """P4: source charge talent must survive both tight and standard frontiers."""
+        from src.v2.source_bounded_joint_frontier import bounded_full_point_talent_frontier
+        ir=_compiled()
+        stateful={t.id for t in ir.talents if any(
+            m.kind=='cast_charge_exchange' for r in t.ranks for m in r.modifiers)}
+        assert stateful
+        for size in (16,32,64):
+            allocations,_=bounded_full_point_talent_frontier(ir,level=30,
+                bonus_talent_points=5,max_frontier=size)
+            for tid in stateful:
+                talent=next(t for t in ir.talents if t.id==tid)
+>               assert any(a.get(tid)==talent.max_rank for a in allocations),(size,tid)
+E               AssertionError: (16, 'eclipse')
+E               assert False
+E                +  where False = any(<generator object test_stateful_source_mechanics_not_displaced_by_passive_rank_frontier.<locals>.<genexpr> at 0x7f546ee50580>)
+
+tests/test_wf436_feral_conditional_crit_healing_p2_tdd.py:140: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_wf436_feral_conditional_crit_healing_p2_tdd.py::test_stateful_source_mechanics_not_displaced_by_passive_rank_frontier - AssertionError: (16, 'eclipse')
+assert False
+ +  where False = any(<generator object test_stateful_source_mechanics_not_displaced_by_passive_rank_frontier.<locals>.<genexpr> at 0x7f546ee50580>)
+1 failed, 6 deselected in 1.32s
