@@ -1,0 +1,118 @@
+{
+  "accepted_checkpoints": "1/148",
+  "axis_events": [
+    {
+      "action": "CACHED",
+      "axis": "weapon_dps",
+      "status": "MEASURED_100MOB_OS_ISOLATED"
+    },
+    {
+      "action": "CACHED",
+      "axis": "spell_power",
+      "status": "TESTED_ZERO_RANGE_ONLY"
+    },
+    {
+      "action": "CACHED",
+      "axis": "armor",
+      "status": "MEASURED_100MOB_OS_ISOLATED"
+    },
+    {
+      "action": "CACHED",
+      "axis": "mp5",
+      "status": "MEASURED_100MOB_OS_ISOLATED"
+    },
+    {
+      "action": "CACHED",
+      "axis": "health_regeneration_per_5s",
+      "status": "MEASURED_100MOB_OS_ISOLATED"
+    },
+    {
+      "action": "CACHED",
+      "axis": "crit",
+      "status": "MEASURED_100MOB_OS_ISOLATED"
+    },
+    {
+      "action": "CACHED",
+      "axis": "defense",
+      "status": "MEASURED_100MOB_OS_ISOLATED"
+    }
+  ],
+  "baseline_100mob_s_per_mob": 19.02888801859612,
+  "baseline_events": 10011,
+  "checkpoint": "druid:L30:unrestricted",
+  "legal_items": 1974,
+  "measured_axes": [
+    "agility",
+    "armor",
+    "attack_power",
+    "crit",
+    "defense",
+    "health_regeneration_per_5s",
+    "intellect",
+    "mp5",
+    "spell_power",
+    "spirit",
+    "stamina",
+    "strength",
+    "weapon_dps",
+    "weapon_speed"
+  ],
+  "p1": "PASS 86/86",
+  "p2": "PASS 117/117",
+  "p3": "PASS_L0_WITH_EXPLICIT_UNCERTAINTY",
+  "p3_accepted": true,
+  "p3_certificate": {
+    "contract": "Source legal L0 + nondegenerate actual 100mob context weights + Top5 contributions, uncertainty disclosed",
+    "failures": [],
+    "gate": "P3",
+    "legal_items": 1974,
+    "limits": [
+      "NOT all item effects executable in L2",
+      "L0 local marginal weights not a global optimum guarantee",
+      "Unknown item effects, resistances and rank changes can reorder the Top5",
+      "Tested zero over a short finite-difference range does not prove universal zero"
+    ],
+    "measured_or_context_zero_axes": [
+      "agility",
+      "armor",
+      "attack_power",
+      "crit",
+      "defense",
+      "health_regeneration_per_5s",
+      "intellect",
+      "mp5",
+      "spell_power",
+      "spirit",
+      "stamina",
+      "strength",
+      "weapon_dps",
+      "weapon_speed"
+    ],
+    "nonzero_build_specific_axes": [
+      "agility",
+      "armor",
+      "attack_power",
+      "crit",
+      "defense",
+      "health_regeneration_per_5s",
+      "intellect",
+      "mp5",
+      "spirit",
+      "strength",
+      "weapon_dps"
+    ],
+    "pass": true,
+    "slots": 18,
+    "status": "PASS_L0_WITH_EXPLICIT_UNCERTAINTY",
+    "top5_rows": 83,
+    "unknown_item_components_remain_explicit": true,
+    "unknown_weighted_ranking_items": 95
+  },
+  "p4_p5_p6": "NOT RUN",
+  "parent": "WF351 on published WF350",
+  "reason": "L0 gate accepts explicitly uncertain effects like WF347; not all L2 item effects executable and no global optimum claim",
+  "release": "WF352",
+  "slots": 18,
+  "source_stage_sha256": "eca9e19111f4079fdd60b19cf9e3cd1fce0f4a374cfd84c88d234badea1412c5",
+  "uncertain_items": 95
+}

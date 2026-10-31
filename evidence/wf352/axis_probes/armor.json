@@ -1,0 +1,21 @@
+{
+  "axis": "armor",
+  "fingerprint": "2c4afc0e9710f4db5feae63617a095ba25688254f328d073ce4e7369396c8312",
+  "row": {
+    "method": "exact_100mob_fixed_build_finite_difference",
+    "probe_delta": 100.0,
+    "probes": [
+      {
+        "delta": 100.0,
+        "elapsed_wall_s": 2.7486235210003542,
+        "events": 10013,
+        "improvement_s_per_mob": 0.022439551337825492,
+        "s_per_mob": 19.006448467258295,
+        "status": "COMPLETE"
+      }
+    ],
+    "status": "MEASURED_100MOB_OS_ISOLATED",
+    "uncertainty": "discrete_nonmonotone_local_prior_only",
+    "weight_s_saved_per_mob_per_unit": 0.00022439551337825493
+  }
+}
