@@ -1,0 +1,70 @@
+{
+  "class_key": "druid",
+  "min_level": 30,
+  "notes": {
+    "heal_crit_multiplier": "Classic Era heal crit 1.5 sourced separately, Forever 70338 parity NOT certified.",
+    "improved_regrowth": "Rank curve observed pinned 70338, prerequisite identity observed pinned 70338; full 3/3 prerequisite rank appears on 70374, so it is not certified for 70338.",
+    "natural_reaction": "Current Natural Reaction mechanics are observed in 70425 / 70374, and 70338 parity remains unproven."
+  },
+  "observations": [
+    {
+      "additional_effect_domain": "on_incoming_dodge_resource_proc_probability",
+      "additional_rank_values": [
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        1.0
+      ],
+      "additional_target": "rage",
+      "effect_domain": "dodge_chance_bonus_fraction",
+      "expected_value_proc_distribution_not_certified": true,
+      "max_rank": 5,
+      "mechanics_build_bridge_unverified": true,
+      "mechanics_source_build": "1.60.1.70425",
+      "mechanics_source_url": "https://wowforevertalents.com/druid/talents/natural-reaction/",
+      "rank_values": [
+        0.01,
+        0.02,
+        0.03,
+        0.04,
+        0.05
+      ],
+      "required_mode_id": "bear",
+      "resource_per_proc": 5.0,
+      "row": 5,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "talent_id": "natural_reaction",
+      "target": "dodge_chance",
+      "tree_key": "feral"
+    },
+    {
+      "effect_domain": "healing_direct_crit_chance_bonus_fraction",
+      "heal_crit_multiplier": 1.5,
+      "heal_crit_multiplier_build_bridge_unverified": true,
+      "heal_crit_multiplier_source_build": "classic_era",
+      "heal_crit_multiplier_source_url": "https://www.warcrafttavern.com/wow-classic/guides/mana-management-optimization/",
+      "max_rank": 5,
+      "prerequisite": {
+        "required_rank": 3,
+        "talent_id": "improved_rejuvenation"
+      },
+      "prerequisite_rank_build_bridge_unverified": true,
+      "prerequisite_rank_mechanics_source_build": "1.60.1.70374",
+      "rank_values": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5
+      ],
+      "row": 5,
+      "source_url": "https://wowforevertalents.com/druid/talents/improved-regrowth/",
+      "talent_id": "improved_regrowth",
+      "target": "regrowth",
+      "tree_key": "restoration"
+    }
+  ],
+  "parent_source_sha256": "e71c2a670e5063e7b9d4bd04e267ad5052ddb3b0f1f068ddfec80642b0e03152",
+  "source_build": "1.60.1.70338"
+}

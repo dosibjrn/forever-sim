@@ -1,0 +1,21 @@
+{
+  "class_key": "druid",
+  "capture_id": "wf482-druid-remaining-tree-rows-2026-10-17",
+  "description": "Previously unresolved trait tree rows; user-supplied 3-tree visual reference corroborated by an independently accessible current Forever talent text listing. Row numbers are zero-based; no columns/prerequisites/rank caps inferred.",
+  "facts": [
+    {"name":"Blood Frenzy", "row":3,"authority":"secondary_provisional_row","source_url":"https://talentsforever.com/druid/talents","evidence":"Requires 15 points in Feral Combat Talents (level 25). Requires Sharpened Claws."},
+    {"name":"Improved Starfire", "row":3,"authority":"secondary_provisional_row","source_url":"https://talentsforever.com/druid/talents","evidence":"Requires 15 points in Balance Talents (level 25)."},
+    {"name":"Improved Tranquility", "row":4,"authority":"secondary_provisional_row","source_url":"https://talentsforever.com/druid/talents","evidence":"Requires 20 points in Restoration Talents (level 30)."},
+    {"name":"Insect Swarm", "row":3,"authority":"secondary_provisional_row","source_url":"https://talentsforever.com/druid/talents","evidence":"Requires 15 points in Balance Talents (level 25)."},
+    {"name":"Leader of the Pack", "row":4,"authority":"secondary_provisional_row","source_url":"https://talentsforever.com/druid/talents","evidence":"Requires 20 points in Feral Combat Talents (level 30)."},
+    {"name":"Moonkin Form", "row":6,"authority":"secondary_provisional_row","source_url":"https://talentsforever.com/druid/talents","evidence":"Requires 30 points in Balance Talents (level 40)."},
+    {"name":"Predatory Strikes", "row":3,"authority":"secondary_provisional_row","source_url":"https://talentsforever.com/druid/talents","evidence":"Requires 15 points in Feral Combat Talents (level 25)."},
+    {"name":"Vengeance", "row":3,"authority":"secondary_provisional_row","source_url":"https://talentsforever.com/druid/talents","evidence":"Requires 15 points in Balance Talents (level 25). Requires Improved Moonfire."}
+  ],
+  "tier_rule": {
+    "points_per_row":5,
+    "authority":"secondary_provisional_rule",
+    "source_url":"https://talentsforever.com/druid/talents",
+    "evidence":"Rows gated by 0, 5, 10, 15, 20, 25, 30 points spent in the same tree, as stated per talent."
+  }
+}

@@ -1,0 +1,10 @@
+{
+ "schema":"source_enemy_melee_ap_debuff_observation_v1",
+ "observations":[{
+  "class_key":"druid", "spell_id":1735, "name":"Demoralizing Roar",
+  "source_url":"https://www.wowhead.com/forever/spell=1735",
+  "geometry_source_url":"https://classicdb.ch/?spell=1735",
+  "geometry_note":"10-yard radius and bear form are qualified Classic proxies; Forever change-index independently provides the -88 melee AP and 30s duration",
+  "required_mode_id":"bear", "gcd_s":1.5, "radius_yards":10.0
+ }]
+}
