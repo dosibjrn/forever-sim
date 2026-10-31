@@ -1,0 +1,42 @@
+{
+  "workflow": "WF613",
+  "date_audited": "2026-10-30",
+  "evidence_kind": "Historical gsim-2D + MythicSim Go, NOT Rust",
+  "archive_name": "WF613_COMPATIBILITY_REPAIR_P75_FAIL_2026-10-28(2).zip",
+  "archive_sha256": "a95e89f1bbd36d3cccb3c605fb9c8c90490bdd857112fc2c6bb83ceac1785e5f",
+  "members_sha256": {
+    "WF612/WF613_P75_COLD_300S.json": "4cabb9bd66f36061ba6079ac7db1ac2fa88aba6ee2317fd25efc2dd7d30c6886",
+    "WF612/WF612_P75_HOLDOUT_PRECOMMIT.json": "d5498b97cf095636f8c1ae01a8770f548c3fb8e5d3c0401483c4845f5c771966",
+    "WF612/p75_joint_search_wf612.py": "d4f2c6202b6e61c5d0af439993fd39b90a11e2ced4be42589f136d2f7bed507b",
+    "WF612/WF613_P75_HOLDOUT_1000.json": "0a69446c09a63e638d632586f5b14907a3241dbacc6f57b5b3a3ea3a3dff646e",
+    "WF612/WF613_P75_WINNER_CAUSAL_TRACE.json": "852e4945661c24c2d84e0a71f58ea888a6a19dda779fe8ee0f0c244cacdb75ba"
+  },
+  "frozen_config_sha256": "d098edb167f58562c6ea4b15242b83f6659f8bd78c0967e4c8b88965a70484b4",
+  "source_binary_sha256": "69d30df669c5ea8601fb45479dd24fe4cad770092fd5c513910490c5453d1c7d",
+  "reference_sha256": "ee7294fb90080eda3c0b20e2e008c1671172f8133f64c4b60b4a25463f3a9f46",
+  "database_sha256": "94abb2cea509bd0bbb11c3ab8673bc8f179c861beda640fa4a36206272afd168",
+  "checks": {
+    "archive_and_member_digest": true,
+    "holdout_search_member_sha256": true,
+    "holdout_precommit_member_sha256": true,
+    "search_generator_source_sha256": true,
+    "winner_config_matches_frozen_holdout": true,
+    "canonical_frozen_config_sha256": true,
+    "causal_trace_winner_hash": true,
+    "binary_identity_across_search_holdout_trace": true,
+    "reference_identity_across_search_holdout_trace": true,
+    "database_identity_across_search_holdout": true,
+    "precommit_prior_mean_matches_holdout": true,
+    "precommit_seed_range_1000": true,
+    "trace_ack_count_matches": true
+  },
+  "world_ack_count": 110,
+  "stochastic_holdout_fights": 1000,
+  "stochastic_mean_dps": 848.7643621918036,
+  "original_historical_verdict": "FAIL",
+  "process_v2_10_numeric_result": "CONDITIONAL_PASS_ONLY_IF_853_9305_PRIOR_ACCEPTED_COMPATIBLE",
+  "critical_missing_proof": "853.9305465836047 DPS comparator appears as prior mean in WF612/WF613 precommit and holdout, but no independently accepted P7.4 raw result for that value was found in the WF607/WF613 archives; WF607's documented accepted P7.4 result is 845.5219526091071 DPS. The stronger prior's acceptance and compatibility are NOT certified.",
+  "full_process_p7_5_certified": false,
+  "full_checkpoint_p1_p7_certified": false,
+  "scope_limit": "This manifest is a locally recomputed archive lineage audit; the full raw source, search, holdout and causal trace still need durable publication in GitHub before a self-contained merge."
+}
