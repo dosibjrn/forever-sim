@@ -1,5 +1,11 @@
 # WoW Forever — simulator and optimizer
 
+## Upstream inspiration and acknowledgments
+
+This is an independent Forever simulation and optimization research project. The combat execution and reference-parity work builds on **[MythicSim](https://www.mythicsim.com/wow-forever)** and its open-source [Rust Forever engine](https://github.com/sage3648/mythicsim-forever-engine) and [Go reference fork](https://github.com/sage3648/mythicsim-forever-engine-go). Thanks to the MythicSim and WoWSims contributors for the engines, mechanics research, reference results, and open tooling.
+
+**Credit and scope:** this repository is not the official MythicSim project and is not affiliated with its maintainers. Engine references and pinned versions must remain traceable; upstream licenses and notices govern any adapted code.
+
 **Fully certified P1–P7 checkpoints evidenced in this repo: 0/148.** User-accepted P7 subgates are tracked separately; do not mistake them for full P1–P7 checkpoint certification. A green CI job or a standalone reference replay does not certify P1–P7.
 
 ## Work queue and the 148-checkpoint matrix
