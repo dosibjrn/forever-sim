@@ -1,0 +1,572 @@
+{
+  "accepted_checkpoint": false,
+  "checkpoint": "druid:L20:talented_on_16_points",
+  "equipped_item_ids": {
+    "back": 4311,
+    "chest": 277213,
+    "feet": 4320,
+    "hands": 5970,
+    "head": 252448,
+    "legs": 252502,
+    "neck": 285331,
+    "relic": 249396,
+    "ring1": 20426,
+    "ring2": 286535,
+    "shirt": 3342,
+    "shoulder": 12998,
+    "trinket1": 21566,
+    "trinket2": 273298,
+    "waist": 4250,
+    "weapon": 5187,
+    "wrist": 271096
+  },
+  "gear_move": "source_stat_package:spell_power",
+  "p3_status": "NOT_CERTIFIED_FULL_16PT_WEIGHT_COVERAGE_NOT_YET_MET",
+  "p4_source_result_sha256": "967781610f2fe5ef8584654457facfe27a24a867adca5dc324fac43d4dc5899a",
+  "p5_p6_p7_status": "SEPARATE",
+  "release": "WF420",
+  "replay": {
+    "events": 2869,
+    "exact_result": true,
+    "mobs": 100,
+    "seconds_per_mob": 10.944654638414288,
+    "status": "COMPLETE"
+  },
+  "source_100mob_stat_sensitivity_fixed_best_recovery": {
+    "agility": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": false,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "agility",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    },
+    "armor": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 200.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": false,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "armor",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    },
+    "intellect": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944356794717056,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.4356794717055,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944356794717056,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.4356794717055,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "intellect",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 1.4892184861636792e-05
+    },
+    "mp5": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.83800433993721,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 257.80043399372096,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 10.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.83800433993721,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 257.80043399372096,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "mp5",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.010665029847707785
+    },
+    "spell_power": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 12,
+          "context": "after",
+          "events": 2512,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 9.827465210008631,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 228.24652100086303,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 30.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 12,
+          "context": "after",
+          "events": 2512,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 9.827465210008631,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 228.24652100086303,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "spell_power",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.037239647613521915
+    },
+    "spirit": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.83800433993721,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 257.80043399372096,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.83800433993721,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 257.80043399372096,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "spirit",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.005332514923853893
+    },
+    "stamina": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 2862,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.818893442840809,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 252.38934428408083,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": true,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 13,
+          "context": "after",
+          "events": 2862,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.818893442840809,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 252.38934428408083,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "stamina",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.006288059778673994
+    },
+    "strength": {
+      "best": {
+        "after": {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        "before": {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      },
+      "delta": 20.0,
+      "global_optimum_proven": false,
+      "method": "paid_100mob_recovery_and_pull_policy_reselection",
+      "mobs": 100,
+      "positive": false,
+      "rows": [
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "before",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        },
+        {
+          "between_pull_full_recoveries": 15,
+          "context": "after",
+          "events": 2869,
+          "health_fraction": 0.5,
+          "mana_fraction": 0.1,
+          "mean_s_per_mob": 10.944654638414288,
+          "mob_completed": 100,
+          "pack_size": 1,
+          "recovery_policy_index": 0,
+          "recovery_s": 268.46546384142874,
+          "status": "COMPLETE"
+        }
+      ],
+      "stat": "strength",
+      "status": "COMPLETE_REOPTIMIZED_100MOB_STAT_PROBE",
+      "weight_s_saved_per_mob_per_unit": 0.0
+    }
+  },
+  "source_item_db_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "talents": {
+    "feral_instinct": 1,
+    "ferocity": 5,
+    "furor": 5,
+    "improved_wrath": 5
+  }
+}

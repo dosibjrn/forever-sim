@@ -1,0 +1,1316 @@
+{
+  "blockers": [
+    "MISSING_WEIGHT:mean_weapon_hit_damage",
+    "MISSING_WEIGHT:mp5",
+    "MISSING_WEIGHT:spirit",
+    "NONPOSITIVE_RELEVANT_WEIGHT:spell_power",
+    "NONPOSITIVE_RELEVANT_WEIGHT:stamina"
+  ],
+  "build_identity_sha256": "b97142ad3be8814e5a7ab0601272881bd66986b07fe4d047b4848f4e0465a7bf",
+  "checkpoint": "druid:L20",
+  "item_db_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "legal_item_count": 1233,
+  "p3_pass": false,
+  "scope": "PROCESS_V1_FAST_P3_SMOKE_NOT_GLOBAL_BIS",
+  "slot_count": 19,
+  "slots": {
+    "back": {
+      "items": [
+        {
+          "contributions": {
+            "armor": 0.014623784763950454,
+            "intellect": 7.910329016524997e-05,
+            "stamina": 0.0
+          },
+          "item_id": 6667,
+          "item_level": 27,
+          "name": "Engineer's Cloak",
+          "required_level": 16,
+          "score": 0.014702888054115704,
+          "source_url": "https://www.wowhead.com/forever/item=6667"
+        },
+        {
+          "contributions": {
+            "agility": 0.005022286529921871,
+            "armor": 0.014623784763950454,
+            "stamina": 0.0
+          },
+          "item_id": 16990,
+          "item_level": 27,
+          "name": "Spritekin Cloak",
+          "required_level": 18,
+          "score": 0.019646071293872323,
+          "source_url": "https://www.wowhead.com/forever/item=16990"
+        },
+        {
+          "contributions": {
+            "agility": 0.005022286529921871,
+            "armor": 0.013892595525752931,
+            "stamina": 0.0
+          },
+          "item_id": 3018,
+          "item_level": 25,
+          "name": "Hide of Lupos",
+          "required_level": 20,
+          "score": 0.018914882055674802,
+          "source_url": "https://www.wowhead.com/forever/item=3018"
+        },
+        {
+          "contributions": {
+            "armor": 0.013892595525752931,
+            "resistance_fire": 0.0
+          },
+          "item_id": 4790,
+          "item_level": 25,
+          "name": "Inferno Cloak",
+          "required_level": 20,
+          "score": 0.013892595525752931,
+          "source_url": "https://www.wowhead.com/forever/item=4790"
+        },
+        {
+          "contributions": {
+            "armor": 0.013892595525752931,
+            "resistance_fire": 0.0
+          },
+          "item_id": 4797,
+          "item_level": 25,
+          "name": "Fiery Cloak",
+          "required_level": 20,
+          "score": 0.013892595525752931,
+          "source_url": "https://www.wowhead.com/forever/item=4797"
+        }
+      ],
+      "legal_count": 121,
+      "selected_ids": [
+        6667,
+        16990,
+        3018,
+        4790,
+        4797
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "chest": {
+      "items": [
+        {
+          "contributions": {
+            "agility": 0.01130014469232421,
+            "armor": 0.06507584219957953,
+            "strength": 0.001812095030049754
+          },
+          "item_id": 6670,
+          "item_level": 27,
+          "name": "Panther Armor",
+          "required_level": 20,
+          "score": 0.07818808192195349,
+          "source_url": "https://www.wowhead.com/forever/item=6670"
+        },
+        {
+          "contributions": {
+            "armor": 0.06873178839056714,
+            "stamina": 0.0,
+            "strength": 0.004530237575124385
+          },
+          "item_id": 1489,
+          "item_level": 25,
+          "name": "Gloomshroud Armor",
+          "required_level": 20,
+          "score": 0.07326202596569152,
+          "source_url": "https://www.wowhead.com/forever/item=1489"
+        },
+        {
+          "contributions": {
+            "armor": 0.028516380289703387,
+            "spell_power": 0.0
+          },
+          "item_id": 2034,
+          "item_level": 25,
+          "name": "Scholarly Robes",
+          "required_level": 20,
+          "score": 0.028516380289703387,
+          "source_url": "https://www.wowhead.com/forever/item=2034"
+        },
+        {
+          "contributions": {
+            "armor": 0.03144113724249348,
+            "intellect": 0.00019775822541312493,
+            "stamina": 0.0
+          },
+          "item_id": 2292,
+          "item_level": 25,
+          "name": "Necrology Robes",
+          "required_level": 20,
+          "score": 0.0316388954679066,
+          "source_url": "https://www.wowhead.com/forever/item=2292"
+        },
+        {
+          "contributions": {
+            "armor": 0.06288227448498696,
+            "spell_power": 0.0,
+            "stamina": 0.0
+          },
+          "item_id": 5316,
+          "item_level": 25,
+          "name": "Barkshell Tunic",
+          "required_level": 17,
+          "score": 0.06288227448498696,
+          "source_url": "https://www.wowhead.com/forever/item=5316"
+        }
+      ],
+      "legal_count": 164,
+      "selected_ids": [
+        6670,
+        1489,
+        2034,
+        2292,
+        5316
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "feet": {
+      "items": [
+        {
+          "contributions": {
+            "armor": 0.04460254353004889,
+            "stamina": 0.0,
+            "strength": 0.004530237575124385
+          },
+          "item_id": 6668,
+          "item_level": 27,
+          "name": "Draftsman Boots",
+          "required_level": 16,
+          "score": 0.04913278110517327,
+          "source_url": "https://www.wowhead.com/forever/item=6668"
+        },
+        {
+          "contributions": {
+            "armor": 0.03875302962446871
+          },
+          "item_id": 1796,
+          "item_level": 25,
+          "name": "Rawhide Boots",
+          "required_level": 20,
+          "score": 0.03875302962446871,
+          "source_url": "https://www.wowhead.com/forever/item=1796"
+        },
+        {
+          "contributions": {
+            "armor": 0.019742109431333112,
+            "stamina": 0.0
+          },
+          "item_id": 2232,
+          "item_level": 25,
+          "name": "Dark Runner Boots",
+          "required_level": 20,
+          "score": 0.019742109431333112,
+          "source_url": "https://www.wowhead.com/forever/item=2232"
+        },
+        {
+          "contributions": {
+            "armor": 0.021204487907728158,
+            "intellect": 0.00015820658033049995,
+            "spell_power": 0.0,
+            "stamina": 0.0
+          },
+          "item_id": 4320,
+          "item_level": 25,
+          "name": "Spidersilk Boots",
+          "required_level": 20,
+          "score": 0.021362694488058658,
+          "source_url": "https://www.wowhead.com/forever/item=4320"
+        },
+        {
+          "contributions": {
+            "armor": 0.019742109431333112
+          },
+          "item_id": 9792,
+          "item_level": 25,
+          "name": "Ivycloth Boots",
+          "required_level": 20,
+          "score": 0.019742109431333112,
+          "source_url": "https://www.wowhead.com/forever/item=9792"
+        }
+      ],
+      "legal_count": 123,
+      "selected_ids": [
+        6668,
+        1796,
+        2232,
+        4320,
+        9792
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "hands": {
+      "items": [
+        {
+          "contributions": {
+            "armor": 0.0160861632403455
+          },
+          "item_id": 1775,
+          "item_level": 25,
+          "name": "Brocade Gloves",
+          "required_level": 20,
+          "score": 0.0160861632403455,
+          "source_url": "https://www.wowhead.com/forever/item=1775"
+        },
+        {
+          "contributions": {
+            "agility": 0.005022286529921871,
+            "armor": 0.03875302962446871,
+            "stamina": 0.0
+          },
+          "item_id": 3058,
+          "item_level": 25,
+          "name": "Forest Leather Gloves",
+          "required_level": 20,
+          "score": 0.04377531615439058,
+          "source_url": "https://www.wowhead.com/forever/item=3058"
+        },
+        {
+          "contributions": {
+            "armor": 0.017548541716740546
+          },
+          "item_id": 4331,
+          "item_level": 25,
+          "name": "Phoenix Gloves",
+          "required_level": 20,
+          "score": 0.017548541716740546,
+          "source_url": "https://www.wowhead.com/forever/item=4331"
+        },
+        {
+          "contributions": {
+            "armor": 0.03875302962446871,
+            "crit": 0.0022651187875621925
+          },
+          "item_id": 7348,
+          "item_level": 25,
+          "name": "Fletcher's Gloves",
+          "required_level": 20,
+          "score": 0.0410181484120309,
+          "source_url": "https://www.wowhead.com/forever/item=7348"
+        },
+        {
+          "contributions": {
+            "armor": 0.017548541716740546
+          },
+          "item_id": 9771,
+          "item_level": 25,
+          "name": "Greenweave Gloves",
+          "required_level": 20,
+          "score": 0.017548541716740546,
+          "source_url": "https://www.wowhead.com/forever/item=9771"
+        }
+      ],
+      "legal_count": 118,
+      "selected_ids": [
+        1775,
+        3058,
+        4331,
+        7348,
+        9771
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "head": {
+      "items": [
+        {
+          "contributions": {
+            "armor": 0.025591623336913297
+          },
+          "item_id": 211500,
+          "item_level": 25,
+          "name": "Resilient Cloth Headband",
+          "required_level": 20,
+          "score": 0.025591623336913297,
+          "source_url": "https://www.wowhead.com/forever/item=211500"
+        },
+        {
+          "contributions": {
+            "armor": 0.055570382103011726
+          },
+          "item_id": 211857,
+          "item_level": 25,
+          "name": "Resilient Leather Mask",
+          "required_level": 20,
+          "score": 0.055570382103011726,
+          "source_url": "https://www.wowhead.com/forever/item=211857"
+        },
+        {
+          "contributions": {
+            "armor": 0.055570382103011726,
+            "stamina": 0.0,
+            "strength": 0.007248380120199016
+          },
+          "item_id": 252447,
+          "item_level": 25,
+          "name": "Defender's Leather Hood",
+          "required_level": 20,
+          "score": 0.06281876222321074,
+          "source_url": "https://www.wowhead.com/forever/item=252447"
+        },
+        {
+          "contributions": {
+            "armor": 0.055570382103011726,
+            "spell_power": 0.0,
+            "stamina": 0.0
+          },
+          "item_id": 252448,
+          "item_level": 25,
+          "name": "Totemic Leather Hood",
+          "required_level": 20,
+          "score": 0.055570382103011726,
+          "source_url": "https://www.wowhead.com/forever/item=252448"
+        },
+        {
+          "contributions": {
+            "agility": 0.010044573059843742,
+            "armor": 0.055570382103011726,
+            "stamina": 0.0
+          },
+          "item_id": 252504,
+          "item_level": 25,
+          "name": "Brawler's Leather Hood",
+          "required_level": 20,
+          "score": 0.06561495516285547,
+          "source_url": "https://www.wowhead.com/forever/item=252504"
+        }
+      ],
+      "legal_count": 18,
+      "selected_ids": [
+        211500,
+        211857,
+        252447,
+        252448,
+        252504
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "legs": {
+      "items": [
+        {
+          "contributions": {
+            "armor": 0.024860434098715772,
+            "intellect": 0.00015820658033049995
+          },
+          "item_id": 4317,
+          "item_level": 25,
+          "name": "Phoenix Pants",
+          "required_level": 20,
+          "score": 0.025018640679046272,
+          "source_url": "https://www.wowhead.com/forever/item=4317"
+        },
+        {
+          "contributions": {
+            "armor": 0.024860434098715772
+          },
+          "item_id": 14165,
+          "item_level": 25,
+          "name": "Pagan Britches",
+          "required_level": 20,
+          "score": 0.024860434098715772,
+          "source_url": "https://www.wowhead.com/forever/item=14165"
+        },
+        {
+          "contributions": {
+            "armor": 0.027054001813308342,
+            "intellect": 0.0003164131606609999,
+            "spell_power": 0.0,
+            "stamina": 0.0
+          },
+          "item_id": 23173,
+          "item_level": 25,
+          "name": "Abomination Skin Leggings",
+          "required_level": 20,
+          "score": 0.027370414973969342,
+          "source_url": "https://www.wowhead.com/forever/item=23173"
+        },
+        {
+          "contributions": {
+            "agility": 0.005022286529921871,
+            "armor": 0.09066746553649281,
+            "stamina": 0.0,
+            "strength": 0.008154427635223893
+          },
+          "item_id": 252445,
+          "item_level": 25,
+          "name": "Defender's Leather Pants",
+          "required_level": 20,
+          "score": 0.10384417970163858,
+          "source_url": "https://www.wowhead.com/forever/item=252445"
+        },
+        {
+          "contributions": {
+            "armor": 0.059957517532196865,
+            "intellect": 0.00015820658033049995,
+            "spell_power": 0.0,
+            "stamina": 0.0,
+            "strength": 0.008154427635223893
+          },
+          "item_id": 252446,
+          "item_level": 25,
+          "name": "Totemic Leather Pants",
+          "required_level": 20,
+          "score": 0.06827015174775125,
+          "source_url": "https://www.wowhead.com/forever/item=252446"
+        }
+      ],
+      "legal_count": 121,
+      "selected_ids": [
+        4317,
+        14165,
+        23173,
+        252445,
+        252446
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "neck": {
+      "items": [
+        {
+          "contributions": {
+            "stamina": 0.0
+          },
+          "item_id": 277203,
+          "item_level": 25,
+          "name": "Scholarly Pendant",
+          "required_level": 1,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=277203"
+        },
+        {
+          "contributions": {
+            "agility": 0.005022286529921871,
+            "stamina": 0.0
+          },
+          "item_id": 277204,
+          "item_level": 25,
+          "name": "Erudite's Amulet",
+          "required_level": 1,
+          "score": 0.005022286529921871,
+          "source_url": "https://www.wowhead.com/forever/item=277204"
+        },
+        {
+          "contributions": {
+            "intellect": 0.00019775822541312493,
+            "strength": 0.004530237575124385
+          },
+          "item_id": 285331,
+          "item_level": 25,
+          "name": "Mark of the Pack Leader",
+          "required_level": 20,
+          "score": 0.00472799580053751,
+          "source_url": "https://www.wowhead.com/forever/item=285331"
+        },
+        {
+          "contributions": {
+            "agility": 0.007533429794882807,
+            "stamina": 0.0
+          },
+          "item_id": 20442,
+          "item_level": 23,
+          "name": "Scout's Medallion",
+          "required_level": 18,
+          "score": 0.007533429794882807,
+          "source_url": "https://www.wowhead.com/forever/item=20442"
+        },
+        {
+          "contributions": {
+            "agility": 0.0012555716324804678,
+            "intellect": 3.9551645082624987e-05,
+            "resistance_arcane": 0.0,
+            "resistance_fire": 0.0,
+            "resistance_frost": 0.0,
+            "resistance_nature": 0.0,
+            "stamina": 0.0,
+            "strength": 0.000906047515024877
+          },
+          "item_id": 273088,
+          "item_level": 22,
+          "name": "Snake Eye Kaleidoscope",
+          "required_level": 17,
+          "score": 0.0022011707925879698,
+          "source_url": "https://www.wowhead.com/forever/item=273088"
+        }
+      ],
+      "legal_count": 8,
+      "selected_ids": [
+        277203,
+        277204,
+        285331,
+        20442,
+        273088
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "offhand": {
+      "items": [
+        {
+          "contributions": {},
+          "item_id": 5323,
+          "item_level": 25,
+          "name": "Everglow Lantern",
+          "required_level": 19,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=5323"
+        },
+        {
+          "contributions": {},
+          "item_id": 6363,
+          "item_level": 25,
+          "name": "26 Pound Catfish",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=6363"
+        },
+        {
+          "contributions": {},
+          "item_id": 6364,
+          "item_level": 25,
+          "name": "32 Pound Catfish",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=6364"
+        },
+        {
+          "contributions": {},
+          "item_id": 7558,
+          "item_level": 25,
+          "name": "Shimmering Stave",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=7558"
+        },
+        {
+          "contributions": {
+            "intellect": 0.00019775822541312493
+          },
+          "item_id": 274743,
+          "item_level": 25,
+          "name": "Defective Samophlange",
+          "required_level": 20,
+          "score": 0.00019775822541312493,
+          "source_url": "https://www.wowhead.com/forever/item=274743"
+        }
+      ],
+      "legal_count": 44,
+      "selected_ids": [
+        5323,
+        6363,
+        6364,
+        7558,
+        274743
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "relic": {
+      "items": [
+        {
+          "contributions": {},
+          "item_id": 249396,
+          "item_level": 25,
+          "name": "Mystic Mushroom",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=249396"
+        },
+        {
+          "contributions": {},
+          "item_id": 263435,
+          "item_level": 10,
+          "name": "Mark of Urs'endris",
+          "required_level": 5,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=263435"
+        }
+      ],
+      "legal_count": 2,
+      "selected_ids": [
+        249396,
+        263435
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "ring1": {
+      "items": [
+        {
+          "contributions": {},
+          "item_id": 281252,
+          "item_level": 26,
+          "name": "Harpy Claw Ring",
+          "required_level": 18,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=281252"
+        },
+        {
+          "contributions": {},
+          "item_id": 1462,
+          "item_level": 25,
+          "name": "Ring of the Shadow",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=1462"
+        },
+        {
+          "contributions": {
+            "intellect": 0.00011865493524787496,
+            "stamina": 0.0
+          },
+          "item_id": 3739,
+          "item_level": 25,
+          "name": "Skull Ring",
+          "required_level": 20,
+          "score": 0.00011865493524787496,
+          "source_url": "https://www.wowhead.com/forever/item=3739"
+        },
+        {
+          "contributions": {
+            "intellect": 0.00011865493524787496
+          },
+          "item_id": 5313,
+          "item_level": 25,
+          "name": "Totemic Clan Ring",
+          "required_level": 17,
+          "score": 0.00011865493524787496,
+          "source_url": "https://www.wowhead.com/forever/item=5313"
+        },
+        {
+          "contributions": {
+            "spell_power": 0.0
+          },
+          "item_id": 6669,
+          "item_level": 25,
+          "name": "Sacred Band",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=6669"
+        }
+      ],
+      "legal_count": 38,
+      "selected_ids": [
+        281252,
+        1462,
+        3739,
+        5313,
+        6669
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "ring2": {
+      "items": [
+        {
+          "contributions": {},
+          "item_id": 281252,
+          "item_level": 26,
+          "name": "Harpy Claw Ring",
+          "required_level": 18,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=281252"
+        },
+        {
+          "contributions": {},
+          "item_id": 1462,
+          "item_level": 25,
+          "name": "Ring of the Shadow",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=1462"
+        },
+        {
+          "contributions": {
+            "intellect": 0.00011865493524787496,
+            "stamina": 0.0
+          },
+          "item_id": 3739,
+          "item_level": 25,
+          "name": "Skull Ring",
+          "required_level": 20,
+          "score": 0.00011865493524787496,
+          "source_url": "https://www.wowhead.com/forever/item=3739"
+        },
+        {
+          "contributions": {
+            "intellect": 0.00011865493524787496
+          },
+          "item_id": 5313,
+          "item_level": 25,
+          "name": "Totemic Clan Ring",
+          "required_level": 17,
+          "score": 0.00011865493524787496,
+          "source_url": "https://www.wowhead.com/forever/item=5313"
+        },
+        {
+          "contributions": {
+            "spell_power": 0.0
+          },
+          "item_id": 6669,
+          "item_level": 25,
+          "name": "Sacred Band",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=6669"
+        }
+      ],
+      "legal_count": 38,
+      "selected_ids": [
+        281252,
+        1462,
+        3739,
+        5313,
+        6669
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "shirt": {
+      "items": [
+        {
+          "contributions": {},
+          "item_id": 6384,
+          "item_level": 25,
+          "name": "Stylish Blue Shirt",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=6384"
+        },
+        {
+          "contributions": {},
+          "item_id": 6385,
+          "item_level": 25,
+          "name": "Stylish Green Shirt",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=6385"
+        },
+        {
+          "contributions": {},
+          "item_id": 6833,
+          "item_level": 25,
+          "name": "White Tuxedo Shirt",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=6833"
+        },
+        {
+          "contributions": {},
+          "item_id": 4330,
+          "item_level": 22,
+          "name": "Stylish Red Shirt",
+          "required_level": 17,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=4330"
+        },
+        {
+          "contributions": {},
+          "item_id": 2587,
+          "item_level": 20,
+          "name": "Gray Woolen Shirt",
+          "required_level": 15,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=2587"
+        }
+      ],
+      "legal_count": 13,
+      "selected_ids": [
+        6384,
+        6385,
+        6833,
+        4330,
+        2587
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "shoulder": {
+      "items": [
+        {
+          "contributions": {
+            "armor": 0.024860434098715772,
+            "spell_power": 0.0
+          },
+          "item_id": 3324,
+          "item_level": 27,
+          "name": "Ghostly Mantle",
+          "required_level": 18,
+          "score": 0.024860434098715772,
+          "source_url": "https://www.wowhead.com/forever/item=3324"
+        },
+        {
+          "contributions": {
+            "armor": 0.05337681438841916,
+            "spell_power": 0.0,
+            "stamina": 0.0
+          },
+          "item_id": 270023,
+          "item_level": 27,
+          "name": "Tanned Shoulderpads",
+          "required_level": 18,
+          "score": 0.05337681438841916,
+          "source_url": "https://www.wowhead.com/forever/item=270023"
+        },
+        {
+          "contributions": {
+            "armor": 0.021935677145925682,
+            "stamina": 0.0
+          },
+          "item_id": 6664,
+          "item_level": 26,
+          "name": "Voodoo Mantle",
+          "required_level": 20,
+          "score": 0.021935677145925682,
+          "source_url": "https://www.wowhead.com/forever/item=6664"
+        },
+        {
+          "contributions": {
+            "armor": 0.02412924486051825,
+            "intellect": 0.00023730987049574992,
+            "stamina": 0.0
+          },
+          "item_id": 10657,
+          "item_level": 26,
+          "name": "Talbar Mantle",
+          "required_level": 10,
+          "score": 0.024366554731014,
+          "source_url": "https://www.wowhead.com/forever/item=10657"
+        },
+        {
+          "contributions": {
+            "armor": 0.042408975815456315
+          },
+          "item_id": 1801,
+          "item_level": 25,
+          "name": "Rawhide Shoulderpads",
+          "required_level": 20,
+          "score": 0.042408975815456315,
+          "source_url": "https://www.wowhead.com/forever/item=1801"
+        }
+      ],
+      "legal_count": 30,
+      "selected_ids": [
+        3324,
+        270023,
+        6664,
+        10657,
+        1801
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "tabard": {
+      "items": [
+        {
+          "contributions": {},
+          "item_id": 15197,
+          "item_level": 20,
+          "name": "Scout's Tabard",
+          "required_level": 15,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=15197"
+        },
+        {
+          "contributions": {},
+          "item_id": 19031,
+          "item_level": 20,
+          "name": "Frostwolf Battle Tabard",
+          "required_level": 15,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=19031"
+        },
+        {
+          "contributions": {},
+          "item_id": 19505,
+          "item_level": 20,
+          "name": "Warsong Battle Tabard",
+          "required_level": 15,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=19505"
+        },
+        {
+          "contributions": {},
+          "item_id": 215450,
+          "item_level": 20,
+          "name": "Tabard Project (Aidan)",
+          "required_level": 15,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=215450"
+        },
+        {
+          "contributions": {},
+          "item_id": 262764,
+          "item_level": 20,
+          "name": "Durotar Supply and Logistics Tabard",
+          "required_level": 15,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=262764"
+        }
+      ],
+      "legal_count": 11,
+      "selected_ids": [
+        15197,
+        19031,
+        19505,
+        215450,
+        262764
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "trinket1": {
+      "items": [
+        {
+          "contributions": {},
+          "item_id": 7506,
+          "item_level": 25,
+          "name": "Gnomish Universal Remote",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=7506"
+        },
+        {
+          "contributions": {
+            "stamina": 0.0
+          },
+          "item_id": 21566,
+          "item_level": 25,
+          "name": "Rune of Perfection",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=21566"
+        },
+        {
+          "contributions": {
+            "stamina": 0.0
+          },
+          "item_id": 21568,
+          "item_level": 25,
+          "name": "Rune of Duty",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=21568"
+        },
+        {
+          "contributions": {},
+          "item_id": 273298,
+          "item_level": 23,
+          "name": "Lookie's Spyglass",
+          "required_level": 18,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=273298"
+        },
+        {
+          "contributions": {},
+          "item_id": 23714,
+          "item_level": 20,
+          "name": "Perpetual Purple Firework",
+          "required_level": 15,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=23714"
+        }
+      ],
+      "legal_count": 5,
+      "selected_ids": [
+        7506,
+        21566,
+        21568,
+        273298,
+        23714
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "trinket2": {
+      "items": [
+        {
+          "contributions": {},
+          "item_id": 7506,
+          "item_level": 25,
+          "name": "Gnomish Universal Remote",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=7506"
+        },
+        {
+          "contributions": {
+            "stamina": 0.0
+          },
+          "item_id": 21566,
+          "item_level": 25,
+          "name": "Rune of Perfection",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=21566"
+        },
+        {
+          "contributions": {
+            "stamina": 0.0
+          },
+          "item_id": 21568,
+          "item_level": 25,
+          "name": "Rune of Duty",
+          "required_level": 20,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=21568"
+        },
+        {
+          "contributions": {},
+          "item_id": 273298,
+          "item_level": 23,
+          "name": "Lookie's Spyglass",
+          "required_level": 18,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=273298"
+        },
+        {
+          "contributions": {},
+          "item_id": 23714,
+          "item_level": 20,
+          "name": "Perpetual Purple Firework",
+          "required_level": 15,
+          "score": 0.0,
+          "source_url": "https://www.wowhead.com/forever/item=23714"
+        }
+      ],
+      "legal_count": 5,
+      "selected_ids": [
+        7506,
+        21566,
+        21568,
+        273298,
+        23714
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "waist": {
+      "items": [
+        {
+          "contributions": {
+            "armor": 0.036559461909876134,
+            "attack_power": 0.005436285090149262,
+            "intellect": 0.00019775822541312493,
+            "stamina": 0.0
+          },
+          "item_id": 16987,
+          "item_level": 27,
+          "name": "Screecher Belt",
+          "required_level": 18,
+          "score": 0.04219350522543852,
+          "source_url": "https://www.wowhead.com/forever/item=16987"
+        },
+        {
+          "contributions": {
+            "armor": 0.0160861632403455,
+            "intellect": 0.00019775822541312493
+          },
+          "item_id": 3229,
+          "item_level": 25,
+          "name": "Tarantula Silk Sash",
+          "required_level": 20,
+          "score": 0.016283921465758626,
+          "source_url": "https://www.wowhead.com/forever/item=3229"
+        },
+        {
+          "contributions": {
+            "agility": 0.005022286529921871,
+            "armor": 0.03509708343348109,
+            "stamina": 0.0
+          },
+          "item_id": 4249,
+          "item_level": 25,
+          "name": "Dark Leather Belt",
+          "required_level": 20,
+          "score": 0.040119369963402964,
+          "source_url": "https://www.wowhead.com/forever/item=4249"
+        },
+        {
+          "contributions": {
+            "armor": 0.03509708343348109,
+            "spell_power": 0.0,
+            "stamina": 0.0
+          },
+          "item_id": 4250,
+          "item_level": 25,
+          "name": "Hillman's Belt",
+          "required_level": 20,
+          "score": 0.03509708343348109,
+          "source_url": "https://www.wowhead.com/forever/item=4250"
+        },
+        {
+          "contributions": {
+            "armor": 0.03509708343348109
+          },
+          "item_id": 9801,
+          "item_level": 25,
+          "name": "Superior Belt",
+          "required_level": 20,
+          "score": 0.03509708343348109,
+          "source_url": "https://www.wowhead.com/forever/item=9801"
+        }
+      ],
+      "legal_count": 109,
+      "selected_ids": [
+        16987,
+        3229,
+        4249,
+        4250,
+        9801
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "weapon": {
+      "items": [
+        {
+          "contributions": {
+            "strength": 0.008154427635223893,
+            "weapon_dps": 0.15955496739588085
+          },
+          "item_id": 5322,
+          "item_level": 26,
+          "name": "Demolition Hammer",
+          "required_level": 17,
+          "score": 0.16770939503110474,
+          "source_url": "https://www.wowhead.com/forever/item=5322"
+        },
+        {
+          "contributions": {
+            "stamina": 0.0,
+            "strength": 0.007248380120199016,
+            "weapon_dps": 0.1518535635181694
+          },
+          "item_id": 911,
+          "item_level": 25,
+          "name": "Ironwood Treebranch",
+          "required_level": 20,
+          "score": 0.1591019436383684,
+          "source_url": "https://www.wowhead.com/forever/item=911"
+        },
+        {
+          "contributions": {
+            "agility": 0.005022286529921871,
+            "weapon_dps": 0.11597408192318426
+          },
+          "item_id": 920,
+          "item_level": 25,
+          "name": "Wicked Spiked Mace",
+          "required_level": 20,
+          "score": 0.12099636845310613,
+          "source_url": "https://www.wowhead.com/forever/item=920"
+        },
+        {
+          "contributions": {
+            "weapon_dps": 0.10709481627594046
+          },
+          "item_id": 925,
+          "item_level": 25,
+          "name": "Flail",
+          "required_level": 20,
+          "score": 0.10709481627594046,
+          "source_url": "https://www.wowhead.com/forever/item=925"
+        },
+        {
+          "contributions": {
+            "weapon_dps": 0.13744740802927385
+          },
+          "item_id": 928,
+          "item_level": 25,
+          "name": "Long Staff",
+          "required_level": 20,
+          "score": 0.13744740802927385,
+          "source_url": "https://www.wowhead.com/forever/item=928"
+        }
+      ],
+      "legal_count": 213,
+      "selected_ids": [
+        5322,
+        911,
+        920,
+        925,
+        928
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    },
+    "wrist": {
+      "items": [
+        {
+          "contributions": {
+            "armor": 0.013161406287555409,
+            "intellect": 0.00015820658033049995,
+            "stamina": 0.0
+          },
+          "item_id": 270028,
+          "item_level": 27,
+          "name": "Harpy Bangles",
+          "required_level": 18,
+          "score": 0.013319612867885909,
+          "source_url": "https://www.wowhead.com/forever/item=270028"
+        },
+        {
+          "contributions": {
+            "agility": 0.005022286529921871,
+            "armor": 0.027054001813308342,
+            "stamina": 0.0
+          },
+          "item_id": 4794,
+          "item_level": 25,
+          "name": "Wolf Bracers",
+          "required_level": 20,
+          "score": 0.032076288343230216,
+          "source_url": "https://www.wowhead.com/forever/item=4794"
+        },
+        {
+          "contributions": {
+            "armor": 0.027054001813308342,
+            "stamina": 0.0
+          },
+          "item_id": 4795,
+          "item_level": 25,
+          "name": "Bear Bracers",
+          "required_level": 20,
+          "score": 0.027054001813308342,
+          "source_url": "https://www.wowhead.com/forever/item=4795"
+        },
+        {
+          "contributions": {
+            "armor": 0.027054001813308342,
+            "intellect": 0.00019775822541312493
+          },
+          "item_id": 4796,
+          "item_level": 25,
+          "name": "Owl Bracers",
+          "required_level": 20,
+          "score": 0.027251760038721467,
+          "source_url": "https://www.wowhead.com/forever/item=4796"
+        },
+        {
+          "contributions": {
+            "armor": 0.012430217049357886
+          },
+          "item_id": 9793,
+          "item_level": 25,
+          "name": "Ivycloth Bracelets",
+          "required_level": 20,
+          "score": 0.012430217049357886,
+          "source_url": "https://www.wowhead.com/forever/item=9793"
+        }
+      ],
+      "legal_count": 95,
+      "selected_ids": [
+        270028,
+        4794,
+        4795,
+        4796,
+        9793
+      ],
+      "selection": "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    }
+  },
+  "source": "CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS",
+  "source_policy": {
+    "action_ids": [
+      "claw:20"
+    ],
+    "policy_id": "source:claw:20",
+    "source_ir_id": "forever:druid:caster-healing-slice@20",
+    "weapon_damage_effect_derived_from_ir": true
+  },
+  "source_policy_attestation_inherited_from": "WF407_DRUID_L20_FAST_P3_LIVE.json",
+  "tested_item_count": 92,
+  "wall_s": 0.07874639999954525,
+  "weapon_damage_dependent": true,
+  "weight_evidence_kind": "MEASURED_SOURCE_CONTEXT",
+  "weight_evidence_sha256": "7e922eae685ebe23a301fc159df466303032126a638b18da7cf152c52ca10b24"
+}
