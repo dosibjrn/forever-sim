@@ -7,6 +7,7 @@ OLD_URL="${OLD_URL:-https://github.com/dosibjrn/mage-level-sim.git}"
 NEW_URL="${NEW_URL:-https://github.com/dosibjrn/forever-sim.git}"
 command -v git >/dev/null || { echo "git required" >&2; exit 2; }
 command -v tar >/dev/null || { echo "tar required" >&2; exit 2; }
+command -v python3 >/dev/null || { echo "python3 required for byte/stage parity check" >&2; exit 2; }
 git lfs version >/dev/null 2>&1 || { echo "git-lfs required to preserve canonical source assets" >&2; exit 2; }
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -21,8 +22,18 @@ if git -C "$work/old" grep -I -nE 'gh[pousr]_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z
   sed -E 's/:.*/: [redacted match]/' "$work/secret-hits" | head -30
   exit 4
 fi
-echo "[4/7] Copy current source snapshot, excluding legacy automatic CI and old priority index"
-tar -C "$work/old" --exclude='./.git' --exclude='./.github/workflows' --exclude='./docs/planning/WORK_PRIORITY.md' -cf - . | tar -C "$work/new" -xf -
+echo "[4/7] Copy current source snapshot, preserving public migration controls"
+tar -C "$work/old" \
+  --exclude='./.git' \
+  --exclude='./.github/workflows' \
+  --exclude='./README.md' \
+  --exclude='./docs/planning/WORK_PRIORITY.md' \
+  --exclude='./docs/migration' \
+  --exclude='./scripts/complete_public_migration.sh' \
+  --exclude='./scripts/port_remaining_branches.sh' \
+  --exclude='./scripts/verify_public_snapshot.py' \
+  --exclude='./tests/test_verify_public_snapshot.py' \
+  -cf - . | tar -C "$work/new" -xf -
 echo "[5/7] Check that any source LFS pointers are materialized"
 unresolved="$(find "$work/new" -type f \( -name '*.sqlite' -o -name '*.db' -o -name '*.bin' -o -name '*.zip' \) -not -path '*/.git/*' -exec grep -Il '^version https://git-lfs.github.com/spec/v1' {} + || true)"
 if [[ -n "$unresolved" ]]; then
@@ -31,7 +42,8 @@ if [[ -n "$unresolved" ]]; then
   exit 5
 fi
 echo "[6/7] Stage public main snapshot (not historical commits)"
-git -C "$work/new" add -A
+git -C "$work/new" add -A --force
+python3 "$work/new/scripts/verify_public_snapshot.py" --source "$work/old" --target "$work/new"
 git -C "$work/new" diff --cached --stat
 if git -C "$work/new" diff --cached --quiet; then
   echo "Already up to date; no change required."
