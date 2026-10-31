@@ -1,0 +1,395 @@
+{
+  "as_of": "2026-10-14",
+  "build": "1.60.1.70338",
+  "class_key": "warrior",
+  "completeness_claim": "54 learned Warrior spellbook rows through level30; conditional talent actions require legal allocation",
+  "conditional_rank_families": [],
+  "conditional_talent_actions": [
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "temporary_max_health_increase_pct": 30.0
+      },
+      "learned_level": 20,
+      "name": "Last Stand",
+      "prior_tree_points": 10,
+      "source_url": "https://www.wowhead.com/forever/spell=12975/last-stand",
+      "spell_id": 12975,
+      "talent_rank": 1,
+      "talent_source_url": "https://theforeverera.com/en/spells/warrior/last-stand/",
+      "talent_tree": "Protection"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "enemy_movement_speed_reduction_pct": 50.0,
+        "snare_duration_seconds": 6.0
+      },
+      "learned_level": 20,
+      "name": "Piercing Howl",
+      "prior_tree_points": 10,
+      "source_url": "https://www.wowhead.com/forever/spell=12323/piercing-howl",
+      "spell_id": 12323,
+      "talent_rank": 1,
+      "talent_source_url": "https://theforeverera.com/en/spells/warrior/piercing-howl/",
+      "talent_tree": "Fury"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "weapon_damage_multiplier": 0.4
+      },
+      "learned_level": 25,
+      "name": "Spearing Strike",
+      "prior_tree_points": 15,
+      "source_url": "https://www.wowhead.com/forever/spell=1310222/spearing-strike",
+      "spell_id": 1310222,
+      "talent_rank": 1,
+      "talent_source_url": "https://theforeverera.com/en/spells/warrior/spearing-strike/",
+      "talent_tree": "Arms"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "target_control_seconds": 5.0
+      },
+      "learned_level": 30,
+      "name": "Concussion Blow",
+      "prior_tree_points": 20,
+      "source_url": "https://www.wowhead.com/forever/spell=12809/concussion-blow",
+      "spell_id": 12809,
+      "talent_rank": 1,
+      "talent_source_url": "https://theforeverera.com/en/spells/warrior/concussion-blow/",
+      "talent_tree": "Protection"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "increased_incoming_damage_pct": 5.0,
+        "physical_damage_increase_pct": 20.0
+      },
+      "learned_level": 30,
+      "name": "Death Wish",
+      "prior_tree_points": 20,
+      "source_url": "https://www.wowhead.com/forever/spell=12328/death-wish",
+      "spell_id": 12328,
+      "talent_rank": 1,
+      "talent_source_url": "https://theforeverera.com/en/spells/warrior/death-wish/",
+      "talent_tree": "Fury"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {},
+      "learned_level": 30,
+      "name": "Sweeping Strikes",
+      "prior_tree_points": 20,
+      "source_url": "https://www.wowhead.com/forever/spell=12292/sweeping-strikes",
+      "spell_id": 12292,
+      "talent_rank": 1,
+      "talent_source_url": "https://theforeverera.com/en/spells/warrior/sweeping-strikes/",
+      "talent_tree": "Arms"
+    }
+  ],
+  "contextual_numeric_proxies_by_name": {
+    "Battle Stance": {
+      "stance_transition_opportunity": 1.0
+    },
+    "Berserker Rage": {
+      "rage_generation_opportunity": 1.0
+    },
+    "Berserker Stance": {
+      "stance_transition_opportunity": 1.0
+    },
+    "Bloodrage": {
+      "resource_gain_per_activation": 10.0
+    },
+    "Charge": {
+      "resource_gain_per_activation": 9.0
+    },
+    "Cleave": {
+      "weapon_damage_opportunity": 1.0
+    },
+    "Defensive Stance": {
+      "stance_transition_opportunity": 1.0
+    },
+    "Demoralizing Shout": {
+      "enemy_attack_power_reduction": 49.0
+    },
+    "Disarm": {
+      "enemy_weapon_damage_prevention_opportunity": 1.0
+    },
+    "Execute": {
+      "low_health_finisher_opportunity": 1.0
+    },
+    "Hamstring": {
+      "enemy_movement_speed_reduction_opportunity": 1.0
+    },
+    "Heroic Strike": {
+      "queued_swing_damage_opportunity": 1.0
+    },
+    "Intercept": {
+      "gap_closer_opportunity": 1.0
+    },
+    "Intimidating Shout": {
+      "enemy_fear_control_opportunity": 1.0
+    },
+    "Overpower": {
+      "reactive_weapon_damage_opportunity": 1.0
+    },
+    "Rend": {
+      "bleed_damage_opportunity": 1.0
+    },
+    "Retaliation": {
+      "reactive_damage_opportunity": 1.0
+    },
+    "Revenge": {
+      "reactive_weapon_damage_opportunity": 1.0
+    },
+    "Shield Bash": {
+      "interrupt_opportunity": 1.0
+    },
+    "Shield Block": {
+      "blocked_damage_prevention_opportunity": 1.0
+    },
+    "Shield Wall": {
+      "incoming_damage_reduction_opportunity": 1.0
+    },
+    "Slam": {
+      "weapon_damage_opportunity": 1.0
+    },
+    "Sunder Armor": {
+      "enemy_armor_reduction_opportunity": 1.0
+    },
+    "Tactical Mastery": {
+      "stance_resource_retention_opportunity": 1.0
+    },
+    "Thunder Clap": {
+      "enemy_attack_speed_reduction_opportunity": 1.0
+    },
+    "Victory Rush": {
+      "post_kill_heal_opportunity": 1.0
+    }
+  },
+  "contextual_proxy_caveat": "Unit opportunity=1 only establishes possible utility, not benefit magnitude or cross-domain comparability; missing magnitude stays uncertain.",
+  "contextual_proxy_source_urls_by_name": {
+    "Battle Stance": "https://theforeverera.com/en/spells/warrior/battle-stance/",
+    "Berserker Rage": "https://theforeverera.com/en/spells/warrior/berserker-rage/",
+    "Berserker Stance": "https://theforeverera.com/en/spells/warrior/berserker-stance/",
+    "Bloodrage": "https://theforeverera.com/en/spells/warrior/bloodrage/",
+    "Charge": "https://theforeverera.com/en/spells/warrior/charge/",
+    "Cleave": "https://theforeverera.com/en/spells/warrior/cleave/",
+    "Defensive Stance": "https://theforeverera.com/en/spells/warrior/defensive-stance/",
+    "Demoralizing Shout": "https://theforeverera.com/en/spells/warrior/demoralizing-shout/",
+    "Disarm": "https://theforeverera.com/en/spells/warrior/disarm/",
+    "Execute": "https://theforeverera.com/en/spells/warrior/execute/",
+    "Hamstring": "https://theforeverera.com/en/spells/warrior/hamstring/",
+    "Heroic Strike": "https://theforeverera.com/en/spells/warrior/heroic-strike/",
+    "Intercept": "https://theforeverera.com/en/spells/warrior/intercept/",
+    "Intimidating Shout": "https://theforeverera.com/en/spells/warrior/intimidating-shout/",
+    "Overpower": "https://theforeverera.com/en/spells/warrior/overpower/",
+    "Rend": "https://theforeverera.com/en/spells/warrior/rend/",
+    "Retaliation": "https://theforeverera.com/en/spells/warrior/retaliation/",
+    "Revenge": "https://theforeverera.com/en/spells/warrior/revenge/",
+    "Shield Bash": "https://theforeverera.com/en/spells/warrior/shield-bash/",
+    "Shield Block": "https://theforeverera.com/en/spells/warrior/shield-block/",
+    "Shield Wall": "https://theforeverera.com/en/spells/warrior/shield-wall/",
+    "Slam": "https://theforeverera.com/en/spells/warrior/slam/",
+    "Sunder Armor": "https://theforeverera.com/en/spells/warrior/sunder-armor/",
+    "Tactical Mastery": "https://theforeverera.com/en/spells/warrior/tactical-mastery/",
+    "Thunder Clap": "https://theforeverera.com/en/spells/warrior/thunder-clap/",
+    "Victory Rush": "https://theforeverera.com/en/spells/warrior/victory-rush/"
+  },
+  "contextual_zero_when_solo_land_mob_no_allies_or_debuffs": {
+    "Challenging Shout": "SOLO_ONE_ACTOR_NO_THREAT_COMPETITOR",
+    "Mocking Blow": "SOLO_ONE_ACTOR_NO_THREAT_COMPETITOR",
+    "Sweeping Strikes": "SOLO_SINGLE_MOB_NO_SECONDARY_TARGET",
+    "Taunt": "SOLO_ONE_ACTOR_NO_THREAT_COMPETITOR"
+  },
+  "expected_learned_rows": 54,
+  "learned_by_level": {
+    "1": [
+      "Battle Shout",
+      "Battle Stance",
+      "Heroic Strike"
+    ],
+    "10": [
+      "Bloodrage",
+      "Defensive Stance",
+      "Sunder Armor",
+      "Taunt",
+      "Rend"
+    ],
+    "12": [
+      "Overpower",
+      "Shield Bash",
+      "Battle Shout"
+    ],
+    "14": [
+      "Demoralizing Shout",
+      "Revenge",
+      "Tactical Mastery"
+    ],
+    "16": [
+      "Mocking Blow",
+      "Shield Block",
+      "Heroic Strike"
+    ],
+    "18": [
+      "Disarm",
+      "Thunder Clap"
+    ],
+    "20": [
+      "Cleave",
+      "Retaliation",
+      "Slam",
+      "Victory Rush",
+      "Last Stand",
+      "Piercing Howl",
+      "Rend"
+    ],
+    "22": [
+      "Intimidating Shout",
+      "Battle Shout",
+      "Sunder Armor"
+    ],
+    "24": [
+      "Execute",
+      "Heroic Strike",
+      "Demoralizing Shout",
+      "Revenge"
+    ],
+    "25": [
+      "Spearing Strike"
+    ],
+    "26": [
+      "Challenging Shout",
+      "Charge",
+      "Mocking Blow"
+    ],
+    "28": [
+      "Shield Wall",
+      "Thunder Clap",
+      "Overpower"
+    ],
+    "30": [
+      "Berserker Rage",
+      "Berserker Stance",
+      "Intercept",
+      "Concussion Blow",
+      "Death Wish",
+      "Sweeping Strikes",
+      "Rend",
+      "Cleave",
+      "Slam"
+    ],
+    "4": [
+      "Charge",
+      "Rend"
+    ],
+    "6": [
+      "Thunder Clap"
+    ],
+    "8": [
+      "Hamstring",
+      "Heroic Strike"
+    ]
+  },
+  "level_range_covered": [
+    1,
+    30
+  ],
+  "non_cast_passives": [
+    "Tactical Mastery"
+  ],
+  "observed_rank_numeric_by_id": {
+    "5242": {
+      "domains": {
+        "buff_duration_seconds": 180.0,
+        "caster_attack_power_increase": 21.0
+      },
+      "learned_level": 12,
+      "name": "Battle Shout",
+      "source_kind": "web_readable_forever_beta_client_tooltip",
+      "source_url": "https://theforeverera.com/en/spells/warrior/battle-shout/"
+    },
+    "5308": {
+      "domains": {
+        "damage_per_activation": 125.0,
+        "rage_conversion_bonus_damage_per_point": 3.0
+      },
+      "learned_level": 24,
+      "name": "Execute",
+      "source_kind": "web_readable_forever_beta_client_tooltip",
+      "source_url": "https://theforeverera.com/en/spells/warrior/execute/"
+    },
+    "6178": {
+      "domains": {
+        "resource_gain_per_activation": 15.0,
+        "target_control_seconds": 1.0
+      },
+      "learned_level": 26,
+      "name": "Charge",
+      "source_kind": "web_readable_forever_beta_client_tooltip",
+      "source_url": "https://theforeverera.com/en/spells/warrior/charge/"
+    },
+    "6190": {
+      "domains": {
+        "enemy_attack_power_reduction": 77.0
+      },
+      "learned_level": 24,
+      "name": "Demoralizing Shout",
+      "source_kind": "web_readable_forever_beta_client_tooltip",
+      "source_url": "https://theforeverera.com/en/spells/warrior/demoralizing-shout/"
+    },
+    "6192": {
+      "domains": {
+        "buff_duration_seconds": 180.0,
+        "caster_attack_power_increase": 33.0
+      },
+      "learned_level": 22,
+      "name": "Battle Shout",
+      "source_kind": "web_readable_forever_beta_client_tooltip",
+      "source_url": "https://theforeverera.com/en/spells/warrior/battle-shout/"
+    },
+    "6673": {
+      "domains": {
+        "buff_duration_seconds": 180.0,
+        "caster_attack_power_increase": 9.0
+      },
+      "learned_level": 1,
+      "name": "Battle Shout",
+      "source_kind": "web_readable_forever_beta_client_tooltip",
+      "source_url": "https://theforeverera.com/en/spells/warrior/battle-shout/"
+    },
+    "7369": {
+      "domains": {
+        "additional_enemy_target_count": 1.0,
+        "queued_swing_bonus_damage": 10.0
+      },
+      "learned_level": 30,
+      "name": "Cleave",
+      "source_kind": "web_readable_forever_beta_client_tooltip",
+      "source_url": "https://theforeverera.com/en/spells/warrior/cleave/"
+    },
+    "7887": {
+      "domains": {
+        "queued_swing_bonus_damage": 15.0
+      },
+      "learned_level": 28,
+      "name": "Overpower",
+      "source_kind": "web_readable_forever_beta_client_tooltip",
+      "source_url": "https://theforeverera.com/en/spells/warrior/overpower/"
+    }
+  },
+  "obsolete_or_ungranted_exact_spell_ids": {},
+  "passive_numeric_by_name": {
+    "Tactical Mastery": {
+      "stance_resource_retention_opportunity": 1.0
+    }
+  },
+  "runes_enabled": false,
+  "schema": "forever_spellbook_level_ranks_v1",
+  "source_index_sha256": "8418cf8a37fdc8ebb8b758d32aae4adbaa4446537a8cc377b1eded055d2272a8",
+  "source_kind": "web_readable_client_spellbook_level_table_not_raw_client_dump",
+  "source_url": "https://theforeverera.com/en/spells/warrior/levels/"
+}

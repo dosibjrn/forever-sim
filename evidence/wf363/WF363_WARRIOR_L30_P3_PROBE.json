@@ -1,0 +1,74 @@
+{
+  "accepted_checkpoints": "2/148",
+  "checkpoint": "warrior:L30:unrestricted",
+  "limitations": [
+    "Provisional item set is not a legal Warrior denominator",
+    "Other class listview intersections can include class-restricted items and miss Warrior-only items",
+    "No 100-mob build evaluation or Top5 claim until class-1 source membership is ingested"
+  ],
+  "p1": {
+    "coverage": "54/54",
+    "inherited_from": "WF361",
+    "status": "PASS"
+  },
+  "p2": {
+    "coverage": "117/117",
+    "inherited_from": "WF362",
+    "status": "PASS"
+  },
+  "p3": {
+    "missing_required_slots": [],
+    "probe_cpu_s": 0.39719522900000004,
+    "probe_wall_s": 0.39721264000002066,
+    "provenance_counts": [
+      [
+        "PROVISIONAL_CROSS_CLASS_INTERSECTION_NOT_WARRIOR_SOURCE",
+        6452
+      ]
+    ],
+    "provisional_fillable_slots": 18,
+    "provisional_item_count": 2837,
+    "provisional_item_l0_assessed": 2837,
+    "provisional_membership_rows": 6452,
+    "provisional_required_slots": 18,
+    "provisional_unresolved_effect_items": 103,
+    "reason": "CANONICAL_WARRIOR_CLASS_1_ITEM_MEMBERSHIP_NOT_INGESTED",
+    "required_slot_counts": {
+      "back": 190,
+      "chest": 328,
+      "feet": 266,
+      "hands": 257,
+      "head": 95,
+      "legs": 266,
+      "neck": 31,
+      "offhand": 59,
+      "ranged": 92,
+      "ring1": 93,
+      "ring2": 93,
+      "shirt": 2,
+      "shoulder": 131,
+      "trinket1": 14,
+      "trinket2": 14,
+      "waist": 256,
+      "weapon": 547,
+      "wrist": 210
+    },
+    "source_contextual_top5": "NOT_MEASURED_UNVERIFIED_MEMBERSHIP",
+    "source_membership_verified": false,
+    "status": "FAIL",
+    "verified_legal_item_denominator": null,
+    "verified_legal_item_numerator": 0
+  },
+  "p4": {
+    "status": "NOT_RUN"
+  },
+  "p4_p5_wall_cpu_events_attempts_unique_forecast_actual": "NOT_MEASURED",
+  "p5": {
+    "status": "NOT_RUN"
+  },
+  "p6": {
+    "status": "NOT_RUN"
+  },
+  "provisional_sqlite_sha256": "9d9b999efb2275640b41f40171a98f98bdb954663fb1f0dc92d4b45bcb7a40df",
+  "schema": "wf363_warrior_l30_p3_fail_closed_v1"
+}
