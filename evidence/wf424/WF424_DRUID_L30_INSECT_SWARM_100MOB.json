@@ -1,0 +1,70 @@
+{
+  "allocation": {
+    "ferocity": 2,
+    "genesis": 5,
+    "improved_entangling_roots": 3,
+    "improved_moonfire": 2,
+    "improved_wrath": 5,
+    "insect_swarm": 1,
+    "moonglow": 3,
+    "natures_majesty": 2,
+    "natures_reach": 2,
+    "natures_splendor": 1
+  },
+  "class_key": "druid",
+  "difference_s_per_mob": 0.5326038388924133,
+  "forever_named_yeti_enemy_attested": false,
+  "level": 30,
+  "parent": "WF423",
+  "results": {
+    "insect_swarm_plus_wrath": {
+      "action_counts": {
+        "cancel_mode:cat": 100,
+        "cat_form:768": 100,
+        "claw:28": 100,
+        "insect_swarm:24974": 100,
+        "wrath:5180": 700
+      },
+      "combat_s": 1730.0000000000016,
+      "events": 10208,
+      "mean_s_per_mob": 26.70919402183724,
+      "policy_rules": [
+        "insect_swarm:24974",
+        "wrath:5180",
+        "cancel_mode:cat"
+      ],
+      "recovery_s": 931.9194021837227,
+      "total_s": 2670.9194021837243
+    },
+    "wrath_only_same_full_build": {
+      "action_counts": {
+        "cancel_mode:cat": 100,
+        "cat_form:768": 100,
+        "claw:28": 100,
+        "wrath:5180": 803
+      },
+      "combat_s": 1734.5000000000014,
+      "events": 8591,
+      "mean_s_per_mob": 26.176590182944828,
+      "policy_rules": [
+        "wrath:5180",
+        "cancel_mode:cat"
+      ],
+      "recovery_s": 874.1590182944816,
+      "total_s": 2617.659018294483
+    }
+  },
+  "scope": "same_gear_same_talents_same_source_non_cold_persistent_100mob",
+  "source_db_sha256": "5d1d4c522a833f3685736a8256a0da4c9825db95c9be011c11b1ef4a40f6e91d",
+  "source_known_issues": [
+    "periodic_tick_interval_classic_proxy_not_forever_verified",
+    "insect_swarm_spell_power_coefficient_not_source_verified",
+    "caster_form_restriction_source_proxy",
+    "encounter_is_not_named_forever_yeti",
+    "talent_search_not_exhaustive"
+  ],
+  "source_stage": "evidence/wf360/WF360_L30_P4_30S.json winner_stage",
+  "status": "BOUNDED_PAID_DIAGNOSTIC_NOT_CHECKPOINT",
+  "talent_point_budget": 26,
+  "talented_enabled": true
+}

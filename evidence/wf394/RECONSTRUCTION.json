@@ -1,0 +1,464 @@
+[
+  {
+    "step": 0,
+    "name": "WF309_SOURCE_STAT_AURA_RUNTIME_FULL_WIP_ON_289.zip",
+    "sha256": "beacb1241f14e62b0d97c4f4eaf828e77f2fa1badce7d11cd0a559863c21d373",
+    "count": 1923
+  },
+  {
+    "step": 1,
+    "name": "WF310_MULTI_BATCH_SOURCE_CAPTURE_WIP_PATCH_ON_WF309.zip",
+    "sha256": "6297b263ac88a456cbd5101a5e1e94bccb51430fde6dfc9efb67bc4e52b9b0ff",
+    "count": 4
+  },
+  {
+    "step": 2,
+    "name": "WF311_VERIFIED_STRUCTURED_EFFECTS_WIP_ON_WF309_WF310.zip",
+    "sha256": "5623fc8037256ea54799bc6c8743877e76153a1b90b9ae1828bf8fbc9c9d74a2",
+    "count": 12
+  },
+  {
+    "step": 3,
+    "name": "WF312_GENERIC_VERIFIED_MULTI_EFFECT_L1_WIP_ON_WF311.zip",
+    "sha256": "d8712c4f1fd56675de343ee4841a69e11d20937fc67b8a66890c336ba0931137",
+    "count": 11
+  },
+  {
+    "step": 4,
+    "name": "WF313_PARALLEL_SOURCE_CAPTURE_AND_QUARANTINE_WIP_ON_WF312.zip",
+    "sha256": "9023a4977d063e059f7e1fcc6114957e8d67fbee4918cfad4d3ce0e6965483dd",
+    "count": 18
+  },
+  {
+    "step": 5,
+    "name": "WF314_GENERIC_SOURCED_ABSORB_CONTROL_WIP_ON_WF313.zip",
+    "sha256": "0bd520b2bdb07a7104c41c9640880beb2680822c0e4c427c7307459d2df0505a",
+    "count": 9
+  },
+  {
+    "step": 6,
+    "name": "WF315_CANONICAL_INDEX_STAT_WEAPON_BATCH_WIP_ON_WF314.zip",
+    "sha256": "a13b23e0435f7e733fb14d968d18b7650678e777b3f19c3a01ed01782076da0f",
+    "count": 11
+  },
+  {
+    "step": 7,
+    "name": "WF316_VERIFIED_WEAPON_SP_COEFFICIENT_WIP_ON_WF315.zip",
+    "sha256": "05be46ac0a1b8acc191af8ebcdccba23926863aa36c6c20c8bc0d11a9ccb4442",
+    "count": 12
+  },
+  {
+    "step": 8,
+    "name": "WF317_DRUID_L20_CANONICAL_SOURCE_BRIDGE_WIP_ON_WF316.zip",
+    "sha256": "78fd0f723f91055ede6a2a83c0efe3a6d88d49fa7723b203bf0f133b9ffb6993",
+    "count": 15
+  },
+  {
+    "step": 9,
+    "name": "WF318_NINE_CLASS_SOURCE_COMPOSITES_AND_VERIFIED_SLOW_WIP_ON_WF317.zip",
+    "sha256": "8259548a1249f71f5f1f43b203c77c59de2c4e3b7bc4ddb7a6f575a7c9fd1d6e",
+    "count": 20
+  },
+  {
+    "step": 10,
+    "name": "WF323_DRUID_L20_CONTROL_RESOURCE_BUDGET_AND_70338_CUMULATIVE_WIP_ON_WF318.zip",
+    "sha256": "00c5e5b403e0492e8b5c50a18c619ae18329d0c15b3620395b1da06f2e85719f",
+    "count": 37
+  },
+  {
+    "step": 11,
+    "name": "WF326_DRUID_L20_LEGAL_GEAR_SLOT_L2_CUMULATIVE_WIP_ON_WF323.zip",
+    "sha256": "b9a35504f5d763d8d815f3ede4175d763c747a95074522cea728172142fc0d53",
+    "count": 26
+  },
+  {
+    "step": 12,
+    "name": "WF327_DRUID_L20_CHECKPOINT_ACTION_L0_PROXY_WIP_ON_WF326.zip",
+    "sha256": "b5c6b04c7676d891485284761f48b02f1ce2f5754e3add884eedff340e3c1e46",
+    "count": 7
+  },
+  {
+    "step": 13,
+    "name": "WF328_DRUID_L20_GEARED_SEARCH_COMPARISON_WIP_ON_WF327.zip",
+    "sha256": "47f512a14aabe042eecc540d01f71ec79eee9f039a499d1e2dba4febfd3bd473",
+    "count": 12
+  },
+  {
+    "step": 14,
+    "name": "WF329_DRUID_L20_SOURCED_CONTEXT_L0_WIP_ON_WF328.zip",
+    "sha256": "c6b1f04eb67283d940b1291d0ca220c0013b27a9abdc1fd06adfa6563fe000c6",
+    "count": 7
+  },
+  {
+    "step": 15,
+    "name": "WF330_DRUID_L20_QUEUED_MAUL_RESOURCE_SEARCH_WIP_ON_WF329.zip",
+    "sha256": "1f4127eb35440a0fb287e2dca913312fb7e51226d398e002a9e66c9d99dc932c",
+    "count": 14
+  },
+  {
+    "step": 16,
+    "name": "WF331_DRUID_L20_SOURCE_BOUND_WEB_INDEXED_L0_WIP_ON_WF330.zip",
+    "sha256": "55e1d98f44d17114d23bbb87af742192124070b03a9642b785076d95f5b2c5ce",
+    "count": 8
+  },
+  {
+    "step": 17,
+    "name": "WF334_DRUID_L20_GENERIC_P1_CUMULATIVE_ON_WF331.zip",
+    "sha256": "87253aa402bd1af7cda9fb8cfabc9cdf64957780d808bd3789330c255d9284c4",
+    "count": 22
+  },
+  {
+    "step": 18,
+    "name": "WF335_DRUID_L20_SOURCE_SPELLBOOK_P1_ACCEPTANCE_WIP_ON_WF334.zip",
+    "sha256": "d5a7977cf39e746d556c74af01e11b2ac995211a45981a1dff18071456c5360a",
+    "count": 7
+  },
+  {
+    "step": 19,
+    "name": "WF337_MERGED_DRUID_L20_GENERIC_P2_CUMULATIVE_ON_WF335.zip",
+    "sha256": "f0468b212788838d724b89e8e65aed59452174cc2f4658177742d8978e830734",
+    "count": 13
+  },
+  {
+    "step": 20,
+    "name": "WF338_DRUID_L20_COMPLETE_ITEM_P3_L0_AND_SEARCH_INTEGRATION_WIP_ON_WF337.zip",
+    "sha256": "cb94485f5b132741c192e0dc8988b288867fbb2e0c9c5b275763a28d42e54b6c",
+    "count": 8
+  },
+  {
+    "step": 21,
+    "name": "WF339_BUILD_LOCAL_STAT_WEIGHTS_WEIGHTED_TOP5_WIP_ON_WF338.zip",
+    "sha256": "507d26e581d3911823448f426208ee86f85e0eee91264fd9a77ada68cf31969e",
+    "count": 10
+  },
+  {
+    "step": 22,
+    "name": "WF340_DRUID_L20_STRICT_L2_BUDGETED_30_300S_WIP_ON_WF339.zip",
+    "sha256": "5268abbbd8ab45e6eb31993158a1702fbe222c9fe631c115975076f2e1b2b48f",
+    "count": 14
+  },
+  {
+    "step": 23,
+    "name": "WF341_DRUID_L20_CHANCE_WEIGHT_TOP5_OVERLAY_ON_WF340.zip",
+    "sha256": "ea355206383a4906fb290b98f919d3fd8b75aa355051d3ebe1aeae6bc2b844c4",
+    "count": 8
+  },
+  {
+    "step": 24,
+    "name": "WF342_RATING_CRIT_HIT_DEFENSE_WIP_ON_WF341.zip",
+    "sha256": "0b99ab0a4b42dc0925e2c0a8360367e03b1c70788c39e84b09778e410ccb82b5",
+    "count": 15
+  },
+  {
+    "step": 25,
+    "name": "WF343_FOREVER_DISPLAY_PERCENT_ITEM_STATS_WIP_ON_WF342.zip",
+    "sha256": "272bbf7761c4dc1577927ce4ea7a254f2a75b6ef35d6ab366923aa1c72e4960c",
+    "count": 14
+  },
+  {
+    "step": 26,
+    "name": "WF344_DRUID_L20_SOURCED_EQUIPMENT_LEGALITY_AND_TYPED_RELIC_WIP_ON_PUBLISHED_WF343.zip",
+    "sha256": "8e274febe10b51256131b0b8388d86a74cc96e4cc63b9fa52dbae4bf3414b25c",
+    "count": 20
+  },
+  {
+    "step": 27,
+    "name": "WF345_DRUID_L20_UNIQUE_EQUIPPED_AND_NONCOMBAT_TRINKET_WIP_ON_WF344.zip",
+    "sha256": "bd9c266a6692d5e800447b385c6fa9b908bdb56312b634cac98e528e80431154",
+    "count": 18
+  },
+  {
+    "step": 28,
+    "name": "WF346_DRUID_L20_GENERIC_MAGIC_EQUIPMENT_ON_WF345.zip",
+    "sha256": "ea63e23579ae89c23d898434a0c8effe629eb8ed5d81e806665d0b25cd42ca13",
+    "count": 23
+  },
+  {
+    "step": 29,
+    "name": "WF347_DRUID_L20_FIRST_ACCEPTED_CHECKPOINT_1_OF_148_ON_WF346.zip",
+    "sha256": "56b44a9c2c2d52cce31cfe2215f4aee87a69814c869af88ac127a69dbdf86834",
+    "count": 27
+  },
+  {
+    "step": 30,
+    "name": "WF348_DRUID_L30_P1_86_OF_86_ON_WF347.zip",
+    "sha256": "74a3808625d9c7a28b2a49b6a8dc37da57b16b5460e2f73395f03a370ef741da",
+    "count": 8
+  },
+  {
+    "step": 31,
+    "name": "WF349_DRUID_L30_P2_SOURCE_RANK_INTEGRITY_WIP_ON_WF348.zip",
+    "sha256": "fea3eda0b88fc0d839c39ab890e228c5fd31e5ca7b6288a52829fe2a5c006d71",
+    "count": 8
+  },
+  {
+    "step": 32,
+    "name": "WF350_DRUID_L30_P2_117_OF_117_STAGED_SOURCE_ON_WF349.zip",
+    "sha256": "7b79d39009e190b493c8a871c058e4373500c06ff8d707f2a9edd8ec6ace8eb0",
+    "count": 14
+  },
+  {
+    "step": 33,
+    "name": "WF351_DRUID_L30_P3_PARTIAL_MEASURED_TOP5_ON_PUBLISHED_WF350.zip",
+    "sha256": "3760fe7e8f7e00281e999024d035043508b476d4e4f45d41733f64f8f37a9828",
+    "count": 9
+  },
+  {
+    "step": 34,
+    "name": "WF352_DRUID_L30_P3_ACCEPTED_OS_ISOLATED_ON_WF351.zip",
+    "sha256": "f7b9d68068517304cd98b0b8955dc65e31a946f91057f41b3379255b0bccff53",
+    "count": 17
+  },
+  {
+    "step": 35,
+    "name": "WF352_P3_FAIL_CLOSED_CORRECTION_ON_WF352.zip",
+    "sha256": "37910173194ca3b875175c37b0056a73556585a784f3ad38d2b86fcde131180e",
+    "count": 7
+  },
+  {
+    "step": 36,
+    "name": "WF352_P3_COARSE_20_AGI_10_WEAPON_DPS_ON_REVOCATION.zip",
+    "sha256": "94d371c071fd275224cda6449bf19bf03dc0ecdb8c0d7a0f5bfec065f19c60ad",
+    "count": 7
+  },
+  {
+    "step": 37,
+    "name": "WF354_DRUID_L30_P3_DIRECT_JOINT_100MOB_WIP_ON_WF352_COARSE.zip",
+    "sha256": "1d49e118d9bcb0912936a1148d621c2d1707e3c803b1b006df33939e43fb2d8a",
+    "count": 17
+  },
+  {
+    "step": 38,
+    "name": "WF355_P7_LEGACY_HOLDOUT_AND_RECOVERY_PARITY_BLOCKER_ON_WF354.zip",
+    "sha256": "25e4de1ff477248148b4aaa5754706c226a4483b5de4b5e74e2743441e4e30f1",
+    "count": 6
+  },
+  {
+    "step": 39,
+    "name": "WF356_ACTUAL_LEGACY_DRUID_L30_WINNER_ON_WF355.zip",
+    "sha256": "77b65a1e0b9572051fcf59ead22e842cc992886a67acc9100c42a1ec040ba95f",
+    "count": 7
+  },
+  {
+    "step": 40,
+    "name": "WF357_DRUID_L30_CONDITIONAL_RECOVERY_AND_31_P3_REPLAYS_ON_WF356.zip",
+    "sha256": "d609910f923d91aa577eb396eb9076b0ac070b7c3b57f5be2a62607a7bec928c",
+    "count": 17
+  },
+  {
+    "step": 41,
+    "name": "WF358_DRUID_L30_P3_CAUSAL_AND_JOINT_TOP5_WIP_ON_WF357.zip",
+    "sha256": "b7a8e52cce49ed8bceb6e7c5a972c02e193026fecf4c09ac785525bb07ae7a89",
+    "count": 18
+  },
+  {
+    "step": 42,
+    "name": "WF359_DRUID_L30_REBASED_SOURCE_TOP5_P3_PASS_ON_WF358.zip",
+    "sha256": "b7ef9b78cac5f6a239027aa0f6c0bf0b492cb01378adf7ac12697b62ccd6eda2",
+    "count": 9
+  },
+  {
+    "step": 43,
+    "name": "WF360_DRUID_L30_SIX_PORT_ACCEPTED_2_OF_148_ON_WF359.zip",
+    "sha256": "ae5f0c8e90bf99b0c1470011ef6282fcb735cb1a64ecb52f456665818689dcec",
+    "count": 11
+  },
+  {
+    "step": 44,
+    "name": "WF361_WARRIOR_L30_P1_54_OF_54_ON_WF360.zip",
+    "sha256": "a340573982951fa5113a7b8678246d5871a21c9e42270afb8917f7b4a4758489",
+    "count": 11
+  },
+  {
+    "step": 45,
+    "name": "WF362_WARRIOR_L30_P2_117_OF_117_ON_WF361.zip",
+    "sha256": "a20517bb38592c92348ee6ce25184934559fa51ff996d1c7b7a357e0c6cb1839",
+    "count": 12
+  },
+  {
+    "step": 46,
+    "name": "WF363_WARRIOR_L30_P3_SOURCE_MEMBERSHIP_AND_18_SLOT_PROVISIONAL_WIP_ON_WF362.zip",
+    "sha256": "1764a830141e6f800672bf92a3d5ec73bd852e66c12353201a4a05027f0ffdc3",
+    "count": 13
+  },
+  {
+    "step": 47,
+    "name": "WF364_WARRIOR_L30_P3_COMPLETE_CLASS_CAPTURE_INTEGRITY_WIP_ON_WF363.zip",
+    "sha256": "3110913c86c49cb8f92d9788811ec427cb1e2428b8e17f6ca3623c2a90f4b690",
+    "count": 10
+  },
+  {
+    "step": 48,
+    "name": "WF365_WARRIOR_L30_P3_SHIELDS_AND_SOURCE_PROFILE_GEAR_PACKAGES_WIP_ON_WF364.zip",
+    "sha256": "bc95f6a3effbe80bebc15caacae1c6c3b37d7e70d82f1364f9b70075250ca2f2",
+    "count": 9
+  },
+  {
+    "step": 49,
+    "name": "WF366_DRUID_L30_PRIMAL_BITE_AND_2D_SPATIAL_WIP_ON_WF365.zip",
+    "sha256": "e76833b299dcaa6418b565591465a1273f83d7cdc5d4f109ef2240fd06175450",
+    "count": 18
+  },
+  {
+    "step": 50,
+    "name": "WF367_DRUID_L30_SIX_PORT_REACCEPTED_GEAR_NEIGHBOR_SEARCH_ON_WF366.zip",
+    "sha256": "e7c090a85380c4f79ea3bc47d8b246182fc77e307f9231e23bf0131edf182467",
+    "count": 14
+  },
+  {
+    "step": 51,
+    "name": "WF368_WARRIOR_L30_P3_REAL_GEAR_RUNTIME_AND_103_100MOB_SWAPS_ON_WF367.zip",
+    "sha256": "158d78640423d46bf875aac824052b95813bc9c1ba8f847f9577883be276e324",
+    "count": 13
+  },
+  {
+    "step": 52,
+    "name": "WF369_GENERIC_APL_EVOLUTION_PAID_DRUID_L30_PROBE_ON_WF368.zip",
+    "sha256": "18247da488e1a22e9e2d59d1f0019f729463ba55814e3d90304ad85967af88b3",
+    "count": 9
+  },
+  {
+    "step": 53,
+    "name": "WF370_WARRIOR_L30_P3_SOURCE_BIS_100MOB_ON_WF369.zip",
+    "sha256": "6dbb99f7f7f3add4146c0f91c3e062711181d14c5fa04438c1fd1343cc8cd033",
+    "count": 12
+  },
+  {
+    "step": 54,
+    "name": "WF371_SIMULTANEOUS_2D_MULTI_TARGET_RUNTIME_ON_WF370.zip",
+    "sha256": "61c7995fd99851b60ceeca104304dac97a7a46fb51159945dfc01beedaaab49f",
+    "count": 5
+  },
+  {
+    "step": 55,
+    "name": "WF372_PERSISTENT_100MOB_SIMULTANEOUS_2D_PACKS_TDD_ON_WF371.zip",
+    "sha256": "fe26f886391199a367a290c76707af97ddda71e1414327623168646f55b42eff",
+    "count": 5
+  },
+  {
+    "step": 56,
+    "name": "WF373_DRUID_L30_LIVE_DECISIONS_PRIMAL_BITE_100MOB_TDD_ON_WF372.zip",
+    "sha256": "90655450f7463b1aef47d1839c31743a3e11e68ea8a793c5f59f2754aef40e17",
+    "count": 6
+  },
+  {
+    "step": 57,
+    "name": "WF374_SOURCE_100MOB_2D_APL_SEARCH_TDD_ON_WF373.zip",
+    "sha256": "137f84eb1787a4727661efb4d72ab811d9f7440abbf71ee4d9a2a71d79ed9d7d",
+    "count": 11
+  },
+  {
+    "step": 58,
+    "name": "WF375_SQUARE_GRID_10YD_AGGRO_MOVING_APL_ON_WF374.zip",
+    "sha256": "c218921a2c6ebaae685dd63d162fb02993767b45895764dd9dacadbdbd03da1e",
+    "count": 10
+  },
+  {
+    "step": 59,
+    "name": "WF376_MAGE_L30_SOURCE_RANK_RANGE_CONTROL_TDD_ON_WF375.zip",
+    "sha256": "8dce335d145ac5497b8319f7415db517b6a369ec53c5f924bf7dbf6026167eca",
+    "count": 7
+  },
+  {
+    "step": 60,
+    "name": "WF377_MAGE_L30_P1_80_OF_80_EXACT_SOURCE_SPELLBOOK_TDD_ON_WF376.zip",
+    "sha256": "07410d541952f4d9be34a83734abb8e09d7c27d98c8f4aebbefdaaedcd5cdcff",
+    "count": 19
+  },
+  {
+    "step": 61,
+    "name": "WF378_MAGE_L30_SOURCE_EVO_SPIRIT_PAID_RECOVERY_TDD_ON_WF377.zip",
+    "sha256": "a06dcdffd789273bfe2c1a2cd8aa90563a878011a199ed2856a58b9064b92a06",
+    "count": 19
+  },
+  {
+    "step": 62,
+    "name": "WF379_MAGE_L30_STATIONARY_HARDCAST_MOVING_INSTANT_TDD_ON_WF378.zip",
+    "sha256": "8e8bc855895d00bff3131a90d7da9fa078d7ece7c794a8dffaa9c045f0c9b856",
+    "count": 4
+  },
+  {
+    "step": 63,
+    "name": "WF380_LEGACY_BONUS_TALENTS_CHAINPULL_TDD_ON_WF379.zip",
+    "sha256": "c86d1ce74b2859e882c679dad392c4ba2c2dde9ddae4031fada58c725c1c8fc5",
+    "count": 11
+  },
+  {
+    "step": 64,
+    "name": "WF381_MAGE_L30_70374_TALENTS_121_L0_TDD_ON_WF380.zip",
+    "sha256": "e3f3012dcc39fd389db45f008f2eca22509cbee928badd2db901f7966c9e6401",
+    "count": 18
+  },
+  {
+    "step": 65,
+    "name": "WF382_MAGE_L30_P1_P2_70374_BUILD_DELTA_TDD_ON_WF381.zip",
+    "sha256": "c2bec0d348841799a5c0f7f6fbf166386327720cb569d26f141c984c1dc61d71",
+    "count": 15
+  },
+  {
+    "step": 66,
+    "name": "WF383_MAGE_L30_NAMED_WAND_2H_P3_75_PAID_SWAPS_TDD_ON_WF382.zip",
+    "sha256": "11faa1f9cf48680968308a863edfcd6dda39c5ffe13a0f170d00c8e9d3fdfd1a",
+    "count": 13
+  },
+  {
+    "step": 67,
+    "name": "WF384_GENERIC_CHECKPOINT_SOURCE_ENCOUNTER_AUTO_SCREEN_ON_WF383.zip",
+    "sha256": "4eaf941b8c09fe9275641d284d22875b676c90562b37044e1ac075d7f5416ca5",
+    "count": 9
+  },
+  {
+    "step": 68,
+    "name": "WF385_MAGE_L30_P3_SOURCE_STAMINA_PAID_100MOB_TDD_ON_WF384.zip",
+    "sha256": "7c1c509e74b55106e37ba74caf943c15ea9a961f7516e45602c1f3775c94595a",
+    "count": 16
+  },
+  {
+    "step": 69,
+    "name": "WF386_GENERIC_P3_MAGE_86_PAID_SWAPS_TDD_ON_WF385.zip",
+    "sha256": "dca86e7e58c444f3c6158557475646d5a89175733096ca8fd1f967de0f5fe62c",
+    "count": 12
+  },
+  {
+    "step": 70,
+    "name": "WF387_GENERIC_SOURCE_ATOMIC_TALENT_21_26_GATES_ON_WF386.zip",
+    "sha256": "c00ef3a33d400ae14631dcd7da0e472645da11c94d066a694547d2bc6160af05",
+    "count": 8
+  },
+  {
+    "step": 71,
+    "name": "WF388_GENERIC_COMPLETE_CLASS_ITEM_ATTESTATION_AND_PAID_P3_DIAGNOSTIC_ON_WF387.zip",
+    "sha256": "d9745ee0bc7cc0683349b824f1ffd94112aeb9171ce1aefc9c000597f022e61d",
+    "count": 18
+  },
+  {
+    "step": 72,
+    "name": "WF389_GENERIC_ATOMIC_WEAPON_PACKAGES_PAID_100MOB_TDD_ON_WF388.zip",
+    "sha256": "f40526ea12a7fc630888a433a48ed7d1752b94d72311a05886a545b8e5a4223f",
+    "count": 18
+  },
+  {
+    "step": 73,
+    "name": "WF390_GENERIC_SOURCE_TALENT_PIPELINE_EXHAUSTIVE_21POINT_PAID_ON_WF389.zip",
+    "sha256": "db599a1fb8d2a9526285f1cd5d2b1334aaf210c2331bea3391cdd0534014af3d",
+    "count": 16
+  },
+  {
+    "step": 74,
+    "name": "WF391_GENERIC_FOUR_AXIS_SOURCE_JOINT_PAID_OS_ISOLATED_ON_WF390.zip",
+    "sha256": "16433fb904777bb6dece28fdda1c336d9dbc0d084b136ed5f8642ff38e947b33",
+    "count": 7
+  },
+  {
+    "step": 75,
+    "name": "WF392_NINE_CLASS_ATOM_LEDGER_REPLAY_TDD_ON_WF391.zip",
+    "sha256": "a31f1f1d5b85db78b6893468bf3a525e5425cf4e4ee21e4d703ae30c48e48e72",
+    "count": 7
+  },
+  {
+    "step": 76,
+    "name": "WF393_CONTEXTUAL_SOURCE_APL_JOINT_PAID_TDD_ON_WF392.zip",
+    "sha256": "6d8ecc43f9946f2ffe1a841079955cdd9fd97e6a531cdda20677219d2b345ebb",
+    "count": 8
+  }
+]

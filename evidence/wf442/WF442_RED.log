@@ -1,0 +1,55 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_____ test_source_clause_targets_one_heal_family_without_a_spell_whitelist _____
+
+    def test_source_clause_targets_one_heal_family_without_a_spell_whitelist():
+>       ir=_fixture()
+           ^^^^^^^^^^
+
+tests/test_wf442_generic_direct_heal_crit_red.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _fixture():
+>       effect = HealEffect(effect_type='heal', target='self', resource_id='health',
+            base_min=100., base_max=100., crit_multiplier=1.5,
+            field_provenance={'crit_multiplier': ({'source_url': SOURCE, 'build': 'classic'},)})
+E       TypeError: HealEffect.__init__() got an unexpected keyword argument 'crit_multiplier'
+
+tests/test_wf442_generic_direct_heal_crit_red.py:21: TypeError
+___ test_heal_crit_modifier_changes_direct_heal_only_not_hot_or_other_family ___
+
+    def test_heal_crit_modifier_changes_direct_heal_only_not_hot_or_other_family():
+>       ir=_fixture()
+           ^^^^^^^^^^
+
+tests/test_wf442_generic_direct_heal_crit_red.py:54: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _fixture():
+>       effect = HealEffect(effect_type='heal', target='self', resource_id='health',
+            base_min=100., base_max=100., crit_multiplier=1.5,
+            field_provenance={'crit_multiplier': ({'source_url': SOURCE, 'build': 'classic'},)})
+E       TypeError: HealEffect.__init__() got an unexpected keyword argument 'crit_multiplier'
+
+tests/test_wf442_generic_direct_heal_crit_red.py:21: TypeError
+_________ test_crit_changes_real_heal_and_rejects_unsourced_multiplier _________
+
+    def test_crit_changes_real_heal_and_rejects_unsourced_multiplier():
+>       ir=_fixture()
+           ^^^^^^^^^^
+
+tests/test_wf442_generic_direct_heal_crit_red.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _fixture():
+>       effect = HealEffect(effect_type='heal', target='self', resource_id='health',
+            base_min=100., base_max=100., crit_multiplier=1.5,
+            field_provenance={'crit_multiplier': ({'source_url': SOURCE, 'build': 'classic'},)})
+E       TypeError: HealEffect.__init__() got an unexpected keyword argument 'crit_multiplier'
+
+tests/test_wf442_generic_direct_heal_crit_red.py:21: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_wf442_generic_direct_heal_crit_red.py::test_source_clause_targets_one_heal_family_without_a_spell_whitelist - TypeError: HealEffect.__init__() got an unexpected keyword argument 'crit_multiplier'
+FAILED tests/test_wf442_generic_direct_heal_crit_red.py::test_heal_crit_modifier_changes_direct_heal_only_not_hot_or_other_family - TypeError: HealEffect.__init__() got an unexpected keyword argument 'crit_multiplier'
+FAILED tests/test_wf442_generic_direct_heal_crit_red.py::test_crit_changes_real_heal_and_rejects_unsourced_multiplier - TypeError: HealEffect.__init__() got an unexpected keyword argument 'crit_multiplier'
+3 failed in 0.29s

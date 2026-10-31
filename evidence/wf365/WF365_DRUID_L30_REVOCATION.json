@@ -1,0 +1,65 @@
+{
+  "L30_status": "REVOKED",
+  "P4_status": "FAIL_WORSE_THAN_LEGAL_PREVIOUS_CANDIDATE",
+  "P5_status": "FAIL_WORSE_THAN_LEGAL_PREVIOUS_CANDIDATE",
+  "P6_status": "INSUFFICIENT_HISTORICAL_HOLDOUT",
+  "accepted_checkpoints_after_revocation": "1/148",
+  "bear_l30_primal_bite_source_action": true,
+  "checkpoint": "druid:L30:unrestricted",
+  "comparison": {
+    "absolute_gap_s_per_mob": 0.42216104141220967,
+    "claimed_s_per_mob": 16.709756866643524,
+    "falsified": true,
+    "heldout_s_per_mob": 16.287595825231314,
+    "percent_slower_than_challenger": 2.5919174686188873,
+    "same_100_mob_objective": true,
+    "same_recovery": true,
+    "same_source": true
+  },
+  "holdout_used_as_search_seed": false,
+  "limitations": [
+    "Neither replay models 20-yard-spaced multi-enemy pulls.",
+    "Bear Primal Bite exists in IR but this audit has not certified a Bear 100-mob winner.",
+    "Does not assert a global optimum."
+  ],
+  "replays": {
+    "claimed_wf360": {
+      "combat_s": 1449.0,
+      "count": 100,
+      "events": 10249,
+      "maintenance_s": 7.0,
+      "mean_s_per_mob": 16.709756866643524,
+      "recovery_policy": {
+        "exit_action_id": "cancel_mode:cat",
+        "health_fraction": 0.25,
+        "hot_action_id": null,
+        "hot_min_missing_health_fraction": 0.0,
+        "mana_fraction": 0.1,
+        "reentry_action_id": "cat_form:768"
+      },
+      "recovery_s": 214.97568666435245,
+      "source_db_sha256": "63c56b316c9ed6ba175c5f895870c372fb553fc78962fc8ee15c1e8cd5423244",
+      "status": "COMPLETE"
+    },
+    "heldout_wf358": {
+      "combat_s": 1448.0,
+      "count": 100,
+      "events": 9979,
+      "maintenance_s": 9.0,
+      "mean_s_per_mob": 16.287595825231314,
+      "recovery_policy": {
+        "exit_action_id": "cancel_mode:cat",
+        "health_fraction": 0.25,
+        "hot_action_id": null,
+        "hot_min_missing_health_fraction": 0.0,
+        "mana_fraction": 0.1,
+        "reentry_action_id": "cat_form:768"
+      },
+      "recovery_s": 171.75958252313148,
+      "source_db_sha256": "63c56b316c9ed6ba175c5f895870c372fb553fc78962fc8ee15c1e8cd5423244",
+      "status": "COMPLETE"
+    }
+  },
+  "schema": "wf365_druid_l30_historical_challenger_replay_v1",
+  "source_db_sha256": "63c56b316c9ed6ba175c5f895870c372fb553fc78962fc8ee15c1e8cd5423244"
+}

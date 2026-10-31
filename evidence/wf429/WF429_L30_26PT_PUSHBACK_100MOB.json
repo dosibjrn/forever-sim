@@ -1,0 +1,114 @@
+{
+  "illustrative_unverified_pushback_s_on_landed_hit": 0.5,
+  "incoming_profile_url": "https://warcraft.wiki.gg/wiki/Pushback",
+  "kind": "SOURCED_TALENT_CONDITIONAL_PROXY_BASE_PUSHBACK_100MOB",
+  "level": 30,
+  "rows": [
+    {
+      "allocation": {
+        "genesis": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "vengeance": 2
+      },
+      "elapsed_wall_s": 0.21104392699999153,
+      "events": 4915,
+      "mobs": 100,
+      "name": "control_26pt",
+      "profile": "no_sourced_pushback",
+      "s_per_mob": 14.03031398659498,
+      "source_action_counts": {
+        "insect_swarm:24974": 100,
+        "wrath:5180": 600
+      },
+      "status": "COMPLETE"
+    },
+    {
+      "allocation": {
+        "genesis": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1,
+        "vengeance": 2
+      },
+      "elapsed_wall_s": 3.383287170000017,
+      "events": 6214,
+      "mobs": 100,
+      "name": "control_26pt",
+      "profile": "illustrative_later_wow_0.5s_on_hit",
+      "s_per_mob": 17.306178331124947,
+      "source_action_counts": {
+        "insect_swarm:24974": 100,
+        "wrath:5180": 600
+      },
+      "status": "COMPLETE"
+    },
+    {
+      "allocation": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3,
+        "natures_focus": 5,
+        "natures_majesty": 2,
+        "natures_splendor": 1,
+        "vengeance": 2
+      },
+      "elapsed_wall_s": 0.20711724500006312,
+      "events": 4915,
+      "mobs": 100,
+      "name": "natures_focus5_26pt",
+      "profile": "no_sourced_pushback",
+      "s_per_mob": 14.03031398659498,
+      "source_action_counts": {
+        "insect_swarm:24974": 100,
+        "wrath:5180": 600
+      },
+      "status": "COMPLETE"
+    },
+    {
+      "allocation": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3,
+        "natures_focus": 5,
+        "natures_majesty": 2,
+        "natures_splendor": 1,
+        "vengeance": 2
+      },
+      "elapsed_wall_s": 0.26367978400003267,
+      "events": 5413,
+      "mobs": 100,
+      "name": "natures_focus5_26pt",
+      "profile": "illustrative_later_wow_0.5s_on_hit",
+      "s_per_mob": 14.752305386594877,
+      "source_action_counts": {
+        "insect_swarm:24974": 100,
+        "wrath:5180": 600
+      },
+      "status": "COMPLETE"
+    }
+  ],
+  "ruleset_armor_spell_source": "WF428",
+  "source_build": "1.60.1.70338",
+  "source_db_sha256": "5d1d4c522a833f3685736a8256a0da4c9825db95c9be011c11b1ef4a40f6e91d",
+  "source_pushback_baseline_status": "NOT_VERIFIED_ON_FOREVER",
+  "talent_missing_executor_after": 39,
+  "talent_source_url": "https://wowforevertalents.com/druid/talents/nature-s-focus/",
+  "talented_bonus": 5,
+  "total_wall_s": 4.698203863999993
+}

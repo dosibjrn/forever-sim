@@ -1,0 +1,75 @@
+{
+  "accepted_as_20yd_multi_pack": "NO",
+  "initial_melee_targets": [
+    0
+  ],
+  "legacy_spaced_aggro_and_incoming_damage": "PROVISIONAL_NOT_EVENT_EXECUTED",
+  "new_persistent_2_targets": {
+    "0": {
+      "events": 215,
+      "mean_s_per_mob": 20.947419708974053,
+      "spaced_travel_events": 0,
+      "spaced_travel_s": 0.0,
+      "spatial_mode": "2d_sequential_not_simultaneous_pack",
+      "status": "COMPLETE",
+      "total_s": 41.894839417948106
+    },
+    "20": {
+      "events": 215,
+      "mean_s_per_mob": 22.375991137545483,
+      "spaced_travel_events": 0,
+      "spaced_travel_s": 2.857142857142857,
+      "spatial_mode": "2d_sequential_not_simultaneous_pack",
+      "status": "COMPLETE",
+      "total_s": 44.75198227509097
+    }
+  },
+  "new_simultaneous_multi_enemy_pack": "NOT_IMPLEMENTED",
+  "old_bear": {
+    "1": {
+      "cycle_s": 13.68341871900584,
+      "initial_melee_targets": 1,
+      "pack_assembly_s": 0.0,
+      "profile": "bear",
+      "pull_size": 1,
+      "rotation": "Primal Bite on CD \u2192 Maul with excess rage \u2192 Bear autos",
+      "spatial_multi_pull_fidelity": "PROVISIONAL_MOVEMENT_AND_GROUPING_PROXY",
+      "total_s": 1368.341871900584
+    },
+    "2": {
+      "cycle_s": 29.727051352942617,
+      "initial_melee_targets": 1,
+      "pack_assembly_s": 107.14285714285714,
+      "profile": "bear",
+      "pull_size": 2,
+      "rotation": "Primal Bite on CD \u2192 Swipe (3-target cap) on pack \u2192 Maul with excess rage \u2192 Bear autos",
+      "spatial_multi_pull_fidelity": "PROVISIONAL_MOVEMENT_AND_GROUPING_PROXY",
+      "total_s": 1486.3525676471309
+    },
+    "3": {
+      "cycle_s": 45.288987104820364,
+      "initial_melee_targets": 1,
+      "pack_assembly_s": 142.85714285714286,
+      "profile": "bear",
+      "pull_size": 3,
+      "rotation": "Primal Bite on CD \u2192 Swipe (3-target cap) on pack \u2192 Maul with excess rage \u2192 Bear autos",
+      "spatial_multi_pull_fidelity": "PROVISIONAL_MOVEMENT_AND_GROUPING_PROXY",
+      "total_s": 1509.6329034940122
+    }
+  },
+  "positions_yards": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      20.0,
+      0.0
+    ],
+    [
+      10.0,
+      17.32050807568877
+    ]
+  ],
+  "schema": "wf365_spaced_pull_movement_smoke_v1"
+}

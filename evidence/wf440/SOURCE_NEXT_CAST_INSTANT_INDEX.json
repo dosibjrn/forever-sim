@@ -1,0 +1,30 @@
+{
+  "checkpoint_source_build": "1.60.1.70338",
+  "records": [
+    {
+      "class_key": "druid",
+      "cooldown_s": 180,
+      "cost_amount": 0,
+      "cost_resource_id": null,
+      "family_key": "natures_swiftness",
+      "gcd_s": 0,
+      "indexed_payload_sha256": "7ce5f35ebc77da1ed0a0687afab43b0ec7bda0ba3e7f8fab242a05385fe55e57",
+      "mechanics_source_build": "1.60.1.70374",
+      "mechanics_source_url": "https://www.wowhead.com/forever/spell=17116/natures-swiftness",
+      "mechanics_tooltip": "When activated, your next Nature spell becomes an instant cast spell.",
+      "name": "Nature's Swiftness",
+      "next_cast_count": 1,
+      "observation_status": "forever_wowhead_current_70374_mechanics_not_70338_certified",
+      "required_mode_id": "caster",
+      "self_cast": true,
+      "source_index_kind": "talents",
+      "source_mechanics_version_verified": false,
+      "source_talent_target": "nature_spell",
+      "source_url": "https://www.wowhead.com/forever/spell=17116",
+      "spell_id": 17116,
+      "spell_school": "nature",
+      "talent_id": "natures_swiftness",
+      "target_effect_domain": "instant_next_nature_cast_count"
+    }
+  ]
+}

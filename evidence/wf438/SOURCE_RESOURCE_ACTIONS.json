@@ -1,0 +1,31 @@
+{
+  "scope": "forever:druid:L30:talented_on",
+  "source_build": "1.60.1.70338",
+  "notes": "Mechanics first documented on historical 70170 and full-energy gate on 70291. The current 70338 checkpoint holds the ranked energy restoration value but these historical source fields have NOT been independently captured in an exact-build spell tooltip; bridge_verified=0 is mandatory until pinned corroboration.",
+  "records": [
+    {
+      "class_key": "druid",
+      "talent_id": "shifting_power",
+      "family_key": "shifting_power",
+      "spell_id": 1322605,
+      "name": "Shifting Power",
+      "required_level": 25,
+      "required_mode_id": "cat",
+      "resource_id": "energy",
+      "resource_gain": 40.0,
+      "cost_resource_id": "mana",
+      "base_resource_cost_fraction": 0.55,
+      "cooldown_s": 16.0,
+      "gcd_s": 1.0,
+      "must_have_room": 1,
+      "source_build": "1.60.1.70338",
+      "source_url": "https://theforeverera.com/en/talents/druid/shifting-power/",
+      "mechanics_source_url": "https://www.wowhead.com/forever/spell=1322605/shifting-power",
+      "mechanics_source_build": "1.60.1.70170",
+      "full_resource_rule_source_url": "https://theforeverera.com/en/changes/?class=druid",
+      "full_resource_rule_source_build": "1.60.1.70291",
+      "bridge_verified": 0,
+      "cost_reduction_group": "shapeshift_mana"
+    }
+  ]
+}

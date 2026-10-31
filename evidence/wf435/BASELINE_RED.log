@@ -1,0 +1,79 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+_________ test_source_mixed_package_is_real_and_not_a_pure_axis_label __________
+
+    def test_source_mixed_package_is_real_and_not_a_pure_axis_label():
+        base,packages,ledger,by_id=_packages()
+        d=dict(packages)
+        assert 'spell_power' in d and 'crit' in d
+        hybrids={name:swaps for name,swaps in packages if '+' in name}
+>       assert 'spell_power+crit' in hybrids, packages
+E       AssertionError: [('spell_power', {'back': 274149, 'chest': 1486, 'feet': 254001, 'hands': 16741, ...}), ('crit', {'hands': 7348, 'shou...82, 'feet': 252439, 'hands': 720, ...}), ('agility', {'back': 13108, 'chest': 7374, 'feet': 4055, 'hands': 4107, ...})]
+E       assert 'spell_power+crit' in {}
+
+tests/test_wf435_source_hybrid_paid_100mob_tdd.py:46: AssertionError
+________ test_tight_budget_still_contains_a_paid_mixed_source_candidate ________
+
+    def test_tight_budget_still_contains_a_paid_mixed_source_candidate():
+        base,packages,ledger,by_id=_packages()
+        assert len(packages)==4
+        assert len({tuple(sorted(swaps.items())) for _,swaps in packages})==4
+>       assert sum('+' in name for name,_ in packages)>=1
+E       assert 0 >= 1
+E        +  where 0 = sum(<generator object test_tight_budget_still_contains_a_paid_mixed_source_candidate.<locals>.<genexpr> at 0x7f33df08b440>)
+
+tests/test_wf435_source_hybrid_paid_100mob_tdd.py:64: AssertionError
+________ test_real_source_mixed_gear_reaches_100mob_with_paid_recovery _________
+
+    def test_real_source_mixed_gear_reaches_100mob_with_paid_recovery():
+        from src.game.data.forever.source_checkpoint_p3_swaps import substituted_multi_stage
+        from src.v2.source_persistent_joint_finalists import prepare_candidate,evaluate_persistent_candidate
+        from src.v2.source_bounded_joint_frontier import _recovery_variants
+        ir,stage,_=_fixture()
+        base,packages,_,_=_packages()
+        hybrids=[(name,swaps) for name,swaps in packages if name=='spell_power+crit']
+>       assert hybrids, 'NO_SOURCE_HYBRID_IN_COLD_GEAR_FRONTIER'
+E       AssertionError: NO_SOURCE_HYBRID_IN_COLD_GEAR_FRONTIER
+E       assert []
+
+tests/test_wf435_source_hybrid_paid_100mob_tdd.py:78: AssertionError
+_____ test_hybrid_gets_reserved_early_paid_coordinate_after_source_unlocks _____
+
+    def test_hybrid_gets_reserved_early_paid_coordinate_after_source_unlocks():
+        from src.v2.source_bounded_joint_frontier import (
+            _source_witness_first_coordinates,_source_priority_witness_probes,
+            _source_talent_policy_variants,source_joint_policy_frontier,
+            bounded_full_point_talent_frontier)
+        ir,stage,_=_fixture()
+        base,packages,_,_=_packages()
+        talents,_=bounded_full_point_talent_frontier(ir,level=30,
+            bonus_talent_points=5,max_frontier=64)
+        policies=source_joint_policy_frontier(ir,stage,max_policies=4,include_mode_cycles=True)
+        variants,_,_=_source_talent_policy_variants(ir,talents,stage,policies,
+            level=30,bonus_talent_points=5)
+        gear_stages=[('incumbent',stage)] + [('source_stat_package:'+name,None)
+            for name,_ in packages]
+        priority=_source_priority_witness_probes(variants)
+>       coords=_source_witness_first_coordinates(
+            (len(talents),len(gear_stages),len(policies),2),variants,
+            'diagonal',(),gear_stages=gear_stages)
+E       TypeError: _source_witness_first_coordinates() got an unexpected keyword argument 'gear_stages'
+
+tests/test_wf435_source_hybrid_paid_100mob_tdd.py:108: TypeError
+_________ test_full_eight_move_quota_preserves_melee_axes_plus_hybrid __________
+
+    def test_full_eight_move_quota_preserves_melee_axes_plus_hybrid():
+>       from src.v2.source_bounded_joint_frontier import _joint_gear_move_quotas
+E       ImportError: cannot import name '_joint_gear_move_quotas' from 'src.v2.source_bounded_joint_frontier' (/mnt/data/wf435_red_baseline/src/v2/source_bounded_joint_frontier.py)
+
+tests/test_wf435_source_hybrid_paid_100mob_tdd.py:120: ImportError
+=========================== short test summary info ============================
+FAILED tests/test_wf435_source_hybrid_paid_100mob_tdd.py::test_source_mixed_package_is_real_and_not_a_pure_axis_label - AssertionError: [('spell_power', {'back': 274149, 'chest': 1486, 'feet': 254001, 'hands': 16741, ...}), ('crit', {'hands': 7348, 'shou...82, 'feet': 252439, 'hands': 720, ...}), ('agility', {'back': 13108, 'chest': 7374, 'feet': 4055, 'hands': 4107, ...})]
+assert 'spell_power+crit' in {}
+FAILED tests/test_wf435_source_hybrid_paid_100mob_tdd.py::test_tight_budget_still_contains_a_paid_mixed_source_candidate - assert 0 >= 1
+ +  where 0 = sum(<generator object test_tight_budget_still_contains_a_paid_mixed_source_candidate.<locals>.<genexpr> at 0x7f33df08b440>)
+FAILED tests/test_wf435_source_hybrid_paid_100mob_tdd.py::test_real_source_mixed_gear_reaches_100mob_with_paid_recovery - AssertionError: NO_SOURCE_HYBRID_IN_COLD_GEAR_FRONTIER
+assert []
+FAILED tests/test_wf435_source_hybrid_paid_100mob_tdd.py::test_hybrid_gets_reserved_early_paid_coordinate_after_source_unlocks - TypeError: _source_witness_first_coordinates() got an unexpected keyword argument 'gear_stages'
+FAILED tests/test_wf435_source_hybrid_paid_100mob_tdd.py::test_full_eight_move_quota_preserves_melee_axes_plus_hybrid - ImportError: cannot import name '_joint_gear_move_quotas' from 'src.v2.source_bounded_joint_frontier' (/mnt/data/wf435_red_baseline/src/v2/source_bounded_joint_frontier.py)
+5 failed in 2.84s

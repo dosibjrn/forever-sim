@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-10-17",
+  "records": [
+    {
+      "class_key": "druid", "spell_id": 5215, "name": "Prowl", "rank": 1,
+      "minimum_level": 20, "required_mode_id": "cat", "out_of_combat_only": true,
+      "cooldown_s": 10, "gcd_s": 0, "movement_speed_multiplier": 0.60,
+      "indefinite_until_canceled": true,
+      "source_url": "https://www.wowhead.com/forever/spell=5215",
+      "source_text": "Instant 10 sec cooldown. Requires level 20. Requires Cat Form. Allows the Druid to prowl around, but reduces your movement speed by 40%. Lasts until cancelled. Cannot be used in combat. Stops auto-attack."
+    }
+  ]
+}

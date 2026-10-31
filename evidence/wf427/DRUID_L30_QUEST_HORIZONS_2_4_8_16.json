@@ -1,0 +1,4422 @@
+{
+  "builds": [
+    {
+      "allocation": {
+        "ferocity": 2,
+        "genesis": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      },
+      "gear_move": "source_stat_package:spell_power",
+      "original_100mob_paid_full_recovery_s_per_mob": 14.03031398659498,
+      "policy": "talent_unlock:insect_swarm:24974",
+      "recovery_choices": {
+        "always": {
+          "100": {
+            "combat_s": 1050.0,
+            "events": 4915,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 1160.7258517749806,
+              "mana": 1282.75
+            },
+            "full_recovery_count": 99,
+            "long_cooldown_uses": {},
+            "per_mob": null,
+            "recovery_s": 343.6374732108095,
+            "s_per_mob": 13.996374732108094,
+            "source_action_counts": {
+              "insect_swarm:24974": 100,
+              "wrath:5180": 600
+            },
+            "status": "COMPLETE",
+            "total_s": 1399.6374732108095,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 7.811426,
+                "water_s": 7.811426
+              },
+              {
+                "after_mob": 2,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 3,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 4,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 5,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 6,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 7,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 8,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 9,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 10,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 11,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 12,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 13,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 14,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 15,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 16,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 17,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 18,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 19,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 20,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 21,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 22,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 23,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 24,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 25,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 26,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 27,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 28,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 29,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 30,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 31,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 32,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 33,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 34,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 35,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 36,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 37,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 38,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 39,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 40,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 41,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 42,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 43,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 44,
+                "recovery_s": 5.004602,
+                "water_s": 5.004602
+              },
+              {
+                "after_mob": 45,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 46,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 47,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 48,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 49,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 50,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 51,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 52,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 53,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 54,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 55,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 56,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 57,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 58,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 59,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 60,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 61,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 62,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 63,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 64,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 65,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 66,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 67,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 68,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 69,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 70,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 71,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 72,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 73,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 74,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 75,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 76,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 77,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 78,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 79,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 80,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 81,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 82,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 83,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 84,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 85,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 86,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 87,
+                "recovery_s": 5.004602,
+                "water_s": 5.004602
+              },
+              {
+                "after_mob": 88,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 89,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 90,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 91,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 92,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 93,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 94,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 95,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 96,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 97,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 98,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 99,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              }
+            ],
+            "water_s": 343.63747321081024
+          },
+          "100_extrapolation_from_8_16": {
+            "absolute_error_s": 6.221352968246947,
+            "actual_s": 1399.6374732108095,
+            "confidence": "LOW",
+            "method": "last_8_mob_slope",
+            "observed_water_gap_count": 14,
+            "prediction_s": 1393.4161202425626,
+            "relative_error_fraction": -0.004444974564717091,
+            "source_long_cooldown_actions_untested_by_policy": [
+              "enrage:5229"
+            ],
+            "training_horizon_mobs": 16,
+            "warning": "Not an accepted surrogate for 100mob: periodic water/cooldown phases may be absent from 16mob trace.",
+            "water_break_mobs_observed": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15
+            ]
+          },
+          "16": {
+            "combat_s": 168.0,
+            "events": 792,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 1160.7258517749806,
+              "mana": 1282.75
+            },
+            "full_recovery_count": 15,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1216.0231213872833
+                },
+                "kill_finished_s": 13.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": "food+water",
+                "recovery_s": 7.811426271095517,
+                "water_s": 7.811426271095518
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 31.811426271095517,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 21.311426271095517,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688446,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 45.70535171978396,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 35.20535171978396,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 59.59927716847241,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 49.09927716847241,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 73.49320261716086,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 5,
+                "pull_started_s": 62.99320261716086,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 87.38712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 6,
+                "pull_started_s": 76.88712806584931,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 101.28105351453776,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 7,
+                "pull_started_s": 90.78105351453776,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 115.17497896322621,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 8,
+                "pull_started_s": 104.67497896322621,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.500000000000014,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 129.06890441191467,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 9,
+                "pull_started_s": 118.56890441191466,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688435,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 142.9628298606031,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 10,
+                "pull_started_s": 132.4628298606031,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688435,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 156.85675530929154,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 11,
+                "pull_started_s": 146.35675530929154,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688435,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 170.75068075797998,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 12,
+                "pull_started_s": 160.25068075797998,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688435,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 184.6446062066684,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 13,
+                "pull_started_s": 174.1446062066684,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688435,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 198.53853165535685,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 14,
+                "pull_started_s": 188.03853165535685,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688435,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 212.43245710404528,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 15,
+                "pull_started_s": 201.93245710404528,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688435,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 226.32638255273372,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 16,
+                "pull_started_s": 215.82638255273372,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 55.326382552733705,
+            "s_per_mob": 14.145398909545857,
+            "source_action_counts": {
+              "insect_swarm:24974": 16,
+              "wrath:5180": 96
+            },
+            "status": "COMPLETE",
+            "total_s": 226.32638255273372,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 7.811426,
+                "water_s": 7.811426
+              },
+              {
+                "after_mob": 2,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 3,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 4,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 5,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 6,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 7,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 8,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 9,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 10,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 11,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 12,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 13,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 14,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 15,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              }
+            ],
+            "water_s": 55.32638255273381
+          },
+          "2": {
+            "combat_s": 21.0,
+            "events": 106,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 1160.7258517749806,
+              "mana": 1282.75
+            },
+            "full_recovery_count": 1,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1216.0231213872833
+                },
+                "kill_finished_s": 13.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": "food+water",
+                "recovery_s": 7.811426271095517,
+                "water_s": 7.811426271095518
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 31.811426271095517,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 21.311426271095517,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 7.811426271095517,
+            "s_per_mob": 15.905713135547758,
+            "source_action_counts": {
+              "insect_swarm:24974": 2,
+              "wrath:5180": 12
+            },
+            "status": "COMPLETE",
+            "total_s": 31.811426271095517,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 7.811426,
+                "water_s": 7.811426
+              }
+            ],
+            "water_s": 7.811426271095518
+          },
+          "4": {
+            "combat_s": 42.0,
+            "events": 204,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 1160.7258517749806,
+              "mana": 1282.75
+            },
+            "full_recovery_count": 3,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1216.0231213872833
+                },
+                "kill_finished_s": 13.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": "food+water",
+                "recovery_s": 7.811426271095517,
+                "water_s": 7.811426271095518
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 31.811426271095517,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 21.311426271095517,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688446,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 45.70535171978396,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 35.20535171978396,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 59.59927716847241,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 49.09927716847241,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 14.599277168472412,
+            "s_per_mob": 14.899819292118103,
+            "source_action_counts": {
+              "insect_swarm:24974": 4,
+              "wrath:5180": 24
+            },
+            "status": "COMPLETE",
+            "total_s": 59.59927716847241,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 7.811426,
+                "water_s": 7.811426
+              },
+              {
+                "after_mob": 2,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 3,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              }
+            ],
+            "water_s": 14.599277168472415
+          },
+          "8": {
+            "combat_s": 84.0,
+            "events": 400,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 1160.7258517749806,
+              "mana": 1282.75
+            },
+            "full_recovery_count": 7,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1216.0231213872833
+                },
+                "kill_finished_s": 13.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": "food+water",
+                "recovery_s": 7.811426271095517,
+                "water_s": 7.811426271095518
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 31.811426271095517,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 21.311426271095517,
+                "recovery_method": "food+water",
+                "recovery_s": 3.393925448688446,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 45.70535171978396,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 35.20535171978396,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 59.59927716847241,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 49.09927716847241,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 73.49320261716086,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 5,
+                "pull_started_s": 62.99320261716086,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 87.38712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 6,
+                "pull_started_s": 76.88712806584931,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 3.195150532895305,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 101.28105351453776,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 7,
+                "pull_started_s": 90.78105351453776,
+                "recovery_method": "food+water",
+                "recovery_s": 3.3939254486884494,
+                "water_s": 3.3939254486884494
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 115.17497896322621,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 8,
+                "pull_started_s": 104.67497896322621,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 28.17497896322621,
+            "s_per_mob": 14.396872370403276,
+            "source_action_counts": {
+              "insect_swarm:24974": 8,
+              "wrath:5180": 48
+            },
+            "status": "COMPLETE",
+            "total_s": 115.17497896322621,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 7.811426,
+                "water_s": 7.811426
+              },
+              {
+                "after_mob": 2,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 3,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 4,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 5,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 6,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              },
+              {
+                "after_mob": 7,
+                "recovery_s": 3.393925,
+                "water_s": 3.393925
+              }
+            ],
+            "water_s": 28.174978963226213
+          }
+        },
+        "threshold_0.50_0.10": {
+          "100": {
+            "combat_s": 1050.0,
+            "events": 4900,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 738.0292588749038,
+              "mana": 397.75
+            },
+            "full_recovery_count": 16,
+            "long_cooldown_uses": {},
+            "per_mob": null,
+            "recovery_s": 330.0617714160567,
+            "s_per_mob": 13.860617714160567,
+            "source_action_counts": {
+              "insect_swarm:24974": 100,
+              "wrath:5180": 600
+            },
+            "status": "COMPLETE",
+            "total_s": 1386.0617714160567,
+            "water_breaks": [
+              {
+                "after_mob": 5,
+                "recovery_s": 21.387128,
+                "water_s": 21.387128
+              },
+              {
+                "after_mob": 11,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 17,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 23,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 29,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 35,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 41,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 47,
+                "recovery_s": 21.974229,
+                "water_s": 21.974229
+              },
+              {
+                "after_mob": 53,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 59,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 65,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 71,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 77,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 83,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              },
+              {
+                "after_mob": 89,
+                "recovery_s": 21.974229,
+                "water_s": 21.974229
+              },
+              {
+                "after_mob": 95,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              }
+            ],
+            "water_s": 330.06177141605644
+          },
+          "100_extrapolation_from_8_16": {
+            "absolute_error_s": 77.49378739070426,
+            "actual_s": 1386.0617714160567,
+            "confidence": "LOW",
+            "method": "last_8_mob_slope",
+            "observed_water_gap_count": 1,
+            "prediction_s": 1308.5679840253524,
+            "relative_error_fraction": -0.055909331740340455,
+            "source_long_cooldown_actions_untested_by_policy": [
+              "enrage:5229"
+            ],
+            "training_horizon_mobs": 16,
+            "warning": "Not an accepted surrogate for 100mob: periodic water/cooldown phases may be absent from 16mob trace.",
+            "water_break_mobs_observed": [
+              5,
+              11
+            ]
+          },
+          "16": {
+            "combat_s": 168.0,
+            "events": 792,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 738.0292588749038,
+              "mana": 397.75
+            },
+            "full_recovery_count": 2,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1216.0231213872833
+                },
+                "kill_finished_s": 13.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "kill_finished_s": 24.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 13.5,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "kill_finished_s": 34.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 24.0,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 331.02312138728325
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 331.02312138728325
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "kill_finished_s": 45.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 34.5,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 15.554700032897552,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 738.0292588749038,
+                  "mana": 109.77312138728325
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 331.02312138728325
+                },
+                "kill_finished_s": 55.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 5,
+                "pull_started_s": 45.0,
+                "recovery_method": "food+water",
+                "recovery_s": 21.38712806584931,
+                "water_s": 21.387128065849314
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 87.38712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 6,
+                "pull_started_s": 76.88712806584931,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "kill_finished_s": 97.88712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 7,
+                "pull_started_s": 87.38712806584931,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 840.25
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 840.25
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "kill_finished_s": 108.38712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 8,
+                "pull_started_s": 97.88712806584931,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 619.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 619.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 840.25
+                },
+                "kill_finished_s": 118.88712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 9,
+                "pull_started_s": 108.38712806584931,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 738.0292588749038,
+                  "mana": 397.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 738.0292588749038,
+                  "mana": 397.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 619.0
+                },
+                "kill_finished_s": 129.3871280658493,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 10,
+                "pull_started_s": 118.88712806584931,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 18.64458740789811,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 632.3551106498846,
+                  "mana": 176.5
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 738.0292588749038,
+                  "mana": 397.75
+                },
+                "kill_finished_s": 139.8871280658493,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 11,
+                "pull_started_s": 129.3871280658493,
+                "recovery_method": "food+water",
+                "recovery_s": 20.363552692130696,
+                "water_s": 20.363552692130696
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 170.75068075798,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 12,
+                "pull_started_s": 160.25068075798,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "kill_finished_s": 181.25068075798,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 13,
+                "pull_started_s": 170.75068075798,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 840.25
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 840.25
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "kill_finished_s": 191.75068075798,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 14,
+                "pull_started_s": 181.25068075798,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 619.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 619.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 840.25
+                },
+                "kill_finished_s": 202.25068075798,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 15,
+                "pull_started_s": 191.75068075798,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 738.0292588749038,
+                  "mana": 397.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 738.0292588749038,
+                  "mana": 397.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 619.0
+                },
+                "kill_finished_s": 212.75068075798,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 16,
+                "pull_started_s": 202.25068075798,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 41.75068075798001,
+            "s_per_mob": 13.29691754737375,
+            "source_action_counts": {
+              "insect_swarm:24974": 16,
+              "wrath:5180": 96
+            },
+            "status": "COMPLETE",
+            "total_s": 212.75068075798,
+            "water_breaks": [
+              {
+                "after_mob": 5,
+                "recovery_s": 21.387128,
+                "water_s": 21.387128
+              },
+              {
+                "after_mob": 11,
+                "recovery_s": 20.363553,
+                "water_s": 20.363553
+              }
+            ],
+            "water_s": 41.75068075798001
+          },
+          "2": {
+            "combat_s": 21.0,
+            "events": 106,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 1055.0517035499613,
+              "mana": 773.5231213872833
+            },
+            "full_recovery_count": 0,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1216.0231213872833
+                },
+                "kill_finished_s": 13.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "kill_finished_s": 24.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 13.5,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 0.0,
+            "s_per_mob": 12.0,
+            "source_action_counts": {
+              "insect_swarm:24974": 2,
+              "wrath:5180": 12
+            },
+            "status": "COMPLETE",
+            "total_s": 24.0,
+            "water_breaks": [],
+            "water_s": 0.0
+          },
+          "4": {
+            "combat_s": 42.0,
+            "events": 204,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 843.703407099923,
+              "mana": 331.02312138728325
+            },
+            "full_recovery_count": 0,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1216.0231213872833
+                },
+                "kill_finished_s": 13.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "kill_finished_s": 24.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 13.5,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "kill_finished_s": 34.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 24.0,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 331.02312138728325
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 331.02312138728325
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "kill_finished_s": 45.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 34.5,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 0.0,
+            "s_per_mob": 11.25,
+            "source_action_counts": {
+              "insect_swarm:24974": 4,
+              "wrath:5180": 24
+            },
+            "status": "COMPLETE",
+            "total_s": 45.0,
+            "water_breaks": [],
+            "water_s": 0.0
+          },
+          "8": {
+            "combat_s": 84.0,
+            "events": 400,
+            "final_resources": {
+              "energy": 100.0,
+              "health": 949.3775553249421,
+              "mana": 840.25
+            },
+            "full_recovery_count": 1,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1216.0231213872833
+                },
+                "kill_finished_s": 13.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 994.7731213872833
+                },
+                "kill_finished_s": 24.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 13.5,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 773.5231213872833
+                },
+                "kill_finished_s": 34.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 24.0,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 331.02312138728325
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 331.02312138728325
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 552.2731213872833
+                },
+                "kill_finished_s": 45.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 34.5,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 15.554700032897552,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 738.0292588749038,
+                  "mana": 109.77312138728325
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 843.703407099923,
+                  "mana": 331.02312138728325
+                },
+                "kill_finished_s": 55.5,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 5,
+                "pull_started_s": 45.0,
+                "recovery_method": "food+water",
+                "recovery_s": 21.38712806584931,
+                "water_s": 21.387128065849314
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1270.0,
+                  "mana": 1504.0
+                },
+                "kill_finished_s": 87.38712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 6,
+                "pull_started_s": 76.88712806584931,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1160.7258517749806,
+                  "mana": 1282.75
+                },
+                "kill_finished_s": 97.88712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 7,
+                "pull_started_s": 87.38712806584931,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "insect_swarm:24974": 1,
+                  "wrath:5180": 6
+                },
+                "combat_s": 10.5,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 840.25
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 100.0,
+                  "health": 949.3775553249421,
+                  "mana": 840.25
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1055.0517035499613,
+                  "mana": 1061.5
+                },
+                "kill_finished_s": 108.38712806584931,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 8,
+                "pull_started_s": 97.88712806584931,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 21.38712806584931,
+            "s_per_mob": 13.548391008231164,
+            "source_action_counts": {
+              "insect_swarm:24974": 8,
+              "wrath:5180": 48
+            },
+            "status": "COMPLETE",
+            "total_s": 108.38712806584931,
+            "water_breaks": [
+              {
+                "after_mob": 5,
+                "recovery_s": 21.387128,
+                "water_s": 21.387128
+              }
+            ],
+            "water_s": 21.387128065849314
+          }
+        }
+      }
+    },
+    {
+      "allocation": {
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 3,
+        "rend_and_tear": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "thick_hide": 3
+      },
+      "gear_move": "source_stat_package:strength",
+      "original_100mob_paid_full_recovery_s_per_mob": 17.653158877582726,
+      "policy": "talent_condition:rake:1822:bleed:claw:28",
+      "recovery_choices": {
+        "always": {
+          "100": {
+            "combat_s": 1300.0,
+            "events": 10950,
+            "final_resources": {
+              "energy": 33.459144959720106,
+              "health": 1189.8962787701319,
+              "mana": 1438.0
+            },
+            "full_recovery_count": 99,
+            "long_cooldown_uses": {},
+            "per_mob": null,
+            "recovery_s": 454.37441488080776,
+            "s_per_mob": 17.603744148808076,
+            "source_action_counts": {
+              "cat_form:768": 3,
+              "claw:28": 262,
+              "rake:1822": 197
+            },
+            "status": "COMPLETE",
+            "total_s": 1760.3744148808078,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 9.848809,
+                "water_s": 9.848809
+              },
+              {
+                "after_mob": 35,
+                "recovery_s": 6.95577,
+                "water_s": 6.95577
+              },
+              {
+                "after_mob": 70,
+                "recovery_s": 6.95577,
+                "water_s": 6.95577
+              }
+            ],
+            "water_s": 23.76034984456532
+          },
+          "100_extrapolation_from_8_16": {
+            "absolute_error_s": 7.675632473317364,
+            "actual_s": 1760.3744148808078,
+            "confidence": "LOW",
+            "method": "last_8_mob_slope",
+            "observed_water_gap_count": 0,
+            "prediction_s": 1752.6987824074904,
+            "relative_error_fraction": -0.004360227238270257,
+            "source_long_cooldown_actions_untested_by_policy": [
+              "enrage:5229"
+            ],
+            "training_horizon_mobs": 16,
+            "warning": "Not an accepted surrogate for 100mob: periodic water/cooldown phases may be absent from 16mob trace.",
+            "water_break_mobs_observed": [
+              1
+            ]
+          },
+          "16": {
+            "combat_s": 206.99999999999997,
+            "events": 1753,
+            "final_resources": {
+              "energy": 8.27298013484345,
+              "health": 1212.7682389458273,
+              "mana": 1438.0
+            },
+            "full_recovery_count": 15,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "cat_form:768": 1,
+                  "claw:28": 2,
+                  "rake:1822": 1
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 25.0,
+                  "health": 1189.8962787701319,
+                  "mana": 811.1725341426404
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1148.8725341426405
+                },
+                "kill_finished_s": 17.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": "food+water",
+                "recovery_s": 9.84880926792929,
+                "water_s": 9.848809267929289
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 72.3554818068434,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 30.0,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 38.84880926792929,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 26.84880926792929,
+                "recovery_method": "food+water",
+                "recovery_s": 4.23554818068434,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 44.7109636136868,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 2.3554818068434002,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 72.3554818068434,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 55.08435744861363,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 43.08435744861363,
+                "recovery_method": "food+water",
+                "recovery_s": 4.23554818068434,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 2,
+                  "rake:1822": 2
+                },
+                "combat_s": 14.000000000000007,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 84.12569238833747,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 34.71096361368687,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 44.7109636136868,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 73.31990562929798,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 59.31990562929797,
+                "recovery_method": "food+water",
+                "recovery_s": 4.94147287746506,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 56.48117419518094,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 14.12569238833747,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 84.12569238833747,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 90.26137850676304,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 5,
+                "pull_started_s": 78.26137850676304,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684347,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 2,
+                  "rake:1822": 2
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 95.89590296983154,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 46.48117419518094,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 56.48117419518094,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 108.49692668744738,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 6,
+                "pull_started_s": 94.49692668744738,
+                "recovery_method": "food+water",
+                "recovery_s": 4.94147287746506,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 68.25138477667501,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 25.89590296983154,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 95.89590296983154,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 125.43839956491244,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 7,
+                "pull_started_s": 113.43839956491244,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684347,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 13.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 50.60686658351834,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 8.25138477667501,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 68.25138477667501,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 142.6739477455968,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 8,
+                "pull_started_s": 129.6739477455968,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684333,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 2,
+                  "rake:1822": 2
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 90.02159535816894,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 40.60686658351834,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 50.60686658351834,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 160.90949592628112,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 9,
+                "pull_started_s": 146.90949592628112,
+                "recovery_method": "food+water",
+                "recovery_s": 4.94147287746506,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 62.37707716501227,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 20.021595358168938,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 90.02159535816894,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 177.85096880374618,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 10,
+                "pull_started_s": 165.85096880374618,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684333,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 13.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 44.732558971855596,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 2.377077165012267,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 62.37707716501227,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 195.08651698443052,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 11,
+                "pull_started_s": 182.08651698443052,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684333,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 2,
+                  "rake:1822": 2
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 84.1472877465062,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 34.732558971855596,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 44.732558971855596,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 213.32206516511485,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 12,
+                "pull_started_s": 199.32206516511485,
+                "recovery_method": "food+water",
+                "recovery_s": 4.94147287746506,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 56.50276955334952,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 14.147287746506194,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 84.1472877465062,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 230.2635380425799,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 13,
+                "pull_started_s": 218.2635380425799,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684333,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 2,
+                  "rake:1822": 2
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 95.91749832800012,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 46.50276955334952,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 56.50276955334952,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 248.49908622326424,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 14,
+                "pull_started_s": 234.49908622326424,
+                "recovery_method": "food+water",
+                "recovery_s": 4.94147287746506,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 11.999999999999972,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 68.27298013484345,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 25.917498327999837,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 95.91749832800012,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 265.4405591007293,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 15,
+                "pull_started_s": 253.4405591007293,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684361,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 13.0,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 8.27298013484345,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 8.27298013484345,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 68.27298013484345,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 282.67610728141364,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 16,
+                "pull_started_s": 269.67610728141364,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 72.67610728141366,
+            "s_per_mob": 17.667256705088352,
+            "source_action_counts": {
+              "cat_form:768": 1,
+              "claw:28": 42,
+              "rake:1822": 31
+            },
+            "status": "COMPLETE",
+            "total_s": 282.67610728141364,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 9.848809,
+                "water_s": 9.848809
+              }
+            ],
+            "water_s": 9.848809267929289
+          },
+          "2": {
+            "combat_s": 26.0,
+            "events": 223,
+            "final_resources": {
+              "energy": 30.0,
+              "health": 1212.7682389458273,
+              "mana": 1438.0
+            },
+            "full_recovery_count": 1,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "cat_form:768": 1,
+                  "claw:28": 2,
+                  "rake:1822": 1
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 25.0,
+                  "health": 1189.8962787701319,
+                  "mana": 811.1725341426404
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1148.8725341426405
+                },
+                "kill_finished_s": 17.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": "food+water",
+                "recovery_s": 9.84880926792929,
+                "water_s": 9.848809267929289
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 30.0,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 30.0,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 38.84880926792929,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 26.84880926792929,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 9.84880926792929,
+            "s_per_mob": 19.424404633964645,
+            "source_action_counts": {
+              "cat_form:768": 1,
+              "claw:28": 5,
+              "rake:1822": 3
+            },
+            "status": "COMPLETE",
+            "total_s": 38.84880926792929,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 9.848809,
+                "water_s": 9.848809
+              }
+            ],
+            "water_s": 9.848809267929289
+          },
+          "4": {
+            "combat_s": 52.00000000000001,
+            "events": 443,
+            "final_resources": {
+              "energy": 34.71096361368687,
+              "health": 1189.8962787701319,
+              "mana": 1438.0
+            },
+            "full_recovery_count": 3,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "cat_form:768": 1,
+                  "claw:28": 2,
+                  "rake:1822": 1
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 25.0,
+                  "health": 1189.8962787701319,
+                  "mana": 811.1725341426404
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1148.8725341426405
+                },
+                "kill_finished_s": 17.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": "food+water",
+                "recovery_s": 9.84880926792929,
+                "water_s": 9.848809267929289
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 72.3554818068434,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 30.0,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 38.84880926792929,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 26.84880926792929,
+                "recovery_method": "food+water",
+                "recovery_s": 4.23554818068434,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 44.7109636136868,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 2.3554818068434002,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 72.3554818068434,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 55.08435744861363,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 43.08435744861363,
+                "recovery_method": "food+water",
+                "recovery_s": 4.23554818068434,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 2,
+                  "rake:1822": 2
+                },
+                "combat_s": 14.000000000000007,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 34.71096361368687,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 34.71096361368687,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 44.7109636136868,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 73.31990562929798,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 59.31990562929797,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 18.31990562929797,
+            "s_per_mob": 18.329976407324494,
+            "source_action_counts": {
+              "cat_form:768": 1,
+              "claw:28": 10,
+              "rake:1822": 7
+            },
+            "status": "COMPLETE",
+            "total_s": 73.31990562929798,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 9.848809,
+                "water_s": 9.848809
+              }
+            ],
+            "water_s": 9.848809267929289
+          },
+          "8": {
+            "combat_s": 103.0,
+            "events": 877,
+            "final_resources": {
+              "energy": 8.25138477667501,
+              "health": 1212.7682389458273,
+              "mana": 1438.0
+            },
+            "full_recovery_count": 7,
+            "long_cooldown_uses": {},
+            "per_mob": [
+              {
+                "actions": {
+                  "cat_form:768": 1,
+                  "claw:28": 2,
+                  "rake:1822": 1
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 25.0,
+                  "health": 1189.8962787701319,
+                  "mana": 811.1725341426404
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1148.8725341426405
+                },
+                "kill_finished_s": 17.0,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 1,
+                "pull_started_s": 3.0,
+                "recovery_method": "food+water",
+                "recovery_s": 9.84880926792929,
+                "water_s": 9.848809267929289
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 72.3554818068434,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 30.0,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 100.0,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 38.84880926792929,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 2,
+                "pull_started_s": 26.84880926792929,
+                "recovery_method": "food+water",
+                "recovery_s": 4.23554818068434,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 44.7109636136868,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 2.3554818068434002,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 72.3554818068434,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 55.08435744861363,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 3,
+                "pull_started_s": 43.08435744861363,
+                "recovery_method": "food+water",
+                "recovery_s": 4.23554818068434,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 2,
+                  "rake:1822": 2
+                },
+                "combat_s": 14.000000000000007,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 84.12569238833747,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 34.71096361368687,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 44.7109636136868,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 73.31990562929798,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 4,
+                "pull_started_s": 59.31990562929797,
+                "recovery_method": "food+water",
+                "recovery_s": 4.94147287746506,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 56.48117419518094,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 14.12569238833747,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 84.12569238833747,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 90.26137850676304,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 5,
+                "pull_started_s": 78.26137850676304,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684347,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 2,
+                  "rake:1822": 2
+                },
+                "combat_s": 14.0,
+                "food_s": 4.941472877465066,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 95.89590296983154,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 46.48117419518094,
+                  "health": 1189.8962787701319,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 56.48117419518094,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 108.49692668744738,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 6,
+                "pull_started_s": 94.49692668744738,
+                "recovery_method": "food+water",
+                "recovery_s": 4.94147287746506,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 12.0,
+                "food_s": 4.235548180684343,
+                "full_recovery": true,
+                "health_mana_energy_after_recovery": {
+                  "energy": 68.25138477667501,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 25.89590296983154,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 95.89590296983154,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 125.43839956491244,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 7,
+                "pull_started_s": 113.43839956491244,
+                "recovery_method": "food+water",
+                "recovery_s": 4.235548180684347,
+                "water_s": 0.0
+              },
+              {
+                "actions": {
+                  "claw:28": 3,
+                  "rake:1822": 2
+                },
+                "combat_s": 13.0,
+                "food_s": 0.0,
+                "full_recovery": false,
+                "health_mana_energy_after_recovery": {
+                  "energy": 8.25138477667501,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_at_kill": {
+                  "energy": 8.25138477667501,
+                  "health": 1212.7682389458273,
+                  "mana": 1438.0
+                },
+                "health_mana_energy_before": {
+                  "energy": 68.25138477667501,
+                  "health": 1350.0,
+                  "mana": 1438.0
+                },
+                "kill_finished_s": 142.6739477455968,
+                "long_cooldown_timer_ready_at_pull": {
+                  "enrage:5229": true
+                },
+                "long_cooldowns_not_ready_at_kill": {},
+                "long_cooldowns_used": {},
+                "mob": 8,
+                "pull_started_s": 129.6739477455968,
+                "recovery_method": null,
+                "recovery_s": 0.0,
+                "water_s": 0.0
+              }
+            ],
+            "recovery_s": 36.673947745596784,
+            "s_per_mob": 17.8342434681996,
+            "source_action_counts": {
+              "cat_form:768": 1,
+              "claw:28": 21,
+              "rake:1822": 15
+            },
+            "status": "COMPLETE",
+            "total_s": 142.6739477455968,
+            "water_breaks": [
+              {
+                "after_mob": 1,
+                "recovery_s": 9.848809,
+                "water_s": 9.848809
+              }
+            ],
+            "water_s": 9.848809267929289
+          }
+        },
+        "threshold_0.50_0.10": {
+          "100": {
+            "mob_completed": null,
+            "reason": "no legal policy action",
+            "status": "BLOCKED_COMBAT"
+          },
+          "16": {
+            "mob_completed": null,
+            "reason": "no legal policy action",
+            "status": "BLOCKED_COMBAT"
+          },
+          "2": {
+            "mob_completed": null,
+            "reason": "no legal policy action",
+            "status": "BLOCKED_COMBAT"
+          },
+          "4": {
+            "mob_completed": null,
+            "reason": "no legal policy action",
+            "status": "BLOCKED_COMBAT"
+          },
+          "8": {
+            "mob_completed": null,
+            "reason": "no legal policy action",
+            "status": "BLOCKED_COMBAT"
+          }
+        }
+      }
+    }
+  ],
+  "encounter": "CMaNGOS Classic proxy, not Forever Yeti",
+  "horizons": [
+    2,
+    4,
+    8,
+    16
+  ],
+  "level": 30,
+  "mode": "quest_end_at_final_kill_no_settlement_no_100mob_P4_gate",
+  "parent": "WF426",
+  "release": "WF427",
+  "source_db_sha256": "5d1d4c522a833f3685736a8256a0da4c9825db95c9be011c11b1ef4a40f6e91d",
+  "talented_bonus_points": 5
+}

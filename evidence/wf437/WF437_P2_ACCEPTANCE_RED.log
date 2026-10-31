@@ -1,0 +1,20 @@
+F
+=================================== FAILURES ===================================
+____ test_all_structurally_reachable_source_ranks_have_executors_and_apply _____
+
+    def test_all_structurally_reachable_source_ranks_have_executors_and_apply():
+        result = audit()
+        assert result["source_rank_total"] == 148
+>       assert result["reachable_without_executor"] == 0, [
+            (row["talent_id"], row["rank"]) for row in result["structural_witnesses"]
+            if row["status"] == "RED_NO_EXECUTOR"
+        ]
+E       AssertionError: [('natures_grace', 1), ('brutal_impact', 1), ('brutal_impact', 2), ('feral_charge', 1), ('shifting_power', 1), ('blood_frenzy', 1), ...]
+E       assert 15 == 0
+
+tests/test_wf432_p2_full_26point_red.py:7: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_wf432_p2_full_26point_red.py::test_all_structurally_reachable_source_ranks_have_executors_and_apply - AssertionError: [('natures_grace', 1), ('brutal_impact', 1), ('brutal_impact', 2), ('feral_charge', 1), ('shifting_power', 1), ('blood_frenzy', 1), ...]
+assert 15 == 0
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.71s

@@ -1,0 +1,24 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_two_source_observations_compile_to_generic_avoidance_modifiers ______
+
+    def test_two_source_observations_compile_to_generic_avoidance_modifiers():
+        from src.game.data.forever.source_rank_promotion import _compile_clause
+        common={'source':SOURCE,'condition':'passive'}
+        dodge=_compile_clause({**common,'domain':'dodge_bonus_pct',
+            'target':'dodge_chance','sourced_value':1.},
+            actions=set(),schools=set(),actor_stats={'dodge_chance'},build='1.60.1.70374')
+        proc=_compile_clause({**common,'domain':'avoidance_resource_proc_chance_pct',
+            'condition':'on_dodge','target':'rage','sourced_value':20.,
+            'gain_amount':5.,'source_build_verified':False,
+            'proc_distribution_verified':False},
+            actions=set(),schools=set(),actor_stats={'dodge_chance'},build='1.60.1.70374')
+>       assert (dodge.kind,dodge.target_type,dodge.target_id,dodge.value)==(
+                ^^^^^^^^^^
+            'actor_stat_flat','actor_stat','dodge_chance',pytest.approx(.01))
+E       AttributeError: 'NoneType' object has no attribute 'kind'
+
+tests/test_wf442_generic_avoidance_resource_red.py:94: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_wf442_generic_avoidance_resource_red.py::test_two_source_observations_compile_to_generic_avoidance_modifiers - AttributeError: 'NoneType' object has no attribute 'kind'
+1 failed in 0.19s

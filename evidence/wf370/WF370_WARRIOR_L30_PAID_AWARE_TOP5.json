@@ -1,0 +1,1203 @@
+{
+  "checkpoint": "warrior:L30:unrestricted",
+  "cpu_s": 0.9008888850000001,
+  "gate3": "FAIL",
+  "limitations": [
+    "Only per-item BiS witness legality is sourced; full class-1 denominator remains unknown.",
+    "This is a paid-aware candidate shortlist, not a mathematically sorted top5.",
+    "All paid 100-mob data use zero allocated talents; 21-point interactions remain L0-only.",
+    "Offhand is paired with a one-hand weapon at L0; no 100-mob offhand challenger here.",
+    "Unknown source effects remain visible and never silently zeroed."
+  ],
+  "measured_complete_swaps_model": 104,
+  "model_cv_mae_s_per_mob": 0.2201354448422766,
+  "model_status": "MEASURED_100MOB_REGULARIZED_NONLINEAR_UNCERTAINTY",
+  "new_source_items": 2,
+  "provisional_l0_assessed": 2953,
+  "provisional_legal_denominator": 2953,
+  "slots": {
+    "back": {
+      "evaluated_legal_equipment_packages": 190,
+      "paid_direct_complete": 8,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 14593,
+          "measured_s_per_mob": 33.47596354414361,
+          "name": "Hawkeye's Cloak",
+          "source_url": "https://www.wowhead.com/forever/item=14593",
+          "swaps": {
+            "back": 14593
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 282658,
+          "measured_s_per_mob": 33.50520199369061,
+          "name": "Dragonmaw Battle Shroud",
+          "source_url": "https://www.wowhead.com/forever/item=282658",
+          "swaps": {
+            "back": 282658
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 4462,
+          "known_proxy_improvement_s_per_mob": 0.08259907205420633,
+          "name": "Cloak of Rot",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=4462",
+          "swaps": {
+            "back": 4462
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 271923,
+          "known_proxy_improvement_s_per_mob": 0.06240096249872215,
+          "name": "Expeditionary's Cape",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=271923",
+          "swaps": {
+            "back": 271923
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 272078,
+          "known_proxy_improvement_s_per_mob": 0.06240096249872215,
+          "name": "Darkspear Raider's Cloak",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=272078",
+          "swaps": {
+            "back": 272078
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "chest": {
+      "evaluated_legal_equipment_packages": 329,
+      "paid_direct_complete": 9,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 14751,
+          "measured_s_per_mob": 33.43981340388045,
+          "name": "Slayer's Surcoat",
+          "source_url": "https://www.wowhead.com/forever/item=14751",
+          "swaps": {
+            "chest": 14751
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 1488,
+          "measured_s_per_mob": 33.561848425104856,
+          "name": "Avenger's Armor",
+          "source_url": "https://foreverdb.net/item/1488",
+          "swaps": {
+            "chest": 1488
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 7065,
+          "known_proxy_improvement_s_per_mob": 0.1743478222479088,
+          "name": "Green Silk Armor",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=7065",
+          "swaps": {
+            "chest": 7065
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 4256,
+          "known_proxy_improvement_s_per_mob": 0.1606915864057068,
+          "name": "Guardian Armor",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=4256",
+          "swaps": {
+            "chest": 4256
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 250521,
+          "known_proxy_improvement_s_per_mob": 0.15765489090720314,
+          "name": "Acolyte's Silvered Chain Shirt",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=250521",
+          "swaps": {
+            "chest": 250521
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "feet": {
+      "evaluated_legal_equipment_packages": 266,
+      "paid_direct_complete": 11,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 20182,
+          "measured_s_per_mob": 33.327224193381454,
+          "name": "Defiler's Lamellar Greaves",
+          "source_url": "https://www.wowhead.com/forever/item=20182",
+          "swaps": {
+            "feet": 20182
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 20210,
+          "measured_s_per_mob": 33.327224193381454,
+          "name": "Defiler's Plate Greaves",
+          "source_url": "https://www.wowhead.com/forever/item=20210",
+          "swaps": {
+            "feet": 20210
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 279840,
+          "known_proxy_improvement_s_per_mob": 0.2441640797522848,
+          "name": "Renewing Footpads",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=279840",
+          "swaps": {
+            "feet": 279840
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 250506,
+          "known_proxy_improvement_s_per_mob": 0.1803850689160402,
+          "name": "Acolyte's Boots",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=250506",
+          "swaps": {
+            "feet": 250506
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 273025,
+          "known_proxy_improvement_s_per_mob": 0.17925597414955044,
+          "name": "Raptorclaw Greaves",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=273025",
+          "swaps": {
+            "feet": 273025
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "hands": {
+      "evaluated_legal_equipment_packages": 257,
+      "paid_direct_complete": 11,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 16978,
+          "measured_s_per_mob": 33.25412055192485,
+          "name": "Warsong Gauntlets",
+          "source_url": "https://www.wowhead.com/forever/item=16978",
+          "swaps": {
+            "hands": 16978
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 4075,
+          "measured_s_per_mob": 33.46389426892691,
+          "name": "Mail Combat Gauntlets",
+          "source_url": "https://www.wowhead.com/forever/item=4075",
+          "swaps": {
+            "hands": 4075
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 16741,
+          "known_proxy_improvement_s_per_mob": 0.11983936773139484,
+          "name": "Oilrag Handwraps",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=16741",
+          "swaps": {
+            "hands": 16741
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 250511,
+          "known_proxy_improvement_s_per_mob": 0.10989898120834121,
+          "name": "Acolyte's Gloves",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=250511",
+          "swaps": {
+            "hands": 250511
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 10654,
+          "known_proxy_improvement_s_per_mob": 0.09862823921164438,
+          "name": "Jutebraid Gloves",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=10654",
+          "swaps": {
+            "hands": 10654
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "head": {
+      "evaluated_legal_equipment_packages": 95,
+      "paid_direct_complete": 8,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 6686,
+          "measured_s_per_mob": 33.16069843063436,
+          "name": "Tusken Helm",
+          "source_url": "https://www.wowhead.com/forever/item=6686",
+          "swaps": {
+            "head": 6686
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 250502,
+          "measured_s_per_mob": 33.30854584346837,
+          "name": "Crusader's Chain Helm",
+          "source_url": "https://www.wowhead.com/forever/item=250502",
+          "swaps": {
+            "head": 250502
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 250532,
+          "known_proxy_improvement_s_per_mob": 0.15691116680966477,
+          "name": "Crusader's Silvered Chain Helm",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=250532",
+          "swaps": {
+            "head": 250532
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 4322,
+          "known_proxy_improvement_s_per_mob": 0.14478177905168316,
+          "name": "Enchanter's Cowl",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=4322",
+          "swaps": {
+            "head": 4322
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 252456,
+          "known_proxy_improvement_s_per_mob": 0.1358849607983585,
+          "name": "Totemic Leather Helm",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=252456",
+          "swaps": {
+            "head": 252456
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "legs": {
+      "evaluated_legal_equipment_packages": 266,
+      "paid_direct_complete": 9,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 250493,
+          "measured_s_per_mob": 33.52284574100675,
+          "name": "Veteran's Chain Leggings",
+          "source_url": "https://www.wowhead.com/forever/item=250493",
+          "swaps": {
+            "legs": 250493
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 3843,
+          "measured_s_per_mob": 33.526776891724644,
+          "name": "Golden Scale Leggings",
+          "source_url": "https://www.wowhead.com/forever/item=3843",
+          "swaps": {
+            "legs": 3843
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 285338,
+          "known_proxy_improvement_s_per_mob": 0.1985510501415198,
+          "name": "Kodohide Legguards",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=285338",
+          "swaps": {
+            "legs": 285338
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 250526,
+          "known_proxy_improvement_s_per_mob": 0.18170540051161202,
+          "name": "Acolyte's Silvered Chain Leggings",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=250526",
+          "swaps": {
+            "legs": 250526
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 250527,
+          "known_proxy_improvement_s_per_mob": 0.16127156266653084,
+          "name": "Crusader's Silvered Chain Leggings",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=250527",
+          "swaps": {
+            "legs": 250527
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "neck": {
+      "evaluated_legal_equipment_packages": 31,
+      "paid_direct_complete": 7,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 19537,
+          "measured_s_per_mob": 33.45465421266685,
+          "name": "Scout's Medallion",
+          "source_url": "https://www.wowhead.com/forever/item=19537",
+          "swaps": {
+            "neck": 19537
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 13087,
+          "measured_s_per_mob": 33.575478733752746,
+          "name": "River Pride Choker",
+          "source_url": "https://www.wowhead.com/forever/item=13087",
+          "swaps": {
+            "neck": 13087
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 23169,
+          "known_proxy_improvement_s_per_mob": 0.20667127083595077,
+          "name": "Scorn's Icy Choker",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=23169",
+          "swaps": {
+            "neck": 23169
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 285331,
+          "known_proxy_improvement_s_per_mob": 0.09434896661172387,
+          "name": "Mark of the Pack Leader",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=285331",
+          "swaps": {
+            "neck": 285331
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 271920,
+          "known_proxy_improvement_s_per_mob": 0.09361958894377333,
+          "name": "Seal of the Expedition",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=271920",
+          "swaps": {
+            "neck": 271920
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "offhand": {
+      "evaluated_legal_equipment_packages": 173,
+      "paid_direct_complete": 0,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 274290,
+          "known_proxy_improvement_s_per_mob": -0.6369834220761249,
+          "name": "Painwalker Buckler",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=274290",
+          "swaps": {
+            "offhand": 274290,
+            "weapon": 7687
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 273811,
+          "known_proxy_improvement_s_per_mob": -0.6419753798737523,
+          "name": "Repurposed Rack",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=273811",
+          "swaps": {
+            "offhand": 273811,
+            "weapon": 7687
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 6725,
+          "known_proxy_improvement_s_per_mob": -0.7112672381184911,
+          "name": "Marbled Buckler",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=6725",
+          "swaps": {
+            "offhand": 6725,
+            "weapon": 7687
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 13079,
+          "known_proxy_improvement_s_per_mob": -0.7144878632430579,
+          "name": "Shield of Thorsen",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=13079",
+          "swaps": {
+            "offhand": 13079,
+            "weapon": 7687
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 14608,
+          "known_proxy_improvement_s_per_mob": -0.7220864214374684,
+          "name": "Dokebi Buckler",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=14608",
+          "swaps": {
+            "offhand": 14608,
+            "weapon": 7687
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "ranged": {
+      "evaluated_legal_equipment_packages": 92,
+      "paid_direct_complete": 7,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 19561,
+          "measured_s_per_mob": 33.430103448276206,
+          "name": "Outrider's Bow",
+          "source_url": "https://www.wowhead.com/forever/item=19561",
+          "swaps": {
+            "ranged": 19561
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 4086,
+          "measured_s_per_mob": 33.48568649439764,
+          "name": "Flash Rifle",
+          "source_url": "https://www.wowhead.com/forever/item=4086",
+          "swaps": {
+            "ranged": 4086
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 274748,
+          "known_proxy_improvement_s_per_mob": 0.0,
+          "name": "Booty Bay Bruiser's Buckshot",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=274748",
+          "swaps": {
+            "ranged": 274748
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 3463,
+          "known_proxy_improvement_s_per_mob": -0.029910962259150763,
+          "name": "Silver Star",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=3463",
+          "swaps": {
+            "ranged": 3463
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 13137,
+          "known_proxy_improvement_s_per_mob": -0.07863326859678091,
+          "name": "Ironweaver",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=13137",
+          "swaps": {
+            "ranged": 13137
+          },
+          "unresolved_source_effects": [
+            "partial_defense_skill_effect_parry_block_incoming_crit_unmodeled"
+          ]
+        }
+      ]
+    },
+    "ring1": {
+      "evaluated_legal_equipment_packages": 92,
+      "paid_direct_complete": 7,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 20429,
+          "measured_s_per_mob": 33.441758169935,
+          "name": "Legionnaire's Band",
+          "source_url": "https://www.wowhead.com/forever/item=20429",
+          "swaps": {
+            "ring1": 20429
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 7686,
+          "measured_s_per_mob": 33.55990493915193,
+          "name": "Ironspine's Eye",
+          "source_url": "https://www.wowhead.com/forever/item=7686",
+          "swaps": {
+            "ring1": 7686
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 19521,
+          "known_proxy_improvement_s_per_mob": 0.11013729099853842,
+          "name": "Advisor's Ring",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=19521",
+          "swaps": {
+            "ring1": 19521
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 9622,
+          "known_proxy_improvement_s_per_mob": 0.10800079297658945,
+          "name": "Reedknot Ring",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=9622",
+          "swaps": {
+            "ring1": 9622
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 6199,
+          "known_proxy_improvement_s_per_mob": 0.10409046091023261,
+          "name": "Black Widow Band",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=6199",
+          "swaps": {
+            "ring1": 6199
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "ring2": {
+      "evaluated_legal_equipment_packages": 92,
+      "paid_direct_complete": 6,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 7686,
+          "measured_s_per_mob": 33.47402172745632,
+          "name": "Ironspine's Eye",
+          "source_url": "https://www.wowhead.com/forever/item=7686",
+          "swaps": {
+            "ring2": 7686
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 20429,
+          "measured_s_per_mob": 33.493481534429705,
+          "name": "Legionnaire's Band",
+          "source_url": "https://www.wowhead.com/forever/item=20429",
+          "swaps": {
+            "ring2": 20429
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 19521,
+          "known_proxy_improvement_s_per_mob": 0.06738855991531251,
+          "name": "Advisor's Ring",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=19521",
+          "swaps": {
+            "ring2": 19521
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 9622,
+          "known_proxy_improvement_s_per_mob": 0.06525206189336354,
+          "name": "Reedknot Ring",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=9622",
+          "swaps": {
+            "ring2": 9622
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 6199,
+          "known_proxy_improvement_s_per_mob": 0.06134172982700671,
+          "name": "Black Widow Band",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=6199",
+          "swaps": {
+            "ring2": 6199
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "shirt": {
+      "evaluated_legal_equipment_packages": 2,
+      "paid_direct_complete": 2,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 2575,
+          "measured_s_per_mob": 33.71308790382102,
+          "name": "Red Linen Shirt",
+          "source_url": "https://www.wowhead.com/forever/item=2575",
+          "swaps": {
+            "shirt": 2575
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 3342,
+          "measured_s_per_mob": 33.71308790382102,
+          "name": "Captain Sander's Shirt",
+          "source_url": "https://www.wowhead.com/forever/item=3342",
+          "swaps": {
+            "shirt": 3342
+          }
+        }
+      ]
+    },
+    "shoulder": {
+      "evaluated_legal_equipment_packages": 131,
+      "paid_direct_complete": 9,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 7913,
+          "measured_s_per_mob": 33.36106589571323,
+          "name": "Barbaric Iron Shoulders",
+          "source_url": "https://www.wowhead.com/forever/item=7913",
+          "swaps": {
+            "shoulder": 7913
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 4443,
+          "measured_s_per_mob": 33.45631070972487,
+          "name": "Grim Pauldrons",
+          "source_url": "https://www.wowhead.com/forever/item=4443",
+          "swaps": {
+            "shoulder": 4443
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 7684,
+          "known_proxy_improvement_s_per_mob": 0.20255446532163482,
+          "name": "Bloodmage Mantle",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=7684",
+          "swaps": {
+            "shoulder": 7684
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 4197,
+          "known_proxy_improvement_s_per_mob": 0.19926874703176542,
+          "name": "Berylline Pads",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=4197",
+          "swaps": {
+            "shoulder": 4197
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 6685,
+          "known_proxy_improvement_s_per_mob": 0.187817704945792,
+          "name": "Death Speaker Mantle",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=6685",
+          "swaps": {
+            "shoulder": 6685
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "trinket1": {
+      "evaluated_legal_equipment_packages": 13,
+      "paid_direct_complete": 2,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 21566,
+          "measured_s_per_mob": 33.71308790382102,
+          "name": "Rune of Perfection",
+          "source_url": "https://www.wowhead.com/forever/item=21566",
+          "swaps": {
+            "trinket1": 21566
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 21568,
+          "measured_s_per_mob": 33.71308790382102,
+          "name": "Rune of Duty",
+          "source_url": "https://www.wowhead.com/forever/item=21568",
+          "swaps": {
+            "trinket1": 21568
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 21120,
+          "known_proxy_improvement_s_per_mob": 0.004272996043897946,
+          "name": "Defiler's Talisman",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=21120",
+          "swaps": {
+            "trinket1": 21120
+          },
+          "unresolved_source_effects": [
+            "item_effect_tooltip_not_typed"
+          ]
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 271905,
+          "known_proxy_improvement_s_per_mob": 0.004272996043897946,
+          "name": "Enriched Seal",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=271905",
+          "swaps": {
+            "trinket1": 271905
+          },
+          "unresolved_source_effects": [
+            "item_effect_tooltip_not_typed"
+          ]
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 272059,
+          "known_proxy_improvement_s_per_mob": 0.004272996043897946,
+          "name": "Darkspear Voodoo Seal",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=272059",
+          "swaps": {
+            "trinket1": 272059
+          },
+          "unresolved_source_effects": [
+            "item_effect_tooltip_not_typed"
+          ]
+        }
+      ]
+    },
+    "trinket2": {
+      "evaluated_legal_equipment_packages": 12,
+      "paid_direct_complete": 1,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 273298,
+          "measured_s_per_mob": 33.71308790382102,
+          "name": "Lookie's Spyglass",
+          "source_url": "https://www.wowhead.com/forever/item=273298",
+          "swaps": {
+            "trinket2": 273298
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 21120,
+          "known_proxy_improvement_s_per_mob": 0.02277554705245815,
+          "name": "Defiler's Talisman",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=21120",
+          "swaps": {
+            "trinket2": 21120
+          },
+          "unresolved_source_effects": [
+            "item_effect_tooltip_not_typed"
+          ]
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 271905,
+          "known_proxy_improvement_s_per_mob": 0.02277554705245815,
+          "name": "Enriched Seal",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=271905",
+          "swaps": {
+            "trinket2": 271905
+          },
+          "unresolved_source_effects": [
+            "item_effect_tooltip_not_typed"
+          ]
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 272059,
+          "known_proxy_improvement_s_per_mob": 0.02277554705245815,
+          "name": "Darkspear Voodoo Seal",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=272059",
+          "swaps": {
+            "trinket2": 272059
+          },
+          "unresolved_source_effects": [
+            "item_effect_tooltip_not_typed"
+          ]
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 271904,
+          "known_proxy_improvement_s_per_mob": 0.02277554705245815,
+          "name": "Volunteer's Lucky Seal",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=271904",
+          "swaps": {
+            "trinket2": 271904
+          },
+          "unresolved_source_effects": [
+            "item_effect_tooltip_not_typed"
+          ]
+        }
+      ]
+    },
+    "waist": {
+      "evaluated_legal_equipment_packages": 256,
+      "paid_direct_complete": 10,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 20178,
+          "measured_s_per_mob": 33.46908248152609,
+          "name": "Defiler's Lamellar Girdle",
+          "source_url": "https://www.wowhead.com/forever/item=20178",
+          "swaps": {
+            "waist": 20178
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 832,
+          "measured_s_per_mob": 33.47214853003515,
+          "name": "Silver Defias Belt",
+          "source_url": "https://www.wowhead.com/forever/item=832",
+          "swaps": {
+            "waist": 832
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 250559,
+          "known_proxy_improvement_s_per_mob": 0.1577102681313548,
+          "name": "Prefect's Belt",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=250559",
+          "swaps": {
+            "waist": 250559
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 250560,
+          "known_proxy_improvement_s_per_mob": 0.14895720016225444,
+          "name": "Justicar's Belt",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=250560",
+          "swaps": {
+            "waist": 250560
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 20164,
+          "known_proxy_improvement_s_per_mob": 0.1272465268980372,
+          "name": "Defiler's Cloth Girdle",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=20164",
+          "swaps": {
+            "waist": 20164
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "weapon": {
+      "evaluated_legal_equipment_packages": 548,
+      "paid_direct_complete": 4,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 279841,
+          "measured_s_per_mob": 33.71308790382102,
+          "name": "Defender of Dalaran",
+          "source_url": "https://www.wowhead.com/forever/item=279841",
+          "swaps": {
+            "weapon": 279841
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 13045,
+          "measured_s_per_mob": 34.08794763932839,
+          "name": "Viscous Hammer",
+          "source_url": "https://www.wowhead.com/forever/item=13045",
+          "swaps": {
+            "weapon": 13045
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 6976,
+          "known_proxy_improvement_s_per_mob": 0.5979560204480723,
+          "name": "Whirlwind Warhammer",
+          "paid_100mob_challenge_failure": "death_or_empty_policy",
+          "paid_100mob_challenge_status": "BLOCKED_COMBAT",
+          "source_url": "https://foreverdb.net/item/6976",
+          "swaps": {
+            "weapon": 6976
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 279844,
+          "known_proxy_improvement_s_per_mob": -0.09616738786313832,
+          "name": "Striking Staff",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=279844",
+          "swaps": {
+            "weapon": 279844
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 7689,
+          "known_proxy_improvement_s_per_mob": -0.14646163053128447,
+          "name": "Morbid Dawn",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=7689",
+          "swaps": {
+            "weapon": 7689
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    },
+    "wrist": {
+      "evaluated_legal_equipment_packages": 210,
+      "paid_direct_complete": 10,
+      "ranking_uncertainty": "unknown channels and discrete stat thresholds; measured swaps supersede proxy",
+      "top5_shortlist": [
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 13012,
+          "measured_s_per_mob": 33.48179453829304,
+          "name": "Yorgen Bracers",
+          "source_url": "https://www.wowhead.com/forever/item=13012",
+          "swaps": {
+            "wrist": 13012
+          }
+        },
+        {
+          "basis": "PAID_100_CONSECUTIVE_MOBS",
+          "item_id": 4132,
+          "measured_s_per_mob": 33.48374005323777,
+          "name": "Darkspear Armsplints",
+          "source_url": "https://www.wowhead.com/forever/item=4132",
+          "swaps": {
+            "wrist": 4132
+          }
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 270042,
+          "known_proxy_improvement_s_per_mob": 0.05803662954960025,
+          "name": "Technician's Bracers",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=270042",
+          "swaps": {
+            "wrist": 270042
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 9448,
+          "known_proxy_improvement_s_per_mob": 0.05798500705766178,
+          "name": "Spidertank Oilrag",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=9448",
+          "swaps": {
+            "wrist": 9448
+          },
+          "unresolved_source_effects": []
+        },
+        {
+          "basis": "UNCERTAIN_L0_RIDGE_PROXY",
+          "item_id": 13106,
+          "known_proxy_improvement_s_per_mob": 0.05608320264465014,
+          "name": "Glowing Magical Bracelets",
+          "paid_100mob_challenge_failure": null,
+          "paid_100mob_challenge_status": null,
+          "source_url": "https://www.wowhead.com/forever/item=13106",
+          "swaps": {
+            "wrist": 13106
+          },
+          "unresolved_source_effects": []
+        }
+      ]
+    }
+  },
+  "source_backed_bis_witnesses": 11,
+  "source_membership_verified": false,
+  "unknown_effect_items": 105,
+  "wall_s": 0.900973917999977
+}

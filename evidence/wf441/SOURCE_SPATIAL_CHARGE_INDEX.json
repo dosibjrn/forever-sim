@@ -1,0 +1,54 @@
+{
+  "checkpoint_source_build": "1.60.1.70338",
+  "records": [
+    {
+      "class_key": "druid",
+      "family_key": "feral_charge",
+      "forms": [
+        {
+          "arrival_distance_yards": 1.5,
+          "arrival_position_kind": "target_contact",
+          "cooldown_s": 15.0,
+          "cost_amount": 5.0,
+          "cost_resource_id": "rage",
+          "gcd_s": 1.5,
+          "id_suffix": "bear",
+          "maximum_range_yards": 25.0,
+          "mechanics_source_url": "https://theforeverera.com/en/spells/druid/feral-charge/",
+          "minimum_range_yards": 0.0,
+          "mode_id": "bear",
+          "name": "Feral Charge (Bear)",
+          "root_duration_s": 4.0,
+          "source_mechanics_verified": false
+        },
+        {
+          "arrival_distance_yards": 1.5,
+          "arrival_position_kind": "behind_target",
+          "cooldown_s": 30.0,
+          "cost_amount": 0.0,
+          "cost_resource_id": null,
+          "gcd_s": 1.5,
+          "id_suffix": "cat",
+          "maximum_range_yards": 25.0,
+          "mechanics_source_url": "https://theforeverera.com/en/druid-forms/",
+          "minimum_range_yards": 8.0,
+          "mode_id": "cat",
+          "name": "Feral Charge (Cat)",
+          "root_duration_s": 0.0,
+          "source_mechanics_verified": false
+        }
+      ],
+      "indexed_payload_sha256": "7a7f880a01129e11636fe8763572698f508ede0c5d45519bfb38fad3aecad85f",
+      "name": "Feral Charge",
+      "required_level": 20,
+      "root_duration_s": 4.0,
+      "source_build": "1.60.1.70338",
+      "source_build_verified": false,
+      "source_tooltip": "Requires Bear Form, Dire Bear Form\nCharge an enemy, immobilizing them and interrupting any spell they are casting for 4 sec.\n\nFeral Charge (Cat)\n8 - 25 yd range\nInstant\n30 sec cooldown\nRequires Druid\nRequires level 1\nRequires Cat Form\nLeap behind an enemy.",
+      "source_url": "https://www.wowhead.com/forever/spell=1238122",
+      "spell_id": 1238122,
+      "talent_effect_target": "feral_charge_talent_grant",
+      "talent_id": "feral_charge"
+    }
+  ]
+}

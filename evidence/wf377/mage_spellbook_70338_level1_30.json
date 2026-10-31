@@ -1,0 +1,556 @@
+{
+  "as_of": "2026-10-14",
+  "build": "1.60.1.70338",
+  "class_key": "mage",
+  "completeness_claim": "L1_30_TRAINER_RANKS_AND_TALENT_GRANTS_EXPLICIT_WITH_SPELLBOOK_COMPREHENSION",
+  "conditional_rank_families": [
+    {
+      "name": "Arcane Blast",
+      "source_url": "https://wowf.io/en/spellbook/mage",
+      "talent_spell_id": 400574
+    },
+    {
+      "name": "Ice Lance",
+      "source_url": "https://wowf.io/en/spellbook/mage",
+      "talent_spell_id": 1312002
+    },
+    {
+      "name": "Pyroblast",
+      "source_url": "https://wowf.io/en/spellbook/mage",
+      "talent_spell_id": 11366
+    },
+    {
+      "name": "Blast Wave",
+      "source_url": "https://wowf.io/en/spellbook/mage",
+      "talent_spell_id": 11113
+    }
+  ],
+  "conditional_talent_actions": [
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "damage_per_activation": 54.0,
+        "other_spell_damage_stack_bonus_pct": 10.0
+      },
+      "learned_level": 20,
+      "name": "Arcane Blast",
+      "prior_tree_points": 10,
+      "source_url": "https://www.wowhead.com/forever/spell=400574",
+      "spell_id": 400574,
+      "talent_rank": 1,
+      "talent_source_url": "https://wowf.io/en/talents/mage",
+      "talent_tree": "Arcane"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "damage_per_activation": 28.0,
+        "frozen_target_damage_multiplier": 4.0
+      },
+      "learned_level": 20,
+      "name": "Ice Lance",
+      "prior_tree_points": 10,
+      "source_url": "https://www.wowhead.com/forever/spell=1312002",
+      "spell_id": 1312002,
+      "talent_rank": 1,
+      "talent_source_url": "https://wowf.io/en/talents/mage",
+      "talent_tree": "Frost"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "damage_per_activation": 110.0,
+        "periodic_damage_per_activation": 44.0
+      },
+      "learned_level": 20,
+      "name": "Pyroblast",
+      "prior_tree_points": 10,
+      "source_url": "https://www.wowhead.com/forever/spell=11366",
+      "spell_id": 11366,
+      "talent_rank": 1,
+      "talent_source_url": "https://wowf.io/en/talents/mage",
+      "talent_tree": "Fire"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "damage_immunity_duration_seconds": 10.0
+      },
+      "learned_level": 25,
+      "name": "Ice Block",
+      "prior_tree_points": 15,
+      "source_index_level_hint_override": 4,
+      "source_url": "https://www.wowhead.com/forever/spell=11958",
+      "spell_id": 11958,
+      "talent_rank": 1,
+      "talent_source_url": "https://wowf.io/en/talents/mage",
+      "talent_tree": "Frost"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "frost_cooldown_reset_opportunities": 1.0
+      },
+      "learned_level": 30,
+      "name": "Cold Snap",
+      "prior_tree_points": 20,
+      "source_index_level_hint_override": 1,
+      "source_url": "https://www.wowhead.com/forever/spell=12472",
+      "spell_id": 12472,
+      "talent_rank": 1,
+      "talent_source_url": "https://wowf.io/en/talents/mage",
+      "talent_tree": "Frost"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "instant_cast_opportunities": 1.0
+      },
+      "learned_level": 30,
+      "name": "Presence of Mind",
+      "prior_tree_points": 20,
+      "source_index_level_hint_override": 1,
+      "source_url": "https://www.wowhead.com/forever/spell=12043",
+      "spell_id": 12043,
+      "talent_rank": 1,
+      "talent_source_url": "https://wowf.io/en/talents/mage",
+      "talent_tree": "Arcane"
+    },
+    {
+      "does_not_prove_paid_L2": true,
+      "l0_domains": {
+        "damage_per_activation": 163.0,
+        "enemy_slow_duration_seconds": 6.0
+      },
+      "learned_level": 30,
+      "name": "Blast Wave",
+      "prior_tree_points": 20,
+      "source_url": "https://www.wowhead.com/forever/spell=11113",
+      "spell_id": 11113,
+      "talent_rank": 1,
+      "talent_source_url": "https://wowf.io/en/talents/mage",
+      "talent_tree": "Fire"
+    }
+  ],
+  "contextual_numeric_proxies_by_name": {
+    "Arcane Blast": {
+      "damage_per_activation": 54.0,
+      "other_spell_damage_stack_bonus_pct": 10.0
+    },
+    "Arcane Explosion": {
+      "damage_per_activation": 32.0
+    },
+    "Arcane Intellect": {
+      "intellect_increase": 2.0
+    },
+    "Arcane Missiles": {
+      "damage_per_activation": 72.0
+    },
+    "Blast Wave": {
+      "damage_per_activation": 163.0,
+      "enemy_slow_duration_seconds": 6.0
+    },
+    "Blink": {
+      "movement_distance_yards": 20.0,
+      "root_escape_opportunities": 1.0
+    },
+    "Blizzard": {
+      "damage_per_activation": 192.0
+    },
+    "Cold Snap": {
+      "frost_cooldown_reset_opportunities": 1.0
+    },
+    "Cone of Cold": {
+      "damage_per_activation": 97.0,
+      "enemy_slow_duration_seconds": 6.0
+    },
+    "Conjure Food": {
+      "conjured_health_recovery_opportunities": 1.0
+    },
+    "Conjure Mana Agate": {
+      "conjured_mana_recovery_potential": 375.0
+    },
+    "Conjure Water": {
+      "conjured_mana_recovery_opportunities": 1.0
+    },
+    "Counterspell": {
+      "interrupt_opportunities": 1.0,
+      "school_lockout_duration_seconds": 10.0
+    },
+    "Evocation": {
+      "channel_duration_seconds": 8.0,
+      "mana_regeneration_multiplier": 16.0
+    },
+    "Fire Blast": {
+      "damage_per_activation": 28.0
+    },
+    "Fire Ward": {
+      "fire_damage_absorb_capacity": 162.0
+    },
+    "Fireball": {
+      "damage_per_activation": 18.0
+    },
+    "Flamestrike": {
+      "damage_per_activation": 60.0
+    },
+    "Frost Armor": {
+      "caster_armor_increase": 30.0,
+      "incoming_melee_slow_opportunities": 1.0
+    },
+    "Frost Nova": {
+      "target_control_seconds": 8.0
+    },
+    "Frost Ward": {
+      "frost_damage_absorb_capacity": 162.0
+    },
+    "Frostbolt": {
+      "damage_per_activation": 19.0
+    },
+    "Ice Armor": {
+      "caster_armor_increase": 290.0,
+      "incoming_melee_slow_opportunities": 1.0
+    },
+    "Ice Block": {
+      "damage_immunity_duration_seconds": 10.0
+    },
+    "Ice Lance": {
+      "damage_per_activation": 28.0,
+      "frozen_target_damage_multiplier": 4.0
+    },
+    "Mana Shield": {
+      "mana_per_damage_absorbed": 2.0,
+      "physical_damage_absorb_capacity": 120.0
+    },
+    "Polymorph": {
+      "target_control_seconds": 20.0
+    },
+    "Presence of Mind": {
+      "instant_cast_opportunities": 1.0
+    },
+    "Pyroblast": {
+      "damage_per_activation": 110.0,
+      "periodic_damage_per_activation": 44.0
+    },
+    "Scorch": {
+      "damage_per_activation": 39.0
+    }
+  },
+  "contextual_proxy_source_urls_by_name": {
+    "Arcane Blast": "https://wowf.io/en/spellbook/mage",
+    "Arcane Explosion": "https://foreverdb.net/guide/leveling-mage",
+    "Arcane Intellect": "https://foreverdb.net/guide/leveling-mage",
+    "Arcane Missiles": "https://foreverdb.net/guide/leveling-mage",
+    "Blast Wave": "https://wowf.io/en/spellbook/mage",
+    "Blink": "https://foreverdb.net/guide/leveling-mage",
+    "Blizzard": "https://foreverdb.net/guide/leveling-mage",
+    "Cold Snap": "https://wowf.io/en/spellbook/mage",
+    "Cone of Cold": "https://foreverdb.net/guide/leveling-mage",
+    "Conjure Food": "https://foreverdb.net/guide/leveling-mage",
+    "Conjure Mana Agate": "https://foreverdb.net/guide/leveling-mage",
+    "Conjure Water": "https://foreverdb.net/guide/leveling-mage",
+    "Counterspell": "https://foreverdb.net/guide/leveling-mage",
+    "Evocation": "https://foreverdb.net/guide/leveling-mage",
+    "Fire Blast": "https://foreverdb.net/guide/leveling-mage",
+    "Fire Ward": "https://foreverdb.net/guide/leveling-mage",
+    "Fireball": "https://foreverdb.net/guide/leveling-mage",
+    "Flamestrike": "https://foreverdb.net/guide/leveling-mage",
+    "Frost Armor": "https://foreverdb.net/guide/leveling-mage",
+    "Frost Nova": "https://foreverdb.net/guide/leveling-mage",
+    "Frost Ward": "https://foreverdb.net/guide/leveling-mage",
+    "Frostbolt": "https://foreverdb.net/guide/leveling-mage",
+    "Ice Armor": "https://foreverdb.net/guide/leveling-mage",
+    "Ice Block": "https://wowf.io/en/spellbook/mage",
+    "Ice Lance": "https://wowf.io/en/spellbook/mage",
+    "Mana Shield": "https://foreverdb.net/guide/leveling-mage",
+    "Polymorph": "https://foreverdb.net/guide/leveling-mage",
+    "Presence of Mind": "https://wowf.io/en/spellbook/mage",
+    "Pyroblast": "https://wowf.io/en/spellbook/mage",
+    "Scorch": "https://foreverdb.net/guide/leveling-mage"
+  },
+  "contextual_zero_when_solo_land_mob_no_allies_or_debuffs": {
+    "Amplify Magic": "FIXED_MOB_SCENARIO_HAS_NO_INCOMING_MAGIC_DAMAGE_OR_EXTERNAL_HEALS",
+    "Dampen Magic": "FIXED_MOB_SCENARIO_HAS_NO_INCOMING_MAGIC_DAMAGE_OR_EXTERNAL_HEALS",
+    "Remove Lesser Curse": "FIXED_MOB_SCENARIO_HAS_NO_CURSE_OR_BANE",
+    "Slow Fall": "FIXED_LAND_100_MOB_SCENARIO_HAS_NO_FALLING_DAMAGE",
+    "Teleport: Darnassus": "TELEPORT_EXITS_FIXED_100_MOB_KILL_OBJECTIVE",
+    "Teleport: Ironforge": "TELEPORT_EXITS_FIXED_100_MOB_KILL_OBJECTIVE",
+    "Teleport: Orgrimmar": "TELEPORT_EXITS_FIXED_100_MOB_KILL_OBJECTIVE",
+    "Teleport: Stormwind": "TELEPORT_EXITS_FIXED_100_MOB_KILL_OBJECTIVE",
+    "Teleport: Thunder Bluff": "TELEPORT_EXITS_FIXED_100_MOB_KILL_OBJECTIVE",
+    "Teleport: Undercity": "TELEPORT_EXITS_FIXED_100_MOB_KILL_OBJECTIVE"
+  },
+  "expected_learned_rows": 82,
+  "learned_by_level": {
+    "1": [
+      "Arcane Intellect",
+      "Chilled",
+      "Fireball",
+      "Frost Armor"
+    ],
+    "10": [
+      "Clearcasting",
+      "Conjure Water",
+      "Frost Armor",
+      "Frost Nova"
+    ],
+    "12": [
+      "Conjure Food",
+      "Dampen Magic",
+      "Fireball",
+      "Slow Fall"
+    ],
+    "14": [
+      "Arcane Explosion",
+      "Arcane Intellect",
+      "Fire Blast",
+      "Frostbolt"
+    ],
+    "16": [
+      "Arcane Missiles",
+      "Flamestrike"
+    ],
+    "18": [
+      "Amplify Magic",
+      "Fireball",
+      "Remove Lesser Curse"
+    ],
+    "20": [
+      "Arcane Blast",
+      "Blink",
+      "Blizzard",
+      "Conjure Water",
+      "Evocation",
+      "Fire Ward",
+      "Frost Armor",
+      "Frostbolt",
+      "Ice Lance",
+      "Mana Shield",
+      "Polymorph",
+      "Pyroblast",
+      "Teleport: Ironforge",
+      "Teleport: Orgrimmar",
+      "Teleport: Stormwind",
+      "Teleport: Undercity"
+    ],
+    "22": [
+      "Arcane Explosion",
+      "Conjure Food",
+      "Fire Blast",
+      "Frost Ward",
+      "Scorch"
+    ],
+    "24": [
+      "Arcane Missiles",
+      "Counterspell",
+      "Dampen Magic",
+      "Fireball",
+      "Flamestrike",
+      "Pyroblast"
+    ],
+    "25": [
+      "Ice Block"
+    ],
+    "26": [
+      "Cone of Cold",
+      "Frost Nova",
+      "Frostbolt"
+    ],
+    "28": [
+      "Arcane Intellect",
+      "Blizzard",
+      "Conjure Mana Agate",
+      "Ice Lance",
+      "Mana Shield",
+      "Scorch"
+    ],
+    "30": [
+      "Amplify Magic",
+      "Arcane Blast",
+      "Arcane Explosion",
+      "Blast Wave",
+      "Cold Snap",
+      "Conjure Water",
+      "Fire Blast",
+      "Fire Ward",
+      "Fireball",
+      "Ice Armor",
+      "Presence of Mind",
+      "Pyroblast",
+      "Teleport: Darnassus",
+      "Teleport: Thunder Bluff"
+    ],
+    "4": [
+      "Conjure Water",
+      "Frostbolt"
+    ],
+    "6": [
+      "Comprehend Scroll",
+      "Conjure Food",
+      "Fire Blast",
+      "Fireball",
+      "Study"
+    ],
+    "8": [
+      "Arcane Missiles",
+      "Frostbolt",
+      "Polymorph"
+    ]
+  },
+  "learned_exact_spell_ids_by_level": {
+    "1": {
+      "Arcane Intellect": 1459,
+      "Fireball": 133,
+      "Frost Armor": 168
+    },
+    "10": {
+      "Conjure Water": 5505,
+      "Frost Armor": 7300,
+      "Frost Nova": 122
+    },
+    "12": {
+      "Conjure Food": 597,
+      "Dampen Magic": 604,
+      "Fireball": 145,
+      "Slow Fall": 130
+    },
+    "14": {
+      "Arcane Explosion": 1449,
+      "Arcane Intellect": 1460,
+      "Fire Blast": 2137,
+      "Frostbolt": 837
+    },
+    "16": {
+      "Arcane Missiles": 5144,
+      "Flamestrike": 2120
+    },
+    "18": {
+      "Amplify Magic": 1008,
+      "Fireball": 3140,
+      "Remove Lesser Curse": 475
+    },
+    "20": {
+      "Arcane Blast": 400574,
+      "Blink": 1953,
+      "Blizzard": 10,
+      "Conjure Water": 5506,
+      "Evocation": 12051,
+      "Fire Ward": 543,
+      "Frost Armor": 7301,
+      "Frostbolt": 7322,
+      "Ice Lance": 1312002,
+      "Mana Shield": 1463,
+      "Polymorph": 12824,
+      "Pyroblast": 11366,
+      "Teleport: Ironforge": 3562,
+      "Teleport: Orgrimmar": 3567,
+      "Teleport: Stormwind": 3561,
+      "Teleport: Undercity": 3563
+    },
+    "22": {
+      "Arcane Explosion": 8437,
+      "Conjure Food": 990,
+      "Fire Blast": 2138,
+      "Frost Ward": 6143,
+      "Scorch": 2948
+    },
+    "24": {
+      "Arcane Missiles": 5145,
+      "Counterspell": 2139,
+      "Dampen Magic": 8450,
+      "Fireball": 8400,
+      "Flamestrike": 2121,
+      "Pyroblast": 12505
+    },
+    "25": {
+      "Ice Block": 11958
+    },
+    "26": {
+      "Cone of Cold": 120,
+      "Frost Nova": 865,
+      "Frostbolt": 8406
+    },
+    "28": {
+      "Arcane Intellect": 1461,
+      "Blizzard": 6141,
+      "Conjure Mana Agate": 759,
+      "Ice Lance": 400640,
+      "Mana Shield": 8494,
+      "Scorch": 8444
+    },
+    "30": {
+      "Amplify Magic": 8455,
+      "Arcane Blast": 1239696,
+      "Arcane Explosion": 8438,
+      "Blast Wave": 11113,
+      "Cold Snap": 12472,
+      "Conjure Water": 6127,
+      "Fire Blast": 8412,
+      "Fire Ward": 8457,
+      "Fireball": 8401,
+      "Ice Armor": 7302,
+      "Presence of Mind": 12043,
+      "Pyroblast": 12522,
+      "Teleport: Darnassus": 3565,
+      "Teleport: Thunder Bluff": 3566
+    },
+    "4": {
+      "Conjure Water": 5504,
+      "Frostbolt": 116
+    },
+    "6": {
+      "Comprehend Scroll": 1296017,
+      "Conjure Food": 587,
+      "Fire Blast": 2136,
+      "Fireball": 143,
+      "Study": 1302508
+    },
+    "8": {
+      "Arcane Missiles": 5143,
+      "Frostbolt": 205,
+      "Polymorph": 118
+    }
+  },
+  "level_range_covered": [
+    1,
+    30
+  ],
+  "non_cast_passives": [
+    "Chilled",
+    "Clearcasting"
+  ],
+  "observed_rank_numeric_by_id": {},
+  "obsolete_or_ungranted_exact_spell_ids": {},
+  "passive_numeric_by_name": {},
+  "runes_enabled": false,
+  "schema": "forever_spellbook_level_ranks_v1",
+  "source_caveats": [
+    "Sourced client rank and talent unlock, not proof of trainer purchase or loot ownership",
+    "Mage Study/Comprehend are explicit source-only L0; Study beta quest persistence uncertain",
+    "Contextual proxy dimensions are noncommensurate and do not imply paid L2 execution",
+    "Faction-specific teleport spells are alternative legal actions, not one character possessing both factions",
+    "Talent spell level hints in listview may predate actual talent unlock; grant override is explicit per ID",
+    "Passives Chilled/Clearcasting are handled outside standalone P1 action universe"
+  ],
+  "source_index_sha256": "8f65c49a151cbedd12821895600a5ce413454633c33be64534e7f1bf46bbe170",
+  "source_kind": "FOREVERDB_BETA_70338_TRAINER_PLUS_WOWF_IO_TALENT_COMPREHENSION",
+  "source_levels_21_30_url": "https://wowf.io/en/spellbook/mage",
+  "source_only_learned_actions": [
+    {
+      "acquisition_uncertainty": "CLASS_COMPREHENSION_ACTION_NOT_COMBAT_IR",
+      "contextual_zero": "NO_UNTRANSLATED_SCROLL_INTERACTION_IN_FIXED_100_MOB_KILL_OBJECTIVE",
+      "learned_level": 6,
+      "name": "Comprehend Scroll",
+      "source_url": "https://www.wowhead.com/forever/spell=1296017/comprehend-scroll",
+      "spell_id": 1296017
+    },
+    {
+      "acquisition_uncertainty": "QUEST_LIBRARY_UNLOCK_AND_BETA_PERSISTENCE_REPORTS; DOES_NOT_PROVE_POSSESSION",
+      "contextual_zero": "NO_LIBRARY_REAGENT_OR_RESEARCH_ACTION_IN_FIXED_100_MOB_COMBAT",
+      "learned_level": 6,
+      "name": "Study",
+      "source_url": "https://www.wowhead.com/forever/spell=1302508/study",
+      "spell_id": 1302508
+    }
+  ],
+  "source_url": "https://foreverdb.net/guide/leveling-mage"
+}

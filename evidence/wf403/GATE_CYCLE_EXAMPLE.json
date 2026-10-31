@@ -1,0 +1,21 @@
+{
+  "checkpoint": "druid:L30:unrestricted",
+  "source_sha256": "17b4008028d5646e991988a1302950cf862e564f62edfadf9d4ebb570a4d5a2d",
+  "gates": [
+    {
+      "gate": "P3",
+      "phase": "RED",
+      "checkpoint": "druid:L30:unrestricted",
+      "source_sha256": "17b4008028d5646e991988a1302950cf862e564f62edfadf9d4ebb570a4d5a2d",
+      "criterion_id": "P3_COMPLETE_SOURCE_GEAR_AND_CONTEXTUAL_TOP5",
+      "red": {
+        "test_id": "source_class_item_membership_verified(\"druid\", canonical_db) is True",
+        "criterion_id": "P3_COMPLETE_SOURCE_GEAR_AND_CONTEXTUAL_TOP5",
+        "outcome": "FAIL",
+        "evidence_sha256": "310ec186f09d7fe29250c3d9cc4f4204f2b9679d8a7b729ef8eae8eeec434d34",
+        "evidence_file": "evidence/wf403/P3_SOURCE_MEMBERSHIP_RED.json"
+      }
+    }
+  ],
+  "evidence_file": "evidence/wf403/P3_SOURCE_MEMBERSHIP_RED.json"
+}

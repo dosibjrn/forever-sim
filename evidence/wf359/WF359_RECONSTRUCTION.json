@@ -1,0 +1,170 @@
+[
+  {
+    "archive": "WF309_SOURCE_STAT_AURA_RUNTIME_FULL_WIP_ON_289.zip",
+    "files": 1923
+  },
+  {
+    "archive": "WF310_MULTI_BATCH_SOURCE_CAPTURE_WIP_PATCH_ON_WF309.zip",
+    "files": 4
+  },
+  {
+    "archive": "WF311_VERIFIED_STRUCTURED_EFFECTS_WIP_ON_WF309_WF310.zip",
+    "files": 12
+  },
+  {
+    "archive": "WF312_GENERIC_VERIFIED_MULTI_EFFECT_L1_WIP_ON_WF311.zip",
+    "files": 11
+  },
+  {
+    "archive": "WF313_PARALLEL_SOURCE_CAPTURE_AND_QUARANTINE_WIP_ON_WF312.zip",
+    "files": 18
+  },
+  {
+    "archive": "WF314_GENERIC_SOURCED_ABSORB_CONTROL_WIP_ON_WF313.zip",
+    "files": 9
+  },
+  {
+    "archive": "WF315_CANONICAL_INDEX_STAT_WEAPON_BATCH_WIP_ON_WF314.zip",
+    "files": 11
+  },
+  {
+    "archive": "WF316_VERIFIED_WEAPON_SP_COEFFICIENT_WIP_ON_WF315.zip",
+    "files": 12
+  },
+  {
+    "archive": "WF317_DRUID_L20_CANONICAL_SOURCE_BRIDGE_WIP_ON_WF316.zip",
+    "files": 15
+  },
+  {
+    "archive": "WF318_NINE_CLASS_SOURCE_COMPOSITES_AND_VERIFIED_SLOW_WIP_ON_WF317.zip",
+    "files": 20
+  },
+  {
+    "archive": "WF323_DRUID_L20_CONTROL_RESOURCE_BUDGET_AND_70338_CUMULATIVE_WIP_ON_WF318.zip",
+    "files": 37
+  },
+  {
+    "archive": "WF326_DRUID_L20_LEGAL_GEAR_SLOT_L2_CUMULATIVE_WIP_ON_WF323.zip",
+    "files": 26
+  },
+  {
+    "archive": "WF327_DRUID_L20_CHECKPOINT_ACTION_L0_PROXY_WIP_ON_WF326.zip",
+    "files": 7
+  },
+  {
+    "archive": "WF328_DRUID_L20_GEARED_SEARCH_COMPARISON_WIP_ON_WF327.zip",
+    "files": 12
+  },
+  {
+    "archive": "WF329_DRUID_L20_SOURCED_CONTEXT_L0_WIP_ON_WF328.zip",
+    "files": 7
+  },
+  {
+    "archive": "WF330_DRUID_L20_QUEUED_MAUL_RESOURCE_SEARCH_WIP_ON_WF329.zip",
+    "files": 14
+  },
+  {
+    "archive": "WF331_DRUID_L20_SOURCE_BOUND_WEB_INDEXED_L0_WIP_ON_WF330.zip",
+    "files": 8
+  },
+  {
+    "archive": "WF334_DRUID_L20_GENERIC_P1_CUMULATIVE_ON_WF331.zip",
+    "files": 22
+  },
+  {
+    "archive": "WF335_DRUID_L20_SOURCE_SPELLBOOK_P1_ACCEPTANCE_WIP_ON_WF334.zip",
+    "files": 7
+  },
+  {
+    "archive": "WF337_MERGED_DRUID_L20_GENERIC_P2_CUMULATIVE_ON_WF335.zip",
+    "files": 13
+  },
+  {
+    "archive": "WF338_DRUID_L20_COMPLETE_ITEM_P3_L0_AND_SEARCH_INTEGRATION_WIP_ON_WF337.zip",
+    "files": 8
+  },
+  {
+    "archive": "WF339_BUILD_LOCAL_STAT_WEIGHTS_WEIGHTED_TOP5_WIP_ON_WF338.zip",
+    "files": 10
+  },
+  {
+    "archive": "WF340_DRUID_L20_STRICT_L2_BUDGETED_30_300S_WIP_ON_WF339.zip",
+    "files": 14
+  },
+  {
+    "archive": "WF341_DRUID_L20_CHANCE_WEIGHT_TOP5_OVERLAY_ON_WF340.zip",
+    "files": 8
+  },
+  {
+    "archive": "WF342_RATING_CRIT_HIT_DEFENSE_WIP_ON_WF341.zip",
+    "files": 15
+  },
+  {
+    "archive": "WF343_FOREVER_DISPLAY_PERCENT_ITEM_STATS_WIP_ON_WF342.zip",
+    "files": 14
+  },
+  {
+    "archive": "WF344_DRUID_L20_SOURCED_EQUIPMENT_LEGALITY_AND_TYPED_RELIC_WIP_ON_PUBLISHED_WF343.zip",
+    "files": 20
+  },
+  {
+    "archive": "WF345_DRUID_L20_UNIQUE_EQUIPPED_AND_NONCOMBAT_TRINKET_WIP_ON_WF344.zip",
+    "files": 18
+  },
+  {
+    "archive": "WF346_DRUID_L20_GENERIC_MAGIC_EQUIPMENT_ON_WF345.zip",
+    "files": 23
+  },
+  {
+    "archive": "WF347_DRUID_L20_FIRST_ACCEPTED_CHECKPOINT_1_OF_148_ON_WF346.zip",
+    "files": 27
+  },
+  {
+    "archive": "WF348_DRUID_L30_P1_86_OF_86_ON_WF347.zip",
+    "files": 8
+  },
+  {
+    "archive": "WF349_DRUID_L30_P2_SOURCE_RANK_INTEGRITY_WIP_ON_WF348.zip",
+    "files": 8
+  },
+  {
+    "archive": "WF350_DRUID_L30_P2_117_OF_117_STAGED_SOURCE_ON_WF349.zip",
+    "files": 14
+  },
+  {
+    "archive": "WF351_DRUID_L30_P3_PARTIAL_MEASURED_TOP5_ON_PUBLISHED_WF350.zip",
+    "files": 9
+  },
+  {
+    "archive": "WF352_DRUID_L30_P3_ACCEPTED_OS_ISOLATED_ON_WF351.zip",
+    "files": 17
+  },
+  {
+    "archive": "WF352_P3_FAIL_CLOSED_CORRECTION_ON_WF352.zip",
+    "files": 7
+  },
+  {
+    "archive": "WF352_P3_COARSE_20_AGI_10_WEAPON_DPS_ON_REVOCATION.zip",
+    "files": 7
+  },
+  {
+    "archive": "WF354_DRUID_L30_P3_DIRECT_JOINT_100MOB_WIP_ON_WF352_COARSE.zip",
+    "files": 17
+  },
+  {
+    "archive": "WF355_P7_LEGACY_HOLDOUT_AND_RECOVERY_PARITY_BLOCKER_ON_WF354.zip",
+    "files": 6
+  },
+  {
+    "archive": "WF356_ACTUAL_LEGACY_DRUID_L30_WINNER_ON_WF355.zip",
+    "files": 7
+  },
+  {
+    "archive": "WF357_DRUID_L30_CONDITIONAL_RECOVERY_AND_31_P3_REPLAYS_ON_WF356.zip",
+    "files": 17
+  },
+  {
+    "archive": "WF358_DRUID_L30_P3_CAUSAL_AND_JOINT_TOP5_WIP_ON_WF357.zip",
+    "files": 18
+  }
+]

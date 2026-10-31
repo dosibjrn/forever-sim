@@ -1,0 +1,69 @@
+{
+  "accepted_checkpoints": "2/148",
+  "checkpoint": "druid:L30:unrestricted",
+  "heldout_challenger": {
+    "actual_s_per_mob": 16.287595825231314,
+    "source": "WF365 revocation evidence",
+    "status": "FASTER_THAN_BOTH_SEARCH_WINNERS_NOT_AN_ADDITIONAL_PASS_GATE",
+    "used_as_seed": false
+  },
+  "notes": [
+    "Empirical 10x saturation criterion only, NOT global optimality.",
+    "Previous WF366 revocation relied on held-out performance, an extra gate outside the six-gate contract.",
+    "Current source/runtime re-run after WF366; no legacy winner seeded.",
+    "P5 300s is a wall BUDGET not a requirement to burn all 300 seconds."
+  ],
+  "ports": {
+    "P1": {
+      "covered": 86,
+      "legal": 86,
+      "status": "PASS"
+    },
+    "P2": {
+      "covered": 117,
+      "legal": 117,
+      "status": "PASS"
+    },
+    "P3": {
+      "covered": 1974,
+      "legal": 1974,
+      "slots": 18,
+      "source_membership_verified": true,
+      "status": "PASS",
+      "top5_legal_packages": 83,
+      "unknown_effect_items": 73
+    },
+    "P4": {
+      "actual_s_per_mob": 16.645746387070563,
+      "attempts": 201,
+      "cpu_s": 25.391048025,
+      "events": 87220,
+      "predicted_s_per_mob": 20.897250105011825,
+      "status": "PASS",
+      "unique": 30,
+      "wall_s": 26.227101968000056
+    },
+    "P5": {
+      "actual_s_per_mob": 16.68719406780137,
+      "attempts": 896,
+      "cpu_s": 56.264045703,
+      "events": 196651,
+      "predicted_s_per_mob": 20.949974283347984,
+      "status": "PASS",
+      "unique": 114,
+      "wall_s": 57.25777712900003
+    },
+    "P6": {
+      "T30": 16.645746387070563,
+      "T300": 16.68719406780137,
+      "relative_percent": -0.24838016842377852,
+      "replay_wall_s": 8.067127895999988,
+      "status": "PASS"
+    }
+  },
+  "runtime_parent": "WF366 Primal Bite unlock and spatial layout (sequential 100mob at 0yd)",
+  "schema": "wf367_six_port_empirical_reacceptance_v1",
+  "source_catalogue_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "source_context_sha256": "785ccf38def5e5a4ddd112e14cf32c57c42c5928af83963207d96a121fe13482",
+  "source_db_sha256": "63c56b316c9ed6ba175c5f895870c372fb553fc78962fc8ee15c1e8cd5423244"
+}
