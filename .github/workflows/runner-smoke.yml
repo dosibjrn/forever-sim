@@ -1,0 +1,12 @@
+name: Public runner allocation smoke
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ubuntu-runner-allocation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verify hosted runner
+        run: echo 'RUNNER_ALLOCATED_AND_STEP_EXECUTED'
