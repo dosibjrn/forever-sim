@@ -21,6 +21,7 @@ type worldTick struct {
     NativeClockNS int64 `json:"native_clock_ns"`
     NativePlayerIndex int `json:"native_player_index"`
     WorldSHA256 string `json:"world_sha256"`
+    PreviousWorldACKID string `json:"previous_world_ack_id"`
     SelectedTargetID string `json:"selected_target_id"`
     DistanceYards float64 `json:"distance_yards"`
     WorldSource string `json:"world_source"`
