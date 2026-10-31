@@ -1,0 +1,965 @@
+[
+  {
+    "details": {
+      "icon_key": "ability_druid_berserk",
+      "modeled_talent": true,
+      "source_roster_key": "berserk"
+    },
+    "entity_kind": "talent",
+    "local_key": "berserk",
+    "name": "Berserk",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_ghoulfrenzy",
+      "modeled_talent": false,
+      "source_roster_key": "blood_frenzy"
+    },
+    "entity_kind": "talent",
+    "local_key": "blood_frenzy",
+    "name": "Blood Frenzy",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_bash",
+      "modeled_talent": true,
+      "source_roster_key": "brutal_impact"
+    },
+    "entity_kind": "talent",
+    "local_key": "brutal_impact",
+    "name": "Brutal Impact",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_ambush",
+      "modeled_talent": true,
+      "source_roster_key": "feral_instinct"
+    },
+    "entity_kind": "talent",
+    "local_key": "feral_instinct",
+    "name": "Feral Instinct",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_spiritwolf",
+      "modeled_talent": true,
+      "source_roster_key": "feral_swiftness"
+    },
+    "entity_kind": "talent",
+    "local_key": "feral_swiftness",
+    "name": "Feral Swiftness",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_hunter_pet_hyena",
+      "modeled_talent": true,
+      "source_roster_key": "ferocity"
+    },
+    "entity_kind": "talent",
+    "local_key": "ferocity",
+    "name": "Ferocity",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_blessingofstamina",
+      "modeled_talent": true,
+      "source_roster_key": "furor"
+    },
+    "entity_kind": "talent",
+    "local_key": "furor",
+    "name": "Furor",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_arcane03",
+      "modeled_talent": true,
+      "source_roster_key": "genesis"
+    },
+    "entity_kind": "talent",
+    "local_key": "genesis",
+    "name": "Genesis",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_protectionformnature",
+      "modeled_talent": true,
+      "source_roster_key": "gift_of_nature"
+    },
+    "entity_kind": "talent",
+    "local_key": "gift_of_nature",
+    "name": "Gift of Nature",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_spiritarmor",
+      "modeled_talent": true,
+      "source_roster_key": "gift_of_the_earthmother"
+    },
+    "entity_kind": "talent",
+    "local_key": "gift_of_earthmother",
+    "name": "Gift of the Earthmother",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_blessingofagility",
+      "modeled_talent": true,
+      "source_roster_key": "heart_of_the_wild"
+    },
+    "entity_kind": "talent",
+    "local_key": "heart_of_the_wild",
+    "name": "Heart of the Wild",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_stranglevines",
+      "modeled_talent": true,
+      "source_roster_key": "improved_entangling_roots"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_entangling_roots",
+    "name": "Improved Entangling Roots",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_starfall",
+      "modeled_talent": true,
+      "source_roster_key": "improved_moonfire"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_moonfire",
+    "name": "Improved Moonfire",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_resistnature",
+      "modeled_talent": true,
+      "source_roster_key": "improved_regrowth"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_regrowth",
+    "name": "Improved Regrowth",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_rejuvenation",
+      "modeled_talent": true,
+      "source_roster_key": "improved_rejuvenation"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_rejuvenation",
+    "name": "Improved Rejuvenation",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_starfire",
+      "modeled_talent": true,
+      "source_roster_key": "improved_starfire"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_starfire",
+    "name": "Improved Starfire",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_tranquility",
+      "modeled_talent": true,
+      "source_roster_key": "improved_tranquility"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_tranquility",
+    "name": "Improved Tranquility",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_kingofthejungle",
+      "modeled_talent": true,
+      "source_roster_key": "king_of_the_jungle"
+    },
+    "entity_kind": "talent",
+    "local_key": "king_of_the_jungle",
+    "name": "King of the Jungle",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_giftofthewaterspirit",
+      "modeled_talent": true,
+      "source_roster_key": "living_spirit"
+    },
+    "entity_kind": "talent",
+    "local_key": "living_spirit",
+    "name": "Living Spirit",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_moonglow",
+      "modeled_talent": true,
+      "source_roster_key": "moonfury"
+    },
+    "entity_kind": "talent",
+    "local_key": "moonfury",
+    "name": "Moonfury",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_sentinal",
+      "modeled_talent": true,
+      "source_roster_key": "moonglow"
+    },
+    "entity_kind": "talent",
+    "local_key": "moonglow",
+    "name": "Moonglow",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_bullrush",
+      "modeled_talent": true,
+      "source_roster_key": "natural_reaction"
+    },
+    "entity_kind": "talent",
+    "local_key": "natural_reaction",
+    "name": "Natural Reaction",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_healingtouch",
+      "modeled_talent": true,
+      "source_roster_key": "naturalist"
+    },
+    "entity_kind": "talent",
+    "local_key": "naturalist",
+    "name": "Naturalist",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_healingwavegreater",
+      "modeled_talent": true,
+      "source_roster_key": "natures_focus"
+    },
+    "entity_kind": "talent",
+    "local_key": "natures_focus",
+    "name": "Nature's Focus",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "inv_staff_01",
+      "modeled_talent": true,
+      "source_roster_key": "natures_majesty"
+    },
+    "entity_kind": "talent",
+    "local_key": "natures_majesty",
+    "name": "Nature's Majesty",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_naturetouchgrow",
+      "modeled_talent": true,
+      "source_roster_key": "natures_reach"
+    },
+    "entity_kind": "talent",
+    "local_key": "natures_reach",
+    "name": "Nature's Reach",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_natureresistancetotem",
+      "modeled_talent": true,
+      "source_roster_key": "natures_splendor"
+    },
+    "entity_kind": "talent",
+    "local_key": "natures_splendor",
+    "name": "Nature's Splendor",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_ravenform",
+      "modeled_talent": true,
+      "source_roster_key": "natures_swiftness"
+    },
+    "entity_kind": "talent",
+    "local_key": "natures_swiftness",
+    "name": "Nature's Swiftness",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_herb_15",
+      "modeled_talent": true,
+      "source_roster_key": "overgrowth"
+    },
+    "entity_kind": "talent",
+    "local_key": "overgrowth",
+    "name": "Overgrowth",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_predatoryinstincts",
+      "modeled_talent": true,
+      "source_roster_key": "predatory_instincts"
+    },
+    "entity_kind": "talent",
+    "local_key": "predatory_instincts",
+    "name": "Predatory Instincts",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_hunter_pet_cat",
+      "modeled_talent": true,
+      "source_roster_key": "predatory_strikes"
+    },
+    "entity_kind": "talent",
+    "local_key": "predatory_strikes",
+    "name": "Predatory Strikes",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_racial_cannibalize",
+      "modeled_talent": false,
+      "source_roster_key": "primal_bite"
+    },
+    "entity_kind": "talent",
+    "local_key": "primal_bite",
+    "name": "Primal Bite",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_windwalkon",
+      "modeled_talent": true,
+      "source_roster_key": "reflection"
+    },
+    "entity_kind": "talent",
+    "local_key": "reflection",
+    "name": "Reflection",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_primalagression",
+      "modeled_talent": true,
+      "source_roster_key": "rend_and_tear"
+    },
+    "entity_kind": "talent",
+    "local_key": "rend_and_tear",
+    "name": "Rend and Tear",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_ravage",
+      "modeled_talent": true,
+      "source_roster_key": "savage_fury"
+    },
+    "entity_kind": "talent",
+    "local_key": "savage_fury",
+    "name": "Savage Fury",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_monsterclaw_04",
+      "modeled_talent": true,
+      "source_roster_key": "sharpened_claws"
+    },
+    "entity_kind": "talent",
+    "local_key": "sharpened_claws",
+    "name": "Sharpened Claws",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_shadow_vampiricaura",
+      "modeled_talent": true,
+      "source_roster_key": "shredding_attacks"
+    },
+    "entity_kind": "talent",
+    "local_key": "shredding_attacks",
+    "name": "Shredding Attacks",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_eyeoftheowl",
+      "modeled_talent": true,
+      "source_roster_key": "subtlety"
+    },
+    "entity_kind": "talent",
+    "local_key": "subtlety",
+    "name": "Subtlety",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "inv_relics_idolofrejuvenation",
+      "modeled_talent": true,
+      "source_roster_key": "swiftmend"
+    },
+    "entity_kind": "talent",
+    "local_key": "swiftmend",
+    "name": "Swiftmend",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_pelt_bear_03",
+      "modeled_talent": true,
+      "source_roster_key": "thick_hide"
+    },
+    "entity_kind": "talent",
+    "local_key": "thick_hide",
+    "name": "Thick Hide",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_elunesgrace",
+      "modeled_talent": true,
+      "source_roster_key": "tranquil_spirit"
+    },
+    "entity_kind": "talent",
+    "local_key": "tranquil_spirit",
+    "name": "Tranquil Spirit",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_purge",
+      "modeled_talent": true,
+      "source_roster_key": "vengeance"
+    },
+    "entity_kind": "talent",
+    "local_key": "vengeance",
+    "name": "Vengeance",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_flourish",
+      "modeled_talent": true,
+      "source_roster_key": "wild_growth"
+    },
+    "entity_kind": "talent",
+    "local_key": "wild_growth",
+    "name": "Wild Growth",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_nullifypoison_02",
+      "source_roster_key": "abolish_poison"
+    },
+    "entity_kind": "spell",
+    "local_key": "abolish_poison",
+    "name": "Abolish Poison",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_aquaticform",
+      "source_roster_key": "aquatic_form"
+    },
+    "entity_kind": "spell",
+    "local_key": "aquatic_form",
+    "name": "Aquatic Form",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_stoneclawtotem",
+      "source_roster_key": "barkskin"
+    },
+    "entity_kind": "spell",
+    "local_key": "barkskin",
+    "name": "Barkskin",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_bash",
+      "source_roster_key": "bash"
+    },
+    "entity_kind": "spell",
+    "local_key": "bash",
+    "name": "Bash",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_racial_bearform",
+      "source_roster_key": "bear_form"
+    },
+    "entity_kind": "spell",
+    "local_key": "bear_form",
+    "name": "Bear Form",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_berserk",
+      "source_roster_key": "berserk"
+    },
+    "entity_kind": "spell",
+    "local_key": "berserk",
+    "name": "Berserk",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_challangingroar",
+      "source_roster_key": "challenging_roar"
+    },
+    "entity_kind": "spell",
+    "local_key": "challenging_roar",
+    "name": "Challenging Roar",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_cower",
+      "source_roster_key": "cower"
+    },
+    "entity_kind": "spell",
+    "local_key": "cower",
+    "name": "Cower",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_nullifypoison",
+      "source_roster_key": "cure_poison"
+    },
+    "entity_kind": "spell",
+    "local_key": "cure_poison",
+    "name": "Cure Poison",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_dash",
+      "source_roster_key": "dash"
+    },
+    "entity_kind": "spell",
+    "local_key": "dash",
+    "name": "Dash",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_demoralizingroar",
+      "source_roster_key": "demoralizing_roar"
+    },
+    "entity_kind": "spell",
+    "local_key": "demoralizing_roar",
+    "name": "Demoralizing Roar",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_racial_bearform",
+      "source_roster_key": "dire_bear_form"
+    },
+    "entity_kind": "spell",
+    "local_key": "dire_bear_form",
+    "name": "Dire Bear Form",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_enrage",
+      "source_roster_key": "enrage"
+    },
+    "entity_kind": "spell",
+    "local_key": "enrage",
+    "name": "Enrage",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_stranglevines",
+      "source_roster_key": "entangling_roots"
+    },
+    "entity_kind": "spell",
+    "local_key": "entangling_roots",
+    "name": "Entangling Roots",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_faeriefire",
+      "source_roster_key": "faerie_fire"
+    },
+    "entity_kind": "spell",
+    "local_key": "faerie_fire",
+    "name": "Faerie Fire",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_feather_01",
+      "source_roster_key": "feline_grace"
+    },
+    "entity_kind": "spell",
+    "local_key": "feline_grace",
+    "name": "Feline Grace",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_hunter_pet_bear",
+      "source_roster_key": "feral_charge"
+    },
+    "entity_kind": "spell",
+    "local_key": "feral_charge",
+    "name": "Feral Charge",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_bullrush",
+      "source_roster_key": "frenzied_regeneration"
+    },
+    "entity_kind": "spell",
+    "local_key": "frenzied_regeneration",
+    "name": "Frenzied Regeneration",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_regeneration",
+      "source_roster_key": "gift_of_the_wild"
+    },
+    "entity_kind": "spell",
+    "local_key": "gift_of_the_wild",
+    "name": "Gift of the Wild",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_physical_taunt",
+      "source_roster_key": "growl"
+    },
+    "entity_kind": "spell",
+    "local_key": "growl",
+    "name": "Growl",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_healingtouch",
+      "source_roster_key": "healing_touch"
+    },
+    "entity_kind": "spell",
+    "local_key": "healing_touch",
+    "name": "Healing Touch",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_sleep",
+      "source_roster_key": "hibernate"
+    },
+    "entity_kind": "spell",
+    "local_key": "hibernate",
+    "name": "Hibernate",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_cyclone",
+      "source_roster_key": "hurricane"
+    },
+    "entity_kind": "spell",
+    "local_key": "hurricane",
+    "name": "Hurricane",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_lightning",
+      "source_roster_key": "innervate"
+    },
+    "entity_kind": "spell",
+    "local_key": "innervate",
+    "name": "Innervate",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_lacerate",
+      "source_roster_key": "lacerate"
+    },
+    "entity_kind": "spell",
+    "local_key": "lacerate",
+    "name": "Lacerate",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_regeneration",
+      "source_roster_key": "mark_of_the_wild"
+    },
+    "entity_kind": "spell",
+    "local_key": "mark_of_the_wild",
+    "name": "Mark of the Wild",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_forceofnature",
+      "source_roster_key": "moonkin_form"
+    },
+    "entity_kind": "spell",
+    "local_key": "moonkin_form",
+    "name": "Moonkin Form",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_natureswrath",
+      "source_roster_key": "natures_grasp"
+    },
+    "entity_kind": "spell",
+    "local_key": "natures_grasp",
+    "name": "Nature's Grasp",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_ravenform",
+      "source_roster_key": "natures_swiftness"
+    },
+    "entity_kind": "spell",
+    "local_key": "natures_swiftness",
+    "name": "Nature's Swiftness",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_crystalball",
+      "source_roster_key": "omen_of_clarity"
+    },
+    "entity_kind": "spell",
+    "local_key": "omen_of_clarity",
+    "name": "Omen of Clarity",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_supriseattack",
+      "source_roster_key": "pounce"
+    },
+    "entity_kind": "spell",
+    "local_key": "pounce",
+    "name": "Pounce",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_racial_cannibalize",
+      "source_roster_key": "primal_bite"
+    },
+    "entity_kind": "spell",
+    "local_key": "primal_bite",
+    "name": "Primal Bite",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_ambush",
+      "source_roster_key": "prowl"
+    },
+    "entity_kind": "spell",
+    "local_key": "prowl",
+    "name": "Prowl",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_ravage",
+      "source_roster_key": "ravage"
+    },
+    "entity_kind": "spell",
+    "local_key": "ravage",
+    "name": "Ravage",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_reincarnation",
+      "source_roster_key": "rebirth"
+    },
+    "entity_kind": "spell",
+    "local_key": "rebirth",
+    "name": "Rebirth",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_resistnature",
+      "source_roster_key": "regrowth"
+    },
+    "entity_kind": "spell",
+    "local_key": "regrowth",
+    "name": "Regrowth",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_rejuvenation",
+      "source_roster_key": "rejuvenation"
+    },
+    "entity_kind": "spell",
+    "local_key": "rejuvenation",
+    "name": "Rejuvenation",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_removecurse",
+      "source_roster_key": "remove_curse"
+    },
+    "entity_kind": "spell",
+    "local_key": "remove_curse",
+    "name": "Remove Curse",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_lunarguidance",
+      "source_roster_key": "revive"
+    },
+    "entity_kind": "spell",
+    "local_key": "revive",
+    "name": "Revive",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_ghoulfrenzy",
+      "source_roster_key": "rip"
+    },
+    "entity_kind": "spell",
+    "local_key": "rip",
+    "name": "Rip",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_hunter_beastsoothe",
+      "source_roster_key": "soothe_animal"
+    },
+    "entity_kind": "spell",
+    "local_key": "soothe_animal",
+    "name": "Soothe Animal",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_relics_idolofrejuvenation",
+      "source_roster_key": "swiftmend"
+    },
+    "entity_kind": "spell",
+    "local_key": "swiftmend",
+    "name": "Swiftmend",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_teleportmoonglade",
+      "source_roster_key": "teleport_moonglade"
+    },
+    "entity_kind": "spell",
+    "local_key": "teleport_moonglade",
+    "name": "Teleport: Moonglade",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_thorns",
+      "source_roster_key": "thorns"
+    },
+    "entity_kind": "spell",
+    "local_key": "thorns",
+    "name": "Thorns",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_mount_jungletiger",
+      "source_roster_key": "tigers_fury"
+    },
+    "entity_kind": "spell",
+    "local_key": "tigers_fury",
+    "name": "Tiger's Fury",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_tracking",
+      "source_roster_key": "track_humanoids"
+    },
+    "entity_kind": "spell",
+    "local_key": "track_humanoids",
+    "name": "Track Humanoids",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_tranquility",
+      "source_roster_key": "tranquility"
+    },
+    "entity_kind": "spell",
+    "local_key": "tranquility",
+    "name": "Tranquility",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_travelform",
+      "source_roster_key": "travel_form"
+    },
+    "entity_kind": "spell",
+    "local_key": "travel_form",
+    "name": "Travel Form",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_druid_flourish",
+      "source_roster_key": "wild_growth"
+    },
+    "entity_kind": "spell",
+    "local_key": "wild_growth",
+    "name": "Wild Growth",
+    "reason": "spell_family_rank_ids_not_imported"
+  }
+]

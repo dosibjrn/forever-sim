@@ -1,0 +1,697 @@
+[
+  {
+    "aliases": [],
+    "class_key": "druid",
+    "col": null,
+    "icon_key": "ability_druid_eclipse",
+    "local_key": "eclipse",
+    "max_rank": 3,
+    "name": "Eclipse",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "3c13be43d376248b74830f6cc3141539942e250d77fc5d9a2281e923367db6a0",
+        "entity_id": 408248,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=408248/eclipse"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "balance"
+  },
+  {
+    "aliases": [],
+    "class_key": "druid",
+    "col": null,
+    "icon_key": "ability_hunter_pet_bear",
+    "local_key": "feral_charge",
+    "max_rank": 1,
+    "name": "Feral Charge",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "572e775bdfbd2db41b22eef8c2e68665590427a963284855bad131f88383b64a",
+          "entity_id": 16979,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=16979/feral-charge"
+        },
+        "spell_id": 16979,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "572e775bdfbd2db41b22eef8c2e68665590427a963284855bad131f88383b64a",
+        "entity_id": 16979,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=16979/feral-charge"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "feral"
+  },
+  {
+    "aliases": [],
+    "class_key": "druid",
+    "col": null,
+    "icon_key": "spell_nature_abolishmagic",
+    "local_key": "improved_wrath",
+    "max_rank": 5,
+    "name": "Improved Wrath",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [
+          {
+            "base_value": -0.1,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "cast_time_delta_s",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 1: Wrath cast time -0.1s",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          },
+          {
+            "base_value": -0.1,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "resource_cost_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 1: Wrath mana cost -10%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "f69efec9ef0d15f98b3210757d4fb849e7db5c4f2fb2de9a0c74c8e2817d927a",
+          "entity_id": 16814,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=16814/improved-wrath"
+        },
+        "spell_id": 16814,
+        "trait_id": 134384
+      },
+      {
+        "effects": [
+          {
+            "base_value": -0.2,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "cast_time_delta_s",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 2: Wrath cast time -0.2s",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          },
+          {
+            "base_value": -0.2,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "resource_cost_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 2: Wrath mana cost -20%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 2,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "f69efec9ef0d15f98b3210757d4fb849e7db5c4f2fb2de9a0c74c8e2817d927a",
+          "entity_id": 16814,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=16814/improved-wrath"
+        },
+        "spell_id": null,
+        "trait_id": 134384
+      },
+      {
+        "effects": [
+          {
+            "base_value": -0.30000000000000004,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "cast_time_delta_s",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 3: Wrath cast time -0.3s",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          },
+          {
+            "base_value": -0.30000000000000004,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "resource_cost_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 3: Wrath mana cost -30%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 3,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "f69efec9ef0d15f98b3210757d4fb849e7db5c4f2fb2de9a0c74c8e2817d927a",
+          "entity_id": 16814,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=16814/improved-wrath"
+        },
+        "spell_id": null,
+        "trait_id": 134384
+      },
+      {
+        "effects": [
+          {
+            "base_value": -0.4,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "cast_time_delta_s",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 4: Wrath cast time -0.4s",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          },
+          {
+            "base_value": -0.4,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "resource_cost_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 4: Wrath mana cost -40%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 4,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "f69efec9ef0d15f98b3210757d4fb849e7db5c4f2fb2de9a0c74c8e2817d927a",
+          "entity_id": 16814,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=16814/improved-wrath"
+        },
+        "spell_id": null,
+        "trait_id": 134384
+      },
+      {
+        "effects": [
+          {
+            "base_value": -0.5,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "cast_time_delta_s",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 5: Wrath cast time -0.5s",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          },
+          {
+            "base_value": -0.5,
+            "coefficient": null,
+            "metadata": {
+              "target": "wrath"
+            },
+            "normalization_status": "supported",
+            "normalized_kind": "resource_cost_pct",
+            "period_s": null,
+            "proc_chance": null,
+            "radius": null,
+            "raw_text_summary": "Improved Wrath rank 5: Wrath mana cost -50%",
+            "school": null,
+            "server_side_script": false,
+            "source_aura_type": null,
+            "source_effect_index": null,
+            "source_effect_type": "trait_value",
+            "trigger_spell_id": null
+          }
+        ],
+        "rank": 5,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "f69efec9ef0d15f98b3210757d4fb849e7db5c4f2fb2de9a0c74c8e2817d927a",
+          "entity_id": 16814,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=16814/improved-wrath"
+        },
+        "spell_id": null,
+        "trait_id": 134384
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "f69efec9ef0d15f98b3210757d4fb849e7db5c4f2fb2de9a0c74c8e2817d927a",
+        "entity_id": 16814,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=16814/improved-wrath"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "balance"
+  },
+  {
+    "aliases": [],
+    "class_key": "druid",
+    "col": null,
+    "icon_key": "spell_nature_insectswarm",
+    "local_key": "insect_swarm",
+    "max_rank": 1,
+    "name": "Insect Swarm",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "4f3254bd766d2d1f543a977fc61cb68c2778bda5f3a0abc68d2d88990cc51bd1",
+          "entity_id": 24974,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=24974/insect-swarm"
+        },
+        "spell_id": 24974,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "4f3254bd766d2d1f543a977fc61cb68c2778bda5f3a0abc68d2d88990cc51bd1",
+        "entity_id": 24974,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=24974/insect-swarm"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "balance"
+  },
+  {
+    "aliases": [],
+    "class_key": "druid",
+    "col": null,
+    "icon_key": "spell_nature_unyeildingstamina",
+    "local_key": "leader_of_the_pack",
+    "max_rank": 1,
+    "name": "Leader of the Pack",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "dee5255d6e06699dbb13f509ab54f28ea11871512a03b05b619562f01a799c3a",
+          "entity_id": 17007,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=17007/leader-of-the-pack"
+        },
+        "spell_id": 17007,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "dee5255d6e06699dbb13f509ab54f28ea11871512a03b05b619562f01a799c3a",
+        "entity_id": 17007,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=17007/leader-of-the-pack"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "feral"
+  },
+  {
+    "aliases": [],
+    "class_key": "druid",
+    "col": null,
+    "icon_key": "spell_nature_forceofnature",
+    "local_key": "moonkin_form",
+    "max_rank": 1,
+    "name": "Moonkin Form",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "50913856c3968f39ca681eb12d557d5c8bee89e2e5f04b9403176e5b5a0b3dba",
+          "entity_id": 24858,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=24858/moonkin-form"
+        },
+        "spell_id": 24858,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "50913856c3968f39ca681eb12d557d5c8bee89e2e5f04b9403176e5b5a0b3dba",
+        "entity_id": 24858,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=24858/moonkin-form"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "balance"
+  },
+  {
+    "aliases": [],
+    "class_key": "druid",
+    "col": null,
+    "icon_key": "spell_nature_wispsplode",
+    "local_key": "natural_shapeshifter",
+    "max_rank": 3,
+    "name": "Natural Shapeshifter",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "67ca200f4695f6e73ce6a78af84847c151404e28de378306fcc5c0aca44556e8",
+        "entity_id": 16833,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=16833/natural-shapeshifter"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "restoration"
+  },
+  {
+    "aliases": [],
+    "class_key": "druid",
+    "col": null,
+    "icon_key": "spell_nature_naturesblessing",
+    "local_key": "natures_grace",
+    "max_rank": 1,
+    "name": "Nature's Grace",
+    "prerequisite": null,
+    "rank_records": [
+      {
+        "effects": [],
+        "rank": 1,
+        "source_ref": {
+          "confidence": "high",
+          "content_fingerprint": "e50f93c9222291dafad6c47d3c684705e22e8c1e87e581c6c9447179436dc97a",
+          "entity_id": 16886,
+          "entity_kind": "talent",
+          "fingerprint_scope": "normalized_capture",
+          "notes": [
+            "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+          ],
+          "parser_version": "forever-source-v1",
+          "provider": "wowhead",
+          "retrieved_at": "2026-09-25",
+          "ruleset": "forever",
+          "source_build": null,
+          "source_patch": "1.60.1",
+          "url": "https://www.wowhead.com/forever/spell=16886/nature-s-grace"
+        },
+        "spell_id": 16886,
+        "trait_id": null
+      }
+    ],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "e50f93c9222291dafad6c47d3c684705e22e8c1e87e581c6c9447179436dc97a",
+        "entity_id": 16886,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever entity anchor; full per-rank ID mapping may remain partial in M42."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=16886/nature-s-grace"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "balance"
+  }
+]

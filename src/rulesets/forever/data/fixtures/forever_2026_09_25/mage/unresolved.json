@@ -1,0 +1,788 @@
+[
+  {
+    "details": {
+      "icon_key": "spell_arcane_blast",
+      "modeled_talent": true,
+      "source_roster_key": "arcane_blast"
+    },
+    "entity_kind": "talent",
+    "local_key": "arcane_blast",
+    "name": "Arcane Blast",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_devotion",
+      "modeled_talent": true,
+      "source_roster_key": "arcane_focus"
+    },
+    "entity_kind": "talent",
+    "local_key": "arcane_focus",
+    "name": "Arcane Focus",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_dispelmagic",
+      "modeled_talent": true,
+      "source_roster_key": "arcane_subtlety"
+    },
+    "entity_kind": "talent",
+    "local_key": "arcane_subtlety",
+    "name": "Arcane Subtlety",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_fire",
+      "modeled_talent": true,
+      "source_roster_key": "burning_soul"
+    },
+    "entity_kind": "talent",
+    "local_key": "burning_soul",
+    "name": "Burning Soul",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_immolation",
+      "modeled_talent": true,
+      "source_roster_key": "fire_power"
+    },
+    "entity_kind": "talent",
+    "local_key": "fire_power",
+    "name": "Fire Power",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_flare",
+      "modeled_talent": true,
+      "source_roster_key": "flame_throwing"
+    },
+    "entity_kind": "talent",
+    "local_key": "flame_throwing",
+    "name": "Flame Throwing",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_frostblast",
+      "modeled_talent": true,
+      "source_roster_key": "ice_lance"
+    },
+    "entity_kind": "talent",
+    "local_key": "ice_lance",
+    "name": "Ice Lance",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_incinerate",
+      "modeled_talent": true,
+      "source_roster_key": "ignite"
+    },
+    "entity_kind": "talent",
+    "local_key": "ignite",
+    "name": "Ignite",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_meteorstorm",
+      "modeled_talent": true,
+      "source_roster_key": "impact"
+    },
+    "entity_kind": "talent",
+    "local_key": "impact",
+    "name": "Impact",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_firearmor",
+      "modeled_talent": true,
+      "source_roster_key": "improved_fire_ward"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_fire_ward",
+    "name": "Improved Fire Ward",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_flamebolt",
+      "modeled_talent": true,
+      "source_roster_key": "improved_fireball"
+    },
+    "entity_kind": "talent",
+    "local_key": "imp_fireball",
+    "name": "Improved Fireball",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_selfdestruct",
+      "modeled_talent": true,
+      "source_roster_key": "improved_flamestrike"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_flamestrike",
+    "name": "Improved Flamestrike",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_frostbolt02",
+      "modeled_talent": true,
+      "source_roster_key": "improved_frostbolt"
+    },
+    "entity_kind": "talent",
+    "local_key": "imp_frostbolt",
+    "name": "Improved Frostbolt",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_windsofwoe",
+      "modeled_talent": true,
+      "source_roster_key": "improved_scorch"
+    },
+    "entity_kind": "talent",
+    "local_key": "imp_scorch",
+    "name": "Improved Scorch",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_fireball02",
+      "modeled_talent": true,
+      "source_roster_key": "pyroblast"
+    },
+    "entity_kind": "talent",
+    "local_key": "pyroblast",
+    "name": "Pyroblast",
+    "reason": "wowhead_talent_id_not_confidently_resolved"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_flashheal",
+      "source_roster_key": "amplify_magic"
+    },
+    "entity_kind": "spell",
+    "local_key": "amplify_magic",
+    "name": "Amplify Magic",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_arcaneintellect",
+      "source_roster_key": "arcane_brilliance"
+    },
+    "entity_kind": "spell",
+    "local_key": "arcane_brilliance",
+    "name": "Arcane Brilliance",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_wispsplode",
+      "source_roster_key": "arcane_explosion"
+    },
+    "entity_kind": "spell",
+    "local_key": "arcane_explosion",
+    "name": "Arcane Explosion",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_magicalsentry",
+      "source_roster_key": "arcane_intellect"
+    },
+    "entity_kind": "spell",
+    "local_key": "arcane_intellect",
+    "name": "Arcane Intellect",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_lightning",
+      "source_roster_key": "arcane_power"
+    },
+    "entity_kind": "spell",
+    "local_key": "arcane_power",
+    "name": "Arcane Power",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_holy_excorcism_02",
+      "source_roster_key": "blast_wave"
+    },
+    "entity_kind": "spell",
+    "local_key": "blast_wave",
+    "name": "Blast Wave",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_blink",
+      "source_roster_key": "blink"
+    },
+    "entity_kind": "spell",
+    "local_key": "blink",
+    "name": "Blink",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_wizardmark",
+      "source_roster_key": "cold_snap"
+    },
+    "entity_kind": "spell",
+    "local_key": "cold_snap",
+    "name": "Cold Snap",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_sealoffire",
+      "source_roster_key": "combustion"
+    },
+    "entity_kind": "spell",
+    "local_key": "combustion",
+    "name": "Combustion",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_glacier",
+      "source_roster_key": "cone_of_cold"
+    },
+    "entity_kind": "spell",
+    "local_key": "cone_of_cold",
+    "name": "Cone of Cold",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_food_10",
+      "source_roster_key": "conjure_food"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_food",
+    "name": "Conjure Food",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_food_09",
+      "source_roster_key": "conjure_food_rank_2"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_food_rank_2",
+    "name": "Conjure Food|Rank 2",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_food_12",
+      "source_roster_key": "conjure_food_rank_3"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_food_rank_3",
+    "name": "Conjure Food|Rank 3",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_food_08",
+      "source_roster_key": "conjure_food_rank_4"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_food_rank_4",
+    "name": "Conjure Food|Rank 4",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_food_11",
+      "source_roster_key": "conjure_food_rank_5"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_food_rank_5",
+    "name": "Conjure Food|Rank 5",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_food_33",
+      "source_roster_key": "conjure_food_rank_6"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_food_rank_6",
+    "name": "Conjure Food|Rank 6",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_food_73cinnamonroll",
+      "source_roster_key": "conjure_food_rank_7"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_food_rank_7",
+    "name": "Conjure Food|Rank 7",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_gem_emerald_01",
+      "source_roster_key": "conjure_mana_agate"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_mana_agate",
+    "name": "Conjure Mana Agate",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_gem_opal_01",
+      "source_roster_key": "conjure_mana_citrine"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_mana_citrine",
+    "name": "Conjure Mana Citrine",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_gem_emerald_02",
+      "source_roster_key": "conjure_mana_jade"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_mana_jade",
+    "name": "Conjure Mana Jade",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_misc_gem_ruby_01",
+      "source_roster_key": "conjure_mana_ruby"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_mana_ruby",
+    "name": "Conjure Mana Ruby",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_drink_06",
+      "source_roster_key": "conjure_water"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_water",
+    "name": "Conjure Water",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_drink_07",
+      "source_roster_key": "conjure_water_rank_2"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_water_rank_2",
+    "name": "Conjure Water|Rank 2",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_drink_milk_02",
+      "source_roster_key": "conjure_water_rank_3"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_water_rank_3",
+    "name": "Conjure Water|Rank 3",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_drink_10",
+      "source_roster_key": "conjure_water_rank_4"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_water_rank_4",
+    "name": "Conjure Water|Rank 4",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_drink_09",
+      "source_roster_key": "conjure_water_rank_5"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_water_rank_5",
+    "name": "Conjure Water|Rank 5",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_drink_11",
+      "source_roster_key": "conjure_water_rank_6"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_water_rank_6",
+    "name": "Conjure Water|Rank 6",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "inv_drink_18",
+      "source_roster_key": "conjure_water_rank_7"
+    },
+    "entity_kind": "spell",
+    "local_key": "conjure_water_rank_7",
+    "name": "Conjure Water|Rank 7",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_iceshock",
+      "source_roster_key": "counterspell"
+    },
+    "entity_kind": "spell",
+    "local_key": "counterspell",
+    "name": "Counterspell",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_abolishmagic",
+      "source_roster_key": "dampen_magic"
+    },
+    "entity_kind": "spell",
+    "local_key": "dampen_magic",
+    "name": "Dampen Magic",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_purge",
+      "source_roster_key": "evocation"
+    },
+    "entity_kind": "spell",
+    "local_key": "evocation",
+    "name": "Evocation",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_firearmor",
+      "source_roster_key": "fire_ward"
+    },
+    "entity_kind": "spell",
+    "local_key": "fire_ward",
+    "name": "Fire Ward",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_selfdestruct",
+      "source_roster_key": "flamestrike"
+    },
+    "entity_kind": "spell",
+    "local_key": "flamestrike",
+    "name": "Flamestrike",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_frostarmor02",
+      "source_roster_key": "frost_armor"
+    },
+    "entity_kind": "spell",
+    "local_key": "frost_armor",
+    "name": "Frost Armor",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_frostward",
+      "source_roster_key": "frost_ward"
+    },
+    "entity_kind": "spell",
+    "local_key": "frost_ward",
+    "name": "Frost Ward",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_mage_frostfirebolt",
+      "source_roster_key": "frostfire_bolt"
+    },
+    "entity_kind": "spell",
+    "local_key": "frostfire_bolt",
+    "name": "Frostfire Bolt",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_frostarmor02",
+      "source_roster_key": "ice_armor"
+    },
+    "entity_kind": "spell",
+    "local_key": "ice_armor",
+    "name": "Ice Armor",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_ice_lament",
+      "source_roster_key": "ice_barrier"
+    },
+    "entity_kind": "spell",
+    "local_key": "ice_barrier",
+    "name": "Ice Barrier",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_frost_frost",
+      "source_roster_key": "ice_block"
+    },
+    "entity_kind": "spell",
+    "local_key": "ice_block",
+    "name": "Ice Block",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_magearmor",
+      "source_roster_key": "mage_armor"
+    },
+    "entity_kind": "spell",
+    "local_key": "mage_armor",
+    "name": "Mage Armor",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_shadow_detectlesserinvisibility",
+      "source_roster_key": "mana_shield"
+    },
+    "entity_kind": "spell",
+    "local_key": "mana_shield",
+    "name": "Mana Shield",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_polymorph",
+      "source_roster_key": "polymorph"
+    },
+    "entity_kind": "spell",
+    "local_key": "polymorph",
+    "name": "Polymorph",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_magic_polymorphpig",
+      "source_roster_key": "polymorph_pig"
+    },
+    "entity_kind": "spell",
+    "local_key": "polymorph_pig",
+    "name": "Polymorph|Pig",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "ability_hunter_pet_turtle",
+      "source_roster_key": "polymorph_turtle"
+    },
+    "entity_kind": "spell",
+    "local_key": "polymorph_turtle",
+    "name": "Polymorph|Turtle",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_portaldarnassus",
+      "source_roster_key": "portal_darnassus"
+    },
+    "entity_kind": "spell",
+    "local_key": "portal_darnassus",
+    "name": "Portal: Darnassus",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_portalironforge",
+      "source_roster_key": "portal_ironforge"
+    },
+    "entity_kind": "spell",
+    "local_key": "portal_ironforge",
+    "name": "Portal: Ironforge",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_portalorgrimmar",
+      "source_roster_key": "portal_orgrimmar"
+    },
+    "entity_kind": "spell",
+    "local_key": "portal_orgrimmar",
+    "name": "Portal: Orgrimmar",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_portalstormwind",
+      "source_roster_key": "portal_stormwind"
+    },
+    "entity_kind": "spell",
+    "local_key": "portal_stormwind",
+    "name": "Portal: Stormwind",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_portalthunderbluff",
+      "source_roster_key": "portal_thunder_bluff"
+    },
+    "entity_kind": "spell",
+    "local_key": "portal_thunder_bluff",
+    "name": "Portal: Thunder Bluff",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_portalundercity",
+      "source_roster_key": "portal_undercity"
+    },
+    "entity_kind": "spell",
+    "local_key": "portal_undercity",
+    "name": "Portal: Undercity",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_enchantarmor",
+      "source_roster_key": "presence_of_mind"
+    },
+    "entity_kind": "spell",
+    "local_key": "presence_of_mind",
+    "name": "Presence of Mind",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_nature_removecurse",
+      "source_roster_key": "remove_lesser_curse"
+    },
+    "entity_kind": "spell",
+    "local_key": "remove_lesser_curse",
+    "name": "Remove Lesser Curse",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_fire_soulburn",
+      "source_roster_key": "scorch"
+    },
+    "entity_kind": "spell",
+    "local_key": "scorch",
+    "name": "Scorch",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_magic_featherfall",
+      "source_roster_key": "slow_fall"
+    },
+    "entity_kind": "spell",
+    "local_key": "slow_fall",
+    "name": "Slow Fall",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_teleporthalloftheguardian",
+      "source_roster_key": "teleport_dalaran"
+    },
+    "entity_kind": "spell",
+    "local_key": "teleport_dalaran",
+    "name": "Teleport: Dalaran",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_teleportdarnassus",
+      "source_roster_key": "teleport_darnassus"
+    },
+    "entity_kind": "spell",
+    "local_key": "teleport_darnassus",
+    "name": "Teleport: Darnassus",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_teleportironforge",
+      "source_roster_key": "teleport_ironforge"
+    },
+    "entity_kind": "spell",
+    "local_key": "teleport_ironforge",
+    "name": "Teleport: Ironforge",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_teleportorgrimmar",
+      "source_roster_key": "teleport_orgrimmar"
+    },
+    "entity_kind": "spell",
+    "local_key": "teleport_orgrimmar",
+    "name": "Teleport: Orgrimmar",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_teleportstormwind",
+      "source_roster_key": "teleport_stormwind"
+    },
+    "entity_kind": "spell",
+    "local_key": "teleport_stormwind",
+    "name": "Teleport: Stormwind",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_teleportthunderbluff",
+      "source_roster_key": "teleport_thunder_bluff"
+    },
+    "entity_kind": "spell",
+    "local_key": "teleport_thunder_bluff",
+    "name": "Teleport: Thunder Bluff",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "icon_key": "spell_arcane_teleportundercity",
+      "source_roster_key": "teleport_undercity"
+    },
+    "entity_kind": "spell",
+    "local_key": "teleport_undercity",
+    "name": "Teleport: Undercity",
+    "reason": "spell_family_rank_ids_not_imported"
+  },
+  {
+    "details": {
+      "canonical_talent_spell_id": 400588,
+      "relation": "overrides_actionbar_spell",
+      "wowhead_spell_id": 401736
+    },
+    "entity_kind": "helper_spell",
+    "local_key": "missile_barrage_grant",
+    "name": "Missile Barrage grant/actionbar override",
+    "reason": "hidden_helper_relation_explicit"
+  }
+]
