@@ -1,0 +1,70 @@
+{
+  "schema": "forever_secondary_client_talent_rank_capture_v1",
+  "class_key": "druid",
+  "capture_id": "secondary_druid_restoration_row1_20261010_70291",
+  "captured_at": "2026-10-10",
+  "client_build_claim": "1.60.1.70291",
+  "authority_note": "Secondary client text transcription; Wowhead indexed spell ID retained; no fabricated trait IDs.",
+  "entries": [
+    {
+      "spell_id": 17056,
+      "name": "Furor",
+      "tree_row": 0,
+      "tree_col": 2,
+      "max_rank": 5,
+      "tooltip_source_url": "https://wowforevertalents.com/druid/talents/furor/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Gives you a 20% chance to gain 10 Rage when shapeshifting into Bear Form or Dire Bear Form. Shapeshifting into Cat Form restores 20% of the Energy you had when last in Cat Form, plus 2 Energy per sec spent outside Cat Form, up to 20 Energy. Bear Form and Dire Bear Form forfeit this Energy and halt its restoration while active."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Gives you a 40% chance to gain 10 Rage when shapeshifting into Bear Form or Dire Bear Form. Shapeshifting into Cat Form restores 40% of the Energy you had when last in Cat Form, plus 4 Energy per sec spent outside Cat Form, up to 40 Energy. Bear Form and Dire Bear Form forfeit this Energy and halt its restoration while active."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Gives you a 60% chance to gain 10 Rage when shapeshifting into Bear Form or Dire Bear Form. Shapeshifting into Cat Form restores 60% of the Energy you had when last in Cat Form, plus 6 Energy per sec spent outside Cat Form, up to 60 Energy. Bear Form and Dire Bear Form forfeit this Energy and halt its restoration while active."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Gives you a 80% chance to gain 10 Rage when shapeshifting into Bear Form or Dire Bear Form. Shapeshifting into Cat Form restores 80% of the Energy you had when last in Cat Form, plus 8 Energy per sec spent outside Cat Form, up to 80 Energy. Bear Form and Dire Bear Form forfeit this Energy and halt its restoration while active."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Gives you a 100% chance to gain 10 Rage when shapeshifting into Bear Form or Dire Bear Form. Shapeshifting into Cat Form restores 100% of the Energy you had when last in Cat Form, plus 10 Energy per sec spent outside Cat Form, up to 100 Energy. Bear Form and Dire Bear Form forfeit this Energy and halt its restoration while active."
+        }
+      ]
+    },
+    {
+      "spell_id": 17063,
+      "name": "Nature's Focus",
+      "tree_row": 0,
+      "tree_col": 1,
+      "max_rank": 5,
+      "tooltip_source_url": "https://wowforevertalents.com/druid/talents/nature-s-focus/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Gives you a 14% chance to avoid interruption caused by damage while casting Arcane and Nature spells."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Gives you a 28% chance to avoid interruption caused by damage while casting Arcane and Nature spells."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Gives you a 42% chance to avoid interruption caused by damage while casting Arcane and Nature spells."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Gives you a 56% chance to avoid interruption caused by damage while casting Arcane and Nature spells."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Gives you a 70% chance to avoid interruption caused by damage while casting Arcane and Nature spells."
+        }
+      ]
+    }
+  ]
+}

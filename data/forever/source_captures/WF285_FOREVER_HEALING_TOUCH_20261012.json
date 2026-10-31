@@ -1,0 +1,27 @@
+{
+  "schema": "forever_source_ability_semantics_v1",
+  "capture_id": "wf285_forever_public_search_excerpt_20261012",
+  "class_key": "druid",
+  "captured_at": "2026-10-12T07:40:00Z",
+  "source_note": "Manual transcription of dated public Wowhead Forever web search excerpts; not a downloaded HTML snapshot or in-client validation. Numeric fields independently cross-checked against canonical 2026-10-08 listview. No trainer acquisition assertion.",
+  "entries": [
+    {
+      "spell_id": 5186, "name": "Healing Touch", "semantic_type": "direct_heal", "required_mode_id": "caster", "gcd_s": 1.5,
+      "spell_power_coefficient": 0.571, "source_url": "https://www.wowhead.com/forever/spell=5186", "mechanics_source_url": "https://www.wowhead.com/forever/spell=5186/healing-touch",
+      "source_authority": "wowhead_forever_public_search_excerpt_crosschecked_with_canonical_listview",
+      "public_page_observation": {"tooltip": "Heals a friendly target for 95 to 119.", "cost": "55 Mana", "cast": "2 sec cast", "level": 8, "spell_power_coefficient": 0.571, "capture_method": "manual_public_search_excerpt"},
+      "caveats": [{"semantic":"acquisition","status":"not_yet_independently_verified"},{"semantic":"heal_crit","status":"not_yet_modeled"}]
+    },
+    {
+      "spell_id": 5187, "name": "Healing Touch", "semantic_type": "direct_heal", "required_mode_id": "caster", "gcd_s": 1.5,
+      "spell_power_coefficient": 0.714, "source_url": "https://www.wowhead.com/forever/spell=5187", "mechanics_source_url": "https://www.wowhead.com/forever/spell=5187/healing-touch",
+      "source_authority": "wowhead_forever_public_search_excerpt_crosschecked_with_canonical_listview",
+      "public_page_observation": {"tooltip": "Heals a friendly target for 188 to 233.", "cost": "110 Mana", "cast": "2.5 sec cast", "level": 14, "spell_power_coefficient": 0.714, "capture_method": "manual_public_search_excerpt"},
+      "caveats": [{"semantic":"acquisition","status":"not_yet_independently_verified"},{"semantic":"heal_crit","status":"not_yet_modeled"}]
+    }
+  ],
+  "blocked_source_drift": [
+    {"spell_id": 5185, "reason": "public page shows spell-power-only tooltip, indexed rank 1 base heal 40-54 cannot be independently reconciled"},
+    {"spell_id": 5188, "reason": "public Forever page reports 185 mana and heal 376-459 while indexed 2026-10-08 listview reports 190 mana and 339-412; no silent overwrite"}
+  ]
+}

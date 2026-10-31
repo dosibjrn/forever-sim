@@ -1,0 +1,32 @@
+{
+  "capture_id": "forever_armor_stat_form_2026-10-10",
+  "captured_at": "2026-10-10",
+  "entries": [
+    {
+      "class_key": "*",
+      "scope": "actor",
+      "mode_label": "",
+      "source_stat": "agility",
+      "target_stat": "armor",
+      "operation": "add_stat_scaled",
+      "coefficient": 2.0,
+      "authority": "forever_stats_guide",
+      "source_url": "https://www.warcrafttavern.com/forever/guides/stats/",
+      "source_date": "2026-10-10",
+      "evidence": "All classes gain 2 Armor per point of Agility."
+    },
+    {
+      "class_key": "druid",
+      "scope": "mode",
+      "mode_label": "Bear Form",
+      "source_stat": "__equipped_item_armor",
+      "target_stat": "armor",
+      "operation": "add_stat_scaled",
+      "coefficient": 1.8,
+      "authority": "current_forever_wowhead_tooltip",
+      "source_url": "https://www.wowhead.com/forever/spell=5487/bear-form",
+      "source_date": "2026-10-10",
+      "evidence": "Shapeshift into Bear Form, increasing ... Armor contribution from items by 180% ..."
+    }
+  ]
+}
