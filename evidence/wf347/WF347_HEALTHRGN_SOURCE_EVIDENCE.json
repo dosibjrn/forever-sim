@@ -1,0 +1,16 @@
+{
+  "source_scope": "Druid L20 unrestricted, Forever item catalogue observed-level, 2026-10-13",
+  "field": "healthrgn",
+  "runtime_stat": "health_regeneration_per_5s",
+  "units": "flat health restored per 5 seconds, active during combat and ordinary recovery",
+  "field_semantics_basis": "Forever Wowhead item tooltip shows 'Restores +N health per 5 sec' for the same listview healthrgn column on four different items. Fifth item has verified numeric listview field but no independently captured tooltip in this run.",
+  "source_build_limit": "Live Wowhead page text does not independently establish the exact 1.60.1.70338 build; canonical listview catalogue is unchanged and as-of source applicability is qualified.",
+  "items": [
+    {"item_id": 14149,"name": "Subterranean Cape", "healthrgn": 5, "source_url": "https://www.wowhead.com/forever/item=14149", "evidence": "Restores +5 health per 5 sec", "verification": "forever_item_tooltip"},
+    {"item_id": 6226,"name": "Bloody Apron", "healthrgn": 7, "source_url": "https://www.wowhead.com/forever/de/item=6226", "evidence": "Stellt alle 5 Sek. +7 Gesundheit wieder her", "verification": "forever_item_tooltip_german_locale"},
+    {"item_id": 284668,"name": "Apothecary's Concoction", "healthrgn": 5, "source_url": "https://www.wowhead.com/forever/item=284668", "evidence": "Restores +5 health per 5 sec", "verification": "forever_item_tooltip"},
+    {"item_id": 6461,"name": "Slime-encrusted Pads", "healthrgn": 10, "source_url": "https://www.wowhead.com/forever/item=6461", "evidence": "Restores +10 health per 5 sec", "verification": "forever_item_tooltip"},
+    {"item_id": 284192,"name": "Furblog Loincloth", "healthrgn": 4, "source_url": "https://www.wowhead.com/forever/item=284192", "evidence": "healthrgn=4 in canonical observed-level listview; tooltip not independently retrieved", "verification": "source_listview_numeric_with_field_units_inferred_from_four_tooltips"}
+  ],
+  "not_modeled": ["unknown item proc or spell effects", "Spirit-dependent out-of-combat health regeneration", "resipct negative percentage resistance (units unverified)"]
+}

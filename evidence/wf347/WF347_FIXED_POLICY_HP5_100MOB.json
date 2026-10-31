@@ -1,0 +1,69 @@
+{
+  "checkpoint": "druid:L20:unrestricted",
+  "source_sha256": "5af26210829fb2ed6b7ee82df23126092bcb77d2c75207897681177e6b09d920",
+  "item_catalogue_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "oracle_seeded": false,
+  "fixed_policy_not_independent_search": true,
+  "rows": [
+    {
+      "case": "baseline",
+      "slot": null,
+      "item_id": null,
+      "status": "COMPLETE",
+      "actual_100mob_s_per_mob": 13.46412880141965,
+      "events": 7282,
+      "mob_completed": null,
+      "cpu_s": 1.7103470230000002,
+      "wall_s": 1.7130040790000294,
+      "actor_health_regeneration_per_5s": 0.0
+    },
+    {
+      "case": "shoulder_hp5",
+      "slot": "shoulder",
+      "item_id": 6461,
+      "status": "COMPLETE",
+      "actual_100mob_s_per_mob": 13.472307505751093,
+      "events": 7638,
+      "mob_completed": null,
+      "cpu_s": 1.63150845,
+      "wall_s": 1.6337017989999936,
+      "actor_health_regeneration_per_5s": 10.0
+    },
+    {
+      "case": "chest_hp5",
+      "slot": "chest",
+      "item_id": 6226,
+      "status": "COMPLETE",
+      "actual_100mob_s_per_mob": 13.764497204882703,
+      "events": 7637,
+      "mob_completed": null,
+      "cpu_s": 1.8210563660000005,
+      "wall_s": 1.8233219570000188,
+      "actor_health_regeneration_per_5s": 7.0
+    },
+    {
+      "case": "back_hp5",
+      "slot": "back",
+      "item_id": 14149,
+      "status": "COMPLETE",
+      "actual_100mob_s_per_mob": 13.175613673732292,
+      "events": 7302,
+      "mob_completed": null,
+      "cpu_s": 1.7427004650000004,
+      "wall_s": 1.744912501999977,
+      "actor_health_regeneration_per_5s": 5.0
+    },
+    {
+      "case": "legs_hp5",
+      "slot": "legs",
+      "item_id": 284192,
+      "status": "COMPLETE",
+      "actual_100mob_s_per_mob": 14.127440550823133,
+      "events": 7766,
+      "mob_completed": null,
+      "cpu_s": 1.6536500390000004,
+      "wall_s": 1.6563105600000085,
+      "actor_health_regeneration_per_5s": 4.0
+    }
+  ]
+}
