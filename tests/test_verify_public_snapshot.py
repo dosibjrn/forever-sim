@@ -138,6 +138,25 @@ class VerifyPublicSnapshotTest(unittest.TestCase):
         errors = mod.verify(self.old, self.new)[2]
         self.assertTrue(any('STAGED_BLOB_MISMATCH src/engine.py' in e for e in errors), errors)
 
+    def test_clean_filtered_staged_blob_is_valid_when_worktree_is_hydrated(self):
+        # Simulate LFS-like clean conversion without requiring git-lfs locally.
+        self.put('.gitattributes', b'*.bin filter=pointer\\n')
+        self.put('.gitattributes', b'*.bin filter=pointer\\n', self.new)
+        self.put('data/asset.bin', b'hydrated real payload')
+        self.put('data/asset.bin', b'hydrated real payload', self.new)
+        git(self.new, 'config', 'filter.pointer.clean',
+            "sh -c 'printf pointer-representation'")
+        self.stage(self.old)
+        self.stage(self.new)
+        # A valid clean-filtered Git object differs from the hydrated file.
+        indexed_oid = mod.git_index(self.new, include_oids=True)['data/asset.bin'][1]
+        raw_oid = subprocess.check_output([
+            'git', '-C', str(self.new), 'hash-object', '--no-filters',
+            'data/asset.bin',
+        ]).decode().strip()
+        self.assertNotEqual(indexed_oid, raw_oid)
+        self.assertEqual(mod.verify(self.old, self.new), (2, 0, []))
+
     def test_extra_staged_private_file_fails(self):
         self.put('src/engine.py', b'correct')
         self.put('src/engine.py', b'correct', self.new)
