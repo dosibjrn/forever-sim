@@ -5,13 +5,25 @@
 set -euo pipefail
 OLD_URL="${OLD_URL:-https://github.com/dosibjrn/mage-level-sim.git}"
 NEW_URL="${NEW_URL:-https://github.com/dosibjrn/forever-sim.git}"
+# Must be the SHA explicitly approved after a PRIVATE source/disclosure audit.
+APPROVED_SOURCE_SHA="${APPROVED_SOURCE_SHA:-}"
+if [[ ! "$APPROVED_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "APPROVED_SOURCE_SHA must be an audited, lowercase 40-hex private main commit SHA" >&2
+  exit 2
+fi
 command -v git >/dev/null || { echo "git required" >&2; exit 2; }
 command -v tar >/dev/null || { echo "tar required" >&2; exit 2; }
+command -v python3 >/dev/null || { echo "python3 required for byte/stage parity check" >&2; exit 2; }
 git lfs version >/dev/null 2>&1 || { echo "git-lfs required to preserve canonical source assets" >&2; exit 2; }
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 echo "[1/7] Clone original private main (read-only)"
 git clone --depth=1 --single-branch --branch main "$OLD_URL" "$work/old"
+actual_source_sha="$(git -C "$work/old" rev-parse HEAD)"
+if [[ "$actual_source_sha" != "$APPROVED_SOURCE_SHA" ]]; then
+  echo "Private main changed since approval: expected $APPROVED_SOURCE_SHA, got $actual_source_sha; aborting" >&2
+  exit 4
+fi
 git -C "$work/old" lfs pull
 echo "[2/7] Clone destination public main"
 git clone --depth=1 --single-branch --branch main "$NEW_URL" "$work/new"
@@ -21,8 +33,12 @@ if git -C "$work/old" grep -I -nE 'gh[pousr]_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z
   sed -E 's/:.*/: [redacted match]/' "$work/secret-hits" | head -30
   exit 4
 fi
-echo "[4/7] Copy current source snapshot, excluding legacy automatic CI and public-specific README/priority"
-tar -C "$work/old" --exclude='./.git' --exclude='./.github/workflows' --exclude='./README.md' --exclude='./docs/planning/WORK_PRIORITY.md' -cf - . | tar -C "$work/new" -xf -
+echo "[4/7] Copy only tracked source paths, preserving public migration controls"
+# A full working-tree tar could also copy ignored/untracked private files;
+# forcing 'git add -A' would then publish them without any source-index audit.
+python3 "$work/new/scripts/verify_public_snapshot.py" \
+  --source "$work/old" --emit-selected-paths > "$work/selected-paths.z"
+tar -C "$work/old" --null -T "$work/selected-paths.z" -cf - | tar -C "$work/new" -xf -
 echo "[5/7] Check that any source LFS pointers are materialized"
 unresolved="$(find "$work/new" -type f \( -name '*.sqlite' -o -name '*.db' -o -name '*.bin' -o -name '*.zip' \) -not -path '*/.git/*' -exec grep -Il '^version https://git-lfs.github.com/spec/v1' {} + || true)"
 if [[ -n "$unresolved" ]]; then
@@ -31,7 +47,11 @@ if [[ -n "$unresolved" ]]; then
   exit 5
 fi
 echo "[6/7] Stage public main snapshot (not historical commits)"
-git -C "$work/new" add -A
+# Stage only selected source paths, not unrelated files in the public clone.
+# Literal pathspecs handle filenames containing '[' or '*'.
+GIT_LITERAL_PATHSPECS=1 git -C "$work/new" add -A --force \
+  --pathspec-from-file="$work/selected-paths.z" --pathspec-file-nul
+python3 "$work/new/scripts/verify_public_snapshot.py" --source "$work/old" --target "$work/new"
 git -C "$work/new" diff --cached --stat
 if git -C "$work/new" diff --cached --quiet; then
   echo "Already up to date; no change required."
