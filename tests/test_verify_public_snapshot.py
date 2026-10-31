@@ -140,8 +140,8 @@ class VerifyPublicSnapshotTest(unittest.TestCase):
 
     def test_clean_filtered_staged_blob_is_valid_when_worktree_is_hydrated(self):
         # Simulate LFS-like clean conversion without requiring git-lfs locally.
-        self.put('.gitattributes', b'*.bin filter=pointer\\n')
-        self.put('.gitattributes', b'*.bin filter=pointer\\n', self.new)
+        self.put('.gitattributes', b'*.bin filter=pointer\n')
+        self.put('.gitattributes', b'*.bin filter=pointer\n', self.new)
         self.put('data/asset.bin', b'hydrated real payload')
         self.put('data/asset.bin', b'hydrated real payload', self.new)
         git(self.new, 'config', 'filter.pointer.clean',
