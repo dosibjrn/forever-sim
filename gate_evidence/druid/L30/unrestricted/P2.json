@@ -1,0 +1,1997 @@
+{
+  "class": "druid",
+  "engine_id": "WF443_HISTORICAL_IR_ONLY",
+  "failed_behavior_ranks": 0,
+  "gate": "P2",
+  "legacy_semantic_labels_are_not_gate_failures": true,
+  "level": 30,
+  "missing_current_level_runtime_executor_verification": 0,
+  "missing_executor_ranks": 0,
+  "provenance_scope": "HISTORICAL_WF443_L30_SOURCE_APPLIED_IR_NOT_CURRENT_COMBAT_BEHAVIOR",
+  "rank_behavior_results": [],
+  "ranks_with_executed_behavior_tests": 0,
+  "ranks_with_executor_paths": 129,
+  "reachable_rank_keys": [
+    "blood_frenzy:1",
+    "blood_frenzy:2",
+    "brutal_impact:1",
+    "brutal_impact:2",
+    "eclipse:1",
+    "eclipse:2",
+    "eclipse:3",
+    "feral_charge:1",
+    "feral_instinct:1",
+    "feral_instinct:2",
+    "feral_instinct:3",
+    "feral_swiftness:1",
+    "feral_swiftness:2",
+    "ferocity:1",
+    "ferocity:2",
+    "ferocity:3",
+    "ferocity:4",
+    "ferocity:5",
+    "furor:1",
+    "furor:2",
+    "furor:3",
+    "furor:4",
+    "furor:5",
+    "genesis:1",
+    "genesis:2",
+    "genesis:3",
+    "genesis:4",
+    "genesis:5",
+    "gift_of_nature:1",
+    "gift_of_nature:2",
+    "gift_of_nature:3",
+    "gift_of_nature:4",
+    "gift_of_nature:5",
+    "gift_of_the_earthmother:1",
+    "heart_of_the_wild:1",
+    "heart_of_the_wild:2",
+    "heart_of_the_wild:3",
+    "heart_of_the_wild:4",
+    "heart_of_the_wild:5",
+    "improved_entangling_roots:1",
+    "improved_entangling_roots:2",
+    "improved_entangling_roots:3",
+    "improved_moonfire:1",
+    "improved_moonfire:2",
+    "improved_regrowth:1",
+    "improved_rejuvenation:1",
+    "improved_rejuvenation:2",
+    "improved_rejuvenation:3",
+    "improved_shifting_power:1",
+    "improved_shifting_power:2",
+    "improved_starfire:1",
+    "improved_starfire:2",
+    "improved_starfire:3",
+    "improved_starfire:4",
+    "improved_starfire:5",
+    "improved_tranquility:1",
+    "improved_tranquility:2",
+    "improved_wrath:1",
+    "improved_wrath:2",
+    "improved_wrath:3",
+    "improved_wrath:4",
+    "improved_wrath:5",
+    "insect_swarm:1",
+    "leader_of_the_pack:1",
+    "living_spirit:1",
+    "living_spirit:2",
+    "living_spirit:3",
+    "moonfury:1",
+    "moonglow:1",
+    "moonglow:2",
+    "moonglow:3",
+    "natural_instinct:1",
+    "natural_instinct:2",
+    "natural_reaction:1",
+    "natural_shapeshifter:1",
+    "natural_shapeshifter:2",
+    "natural_shapeshifter:3",
+    "naturalist:1",
+    "naturalist:2",
+    "naturalist:3",
+    "naturalist:4",
+    "naturalist:5",
+    "natures_focus:1",
+    "natures_focus:2",
+    "natures_focus:3",
+    "natures_focus:4",
+    "natures_focus:5",
+    "natures_grace:1",
+    "natures_majesty:1",
+    "natures_majesty:2",
+    "natures_reach:1",
+    "natures_reach:2",
+    "natures_splendor:1",
+    "natures_swiftness:1",
+    "overgrowth:1",
+    "overgrowth:2",
+    "predatory_strikes:1",
+    "predatory_strikes:2",
+    "predatory_strikes:3",
+    "primal_bite:1",
+    "reflection:1",
+    "reflection:2",
+    "reflection:3",
+    "rend_and_tear:1",
+    "savage_fury:1",
+    "savage_fury:2",
+    "sharpened_claws:1",
+    "sharpened_claws:2",
+    "shifting_power:1",
+    "shredding_attacks:1",
+    "shredding_attacks:2",
+    "shredding_attacks:3",
+    "subtlety:1",
+    "subtlety:2",
+    "subtlety:3",
+    "swiftmend:1",
+    "thick_hide:1",
+    "thick_hide:2",
+    "thick_hide:3",
+    "tranquil_spirit:1",
+    "tranquil_spirit:2",
+    "tranquil_spirit:3",
+    "tranquil_spirit:4",
+    "tranquil_spirit:5",
+    "vengeance:1",
+    "vengeance:2",
+    "vengeance:3",
+    "vengeance:4",
+    "vengeance:5"
+  ],
+  "reachable_ranks": [
+    {
+      "historical_semantic_labels": [
+        "DISCRETE_CRIT_PROC_DISTRIBUTION_NOT_CERTIFIED",
+        "RESOURCE_AMOUNT_SOURCE_BUILD_BRIDGE_UNVERIFIED"
+      ],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "blood_frenzy",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [
+        "DISCRETE_CRIT_PROC_DISTRIBUTION_NOT_CERTIFIED",
+        "RESOURCE_AMOUNT_SOURCE_BUILD_BRIDGE_UNVERIFIED"
+      ],
+      "rank": 2,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "blood_frenzy",
+      "witness_points": 17
+    },
+    {
+      "historical_semantic_labels": [
+        "FUTURE_LEVEL_CONTROL_ACTION_NOT_EXECUTED",
+        "SOURCE_BUILD_BRIDGE_UNVERIFIED"
+      ],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "brutal_impact",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [
+        "FUTURE_LEVEL_CONTROL_ACTION_NOT_EXECUTED",
+        "SOURCE_BUILD_BRIDGE_UNVERIFIED"
+      ],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "brutal_impact",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "eclipse",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "eclipse",
+      "witness_points": 22
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "eclipse",
+      "witness_points": 23
+    },
+    {
+      "historical_semantic_labels": [
+        "ENEMY_CAST_INTERRUPT_NOT_RUNTIME_CERTIFIED",
+        "SOURCE_BUILD_BRIDGE_UNVERIFIED",
+        "SPATIAL_CHARGE_SOLO_FALLBACK_UNAVAILABLE",
+        "TARGET_FACING_BEHIND_PROXY_NOT_CERTIFIED"
+      ],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "feral_charge",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "feral_instinct",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "feral_instinct",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "feral_instinct",
+      "witness_points": 8
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "feral_swiftness",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "feral_swiftness",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "ferocity",
+      "witness_points": 1
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "ferocity",
+      "witness_points": 2
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "ferocity",
+      "witness_points": 3
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "ferocity",
+      "witness_points": 4
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "ferocity",
+      "witness_points": 5
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "furor",
+      "witness_points": 1
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "furor",
+      "witness_points": 2
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "furor",
+      "witness_points": 3
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "furor",
+      "witness_points": 4
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "furor",
+      "witness_points": 5
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "genesis",
+      "witness_points": 1
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "genesis",
+      "witness_points": 2
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "genesis",
+      "witness_points": 3
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "genesis",
+      "witness_points": 4
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "genesis",
+      "witness_points": 5
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "gift_of_nature",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "gift_of_nature",
+      "witness_points": 12
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "gift_of_nature",
+      "witness_points": 13
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "gift_of_nature",
+      "witness_points": 14
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "gift_of_nature",
+      "witness_points": 15
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "gift_of_the_earthmother",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 5,
+      "talent_id": "heart_of_the_wild",
+      "witness_points": 1
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 5,
+      "talent_id": "heart_of_the_wild",
+      "witness_points": 2
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 5,
+      "talent_id": "heart_of_the_wild",
+      "witness_points": 3
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 5,
+      "talent_id": "heart_of_the_wild",
+      "witness_points": 4
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 5,
+      "talent_id": "heart_of_the_wild",
+      "witness_points": 5
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_entangling_roots",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_entangling_roots",
+      "witness_points": 12
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_entangling_roots",
+      "witness_points": 13
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_moonfire",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_moonfire",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [
+        "PREREQUISITE_REQUIRED_RANK_SOURCE_BUILD_BRIDGE_UNVERIFIED",
+        "SOURCE_CLASSIC_HEAL_CRIT_MULTIPLIER_TO_70338_UNVERIFIED"
+      ],
+      "rank": 1,
+      "row": 5,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_regrowth",
+      "witness_points": 26
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_rejuvenation",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_rejuvenation",
+      "witness_points": 17
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_rejuvenation",
+      "witness_points": 18
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_shifting_power",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "improved_shifting_power",
+      "witness_points": 22
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_starfire",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_starfire",
+      "witness_points": 17
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_starfire",
+      "witness_points": 18
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_starfire",
+      "witness_points": 19
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_starfire",
+      "witness_points": 20
+    },
+    {
+      "historical_semantic_labels": [
+        "SOURCE_CHANNEL_ABILITY_BUILD_BRIDGE_UNVERIFIED",
+        "SOURCE_CHANNEL_PARTY_HEAL_OR_THREAT_NOT_EXECUTED"
+      ],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_tranquility",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [
+        "SOURCE_CHANNEL_ABILITY_BUILD_BRIDGE_UNVERIFIED",
+        "SOURCE_CHANNEL_PARTY_HEAL_OR_THREAT_NOT_EXECUTED"
+      ],
+      "rank": 2,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_tranquility",
+      "witness_points": 22
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_wrath",
+      "witness_points": 1
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_wrath",
+      "witness_points": 2
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_wrath",
+      "witness_points": 3
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_wrath",
+      "witness_points": 4
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "improved_wrath",
+      "witness_points": 5
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "insect_swarm",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [
+        "SOURCE_PARTY_AURA_NOT_EXECUTED"
+      ],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "leader_of_the_pack",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "living_spirit",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "living_spirit",
+      "witness_points": 22
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "living_spirit",
+      "witness_points": 23
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 5,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "moonfury",
+      "witness_points": 26
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "moonglow",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "moonglow",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "moonglow",
+      "witness_points": 8
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "natural_instinct",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "natural_instinct",
+      "witness_points": 22
+    },
+    {
+      "historical_semantic_labels": [
+        "DISCRETE_CRIT_PROC_DISTRIBUTION_NOT_CERTIFIED",
+        "SOURCE_BUILD_BRIDGE_UNVERIFIED"
+      ],
+      "rank": 1,
+      "row": 5,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "natural_reaction",
+      "witness_points": 26
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natural_shapeshifter",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natural_shapeshifter",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natural_shapeshifter",
+      "witness_points": 8
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "naturalist",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "naturalist",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "naturalist",
+      "witness_points": 8
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "naturalist",
+      "witness_points": 9
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "naturalist",
+      "witness_points": 10
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_focus",
+      "witness_points": 1
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_focus",
+      "witness_points": 2
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_focus",
+      "witness_points": 3
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_focus",
+      "witness_points": 4
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 0,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_focus",
+      "witness_points": 5
+    },
+    {
+      "historical_semantic_labels": [
+        "DISCRETE_CRIT_PROC_DISTRIBUTION_NOT_CERTIFIED"
+      ],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_grace",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_majesty",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_majesty",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_reach",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_reach",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 3,
+      "talent_id": "natures_splendor",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [
+        "SOURCE_BUILD_BRIDGE_UNVERIFIED",
+        "SOURCE_NATURE_HEAL_ACTION_SCHOOL_NOT_VERIFIED"
+      ],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "natures_swiftness",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "overgrowth",
+      "witness_points": 21
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 4,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "overgrowth",
+      "witness_points": 22
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "predatory_strikes",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "predatory_strikes",
+      "witness_points": 17
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "predatory_strikes",
+      "witness_points": 18
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "primal_bite",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "reflection",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "reflection",
+      "witness_points": 12
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "reflection",
+      "witness_points": 13
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 5,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "rend_and_tear",
+      "witness_points": 26
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "savage_fury",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "savage_fury",
+      "witness_points": 12
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "sharpened_claws",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "sharpened_claws",
+      "witness_points": 12
+    },
+    {
+      "historical_semantic_labels": [
+        "SOURCE_RESOURCE_ACTION_MECHANICS_BUILD_BRIDGE_UNVERIFIED"
+      ],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "shifting_power",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "shredding_attacks",
+      "witness_points": 11
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "shredding_attacks",
+      "witness_points": 12
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 2,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "shredding_attacks",
+      "witness_points": 13
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "subtlety",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "subtlety",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "subtlety",
+      "witness_points": 8
+    },
+    {
+      "historical_semantic_labels": [
+        "ACTIVE_HOT_HEALING_POWER_SNAPSHOT_NOT_VERIFIED",
+        "MULTIPLE_ACTIVE_HOT_SELECTION_NOT_SOURCE_VERIFIED",
+        "SOURCE_BUILD_BRIDGE_UNVERIFIED"
+      ],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "swiftmend",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "thick_hide",
+      "witness_points": 6
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "thick_hide",
+      "witness_points": 7
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 1,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 4,
+      "talent_id": "thick_hide",
+      "witness_points": 8
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "tranquil_spirit",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "tranquil_spirit",
+      "witness_points": 17
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "tranquil_spirit",
+      "witness_points": 18
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "tranquil_spirit",
+      "witness_points": 19
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 2,
+      "talent_id": "tranquil_spirit",
+      "witness_points": 20
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 1,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "vengeance",
+      "witness_points": 16
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 2,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "vengeance",
+      "witness_points": 17
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 3,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "vengeance",
+      "witness_points": 18
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 4,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "vengeance",
+      "witness_points": 19
+    },
+    {
+      "historical_semantic_labels": [],
+      "rank": 5,
+      "row": 3,
+      "source_l30_ir_applied": true,
+      "source_modifier_count": 1,
+      "talent_id": "vengeance",
+      "witness_points": 20
+    }
+  ],
+  "remaining_rank_behavior_tests": [
+    {
+      "rank": 1,
+      "talent_id": "blood_frenzy"
+    },
+    {
+      "rank": 2,
+      "talent_id": "blood_frenzy"
+    },
+    {
+      "rank": 1,
+      "talent_id": "brutal_impact"
+    },
+    {
+      "rank": 2,
+      "talent_id": "brutal_impact"
+    },
+    {
+      "rank": 1,
+      "talent_id": "eclipse"
+    },
+    {
+      "rank": 2,
+      "talent_id": "eclipse"
+    },
+    {
+      "rank": 3,
+      "talent_id": "eclipse"
+    },
+    {
+      "rank": 1,
+      "talent_id": "feral_charge"
+    },
+    {
+      "rank": 1,
+      "talent_id": "feral_instinct"
+    },
+    {
+      "rank": 2,
+      "talent_id": "feral_instinct"
+    },
+    {
+      "rank": 3,
+      "talent_id": "feral_instinct"
+    },
+    {
+      "rank": 1,
+      "talent_id": "feral_swiftness"
+    },
+    {
+      "rank": 2,
+      "talent_id": "feral_swiftness"
+    },
+    {
+      "rank": 1,
+      "talent_id": "ferocity"
+    },
+    {
+      "rank": 2,
+      "talent_id": "ferocity"
+    },
+    {
+      "rank": 3,
+      "talent_id": "ferocity"
+    },
+    {
+      "rank": 4,
+      "talent_id": "ferocity"
+    },
+    {
+      "rank": 5,
+      "talent_id": "ferocity"
+    },
+    {
+      "rank": 1,
+      "talent_id": "furor"
+    },
+    {
+      "rank": 2,
+      "talent_id": "furor"
+    },
+    {
+      "rank": 3,
+      "talent_id": "furor"
+    },
+    {
+      "rank": 4,
+      "talent_id": "furor"
+    },
+    {
+      "rank": 5,
+      "talent_id": "furor"
+    },
+    {
+      "rank": 1,
+      "talent_id": "genesis"
+    },
+    {
+      "rank": 2,
+      "talent_id": "genesis"
+    },
+    {
+      "rank": 3,
+      "talent_id": "genesis"
+    },
+    {
+      "rank": 4,
+      "talent_id": "genesis"
+    },
+    {
+      "rank": 5,
+      "talent_id": "genesis"
+    },
+    {
+      "rank": 1,
+      "talent_id": "gift_of_nature"
+    },
+    {
+      "rank": 2,
+      "talent_id": "gift_of_nature"
+    },
+    {
+      "rank": 3,
+      "talent_id": "gift_of_nature"
+    },
+    {
+      "rank": 4,
+      "talent_id": "gift_of_nature"
+    },
+    {
+      "rank": 5,
+      "talent_id": "gift_of_nature"
+    },
+    {
+      "rank": 1,
+      "talent_id": "gift_of_the_earthmother"
+    },
+    {
+      "rank": 1,
+      "talent_id": "heart_of_the_wild"
+    },
+    {
+      "rank": 2,
+      "talent_id": "heart_of_the_wild"
+    },
+    {
+      "rank": 3,
+      "talent_id": "heart_of_the_wild"
+    },
+    {
+      "rank": 4,
+      "talent_id": "heart_of_the_wild"
+    },
+    {
+      "rank": 5,
+      "talent_id": "heart_of_the_wild"
+    },
+    {
+      "rank": 1,
+      "talent_id": "improved_entangling_roots"
+    },
+    {
+      "rank": 2,
+      "talent_id": "improved_entangling_roots"
+    },
+    {
+      "rank": 3,
+      "talent_id": "improved_entangling_roots"
+    },
+    {
+      "rank": 1,
+      "talent_id": "improved_moonfire"
+    },
+    {
+      "rank": 2,
+      "talent_id": "improved_moonfire"
+    },
+    {
+      "rank": 1,
+      "talent_id": "improved_regrowth"
+    },
+    {
+      "rank": 1,
+      "talent_id": "improved_rejuvenation"
+    },
+    {
+      "rank": 2,
+      "talent_id": "improved_rejuvenation"
+    },
+    {
+      "rank": 3,
+      "talent_id": "improved_rejuvenation"
+    },
+    {
+      "rank": 1,
+      "talent_id": "improved_shifting_power"
+    },
+    {
+      "rank": 2,
+      "talent_id": "improved_shifting_power"
+    },
+    {
+      "rank": 1,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 2,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 3,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 4,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 5,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 1,
+      "talent_id": "improved_tranquility"
+    },
+    {
+      "rank": 2,
+      "talent_id": "improved_tranquility"
+    },
+    {
+      "rank": 1,
+      "talent_id": "improved_wrath"
+    },
+    {
+      "rank": 2,
+      "talent_id": "improved_wrath"
+    },
+    {
+      "rank": 3,
+      "talent_id": "improved_wrath"
+    },
+    {
+      "rank": 4,
+      "talent_id": "improved_wrath"
+    },
+    {
+      "rank": 5,
+      "talent_id": "improved_wrath"
+    },
+    {
+      "rank": 1,
+      "talent_id": "insect_swarm"
+    },
+    {
+      "rank": 1,
+      "talent_id": "leader_of_the_pack"
+    },
+    {
+      "rank": 1,
+      "talent_id": "living_spirit"
+    },
+    {
+      "rank": 2,
+      "talent_id": "living_spirit"
+    },
+    {
+      "rank": 3,
+      "talent_id": "living_spirit"
+    },
+    {
+      "rank": 1,
+      "talent_id": "moonfury"
+    },
+    {
+      "rank": 1,
+      "talent_id": "moonglow"
+    },
+    {
+      "rank": 2,
+      "talent_id": "moonglow"
+    },
+    {
+      "rank": 3,
+      "talent_id": "moonglow"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natural_instinct"
+    },
+    {
+      "rank": 2,
+      "talent_id": "natural_instinct"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natural_reaction"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natural_shapeshifter"
+    },
+    {
+      "rank": 2,
+      "talent_id": "natural_shapeshifter"
+    },
+    {
+      "rank": 3,
+      "talent_id": "natural_shapeshifter"
+    },
+    {
+      "rank": 1,
+      "talent_id": "naturalist"
+    },
+    {
+      "rank": 2,
+      "talent_id": "naturalist"
+    },
+    {
+      "rank": 3,
+      "talent_id": "naturalist"
+    },
+    {
+      "rank": 4,
+      "talent_id": "naturalist"
+    },
+    {
+      "rank": 5,
+      "talent_id": "naturalist"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natures_focus"
+    },
+    {
+      "rank": 2,
+      "talent_id": "natures_focus"
+    },
+    {
+      "rank": 3,
+      "talent_id": "natures_focus"
+    },
+    {
+      "rank": 4,
+      "talent_id": "natures_focus"
+    },
+    {
+      "rank": 5,
+      "talent_id": "natures_focus"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natures_grace"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natures_majesty"
+    },
+    {
+      "rank": 2,
+      "talent_id": "natures_majesty"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natures_reach"
+    },
+    {
+      "rank": 2,
+      "talent_id": "natures_reach"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natures_splendor"
+    },
+    {
+      "rank": 1,
+      "talent_id": "natures_swiftness"
+    },
+    {
+      "rank": 1,
+      "talent_id": "overgrowth"
+    },
+    {
+      "rank": 2,
+      "talent_id": "overgrowth"
+    },
+    {
+      "rank": 1,
+      "talent_id": "predatory_strikes"
+    },
+    {
+      "rank": 2,
+      "talent_id": "predatory_strikes"
+    },
+    {
+      "rank": 3,
+      "talent_id": "predatory_strikes"
+    },
+    {
+      "rank": 1,
+      "talent_id": "primal_bite"
+    },
+    {
+      "rank": 1,
+      "talent_id": "reflection"
+    },
+    {
+      "rank": 2,
+      "talent_id": "reflection"
+    },
+    {
+      "rank": 3,
+      "talent_id": "reflection"
+    },
+    {
+      "rank": 1,
+      "talent_id": "rend_and_tear"
+    },
+    {
+      "rank": 1,
+      "talent_id": "savage_fury"
+    },
+    {
+      "rank": 2,
+      "talent_id": "savage_fury"
+    },
+    {
+      "rank": 1,
+      "talent_id": "sharpened_claws"
+    },
+    {
+      "rank": 2,
+      "talent_id": "sharpened_claws"
+    },
+    {
+      "rank": 1,
+      "talent_id": "shifting_power"
+    },
+    {
+      "rank": 1,
+      "talent_id": "shredding_attacks"
+    },
+    {
+      "rank": 2,
+      "talent_id": "shredding_attacks"
+    },
+    {
+      "rank": 3,
+      "talent_id": "shredding_attacks"
+    },
+    {
+      "rank": 1,
+      "talent_id": "subtlety"
+    },
+    {
+      "rank": 2,
+      "talent_id": "subtlety"
+    },
+    {
+      "rank": 3,
+      "talent_id": "subtlety"
+    },
+    {
+      "rank": 1,
+      "talent_id": "swiftmend"
+    },
+    {
+      "rank": 1,
+      "talent_id": "thick_hide"
+    },
+    {
+      "rank": 2,
+      "talent_id": "thick_hide"
+    },
+    {
+      "rank": 3,
+      "talent_id": "thick_hide"
+    },
+    {
+      "rank": 1,
+      "talent_id": "tranquil_spirit"
+    },
+    {
+      "rank": 2,
+      "talent_id": "tranquil_spirit"
+    },
+    {
+      "rank": 3,
+      "talent_id": "tranquil_spirit"
+    },
+    {
+      "rank": 4,
+      "talent_id": "tranquil_spirit"
+    },
+    {
+      "rank": 5,
+      "talent_id": "tranquil_spirit"
+    },
+    {
+      "rank": 1,
+      "talent_id": "vengeance"
+    },
+    {
+      "rank": 2,
+      "talent_id": "vengeance"
+    },
+    {
+      "rank": 3,
+      "talent_id": "vengeance"
+    },
+    {
+      "rank": 4,
+      "talent_id": "vengeance"
+    },
+    {
+      "rank": 5,
+      "talent_id": "vengeance"
+    }
+  ],
+  "source_budget_unreachable_ranks": 19,
+  "source_build": "1.60.1.70338",
+  "source_id": "ca8c45fec9fddf9028f5f5f0114385c98f401ffd4b66d6f09485c8e2159da09c",
+  "source_l30_ir_applied_ranks": 129,
+  "source_rank_total": 148,
+  "source_specific_behavior_tests_executed": false,
+  "source_unresolved_ranks": 0,
+  "source_witness_sha256": "24f77eccb216f6474c389d46aebe29b5d1fd4874de18ddecb67504dd77c2a8da",
+  "spec": "unrestricted",
+  "structurally_reachable_ranks": 129,
+  "talent_paths_legal": true,
+  "talent_points": 26,
+  "unreachable_ranks": [
+    {
+      "rank": 1,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 6,
+      "talent_id": "berserk"
+    },
+    {
+      "rank": 2,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "improved_regrowth"
+    },
+    {
+      "rank": 3,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "improved_regrowth"
+    },
+    {
+      "rank": 4,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "improved_regrowth"
+    },
+    {
+      "rank": 5,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "improved_regrowth"
+    },
+    {
+      "rank": 2,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "moonfury"
+    },
+    {
+      "rank": 3,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "moonfury"
+    },
+    {
+      "rank": 4,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "moonfury"
+    },
+    {
+      "rank": 5,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "moonfury"
+    },
+    {
+      "rank": 1,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 6,
+      "talent_id": "moonkin_form"
+    },
+    {
+      "rank": 2,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "natural_reaction"
+    },
+    {
+      "rank": 3,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "natural_reaction"
+    },
+    {
+      "rank": 4,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "natural_reaction"
+    },
+    {
+      "rank": 5,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "natural_reaction"
+    },
+    {
+      "rank": 2,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "rend_and_tear"
+    },
+    {
+      "rank": 3,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "rend_and_tear"
+    },
+    {
+      "rank": 4,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "rend_and_tear"
+    },
+    {
+      "rank": 5,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 5,
+      "talent_id": "rend_and_tear"
+    },
+    {
+      "rank": 1,
+      "reason": "TIER_MINIMUM_EXCEEDS_BUDGET",
+      "row": 6,
+      "talent_id": "wild_growth"
+    }
+  ],
+  "unresolved_ranks": []
+}

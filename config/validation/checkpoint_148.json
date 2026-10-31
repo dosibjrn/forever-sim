@@ -1,0 +1,63 @@
+{
+  "schema": "wf406_reporting_checkpoint_register_v1",
+  "class_order": [
+    "druid",
+    "mage",
+    "hunter",
+    "shaman",
+    "warrior",
+    "rogue",
+    "priest",
+    "warlock",
+    "paladin"
+  ],
+  "spec_profiles": {
+    "druid": [
+      "balance",
+      "feral_cat",
+      "feral_bear",
+      "restoration"
+    ],
+    "hunter": [
+      "beast_mastery",
+      "marksmanship",
+      "survival"
+    ],
+    "mage": [
+      "arcane",
+      "fire",
+      "frost"
+    ],
+    "shaman": [
+      "elemental",
+      "enhancement",
+      "restoration"
+    ],
+    "warrior": [
+      "arms",
+      "fury",
+      "protection"
+    ],
+    "rogue": [
+      "assassination",
+      "combat",
+      "subtlety"
+    ],
+    "priest": [
+      "discipline",
+      "holy",
+      "shadow"
+    ],
+    "warlock": [
+      "affliction",
+      "demonology",
+      "destruction"
+    ],
+    "paladin": [
+      "holy",
+      "protection",
+      "retribution"
+    ]
+  },
+  "notes": "Labels for validation acceptance enumeration only; not a Forever talent tree, skill effect or optimizer source."
+}

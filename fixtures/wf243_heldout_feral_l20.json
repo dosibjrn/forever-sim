@@ -1,0 +1,114 @@
+{
+  "reference": "WF240_DRUID_L20_JOINT_REPLAY.json / held_out",
+  "reference_version": "0.11.48.240",
+  "source_original": "historical Feral challenger, gear/talents/policy held fixed",
+  "class_key": "druid",
+  "level": 20,
+  "talent_allocation": {
+    "ferocity": 5,
+    "heart_of_the_wild": 3,
+    "thick_hide": 2,
+    "savage_fury": 1
+  },
+  "gear_id": "gear:back=4706,chest=252434,feet=252439,hands=5195,head=252447,legs=252445,neck=285331,ring1=284715,ring2=12054,shoulder=6664,trinket1=21566,trinket2=21568,waist=5975,weapon=7230,wrist=14569",
+  "gear_slots": {
+    "head": {
+      "item_id": 252447,
+      "name": "Defender's Leather Hood"
+    },
+    "neck": {
+      "item_id": 285331,
+      "name": "Mark of the Pack Leader"
+    },
+    "shoulder": {
+      "item_id": 6664,
+      "name": "Voodoo Mantle"
+    },
+    "back": {
+      "item_id": 4706,
+      "name": "Lambent Scale Cloak"
+    },
+    "chest": {
+      "item_id": 252434,
+      "name": "Defender's Leather Armor"
+    },
+    "wrist": {
+      "item_id": 14569,
+      "name": "Bristlebark Bindings"
+    },
+    "hands": {
+      "item_id": 5195,
+      "name": "Gold-flecked Gloves"
+    },
+    "waist": {
+      "item_id": 5975,
+      "name": "Ruffian Belt"
+    },
+    "legs": {
+      "item_id": 252445,
+      "name": "Defender's Leather Pants"
+    },
+    "feet": {
+      "item_id": 252439,
+      "name": "Brawler's Leather Boots"
+    },
+    "ring1": {
+      "item_id": 284715,
+      "name": "First Mate Band"
+    },
+    "ring2": {
+      "item_id": 12054,
+      "name": "Demon Band"
+    },
+    "trinket1": {
+      "item_id": 21566,
+      "name": "Rune of Perfection"
+    },
+    "trinket2": {
+      "item_id": 21568,
+      "name": "Rune of Duty"
+    },
+    "weapon": {
+      "item_id": 7230,
+      "name": "Smite's Mighty Hammer"
+    }
+  },
+  "policy": {
+    "id": "forever:druid:caster-healing-slice@20:talents:source-search:0:via:cat_form:768",
+    "kind": "priority_policy",
+    "label": "Sourced mode entry and in-mode priority",
+    "rules": [
+      {
+        "id": "source-mode-entry",
+        "phase": "combat",
+        "action_id": "cat_form:768",
+        "conditions": [
+          {
+            "kind": "mode_state",
+            "value": "caster"
+          }
+        ],
+        "provenance": {
+          "authority": "source_mode_search"
+        }
+      },
+      {
+        "id": "candidate:0",
+        "phase": "combat",
+        "action_id": "claw:20",
+        "conditions": [],
+        "provenance": {
+          "authority": "source_button_search"
+        }
+      }
+    ],
+    "maintenance": [],
+    "provenance": {
+      "authority": "source_mode_search",
+      "search_performed": true,
+      "entry_action_id": "cat_form:768",
+      "exit_action_id": "cancel_mode:cat"
+    }
+  },
+  "reference_single_pull_s_per_mob": 14.161986560455698
+}

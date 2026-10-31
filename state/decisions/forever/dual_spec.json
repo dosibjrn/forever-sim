@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "ruleset": "forever",
+  "classes": {
+    "hunter": {
+      "schema_version": 1,
+      "ruleset": "forever",
+      "class": "hunter",
+      "unlock_level": 40,
+      "target_level": 20,
+      "verified_level_cap": 20,
+      "verification_status": "verified_range",
+      "uses_unverified_levels": false,
+      "unverified_from_level": null,
+      "method": "bounded_joint_two_path_min_per_level_after_unlock",
+      "status": "unlock_after_target",
+      "reason": "unlock level 40 is after target 20",
+      "pair": null
+    },
+    "druid": {
+      "schema_version": 1,
+      "ruleset": "forever",
+      "class": "druid",
+      "unlock_level": 40,
+      "target_level": 20,
+      "verified_level_cap": 30,
+      "verification_status": "verified_range",
+      "uses_unverified_levels": false,
+      "unverified_from_level": null,
+      "method": "bounded_joint_two_path_min_per_level_after_unlock",
+      "status": "unlock_after_target",
+      "reason": "unlock level 40 is after target 20",
+      "pair": null
+    }
+  }
+}
