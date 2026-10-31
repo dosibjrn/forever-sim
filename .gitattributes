@@ -1,0 +1,12 @@
+*.sqlite filter=lfs diff=lfs merge=lfs -text
+*.sqlite3 filter=lfs diff=lfs merge=lfs -text
+*.db filter=lfs diff=lfs merge=lfs -text
+*.bin filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.parquet filter=lfs diff=lfs merge=lfs -text
+*.npy filter=lfs diff=lfs merge=lfs -text
+*.npz filter=lfs diff=lfs merge=lfs -text
+# Only exceptional multi-megabyte generated JSON; ordinary JSON stays readable.
+docs/validation/I15/LISTENER_LOCAL_I15_STATE_v0.11.48.103.json filter=lfs diff=lfs merge=lfs -text
+evidence/wf325/WF325_BLIND_JOINT.json filter=lfs diff=lfs merge=lfs -text
+evidence/wf353/WF353_L30_DISCOVERED_STAGES.json filter=lfs diff=lfs merge=lfs -text
