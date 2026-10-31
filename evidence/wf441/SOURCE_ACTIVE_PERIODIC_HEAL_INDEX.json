@@ -1,0 +1,36 @@
+{
+  "checkpoint_source_build": "1.60.1.70338",
+  "records": [
+    {
+      "base_mana_cost_fraction": 0.2,
+      "cast_time_s": 0.0,
+      "checkpoint_source_build": "1.60.1.70338",
+      "class_key": "druid",
+      "cooldown_s": 15.0,
+      "family_key": "swiftmend",
+      "full_duration_multiplier": 1.0,
+      "gcd_mechanics_verified": false,
+      "gcd_s": 1.5,
+      "indexed_payload_sha256": "4e2bcc9e133d17ab73522a90418b0b65e64d0b0f6331134d066998484ea82b3d",
+      "mechanics_source_build": "1.60.1.70374",
+      "mechanics_source_url": "https://theforeverera.com/en/spells/druid/swiftmend/",
+      "multiple_hot_selection_verified": false,
+      "name": "Swiftmend",
+      "required_level": 25,
+      "required_mode_id": "caster",
+      "source_build": "1.60.1.70338",
+      "source_build_verified": false,
+      "source_families": [
+        "rejuvenation",
+        "regrowth"
+      ],
+      "source_hot_consumption": false,
+      "source_index_kind": "talents",
+      "source_tooltip": "Instantly heals a target with an active Rejuvenation or Regrowth effect for an amount equal to the full duration of the periodic effect of one of those spells.",
+      "source_url": "https://www.wowhead.com/forever/spell=18562",
+      "spell_id": 18562,
+      "talent_effect_target": "rejuvenation_or_regrowth",
+      "talent_id": "swiftmend"
+    }
+  ]
+}

@@ -1,0 +1,2033 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_avoidance_rank_compiles_two_real_effects_and_preserves_base _______
+
+    def test_avoidance_rank_compiles_two_real_effects_and_preserves_base():
+        original=_slice()
+>       changed,application=apply_talent_selection(original,{'test_avoidance':1},level=30)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_wf442_generic_avoidance_resource_red.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='avoidance-test', ruleset='test', actor=ActorDefinition(id='player', actor_type='player', base_stats={'...erlays=(), unsupported_semantics=(), provenance={}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'test_avoidance': 1}
+
+    def apply_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> tuple[GameIRSlice, TalentApplication]:
+        validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) > 0}
+        gated_families = {}
+        for gated_talent in ir_slice.talents:
+            for gated_rank in gated_talent.ranks:
+                for gate in gated_rank.modifiers:
+                    if gate.kind == 'unlock_action_family':
+                        if gate.target_type != 'action_family':
+                            raise ValueError('UNLOCK_REQUIRES_ACTION_FAMILY')
+                        prev = gated_families.setdefault(gate.target_id, gated_talent.id)
+                        if prev != gated_talent.id:
+                            raise ValueError('CONFLICTING_TALENT_UNLOCK_FAMILY')
+        actions = list(ir_slice.actions)
+        auto_attacks = list(ir_slice.auto_attacks)
+        triggers = list(ir_slice.triggers)
+        modes = list(ir_slice.modes)
+        actor = ir_slice.actor
+        resources = list(ir_slice.resources)
+        applied: list[dict] = []
+        unsupported = list(ir_slice.unsupported_semantics)
+    
+        # Grant sourced actions first, then apply all passive modifiers so a
+        # trigger-filter talent cannot miss a newly granted event trigger.
+        ordered = sorted(normalized.items(), key=lambda item: (not any(
+            mod.kind in ('grant_source_action','grant_source_resource_action','grant_source_next_cast_instant_action','grant_source_active_periodic_full_heal','grant_source_spatial_charge_actions') for rr in definitions[item[0]].ranks
+            if rr.rank == item[1] for mod in rr.modifiers), item[0]))
+        for talent_id, rank in ordered:
+            talent = definitions[talent_id]
+            rank_row = next(row for row in talent.ranks if int(row.rank) == rank)
+            for modifier in rank_row.modifiers:
+                if modifier.kind == 'grant_source_spatial_charge_actions':
+                    from src.game.model.ir import SpatialChargeEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or len(fact.get('forms') or ())!=2
+                            or fact.get('source_build_verified') is not False):
+                        raise ValueError('INVALID_SOURCE_SPATIAL_CHARGE_FACT')
+                    if any(a.family_key==family for a in actions):
+                        raise ValueError('SOURCE_SPATIAL_CHARGE_FAMILY_DUPLICATE')
+                    for form in fact['forms']:
+                        mode_id=str(form['mode_id'])
+                        if mode_id not in {m.id for m in modes}:raise ValueError('CHARGE_UNKNOWN_SOURCE_MODE')
+                        r_id=str(form.get('cost_resource_id') or '')
+                        if r_id and r_id not in {r.id for r in resources}:
+                            raise ValueError('CHARGE_UNKNOWN_SOURCE_COST_RESOURCE')
+                        source={'authority':'sourced_talent_spatial_charge_action',
+                            'source_url':fact['source_url'],'source_build_verified':False,
+                            'checkpoint_source_build':modifier.provenance['source_build']}
+                        action_id=family+':'+str(form['id_suffix'])
+                        cost=((ResourceCost(r_id,float(form['cost_amount'])),) if r_id else ())
+                        effect=SpatialChargeEffect('spatial_charge','enemy',
+                            float(form['minimum_range_yards']),float(form['maximum_range_yards']),
+                            float(form['arrival_distance_yards']),str(form['arrival_position_kind']))
+                        root=((ControlEffect('control','root','enemy',float(form['root_duration_s'])),)
+                              if form.get('root_duration_s') else ())
+                        granted=ActionDefinition(id=action_id,family_key=family,
+                            name=str(form['name']),owner_actor_id=actor.id,
+                            requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                                {'kind':'mode_is','value':mode_id}),costs=cost,
+                            cast_time_s=0.,gcd_s=float(form['gcd_s']),
+                            cooldown_s=float(form['cooldown_s']),effects=(effect,*root),
+                            provenance=(source,),metadata={'talent_granted_action':True,
+                                'range_yards':float(form['maximum_range_yards']),
+                                'source_movement_action':True,
+                                'source_interrupt_cast':'NOT_MODELED',
+                                'source_target_orientation':'GEOMETRIC_PROXY',
+                                'source_requires_2d':True})
+                        actions.append(granted)
+                        modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                            (*m.enabled_action_ids,action_id))))
+                            if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                        applied.append({'talent_id':talent_id,'rank':rank,
+                            'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_active_periodic_full_heal':
+                    from src.game.model.ir import ActivePeriodicFullHealEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    source_families=tuple(fact.get('source_families') or ())
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or mode_id not in {m.id for m in modes}
+                            or not source_families or not all(any(a.family_key==f
+                                and any(isinstance(e,PeriodicHealEffect) for e in a.effects)
+                                for a in actions) for f in source_families)
+                            or fact.get('source_build_verified') is not False):
+                        raise ValueError('INVALID_ACTIVE_PERIODIC_FULL_HEAL_GRANT')
+                    hot_auras=tuple(sorted({e.aura_id for a in actions
+                        if a.family_key in source_families for e in a.effects
+                        if isinstance(e,PeriodicHealEffect)}))
+                    if not hot_auras:raise ValueError('MISSING_ACTIVE_PERIODIC_HEAL_SOURCE')
+                    mana=next((r for r in resources if r.id=='mana'),None)
+                    if mana is None or not 0 < float(mana.metadata.get('base_mana',0)):
+                        raise ValueError('ACTIVE_PERIODIC_HEAL_BASE_MANA_UNAVAILABLE')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('DUPLICATE_ACTIVE_PERIODIC_HEAL_GRANT')
+                    source={'source_url':fact['source_url'],
+                            'authority':'source_index_active_periodic_heal',
+                            'target_build':modifier.provenance['source_build'],
+                            'client_source_build_verified':False}
+                    button=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                            {'kind':'mode_is','value':mode_id},
+                            {'kind':'aura_any_present','scope':'actor','aura_ids':hot_auras}),
+                        costs=(ResourceCost('mana',float(mana.metadata['base_mana'])*
+                            float(fact['base_mana_cost_fraction'])),),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),
+                        effects=(ActivePeriodicFullHealEffect('active_periodic_full_heal','self',
+                            'health',source_families,float(fact['full_duration_multiplier'])),),
+                        provenance=(source,),metadata={'talent_granted_action':True,
+                            'source_build_bridge_verified':False,
+                            'source_hot_preserved':True,
+                            'source_multiple_hot_priority':'UNVERIFIED',
+                            'source_healing_power_snapshot':'UNVERIFIED'})
+                    actions.append(button)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                                    'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_next_cast_instant_action':
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family or
+                            not family or mode_id not in {m.id for m in modes} or
+                            type(fact.get('spell_id')) is not int or fact['spell_id']<=0 or
+                            fact.get('source_mechanics_version_verified') is not False or
+                            not str(fact.get('mechanics_source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_NEXT_CAST_ACTION_GRANT')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('DUPLICATE_NEXT_CAST_ACTION_GRANT')
+                    action=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'mode_is','value':mode_id},),costs=(),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),effects=(),
+                        provenance=({'authority':'sourced_talent_next_cast_action',
+                            'source_url':fact['mechanics_source_url'],
+                            'mechanics_source_build':fact['mechanics_source_build'],
+                            'target_build':modifier.provenance['source_build'],
+                            'source_build_verified':False},),
+                        metadata={'talent_granted_action':True,
+                            'ignores_global_cooldown':True,
+                            'source_next_cast_instant_grant':{
+                            'school':str(fact['spell_school']),
+                            'count':int(fact['next_cast_count']),
+                            'source_url':str(fact['mechanics_source_url']),
+                            'source_build_verified':False}})
+                    actions.append(action)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_id':action_id,'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'grant_source_resource_action':
+                    # A typed source fact supplies all action parameters; this is
+                    # the same general ActionDefinition/ResourceChangeEffect used
+                    # for any class's resource-converting button.
+                    from src.game.model.ir import ResourceChangeEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    resource_id=str(fact.get('resource_id') or '')
+                    cost_resource=str(fact.get('cost_resource_id') or '')
+                    family=str(fact.get('family_key') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or not any(m.id==mode_id for m in modes)
+                            or resource_id not in {r.id for r in resources}
+                            or cost_resource not in {r.id for r in resources}
+                            or not str(fact.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_RESOURCE_ACTION_GRANT')
+                    cost_definition=next(r for r in resources if r.id==cost_resource)
+                    base=cost_definition.metadata.get('base_mana')
+                    if base is None or not 0 < float(base):
+                        raise ValueError('SOURCE_RESOURCE_ACTION_BASE_COST_UNAVAILABLE')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('SOURCE_RESOURCE_ACTION_DUPLICATE')
+                    source={'authority':'source_pinned_instant_resource_action',
+                            'source_build':fact['source_build'],
+                            'source_url':fact['source_url'],
+                            'mechanics_source_url':fact['mechanics_source_url'],
+                            'mechanics_source_build':fact['mechanics_source_build'],
+                            **({'unsupported_build_bridge':modifier.provenance['unsupported_build_bridge']}
+                               if modifier.provenance.get('unsupported_build_bridge') else {})}
+                    granted=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                            {'kind':'mode_is','value':mode_id},
+                            *(({'kind':'resource_below_capacity','resource_id':resource_id},)
+                              if int(fact['must_have_room']) else ())),
+                        costs=(ResourceCost(cost_resource, float(base)*
+                            float(fact['base_resource_cost_fraction'])),),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),
+                        effects=(ResourceChangeEffect('resource_change',resource_id,
+                            'actor','add',float(fact['resource_gain'])),),
+                        provenance=(source,),metadata={'talent_granted_action':True,
+                            'source_action_kind':'instant_resource_conversion',
+                            'resource_cost_formula':'base_resource * source_fraction',
+                            'resource_cost_reduction_group':str(fact['cost_reduction_group'])})
+                    actions.append(granted)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_action':
+                    if modifier.target_type != 'source_action':
+                        raise ValueError('grant_source_action requires source_action target')
+                    # A learned talent may grant a trainable *spell family* with
+                    # higher source ranks. The grant modifier points to the talent's
+                    # original spell ID; canonical rank rows declare that parent.
+                    # Choose the highest legal rank, never the first SQLite row.
+                    matching = [row for fact in ir_slice.source_facts
+                        if fact.get('family') == 'talent_granted_action_facts'
+                        for row in fact.get('actions', ())
+                        if str(row.get('grant_parent_spell_id', row.get('spell_id'))) == modifier.target_id
+                        and int(row.get('required_level', 0)) <= int(level)]
+                    if not matching:
+                        raise ValueError('verified talent-granted action absent at level')
+                    highest = max(int(row['required_level']) for row in matching)
+                    matching = [row for row in matching if int(row['required_level']) == highest]
+                    if len(matching) != 1:
+                        raise ValueError('ambiguous verified talent-granted rank')
+                    row = matching[0]
+                    if int(row['required_level']) > level:
+                        raise ValueError('talent-granted action level not met')
+                    if not row.get('source_url'):
+                        raise ValueError('talent-granted action source missing')
+                    action_id = str(row['family_key']) + ':' + str(row['spell_id'])
+                    if any(a.id == action_id for a in actions):
+                        raise ValueError('duplicate talent-granted action')
+                    if row.get('action_kind') == 'timed_aura_weapon_proc':
+                        from src.game.data.forever.source_timed_auras import compile_granted_timed_aura
+                        action, granted_triggers = compile_granted_timed_aura(row, ir_slice=ir_slice)
+                        actions.append(action)
+                        triggers.extend(granted_triggers)
+                        if str(row.get('proc_authority','')).startswith('CLASSIC_'):
+                            unsupported.append({'code':'talent_granted_proc_server_frequency_unverified',
+                                'status':'qualified_classic_proxy_not_current_forever_server',
+                                'source_url':row.get('proc_source_url'),
+                                'client_build':row.get('client_build'),
+                                'talent_grant_spell_id':row['spell_id']})
+                        applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                        'action_id':action.id,'trigger_ids':[t.id for t in granted_triggers]})
+                        continue
+                    if row.get('action_kind') == 'periodic_damage_target_hit_debuff':
+                        from src.game.model.ir import TargetStatDebuffEffect
+                        from math import isfinite
+                        total=float(row['periodic_total_base_damage'])
+                        duration=float(row['periodic_duration_s'])
+                        interval=float(row['periodic_tick_interval_s'])
+                        delta=float(row['target_hit_chance_delta'])
+                        if (not all(isfinite(v) for v in (total,duration,interval,delta))
+                                or total <= 0 or duration <= 0 or interval <= 0
+                                or abs(duration / interval - round(duration / interval)) > 1e-8
+                                or not -1 <= delta < 0):
+                            raise ValueError('invalid sourced periodic+hit talent grant')
+                        source={'source_url':str(row['source_url']),
+                            'talent_grant_spell_id':str(row.get('grant_parent_spell_id',row['spell_id'])),
+                            'authority':'canonical_sqlite_verified_talent_grant'}
+                        effects=(PeriodicEffect(effect_type='periodic_damage',
+                            school=str(row['school']),target='enemy',
+                            aura_id='source_periodic:'+str(row['spell_id']),
+                            total_base_damage=total,duration_s=duration,
+                            tick_interval_s=interval,
+                            field_provenance={'total_base_damage':(source,)}),
+                            TargetStatDebuffEffect(effect_type='target_stat_debuff',
+                            aura_id='source_target_hit:'+str(row['spell_id']),
+                            target_stat_id='hit_chance',delta=delta,duration_s=duration,
+                            provenance=(source,)))
+                        actions.append(ActionDefinition(id=action_id,
+                            family_key=str(row['family_key']),name=str(row['name']),
+                            owner_actor_id=actor.id,
+                            requirements=({'kind':'minimum_level','value':int(row['required_level'])},
+                                *(({'kind':'mode_is','value':str(row['required_mode_id'])},)
+                                  if row.get('required_mode_id') else ())),
+                            costs=(ResourceCost('mana',float(row['mana_cost'])),),
+                            cast_time_s=float(row['cast_time_s']),gcd_s=float(row['gcd_s']),
+                            cooldown_s=float(row['cooldown_s']),effects=effects,
+                            provenance=(source,),metadata={'source_range_yards':row.get('range_yards'),
+                                'periodic_tick_interval_status':row.get('periodic_tick_interval_status'),
+                                'spell_power_coefficient_status':row.get('spell_power_coefficient_status')}))
+                        if row.get('required_mode_id'):
+                            mode_id=str(row['required_mode_id'])
+                            if not any(m.id==mode_id for m in modes):
+                                raise ValueError('grant requires unknown source mode')
+                            modes[:]=[replace(m,enabled_action_ids=tuple(
+                                dict.fromkeys((*m.enabled_action_ids,action_id))))
+                                if m.id==mode_id and m.enabled_action_ids is not None else m
+                                for m in modes]
+                        applied.append({'talent_id':talent_id,'rank':rank,
+                            'kind':modifier.kind,'action_id':action_id,'source':dict(modifier.provenance)})
+                        continue
+                    if row.get('action_kind') not in (None, 'direct_damage'):
+                        raise ValueError('unknown canonical talent-granted action kind')
+                    actions.append(ActionDefinition(id=action_id, family_key=str(row['family_key']),
+                        name=str(row['name']), owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(row['required_level'])},),
+                        costs=(ResourceCost('mana',float(row['mana_cost'])),),
+                        cast_time_s=float(row['cast_time_s']),gcd_s=float(row['gcd_s']),
+                        cooldown_s=float(row['cooldown_s']),
+                        effects=(DamageEffect('damage',str(row['school']),'enemy',
+                            float(row['damage_min']),float(row['damage_max']),
+                            field_provenance={'base_damage':({'source_url':row['source_url']},)}),),
+                        provenance=({'source_url':row['source_url'],
+                            'authority':'canonical_sqlite_verified_talent_grant'},),
+                        metadata={'conditional_target_control_damage_multiplier':{
+                            'control_id':str(row['conditional_target_control']),
+                            'multiplier':float(row['conditional_multiplier'])}}))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_id':action_id,'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'unlock_action_family':
+                    if (modifier.target_type != 'action_family' or
+                            not any(action.family_key == modifier.target_id and
+                                    any(isinstance(e, WeaponDamageEffect) for e in action.effects)
+                                    for action in ir_slice.actions)):
+                        raise ValueError('UNLOCK_MISSING_VERIFIED_WEAPON_ACTION_FAMILY')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_family':modifier.target_id,
+                                    'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'control_target_cap_bonus':
+                    prov=dict(modifier.provenance)
+                    if (modifier.target_type!='action_family' or
+                            type(modifier.value) not in (int,float) or
+                            not float(modifier.value).is_integer() or not 0 < modifier.value <= 16
+                            or not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_CONTROL_TARGET_CAP_BONUS')
+                    control_id=str(prov.get('control_id',''))
+                    matched=False
+                    for index,action in enumerate(actions):
+                        if action.family_key != modifier.target_id:continue
+                        baseline=(action.metadata.get('source_control_target_caps') or {}).get(control_id)
+                        if (not baseline or baseline['source_build']!=prov.get('source_build')
+                                or baseline['base_source_url']!=prov.get('base_source_url')
+                                or baseline['base_max_targets']!=prov.get('base_max_targets')):
+                            raise ValueError('SOURCE_CONTROL_TARGET_CAP_BASELINE_MISSING')
+                        cap=int(baseline['base_max_targets']+modifier.value)
+                        if not 1<=cap<=16:raise ValueError('INVALID_SOURCE_CONTROL_TARGET_CAP')
+                        new_spec={**baseline,'max_targets':cap,'talent_source_url':prov['source_url']}
+                        actions[index]=replace(action,metadata={**dict(action.metadata),
+                            'source_control_target_caps':{**dict(action.metadata['source_control_target_caps']),
+                                control_id:new_spec}})
+                        matched=True
+                    if not matched:raise ValueError('SOURCE_CONTROL_TARGET_CAP_ACTION_MISSING')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'action_family':modifier.target_id,'control_id':control_id,
+                        'max_targets':int(prov['base_max_targets']+modifier.value),'source':prov})
+                    continue
+                if modifier.kind == 'cast_charge_exchange':
+                    # The source owns both action families and all charge semantics.
+                    # Never turn a conditional cast-time reduction into a permanent
+                    # static cast-time buff or apply only one half of the exchange.
+                    prov=dict(modifier.provenance)
+                    producer=str(prov.get('producer_family',''))
+                    consumer=str(prov.get('consumer_family',''))
+                    bank=str(prov.get('bank_id',''))
+                    if (modifier.target_type != 'action_family' or modifier.target_id != consumer
+                            or not producer or not consumer or producer==consumer
+                            or bank != 'source_cast_charges:'+producer+':'+consumer
+                            or type(prov.get('grant_per_cast')) is not int
+                            or type(prov.get('capacity')) is not int
+                            or not 0 < prov['grant_per_cast'] <= prov['capacity'] <= 16
+                            or not 0 < float(prov.get('duration_s',0.)) <= 120.
+                            or not 0 < float(modifier.value) <= 10.
+                            or not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_CAST_CHARGE_EXCHANGE')
+                    if not any(a.family_key==producer for a in actions) or not any(
+                            a.family_key==consumer for a in actions):
+                        raise ValueError('SOURCE_CAST_CHARGE_ACTION_FAMILY_MISSING')
+                    source={'bank_id':bank,'grant_per_cast':int(prov['grant_per_cast']),
+                        'capacity':int(prov['capacity']),'duration_s':float(prov['duration_s']),
+                        'source_url':prov['source_url'],'source_build':prov['source_build']}
+                    sink={'bank_id':bank,'reduction_s':float(modifier.value),
+                        'source_url':prov['source_url'],'source_build':prov['source_build']}
+                    for index,action in enumerate(actions):
+                        role=('source_cast_charge_producer' if action.family_key==producer else
+                              'source_cast_charge_consumer' if action.family_key==consumer else None)
+                        if role is None:continue
+                        facts=source if role.endswith('producer') else sink
+                        if role in action.metadata and action.metadata[role] != facts:
+                            raise ValueError('CONFLICTING_SOURCE_CAST_CHARGE_BANK')
+                        actions[index]=replace(action,metadata={**dict(action.metadata),role:facts},
+                            provenance=action.provenance+({'stage':'talent_modifier',
+                            'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                            'source':prov},))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'bank_id':bank,'producer_family':producer,'consumer_family':consumer,
+                        'source':prov})
+                    continue
+                if modifier.kind == 'critical_resource_gain':
+                    # Generic event-driven resource gain. No talent/class dispatch:
+                    # the source modifier supplies target resource, mode, amount,
+                    # trigger chance and whether the critical ability generates
+                    # this very same resource.
+                    from src.game.model.ir import ResourceEventGainRule
+                    if modifier.target_type!='resource' or not 0 < float(modifier.value) <= 1:
+                        raise ValueError('INVALID_SOURCE_CRITICAL_RESOURCE_MODIFIER')
+                    prov=dict(modifier.provenance)
+                    mode=prov.get('required_mode_id')
+                    amount=prov.get('bonus_resource_amount')
+                    generator=prov.get('requires_resource_generator')
+                    if (mode not in {m.id for m in modes} or type(amount) not in (int,float)
+                            or not 0 < float(amount) <= 100 or type(generator) is not bool):
+                        raise ValueError('INCOMPLETE_CRITICAL_RESOURCE_EVENT_SOURCE')
+                    matches=[i for i,resource in enumerate(resources)
+                             if resource.id==modifier.target_id]
+                    if len(matches)!=1:raise ValueError('CRITICAL_RESOURCE_TARGET_UNAVAILABLE')
+                    index=matches[0];resource=resources[index]
+                    rule=ResourceEventGainRule(id=f'source_critical_gain:{talent_id}:{modifier.target_id}',
+                        event_kind='nonperiodic_melee_critical',
+                        event_value_field='expected_critical_count',
+                        multiplier=float(amount)*float(modifier.value),
+                        required_mode_id=str(mode),
+                        filters=({'required_generated_resource':modifier.target_id}
+                                 if generator else {}),
+                        provenance=(prov,),
+                        metadata={'expected_value_semantics':'crit_probability_x_sourced_proc_chance',
+                                  'resource_amount_source_build':prov['resource_amount_source_build']})
+                    resources[index]=replace(resource,event_gain_rules=(*resource.event_gain_rules,rule))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'resource_id':resource.id,'trigger_probability':float(modifier.value),
+                        'amount_per_proc':float(amount),'required_mode_id':mode,'source':prov})
+                    continue
+                if modifier.kind == 'timed_spell_crit_cast_haste':
+                    prov=dict(modifier.provenance)
+                    if (modifier.target_type!='actor_proc' or
+                            modifier.target_id!='nonperiodic_spell_crit' or
+                            not 0 < float(modifier.value) < 1 or
+                            not 0 < float(prov.get('gcd_reduction_fraction',0)) < 1 or
+                            not 0 < float(prov.get('duration_s',0)) <= 60 or
+                            not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_TIMED_CRIT_HASTE')
+                    spec={'event_kind':modifier.target_id,
+                        'cast_speed_fraction':float(modifier.value),
+                        'gcd_reduction_fraction':float(prov['gcd_reduction_fraction']),
+                        'duration_s':float(prov['duration_s']),
+                        'source':prov}
+                    if actor.metadata.get('source_timed_spell_crit_haste') is not None:
+                        raise ValueError('DUPLICATE_SOURCE_TIMED_CRIT_HASTE')
+                    actor=replace(actor,metadata={**dict(actor.metadata),
+                        'source_timed_spell_crit_haste':spec})
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'kind':modifier.kind,'source':prov})
+                    continue
+                if modifier.kind=='control_duration_delta_s' and modifier.target_type=='action_family_group':
+                    families=tuple(str(modifier.target_id).split(','))
+                    if (not families or len(set(families))!=len(families) or
+                            not 0<float(modifier.value)<=60):
+                        raise ValueError('INVALID_SOURCE_CONTROL_DURATION_FAMILIES')
+                    matched=[]
+                    for i,action in enumerate(actions):
+                        if action.family_key not in families:continue
+                        modified=[];n=0
+                        for effect in action.effects:
+                            if isinstance(effect,ControlEffect) and effect.control_id=='stun':
+                                modified.append(replace(effect,duration_s=float(effect.duration_s)+float(modifier.value)))
+                                n+=1
+                            else:modified.append(effect)
+                        if n:
+                            actions[i]=replace(action,effects=tuple(modified),
+                                provenance=action.provenance+({'stage':'talent_modifier',
+                                    'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'source':dict(modifier.provenance)},))
+                            matched.append(action.id)
+                    if not matched:raise ValueError('NO_EXECUTABLE_SOURCE_CONTROL_DURATION_ACTION')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'action_ids':matched,'future_tier_family_unresolved':tuple(
+                        family for family in families if not any(a.family_key==family for a in actions)),
+                        'source':dict(modifier.provenance)})
+                    continue
+                if modifier.target_type == 'actor_stat':
+                    if modifier.kind == 'healing_power_from_stat':
+                        source_stat = str(modifier.provenance.get('source_stat') or '')
+                        if (modifier.target_id != 'healing_power'
+                                or source_stat not in actor.base_stats
+                                or not 0. < float(modifier.value) <= 1.):
+                            raise ValueError('INVALID_SOURCE_STAT_TO_HEALING_CONVERSION')
+                        coefficients = dict(actor.metadata.get('source_healing_power_from_stats') or {})
+                        before = float(coefficients.get(source_stat, 0.))
+                        coefficients[source_stat] = before + float(modifier.value)
+                        actor = replace(actor, metadata={**dict(actor.metadata),
+                            'source_healing_power_from_stats': coefficients})
+                        applied.append({'talent_id': talent_id, 'rank': rank,
+                            'kind': modifier.kind, 'source_stat': source_stat,
+                            'before': before, 'after': coefficients[source_stat]})
+                        continue
+                    if modifier.kind not in ('actor_stat_pct', 'actor_stat_flat'):
+                        raise ValueError(f'unsupported actor stat talent modifier: {modifier.kind}')
+                    if modifier.kind == 'actor_stat_pct' and modifier.target_id not in actor.base_stats:
+                        raise ValueError(f'actor stat unavailable: {modifier.target_id}')
+                    stats = dict(actor.base_stats)
+                    before = float(stats.get(modifier.target_id, 0.0))
+                    after = (before * (1.0 + float(modifier.value))
+                             if modifier.kind == 'actor_stat_pct' else before + float(modifier.value))
+                    stats[modifier.target_id] = after
+                    # Re-evaluate source-derived combat stats when a talent changes
+                    # a primary stat. Mode-scoped conversions remain separate and
+                    # use the new source stat at form entry.
+                    for fact in actor.metadata.get('canonical_primary_stat_conversions', ()):
+                        if (fact['target_type'] == 'stat' and
+                                fact['source_stat'] == modifier.target_id):
+                            target = str(fact['target_id'])
+                            stats[target] = float(stats.get(target, 0.0)) + (
+                                after - before) * float(fact['coefficient'])
+                    actor = replace(actor, base_stats=stats,
+                        provenance=actor.provenance + ({'stage':'talent_modifier','talent_id':talent_id,
+                                                       'rank':rank,'source':dict(modifier.provenance)},))
+                    # Shared source-backed mana conversion is already used by gear;
+                    # recompute from total (possibly geared) Intellect here too.
+                    for idx, resource in enumerate(resources):
+                        if (resource.metadata.get('base_mana') is not None and
+                                str(resource.metadata.get('capacity_formula','')).startswith(
+                                    'base_mana + classic_mana_bonus_from_intellect(') and
+                                modifier.target_id == 'intellect'):
+                            from src.game.data.forever.player_state import classic_mana_bonus_from_intellect
+                            capacity = float(resource.metadata['base_mana']) + classic_mana_bonus_from_intellect(after)
+                            resources[idx] = replace(resource, capacity=capacity, initial_amount=capacity,
+                                metadata={**dict(resource.metadata),'base_intellect':after,
+                                          'intellect_mana_bonus':classic_mana_bonus_from_intellect(after),
+                                          'talents_included':True})
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'target_stat':modifier.target_id,'before':before,'after':after})
+                    continue
+                if modifier.target_type == "mode":
+                    mode_index = next((i for i, mode in enumerate(modes) if mode.id == modifier.target_id), None)
+                    if mode_index is None:
+                        raise ValueError(f"talent modifier mode target unavailable: {modifier.target_id}")
+                    mode = modes[mode_index]
+                    if modifier.kind in ('mode_entry_expected_gain','mode_entry_restore_last'):
+                        provenance = dict(modifier.provenance)
+                        resource_id = str(provenance.get('resource_id') or '')
+                        if not any(r.id == resource_id and r.owner_actor_id == actor.id for r in resources):
+                            raise ValueError(f'mode entry talent resource unavailable: {resource_id}')
+                        if modifier.kind == 'mode_entry_restore_last':
+                            forbidden = tuple(str(x) for x in provenance.get('forbidden_mode_ids',()))
+                            if any(x not in {m.id for m in modes} for x in forbidden):
+                                raise ValueError('mode entry forbidden mode unavailable')
+                            entry = ModeEntryResourceModifier(kind='restore_last_mode_resource',
+                                resource_id=resource_id, value=float(modifier.value),
+                                outside_regen_per_s=float(provenance['outside_regen_per_s']),
+                                max_restored=float(provenance['max_restored']),
+                                forbidden_mode_ids=forbidden, provenance=(provenance,))
+                        else:
+                            entry = ModeEntryResourceModifier(kind='expected_flat_gain',
+                                resource_id=resource_id, value=float(modifier.value),
+                                provenance=(provenance,))
+                        modes[mode_index] = replace(mode,
+                            entry_resource_modifiers=mode.entry_resource_modifiers+(entry,),
+                            provenance=mode.provenance+({'stage':'talent_modifier','talent_id':talent_id,
+                                'rank':rank,'kind':modifier.kind,'source':provenance},))
+                        applied.append({'talent_id':talent_id,'rank':rank,'mode_id':mode.id,
+                                        'kind':modifier.kind,'resource_id':resource_id,
+                                        'value':float(modifier.value)})
+                        continue
+                    if modifier.kind == "mode_armor_per_level":
+                        mode_modifier = ModeStatModifier(target_stat="armor", kind="add_level_scaled",
+                                                         value=float(modifier.value))
+                    elif modifier.kind == "mode_armor_excess_defense":
+                        threshold = modifier.provenance.get('reference_level_multiplier')
+                        if threshold is None:
+                            raise ValueError("source threshold missing for excess-defense armor")
+                        mode_modifier = ModeStatModifier(
+                            target_stat="armor", kind="add_stat_above_level_scaled",
+                            value=float(modifier.value), source_stat="defense",
+                            reference_level_multiplier=float(threshold))
+                    elif modifier.kind == 'mode_stat_flat':
+                        target_stat = str(modifier.provenance.get('target_stat') or '')
+                        if not target_stat:
+                            raise ValueError('mode flat stat source target missing')
+                        mode_modifier = ModeStatModifier(target_stat=target_stat,
+                            kind='add_flat',value=float(modifier.value))
+                    elif modifier.kind in ('mode_stat_pct','mode_derived_stat_pct'):
+                        source_stat = modifier.provenance.get('source_stat')
+                        target_stat = (source_stat if modifier.kind == 'mode_stat_pct'
+                                       else modifier.provenance.get('target_id'))
+                        if not source_stat or not target_stat:
+                            raise ValueError('source stat conversion metadata missing')
+                        if source_stat not in actor.base_stats:
+                            raise ValueError(f'source actor stat unavailable: {source_stat}')
+                        mode_modifier = ModeStatModifier(target_stat=str(target_stat),
+                            kind='add_stat_scaled',source_stat=str(source_stat),value=float(modifier.value))
+                    elif modifier.kind == 'mode_resource_capacity_pct':
+                        source_stat = modifier.provenance.get('source_stat')
+                        resource_id = modifier.provenance.get('target_id')
+                        if not source_stat or not resource_id or source_stat not in actor.base_stats:
+                            raise ValueError('resource conversion source stat missing')
+                        if not any(r.id == resource_id and r.capacity is not None for r in resources):
+                            raise ValueError('resource conversion capacity target unavailable')
+                        cap_modifier = ModeResourceCapacityModifier(resource_id=str(resource_id),
+                            kind='add_stat_scaled',source_stat=str(source_stat),value=float(modifier.value))
+                        modes[mode_index] = replace(mode,
+                            resource_capacity_modifiers=mode.resource_capacity_modifiers + (cap_modifier,),
+                            provenance=mode.provenance + ({'stage':'talent_modifier','talent_id':talent_id,
+                                'rank':rank,'kind':modifier.kind,'source':dict(modifier.provenance)},))
+                        applied.append({'talent_id':talent_id,'rank':rank,'mode_id':mode.id,
+                                        'kind':modifier.kind,'value':float(modifier.value),
+                                        'target_resource':str(resource_id)})
+                        continue
+                    else:
+                        raise ValueError(f"unsupported mode talent modifier kind: {modifier.kind}")
+                    modes[mode_index] = replace(mode, stat_modifiers=mode.stat_modifiers + (mode_modifier,),
+                        provenance=mode.provenance + ({"stage": "talent_modifier", "talent_id": talent_id,
+                            "rank": rank, "kind": modifier.kind, "value": float(modifier.value),
+                            "provenance": dict(modifier.provenance)},))
+                    applied.append({"talent_id": talent_id, "rank": rank, "mode_id": mode.id,
+                                    "kind": modifier.kind, "value": float(modifier.value),
+                                    "target_stat": mode_modifier.target_stat})
+                    continue
+                if modifier.target_type == 'trigger_filter':
+                    if modifier.kind != 'effect_damage_pct':
+                        raise ValueError('unsupported trigger talent modifier')
+                    changed=[]
+                    for i,trigger in enumerate(triggers):
+                        if trigger.metadata.get('effect_category') != modifier.target_id:
+                            continue
+                        effects=[]
+                        for effect in trigger.effects:
+                            factor=max(0.,1.+float(modifier.value))
+                            if isinstance(effect,DamageEffect):
+                                effects.append(replace(effect,base_min=effect.base_min*factor,
+                                    base_max=effect.base_max*factor,
+                                    spell_power_coefficient=effect.spell_power_coefficient*factor))
+                            elif isinstance(effect,WeaponDamageEffect):
+                                effects.append(replace(effect,weapon_damage_multiplier=effect.weapon_damage_multiplier*factor,
+                                    flat_damage=effect.flat_damage*factor))
+                            else:
+                                raise ValueError('unsupported trigger damage effect')
+                        triggers[i]=replace(trigger,effects=tuple(effects),
+                            provenance=trigger.provenance+({'stage':'talent_modifier',
+                            'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                            'source':dict(modifier.provenance)},))
+                        changed.append(trigger.id)
+                    if not changed:
+                        raise ValueError(f'no source triggers in category: {modifier.target_id}')
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'kind':modifier.kind,'trigger_ids':changed,'value':float(modifier.value)})
+                    continue
+                if modifier.target_type not in ('action_family', 'action_filter'):
+>                   raise ValueError(f"unsupported talent modifier target_type: {modifier.target_type}")
+E                   ValueError: unsupported talent modifier target_type: resource
+
+src/game/talents.py:788: ValueError
+____ test_expected_dodge_proc_is_paid_through_real_incoming_resource_events ____
+
+    def test_expected_dodge_proc_is_paid_through_real_incoming_resource_events():
+>       changed,_=apply_talent_selection(_slice(),{'test_avoidance':1},level=30)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_wf442_generic_avoidance_resource_red.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='avoidance-test', ruleset='test', actor=ActorDefinition(id='player', actor_type='player', base_stats={'...erlays=(), unsupported_semantics=(), provenance={}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'test_avoidance': 1}
+
+    def apply_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> tuple[GameIRSlice, TalentApplication]:
+        validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) > 0}
+        gated_families = {}
+        for gated_talent in ir_slice.talents:
+            for gated_rank in gated_talent.ranks:
+                for gate in gated_rank.modifiers:
+                    if gate.kind == 'unlock_action_family':
+                        if gate.target_type != 'action_family':
+                            raise ValueError('UNLOCK_REQUIRES_ACTION_FAMILY')
+                        prev = gated_families.setdefault(gate.target_id, gated_talent.id)
+                        if prev != gated_talent.id:
+                            raise ValueError('CONFLICTING_TALENT_UNLOCK_FAMILY')
+        actions = list(ir_slice.actions)
+        auto_attacks = list(ir_slice.auto_attacks)
+        triggers = list(ir_slice.triggers)
+        modes = list(ir_slice.modes)
+        actor = ir_slice.actor
+        resources = list(ir_slice.resources)
+        applied: list[dict] = []
+        unsupported = list(ir_slice.unsupported_semantics)
+    
+        # Grant sourced actions first, then apply all passive modifiers so a
+        # trigger-filter talent cannot miss a newly granted event trigger.
+        ordered = sorted(normalized.items(), key=lambda item: (not any(
+            mod.kind in ('grant_source_action','grant_source_resource_action','grant_source_next_cast_instant_action','grant_source_active_periodic_full_heal','grant_source_spatial_charge_actions') for rr in definitions[item[0]].ranks
+            if rr.rank == item[1] for mod in rr.modifiers), item[0]))
+        for talent_id, rank in ordered:
+            talent = definitions[talent_id]
+            rank_row = next(row for row in talent.ranks if int(row.rank) == rank)
+            for modifier in rank_row.modifiers:
+                if modifier.kind == 'grant_source_spatial_charge_actions':
+                    from src.game.model.ir import SpatialChargeEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or len(fact.get('forms') or ())!=2
+                            or fact.get('source_build_verified') is not False):
+                        raise ValueError('INVALID_SOURCE_SPATIAL_CHARGE_FACT')
+                    if any(a.family_key==family for a in actions):
+                        raise ValueError('SOURCE_SPATIAL_CHARGE_FAMILY_DUPLICATE')
+                    for form in fact['forms']:
+                        mode_id=str(form['mode_id'])
+                        if mode_id not in {m.id for m in modes}:raise ValueError('CHARGE_UNKNOWN_SOURCE_MODE')
+                        r_id=str(form.get('cost_resource_id') or '')
+                        if r_id and r_id not in {r.id for r in resources}:
+                            raise ValueError('CHARGE_UNKNOWN_SOURCE_COST_RESOURCE')
+                        source={'authority':'sourced_talent_spatial_charge_action',
+                            'source_url':fact['source_url'],'source_build_verified':False,
+                            'checkpoint_source_build':modifier.provenance['source_build']}
+                        action_id=family+':'+str(form['id_suffix'])
+                        cost=((ResourceCost(r_id,float(form['cost_amount'])),) if r_id else ())
+                        effect=SpatialChargeEffect('spatial_charge','enemy',
+                            float(form['minimum_range_yards']),float(form['maximum_range_yards']),
+                            float(form['arrival_distance_yards']),str(form['arrival_position_kind']))
+                        root=((ControlEffect('control','root','enemy',float(form['root_duration_s'])),)
+                              if form.get('root_duration_s') else ())
+                        granted=ActionDefinition(id=action_id,family_key=family,
+                            name=str(form['name']),owner_actor_id=actor.id,
+                            requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                                {'kind':'mode_is','value':mode_id}),costs=cost,
+                            cast_time_s=0.,gcd_s=float(form['gcd_s']),
+                            cooldown_s=float(form['cooldown_s']),effects=(effect,*root),
+                            provenance=(source,),metadata={'talent_granted_action':True,
+                                'range_yards':float(form['maximum_range_yards']),
+                                'source_movement_action':True,
+                                'source_interrupt_cast':'NOT_MODELED',
+                                'source_target_orientation':'GEOMETRIC_PROXY',
+                                'source_requires_2d':True})
+                        actions.append(granted)
+                        modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                            (*m.enabled_action_ids,action_id))))
+                            if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                        applied.append({'talent_id':talent_id,'rank':rank,
+                            'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_active_periodic_full_heal':
+                    from src.game.model.ir import ActivePeriodicFullHealEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    source_families=tuple(fact.get('source_families') or ())
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or mode_id not in {m.id for m in modes}
+                            or not source_families or not all(any(a.family_key==f
+                                and any(isinstance(e,PeriodicHealEffect) for e in a.effects)
+                                for a in actions) for f in source_families)
+                            or fact.get('source_build_verified') is not False):
+                        raise ValueError('INVALID_ACTIVE_PERIODIC_FULL_HEAL_GRANT')
+                    hot_auras=tuple(sorted({e.aura_id for a in actions
+                        if a.family_key in source_families for e in a.effects
+                        if isinstance(e,PeriodicHealEffect)}))
+                    if not hot_auras:raise ValueError('MISSING_ACTIVE_PERIODIC_HEAL_SOURCE')
+                    mana=next((r for r in resources if r.id=='mana'),None)
+                    if mana is None or not 0 < float(mana.metadata.get('base_mana',0)):
+                        raise ValueError('ACTIVE_PERIODIC_HEAL_BASE_MANA_UNAVAILABLE')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('DUPLICATE_ACTIVE_PERIODIC_HEAL_GRANT')
+                    source={'source_url':fact['source_url'],
+                            'authority':'source_index_active_periodic_heal',
+                            'target_build':modifier.provenance['source_build'],
+                            'client_source_build_verified':False}
+                    button=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                            {'kind':'mode_is','value':mode_id},
+                            {'kind':'aura_any_present','scope':'actor','aura_ids':hot_auras}),
+                        costs=(ResourceCost('mana',float(mana.metadata['base_mana'])*
+                            float(fact['base_mana_cost_fraction'])),),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),
+                        effects=(ActivePeriodicFullHealEffect('active_periodic_full_heal','self',
+                            'health',source_families,float(fact['full_duration_multiplier'])),),
+                        provenance=(source,),metadata={'talent_granted_action':True,
+                            'source_build_bridge_verified':False,
+                            'source_hot_preserved':True,
+                            'source_multiple_hot_priority':'UNVERIFIED',
+                            'source_healing_power_snapshot':'UNVERIFIED'})
+                    actions.append(button)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                                    'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_next_cast_instant_action':
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family or
+                            not family or mode_id not in {m.id for m in modes} or
+                            type(fact.get('spell_id')) is not int or fact['spell_id']<=0 or
+                            fact.get('source_mechanics_version_verified') is not False or
+                            not str(fact.get('mechanics_source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_NEXT_CAST_ACTION_GRANT')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('DUPLICATE_NEXT_CAST_ACTION_GRANT')
+                    action=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'mode_is','value':mode_id},),costs=(),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),effects=(),
+                        provenance=({'authority':'sourced_talent_next_cast_action',
+                            'source_url':fact['mechanics_source_url'],
+                            'mechanics_source_build':fact['mechanics_source_build'],
+                            'target_build':modifier.provenance['source_build'],
+                            'source_build_verified':False},),
+                        metadata={'talent_granted_action':True,
+                            'ignores_global_cooldown':True,
+                            'source_next_cast_instant_grant':{
+                            'school':str(fact['spell_school']),
+                            'count':int(fact['next_cast_count']),
+                            'source_url':str(fact['mechanics_source_url']),
+                            'source_build_verified':False}})
+                    actions.append(action)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_id':action_id,'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'grant_source_resource_action':
+                    # A typed source fact supplies all action parameters; this is
+                    # the same general ActionDefinition/ResourceChangeEffect used
+                    # for any class's resource-converting button.
+                    from src.game.model.ir import ResourceChangeEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    resource_id=str(fact.get('resource_id') or '')
+                    cost_resource=str(fact.get('cost_resource_id') or '')
+                    family=str(fact.get('family_key') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or not any(m.id==mode_id for m in modes)
+                            or resource_id not in {r.id for r in resources}
+                            or cost_resource not in {r.id for r in resources}
+                            or not str(fact.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_RESOURCE_ACTION_GRANT')
+                    cost_definition=next(r for r in resources if r.id==cost_resource)
+                    base=cost_definition.metadata.get('base_mana')
+                    if base is None or not 0 < float(base):
+                        raise ValueError('SOURCE_RESOURCE_ACTION_BASE_COST_UNAVAILABLE')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('SOURCE_RESOURCE_ACTION_DUPLICATE')
+                    source={'authority':'source_pinned_instant_resource_action',
+                            'source_build':fact['source_build'],
+                            'source_url':fact['source_url'],
+                            'mechanics_source_url':fact['mechanics_source_url'],
+                            'mechanics_source_build':fact['mechanics_source_build'],
+                            **({'unsupported_build_bridge':modifier.provenance['unsupported_build_bridge']}
+                               if modifier.provenance.get('unsupported_build_bridge') else {})}
+                    granted=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                            {'kind':'mode_is','value':mode_id},
+                            *(({'kind':'resource_below_capacity','resource_id':resource_id},)
+                              if int(fact['must_have_room']) else ())),
+                        costs=(ResourceCost(cost_resource, float(base)*
+                            float(fact['base_resource_cost_fraction'])),),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),
+                        effects=(ResourceChangeEffect('resource_change',resource_id,
+                            'actor','add',float(fact['resource_gain'])),),
+                        provenance=(source,),metadata={'talent_granted_action':True,
+                            'source_action_kind':'instant_resource_conversion',
+                            'resource_cost_formula':'base_resource * source_fraction',
+                            'resource_cost_reduction_group':str(fact['cost_reduction_group'])})
+                    actions.append(granted)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_action':
+                    if modifier.target_type != 'source_action':
+                        raise ValueError('grant_source_action requires source_action target')
+                    # A learned talent may grant a trainable *spell family* with
+                    # higher source ranks. The grant modifier points to the talent's
+                    # original spell ID; canonical rank rows declare that parent.
+                    # Choose the highest legal rank, never the first SQLite row.
+                    matching = [row for fact in ir_slice.source_facts
+                        if fact.get('family') == 'talent_granted_action_facts'
+                        for row in fact.get('actions', ())
+                        if str(row.get('grant_parent_spell_id', row.get('spell_id'))) == modifier.target_id
+                        and int(row.get('required_level', 0)) <= int(level)]
+                    if not matching:
+                        raise ValueError('verified talent-granted action absent at level')
+                    highest = max(int(row['required_level']) for row in matching)
+                    matching = [row for row in matching if int(row['required_level']) == highest]
+                    if len(matching) != 1:
+                        raise ValueError('ambiguous verified talent-granted rank')
+                    row = matching[0]
+                    if int(row['required_level']) > level:
+                        raise ValueError('talent-granted action level not met')
+                    if not row.get('source_url'):
+                        raise ValueError('talent-granted action source missing')
+                    action_id = str(row['family_key']) + ':' + str(row['spell_id'])
+                    if any(a.id == action_id for a in actions):
+                        raise ValueError('duplicate talent-granted action')
+                    if row.get('action_kind') == 'timed_aura_weapon_proc':
+                        from src.game.data.forever.source_timed_auras import compile_granted_timed_aura
+                        action, granted_triggers = compile_granted_timed_aura(row, ir_slice=ir_slice)
+                        actions.append(action)
+                        triggers.extend(granted_triggers)
+                        if str(row.get('proc_authority','')).startswith('CLASSIC_'):
+                            unsupported.append({'code':'talent_granted_proc_server_frequency_unverified',
+                                'status':'qualified_classic_proxy_not_current_forever_server',
+                                'source_url':row.get('proc_source_url'),
+                                'client_build':row.get('client_build'),
+                                'talent_grant_spell_id':row['spell_id']})
+                        applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                        'action_id':action.id,'trigger_ids':[t.id for t in granted_triggers]})
+                        continue
+                    if row.get('action_kind') == 'periodic_damage_target_hit_debuff':
+                        from src.game.model.ir import TargetStatDebuffEffect
+                        from math import isfinite
+                        total=float(row['periodic_total_base_damage'])
+                        duration=float(row['periodic_duration_s'])
+                        interval=float(row['periodic_tick_interval_s'])
+                        delta=float(row['target_hit_chance_delta'])
+                        if (not all(isfinite(v) for v in (total,duration,interval,delta))
+                                or total <= 0 or duration <= 0 or interval <= 0
+                                or abs(duration / interval - round(duration / interval)) > 1e-8
+                                or not -1 <= delta < 0):
+                            raise ValueError('invalid sourced periodic+hit talent grant')
+                        source={'source_url':str(row['source_url']),
+                            'talent_grant_spell_id':str(row.get('grant_parent_spell_id',row['spell_id'])),
+                            'authority':'canonical_sqlite_verified_talent_grant'}
+                        effects=(PeriodicEffect(effect_type='periodic_damage',
+                            school=str(row['school']),target='enemy',
+                            aura_id='source_periodic:'+str(row['spell_id']),
+                            total_base_damage=total,duration_s=duration,
+                            tick_interval_s=interval,
+                            field_provenance={'total_base_damage':(source,)}),
+                            TargetStatDebuffEffect(effect_type='target_stat_debuff',
+                            aura_id='source_target_hit:'+str(row['spell_id']),
+                            target_stat_id='hit_chance',delta=delta,duration_s=duration,
+                            provenance=(source,)))
+                        actions.append(ActionDefinition(id=action_id,
+                            family_key=str(row['family_key']),name=str(row['name']),
+                            owner_actor_id=actor.id,
+                            requirements=({'kind':'minimum_level','value':int(row['required_level'])},
+                                *(({'kind':'mode_is','value':str(row['required_mode_id'])},)
+                                  if row.get('required_mode_id') else ())),
+                            costs=(ResourceCost('mana',float(row['mana_cost'])),),
+                            cast_time_s=float(row['cast_time_s']),gcd_s=float(row['gcd_s']),
+                            cooldown_s=float(row['cooldown_s']),effects=effects,
+                            provenance=(source,),metadata={'source_range_yards':row.get('range_yards'),
+                                'periodic_tick_interval_status':row.get('periodic_tick_interval_status'),
+                                'spell_power_coefficient_status':row.get('spell_power_coefficient_status')}))
+                        if row.get('required_mode_id'):
+                            mode_id=str(row['required_mode_id'])
+                            if not any(m.id==mode_id for m in modes):
+                                raise ValueError('grant requires unknown source mode')
+                            modes[:]=[replace(m,enabled_action_ids=tuple(
+                                dict.fromkeys((*m.enabled_action_ids,action_id))))
+                                if m.id==mode_id and m.enabled_action_ids is not None else m
+                                for m in modes]
+                        applied.append({'talent_id':talent_id,'rank':rank,
+                            'kind':modifier.kind,'action_id':action_id,'source':dict(modifier.provenance)})
+                        continue
+                    if row.get('action_kind') not in (None, 'direct_damage'):
+                        raise ValueError('unknown canonical talent-granted action kind')
+                    actions.append(ActionDefinition(id=action_id, family_key=str(row['family_key']),
+                        name=str(row['name']), owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(row['required_level'])},),
+                        costs=(ResourceCost('mana',float(row['mana_cost'])),),
+                        cast_time_s=float(row['cast_time_s']),gcd_s=float(row['gcd_s']),
+                        cooldown_s=float(row['cooldown_s']),
+                        effects=(DamageEffect('damage',str(row['school']),'enemy',
+                            float(row['damage_min']),float(row['damage_max']),
+                            field_provenance={'base_damage':({'source_url':row['source_url']},)}),),
+                        provenance=({'source_url':row['source_url'],
+                            'authority':'canonical_sqlite_verified_talent_grant'},),
+                        metadata={'conditional_target_control_damage_multiplier':{
+                            'control_id':str(row['conditional_target_control']),
+                            'multiplier':float(row['conditional_multiplier'])}}))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_id':action_id,'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'unlock_action_family':
+                    if (modifier.target_type != 'action_family' or
+                            not any(action.family_key == modifier.target_id and
+                                    any(isinstance(e, WeaponDamageEffect) for e in action.effects)
+                                    for action in ir_slice.actions)):
+                        raise ValueError('UNLOCK_MISSING_VERIFIED_WEAPON_ACTION_FAMILY')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_family':modifier.target_id,
+                                    'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'control_target_cap_bonus':
+                    prov=dict(modifier.provenance)
+                    if (modifier.target_type!='action_family' or
+                            type(modifier.value) not in (int,float) or
+                            not float(modifier.value).is_integer() or not 0 < modifier.value <= 16
+                            or not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_CONTROL_TARGET_CAP_BONUS')
+                    control_id=str(prov.get('control_id',''))
+                    matched=False
+                    for index,action in enumerate(actions):
+                        if action.family_key != modifier.target_id:continue
+                        baseline=(action.metadata.get('source_control_target_caps') or {}).get(control_id)
+                        if (not baseline or baseline['source_build']!=prov.get('source_build')
+                                or baseline['base_source_url']!=prov.get('base_source_url')
+                                or baseline['base_max_targets']!=prov.get('base_max_targets')):
+                            raise ValueError('SOURCE_CONTROL_TARGET_CAP_BASELINE_MISSING')
+                        cap=int(baseline['base_max_targets']+modifier.value)
+                        if not 1<=cap<=16:raise ValueError('INVALID_SOURCE_CONTROL_TARGET_CAP')
+                        new_spec={**baseline,'max_targets':cap,'talent_source_url':prov['source_url']}
+                        actions[index]=replace(action,metadata={**dict(action.metadata),
+                            'source_control_target_caps':{**dict(action.metadata['source_control_target_caps']),
+                                control_id:new_spec}})
+                        matched=True
+                    if not matched:raise ValueError('SOURCE_CONTROL_TARGET_CAP_ACTION_MISSING')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'action_family':modifier.target_id,'control_id':control_id,
+                        'max_targets':int(prov['base_max_targets']+modifier.value),'source':prov})
+                    continue
+                if modifier.kind == 'cast_charge_exchange':
+                    # The source owns both action families and all charge semantics.
+                    # Never turn a conditional cast-time reduction into a permanent
+                    # static cast-time buff or apply only one half of the exchange.
+                    prov=dict(modifier.provenance)
+                    producer=str(prov.get('producer_family',''))
+                    consumer=str(prov.get('consumer_family',''))
+                    bank=str(prov.get('bank_id',''))
+                    if (modifier.target_type != 'action_family' or modifier.target_id != consumer
+                            or not producer or not consumer or producer==consumer
+                            or bank != 'source_cast_charges:'+producer+':'+consumer
+                            or type(prov.get('grant_per_cast')) is not int
+                            or type(prov.get('capacity')) is not int
+                            or not 0 < prov['grant_per_cast'] <= prov['capacity'] <= 16
+                            or not 0 < float(prov.get('duration_s',0.)) <= 120.
+                            or not 0 < float(modifier.value) <= 10.
+                            or not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_CAST_CHARGE_EXCHANGE')
+                    if not any(a.family_key==producer for a in actions) or not any(
+                            a.family_key==consumer for a in actions):
+                        raise ValueError('SOURCE_CAST_CHARGE_ACTION_FAMILY_MISSING')
+                    source={'bank_id':bank,'grant_per_cast':int(prov['grant_per_cast']),
+                        'capacity':int(prov['capacity']),'duration_s':float(prov['duration_s']),
+                        'source_url':prov['source_url'],'source_build':prov['source_build']}
+                    sink={'bank_id':bank,'reduction_s':float(modifier.value),
+                        'source_url':prov['source_url'],'source_build':prov['source_build']}
+                    for index,action in enumerate(actions):
+                        role=('source_cast_charge_producer' if action.family_key==producer else
+                              'source_cast_charge_consumer' if action.family_key==consumer else None)
+                        if role is None:continue
+                        facts=source if role.endswith('producer') else sink
+                        if role in action.metadata and action.metadata[role] != facts:
+                            raise ValueError('CONFLICTING_SOURCE_CAST_CHARGE_BANK')
+                        actions[index]=replace(action,metadata={**dict(action.metadata),role:facts},
+                            provenance=action.provenance+({'stage':'talent_modifier',
+                            'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                            'source':prov},))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'bank_id':bank,'producer_family':producer,'consumer_family':consumer,
+                        'source':prov})
+                    continue
+                if modifier.kind == 'critical_resource_gain':
+                    # Generic event-driven resource gain. No talent/class dispatch:
+                    # the source modifier supplies target resource, mode, amount,
+                    # trigger chance and whether the critical ability generates
+                    # this very same resource.
+                    from src.game.model.ir import ResourceEventGainRule
+                    if modifier.target_type!='resource' or not 0 < float(modifier.value) <= 1:
+                        raise ValueError('INVALID_SOURCE_CRITICAL_RESOURCE_MODIFIER')
+                    prov=dict(modifier.provenance)
+                    mode=prov.get('required_mode_id')
+                    amount=prov.get('bonus_resource_amount')
+                    generator=prov.get('requires_resource_generator')
+                    if (mode not in {m.id for m in modes} or type(amount) not in (int,float)
+                            or not 0 < float(amount) <= 100 or type(generator) is not bool):
+                        raise ValueError('INCOMPLETE_CRITICAL_RESOURCE_EVENT_SOURCE')
+                    matches=[i for i,resource in enumerate(resources)
+                             if resource.id==modifier.target_id]
+                    if len(matches)!=1:raise ValueError('CRITICAL_RESOURCE_TARGET_UNAVAILABLE')
+                    index=matches[0];resource=resources[index]
+                    rule=ResourceEventGainRule(id=f'source_critical_gain:{talent_id}:{modifier.target_id}',
+                        event_kind='nonperiodic_melee_critical',
+                        event_value_field='expected_critical_count',
+                        multiplier=float(amount)*float(modifier.value),
+                        required_mode_id=str(mode),
+                        filters=({'required_generated_resource':modifier.target_id}
+                                 if generator else {}),
+                        provenance=(prov,),
+                        metadata={'expected_value_semantics':'crit_probability_x_sourced_proc_chance',
+                                  'resource_amount_source_build':prov['resource_amount_source_build']})
+                    resources[index]=replace(resource,event_gain_rules=(*resource.event_gain_rules,rule))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'resource_id':resource.id,'trigger_probability':float(modifier.value),
+                        'amount_per_proc':float(amount),'required_mode_id':mode,'source':prov})
+                    continue
+                if modifier.kind == 'timed_spell_crit_cast_haste':
+                    prov=dict(modifier.provenance)
+                    if (modifier.target_type!='actor_proc' or
+                            modifier.target_id!='nonperiodic_spell_crit' or
+                            not 0 < float(modifier.value) < 1 or
+                            not 0 < float(prov.get('gcd_reduction_fraction',0)) < 1 or
+                            not 0 < float(prov.get('duration_s',0)) <= 60 or
+                            not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_TIMED_CRIT_HASTE')
+                    spec={'event_kind':modifier.target_id,
+                        'cast_speed_fraction':float(modifier.value),
+                        'gcd_reduction_fraction':float(prov['gcd_reduction_fraction']),
+                        'duration_s':float(prov['duration_s']),
+                        'source':prov}
+                    if actor.metadata.get('source_timed_spell_crit_haste') is not None:
+                        raise ValueError('DUPLICATE_SOURCE_TIMED_CRIT_HASTE')
+                    actor=replace(actor,metadata={**dict(actor.metadata),
+                        'source_timed_spell_crit_haste':spec})
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'kind':modifier.kind,'source':prov})
+                    continue
+                if modifier.kind=='control_duration_delta_s' and modifier.target_type=='action_family_group':
+                    families=tuple(str(modifier.target_id).split(','))
+                    if (not families or len(set(families))!=len(families) or
+                            not 0<float(modifier.value)<=60):
+                        raise ValueError('INVALID_SOURCE_CONTROL_DURATION_FAMILIES')
+                    matched=[]
+                    for i,action in enumerate(actions):
+                        if action.family_key not in families:continue
+                        modified=[];n=0
+                        for effect in action.effects:
+                            if isinstance(effect,ControlEffect) and effect.control_id=='stun':
+                                modified.append(replace(effect,duration_s=float(effect.duration_s)+float(modifier.value)))
+                                n+=1
+                            else:modified.append(effect)
+                        if n:
+                            actions[i]=replace(action,effects=tuple(modified),
+                                provenance=action.provenance+({'stage':'talent_modifier',
+                                    'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'source':dict(modifier.provenance)},))
+                            matched.append(action.id)
+                    if not matched:raise ValueError('NO_EXECUTABLE_SOURCE_CONTROL_DURATION_ACTION')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'action_ids':matched,'future_tier_family_unresolved':tuple(
+                        family for family in families if not any(a.family_key==family for a in actions)),
+                        'source':dict(modifier.provenance)})
+                    continue
+                if modifier.target_type == 'actor_stat':
+                    if modifier.kind == 'healing_power_from_stat':
+                        source_stat = str(modifier.provenance.get('source_stat') or '')
+                        if (modifier.target_id != 'healing_power'
+                                or source_stat not in actor.base_stats
+                                or not 0. < float(modifier.value) <= 1.):
+                            raise ValueError('INVALID_SOURCE_STAT_TO_HEALING_CONVERSION')
+                        coefficients = dict(actor.metadata.get('source_healing_power_from_stats') or {})
+                        before = float(coefficients.get(source_stat, 0.))
+                        coefficients[source_stat] = before + float(modifier.value)
+                        actor = replace(actor, metadata={**dict(actor.metadata),
+                            'source_healing_power_from_stats': coefficients})
+                        applied.append({'talent_id': talent_id, 'rank': rank,
+                            'kind': modifier.kind, 'source_stat': source_stat,
+                            'before': before, 'after': coefficients[source_stat]})
+                        continue
+                    if modifier.kind not in ('actor_stat_pct', 'actor_stat_flat'):
+                        raise ValueError(f'unsupported actor stat talent modifier: {modifier.kind}')
+                    if modifier.kind == 'actor_stat_pct' and modifier.target_id not in actor.base_stats:
+                        raise ValueError(f'actor stat unavailable: {modifier.target_id}')
+                    stats = dict(actor.base_stats)
+                    before = float(stats.get(modifier.target_id, 0.0))
+                    after = (before * (1.0 + float(modifier.value))
+                             if modifier.kind == 'actor_stat_pct' else before + float(modifier.value))
+                    stats[modifier.target_id] = after
+                    # Re-evaluate source-derived combat stats when a talent changes
+                    # a primary stat. Mode-scoped conversions remain separate and
+                    # use the new source stat at form entry.
+                    for fact in actor.metadata.get('canonical_primary_stat_conversions', ()):
+                        if (fact['target_type'] == 'stat' and
+                                fact['source_stat'] == modifier.target_id):
+                            target = str(fact['target_id'])
+                            stats[target] = float(stats.get(target, 0.0)) + (
+                                after - before) * float(fact['coefficient'])
+                    actor = replace(actor, base_stats=stats,
+                        provenance=actor.provenance + ({'stage':'talent_modifier','talent_id':talent_id,
+                                                       'rank':rank,'source':dict(modifier.provenance)},))
+                    # Shared source-backed mana conversion is already used by gear;
+                    # recompute from total (possibly geared) Intellect here too.
+                    for idx, resource in enumerate(resources):
+                        if (resource.metadata.get('base_mana') is not None and
+                                str(resource.metadata.get('capacity_formula','')).startswith(
+                                    'base_mana + classic_mana_bonus_from_intellect(') and
+                                modifier.target_id == 'intellect'):
+                            from src.game.data.forever.player_state import classic_mana_bonus_from_intellect
+                            capacity = float(resource.metadata['base_mana']) + classic_mana_bonus_from_intellect(after)
+                            resources[idx] = replace(resource, capacity=capacity, initial_amount=capacity,
+                                metadata={**dict(resource.metadata),'base_intellect':after,
+                                          'intellect_mana_bonus':classic_mana_bonus_from_intellect(after),
+                                          'talents_included':True})
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'target_stat':modifier.target_id,'before':before,'after':after})
+                    continue
+                if modifier.target_type == "mode":
+                    mode_index = next((i for i, mode in enumerate(modes) if mode.id == modifier.target_id), None)
+                    if mode_index is None:
+                        raise ValueError(f"talent modifier mode target unavailable: {modifier.target_id}")
+                    mode = modes[mode_index]
+                    if modifier.kind in ('mode_entry_expected_gain','mode_entry_restore_last'):
+                        provenance = dict(modifier.provenance)
+                        resource_id = str(provenance.get('resource_id') or '')
+                        if not any(r.id == resource_id and r.owner_actor_id == actor.id for r in resources):
+                            raise ValueError(f'mode entry talent resource unavailable: {resource_id}')
+                        if modifier.kind == 'mode_entry_restore_last':
+                            forbidden = tuple(str(x) for x in provenance.get('forbidden_mode_ids',()))
+                            if any(x not in {m.id for m in modes} for x in forbidden):
+                                raise ValueError('mode entry forbidden mode unavailable')
+                            entry = ModeEntryResourceModifier(kind='restore_last_mode_resource',
+                                resource_id=resource_id, value=float(modifier.value),
+                                outside_regen_per_s=float(provenance['outside_regen_per_s']),
+                                max_restored=float(provenance['max_restored']),
+                                forbidden_mode_ids=forbidden, provenance=(provenance,))
+                        else:
+                            entry = ModeEntryResourceModifier(kind='expected_flat_gain',
+                                resource_id=resource_id, value=float(modifier.value),
+                                provenance=(provenance,))
+                        modes[mode_index] = replace(mode,
+                            entry_resource_modifiers=mode.entry_resource_modifiers+(entry,),
+                            provenance=mode.provenance+({'stage':'talent_modifier','talent_id':talent_id,
+                                'rank':rank,'kind':modifier.kind,'source':provenance},))
+                        applied.append({'talent_id':talent_id,'rank':rank,'mode_id':mode.id,
+                                        'kind':modifier.kind,'resource_id':resource_id,
+                                        'value':float(modifier.value)})
+                        continue
+                    if modifier.kind == "mode_armor_per_level":
+                        mode_modifier = ModeStatModifier(target_stat="armor", kind="add_level_scaled",
+                                                         value=float(modifier.value))
+                    elif modifier.kind == "mode_armor_excess_defense":
+                        threshold = modifier.provenance.get('reference_level_multiplier')
+                        if threshold is None:
+                            raise ValueError("source threshold missing for excess-defense armor")
+                        mode_modifier = ModeStatModifier(
+                            target_stat="armor", kind="add_stat_above_level_scaled",
+                            value=float(modifier.value), source_stat="defense",
+                            reference_level_multiplier=float(threshold))
+                    elif modifier.kind == 'mode_stat_flat':
+                        target_stat = str(modifier.provenance.get('target_stat') or '')
+                        if not target_stat:
+                            raise ValueError('mode flat stat source target missing')
+                        mode_modifier = ModeStatModifier(target_stat=target_stat,
+                            kind='add_flat',value=float(modifier.value))
+                    elif modifier.kind in ('mode_stat_pct','mode_derived_stat_pct'):
+                        source_stat = modifier.provenance.get('source_stat')
+                        target_stat = (source_stat if modifier.kind == 'mode_stat_pct'
+                                       else modifier.provenance.get('target_id'))
+                        if not source_stat or not target_stat:
+                            raise ValueError('source stat conversion metadata missing')
+                        if source_stat not in actor.base_stats:
+                            raise ValueError(f'source actor stat unavailable: {source_stat}')
+                        mode_modifier = ModeStatModifier(target_stat=str(target_stat),
+                            kind='add_stat_scaled',source_stat=str(source_stat),value=float(modifier.value))
+                    elif modifier.kind == 'mode_resource_capacity_pct':
+                        source_stat = modifier.provenance.get('source_stat')
+                        resource_id = modifier.provenance.get('target_id')
+                        if not source_stat or not resource_id or source_stat not in actor.base_stats:
+                            raise ValueError('resource conversion source stat missing')
+                        if not any(r.id == resource_id and r.capacity is not None for r in resources):
+                            raise ValueError('resource conversion capacity target unavailable')
+                        cap_modifier = ModeResourceCapacityModifier(resource_id=str(resource_id),
+                            kind='add_stat_scaled',source_stat=str(source_stat),value=float(modifier.value))
+                        modes[mode_index] = replace(mode,
+                            resource_capacity_modifiers=mode.resource_capacity_modifiers + (cap_modifier,),
+                            provenance=mode.provenance + ({'stage':'talent_modifier','talent_id':talent_id,
+                                'rank':rank,'kind':modifier.kind,'source':dict(modifier.provenance)},))
+                        applied.append({'talent_id':talent_id,'rank':rank,'mode_id':mode.id,
+                                        'kind':modifier.kind,'value':float(modifier.value),
+                                        'target_resource':str(resource_id)})
+                        continue
+                    else:
+                        raise ValueError(f"unsupported mode talent modifier kind: {modifier.kind}")
+                    modes[mode_index] = replace(mode, stat_modifiers=mode.stat_modifiers + (mode_modifier,),
+                        provenance=mode.provenance + ({"stage": "talent_modifier", "talent_id": talent_id,
+                            "rank": rank, "kind": modifier.kind, "value": float(modifier.value),
+                            "provenance": dict(modifier.provenance)},))
+                    applied.append({"talent_id": talent_id, "rank": rank, "mode_id": mode.id,
+                                    "kind": modifier.kind, "value": float(modifier.value),
+                                    "target_stat": mode_modifier.target_stat})
+                    continue
+                if modifier.target_type == 'trigger_filter':
+                    if modifier.kind != 'effect_damage_pct':
+                        raise ValueError('unsupported trigger talent modifier')
+                    changed=[]
+                    for i,trigger in enumerate(triggers):
+                        if trigger.metadata.get('effect_category') != modifier.target_id:
+                            continue
+                        effects=[]
+                        for effect in trigger.effects:
+                            factor=max(0.,1.+float(modifier.value))
+                            if isinstance(effect,DamageEffect):
+                                effects.append(replace(effect,base_min=effect.base_min*factor,
+                                    base_max=effect.base_max*factor,
+                                    spell_power_coefficient=effect.spell_power_coefficient*factor))
+                            elif isinstance(effect,WeaponDamageEffect):
+                                effects.append(replace(effect,weapon_damage_multiplier=effect.weapon_damage_multiplier*factor,
+                                    flat_damage=effect.flat_damage*factor))
+                            else:
+                                raise ValueError('unsupported trigger damage effect')
+                        triggers[i]=replace(trigger,effects=tuple(effects),
+                            provenance=trigger.provenance+({'stage':'talent_modifier',
+                            'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                            'source':dict(modifier.provenance)},))
+                        changed.append(trigger.id)
+                    if not changed:
+                        raise ValueError(f'no source triggers in category: {modifier.target_id}')
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'kind':modifier.kind,'trigger_ids':changed,'value':float(modifier.value)})
+                    continue
+                if modifier.target_type not in ('action_family', 'action_filter'):
+>                   raise ValueError(f"unsupported talent modifier target_type: {modifier.target_type}")
+E                   ValueError: unsupported talent modifier target_type: resource
+
+src/game/talents.py:788: ValueError
+________________ test_missing_source_proc_facts_fail_atomically ________________
+
+    def test_missing_source_proc_facts_fail_atomically():
+        ir=_slice()
+        bad=replace(ir.talents[0].ranks[0].modifiers[1],provenance={'url':SOURCE})
+        rank=replace(ir.talents[0].ranks[0],modifiers=(ir.talents[0].ranks[0].modifiers[0],bad))
+        talent=replace(ir.talents[0],ranks=(rank,))
+        with pytest.raises(ValueError,match='AVOIDANCE_PROC_SOURCE_FACTS_REQUIRED'):
+>           apply_talent_selection(replace(ir,talents=(talent,)),{'test_avoidance':1},level=30)
+
+tests/test_wf442_generic_avoidance_resource_red.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='avoidance-test', ruleset='test', actor=ActorDefinition(id='player', actor_type='player', base_stats={'...erlays=(), unsupported_semantics=(), provenance={}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'test_avoidance': 1}
+
+    def apply_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> tuple[GameIRSlice, TalentApplication]:
+        validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) > 0}
+        gated_families = {}
+        for gated_talent in ir_slice.talents:
+            for gated_rank in gated_talent.ranks:
+                for gate in gated_rank.modifiers:
+                    if gate.kind == 'unlock_action_family':
+                        if gate.target_type != 'action_family':
+                            raise ValueError('UNLOCK_REQUIRES_ACTION_FAMILY')
+                        prev = gated_families.setdefault(gate.target_id, gated_talent.id)
+                        if prev != gated_talent.id:
+                            raise ValueError('CONFLICTING_TALENT_UNLOCK_FAMILY')
+        actions = list(ir_slice.actions)
+        auto_attacks = list(ir_slice.auto_attacks)
+        triggers = list(ir_slice.triggers)
+        modes = list(ir_slice.modes)
+        actor = ir_slice.actor
+        resources = list(ir_slice.resources)
+        applied: list[dict] = []
+        unsupported = list(ir_slice.unsupported_semantics)
+    
+        # Grant sourced actions first, then apply all passive modifiers so a
+        # trigger-filter talent cannot miss a newly granted event trigger.
+        ordered = sorted(normalized.items(), key=lambda item: (not any(
+            mod.kind in ('grant_source_action','grant_source_resource_action','grant_source_next_cast_instant_action','grant_source_active_periodic_full_heal','grant_source_spatial_charge_actions') for rr in definitions[item[0]].ranks
+            if rr.rank == item[1] for mod in rr.modifiers), item[0]))
+        for talent_id, rank in ordered:
+            talent = definitions[talent_id]
+            rank_row = next(row for row in talent.ranks if int(row.rank) == rank)
+            for modifier in rank_row.modifiers:
+                if modifier.kind == 'grant_source_spatial_charge_actions':
+                    from src.game.model.ir import SpatialChargeEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or len(fact.get('forms') or ())!=2
+                            or fact.get('source_build_verified') is not False):
+                        raise ValueError('INVALID_SOURCE_SPATIAL_CHARGE_FACT')
+                    if any(a.family_key==family for a in actions):
+                        raise ValueError('SOURCE_SPATIAL_CHARGE_FAMILY_DUPLICATE')
+                    for form in fact['forms']:
+                        mode_id=str(form['mode_id'])
+                        if mode_id not in {m.id for m in modes}:raise ValueError('CHARGE_UNKNOWN_SOURCE_MODE')
+                        r_id=str(form.get('cost_resource_id') or '')
+                        if r_id and r_id not in {r.id for r in resources}:
+                            raise ValueError('CHARGE_UNKNOWN_SOURCE_COST_RESOURCE')
+                        source={'authority':'sourced_talent_spatial_charge_action',
+                            'source_url':fact['source_url'],'source_build_verified':False,
+                            'checkpoint_source_build':modifier.provenance['source_build']}
+                        action_id=family+':'+str(form['id_suffix'])
+                        cost=((ResourceCost(r_id,float(form['cost_amount'])),) if r_id else ())
+                        effect=SpatialChargeEffect('spatial_charge','enemy',
+                            float(form['minimum_range_yards']),float(form['maximum_range_yards']),
+                            float(form['arrival_distance_yards']),str(form['arrival_position_kind']))
+                        root=((ControlEffect('control','root','enemy',float(form['root_duration_s'])),)
+                              if form.get('root_duration_s') else ())
+                        granted=ActionDefinition(id=action_id,family_key=family,
+                            name=str(form['name']),owner_actor_id=actor.id,
+                            requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                                {'kind':'mode_is','value':mode_id}),costs=cost,
+                            cast_time_s=0.,gcd_s=float(form['gcd_s']),
+                            cooldown_s=float(form['cooldown_s']),effects=(effect,*root),
+                            provenance=(source,),metadata={'talent_granted_action':True,
+                                'range_yards':float(form['maximum_range_yards']),
+                                'source_movement_action':True,
+                                'source_interrupt_cast':'NOT_MODELED',
+                                'source_target_orientation':'GEOMETRIC_PROXY',
+                                'source_requires_2d':True})
+                        actions.append(granted)
+                        modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                            (*m.enabled_action_ids,action_id))))
+                            if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                        applied.append({'talent_id':talent_id,'rank':rank,
+                            'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_active_periodic_full_heal':
+                    from src.game.model.ir import ActivePeriodicFullHealEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    source_families=tuple(fact.get('source_families') or ())
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or mode_id not in {m.id for m in modes}
+                            or not source_families or not all(any(a.family_key==f
+                                and any(isinstance(e,PeriodicHealEffect) for e in a.effects)
+                                for a in actions) for f in source_families)
+                            or fact.get('source_build_verified') is not False):
+                        raise ValueError('INVALID_ACTIVE_PERIODIC_FULL_HEAL_GRANT')
+                    hot_auras=tuple(sorted({e.aura_id for a in actions
+                        if a.family_key in source_families for e in a.effects
+                        if isinstance(e,PeriodicHealEffect)}))
+                    if not hot_auras:raise ValueError('MISSING_ACTIVE_PERIODIC_HEAL_SOURCE')
+                    mana=next((r for r in resources if r.id=='mana'),None)
+                    if mana is None or not 0 < float(mana.metadata.get('base_mana',0)):
+                        raise ValueError('ACTIVE_PERIODIC_HEAL_BASE_MANA_UNAVAILABLE')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('DUPLICATE_ACTIVE_PERIODIC_HEAL_GRANT')
+                    source={'source_url':fact['source_url'],
+                            'authority':'source_index_active_periodic_heal',
+                            'target_build':modifier.provenance['source_build'],
+                            'client_source_build_verified':False}
+                    button=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                            {'kind':'mode_is','value':mode_id},
+                            {'kind':'aura_any_present','scope':'actor','aura_ids':hot_auras}),
+                        costs=(ResourceCost('mana',float(mana.metadata['base_mana'])*
+                            float(fact['base_mana_cost_fraction'])),),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),
+                        effects=(ActivePeriodicFullHealEffect('active_periodic_full_heal','self',
+                            'health',source_families,float(fact['full_duration_multiplier'])),),
+                        provenance=(source,),metadata={'talent_granted_action':True,
+                            'source_build_bridge_verified':False,
+                            'source_hot_preserved':True,
+                            'source_multiple_hot_priority':'UNVERIFIED',
+                            'source_healing_power_snapshot':'UNVERIFIED'})
+                    actions.append(button)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                                    'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_next_cast_instant_action':
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    family=str(fact.get('family_key') or '')
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family or
+                            not family or mode_id not in {m.id for m in modes} or
+                            type(fact.get('spell_id')) is not int or fact['spell_id']<=0 or
+                            fact.get('source_mechanics_version_verified') is not False or
+                            not str(fact.get('mechanics_source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_NEXT_CAST_ACTION_GRANT')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('DUPLICATE_NEXT_CAST_ACTION_GRANT')
+                    action=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'mode_is','value':mode_id},),costs=(),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),effects=(),
+                        provenance=({'authority':'sourced_talent_next_cast_action',
+                            'source_url':fact['mechanics_source_url'],
+                            'mechanics_source_build':fact['mechanics_source_build'],
+                            'target_build':modifier.provenance['source_build'],
+                            'source_build_verified':False},),
+                        metadata={'talent_granted_action':True,
+                            'ignores_global_cooldown':True,
+                            'source_next_cast_instant_grant':{
+                            'school':str(fact['spell_school']),
+                            'count':int(fact['next_cast_count']),
+                            'source_url':str(fact['mechanics_source_url']),
+                            'source_build_verified':False}})
+                    actions.append(action)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_id':action_id,'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'grant_source_resource_action':
+                    # A typed source fact supplies all action parameters; this is
+                    # the same general ActionDefinition/ResourceChangeEffect used
+                    # for any class's resource-converting button.
+                    from src.game.model.ir import ResourceChangeEffect
+                    fact=modifier.provenance.get('source_action_fact') or {}
+                    mode_id=str(fact.get('required_mode_id') or '')
+                    resource_id=str(fact.get('resource_id') or '')
+                    cost_resource=str(fact.get('cost_resource_id') or '')
+                    family=str(fact.get('family_key') or '')
+                    if (modifier.target_type!='action_family' or modifier.target_id!=family
+                            or not family or not any(m.id==mode_id for m in modes)
+                            or resource_id not in {r.id for r in resources}
+                            or cost_resource not in {r.id for r in resources}
+                            or not str(fact.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_RESOURCE_ACTION_GRANT')
+                    cost_definition=next(r for r in resources if r.id==cost_resource)
+                    base=cost_definition.metadata.get('base_mana')
+                    if base is None or not 0 < float(base):
+                        raise ValueError('SOURCE_RESOURCE_ACTION_BASE_COST_UNAVAILABLE')
+                    action_id=family+':'+str(fact['spell_id'])
+                    if any(a.id==action_id or a.family_key==family for a in actions):
+                        raise ValueError('SOURCE_RESOURCE_ACTION_DUPLICATE')
+                    source={'authority':'source_pinned_instant_resource_action',
+                            'source_build':fact['source_build'],
+                            'source_url':fact['source_url'],
+                            'mechanics_source_url':fact['mechanics_source_url'],
+                            'mechanics_source_build':fact['mechanics_source_build'],
+                            **({'unsupported_build_bridge':modifier.provenance['unsupported_build_bridge']}
+                               if modifier.provenance.get('unsupported_build_bridge') else {})}
+                    granted=ActionDefinition(id=action_id,family_key=family,
+                        name=str(fact['name']),owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(fact['required_level'])},
+                            {'kind':'mode_is','value':mode_id},
+                            *(({'kind':'resource_below_capacity','resource_id':resource_id},)
+                              if int(fact['must_have_room']) else ())),
+                        costs=(ResourceCost(cost_resource, float(base)*
+                            float(fact['base_resource_cost_fraction'])),),
+                        cast_time_s=0.,gcd_s=float(fact['gcd_s']),
+                        cooldown_s=float(fact['cooldown_s']),
+                        effects=(ResourceChangeEffect('resource_change',resource_id,
+                            'actor','add',float(fact['resource_gain'])),),
+                        provenance=(source,),metadata={'talent_granted_action':True,
+                            'source_action_kind':'instant_resource_conversion',
+                            'resource_cost_formula':'base_resource * source_fraction',
+                            'resource_cost_reduction_group':str(fact['cost_reduction_group'])})
+                    actions.append(granted)
+                    modes[:]=[replace(m,enabled_action_ids=tuple(dict.fromkeys(
+                        (*m.enabled_action_ids,action_id))))
+                        if m.id==mode_id and m.enabled_action_ids is not None else m for m in modes]
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'action_id':action_id,'kind':modifier.kind,'source':source})
+                    continue
+                if modifier.kind == 'grant_source_action':
+                    if modifier.target_type != 'source_action':
+                        raise ValueError('grant_source_action requires source_action target')
+                    # A learned talent may grant a trainable *spell family* with
+                    # higher source ranks. The grant modifier points to the talent's
+                    # original spell ID; canonical rank rows declare that parent.
+                    # Choose the highest legal rank, never the first SQLite row.
+                    matching = [row for fact in ir_slice.source_facts
+                        if fact.get('family') == 'talent_granted_action_facts'
+                        for row in fact.get('actions', ())
+                        if str(row.get('grant_parent_spell_id', row.get('spell_id'))) == modifier.target_id
+                        and int(row.get('required_level', 0)) <= int(level)]
+                    if not matching:
+                        raise ValueError('verified talent-granted action absent at level')
+                    highest = max(int(row['required_level']) for row in matching)
+                    matching = [row for row in matching if int(row['required_level']) == highest]
+                    if len(matching) != 1:
+                        raise ValueError('ambiguous verified talent-granted rank')
+                    row = matching[0]
+                    if int(row['required_level']) > level:
+                        raise ValueError('talent-granted action level not met')
+                    if not row.get('source_url'):
+                        raise ValueError('talent-granted action source missing')
+                    action_id = str(row['family_key']) + ':' + str(row['spell_id'])
+                    if any(a.id == action_id for a in actions):
+                        raise ValueError('duplicate talent-granted action')
+                    if row.get('action_kind') == 'timed_aura_weapon_proc':
+                        from src.game.data.forever.source_timed_auras import compile_granted_timed_aura
+                        action, granted_triggers = compile_granted_timed_aura(row, ir_slice=ir_slice)
+                        actions.append(action)
+                        triggers.extend(granted_triggers)
+                        if str(row.get('proc_authority','')).startswith('CLASSIC_'):
+                            unsupported.append({'code':'talent_granted_proc_server_frequency_unverified',
+                                'status':'qualified_classic_proxy_not_current_forever_server',
+                                'source_url':row.get('proc_source_url'),
+                                'client_build':row.get('client_build'),
+                                'talent_grant_spell_id':row['spell_id']})
+                        applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                        'action_id':action.id,'trigger_ids':[t.id for t in granted_triggers]})
+                        continue
+                    if row.get('action_kind') == 'periodic_damage_target_hit_debuff':
+                        from src.game.model.ir import TargetStatDebuffEffect
+                        from math import isfinite
+                        total=float(row['periodic_total_base_damage'])
+                        duration=float(row['periodic_duration_s'])
+                        interval=float(row['periodic_tick_interval_s'])
+                        delta=float(row['target_hit_chance_delta'])
+                        if (not all(isfinite(v) for v in (total,duration,interval,delta))
+                                or total <= 0 or duration <= 0 or interval <= 0
+                                or abs(duration / interval - round(duration / interval)) > 1e-8
+                                or not -1 <= delta < 0):
+                            raise ValueError('invalid sourced periodic+hit talent grant')
+                        source={'source_url':str(row['source_url']),
+                            'talent_grant_spell_id':str(row.get('grant_parent_spell_id',row['spell_id'])),
+                            'authority':'canonical_sqlite_verified_talent_grant'}
+                        effects=(PeriodicEffect(effect_type='periodic_damage',
+                            school=str(row['school']),target='enemy',
+                            aura_id='source_periodic:'+str(row['spell_id']),
+                            total_base_damage=total,duration_s=duration,
+                            tick_interval_s=interval,
+                            field_provenance={'total_base_damage':(source,)}),
+                            TargetStatDebuffEffect(effect_type='target_stat_debuff',
+                            aura_id='source_target_hit:'+str(row['spell_id']),
+                            target_stat_id='hit_chance',delta=delta,duration_s=duration,
+                            provenance=(source,)))
+                        actions.append(ActionDefinition(id=action_id,
+                            family_key=str(row['family_key']),name=str(row['name']),
+                            owner_actor_id=actor.id,
+                            requirements=({'kind':'minimum_level','value':int(row['required_level'])},
+                                *(({'kind':'mode_is','value':str(row['required_mode_id'])},)
+                                  if row.get('required_mode_id') else ())),
+                            costs=(ResourceCost('mana',float(row['mana_cost'])),),
+                            cast_time_s=float(row['cast_time_s']),gcd_s=float(row['gcd_s']),
+                            cooldown_s=float(row['cooldown_s']),effects=effects,
+                            provenance=(source,),metadata={'source_range_yards':row.get('range_yards'),
+                                'periodic_tick_interval_status':row.get('periodic_tick_interval_status'),
+                                'spell_power_coefficient_status':row.get('spell_power_coefficient_status')}))
+                        if row.get('required_mode_id'):
+                            mode_id=str(row['required_mode_id'])
+                            if not any(m.id==mode_id for m in modes):
+                                raise ValueError('grant requires unknown source mode')
+                            modes[:]=[replace(m,enabled_action_ids=tuple(
+                                dict.fromkeys((*m.enabled_action_ids,action_id))))
+                                if m.id==mode_id and m.enabled_action_ids is not None else m
+                                for m in modes]
+                        applied.append({'talent_id':talent_id,'rank':rank,
+                            'kind':modifier.kind,'action_id':action_id,'source':dict(modifier.provenance)})
+                        continue
+                    if row.get('action_kind') not in (None, 'direct_damage'):
+                        raise ValueError('unknown canonical talent-granted action kind')
+                    actions.append(ActionDefinition(id=action_id, family_key=str(row['family_key']),
+                        name=str(row['name']), owner_actor_id=actor.id,
+                        requirements=({'kind':'minimum_level','value':int(row['required_level'])},),
+                        costs=(ResourceCost('mana',float(row['mana_cost'])),),
+                        cast_time_s=float(row['cast_time_s']),gcd_s=float(row['gcd_s']),
+                        cooldown_s=float(row['cooldown_s']),
+                        effects=(DamageEffect('damage',str(row['school']),'enemy',
+                            float(row['damage_min']),float(row['damage_max']),
+                            field_provenance={'base_damage':({'source_url':row['source_url']},)}),),
+                        provenance=({'source_url':row['source_url'],
+                            'authority':'canonical_sqlite_verified_talent_grant'},),
+                        metadata={'conditional_target_control_damage_multiplier':{
+                            'control_id':str(row['conditional_target_control']),
+                            'multiplier':float(row['conditional_multiplier'])}}))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_id':action_id,'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'unlock_action_family':
+                    if (modifier.target_type != 'action_family' or
+                            not any(action.family_key == modifier.target_id and
+                                    any(isinstance(e, WeaponDamageEffect) for e in action.effects)
+                                    for action in ir_slice.actions)):
+                        raise ValueError('UNLOCK_MISSING_VERIFIED_WEAPON_ACTION_FAMILY')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'action_family':modifier.target_id,
+                                    'source':dict(modifier.provenance)})
+                    continue
+                if modifier.kind == 'control_target_cap_bonus':
+                    prov=dict(modifier.provenance)
+                    if (modifier.target_type!='action_family' or
+                            type(modifier.value) not in (int,float) or
+                            not float(modifier.value).is_integer() or not 0 < modifier.value <= 16
+                            or not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_CONTROL_TARGET_CAP_BONUS')
+                    control_id=str(prov.get('control_id',''))
+                    matched=False
+                    for index,action in enumerate(actions):
+                        if action.family_key != modifier.target_id:continue
+                        baseline=(action.metadata.get('source_control_target_caps') or {}).get(control_id)
+                        if (not baseline or baseline['source_build']!=prov.get('source_build')
+                                or baseline['base_source_url']!=prov.get('base_source_url')
+                                or baseline['base_max_targets']!=prov.get('base_max_targets')):
+                            raise ValueError('SOURCE_CONTROL_TARGET_CAP_BASELINE_MISSING')
+                        cap=int(baseline['base_max_targets']+modifier.value)
+                        if not 1<=cap<=16:raise ValueError('INVALID_SOURCE_CONTROL_TARGET_CAP')
+                        new_spec={**baseline,'max_targets':cap,'talent_source_url':prov['source_url']}
+                        actions[index]=replace(action,metadata={**dict(action.metadata),
+                            'source_control_target_caps':{**dict(action.metadata['source_control_target_caps']),
+                                control_id:new_spec}})
+                        matched=True
+                    if not matched:raise ValueError('SOURCE_CONTROL_TARGET_CAP_ACTION_MISSING')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'action_family':modifier.target_id,'control_id':control_id,
+                        'max_targets':int(prov['base_max_targets']+modifier.value),'source':prov})
+                    continue
+                if modifier.kind == 'cast_charge_exchange':
+                    # The source owns both action families and all charge semantics.
+                    # Never turn a conditional cast-time reduction into a permanent
+                    # static cast-time buff or apply only one half of the exchange.
+                    prov=dict(modifier.provenance)
+                    producer=str(prov.get('producer_family',''))
+                    consumer=str(prov.get('consumer_family',''))
+                    bank=str(prov.get('bank_id',''))
+                    if (modifier.target_type != 'action_family' or modifier.target_id != consumer
+                            or not producer or not consumer or producer==consumer
+                            or bank != 'source_cast_charges:'+producer+':'+consumer
+                            or type(prov.get('grant_per_cast')) is not int
+                            or type(prov.get('capacity')) is not int
+                            or not 0 < prov['grant_per_cast'] <= prov['capacity'] <= 16
+                            or not 0 < float(prov.get('duration_s',0.)) <= 120.
+                            or not 0 < float(modifier.value) <= 10.
+                            or not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_CAST_CHARGE_EXCHANGE')
+                    if not any(a.family_key==producer for a in actions) or not any(
+                            a.family_key==consumer for a in actions):
+                        raise ValueError('SOURCE_CAST_CHARGE_ACTION_FAMILY_MISSING')
+                    source={'bank_id':bank,'grant_per_cast':int(prov['grant_per_cast']),
+                        'capacity':int(prov['capacity']),'duration_s':float(prov['duration_s']),
+                        'source_url':prov['source_url'],'source_build':prov['source_build']}
+                    sink={'bank_id':bank,'reduction_s':float(modifier.value),
+                        'source_url':prov['source_url'],'source_build':prov['source_build']}
+                    for index,action in enumerate(actions):
+                        role=('source_cast_charge_producer' if action.family_key==producer else
+                              'source_cast_charge_consumer' if action.family_key==consumer else None)
+                        if role is None:continue
+                        facts=source if role.endswith('producer') else sink
+                        if role in action.metadata and action.metadata[role] != facts:
+                            raise ValueError('CONFLICTING_SOURCE_CAST_CHARGE_BANK')
+                        actions[index]=replace(action,metadata={**dict(action.metadata),role:facts},
+                            provenance=action.provenance+({'stage':'talent_modifier',
+                            'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                            'source':prov},))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'bank_id':bank,'producer_family':producer,'consumer_family':consumer,
+                        'source':prov})
+                    continue
+                if modifier.kind == 'critical_resource_gain':
+                    # Generic event-driven resource gain. No talent/class dispatch:
+                    # the source modifier supplies target resource, mode, amount,
+                    # trigger chance and whether the critical ability generates
+                    # this very same resource.
+                    from src.game.model.ir import ResourceEventGainRule
+                    if modifier.target_type!='resource' or not 0 < float(modifier.value) <= 1:
+                        raise ValueError('INVALID_SOURCE_CRITICAL_RESOURCE_MODIFIER')
+                    prov=dict(modifier.provenance)
+                    mode=prov.get('required_mode_id')
+                    amount=prov.get('bonus_resource_amount')
+                    generator=prov.get('requires_resource_generator')
+                    if (mode not in {m.id for m in modes} or type(amount) not in (int,float)
+                            or not 0 < float(amount) <= 100 or type(generator) is not bool):
+                        raise ValueError('INCOMPLETE_CRITICAL_RESOURCE_EVENT_SOURCE')
+                    matches=[i for i,resource in enumerate(resources)
+                             if resource.id==modifier.target_id]
+                    if len(matches)!=1:raise ValueError('CRITICAL_RESOURCE_TARGET_UNAVAILABLE')
+                    index=matches[0];resource=resources[index]
+                    rule=ResourceEventGainRule(id=f'source_critical_gain:{talent_id}:{modifier.target_id}',
+                        event_kind='nonperiodic_melee_critical',
+                        event_value_field='expected_critical_count',
+                        multiplier=float(amount)*float(modifier.value),
+                        required_mode_id=str(mode),
+                        filters=({'required_generated_resource':modifier.target_id}
+                                 if generator else {}),
+                        provenance=(prov,),
+                        metadata={'expected_value_semantics':'crit_probability_x_sourced_proc_chance',
+                                  'resource_amount_source_build':prov['resource_amount_source_build']})
+                    resources[index]=replace(resource,event_gain_rules=(*resource.event_gain_rules,rule))
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'resource_id':resource.id,'trigger_probability':float(modifier.value),
+                        'amount_per_proc':float(amount),'required_mode_id':mode,'source':prov})
+                    continue
+                if modifier.kind == 'timed_spell_crit_cast_haste':
+                    prov=dict(modifier.provenance)
+                    if (modifier.target_type!='actor_proc' or
+                            modifier.target_id!='nonperiodic_spell_crit' or
+                            not 0 < float(modifier.value) < 1 or
+                            not 0 < float(prov.get('gcd_reduction_fraction',0)) < 1 or
+                            not 0 < float(prov.get('duration_s',0)) <= 60 or
+                            not str(prov.get('source_url','')).startswith('https://')):
+                        raise ValueError('INVALID_SOURCE_TIMED_CRIT_HASTE')
+                    spec={'event_kind':modifier.target_id,
+                        'cast_speed_fraction':float(modifier.value),
+                        'gcd_reduction_fraction':float(prov['gcd_reduction_fraction']),
+                        'duration_s':float(prov['duration_s']),
+                        'source':prov}
+                    if actor.metadata.get('source_timed_spell_crit_haste') is not None:
+                        raise ValueError('DUPLICATE_SOURCE_TIMED_CRIT_HASTE')
+                    actor=replace(actor,metadata={**dict(actor.metadata),
+                        'source_timed_spell_crit_haste':spec})
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'kind':modifier.kind,'source':prov})
+                    continue
+                if modifier.kind=='control_duration_delta_s' and modifier.target_type=='action_family_group':
+                    families=tuple(str(modifier.target_id).split(','))
+                    if (not families or len(set(families))!=len(families) or
+                            not 0<float(modifier.value)<=60):
+                        raise ValueError('INVALID_SOURCE_CONTROL_DURATION_FAMILIES')
+                    matched=[]
+                    for i,action in enumerate(actions):
+                        if action.family_key not in families:continue
+                        modified=[];n=0
+                        for effect in action.effects:
+                            if isinstance(effect,ControlEffect) and effect.control_id=='stun':
+                                modified.append(replace(effect,duration_s=float(effect.duration_s)+float(modifier.value)))
+                                n+=1
+                            else:modified.append(effect)
+                        if n:
+                            actions[i]=replace(action,effects=tuple(modified),
+                                provenance=action.provenance+({'stage':'talent_modifier',
+                                    'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'source':dict(modifier.provenance)},))
+                            matched.append(action.id)
+                    if not matched:raise ValueError('NO_EXECUTABLE_SOURCE_CONTROL_DURATION_ACTION')
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                        'action_ids':matched,'future_tier_family_unresolved':tuple(
+                        family for family in families if not any(a.family_key==family for a in actions)),
+                        'source':dict(modifier.provenance)})
+                    continue
+                if modifier.target_type == 'actor_stat':
+                    if modifier.kind == 'healing_power_from_stat':
+                        source_stat = str(modifier.provenance.get('source_stat') or '')
+                        if (modifier.target_id != 'healing_power'
+                                or source_stat not in actor.base_stats
+                                or not 0. < float(modifier.value) <= 1.):
+                            raise ValueError('INVALID_SOURCE_STAT_TO_HEALING_CONVERSION')
+                        coefficients = dict(actor.metadata.get('source_healing_power_from_stats') or {})
+                        before = float(coefficients.get(source_stat, 0.))
+                        coefficients[source_stat] = before + float(modifier.value)
+                        actor = replace(actor, metadata={**dict(actor.metadata),
+                            'source_healing_power_from_stats': coefficients})
+                        applied.append({'talent_id': talent_id, 'rank': rank,
+                            'kind': modifier.kind, 'source_stat': source_stat,
+                            'before': before, 'after': coefficients[source_stat]})
+                        continue
+                    if modifier.kind not in ('actor_stat_pct', 'actor_stat_flat'):
+                        raise ValueError(f'unsupported actor stat talent modifier: {modifier.kind}')
+                    if modifier.kind == 'actor_stat_pct' and modifier.target_id not in actor.base_stats:
+                        raise ValueError(f'actor stat unavailable: {modifier.target_id}')
+                    stats = dict(actor.base_stats)
+                    before = float(stats.get(modifier.target_id, 0.0))
+                    after = (before * (1.0 + float(modifier.value))
+                             if modifier.kind == 'actor_stat_pct' else before + float(modifier.value))
+                    stats[modifier.target_id] = after
+                    # Re-evaluate source-derived combat stats when a talent changes
+                    # a primary stat. Mode-scoped conversions remain separate and
+                    # use the new source stat at form entry.
+                    for fact in actor.metadata.get('canonical_primary_stat_conversions', ()):
+                        if (fact['target_type'] == 'stat' and
+                                fact['source_stat'] == modifier.target_id):
+                            target = str(fact['target_id'])
+                            stats[target] = float(stats.get(target, 0.0)) + (
+                                after - before) * float(fact['coefficient'])
+                    actor = replace(actor, base_stats=stats,
+                        provenance=actor.provenance + ({'stage':'talent_modifier','talent_id':talent_id,
+                                                       'rank':rank,'source':dict(modifier.provenance)},))
+                    # Shared source-backed mana conversion is already used by gear;
+                    # recompute from total (possibly geared) Intellect here too.
+                    for idx, resource in enumerate(resources):
+                        if (resource.metadata.get('base_mana') is not None and
+                                str(resource.metadata.get('capacity_formula','')).startswith(
+                                    'base_mana + classic_mana_bonus_from_intellect(') and
+                                modifier.target_id == 'intellect'):
+                            from src.game.data.forever.player_state import classic_mana_bonus_from_intellect
+                            capacity = float(resource.metadata['base_mana']) + classic_mana_bonus_from_intellect(after)
+                            resources[idx] = replace(resource, capacity=capacity, initial_amount=capacity,
+                                metadata={**dict(resource.metadata),'base_intellect':after,
+                                          'intellect_mana_bonus':classic_mana_bonus_from_intellect(after),
+                                          'talents_included':True})
+                    applied.append({'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                                    'target_stat':modifier.target_id,'before':before,'after':after})
+                    continue
+                if modifier.target_type == "mode":
+                    mode_index = next((i for i, mode in enumerate(modes) if mode.id == modifier.target_id), None)
+                    if mode_index is None:
+                        raise ValueError(f"talent modifier mode target unavailable: {modifier.target_id}")
+                    mode = modes[mode_index]
+                    if modifier.kind in ('mode_entry_expected_gain','mode_entry_restore_last'):
+                        provenance = dict(modifier.provenance)
+                        resource_id = str(provenance.get('resource_id') or '')
+                        if not any(r.id == resource_id and r.owner_actor_id == actor.id for r in resources):
+                            raise ValueError(f'mode entry talent resource unavailable: {resource_id}')
+                        if modifier.kind == 'mode_entry_restore_last':
+                            forbidden = tuple(str(x) for x in provenance.get('forbidden_mode_ids',()))
+                            if any(x not in {m.id for m in modes} for x in forbidden):
+                                raise ValueError('mode entry forbidden mode unavailable')
+                            entry = ModeEntryResourceModifier(kind='restore_last_mode_resource',
+                                resource_id=resource_id, value=float(modifier.value),
+                                outside_regen_per_s=float(provenance['outside_regen_per_s']),
+                                max_restored=float(provenance['max_restored']),
+                                forbidden_mode_ids=forbidden, provenance=(provenance,))
+                        else:
+                            entry = ModeEntryResourceModifier(kind='expected_flat_gain',
+                                resource_id=resource_id, value=float(modifier.value),
+                                provenance=(provenance,))
+                        modes[mode_index] = replace(mode,
+                            entry_resource_modifiers=mode.entry_resource_modifiers+(entry,),
+                            provenance=mode.provenance+({'stage':'talent_modifier','talent_id':talent_id,
+                                'rank':rank,'kind':modifier.kind,'source':provenance},))
+                        applied.append({'talent_id':talent_id,'rank':rank,'mode_id':mode.id,
+                                        'kind':modifier.kind,'resource_id':resource_id,
+                                        'value':float(modifier.value)})
+                        continue
+                    if modifier.kind == "mode_armor_per_level":
+                        mode_modifier = ModeStatModifier(target_stat="armor", kind="add_level_scaled",
+                                                         value=float(modifier.value))
+                    elif modifier.kind == "mode_armor_excess_defense":
+                        threshold = modifier.provenance.get('reference_level_multiplier')
+                        if threshold is None:
+                            raise ValueError("source threshold missing for excess-defense armor")
+                        mode_modifier = ModeStatModifier(
+                            target_stat="armor", kind="add_stat_above_level_scaled",
+                            value=float(modifier.value), source_stat="defense",
+                            reference_level_multiplier=float(threshold))
+                    elif modifier.kind == 'mode_stat_flat':
+                        target_stat = str(modifier.provenance.get('target_stat') or '')
+                        if not target_stat:
+                            raise ValueError('mode flat stat source target missing')
+                        mode_modifier = ModeStatModifier(target_stat=target_stat,
+                            kind='add_flat',value=float(modifier.value))
+                    elif modifier.kind in ('mode_stat_pct','mode_derived_stat_pct'):
+                        source_stat = modifier.provenance.get('source_stat')
+                        target_stat = (source_stat if modifier.kind == 'mode_stat_pct'
+                                       else modifier.provenance.get('target_id'))
+                        if not source_stat or not target_stat:
+                            raise ValueError('source stat conversion metadata missing')
+                        if source_stat not in actor.base_stats:
+                            raise ValueError(f'source actor stat unavailable: {source_stat}')
+                        mode_modifier = ModeStatModifier(target_stat=str(target_stat),
+                            kind='add_stat_scaled',source_stat=str(source_stat),value=float(modifier.value))
+                    elif modifier.kind == 'mode_resource_capacity_pct':
+                        source_stat = modifier.provenance.get('source_stat')
+                        resource_id = modifier.provenance.get('target_id')
+                        if not source_stat or not resource_id or source_stat not in actor.base_stats:
+                            raise ValueError('resource conversion source stat missing')
+                        if not any(r.id == resource_id and r.capacity is not None for r in resources):
+                            raise ValueError('resource conversion capacity target unavailable')
+                        cap_modifier = ModeResourceCapacityModifier(resource_id=str(resource_id),
+                            kind='add_stat_scaled',source_stat=str(source_stat),value=float(modifier.value))
+                        modes[mode_index] = replace(mode,
+                            resource_capacity_modifiers=mode.resource_capacity_modifiers + (cap_modifier,),
+                            provenance=mode.provenance + ({'stage':'talent_modifier','talent_id':talent_id,
+                                'rank':rank,'kind':modifier.kind,'source':dict(modifier.provenance)},))
+                        applied.append({'talent_id':talent_id,'rank':rank,'mode_id':mode.id,
+                                        'kind':modifier.kind,'value':float(modifier.value),
+                                        'target_resource':str(resource_id)})
+                        continue
+                    else:
+                        raise ValueError(f"unsupported mode talent modifier kind: {modifier.kind}")
+                    modes[mode_index] = replace(mode, stat_modifiers=mode.stat_modifiers + (mode_modifier,),
+                        provenance=mode.provenance + ({"stage": "talent_modifier", "talent_id": talent_id,
+                            "rank": rank, "kind": modifier.kind, "value": float(modifier.value),
+                            "provenance": dict(modifier.provenance)},))
+                    applied.append({"talent_id": talent_id, "rank": rank, "mode_id": mode.id,
+                                    "kind": modifier.kind, "value": float(modifier.value),
+                                    "target_stat": mode_modifier.target_stat})
+                    continue
+                if modifier.target_type == 'trigger_filter':
+                    if modifier.kind != 'effect_damage_pct':
+                        raise ValueError('unsupported trigger talent modifier')
+                    changed=[]
+                    for i,trigger in enumerate(triggers):
+                        if trigger.metadata.get('effect_category') != modifier.target_id:
+                            continue
+                        effects=[]
+                        for effect in trigger.effects:
+                            factor=max(0.,1.+float(modifier.value))
+                            if isinstance(effect,DamageEffect):
+                                effects.append(replace(effect,base_min=effect.base_min*factor,
+                                    base_max=effect.base_max*factor,
+                                    spell_power_coefficient=effect.spell_power_coefficient*factor))
+                            elif isinstance(effect,WeaponDamageEffect):
+                                effects.append(replace(effect,weapon_damage_multiplier=effect.weapon_damage_multiplier*factor,
+                                    flat_damage=effect.flat_damage*factor))
+                            else:
+                                raise ValueError('unsupported trigger damage effect')
+                        triggers[i]=replace(trigger,effects=tuple(effects),
+                            provenance=trigger.provenance+({'stage':'talent_modifier',
+                            'talent_id':talent_id,'rank':rank,'kind':modifier.kind,
+                            'source':dict(modifier.provenance)},))
+                        changed.append(trigger.id)
+                    if not changed:
+                        raise ValueError(f'no source triggers in category: {modifier.target_id}')
+                    applied.append({'talent_id':talent_id,'rank':rank,
+                        'kind':modifier.kind,'trigger_ids':changed,'value':float(modifier.value)})
+                    continue
+                if modifier.target_type not in ('action_family', 'action_filter'):
+>                   raise ValueError(f"unsupported talent modifier target_type: {modifier.target_type}")
+E                   ValueError: unsupported talent modifier target_type: resource
+
+src/game/talents.py:788: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_missing_source_proc_facts_fail_atomically():
+        ir=_slice()
+        bad=replace(ir.talents[0].ranks[0].modifiers[1],provenance={'url':SOURCE})
+        rank=replace(ir.talents[0].ranks[0],modifiers=(ir.talents[0].ranks[0].modifiers[0],bad))
+        talent=replace(ir.talents[0],ranks=(rank,))
+>       with pytest.raises(ValueError,match='AVOIDANCE_PROC_SOURCE_FACTS_REQUIRED'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'AVOIDANCE_PROC_SOURCE_FACTS_REQUIRED'
+E         Actual message: 'unsupported talent modifier target_type: resource'
+
+tests/test_wf442_generic_avoidance_resource_red.py:79: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_wf442_generic_avoidance_resource_red.py::test_avoidance_rank_compiles_two_real_effects_and_preserves_base - ValueError: unsupported talent modifier target_type: resource
+FAILED tests/test_wf442_generic_avoidance_resource_red.py::test_expected_dodge_proc_is_paid_through_real_incoming_resource_events - ValueError: unsupported talent modifier target_type: resource
+FAILED tests/test_wf442_generic_avoidance_resource_red.py::test_missing_source_proc_facts_fail_atomically - AssertionError: Regex pattern did not match.
+  Expected regex: 'AVOIDANCE_PROC_SOURCE_FACTS_REQUIRED'
+  Actual message: 'unsupported talent modifier target_type: resource'
+3 failed in 0.29s
