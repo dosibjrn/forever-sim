@@ -1,0 +1,10 @@
+name: Restore Forever source
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Forever source preflight'
