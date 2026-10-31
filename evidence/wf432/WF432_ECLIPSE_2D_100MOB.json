@@ -1,0 +1,13 @@
+{
+  "status": "COMPLETE",
+  "count": 100,
+  "mean_s_per_mob": 16.6888758825913,
+  "events": 3509,
+  "elapsed_wall_s": 0.16280882099999872,
+  "elapsed_cpu_s": 0.16280753600000009,
+  "source_action_counts": null,
+  "spatial_mode": "simultaneous_2d_pack",
+  "incoming_attacks_scheduled": true,
+  "combat_s": 1128.5,
+  "recovery_s": 534.3875882591301
+}

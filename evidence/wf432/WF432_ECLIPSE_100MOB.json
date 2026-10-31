@@ -1,0 +1,74 @@
+{
+  "charge_aware": [
+    {
+      "combat_s": 1125.0,
+      "count": 100,
+      "elapsed_cpu_s": 0.2391116849999999,
+      "elapsed_wall_s": 0.23947106000002805,
+      "events": 3557,
+      "mean_s_per_mob": 16.649849191380994,
+      "recovery_s": 533.9849191380993,
+      "source_action_counts": {
+        "source_spell:8949": 300,
+        "wrath:5180": 150
+      },
+      "status": "COMPLETE"
+    },
+    {
+      "combat_s": 1125.0,
+      "count": 100,
+      "elapsed_cpu_s": 0.19654611700000002,
+      "elapsed_wall_s": 0.19686153800000739,
+      "events": 3557,
+      "mean_s_per_mob": 16.649849191380994,
+      "recovery_s": 533.9849191380993,
+      "source_action_counts": {
+        "source_spell:8949": 300,
+        "wrath:5180": 150
+      },
+      "status": "COMPLETE"
+    }
+  ],
+  "scenario": "CMANGOS_LEVEL_CLASS_HP_PROXY_NOT_VERIFIED_FOREVER_NPC",
+  "source_db_sha256": "067c12389da399ca4f561faa334a9a8c25cfeadc66b07147cca283c2cb8867f3",
+  "source_gear_package": "source_stat_package:spell_power",
+  "talent_allocation": {
+    "eclipse": 3,
+    "ferocity": 3,
+    "genesis": 5,
+    "improved_entangling_roots": 1,
+    "improved_moonfire": 2,
+    "improved_wrath": 5,
+    "moonglow": 3,
+    "natures_majesty": 2,
+    "natures_reach": 2
+  },
+  "wrath_only": [
+    {
+      "combat_s": 901.5,
+      "count": 100,
+      "elapsed_cpu_s": 3.529037501,
+      "elapsed_wall_s": 3.535198885999989,
+      "events": 3710,
+      "mean_s_per_mob": 11.728208837635073,
+      "recovery_s": 266.8208837635073,
+      "source_action_counts": {
+        "wrath:5180": 601
+      },
+      "status": "COMPLETE"
+    },
+    {
+      "combat_s": 901.5,
+      "count": 100,
+      "elapsed_cpu_s": 3.3313672929999996,
+      "elapsed_wall_s": 3.3361925219999193,
+      "events": 3710,
+      "mean_s_per_mob": 11.728208837635073,
+      "recovery_s": 266.8208837635073,
+      "source_action_counts": {
+        "wrath:5180": 601
+      },
+      "status": "COMPLETE"
+    }
+  ]
+}
