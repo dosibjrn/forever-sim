@@ -1,0 +1,3978 @@
+{
+  "allocation_l0_composer": "source_rank_feature_vectors_with_explicit_interaction_detection_not_s_per_mob",
+  "blocked": [],
+  "checkpoint": {
+    "class_key": "druid",
+    "level": 30,
+    "profile": "unrestricted",
+    "source_build": "1.60.1.70338",
+    "use_runes": false
+  },
+  "known_reachable_rank_count": 105,
+  "l0_scored_reachable_rank_count": 105,
+  "l2_unsupported_scored_rank_count": 27,
+  "p2_pass": false,
+  "point_budget": 21,
+  "rank_rows": [
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.1,
+          "target": "wrath",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.1,
+          "target": "wrath",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "improved_wrath",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "improved_wrath": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.2,
+          "target": "wrath",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.2,
+          "target": "wrath",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "improved_wrath",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "improved_wrath": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.3,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.3,
+          "target": "wrath",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.3,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.3,
+          "target": "wrath",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "improved_wrath",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "improved_wrath": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.4,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.4,
+          "target": "wrath",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.4,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.4,
+          "target": "wrath",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 4,
+      "source_url": null,
+      "talent_id": "improved_wrath",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "improved_wrath": 4
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.5,
+          "target": "wrath",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.5,
+          "target": "wrath",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 5,
+      "source_url": null,
+      "talent_id": "improved_wrath",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "improved_wrath": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "moonfire",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "crit_chance_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "moonfire",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "improved_moonfire",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "moonfire",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "crit_chance_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "moonfire",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "improved_moonfire",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -1.0,
+          "target": "primal_bite",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -1.0,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -1.0,
+          "target": "claw",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -1.0,
+          "target": "rake",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -1.0,
+          "target": "maul",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "ferocity",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -2.0,
+          "target": "primal_bite",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -2.0,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -2.0,
+          "target": "claw",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -2.0,
+          "target": "rake",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -2.0,
+          "target": "maul",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "ferocity",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -3.0,
+          "target": "primal_bite",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -3.0,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -3.0,
+          "target": "claw",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -3.0,
+          "target": "rake",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -3.0,
+          "target": "maul",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "ferocity",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -4.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -4.0,
+          "target": "primal_bite",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -4.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -4.0,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -4.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -4.0,
+          "target": "claw",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -4.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -4.0,
+          "target": "rake",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -4.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -4.0,
+          "target": "maul",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 4,
+      "source_url": null,
+      "talent_id": "ferocity",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 4
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -5.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -5.0,
+          "target": "primal_bite",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -5.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -5.0,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -5.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -5.0,
+          "target": "claw",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -5.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -5.0,
+          "target": "rake",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -5.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -5.0,
+          "target": "maul",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 5,
+      "source_url": null,
+      "talent_id": "ferocity",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "claw",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "rake",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "shred",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": 0.05,
+          "target": "maul",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "savage_fury",
+      "tier_row": 2,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "savage_fury": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "claw",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "rake",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "shred",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": 0.1,
+          "target": "maul",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "savage_fury",
+      "tier_row": 2,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "savage_fury": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.1,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.01,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.01,
+          "target": "all_damage",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "naturalist",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "naturalist": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.2,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.02,
+          "target": "all_damage",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "naturalist",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "naturalist": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.3,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.3,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.03,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.03,
+          "target": "all_damage",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "naturalist",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "naturalist": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.4,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.4,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "all_damage",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 4,
+      "source_url": null,
+      "talent_id": "naturalist",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "naturalist": 4
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "cast_time_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.5,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "all_damage",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 5,
+      "source_url": null,
+      "talent_id": "naturalist",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "naturalist": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.02,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -0.02,
+          "target": "tranquility",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "tranquil_spirit",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.04,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -0.04,
+          "target": "tranquility",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "tranquil_spirit",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.06,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.06,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.06,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -0.06,
+          "target": "tranquility",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "tranquil_spirit",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.08,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.08,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.08,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -0.08,
+          "target": "tranquility",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 4,
+      "source_url": null,
+      "talent_id": "tranquil_spirit",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 4
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.1,
+          "target": "healing_touch",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -0.1,
+          "target": "tranquility",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 5,
+      "source_url": null,
+      "talent_id": "tranquil_spirit",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "stealth_detection_effective_level_bonus",
+          "source": "canonical_talent_rank_tooltip_secondary_L0_only",
+          "sourced_value": 1.0,
+          "target": "source_tooltip_conditional"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "feral_instinct",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "feral_instinct": 1,
+        "ferocity": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.2,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "stealth_detection_effective_level_bonus",
+          "source": "canonical_talent_rank_tooltip_secondary_L0_only",
+          "sourced_value": 2.0,
+          "target": "source_tooltip_conditional"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "feral_instinct",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "feral_instinct": 2,
+        "ferocity": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.3,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.3,
+          "target": "swipe",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "stealth_detection_effective_level_bonus",
+          "source": "canonical_talent_rank_tooltip_secondary_L0_only",
+          "sourced_value": 3.0,
+          "target": "source_tooltip_conditional"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "feral_instinct",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "feral_instinct": 3,
+        "ferocity": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.25,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.25,
+          "target": "entangling_roots",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.25,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "control_break_damage_threshold_fraction",
+          "source": "canonical_talent_rank_tooltip_secondary_L0_only",
+          "sourced_value": 0.25,
+          "target": "source_tooltip_conditional"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "improved_entangling_roots",
+      "tier_row": 2,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_wrath": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.5,
+          "target": "entangling_roots",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "control_break_damage_threshold_fraction",
+          "source": "canonical_talent_rank_tooltip_secondary_L0_only",
+          "sourced_value": 0.5,
+          "target": "source_tooltip_conditional"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "improved_entangling_roots",
+      "tier_row": 2,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 2,
+        "improved_wrath": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.75,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_damage_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.75,
+          "target": "entangling_roots",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 0.75,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "control_break_damage_threshold_fraction",
+          "source": "canonical_talent_rank_tooltip_secondary_L0_only",
+          "sourced_value": 0.75,
+          "target": "source_tooltip_conditional"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "improved_entangling_roots",
+      "tier_row": 2,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 3,
+        "improved_wrath": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_healing_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "rejuvenation",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "improved_rejuvenation",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "improved_rejuvenation": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_healing_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "rejuvenation",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "improved_rejuvenation",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "improved_rejuvenation": 2,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.15,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_healing_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.15,
+          "target": "rejuvenation",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "improved_rejuvenation",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "improved_rejuvenation": 3,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "periodic_duration_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": 3.0,
+          "target": "moonfire",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "periodic_duration_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": 3.0,
+          "target": "rejuvenation",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 6.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "periodic_duration_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": 6.0,
+          "target": "regrowth",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": 3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "periodic_duration_delta_s",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": 3.0,
+          "target": "insect_swarm",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "natures_splendor",
+      "tier_row": 2,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_wrath": 5,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -6.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -6.0,
+          "target": "shred",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/shredding-attacks/",
+      "talent_id": "shredding_attacks",
+      "tier_row": 2,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shredding_attacks": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -12.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -12.0,
+          "target": "shred",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": true,
+      "rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/shredding-attacks/",
+      "talent_id": "shredding_attacks",
+      "tier_row": 2,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shredding_attacks": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -18.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": -18.0,
+          "target": "shred",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": true,
+      "rank": 3,
+      "source_url": "https://theforeverera.com/en/talents/druid/shredding-attacks/",
+      "talent_id": "shredding_attacks",
+      "tier_row": 2,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "gcd_delta_s",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.5,
+          "target": "rejuvenation",
+          "target_type": "action_family"
+        },
+        {
+          "context_l0_value": -0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "gcd_delta_s",
+          "source": "canonical_talent_rank_tooltip_named_target_L0_only",
+          "sourced_value": -0.5,
+          "target": "swiftmend",
+          "target_type": "action_family"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "gift_of_the_earthmother",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "gift_of_the_earthmother": 1,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.02,
+          "target": "intellect",
+          "target_type": "actor_stat"
+        },
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.4,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_resource_capacity_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.4,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.02,
+          "target": "cat",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_derived_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "heart_of_the_wild",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "heart_of_the_wild": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "intellect",
+          "target_type": "actor_stat"
+        },
+        {
+          "context_l0_value": 0.08,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.08,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.8,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_resource_capacity_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.8,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "cat",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.08,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_derived_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.08,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "heart_of_the_wild",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "heart_of_the_wild": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.06,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.06,
+          "target": "intellect",
+          "target_type": "actor_stat"
+        },
+        {
+          "context_l0_value": 0.12,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.12,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 1.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_resource_capacity_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 1.2,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.06,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.06,
+          "target": "cat",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.12,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_derived_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.12,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "heart_of_the_wild",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "heart_of_the_wild": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.08,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.08,
+          "target": "intellect",
+          "target_type": "actor_stat"
+        },
+        {
+          "context_l0_value": 0.16,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.16,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 1.6,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_resource_capacity_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 1.6,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.08,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.08,
+          "target": "cat",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.16,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_derived_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.16,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 4,
+      "source_url": null,
+      "talent_id": "heart_of_the_wild",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "heart_of_the_wild": 4
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "intellect",
+          "target_type": "actor_stat"
+        },
+        {
+          "context_l0_value": 0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.2,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_resource_capacity_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 2.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "cat",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_derived_stat_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.2,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 5,
+      "source_url": null,
+      "talent_id": "heart_of_the_wild",
+      "tier_row": 0,
+      "tree_key": "feral",
+      "witness": {
+        "heart_of_the_wild": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_per_level",
+          "source": "canonical_game_ir",
+          "sourced_value": 1.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.67,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_excess_defense",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.67,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_per_level",
+          "source": "canonical_game_ir",
+          "sourced_value": 1.0,
+          "target": "cat",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.67,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_excess_defense",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.67,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "thick_hide",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "thick_hide": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_per_level",
+          "source": "canonical_game_ir",
+          "sourced_value": 2.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 1.33,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_excess_defense",
+          "source": "canonical_game_ir",
+          "sourced_value": 1.33,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_per_level",
+          "source": "canonical_game_ir",
+          "sourced_value": 2.0,
+          "target": "cat",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 1.33,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_excess_defense",
+          "source": "canonical_game_ir",
+          "sourced_value": 1.33,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "thick_hide",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "thick_hide": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_per_level",
+          "source": "canonical_game_ir",
+          "sourced_value": 3.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_excess_defense",
+          "source": "canonical_game_ir",
+          "sourced_value": 2.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 3.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_per_level",
+          "source": "canonical_game_ir",
+          "sourced_value": 3.0,
+          "target": "cat",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_armor_excess_defense",
+          "source": "canonical_game_ir",
+          "sourced_value": 2.0,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "thick_hide",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "thick_hide": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 2.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_expected_gain",
+          "source": "canonical_game_ir",
+          "sourced_value": 2.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_restore_last",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.2,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "furor",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 4.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_expected_gain",
+          "source": "canonical_game_ir",
+          "sourced_value": 4.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.4,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_restore_last",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.4,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "furor",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 6.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_expected_gain",
+          "source": "canonical_game_ir",
+          "sourced_value": 6.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.6,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_restore_last",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.6,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "furor",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 8.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_expected_gain",
+          "source": "canonical_game_ir",
+          "sourced_value": 8.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.8,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_restore_last",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.8,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 4,
+      "source_url": null,
+      "talent_id": "furor",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 4
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 10.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_expected_gain",
+          "source": "canonical_game_ir",
+          "sourced_value": 10.0,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_entry_restore_last",
+          "source": "canonical_game_ir",
+          "sourced_value": 1.0,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 5,
+      "source_url": null,
+      "talent_id": "furor",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.01,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_periodic_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.01,
+          "target": "periodic",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "genesis",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_periodic_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.02,
+          "target": "periodic",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "genesis",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.03,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_periodic_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.03,
+          "target": "periodic",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "genesis",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_periodic_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "periodic",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 4,
+      "source_url": null,
+      "talent_id": "genesis",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 4
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_periodic_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.05,
+          "target": "periodic",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 5,
+      "source_url": null,
+      "talent_id": "genesis",
+      "tier_row": 0,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_healing_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.02,
+          "target": "healing",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "gift_of_nature",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 1,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_healing_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "healing",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "gift_of_nature",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 2,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.06,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_healing_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.06,
+          "target": "healing",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "gift_of_nature",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 3,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.08,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_healing_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.08,
+          "target": "healing",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 4,
+      "source_url": null,
+      "talent_id": "gift_of_nature",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 4,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "effect_healing_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.1,
+          "target": "healing",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 5,
+      "source_url": null,
+      "talent_id": "gift_of_nature",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 5,
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.02,
+          "target": "dodge_chance",
+          "target_type": "actor_stat"
+        },
+        {
+          "context_l0_value": 0.15,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.15,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "feral_swiftness",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "feral_swiftness": 1,
+        "ferocity": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "dodge_chance",
+          "target_type": "actor_stat"
+        },
+        {
+          "context_l0_value": 0.3,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.3,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "feral_swiftness",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "feral_swiftness": 2,
+        "ferocity": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.03,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.03,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.03,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.03,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "sharpened_claws",
+      "tier_row": 2,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.06,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.06,
+          "target": "bear",
+          "target_type": "mode"
+        },
+        {
+          "context_l0_value": 0.06,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "mode_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.06,
+          "target": "cat",
+          "target_type": "mode"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "sharpened_claws",
+      "tier_row": 2,
+      "tree_key": "feral",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.08,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.08,
+          "target": "damage_spell",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "moonglow",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "moonglow": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.17,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.17,
+          "target": "damage_spell",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "moonglow",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "moonglow": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.25,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.25,
+          "target": "damage_spell",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "moonglow",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "moonglow": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.1,
+          "target": "shapeshift_mana",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "natural_shapeshifter",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.2,
+          "target": "shapeshift_mana",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "natural_shapeshifter",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": -0.3,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "resource_cost_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": -0.3,
+          "target": "shapeshift_mana",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "natural_shapeshifter",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.17,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.17,
+          "target": "casting_mana_regen_fraction",
+          "target_type": "actor_stat"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "reflection",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natures_focus": 5,
+        "reflection": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.33,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.33,
+          "target": "casting_mana_regen_fraction",
+          "target_type": "actor_stat"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "reflection",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natures_focus": 5,
+        "reflection": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "actor_stat_flat",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.5,
+          "target": "casting_mana_regen_fraction",
+          "target_type": "actor_stat"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 3,
+      "source_url": null,
+      "talent_id": "reflection",
+      "tier_row": 2,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natures_focus": 5,
+        "reflection": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "crit_chance_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.02,
+          "target": "spells_and_melee",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "natures_majesty",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "natures_majesty": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "crit_chance_pct",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "spells_and_melee",
+          "target_type": "action_filter"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "natures_majesty",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "natures_majesty": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "hit_chance_bonus",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.02,
+          "target": "damage_spell",
+          "target_type": "action_filter"
+        },
+        {
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "offensive_spell_range_bonus_fraction",
+          "source": "canonical_talent_rank_tooltip_secondary_L0_only",
+          "sourced_value": 0.1,
+          "target": "source_tooltip_conditional"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 1,
+      "source_url": null,
+      "talent_id": "natures_reach",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "natures_reach": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "context_l0_value": 0.04,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "hit_chance_bonus",
+          "source": "canonical_game_ir",
+          "sourced_value": 0.04,
+          "target": "damage_spell",
+          "target_type": "action_filter"
+        },
+        {
+          "context_l0_value": 0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "offensive_spell_range_bonus_fraction",
+          "source": "canonical_talent_rank_tooltip_secondary_L0_only",
+          "sourced_value": 0.2,
+          "target": "source_tooltip_conditional"
+        }
+      ],
+      "l0_status": "GAME_IR_MODIFIERS",
+      "l2_supported": true,
+      "potentially_contextual": false,
+      "rank": 2,
+      "source_url": null,
+      "talent_id": "natures_reach",
+      "tier_row": 1,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "natures_reach": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "bear_or_cat_crit",
+          "context_l0_value": 0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "critical_bear_rage_proc_probability",
+          "source": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+          "sourced_value": 0.5,
+          "target": "bear_direbear"
+        },
+        {
+          "condition": "bear_or_cat_crit",
+          "context_l0_value": 0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "critical_cat_bonus_combo_point_proc_probability",
+          "source": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+          "sourced_value": 0.5,
+          "target": "cat_combo_generators"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+      "talent_id": "blood_frenzy",
+      "tier_row": 3,
+      "tree_key": "feral",
+      "witness": {
+        "blood_frenzy": 1,
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "control_ability_available",
+          "context_l0_value": 0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "stun_duration_bonus_seconds",
+          "source": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+          "sourced_value": 0.5,
+          "target": "bash_and_pounce"
+        },
+        {
+          "condition": "control_ability_available",
+          "context_l0_value": 15.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "bash_cooldown_reduction_seconds",
+          "source": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+          "sourced_value": 15.0,
+          "target": "bash"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "talent_id": "brutal_impact",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "brutal_impact": 1,
+        "ferocity": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "control_ability_available",
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "stun_duration_bonus_seconds",
+          "source": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+          "sourced_value": 1.0,
+          "target": "bash_and_pounce"
+        },
+        {
+          "condition": "control_ability_available",
+          "context_l0_value": 30.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "bash_cooldown_reduction_seconds",
+          "source": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+          "sourced_value": 30.0,
+          "target": "bash"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "talent_id": "brutal_impact",
+      "tier_row": 1,
+      "tree_key": "feral",
+      "witness": {
+        "brutal_impact": 2,
+        "ferocity": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "two_starfires_per_wrath_up_to_4_charges",
+          "context_l0_value": 0.17,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "starfire_cast_time_reduction_seconds_per_charge",
+          "source": "https://theforeverera.com/en/talents/druid/eclipse/",
+          "sourced_value": 0.17,
+          "target": "wrath_then_starfire"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/eclipse/",
+      "talent_id": "eclipse",
+      "tier_row": 4,
+      "tree_key": "balance",
+      "witness": {
+        "eclipse": 1,
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "bear_form_5_rage_or_cat_form_positioning",
+          "context_l0_value": 4.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "charge_immobilize_interrupt_seconds",
+          "source": "https://theforeverera.com/en/talents/druid/feral-charge/",
+          "sourced_value": 4.0,
+          "target": "feral_charge_talent_grant"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-charge/",
+      "talent_id": "feral_charge",
+      "tier_row": 2,
+      "tree_key": "feral",
+      "witness": {
+        "feral_charge": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "when_shifting_power_learned",
+          "context_l0_value": 4.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "shifting_power_cooldown_reduction_seconds",
+          "source": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+          "sourced_value": 4.0,
+          "target": "shifting_power"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+      "talent_id": "improved_shifting_power",
+      "tier_row": 4,
+      "tree_key": "feral",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "improved_shifting_power": 1,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "starfire_is_cast",
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "starfire_cast_time_reduction_seconds",
+          "source": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+          "sourced_value": 0.1,
+          "target": "starfire"
+        },
+        {
+          "condition": "starfire_is_cast",
+          "context_l0_value": 0.03,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "starfire_stun_chance",
+          "source": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+          "sourced_value": 0.03,
+          "target": "starfire"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+      "talent_id": "improved_starfire",
+      "tier_row": 3,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_starfire": 1,
+        "improved_wrath": 5,
+        "moonglow": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "trained_tranquility",
+          "context_l0_value": 0.3,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "tranquility_cooldown_reduction_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+          "sourced_value": 0.3,
+          "target": "tranquility"
+        },
+        {
+          "condition": "trained_tranquility",
+          "context_l0_value": 0.5,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "tranquility_threat_reduction_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+          "sourced_value": 0.5,
+          "target": "tranquility"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+      "talent_id": "improved_tranquility",
+      "tier_row": 4,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "improved_tranquility": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "cast_when_talent_learned",
+          "context_l0_value": 48.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "nature_dot_base_damage",
+          "source": "https://theforeverera.com/en/talents/druid/insect-swarm/",
+          "sourced_value": 48.0,
+          "target": "insect_swarm"
+        },
+        {
+          "condition": "cast_when_talent_learned",
+          "context_l0_value": 0.02,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "target_hit_chance_reduction_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/insect-swarm/",
+          "sourced_value": 0.02,
+          "target": "insect_swarm"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/insect-swarm/",
+      "talent_id": "insect_swarm",
+      "tier_row": 3,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "druid_in_feral_form",
+          "context_l0_value": 0.03,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "form_party_crit_chance_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/leader-of-the-pack/",
+          "sourced_value": 0.03,
+          "target": "party_cat_bear_direbear"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/leader-of-the-pack/",
+      "talent_id": "leader_of_the_pack",
+      "tier_row": 4,
+      "tree_key": "feral",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "leader_of_the_pack": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "always",
+          "context_l0_value": 0.05,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "spirit_stat_increase_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/living-spirit/",
+          "sourced_value": 0.05,
+          "target": "spirit"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/living-spirit/",
+      "talent_id": "living_spirit",
+      "tier_row": 4,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "living_spirit": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "incoming_damage_while_casting",
+          "context_l0_value": 0.14,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "casting_pushback_avoidance_probability",
+          "source": "https://theforeverera.com/en/talents/druid/natures-focus/",
+          "sourced_value": 0.14,
+          "target": "arcane_and_nature_casts"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "talent_id": "natures_focus",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "natures_focus": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "incoming_damage_while_casting",
+          "context_l0_value": 0.28,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "casting_pushback_avoidance_probability",
+          "source": "https://theforeverera.com/en/talents/druid/natures-focus/",
+          "sourced_value": 0.28,
+          "target": "arcane_and_nature_casts"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "talent_id": "natures_focus",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "natures_focus": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "incoming_damage_while_casting",
+          "context_l0_value": 0.42,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "casting_pushback_avoidance_probability",
+          "source": "https://theforeverera.com/en/talents/druid/natures-focus/",
+          "sourced_value": 0.42,
+          "target": "arcane_and_nature_casts"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 3,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "talent_id": "natures_focus",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "natures_focus": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "incoming_damage_while_casting",
+          "context_l0_value": 0.56,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "casting_pushback_avoidance_probability",
+          "source": "https://theforeverera.com/en/talents/druid/natures-focus/",
+          "sourced_value": 0.56,
+          "target": "arcane_and_nature_casts"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 4,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "talent_id": "natures_focus",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "natures_focus": 4
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "incoming_damage_while_casting",
+          "context_l0_value": 0.7,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "casting_pushback_avoidance_probability",
+          "source": "https://theforeverera.com/en/talents/druid/natures-focus/",
+          "sourced_value": 0.7,
+          "target": "arcane_and_nature_casts"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 5,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "talent_id": "natures_focus",
+      "tier_row": 0,
+      "tree_key": "restoration",
+      "witness": {
+        "natures_focus": 5
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "critical_hit_then_next_3s",
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "on_spell_crit_cast_speed_bonus_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/natures-grace/",
+          "sourced_value": 0.1,
+          "target": "nonperiodic_spell_crit"
+        },
+        {
+          "condition": "critical_hit_then_next_3s",
+          "context_l0_value": 0.1,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "on_spell_crit_gcd_reduction_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/natures-grace/",
+          "sourced_value": 0.1,
+          "target": "nonperiodic_spell_crit"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-grace/",
+      "talent_id": "natures_grace",
+      "tier_row": 4,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_grace": 1,
+        "natures_majesty": 2,
+        "natures_reach": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "active_and_cast",
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "instant_next_nature_cast_count",
+          "source": "https://theforeverera.com/en/talents/druid/natures-swiftness/",
+          "sourced_value": 1.0,
+          "target": "nature_spell"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-swiftness/",
+      "talent_id": "natures_swiftness",
+      "tier_row": 4,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "natures_swiftness": 1,
+        "subtlety": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "root_multi_target_availability",
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "extra_concurrent_rooted_targets",
+          "source": "https://theforeverera.com/en/talents/druid/overgrowth/",
+          "sourced_value": 1.0,
+          "target": "entangling_roots"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/overgrowth/",
+      "talent_id": "overgrowth",
+      "tier_row": 4,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "overgrowth": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "in_feral_form",
+          "context_l0_value": 15.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "form_melee_attack_power_from_level",
+          "source": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+          "sourced_value": 15.0,
+          "target": "cat_bear_direbear"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "talent_id": "predatory_strikes",
+      "tier_row": 3,
+      "tree_key": "feral",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "primal_bite_ability",
+          "context_l0_value": 26.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "attack_flat_weapon_addition",
+          "source": "https://theforeverera.com/en/talents/druid/primal-bite/",
+          "sourced_value": 26.0,
+          "target": "primal_bite"
+        },
+        {
+          "condition": "primal_bite_ability",
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "normal_weapon_damage_multiplier",
+          "source": "https://theforeverera.com/en/talents/druid/primal-bite/",
+          "sourced_value": 1.0,
+          "target": "primal_bite"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/primal-bite/",
+      "talent_id": "primal_bite",
+      "tier_row": 3,
+      "tree_key": "feral",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "primal_bite": 1,
+        "savage_fury": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "need_energy_not_full",
+          "context_l0_value": 40.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "on_use_energy_restoration",
+          "source": "https://theforeverera.com/en/talents/druid/shifting-power/",
+          "sourced_value": 40.0,
+          "target": "shifting_power"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/shifting-power/",
+      "talent_id": "shifting_power",
+      "tier_row": 3,
+      "tree_key": "feral",
+      "witness": {
+        "brutal_impact": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "competing_threat_target",
+          "context_l0_value": 0.0,
+          "context_status": "ZERO_SOLO_NO_COMPETING_THREAT_TARGET",
+          "domain": "spell_threat_reduction_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/subtlety/",
+          "sourced_value": 0.1,
+          "target": "nature_and_arcane_spells"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/subtlety/",
+      "talent_id": "subtlety",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "subtlety": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "competing_threat_target",
+          "context_l0_value": 0.0,
+          "context_status": "ZERO_SOLO_NO_COMPETING_THREAT_TARGET",
+          "domain": "spell_threat_reduction_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/subtlety/",
+          "sourced_value": 0.2,
+          "target": "nature_and_arcane_spells"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 2,
+      "source_url": "https://theforeverera.com/en/talents/druid/subtlety/",
+      "talent_id": "subtlety",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "competing_threat_target",
+          "context_l0_value": 0.0,
+          "context_status": "ZERO_SOLO_NO_COMPETING_THREAT_TARGET",
+          "domain": "spell_threat_reduction_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/subtlety/",
+          "sourced_value": 0.3,
+          "target": "nature_and_arcane_spells"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 3,
+      "source_url": "https://theforeverera.com/en/talents/druid/subtlety/",
+      "talent_id": "subtlety",
+      "tier_row": 1,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "subtlety": 3
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "requires_active_regrowth_or_rejuvenation",
+          "context_l0_value": 1.0,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "instant_hot_full_remaining_heal_multiplier",
+          "source": "https://theforeverera.com/en/talents/druid/swiftmend/",
+          "sourced_value": 1.0,
+          "target": "rejuvenation_or_regrowth"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/swiftmend/",
+      "talent_id": "swiftmend",
+      "tier_row": 3,
+      "tree_key": "restoration",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "swiftmend": 1
+      }
+    },
+    {
+      "l0_effects": [
+        {
+          "condition": "crit_and_cast_relevant_spell",
+          "context_l0_value": 0.2,
+          "context_status": "POTENTIAL_SOURCE_EFFECT",
+          "domain": "spell_critical_damage_bonus_fraction",
+          "source": "https://theforeverera.com/en/talents/druid/vengeance/",
+          "sourced_value": 0.2,
+          "target": "arcane_and_nature_spells"
+        }
+      ],
+      "l0_status": "SOURCE_OBSERVED_L0_ONLY",
+      "l2_supported": false,
+      "potentially_contextual": true,
+      "rank": 1,
+      "source_url": "https://theforeverera.com/en/talents/druid/vengeance/",
+      "talent_id": "vengeance",
+      "tier_row": 3,
+      "tree_key": "balance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "vengeance": 1
+      }
+    }
+  ],
+  "source_allocation_rules": {
+    "berserk": {
+      "row": 6
+    },
+    "blood_frenzy": {
+      "prerequisite": {
+        "required_rank": 2,
+        "talent_id": "sharpened_claws"
+      },
+      "row": 3
+    },
+    "brutal_impact": {
+      "row": 1
+    },
+    "eclipse": {
+      "row": 4
+    },
+    "feral_charge": {
+      "row": 2
+    },
+    "improved_regrowth": {
+      "row": 5
+    },
+    "improved_shifting_power": {
+      "prerequisite": {
+        "required_rank": 1,
+        "talent_id": "shifting_power"
+      },
+      "row": 4
+    },
+    "improved_starfire": {
+      "row": 3
+    },
+    "improved_tranquility": {
+      "row": 4
+    },
+    "insect_swarm": {
+      "row": 3
+    },
+    "leader_of_the_pack": {
+      "row": 4
+    },
+    "living_spirit": {
+      "row": 4
+    },
+    "moonkin_form": {
+      "row": 6
+    },
+    "natural_reaction": {
+      "row": 5
+    },
+    "natures_focus": {
+      "row": 0
+    },
+    "natures_grace": {
+      "row": 4
+    },
+    "natures_swiftness": {
+      "prerequisite": {
+        "required_rank": 5,
+        "talent_id": "naturalist"
+      },
+      "row": 4
+    },
+    "overgrowth": {
+      "row": 4
+    },
+    "predatory_instincts": {
+      "row": 4
+    },
+    "predatory_strikes": {
+      "row": 3
+    },
+    "primal_bite": {
+      "prerequisite": {
+        "required_rank": 2,
+        "talent_id": "savage_fury"
+      },
+      "row": 3
+    },
+    "rend_and_tear": {
+      "row": 5
+    },
+    "shifting_power": {
+      "prerequisite": {
+        "required_rank": 3,
+        "talent_id": "shredding_attacks"
+      },
+      "row": 3
+    },
+    "shredding_attacks": {
+      "row": 2
+    },
+    "subtlety": {
+      "row": 1
+    },
+    "swiftmend": {
+      "row": 3
+    },
+    "vengeance": {
+      "prerequisite": {
+        "required_rank": 2,
+        "talent_id": "improved_moonfire"
+      },
+      "row": 3
+    },
+    "wild_growth": {
+      "row": 6
+    }
+  },
+  "source_only_l0_rank_count": 27,
+  "source_rank_mismatches": [
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 5,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 5,
+      "talent_id": "vengeance"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 2,
+      "talent_id": "overgrowth"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [
+        2,
+        3
+      ],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 3,
+      "talent_id": "predatory_strikes"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [
+        2
+      ],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 2,
+      "talent_id": "blood_frenzy"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 2,
+      "talent_id": "improved_shifting_power"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 2,
+      "talent_id": "improved_tranquility"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 3,
+      "talent_id": "living_spirit"
+    }
+  ],
+  "source_scope_context_exclusions": [
+    {
+      "rank": 1,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "shredding_attacks",
+      "target": "lacerate"
+    },
+    {
+      "rank": 2,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "shredding_attacks",
+      "target": "lacerate"
+    },
+    {
+      "rank": 3,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "shredding_attacks",
+      "target": "lacerate"
+    },
+    {
+      "rank": 1,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "gift_of_the_earthmother",
+      "target": "wild_growth"
+    },
+    {
+      "rank": 1,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "heart_of_the_wild",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 2,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "heart_of_the_wild",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 3,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "heart_of_the_wild",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 4,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "heart_of_the_wild",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 5,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "heart_of_the_wild",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 1,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "thick_hide",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 1,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "thick_hide",
+      "target": "moonkin_form"
+    },
+    {
+      "rank": 2,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "thick_hide",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 2,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "thick_hide",
+      "target": "moonkin_form"
+    },
+    {
+      "rank": 3,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "thick_hide",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 3,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "thick_hide",
+      "target": "moonkin_form"
+    },
+    {
+      "rank": 1,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "furor",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 2,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "furor",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 3,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "furor",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 4,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "furor",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 5,
+      "reason": "NOT_LEARNED_BY_CHECKPOINT_FROM_PINNED_SPELLBOOK",
+      "talent_id": "furor",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 1,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "sharpened_claws",
+      "target": "dire_bear_form"
+    },
+    {
+      "rank": 2,
+      "reason": "FORM_UNLEARNED_AT_CHECKPOINT",
+      "talent_id": "sharpened_claws",
+      "target": "dire_bear_form"
+    }
+  ],
+  "spellbook_scoped_l0_completeness_checked": true,
+  "status_counts": {
+    "GAME_IR_MODIFIERS": 78,
+    "SOURCE_OBSERVED_L0_ONLY": 27,
+    "UNREACHABLE_BY_TIER_BUDGET": 7
+  },
+  "unknown_position_families": [
+    {
+      "identity_status": "STALE_OLD_TALENT_NAME_REPLACED_WITH_NATURAL_INSTINCT",
+      "max_rank": 1,
+      "reason": "SOURCE_TALENT_IDENTITY_SUPERSEDED_REQUIRES_CANONICAL_REINGEST",
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "talent_id": "predatory_instincts",
+      "tree_key": "feral"
+    }
+  ]
+}
