@@ -1,0 +1,72 @@
+// Standalone JSONL contract for real gsim world range ticks. Not P7 evidence.
+package main
+
+import (
+    "bytes"
+    "encoding/hex"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "io"
+    "math"
+)
+
+const protocol = "gsim-go-range-v1"
+
+type worldTick struct {
+    Type string `json:"type"`
+    Protocol string `json:"protocol"`
+    Sequence uint64 `json:"sequence"`
+    ClockMS int64 `json:"clock_ms"`
+    NativeClockNS int64 `json:"native_clock_ns"`
+    NativePlayerIndex int `json:"native_player_index"`
+    WorldSHA256 string `json:"world_sha256"`
+    SelectedTargetID string `json:"selected_target_id"`
+    DistanceYards float64 `json:"distance_yards"`
+    WorldSource string `json:"world_source"`
+    RangeOnly bool `json:"range_only"`
+    FacingApplied bool `json:"facing_applied"`
+    ControlsApplied bool `json:"controls_applied"`
+    NativeActionACK bool `json:"native_action_ack"`
+    CheckpointCertified bool `json:"checkpoint_certified"`
+}
+
+type tickValidator struct { next uint64; lastClock int64; started bool }
+
+func decodeWorldTick(line []byte) (worldTick, error) {
+    var tick worldTick
+    decoder := json.NewDecoder(bytes.NewReader(line))
+    decoder.DisallowUnknownFields()
+    if err := decoder.Decode(&tick); err != nil { return tick, err }
+    var leftover interface{}
+    if err := decoder.Decode(&leftover); err != io.EOF { return tick, errors.New("WORLD_TICK_TRAILING_JSON") }
+    return tick, nil
+}
+
+func (v *tickValidator) validate(t worldTick) error {
+    if t.Type != "gsim_world_range_tick" || t.Protocol != protocol || t.WorldSource != "gsim.CombatRuntime" {
+        return errors.New("WORLD_TICK_PROTOCOL_OR_SOURCE_INVALID")
+    }
+    if t.Sequence != v.next || t.ClockMS < 0 || (v.started && t.ClockMS <= v.lastClock) {
+        return fmt.Errorf("WORLD_TICK_REPLAY_OR_CLOCK_ROLLBACK: sequence=%d clock=%d", t.Sequence, t.ClockMS)
+    }
+    if t.ClockMS > math.MaxInt64/1000000 || t.NativeClockNS != t.ClockMS*1000000 {
+        return errors.New("WORLD_TICK_NATIVE_CLOCK_MISMATCH")
+    }
+    if t.NativePlayerIndex < 0 || t.SelectedTargetID == "" || !t.RangeOnly || t.FacingApplied || t.ControlsApplied || t.NativeActionACK || t.CheckpointCertified {
+        return errors.New("WORLD_TICK_UNPROVEN_SEMANTICS")
+    }
+    if math.IsNaN(t.DistanceYards) || math.IsInf(t.DistanceYards, 0) || t.DistanceYards < 0 {
+        return errors.New("WORLD_TICK_DISTANCE_INVALID")
+    }
+    digest, err := hex.DecodeString(t.WorldSHA256)
+    if err != nil || len(digest) != 32 || len(t.WorldSHA256) != 64 {
+        return errors.New("WORLD_TICK_HASH_INVALID")
+    }
+    // Source string and digest are assertions by the gsim producer, not proof
+    // that caller did not invent JSON. Never promote to combat causality.
+    v.lastClock = t.ClockMS
+    v.started = true
+    v.next++
+    return nil
+}
