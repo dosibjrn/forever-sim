@@ -21,8 +21,8 @@ if git -C "$work/old" grep -I -nE 'gh[pousr]_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z
   sed -E 's/:.*/: [redacted match]/' "$work/secret-hits" | head -30
   exit 4
 fi
-echo "[4/7] Copy current source snapshot, excluding legacy automatic CI and old priority index"
-tar -C "$work/old" --exclude='./.git' --exclude='./.github/workflows' --exclude='./docs/planning/WORK_PRIORITY.md' -cf - . | tar -C "$work/new" -xf -
+echo "[4/7] Copy current source snapshot, excluding legacy automatic CI and public-specific README/priority"
+tar -C "$work/old" --exclude='./.git' --exclude='./.github/workflows' --exclude='./README.md' --exclude='./docs/planning/WORK_PRIORITY.md' -cf - . | tar -C "$work/new" -xf -
 echo "[5/7] Check that any source LFS pointers are materialized"
 unresolved="$(find "$work/new" -type f \( -name '*.sqlite' -o -name '*.db' -o -name '*.bin' -o -name '*.zip' \) -not -path '*/.git/*' -exec grep -Il '^version https://git-lfs.github.com/spec/v1' {} + || true)"
 if [[ -n "$unresolved" ]]; then
