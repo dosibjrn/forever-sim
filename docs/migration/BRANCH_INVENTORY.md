@@ -1,6 +1,6 @@
 # GitHub branch migration inventory — 2026-10-31
 
-The old private repo had **59 branches**, including main. The public repo currently has **6** (main + five open PR branches). Old history is intentionally not copied. **A matching branch name is not proof of runtime/source parity.** See [migration P0 issue #26](https://github.com/dosibjrn/forever-sim/issues/26).
+The old private repo had **59 branches**, including main. The public repo currently has **7** (main + five open PR branches + the active native Rust 28-spec matrix branch). Old history is intentionally not copied. **A matching branch name is not proof of runtime/source parity.** See [migration P0 issue #26](https://github.com/dosibjrn/forever-sim/issues/26).
 
 | Original branch | Original tip SHA | Migration status |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ The old private repo had **59 branches**, including main. The public repo curren
 | `work/integrate-balance-p73` | `f2d993d6b35b` | Not yet ported; original tip recorded |
 | `work/joint-two-class-adapter-contract` | `b90d32de2c2d` | Not yet ported; original tip recorded |
 | `work/lfs-large-assets` | `c9648d755ec1` | Not yet ported; original tip recorded |
-| `work/native-rust-generic-l60-matrix-5-30-300` | `f4a6b1cdbaf5` | Not yet ported; original tip recorded |
+| `work/native-rust-generic-l60-matrix-5-30-300` | `f4a6b1cdbaf5` | Ported source-delta files (one manual-only workflow deferred), no old history |
 | `work/p72-balance-rotation` | `766665a6534e` | Not yet ported; original tip recorded |
 | `work/process-p72-p74-one-percent-reference-tolerance` | `facaee6b5db3` | Not yet ported; original tip recorded |
 | `work/process-p75-holdout-mean-issue10` | `3a1de0b97384` | Not yet ported; original tip recorded |
