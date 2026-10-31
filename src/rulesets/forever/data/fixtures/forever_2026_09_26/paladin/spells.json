@@ -1,0 +1,1501 @@
+[
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.095,
+        "metadata": {
+          "target": "first4_tick"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Consecration first-four-target helper exposes SP mod 0.095 per tick",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": null,
+        "source_effect_index": 2,
+        "source_effect_type": "helper_spell_power_mod",
+        "trigger_spell_id": 1280345
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "consecration",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "spell_holy_innerfire",
+    "name": "Consecration",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": null,
+    "relations": [],
+    "required_level": null,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "152774947bb06a3f060df772161569a6db8f8e7b063447b88de06197acc6e4c0",
+      "entity_id": 20116,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20116/consecration"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 20116
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [],
+    "entity_role": "spell_rank",
+    "family_key": "devotion_aura",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "spell_holy_devotionaura",
+    "name": "Devotion Aura",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 7",
+    "relations": [],
+    "required_level": 60,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "2a382b15325b37a0ce00001715663d24a111b2985402151d2c33681197365afe",
+      "entity_id": 10293,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=10293/devotion-aura"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 10293
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "heal"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Flash of Light Heal effect exposes SP mod 0.429",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "heal_spell_power_mod",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "flash_of_light",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "spell_holy_flashheal",
+    "name": "Flash of Light",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": null,
+    "relations": [],
+    "required_level": null,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "652dddd4c83c0561265bf94c39e8658c91438e8ec41c12b25aed8f7f0fceed41",
+      "entity_id": 19993,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=19993/flash-of-light"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 19993
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.714,
+        "metadata": {
+          "target": "heal"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Holy Light Heal effect exposes SP mod 0.714",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "heal_spell_power_mod",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "holy_light",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "spell_holy_holybolt",
+    "name": "Holy Light",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 9",
+    "relations": [],
+    "required_level": 60,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "1f8cf66a848e4016b3197340ee9c68fecd07362da9f81d0769e014da4928a738",
+      "entity_id": 25292,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=25292/holy-light"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 25292
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "holy_damage"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Holy Strike normalized weapon-damage effect exposes SP mod 0.429",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "normalized_weapon_damage_spell_power_mod",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "holy_strike",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "classicon_paladin",
+    "name": "Holy Strike",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 3",
+    "relations": [],
+    "required_level": 20,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "7e2a3871e836cda565590bc610712dca869c9ce0e61a6f9406ddf923ebde485c",
+      "entity_id": 1866,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=1866/holy-strike"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 1866
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "holy_damage"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Holy Strike normalized weapon-damage effect exposes SP mod 0.429",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "normalized_weapon_damage_spell_power_mod",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "holy_strike",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "classicon_paladin",
+    "name": "Holy Strike",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 6",
+    "relations": [],
+    "required_level": 44,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "6f1d7005488e2466b5bd6e3cdaad5c89e5cfc3f8f6df9009926d36ac55a3d4fe",
+      "entity_id": 5569,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=5569/holy-strike"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 5569
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "holy_damage"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Holy Strike normalized weapon-damage effect exposes SP mod 0.429",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "normalized_weapon_damage_spell_power_mod",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "holy_strike",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "classicon_paladin",
+    "name": "Holy Strike",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 7",
+    "relations": [],
+    "required_level": 52,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "949d8d22ce5bc5018577cbc6406cbcf254f290f8917afb9e8c3ea86f4df64e7d",
+      "entity_id": 10332,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=10332/holy-strike"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 10332
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "holy_damage"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Holy Strike normalized weapon-damage effect exposes SP mod 0.429",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "normalized_weapon_damage_spell_power_mod",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "holy_strike",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "classicon_paladin",
+    "name": "Holy Strike",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 8",
+    "relations": [],
+    "required_level": 60,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "518246f0f9addb9e297d51f53a10a83d4538f04e1c17ffe4d2b7c2f49b00340f",
+      "entity_id": 10333,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=10333/holy-strike"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 10333
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [],
+    "entity_role": "spell_rank",
+    "family_key": "judgement",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "spell_holy_righteousfury",
+    "name": "Judgement",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": null,
+    "relations": [],
+    "required_level": null,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "1182b3b4938989dc40dd32d358327a387cff33273fdb647c4853bfccd2cea546",
+      "entity_id": 20271,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20271/judgement"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 20271
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [],
+    "entity_role": "spell_rank",
+    "family_key": "retribution_aura",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "spell_holy_auraoflight",
+    "name": "Retribution Aura",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 5",
+    "relations": [],
+    "required_level": 56,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "45f645d3138d483a9461fd894165b6c139c569cd42a816c9b279e9001d07f52e",
+      "entity_id": 10301,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=10301/retribution-aura"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 10301
+  },
+  {
+    "cast_time_s": 0.0,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": 30.0,
+    "effects": [
+      {
+        "base_value": 0.7,
+        "coefficient": null,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "weapon_damage_pct",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc deals 70% normal weapon damage",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "weapon_damage_pct",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.29,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc helper has 0.29 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "spell_power_mod",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": 71.0,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 73,
+          "damage_min": 69,
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "judgement_base_damage",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement causes 69-73 Holy damage",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "tooltip_judgement_damage",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement helper has 0.429 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "judgement_spell_power_mod",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": 2.0,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 146,
+          "damage_min": 138,
+          "state": "stunned_or_incapacitated",
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "target_state_damage_multiplier",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement tooltip is doubled to 138-146 when target is stunned or incapacitated",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "target_state_multiplier",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "seal_of_command",
+    "flags": [],
+    "gcd_s": 1.5,
+    "icon_key": "ability_warrior_innerrage",
+    "name": "Seal of Command",
+    "radius_yards": null,
+    "range_yards": 0.0,
+    "rank_label": "Rank 1",
+    "relations": [
+      {
+        "kind": "talent_granted_spell",
+        "talent_key": "seal_of_command"
+      },
+      {
+        "kind": "proc_helper",
+        "spell_id": 20424
+      }
+    ],
+    "required_level": 20,
+    "resource_cost": {
+      "amount": 65,
+      "kind": "flat"
+    },
+    "resource_type": "mana",
+    "school": "holy",
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "a3e1a3525625f5a00336bad31ad34d669f1bd8597ec033b0077a14416926a615",
+      "entity_id": 20375,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact current Wowhead Forever entity capture used by M46 source-fidelity migration."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-26",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20375/seal-of-command"
+    },
+    "source_status": "resolved",
+    "spell_id": 20375
+  },
+  {
+    "cast_time_s": 0.0,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": 30.0,
+    "effects": [
+      {
+        "base_value": 0.7,
+        "coefficient": null,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "weapon_damage_pct",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc deals 70% normal weapon damage",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "weapon_damage_pct",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.29,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc helper has 0.29 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "spell_power_mod",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": 100.5,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 104,
+          "damage_min": 97,
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "judgement_base_damage",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement causes 97-104 Holy damage",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "tooltip_judgement_damage",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement helper has 0.429 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "judgement_spell_power_mod",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": 2.0,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 209,
+          "damage_min": 195,
+          "state": "stunned_or_incapacitated",
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "target_state_damage_multiplier",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement tooltip is doubled to 195-209 when target is stunned or incapacitated",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "target_state_multiplier",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "seal_of_command",
+    "flags": [],
+    "gcd_s": 1.5,
+    "icon_key": "ability_warrior_innerrage",
+    "name": "Seal of Command",
+    "radius_yards": null,
+    "range_yards": 0.0,
+    "rank_label": "Rank 2",
+    "relations": [
+      {
+        "kind": "talent_granted_spell",
+        "talent_key": "seal_of_command"
+      },
+      {
+        "kind": "proc_helper",
+        "spell_id": 20424
+      }
+    ],
+    "required_level": 30,
+    "resource_cost": {
+      "amount": 110,
+      "kind": "flat"
+    },
+    "resource_type": "mana",
+    "school": "holy",
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "fdf901d34279dcdc8aa472dca74eacb93b21586e1084737d876621de9ba62451",
+      "entity_id": 20915,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact current Wowhead Forever entity capture used by M46 source-fidelity migration."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-26",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20915/seal-of-command"
+    },
+    "source_status": "resolved",
+    "spell_id": 20915
+  },
+  {
+    "cast_time_s": 0.0,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": 30.0,
+    "effects": [
+      {
+        "base_value": 0.7,
+        "coefficient": null,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "weapon_damage_pct",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc deals 70% normal weapon damage",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "weapon_damage_pct",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.29,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc helper has 0.29 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "spell_power_mod",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": 129.0,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 134,
+          "damage_min": 124,
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "judgement_base_damage",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement causes 124-134 Holy damage",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "tooltip_judgement_damage",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement helper has 0.429 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "judgement_spell_power_mod",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": 2.0,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 269,
+          "damage_min": 249,
+          "state": "stunned_or_incapacitated",
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "target_state_damage_multiplier",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement tooltip is doubled to 249-269 when target is stunned or incapacitated",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "target_state_multiplier",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "seal_of_command",
+    "flags": [],
+    "gcd_s": 1.5,
+    "icon_key": "ability_warrior_innerrage",
+    "name": "Seal of Command",
+    "radius_yards": null,
+    "range_yards": 0.0,
+    "rank_label": "Rank 3",
+    "relations": [
+      {
+        "kind": "talent_granted_spell",
+        "talent_key": "seal_of_command"
+      },
+      {
+        "kind": "proc_helper",
+        "spell_id": 20424
+      }
+    ],
+    "required_level": 40,
+    "resource_cost": {
+      "amount": 140,
+      "kind": "flat"
+    },
+    "resource_type": "mana",
+    "school": "holy",
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "71fd1a1d052d53cbd58871aa5953f31eb7b2ffbbd99a81bb20fc5781aa00e2a3",
+      "entity_id": 20918,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact current Wowhead Forever entity capture used by M46 source-fidelity migration."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-26",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20918/seal-of-command"
+    },
+    "source_status": "resolved",
+    "spell_id": 20918
+  },
+  {
+    "cast_time_s": 0.0,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": 30.0,
+    "effects": [
+      {
+        "base_value": 0.7,
+        "coefficient": null,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "weapon_damage_pct",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc deals 70% normal weapon damage",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "weapon_damage_pct",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.29,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc helper has 0.29 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "spell_power_mod",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": 161.5,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 168,
+          "damage_min": 155,
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "judgement_base_damage",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement causes 155-168 Holy damage",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "tooltip_judgement_damage",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement helper has 0.429 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "judgement_spell_power_mod",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": 2.0,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 336,
+          "damage_min": 310,
+          "state": "stunned_or_incapacitated",
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "target_state_damage_multiplier",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement tooltip is doubled to 310-336 when target is stunned or incapacitated",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "target_state_multiplier",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "seal_of_command",
+    "flags": [],
+    "gcd_s": 1.5,
+    "icon_key": "ability_warrior_innerrage",
+    "name": "Seal of Command",
+    "radius_yards": null,
+    "range_yards": 0.0,
+    "rank_label": "Rank 4",
+    "relations": [
+      {
+        "kind": "talent_granted_spell",
+        "talent_key": "seal_of_command"
+      },
+      {
+        "kind": "proc_helper",
+        "spell_id": 20424
+      }
+    ],
+    "required_level": 50,
+    "resource_cost": {
+      "amount": 180,
+      "kind": "flat"
+    },
+    "resource_type": "mana",
+    "school": "holy",
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "0952cf660ba093a52a177e9a89e80c23bc052f02c3eb882d3507534bd5ab5c47",
+      "entity_id": 20919,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact current Wowhead Forever entity capture used by M46 source-fidelity migration."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-26",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20919/seal-of-command"
+    },
+    "source_status": "resolved",
+    "spell_id": 20919
+  },
+  {
+    "cast_time_s": 0.0,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": 30.0,
+    "effects": [
+      {
+        "base_value": 0.7,
+        "coefficient": null,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "weapon_damage_pct",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc deals 70% normal weapon damage",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "weapon_damage_pct",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.29,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Seal proc helper has 0.29 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": false,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "spell_power_mod",
+        "trigger_spell_id": 20424
+      },
+      {
+        "base_value": 202.5,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 211,
+          "damage_min": 194,
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "judgement_base_damage",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement causes 194-211 Holy damage",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "tooltip_judgement_damage",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.429,
+        "metadata": {
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement helper has 0.429 Spell Power modifier",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "judgement_spell_power_mod",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": 2.0,
+        "coefficient": null,
+        "metadata": {
+          "damage_max": 422,
+          "damage_min": 388,
+          "state": "stunned_or_incapacitated",
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "target_state_damage_multiplier",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Judgement tooltip is doubled to 388-422 when target is stunned or incapacitated",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": "dummy",
+        "source_effect_index": 3,
+        "source_effect_type": "target_state_multiplier",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "seal_of_command",
+    "flags": [],
+    "gcd_s": 1.5,
+    "icon_key": "ability_warrior_innerrage",
+    "name": "Seal of Command",
+    "radius_yards": null,
+    "range_yards": 0.0,
+    "rank_label": "Rank 5",
+    "relations": [
+      {
+        "kind": "talent_granted_spell",
+        "talent_key": "seal_of_command"
+      },
+      {
+        "kind": "proc_helper",
+        "spell_id": 20424
+      }
+    ],
+    "required_level": 60,
+    "resource_cost": {
+      "amount": 210,
+      "kind": "flat"
+    },
+    "resource_type": "mana",
+    "school": "holy",
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "5be5cfd2fce37c72dc4d372d7354a7ada90d13ce32dbca7e7ee169b989c46e14",
+      "entity_id": 20920,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact current Wowhead Forever entity capture used by M46 source-fidelity migration."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-26",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20920/seal-of-command"
+    },
+    "source_status": "resolved",
+    "spell_id": 20920
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.1,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Seal of Fury tooltip/guide specifies 10% Spell Power on melee proc",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "dummy_spell_power_mod",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.45,
+        "metadata": {
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Seal of Fury tooltip/guide specifies 45% Spell Power on Judgement",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": null,
+        "source_effect_index": 3,
+        "source_effect_type": "judgement_spell_power_mod",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.5,
+        "metadata": {
+          "target": "shield"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "damage_absorb_fraction",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Seal of Fury tooltip states each shield absorbs 50% of the Holy damage dealt by that attack",
+        "school": null,
+        "server_side_script": true,
+        "source_aura_type": null,
+        "source_effect_index": 2,
+        "source_effect_type": "tooltip_absorb_fraction",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "seal_of_fury",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "spell_holy_retributionaura",
+    "name": "Seal of Fury",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 7",
+    "relations": [],
+    "required_level": 58,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "10021486251e4bab031eed9cd15bd621e2ff19132ba667fb8996443430460095",
+      "entity_id": 20423,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20423/seal-of-fury"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 20423
+  },
+  {
+    "cast_time_s": null,
+    "channel_time_s": null,
+    "class_key": "paladin",
+    "cooldown_s": null,
+    "duration_s": null,
+    "effects": [
+      {
+        "base_value": null,
+        "coefficient": 0.1,
+        "metadata": {
+          "target": "seal_proc"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Seal of Righteousness on-hit dummy exposes SP mod 0.10",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": null,
+        "source_effect_index": 1,
+        "source_effect_type": "dummy_spell_power_mod",
+        "trigger_spell_id": null
+      },
+      {
+        "base_value": null,
+        "coefficient": 0.5,
+        "metadata": {
+          "target": "judgement"
+        },
+        "normalization_status": "supported",
+        "normalized_kind": "spell_power_coefficient",
+        "period_s": null,
+        "proc_chance": null,
+        "radius": null,
+        "raw_text_summary": "Forever Seal of Righteousness tooltip/helper specifies 50% Spell Power on Judgement",
+        "school": "holy",
+        "server_side_script": true,
+        "source_aura_type": null,
+        "source_effect_index": 3,
+        "source_effect_type": "judgement_spell_power_mod",
+        "trigger_spell_id": null
+      }
+    ],
+    "entity_role": "spell_rank",
+    "family_key": "seal_of_righteousness",
+    "flags": [],
+    "gcd_s": null,
+    "icon_key": "ability_thunderbolt",
+    "name": "Seal of Righteousness",
+    "radius_yards": null,
+    "range_yards": null,
+    "rank_label": "Rank 8",
+    "relations": [],
+    "required_level": 58,
+    "resource_cost": null,
+    "resource_type": null,
+    "school": null,
+    "source_ref": {
+      "confidence": "high",
+      "content_fingerprint": "04d152ba003f586e59fb25c32a3fec6dadad93cafd92bdddf48bf2c5f69dad68",
+      "entity_id": 20293,
+      "entity_kind": "spell",
+      "fingerprint_scope": "normalized_capture",
+      "notes": [
+        "Exact Wowhead Forever spell/rank anchor."
+      ],
+      "parser_version": "forever-source-v1",
+      "provider": "wowhead",
+      "retrieved_at": "2026-09-25",
+      "ruleset": "forever",
+      "source_build": null,
+      "source_patch": "1.60.1",
+      "url": "https://www.wowhead.com/forever/spell=20293/seal-of-righteousness"
+    },
+    "source_status": "resolved_anchor",
+    "spell_id": 20293
+  }
+]

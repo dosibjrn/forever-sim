@@ -1,0 +1,162 @@
+{
+  "capture_id": "wf250_mage_live_wowhead_20261011",
+  "captured_at": "2026-10-11",
+  "ruleset": "forever",
+  "spell_ranks": [
+    {
+      "class_key": "mage",
+      "spell_id": 7322,
+      "cast_time_s": 2.6,
+      "mana_cost": 65,
+      "cooldown_s": 0,
+      "tooltip_text": "Launches a bolt of frost at the enemy, causing 69.6103 to 76.7897 Frost damage and slowing movement speed by 40% for 7 sec.",
+      "source_url": "https://www.wowhead.com/forever/spell=7322/frostbolt",
+      "source_build": "wowhead_forever_public_2026-10-11",
+      "spell_power_coefficient": 0.706
+    },
+    {
+      "class_key": "mage",
+      "spell_id": 3140,
+      "cast_time_s": 3.0,
+      "mana_cost": 95,
+      "cooldown_s": 0,
+      "spell_power_coefficient": 0.857,
+      "tooltip_text": "Hurls a fiery ball that causes 68 to 93 Fire damage and an additional 12 Fire damage over 8 sec.",
+      "source_url": "https://www.wowhead.com/forever/spell=3140/fireball",
+      "source_build": "wowhead_forever_public_2026-10-11"
+    },
+    {
+      "class_key": "mage",
+      "spell_id": 2137,
+      "cast_time_s": 0,
+      "mana_cost": 75,
+      "cooldown_s": 8,
+      "spell_power_coefficient": 0.429,
+      "tooltip_text": "Blasts the enemy for 57 to 69 Fire damage.",
+      "source_url": "https://www.wowhead.com/forever/spell=2137/fire-blast",
+      "source_build": "wowhead_forever_public_2026-10-11"
+    }
+  ],
+  "talents": [
+    {
+      "class_key": "mage",
+      "spell_id": 11070,
+      "name": "Improved Frostbolt",
+      "tree_key": "frost",
+      "row": 0,
+      "col": 1,
+      "max_rank": 5,
+      "tree_source_url": "https://wowforever.gg/en/talents/mage/",
+      "rank_source_url": "https://www.wowhead.com/forever/spell=11070/improved-frostbolt",
+      "trait_id": 135309,
+      "rank_values": [
+        -0.1,
+        -0.2,
+        -0.3,
+        -0.4,
+        -0.5
+      ],
+      "modifiers": [
+        {
+          "kind": "cast_time_delta_s",
+          "target_type": "action_family",
+          "target_id": "frostbolt"
+        }
+      ]
+    },
+    {
+      "class_key": "mage",
+      "spell_id": 11069,
+      "name": "Improved Fireball",
+      "tree_key": "fire",
+      "row": 0,
+      "col": 2,
+      "max_rank": 5,
+      "tree_source_url": "https://wowforever.gg/en/talents/mage/",
+      "rank_source_url": "https://www.wowhead.com/forever/spell=11069/improved-fireball",
+      "trait_id": 135325,
+      "rank_values": [
+        -0.1,
+        -0.2,
+        -0.3,
+        -0.4,
+        -0.5
+      ],
+      "modifiers": [
+        {
+          "kind": "cast_time_delta_s",
+          "target_type": "action_family",
+          "target_id": "fireball"
+        }
+      ]
+    },
+    {
+      "class_key": "mage",
+      "spell_id": 29438,
+      "name": "Elemental Precision",
+      "tree_key": "frost",
+      "row": 0,
+      "col": 2,
+      "max_rank": 5,
+      "tree_source_url": "https://wowforever.gg/en/talents/mage/",
+      "rank_source_url": "https://www.wowhead.com/forever/spell=29438/elemental-precision",
+      "trait_id": 135308,
+      "rank_values": [
+        0.01,
+        0.02,
+        0.03,
+        0.04,
+        0.05
+      ],
+      "modifiers": [
+        {
+          "kind": "hit_chance_bonus",
+          "target_type": "action_filter",
+          "target_id": "damage_schools:fire,frost"
+        }
+      ]
+    },
+    {
+      "class_key": "mage",
+      "spell_id": 1312002,
+      "name": "Ice Lance",
+      "tree_key": "frost",
+      "row": 2,
+      "col": 1,
+      "max_rank": 1,
+      "tree_source_url": "https://wowforever.gg/en/talents/mage/",
+      "rank_source_url": "https://www.wowhead.com/forever/spell=1312002/ice-lance",
+      "trait_id": 1312002,
+      "rank_values": [
+        1.0
+      ],
+      "modifiers": [
+        {
+          "kind": "grant_source_action",
+          "target_type": "source_action",
+          "target_id": "1312002"
+        }
+      ]
+    }
+  ],
+  "granted_actions": [
+    {
+      "class_key": "mage",
+      "spell_id": 1312002,
+      "family_key": "ice_lance",
+      "name": "Ice Lance",
+      "required_level": 20,
+      "mana_cost": 45,
+      "cast_time_s": 0,
+      "gcd_s": 1.5,
+      "cooldown_s": 0,
+      "school": "frost",
+      "damage_min": 28,
+      "damage_max": 32,
+      "conditional_target_control": "frozen",
+      "conditional_multiplier": 4.0,
+      "source_url": "https://www.wowhead.com/forever/spell=1312002/ice-lance",
+      "source_status": "frozen_damage_requires_validated_control_runtime"
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "schema": "forever_spellbook_level_ranks_v1",
+  "class_key": "druid",
+  "build": "1.60.1.70338",
+  "as_of": "2026-10-11",
+  "source_url": "https://theforeverera.com/en/spells/druid/levels/",
+  "source_kind": "web_readable_client_spellbook_level_table_not_raw_client_dump",
+  "completeness_claim": "all learned druid spellbook ranks through level 20 including talent grants and passives, not an inventory of triggered internal spells",
+  "learned_by_level": {
+    "1": [
+      "Healing Touch",
+      "Mark of the Wild",
+      "Wrath"
+    ],
+    "4": [
+      "Moonfire",
+      "Rejuvenation"
+    ],
+    "6": [
+      "Thorns",
+      "Wrath"
+    ],
+    "8": [
+      "Entangling Roots",
+      "Healing Touch"
+    ],
+    "10": [
+      "Bear Form",
+      "Demoralizing Roar",
+      "Growl",
+      "Maul",
+      "Nature's Grasp",
+      "Teleport: Moonglade",
+      "Mark of the Wild",
+      "Moonfire",
+      "Rejuvenation"
+    ],
+    "12": [
+      "Enrage",
+      "Regrowth",
+      "Revive"
+    ],
+    "14": [
+      "Bash",
+      "Cure Poison",
+      "Healing Touch",
+      "Wrath",
+      "Thorns"
+    ],
+    "16": [
+      "Aquatic Form",
+      "Swipe",
+      "Moonfire",
+      "Rejuvenation"
+    ],
+    "18": [
+      "Faerie Fire",
+      "Hibernate",
+      "Entangling Roots",
+      "Maul",
+      "Nature's Grasp",
+      "Regrowth"
+    ],
+    "20": [
+      "Cat Form",
+      "Claw",
+      "Omen of Clarity",
+      "Prowl",
+      "Rebirth",
+      "Rip",
+      "Starfire",
+      "Feral Charge",
+      "Healing Touch",
+      "Mark of the Wild",
+      "Demoralizing Roar"
+    ]
+  },
+  "non_cast_passives": [
+    "Omen of Clarity"
+  ],
+  "conditional_talent_actions": [
+    {
+      "spell_id": 1238122,
+      "name": "Feral Charge",
+      "learned_level": 20,
+      "talent_tree": "Feral Combat",
+      "prior_tree_points": 10,
+      "talent_rank": 1,
+      "source_url": "https://www.wowhead.com/forever/spell=1238122/feral-charge",
+      "talent_source_url": "https://theforeverera.com/en/spells/druid/feral-charge/",
+      "l0_domains": {
+        "target_control_seconds": 4.0,
+        "gap_closer_range_yards": 25.0,
+        "interrupt_opportunities": 1.0,
+        "cat_leap_behind_opportunities": 1.0
+      },
+      "does_not_prove_paid_L2": true,
+      "form_specific_source_urls": {
+        "bear": "https://www.wowhead.com/forever/spell=19675/feral-charge-effect",
+        "cat": "https://www.wowhead.com/forever/spell=414924/feral-charge-cat"
+      }
+    }
+  ],
+  "obsolete_or_ungranted_exact_spell_ids": {
+    "16979": {
+      "reason": "OLDER_BEAR_CHARGE_ID_REPLACED_BY_TALENT_GRANT_1238122",
+      "source_url": "https://foreverdb.net/spell/1238122"
+    },
+    "408024": {
+      "reason": "SOD_RUNE_GRANT_NOT_AVAILABLE_WHEN_USE_RUNES_FALSE",
+      "source_url": "https://www.wowhead.com/forever/spell=410027/engrave-boots-survival-instincts"
+    },
+    "411128": {
+      "reason": "CAT_SWIPE_RANK5_NOT_LEARNED_BY_L20; BEAR_SWIPE_RANK1_IS_779",
+      "source_url": "https://www.wowhead.com/forever/spell=411128/swipe"
+    },
+    "417045": {
+      "reason": "SOD_OR_OLDER_TIGERS_FURY_NOT_LEARNED_AT_L20",
+      "source_url": "https://www.wowhead.com/forever/spell=417045/tigers-fury"
+    },
+    "439753": {
+      "reason": "STARFALL_DAMAGE_TRIGGER_NOT_LEARNED_BY_L20",
+      "source_url": "https://www.wowhead.com/forever/spell=439753/starfall"
+    },
+    "439756": {
+      "reason": "STARFALL_TRIGGER_NOT_LEARNED_BY_L20",
+      "source_url": "https://www.wowhead.com/forever/spell=439748/starfall"
+    }
+  },
+  "contextual_numeric_proxies_by_name": {
+    "Prowl": {
+      "stealth_entry_opportunities": 1.0
+    },
+    "Hibernate": {
+      "conditional_target_control_opportunities": 1.0
+    },
+    "Nature's Grasp": {
+      "reactive_control_opportunities": 1.0
+    }
+  },
+  "contextual_zero_when_solo_land_mob_no_allies_or_debuffs": {
+    "Aquatic Form": "LAND_COMBAT_NO_SWIM_TRAVEL",
+    "Growl": "SOLO_ONE_ACTOR_NO_AGGRO_COMPETITOR",
+    "Cure Poison": "SCENARIO_NO_POISON_EFFECT",
+    "Teleport: Moonglade": "TELEPORT_EXITS_100_MOB_COMBAT_SCENARIO",
+    "Rebirth": "NO_DEAD_FRIENDLY_PLAYER_IN_SOLO_SCENARIO",
+    "Revive": "NO_DEAD_FRIENDLY_PLAYER_IN_SOLO_SCENARIO"
+  },
+  "observed_rank_numeric_by_id": {
+    "774": {
+      "name": "Rejuvenation",
+      "learned_level": 4,
+      "domains": {
+        "heal_or_absorb_per_activation": 32.0
+      },
+      "source_url": "https://www.wowhead.com/forever/spell=774/rejuvenation",
+      "observed_tooltip": "Heals the target for 32 over 12 sec",
+      "source_kind": "web_indexed_spell_detail"
+    }
+  },
+  "passive_numeric_by_name": {
+    "Omen of Clarity": {
+      "clearcasting_proc_opportunity": 1.0
+    }
+  },
+  "source_index_sha256": "2923449bfa24a4c77a5dcb1de89fe9d74efa19a04d0149c6a7e85d013efb8592",
+  "expected_learned_rows": 47,
+  "runes_enabled": false,
+  "level_range_covered": [
+    1,
+    20
+  ]
+}

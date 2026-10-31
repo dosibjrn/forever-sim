@@ -1,0 +1,12 @@
+{
+  "checkpoint": "WF633",
+  "engine_revision": "666fe17a42682068a3c8497d88d5fa3732cbdfb9",
+  "reference_dps": 728.1936126415858,
+  "rust_dps": 728.1936126415858,
+  "dps_difference": 0.0,
+  "stdev": 43.420319553486735,
+  "iterations": 10000,
+  "request_sha256": "d4f659e066a9aaf7ba9f389391e2490415308b65a9e074fa696b18e97ec83226",
+  "source": "WF626 Go schema probe + exact original report player consumables and buff corrections",
+  "limitations": "Original raw report JSON was supplied in chat but not as a mounted file. Reconstructed request validated by exact Rust result distribution; not byte-identical attestation. Native Go P7.1.2 and live hybrid P7.1.3 not yet passed."
+}

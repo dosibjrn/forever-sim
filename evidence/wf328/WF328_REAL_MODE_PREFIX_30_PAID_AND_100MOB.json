@@ -1,0 +1,73 @@
+{
+  "PASS4": false,
+  "PASS5": false,
+  "PASS6": false,
+  "checkpoint": "druid L20 unrestricted",
+  "fresh_distinct_source_mode_entries": [
+    "bear_form:5487",
+    "cat_form:768"
+  ],
+  "fresh_l2_blocked": 7,
+  "fresh_l2_evaluated": 23,
+  "fresh_mode_seed_count": 2,
+  "fresh_paid_attempts": 30,
+  "fresh_source_mode_paid_attempts": 6,
+  "full_build_joint_search_ran": false,
+  "new_l2_winner": {
+    "fallback": "claw:20",
+    "opening": [
+      "cat_form:768",
+      "claw:20"
+    ],
+    "single_mob_s_per_mob": 26.89064481103989
+  },
+  "new_search_cpu_s": 0.424120088,
+  "new_search_wall_s": 0.42413819199964564,
+  "new_winner_persistent_100mob": {
+    "combat_s": 1392.520621463412,
+    "continuous_actor_state": true,
+    "count": 100,
+    "elapsed_cpu_s": 1.702663751,
+    "elapsed_wall_s": 1.721851130000232,
+    "events": 9944,
+    "maintenance_casts": 5,
+    "maintenance_runtime_events": 32,
+    "maintenance_s": 7.5,
+    "mean_s_per_mob": 20.39305377536385,
+    "recovery_s": 639.2847560729728,
+    "skipped_satisfied_mode_prefixes": 96,
+    "source_only": true,
+    "status": "COMPLETE",
+    "total_s": 2039.3053775363849
+  },
+  "prior_wf327_paid_30_attempts_winner": {
+    "fallback": "wrath:5178",
+    "opening": [
+      "moonfire:8925"
+    ],
+    "provenance": "separately re-executed the unchanged WF323 source_budgeted_prefix over same canonical IR",
+    "single_mob_s_per_mob": 29.837956638996886
+  },
+  "prior_winner_persistent_100mob": {
+    "combat_s": 1550.0,
+    "continuous_actor_state": true,
+    "count": 100,
+    "elapsed_cpu_s": 0.1855142019999998,
+    "elapsed_wall_s": 0.18551695599990126,
+    "events": 5720,
+    "maintenance_casts": 5,
+    "maintenance_runtime_events": 20,
+    "maintenance_s": 7.5,
+    "mean_s_per_mob": 23.285153759938385,
+    "recovery_s": 771.0153759938385,
+    "skipped_satisfied_mode_prefixes": 0,
+    "source_only": true,
+    "status": "COMPLETE",
+    "total_s": 2328.5153759938385
+  },
+  "relative_persistent_gain_pct": 12.420360262126904,
+  "schema": "wf328_bounded_production_prefix_evidence_v1",
+  "source_state": "unmodified canonical production IR, naked actor; not WF326 geared winner",
+  "thirty_second_end_to_end_ran": false,
+  "three_hundred_second_search_ran": false
+}

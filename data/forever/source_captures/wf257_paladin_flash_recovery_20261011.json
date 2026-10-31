@@ -1,0 +1,37 @@
+{
+  "class_key": "paladin",
+  "family_key": "flash_of_light",
+  "capture_id": "wf257_paladin_flash_recovery_20261011",
+  "captured_at": "2026-10-11",
+  "source_build": "wowhead_forever_index_20261008",
+  "ranks": [
+    {
+      "spell_id": 19750,
+      "name": "Flash of Light",
+      "level": 20,
+      "tooltip": "Heals a friendly target for 48 to 54.",
+      "cost_text": "35 Mana",
+      "cast_text": "1.5 sec cast",
+      "min": 48,
+      "max": 54,
+      "mana_cost": 35.0,
+      "spell_power_coefficient": 0.429,
+      "source_url": "https://www.wowhead.com/forever/spell=19750",
+      "coefficient_source_url": "https://www.wowhead.com/forever/spell=19750"
+    },
+    {
+      "spell_id": 19939,
+      "name": "Flash of Light",
+      "level": 26,
+      "tooltip": "Heals a friendly target for 68 to 77.",
+      "cost_text": "50 Mana",
+      "cast_text": "1.5 sec cast",
+      "min": 68,
+      "max": 77,
+      "mana_cost": 50.0,
+      "spell_power_coefficient": 0.429,
+      "source_url": "https://www.wowhead.com/forever/spell=19939",
+      "coefficient_source_url": "https://www.wowhead.com/forever/spell=19939"
+    }
+  ]
+}

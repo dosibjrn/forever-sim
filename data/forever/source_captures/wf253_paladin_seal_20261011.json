@@ -1,0 +1,59 @@
+{
+  "capture_id": "wf253_paladin_seal_20261011",
+  "captured_at": "2026-10-11",
+  "client_build": "1.60.1.70338",
+  "source_url": "https://foreverdiff.com/spells/seal-of-righteousness/",
+  "crosscheck_url": "https://foreverdb.net/spell/20288",
+  "mechanic_source_url": "https://foreverdiff.com/spells/judgement/",
+  "class_key": "paladin",
+  "aura_id": "seal:righteousness",
+  "family_key": "seal_of_righteousness",
+  "duration_s": 30.0,
+  "gcd_s": 1.5,
+  "on_swing_spell_power_coefficient": 0.1,
+  "judgement_spell_power_coefficient": 0.5,
+  "judgement_coefficient_status": "qualified_legacy_paladin_model_not_current_server_verified",
+  "proc_reference_weapon_speed_s": 2.4,
+  "proc_speed_formula_status": "qualified_legacy_paladin_model_proxy_not_server_verified",
+  "ranks": [
+    {
+      "spell_id": 20154,
+      "min_level": 1,
+      "mana_cost": 20,
+      "swing_min": 1.24138,
+      "swing_max": 4.32,
+      "judgement_min": null,
+      "judgement_max": null
+    },
+    {
+      "spell_id": 20287,
+      "min_level": 10,
+      "mana_cost": 40,
+      "swing_min": 2.48276,
+      "swing_max": 8.64,
+      "judgement_min": 26,
+      "judgement_max": 26
+    },
+    {
+      "spell_id": 20288,
+      "min_level": 18,
+      "mana_cost": 60,
+      "swing_min": 4.04598,
+      "swing_max": 14.08,
+      "judgement_min": 41,
+      "judgement_max": 41
+    }
+  ],
+  "judgement": {
+    "spell_id": 20271,
+    "min_level": 4,
+    "cost_kind": "base_mana_fraction",
+    "cost_value": 0.06,
+    "cooldown_s": 10,
+    "gcd_s": 0,
+    "consumes_seal": false,
+    "school": "holy"
+  },
+  "scope_note": "Only L1-20 Righteousness ranks; other seals, talents, pet/route and absolute weapon-speed formula remain unverified. Judgement does not consume seal in Forever.",
+  "school": "holy"
+}

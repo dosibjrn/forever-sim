@@ -1,0 +1,12 @@
+{
+  "capture_id": "blizzard_forever_druid_deep_dive_2026-09-30_weapon_modes",
+  "captured_at": "2026-10-10",
+  "source": "Blizzard World of Warcraft: Forever Class Deep Dives — Hunter and Druid",
+  "source_date": "2026-09-30",
+  "source_url": "https://worldofwarcraft.blizzard.com/en-us/news/24301515/",
+  "evidence": "While Shapeshifted, the Druid's melee auto attack DPS ... is now the same as the DPS of the Druid's equipped weapon ... Abilities that deal weapon damage likewise use these damage values.",
+  "entries": [
+    {"class_key": "druid", "mode_label": "Cat Form", "source_stat": "weapon_dps", "damage_source_kind": "equipped_weapon_dps_plus_attack_power", "operation": "replace_flat_dps", "applies_to": "auto_and_weapon_actions"},
+    {"class_key": "druid", "mode_label": "Bear Form", "source_stat": "weapon_dps", "damage_source_kind": "equipped_weapon_dps_plus_attack_power", "operation": "replace_flat_dps", "applies_to": "auto_and_weapon_actions"}
+  ]
+}

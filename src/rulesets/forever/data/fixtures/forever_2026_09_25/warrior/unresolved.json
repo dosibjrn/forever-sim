@@ -1,0 +1,1003 @@
+[
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_battleshout",
+      "source_roster_key": "battle_shout"
+    },
+    "entity_kind": "spell",
+    "local_key": "battle_shout",
+    "name": "Battle Shout",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_offensivestance",
+      "source_roster_key": "battle_stance"
+    },
+    "entity_kind": "spell",
+    "local_key": "battle_stance",
+    "name": "Battle Stance",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_ancestralguardian",
+      "source_roster_key": "berserker_rage"
+    },
+    "entity_kind": "spell",
+    "local_key": "berserker_rage",
+    "name": "Berserker Rage",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_racial_avatar",
+      "source_roster_key": "berserker_stance"
+    },
+    "entity_kind": "spell",
+    "local_key": "berserker_stance",
+    "name": "Berserker Stance",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_racial_bloodrage",
+      "source_roster_key": "bloodrage"
+    },
+    "entity_kind": "spell",
+    "local_key": "bloodrage",
+    "name": "Bloodrage",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_bloodlust",
+      "source_roster_key": "bloodthirst"
+    },
+    "entity_kind": "spell",
+    "local_key": "bloodthirst",
+    "name": "Bloodthirst",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_bullrush",
+      "source_roster_key": "challenging_shout"
+    },
+    "entity_kind": "spell",
+    "local_key": "challenging_shout",
+    "name": "Challenging Shout",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_charge",
+      "source_roster_key": "charge"
+    },
+    "entity_kind": "spell",
+    "local_key": "charge",
+    "name": "Charge",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_cleave",
+      "source_roster_key": "cleave"
+    },
+    "entity_kind": "spell",
+    "local_key": "cleave",
+    "name": "Cleave",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_thunderbolt",
+      "source_roster_key": "concussion_blow"
+    },
+    "entity_kind": "spell",
+    "local_key": "concussion_blow",
+    "name": "Concussion Blow",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_shadow_deathpact",
+      "source_roster_key": "death_wish"
+    },
+    "entity_kind": "spell",
+    "local_key": "death_wish",
+    "name": "Death Wish",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_defensivestance",
+      "source_roster_key": "defensive_stance"
+    },
+    "entity_kind": "spell",
+    "local_key": "defensive_stance",
+    "name": "Defensive Stance",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_warcry",
+      "source_roster_key": "demoralizing_shout"
+    },
+    "entity_kind": "spell",
+    "local_key": "demoralizing_shout",
+    "name": "Demoralizing Shout",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_disarm",
+      "source_roster_key": "disarm"
+    },
+    "entity_kind": "spell",
+    "local_key": "disarm",
+    "name": "Disarm",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_sword_48",
+      "source_roster_key": "execute"
+    },
+    "entity_kind": "spell",
+    "local_key": "execute",
+    "name": "Execute",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_shockwave",
+      "source_roster_key": "hamstring"
+    },
+    "entity_kind": "spell",
+    "local_key": "hamstring",
+    "name": "Hamstring",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_rogue_sprint",
+      "source_roster_key": "intercept"
+    },
+    "entity_kind": "spell",
+    "local_key": "intercept",
+    "name": "Intercept",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_golemthunderclap",
+      "source_roster_key": "intimidating_shout"
+    },
+    "entity_kind": "spell",
+    "local_key": "intimidating_shout",
+    "name": "Intimidating Shout",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_holy_ashestoashes",
+      "source_roster_key": "last_stand"
+    },
+    "entity_kind": "spell",
+    "local_key": "last_stand",
+    "name": "Last Stand",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_punishingblow",
+      "source_roster_key": "mocking_blow"
+    },
+    "entity_kind": "spell",
+    "local_key": "mocking_blow",
+    "name": "Mocking Blow",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_savageblow",
+      "source_roster_key": "mortal_strike"
+    },
+    "entity_kind": "spell",
+    "local_key": "mortal_strike",
+    "name": "Mortal Strike",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_meleedamage",
+      "source_roster_key": "overpower"
+    },
+    "entity_kind": "spell",
+    "local_key": "overpower",
+    "name": "Overpower",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_shadow_deathscream",
+      "source_roster_key": "piercing_howl"
+    },
+    "entity_kind": "spell",
+    "local_key": "piercing_howl",
+    "name": "Piercing Howl",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_gauntlets_04",
+      "source_roster_key": "pummel"
+    },
+    "entity_kind": "spell",
+    "local_key": "pummel",
+    "name": "Pummel",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_criticalstrike",
+      "source_roster_key": "recklessness"
+    },
+    "entity_kind": "spell",
+    "local_key": "recklessness",
+    "name": "Recklessness",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_gouge",
+      "source_roster_key": "rend"
+    },
+    "entity_kind": "spell",
+    "local_key": "rend",
+    "name": "Rend",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_challange",
+      "source_roster_key": "retaliation"
+    },
+    "entity_kind": "spell",
+    "local_key": "retaliation",
+    "name": "Retaliation",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_revenge",
+      "source_roster_key": "revenge"
+    },
+    "entity_kind": "spell",
+    "local_key": "revenge",
+    "name": "Revenge",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_shieldbash",
+      "source_roster_key": "shield_bash"
+    },
+    "entity_kind": "spell",
+    "local_key": "shield_bash",
+    "name": "Shield Bash",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_defend",
+      "source_roster_key": "shield_block"
+    },
+    "entity_kind": "spell",
+    "local_key": "shield_block",
+    "name": "Shield Block",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_shield_05",
+      "source_roster_key": "shield_slam"
+    },
+    "entity_kind": "spell",
+    "local_key": "shield_slam",
+    "name": "Shield Slam",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_shieldwall",
+      "source_roster_key": "shield_wall"
+    },
+    "entity_kind": "spell",
+    "local_key": "shield_wall",
+    "name": "Shield Wall",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_decisivestrike",
+      "source_roster_key": "slam"
+    },
+    "entity_kind": "spell",
+    "local_key": "slam",
+    "name": "Slam",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_spear_01",
+      "source_roster_key": "spearing_strike"
+    },
+    "entity_kind": "spell",
+    "local_key": "spearing_strike",
+    "name": "Spearing Strike",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_sunder",
+      "source_roster_key": "sunder_armor"
+    },
+    "entity_kind": "spell",
+    "local_key": "sunder_armor",
+    "name": "Sunder Armor",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_rogue_slicedice",
+      "source_roster_key": "sweeping_strikes"
+    },
+    "entity_kind": "spell",
+    "local_key": "sweeping_strikes",
+    "name": "Sweeping Strikes",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_enchantarmor",
+      "source_roster_key": "tactical_mastery"
+    },
+    "entity_kind": "spell",
+    "local_key": "tactical_mastery",
+    "name": "Tactical Mastery",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_reincarnation",
+      "source_roster_key": "taunt"
+    },
+    "entity_kind": "spell",
+    "local_key": "taunt",
+    "name": "Taunt",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_thunderclap",
+      "source_roster_key": "thunder_clap"
+    },
+    "entity_kind": "spell",
+    "local_key": "thunder_clap",
+    "name": "Thunder Clap",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_devastate",
+      "source_roster_key": "victory_rush"
+    },
+    "entity_kind": "spell",
+    "local_key": "victory_rush",
+    "name": "Victory Rush",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_whirlwind",
+      "source_roster_key": "whirlwind"
+    },
+    "entity_kind": "spell",
+    "local_key": "whirlwind",
+    "name": "Whirlwind",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_holy_blessingofstamina",
+      "source_roster_key": "anger_management"
+    },
+    "entity_kind": "talent",
+    "local_key": "anger_management",
+    "name": "Anger Management",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_mirrorimage",
+      "source_roster_key": "anticipation"
+    },
+    "entity_kind": "talent",
+    "local_key": "anticipation",
+    "name": "Anticipation",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_shield_04",
+      "source_roster_key": "bastion"
+    },
+    "entity_kind": "talent",
+    "local_key": "bastion",
+    "name": "Bastion",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_shadow_summonimp",
+      "source_roster_key": "blood_craze"
+    },
+    "entity_kind": "talent",
+    "local_key": "blood_craze",
+    "name": "Blood Craze",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_bloodlust",
+      "source_roster_key": "bloodthirst"
+    },
+    "entity_kind": "talent",
+    "local_key": "bloodthirst",
+    "name": "Bloodthirst",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_sword_01",
+      "source_roster_key": "bloodthrill"
+    },
+    "entity_kind": "talent",
+    "local_key": "bloodthrill",
+    "name": "Bloodthrill",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_purge",
+      "source_roster_key": "booming_voice"
+    },
+    "entity_kind": "talent",
+    "local_key": "booming_voice",
+    "name": "Booming Voice",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_intensifyrage",
+      "source_roster_key": "boundless_rage"
+    },
+    "entity_kind": "talent",
+    "local_key": "boundless_rage",
+    "name": "Boundless Rage",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_thunderbolt",
+      "source_roster_key": "concussion_blow"
+    },
+    "entity_kind": "talent",
+    "local_key": "concussion_blow",
+    "name": "Concussion Blow",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_rogue_eviscerate",
+      "source_roster_key": "cruelty"
+    },
+    "entity_kind": "talent",
+    "local_key": "cruelty",
+    "name": "Cruelty",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_shadow_deathpact",
+      "source_roster_key": "death_wish"
+    },
+    "entity_kind": "talent",
+    "local_key": "death_wish",
+    "name": "Death Wish",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_backstab",
+      "source_roster_key": "deep_wounds"
+    },
+    "entity_kind": "talent",
+    "local_key": "deep_wounds",
+    "name": "Deep Wounds",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_innerrage",
+      "source_roster_key": "defiance"
+    },
+    "entity_kind": "talent",
+    "local_key": "defiance",
+    "name": "Defiance",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_dualwield",
+      "source_roster_key": "dual_wield_specialization"
+    },
+    "entity_kind": "talent",
+    "local_key": "dual_wield_specialization",
+    "name": "Dual Wield Specialization",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_shadow_unholyfrenzy",
+      "source_roster_key": "enrage"
+    },
+    "entity_kind": "talent",
+    "local_key": "enrage",
+    "name": "Enrage",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_ghoulfrenzy",
+      "source_roster_key": "flurry"
+    },
+    "entity_kind": "talent",
+    "local_key": "flurry",
+    "name": "Flurry",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_focusedrage",
+      "source_roster_key": "focused_rage"
+    },
+    "entity_kind": "talent",
+    "local_key": "focused_rage",
+    "name": "Focused Rage",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_searingarrow",
+      "source_roster_key": "impale"
+    },
+    "entity_kind": "talent",
+    "local_key": "impale",
+    "name": "Impale",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_ancestralguardian",
+      "source_roster_key": "improved_berserker_rage"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_berserker_rage",
+    "name": "Improved Berserker Rage",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_racial_bloodrage",
+      "source_roster_key": "improved_bloodrage"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_bloodrage",
+    "name": "Improved Bloodrage",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_charge",
+      "source_roster_key": "improved_charge"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_charge",
+    "name": "Improved Charge",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_cleave",
+      "source_roster_key": "improved_cleave"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_cleave",
+    "name": "Improved Cleave",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_disarm",
+      "source_roster_key": "improved_disarm"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_disarm",
+    "name": "Improved Disarm",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_sword_48",
+      "source_roster_key": "improved_execute"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_execute",
+    "name": "Improved Execute",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_shockwave",
+      "source_roster_key": "improved_hamstring"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_hamstring",
+    "name": "Improved Hamstring",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_rogue_sprint",
+      "source_roster_key": "improved_intercept"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_intercept",
+    "name": "Improved Intercept",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_sword_05",
+      "source_roster_key": "improved_overpower"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_overpower",
+    "name": "Improved Overpower",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_revenge",
+      "source_roster_key": "improved_revenge"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_revenge",
+    "name": "Improved Revenge",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_shieldbash",
+      "source_roster_key": "improved_shield_bash"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_shield_bash",
+    "name": "Improved Shield Bash",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_shieldwall",
+      "source_roster_key": "improved_shield_wall"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_shield_wall",
+    "name": "Improved Shield Wall",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_decisivestrike",
+      "source_roster_key": "improved_slam"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_slam",
+    "name": "Improved Slam",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_sunder",
+      "source_roster_key": "improved_sunder_armor"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_sunder_armor",
+    "name": "Improved Sunder Armor",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_enchantarmor",
+      "source_roster_key": "improved_tactical_mastery"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_tactical_mastery",
+    "name": "Improved Tactical Mastery",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_thunderclap",
+      "source_roster_key": "improved_thunder_clap"
+    },
+    "entity_kind": "talent",
+    "local_key": "improved_thunder_clap",
+    "name": "Improved Thunder Clap",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_magic_magearmor",
+      "source_roster_key": "iron_will"
+    },
+    "entity_kind": "talent",
+    "local_key": "iron_will",
+    "name": "Iron Will",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_holy_ashestoashes",
+      "source_roster_key": "last_stand"
+    },
+    "entity_kind": "talent",
+    "local_key": "last_stand",
+    "name": "Last Stand",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_shieldguard",
+      "source_roster_key": "master_of_defense"
+    },
+    "entity_kind": "talent",
+    "local_key": "master_of_defense",
+    "name": "Master of Defense",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_savageblow",
+      "source_roster_key": "mortal_strike"
+    },
+    "entity_kind": "talent",
+    "local_key": "mortal_strike",
+    "name": "Mortal Strike",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_shadow_deathscream",
+      "source_roster_key": "piercing_howl"
+    },
+    "entity_kind": "talent",
+    "local_key": "piercing_howl",
+    "name": "Piercing Howl",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_marksmanship",
+      "source_roster_key": "precision"
+    },
+    "entity_kind": "talent",
+    "local_key": "precision",
+    "name": "Precision",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_whirlwind",
+      "source_roster_key": "raging_blows"
+    },
+    "entity_kind": "talent",
+    "local_key": "raging_blows",
+    "name": "Raging Blows",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_shield_05",
+      "source_roster_key": "shield_slam"
+    },
+    "entity_kind": "talent",
+    "local_key": "shield_slam",
+    "name": "Shield Slam",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_shield_06",
+      "source_roster_key": "shield_specialization"
+    },
+    "entity_kind": "talent",
+    "local_key": "shield_specialization",
+    "name": "Shield Specialization",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_spear_01",
+      "source_roster_key": "spearing_strike"
+    },
+    "entity_kind": "talent",
+    "local_key": "spearing_strike",
+    "name": "Spearing Strike",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_rogue_slicedice",
+      "source_roster_key": "sweeping_strikes"
+    },
+    "entity_kind": "talent",
+    "local_key": "sweeping_strikes",
+    "name": "Sweeping Strikes",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_holy_devotion",
+      "source_roster_key": "toughness"
+    },
+    "entity_kind": "talent",
+    "local_key": "toughness",
+    "name": "Toughness",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "inv_axe_09",
+      "source_roster_key": "two_handed_weapon_specialization"
+    },
+    "entity_kind": "talent",
+    "local_key": "two_handed_weapon_specialization",
+    "name": "Two-Handed Weapon Specialization",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "spell_nature_stoneclawtotem",
+      "source_roster_key": "unbridled_wrath"
+    },
+    "entity_kind": "talent",
+    "local_key": "unbridled_wrath",
+    "name": "Unbridled Wrath",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "ability_warrior_shieldcharge",
+      "source_roster_key": "vanguard"
+    },
+    "entity_kind": "talent",
+    "local_key": "vanguard",
+    "name": "Vanguard",
+    "reason": "not_in_m45_thin_proof"
+  },
+  {
+    "class_key": "warrior",
+    "details": {
+      "icon_key": "garrison_weaponupgrade",
+      "source_roster_key": "weaponmaster"
+    },
+    "entity_kind": "talent",
+    "local_key": "weaponmaster",
+    "name": "Weaponmaster",
+    "reason": "not_in_m45_thin_proof"
+  }
+]

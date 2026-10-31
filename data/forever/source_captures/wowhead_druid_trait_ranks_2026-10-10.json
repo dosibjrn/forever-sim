@@ -1,0 +1,114 @@
+{
+  "schema": "wowhead_forever_trait_rank_capture_v1",
+  "capture_id": "wowhead_druid_traits_20261010_primary_partial",
+  "class_key": "druid",
+  "captured_at": "2026-10-10",
+  "source": "Primary Wowhead Forever spell Trait rank curves for numerical values and rank count; rank tooltip text transcribed from classicwow.gg Forever Druid calculator and cross-checked against primary curves; beta build and current grid positions unverified.",
+  "coverage": "partial_rank_batch_not_complete_talent_tree",
+  "entries": [
+    {
+      "spell_id": 16934,
+      "name": "Ferocity",
+      "trait_id": 134399,
+      "max_rank": 5,
+      "source_url": "https://www.wowhead.com/forever/spell=16934/ferocity",
+      "source_authority": "wowhead_trait_values_secondary_tooltip",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Reduces the cost of your Maul, Primal Bite, Swipe, Claw, and Rake abilities by 1 Rage or Energy."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Reduces the cost of your Maul, Primal Bite, Swipe, Claw, and Rake abilities by 2 Rage or Energy."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Reduces the cost of your Maul, Primal Bite, Swipe, Claw, and Rake abilities by 3 Rage or Energy."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Reduces the cost of your Maul, Primal Bite, Swipe, Claw, and Rake abilities by 4 Rage or Energy."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Reduces the cost of your Maul, Primal Bite, Swipe, Claw, and Rake abilities by 5 Rage or Energy."
+        }
+      ],
+      "tooltip_source_url": "https://classicwow.gg/forever/tools/talent-calculator/druid"
+    },
+    {
+      "spell_id": 16998,
+      "name": "Savage Fury",
+      "trait_id": 134409,
+      "max_rank": 2,
+      "source_url": "https://www.wowhead.com/forever/spell=16998/savage-fury",
+      "source_authority": "wowhead_trait_values_secondary_tooltip",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Increases the damage caused by your Claw, Rake, Shred, Maul, and Swipe abilities by 5%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Increases the damage caused by your Claw, Rake, Shred, Maul, and Swipe abilities by 10%."
+        }
+      ],
+      "tooltip_source_url": "https://classicwow.gg/forever/tools/talent-calculator/druid"
+    },
+    {
+      "spell_id": 17003,
+      "name": "Heart of the Wild",
+      "trait_id": 134400,
+      "max_rank": 5,
+      "source_url": "https://www.wowhead.com/forever/spell=17003/heart-of-the-wild",
+      "source_authority": "wowhead_trait_values_secondary_tooltip",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Increases your Intellect by 2%. In addition, while in Bear Form or Dire Bear Form your Stamina is increased by 4% and while in Cat Form your Strength is increased by 2%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Increases your Intellect by 4%. In addition, while in Bear Form or Dire Bear Form your Stamina is increased by 8% and while in Cat Form your Strength is increased by 4%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Increases your Intellect by 6%. In addition, while in Bear Form or Dire Bear Form your Stamina is increased by 12% and while in Cat Form your Strength is increased by 6%."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Increases your Intellect by 8%. In addition, while in Bear Form or Dire Bear Form your Stamina is increased by 16% and while in Cat Form your Strength is increased by 8%."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Increases your Intellect by 10%. In addition, while in Bear Form or Dire Bear Form your Stamina is increased by 20% and while in Cat Form your Strength is increased by 10%."
+        }
+      ],
+      "tooltip_source_url": "https://classicwow.gg/forever/tools/talent-calculator/druid"
+    },
+    {
+      "spell_id": 16929,
+      "name": "Thick Hide",
+      "trait_id": 134403,
+      "max_rank": 3,
+      "source_url": "https://www.wowhead.com/forever/spell=16929/thick-hide",
+      "source_authority": "wowhead_trait_values_secondary_tooltip",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "While in Bear Form, Cat Form, Dire Bear Form, or Moonkin Form, you gain 1 additional base Armor per level and another 0.67 base Armor for each point of defense skill beyond five times your level. This amount can be further increased by multipliers from those forms."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "While in Bear Form, Cat Form, Dire Bear Form, or Moonkin Form, you gain 2 additional base Armor per level and another 1.33 base Armor for each point of defense skill beyond five times your level. This amount can be further increased by multipliers from those forms."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "While in Bear Form, Cat Form, Dire Bear Form, or Moonkin Form, you gain 3 additional base Armor per level and another 2.00 base Armor for each point of defense skill beyond five times your level. This amount can be further increased by multipliers from those forms."
+        }
+      ],
+      "tooltip_source_url": "https://classicwow.gg/forever/tools/talent-calculator/druid"
+    }
+  ]
+}

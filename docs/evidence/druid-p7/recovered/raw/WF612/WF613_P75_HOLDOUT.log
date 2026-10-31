@@ -1,0 +1,38 @@
+P75_HOLDOUT 100 elapsed 10.4 running_mean 843.421
+P75_HOLDOUT 200 elapsed 21.2 running_mean 842.797
+P75_HOLDOUT 300 elapsed 31.2 running_mean 844.458
+P75_HOLDOUT 400 elapsed 40.8 running_mean 846.399
+P75_HOLDOUT 500 elapsed 51.3 running_mean 847.33
+P75_HOLDOUT 600 elapsed 61.5 running_mean 847.679
+P75_HOLDOUT 700 elapsed 71.4 running_mean 847.927
+P75_HOLDOUT 800 elapsed 80.7 running_mean 848.109
+P75_HOLDOUT 900 elapsed 90.6 running_mean 848.933
+P75_HOLDOUT 1000 elapsed 100.7 running_mean 848.764
+P75_FINAL {
+  "workflow": "WF613",
+  "gate": "P7.5",
+  "mode": "stochastic",
+  "status": "FAIL",
+  "precommitted_seed_range": [
+    92000001,
+    92001000
+  ],
+  "precommit_sha256": "d5498b97cf095636f8c1ae01a8770f548c3fb8e5d3c0401483c4845f5c771966",
+  "search_sha256": "4cabb9bd66f36061ba6079ac7db1ac2fa88aba6ee2317fd25efc2dd7d30c6886",
+  "binary_sha256": "69d30df669c5ea8601fb45479dd24fe4cad770092fd5c513910490c5453d1c7d",
+  "reference_sha256": "ee7294fb90080eda3c0b20e2e008c1671172f8133f64c4b60b4a25463f3a9f46",
+  "database_sha256": "94abb2cea509bd0bbb11c3ab8673bc8f179c861beda640fa4a36206272afd168",
+  "frozen_config_hash": "d098edb167f58562c6ea4b15242b83f6659f8bd78c0967e4c8b88965a70484b4",
+  "observed_n": 1000,
+  "target_n": 1000,
+  "prior_p74_dps": 853.9305465836047,
+  "prior_p74_sd": 33.184201265813556,
+  "elapsed_s": 100.71514141599982,
+  "mean_dps": 848.7643621918036,
+  "std_dps": 30.18222914872394,
+  "delta_vs_p74": -5.166184391801153,
+  "one_sided_95_lower_vs_p74": -7.49962612282251,
+  "delta_vs_reference": 37.74063619050537,
+  "one_sided_95_lower_vs_reference": 36.103831345715385,
+  "comparison_standard": "noninferiority_margin_0_DPS_independent_1000_vs_1000_one_sided_95_CI"
+}

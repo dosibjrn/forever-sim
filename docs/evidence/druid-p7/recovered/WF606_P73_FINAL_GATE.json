@@ -1,0 +1,17 @@
+{
+  "gate": "P7.3",
+  "status": "PASS",
+  "accepted_backend": "hybrid",
+  "reference_id": "c31e596c-a30c-4b99-8789-0848fede6ea6",
+  "reference_dps": 811.0237260012982,
+  "source_revision": "a667dce8492bd9fb94269a9f864289cb74006775",
+  "engine": "LIVE_GSIM_2D_NATIVE_GO",
+  "search_wall_seconds": 260.293186075,
+  "unique_paid_candidates": 575,
+  "winner_talents": "0500210000000000-55000032021031212051-0550000000000000",
+  "winner_dps": 824.283607614643,
+  "final_n": 400,
+  "one_sided_95_lower_delta_dps": 10.877567532173584,
+  "causal_ack": 259,
+  "binary_sha256": "32fd780978b307fc525223361e2f58657fa464f1c6bc55d5ba127e2a027b59d1"
+}

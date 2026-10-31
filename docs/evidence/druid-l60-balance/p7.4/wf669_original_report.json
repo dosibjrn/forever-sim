@@ -1,0 +1,45 @@
+{
+  "status": "NATIVE_P74_DIAGNOSTIC_NOT_LIVE_2D",
+  "workflow_run": "https://github.com/dosibjrn/mage-level-sim/actions/runs/40972109624",
+  "artifact_name": "wf669-p74-native-evidence",
+  "artifact_id": 12940323970,
+  "artifact_sha256": "884f62dc1ebbac267974ee2dcd2f309c5547a83cc3957e7c0d3e8ca18843af55",
+  "engine_build_run_id": 40969635587,
+  "rust_upstream_commit": "666fe17a42682068a3c8497d88d5fa3732cbdfb9",
+  "original_head_sha": "5d05158612b5bc5acaebff026ef3bd9bb3f1c594",
+  "reference_dps": 728.1936126415858,
+  "success_count": 6704,
+  "failed_count": 783,
+  "failure_stderr_categories": {
+    "unclassified_empty_error": 783
+  },
+  "denominator": 7487,
+  "screen_wall_clock_s": 214.98735244000002,
+  "winner": {
+    "ids": [
+      19999,
+      19426,
+      19050,
+      272411,
+      19682,
+      21186,
+      20716,
+      18405,
+      19683,
+      19684,
+      234016,
+      234021,
+      272438,
+      22678,
+      272683,
+      272430
+    ],
+    "screen_dps": 822.8621343394151,
+    "rerank_dps": 797.6450178398271
+  },
+  "holdout_dps": 797.3623484370901,
+  "reference_frozen_sha256": "8cb0e76db54c407ffbfac2085f60c90d8763c80adc1d3fe26681d02dec5071a7",
+  "fixed_talents": "5532220115501351--505",
+  "fixed_rotation_sha256": "a9c790f13e9c59da358cbb771e1835ffba78735b92935595e28af5c9f0539d51",
+  "note": "Historic full raw paid_candidates.json, failures.json, reranked.json and winner request in linked artifact. All 783 historical errors have empty error strings; their actual stderr cannot be recovered from that artifact; no posthoc fake classification. Original winner is NOT certified legal or live Go↔Rust P7.4."
+}
