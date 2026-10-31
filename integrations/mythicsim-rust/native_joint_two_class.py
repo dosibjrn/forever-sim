@@ -45,11 +45,97 @@ def talent_points(talents: str) -> int:
     return sum(int(c) for t in trees for c in t)
 
 
+
+def full_source_talent_builds(class_identity: str, requests: list[dict]) -> tuple[list[str], dict[str, int]]:
+    """Inventory *observed* same-class talent points; never synthesize 51 points.
+
+    A Rust fixture may be an intentional 46/49-point test input. Such a
+    fixture is useful native evidence, but not a legal 51-point talent donor.
+    The histogram makes missing source coverage actionable per class.
+    """
+    builds: set[str] = set()
+    counts: dict[str, int] = {}
+    for request in requests:
+        source_player = player(request)
+        if source_player.get("class") != class_identity:
+            continue
+        talent = source_player.get("talentsString")
+        try:
+            count = talent_points(talent)
+            label = str(count)
+        except ValueError:
+            label = "INVALID_ENCODING"
+            count = -1
+        counts[label] = counts.get(label, 0) + 1
+        if count == 51:
+            builds.add(talent)
+    return sorted(builds), dict(sorted(counts.items()))
+
+
 def native_payload(candidate: dict, iterations: int, seed: int) -> dict:
     payload = copy.deepcopy(candidate)
     payload["simOptions"]["iterations"] = iterations
     payload["simOptions"]["randomSeed"] = str(seed)
     return payload
+
+
+def score_native_baseline(
+    binary: Path, reference: dict, *, iterations: int, seed: int, outdir: Path,
+) -> dict:
+    """Replay the frozen source through REAL Rust, outside the cold search budget.
+
+    Baseline is a separate native call, never a search candidate, stochastic
+    holdout, or P7 reference. Preserve its exact effective request even when
+    Rust rejects it; a failed/mismatched score must not enter paid accounting.
+    """
+    effective = native_payload(reference, iterations, seed)
+    expected_sha = fingerprint(effective)
+    (outdir / "baseline_effective_request.json").write_text(
+        json.dumps(effective, indent=2) + "\n"
+    )
+    evidence = {
+        "baseline_effective_request_sha256": expected_sha,
+        "baseline_native_paid": 0,
+    }
+    try:
+        score, _raw, elapsed, scored_sha = run(
+            binary, reference, iterations, seed, "balanced",
+            time.monotonic() + 30.0,
+        )
+        if scored_sha != expected_sha:
+            raise RuntimeError("Baseline native effective-request SHA256 mismatch")
+        if not math.isfinite(score):
+            raise ValueError("Baseline native metric is not finite")
+    except (RuntimeError, ValueError, KeyError, TimeoutError,
+            subprocess.SubprocessError) as exc:
+        evidence["baseline_status"] = "BLOCKED_NATIVE_BASELINE"
+        evidence["baseline_error"] = f"{type(exc).__name__}: {str(exc)[-800:]}"
+        return evidence
+    evidence.update({
+        "baseline_status": "RAN_NATIVE",
+        "baseline_native_paid": 1,
+        "baseline_balanced_native": score,
+        "baseline_native_duration_s": elapsed,
+    })
+    return evidence
+
+
+
+def mark_failed_source_baseline(row: dict) -> None:
+    """Keep paid search diagnostics but never call an unscored source successful.
+
+    A successful JOINT candidate does not prove the frozen source request
+    can be scored. Without that separate native baseline, a delta against
+    the source is unavailable and the profile is not promotion-eligible.
+    """
+    if row.get("status") != "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY":
+        return
+    if (row.get("baseline_status") != "RAN_NATIVE"
+            or row.get("baseline_native_paid") != 1):
+        row["status"] = "BLOCKED_NATIVE_BASELINE"
+        detail = row.get("baseline_error") or "no paid frozen source baseline"
+        row["blocker"] = "Frozen source native baseline unavailable: " + str(detail)[:500]
+
 
 
 def source_bounded_adapter(
@@ -64,14 +150,12 @@ def source_bounded_adapter(
     original = player(reference)
     base_gear = copy.deepcopy(original["equipment"]["items"])
     base_apl = copy.deepcopy(original["rotation"]["priorityList"])
-    talents = sorted({
-        player(req).get("talentsString")
-        for req in same_class
-        if player(req).get("class") == original["class"]
-        and talent_points(player(req).get("talentsString", "")) == 51
-    })
+    talents, source_point_counts = full_source_talent_builds(original["class"], same_class)
     if original["talentsString"] not in talents or len(talents) < 2:
-        raise ValueError("BLOCKED_TALENTS: need two independent full 51-point same-class source builds")
+        raise ValueError(
+            "BLOCKED_TALENTS: need two independent full 51-point same-class source builds; "
+            "observed_same_class_points=" + json.dumps(source_point_counts, sort_keys=True)
+        )
     alternate = [t for t in talents if t != original["talentsString"]]
 
     def make_gear(rng):
@@ -183,7 +267,14 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
                   and entry["profile_id"].split("/", 1)[0] == cls]
     try:
         adapter, scope = source_bounded_adapter(cls, reference, same_class, native_items)
-    except Exception as exc:
+    except (GearRejected, ValueError) as exc:
+        # Only an explicit source/equipment legality rejection is row-local.
+        # A generic ValueError or programming fault must fail the harness;
+        # otherwise a broken adapter can falsely label all 28 specs BLOCKED.
+        if not isinstance(exc, GearRejected) and not str(exc).startswith((
+            "BLOCKED_GEAR_POOL:", "BLOCKED_TALENTS:", "BLOCKED_APL:",
+        )):
+            raise
         row["status"] = "BLOCKED_SOURCE_LEGALITY"
         row["blocker"] = str(exc)[:500]
         return row
@@ -192,6 +283,11 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     paid_dir = outdir / "paid"
     paid_dir.mkdir(exist_ok=True)
     (outdir / "source_request.json").write_text(json.dumps(reference, indent=2) + "\n")
+    # Baseline is independently Rust-scored BEFORE the active 5s search clock.
+    # Do not count it among paid JOINT candidates or claim it is a holdout.
+    row.update(score_native_baseline(
+        binary, reference, iterations=iterations, seed=seed, outdir=outdir,
+    ))
 
     paid = []
     native_failures = []
@@ -245,6 +341,11 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     row["search_elapsed_s"] = result["elapsed_s"]
     row["three_axis_paid"] = sum(all(e["delta_from_reference"].values()) for e in paid)
     row["best_balanced_screen"] = result["best_score"]
+    if (row.get("baseline_status") == "RAN_NATIVE"
+            and result["best_score"] is not None):
+        row["best_vs_source_baseline"] = (
+            result["best_score"] - row["baseline_balanced_native"]
+        )
     row["source_bounded_joint"] = row["three_axis_paid"] > 0
     row["status"] = (
         "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY"
@@ -277,6 +378,8 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
             row["blocker"] = "Frozen effective scorer payload did not reproduce"
     else:
         row["replay_matches"] = False
+
+    mark_failed_source_baseline(row)
 
     (outdir / "report.json").write_text(json.dumps(row, indent=2) + "\n")
     return row

@@ -1,0 +1,363 @@
+{
+  "evidence_type": "PINNED_SOURCE_TALENT_POINT_AUDIT_NOT_NATIVE_SIMULATION",
+  "audited_date_utc": "2026-10-31",
+  "engine_repo": "sage3648/mythicsim-forever-engine",
+  "engine_commit": "666fe17a42682068a3c8497d88d5fa3732cbdfb9",
+  "gsim_source_branch": "work/native-rust-generic-l60-matrix-5-30-300",
+  "scope": "Digit sum of 28 selected actual source talent strings (Mage: pinned 51-point census BASE smoke fixtures replace 49/49/46 prepared-v2 smoke inputs); no rank/prerequisite legality, native scoring or PROCESS gate certification",
+  "git_blob_sha1_note": "git_blob_sha1 is the Git blob object ID from GitHub, NOT SHA256 of the request or engine binary",
+  "summary": {
+    "rows": 28,
+    "classes": 9,
+    "source_requests_read": 28,
+    "point_total_51": 26,
+    "incomplete_point_totals": 2,
+    "non_51_profiles": [
+      {
+        "profile_id": "druid/restoration",
+        "points": 46,
+        "missing": 5
+      },
+      {
+        "profile_id": "shaman/restoration",
+        "points": 50,
+        "missing": 1
+      }
+    ],
+    "distinct_51_point_donor_builds_by_class": {
+      "druid": 3,
+      "hunter": 3,
+      "mage": 3,
+      "paladin": 3,
+      "priest": 3,
+      "rogue": 3,
+      "shaman": 2,
+      "warlock": 3,
+      "warrior": 3
+    },
+    "mage_census_51_point_smoke_sources": 3
+  },
+  "rows": [
+    {
+      "profile_id": "druid/balance",
+      "source_repository": "dosibjrn/mage-level-sim",
+      "source_path": "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json",
+      "git_blob_sha1": "ca854b6a6559c97ccbc71af29a4c20747949ed38",
+      "source_talent_string": "5532220115501351--505",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "druid/feral_cat",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-multi-target-paladin-druid-references/feral-druid-2-targets.request.json",
+      "git_blob_sha1": "6ff72d7c194aba439dbd1c5f8f9d6f3da4fc2abe",
+      "source_talent_string": "050022-55000032021032212051-053",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "druid/feral_bear",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-multi-target-paladin-druid-references/feral-bear-druid-2-targets.request.json",
+      "git_blob_sha1": "f892c4209f7dcdfba74cd750af565096a0f44abd",
+      "source_talent_string": "-55000332120132012551-055",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "druid/restoration",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "fixtures/healers/restoration-druid.request.json",
+      "git_blob_sha1": "3664b620f1d73f71a26f103248707283526128d4",
+      "source_talent_string": "05002001--5050035153113051",
+      "source_talent_points": 46,
+      "points_missing_to_51": 5,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "INCOMPLETE_51"
+    },
+    {
+      "profile_id": "mage/arcane",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-04-mage-census/bases/arcane-mage.request.json",
+      "git_blob_sha1": "ab408bdb76bb4ec13f8c738bb377c33dcc53a007",
+      "source_talent_string": "0551205003100301531-230500001-005",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE",
+      "superseded_source_path": "fixtures/mage/prepared-v2/arcane-reference.request.json",
+      "superseded_git_blob_sha1": "105c4e53467d200503cfdae6b09ba63ad6fd7032",
+      "superseded_source_talent_string": "0551205003100301531-230500001-003",
+      "source_fixture_selection_reason": "PINNED_MAGE_CENSUS_51_POINT_SMOKE_REPLACES_INCOMPLETE_PREPARED_V2_SMOKE_NOT_RANKING_REFERENCE"
+    },
+    {
+      "profile_id": "mage/fire",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-04-mage-census/bases/fire-mage.request.json",
+      "git_blob_sha1": "4163f0b3d1088f3f0434bbc59be984cacf1f3446",
+      "source_talent_string": "05012050030000-13550000130135031-004",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE",
+      "superseded_source_path": "fixtures/mage/prepared-v2/fire-reference.request.json",
+      "superseded_git_blob_sha1": "868c7b7ff3a382785ae9ac37f7e984d4990cdf35",
+      "superseded_source_talent_string": "2300205-03552020130135031-003",
+      "source_fixture_selection_reason": "PINNED_MAGE_CENSUS_51_POINT_SMOKE_REPLACES_INCOMPLETE_PREPARED_V2_SMOKE_NOT_RANKING_REFERENCE"
+    },
+    {
+      "profile_id": "mage/frost",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-04-mage-census/bases/frost-mage.request.json",
+      "git_blob_sha1": "1a33f4d0341b084d57555e8d03e20edb77cee7ac",
+      "source_talent_string": "05012050030000-03-0555000301001301251",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE",
+      "superseded_source_path": "fixtures/mage/prepared-v2/frost-reference.request.json",
+      "superseded_git_blob_sha1": "6fe8a91faebbeba25d2b3bd33c9d816e3906393e",
+      "superseded_source_talent_string": "05012050030000-03-053500000101301251",
+      "source_fixture_selection_reason": "PINNED_MAGE_CENSUS_51_POINT_SMOKE_REPLACES_INCOMPLETE_PREPARED_V2_SMOKE_NOT_RANKING_REFERENCE"
+    },
+    {
+      "profile_id": "hunter/beast_mastery",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-04-hunter-preset-matrix/variants/preset-bm-bm-launch.request.json",
+      "git_blob_sha1": "b828ec3f1105604fb9ec3f425387ee597bc500bd",
+      "source_talent_string": "5520001505121251-0050551",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "hunter/marksmanship",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-04-hunter-preset-matrix/variants/preset-mm-mm-launch.request.json",
+      "git_blob_sha1": "9454a901b4102137361f20de4a2e88b17c490a99",
+      "source_talent_string": "-3050552301503151-50024001",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "hunter/survival",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-04-hunter-preset-matrix/variants/preset-sv-sv-launch.request.json",
+      "git_blob_sha1": "ca70a329cb5b2feaeda61e417682c822ee5860ed",
+      "source_talent_string": "-005055-550230031051220151",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "shaman/elemental",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-multi-target-warrior-shaman-references/elemental-shaman-2-targets.request.json",
+      "git_blob_sha1": "68fec1005380e87d4a90d9a53c70a9d9d9451175",
+      "source_talent_string": "5502331020021351-05-05305",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 2,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "shaman/enhancement",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-multi-target-warrior-shaman-references/enhancement-shaman-2-targets.request.json",
+      "git_blob_sha1": "d0f75316237bcda376dede93839a30b898b30284",
+      "source_talent_string": "453003102-055030031005102251",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 2,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "shaman/restoration",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "fixtures/healers/restoration-shaman.request.json",
+      "git_blob_sha1": "59dff2ef8bc0dded8d5e5a3f7754295cc2ce3913",
+      "source_talent_string": "-055-5530500015513151",
+      "source_talent_points": 50,
+      "points_missing_to_51": 1,
+      "same_class_51_point_donor_builds": 2,
+      "point_total_status": "INCOMPLETE_51"
+    },
+    {
+      "profile_id": "warrior/arms",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-multi-target-warrior-shaman-references/arms-warrior-2-targets.request.json",
+      "git_blob_sha1": "15af9f54649eafe107dc18a37b652988f5f57a80",
+      "source_talent_string": "30305213132515201-4505",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "warrior/fury",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "fixtures/mage/prepared-v2/fury-warrior-battlegear-of-might-sapper.request.json",
+      "git_blob_sha1": "3dc78e40b6595ad92d3334958547178c99bac01e",
+      "source_talent_string": "30305213-55051105050010501",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "warrior/protection",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-multi-target-warrior-shaman-references/protection-warrior-2-targets.request.json",
+      "git_blob_sha1": "67ac388503e305b3f42091f28788b14b418d3ce2",
+      "source_talent_string": "-0505203005-250033120310021251",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "rogue/assassination",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-05-multi-target-references/assassination-rogue-2-targets.request.json",
+      "git_blob_sha1": "ea14a767997606f5006c505f1301fa29d354f227",
+      "source_talent_string": "0053031055110105-30230320201401",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "rogue/combat",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-05-multi-target-references/combat-rogue-2-targets.request.json",
+      "git_blob_sha1": "526ac66751c0db014e59b6cbae0a50d374f45614",
+      "source_talent_string": "005303105-32030320201515221-002",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "rogue/subtlety",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-05-multi-target-references/subtlety-rogue-2-targets.request.json",
+      "git_blob_sha1": "ffc079a2cf8bac6a0e34a544f4525d97e208c17d",
+      "source_talent_string": "0053021-302301-5023203300013111051",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "priest/discipline",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "fixtures/mage/prepared-v2/production-smite-priest.request.json",
+      "git_blob_sha1": "af994b74c5af8d23e70fb3e06d3d52b353543f70",
+      "source_talent_string": "505030031030001-305051130020003-50002",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "priest/holy",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "fixtures/healers/holy-priest.request.json",
+      "git_blob_sha1": "20cbd08ef36e4da86f46a393c1ac1e14d495b815",
+      "source_talent_string": "00520101133-33505003030121531",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "priest/shadow",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-05-multi-target-references/shadow-priest-2-targets.request.json",
+      "git_blob_sha1": "6069f0e773e02e8da6571f0eeab569b8f9958c1f",
+      "source_talent_string": "025303011030--50052201221302251",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "warlock/affliction",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-mage-warlock-multi-target-references/affliction-warlock-2-targets.request.json",
+      "git_blob_sha1": "a8dcc2bf658380eeec1661ef45a9ba8e11e5839d",
+      "source_talent_string": "0552032013520005--0550005003",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "warlock/demonology",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-mage-warlock-multi-target-references/demonology-warlock-2-targets.request.json",
+      "git_blob_sha1": "33d35b734f5e67f06a02301dc34bc9d7a75b9ea8",
+      "source_talent_string": "02-0025003231020301351-0550005003",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "warlock/destruction",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-mage-warlock-multi-target-references/destruction-warlock-2-targets.request.json",
+      "git_blob_sha1": "ae8c43ff89fba6d47ffe14a8e6d3059c0289342e",
+      "source_talent_string": "2522-0050203001-155030510310005",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "paladin/holy",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "fixtures/mage/prepared-v2/holy-paladin-healing.request.json",
+      "git_blob_sha1": "922a21b406675964b992cfbc6a915c669b20ee55",
+      "source_talent_string": "25320213225131051-50323",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "paladin/protection",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-multi-target-paladin-druid-references/protection-paladin-2-targets.request.json",
+      "git_blob_sha1": "8c6e3e3c3f9c50b896fa287545fbb00b2ff1e876",
+      "source_talent_string": "50003-0530213301301551-50203",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    },
+    {
+      "profile_id": "paladin/retribution",
+      "source_repository": "sage3648/mythicsim-forever-engine",
+      "source_path": "validation/2026-10-06-multi-target-paladin-druid-references/retribution-paladin-2-targets.request.json",
+      "git_blob_sha1": "073421e7dbd7369f165b60cda7523b63a43c2275",
+      "source_talent_string": "52003-503-05225231001330321",
+      "source_talent_points": 51,
+      "points_missing_to_51": 0,
+      "same_class_51_point_donor_builds": 3,
+      "point_total_status": "POINTS_51_UNVERIFIED_TREE"
+    }
+  ],
+  "source_selection_note": "Mage source requests changed within pinned engine 666fe17a4: census BASE has 51 talent points and matching ClassMage request identity, gear and nonempty APL. Superseded prepared-v2 paths/blob IDs retained in each Mage row. No native execution performed for this evidence audit; prior Mage scores/provenance cannot be reused."
+}

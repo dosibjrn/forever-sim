@@ -25,6 +25,31 @@ def _class_name(class_key: str) -> str:
     return "Class" + class_key.capitalize()
 
 
+def _has_required_profession(player: dict, item: dict) -> bool:
+    """Check a pinned Rust item's profession gate against the source player.
+
+    The native JSON/proto surface can spell enum values as
+    'ProfessionEngineering' while request fields use 'Engineering'.
+    Unknown nonempty requirements fail closed; no profession is inferred
+    from another same-class donor's equipment.
+    """
+    def canonical(value):
+        if value is None or value == 0:
+            return ""
+        name = str(value).strip().lower()
+        if name.startswith("profession"):
+            name = name[len("profession"):]
+        return name
+
+    required = canonical(item.get("required_profession"))
+    if required in ("", "unknown", "none", "unspecified"):
+        return True
+    return required in {
+        canonical(player.get("profession1")),
+        canonical(player.get("profession2")),
+    }
+
+
 class NativeGearAdapter:
     """Conservative candidate pools from actual same-class native fixtures.
 
@@ -70,6 +95,8 @@ class NativeGearAdapter:
                 required_level = native.get("required_level")
                 if required_level is not None and int(required_level) > 60:
                     continue
+                if not _has_required_profession(_player(reference), native):
+                    continue
                 self.pools.setdefault(index, {})[iid] = copy.deepcopy(entry)
         # No source loadout is ever described as a cold optimizer proposal.
         self.mutable_indices = tuple(sorted(i for i, pool in self.pools.items()
@@ -112,6 +139,9 @@ class NativeGearAdapter:
             level = native.get("required_level")
             if level is not None and int(level) > 60:
                 raise GearRejected("REQUIRED_LEVEL", f"{iid} requires level {level}")
+            if not _has_required_profession(p, native):
+                raise GearRejected("REQUIRED_PROFESSION",
+                                   f"{iid} requires {native.get('required_profession')}")
             if entry != self.base[i] and entry != self.pools.get(i, {}).get(iid):
                 raise GearRejected("SOURCE_SLOT", f"{iid} not observed at position {i}")
             used_ids.append(iid)

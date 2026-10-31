@@ -205,6 +205,44 @@ class SameSearchCoreAcrossClasses(unittest.TestCase):
             self.assertNotEqual(player(initial)[key], player(updated)[key])
 
 
+
+class NativeAdapterFailureClassification(unittest.TestCase):
+    """Only source-legality rejections become BLOCKED; harness bugs stay fatal."""
+
+    def test_known_source_legality_rejection_is_a_blocked_row(self):
+        from unittest.mock import patch
+        from native_joint_two_class import execute
+        inv = {"profile_id": "druid/feral_cat",
+               "source_sha256": "fixture-sha", "source_type": "SMOKE_FIXTURE_ONLY",
+               "source_path": "frozen.request.json"}
+        request = {"raid": {"parties": [{"players": [{"class": "ClassDruid"}]}]}}
+        with patch("native_joint_two_class.source_bounded_adapter",
+                   side_effect=ValueError("BLOCKED_TALENTS: no 51-point donor")):
+            row = execute("druid/feral_cat", [(inv, request)], {},
+                          binary=Path("not-invoked"), engine_src=Path("not-invoked"),
+                          seconds=5, iterations=40, seed=731, outdir=Path("not-invoked"))
+        self.assertEqual("BLOCKED_SOURCE_LEGALITY", row["status"])
+        self.assertEqual(0, row["native_paid"])
+        self.assertIn("BLOCKED_TALENTS:", row["blocker"])
+
+    def test_unexpected_adapter_errors_must_not_be_disguised_as_source_gaps(self):
+        from unittest.mock import patch
+        from native_joint_two_class import execute
+        inv = {"profile_id": "druid/feral_cat",
+               "source_sha256": "fixture-sha", "source_type": "SMOKE_FIXTURE_ONLY",
+               "source_path": "frozen.request.json"}
+        request = {"raid": {"parties": [{"players": [{"class": "ClassDruid"}]}]}}
+        for failure in (TypeError("broken adapter API"),
+                        ValueError("unexpected schema implementation bug")):
+            with self.subTest(failure=type(failure).__name__):
+                with patch("native_joint_two_class.source_bounded_adapter",
+                           side_effect=failure):
+                    with self.assertRaises(type(failure)):
+                        execute("druid/feral_cat", [(inv, request)], {},
+                                binary=Path("not-invoked"), engine_src=Path("not-invoked"),
+                                seconds=5, iterations=40, seed=731, outdir=Path("not-invoked"))
+
+
 class SourceTalentEncodingContracts(unittest.TestCase):
     """Pinned Rust fixtures use both two-tree and three-tree encodings.
 
@@ -226,12 +264,108 @@ class SourceTalentEncodingContracts(unittest.TestCase):
         self.assertEqual(51, talent_points("005303105-32030320201515221-002"))
         self.assertEqual(51, talent_points("025303011030--50052201221302251"))
 
+    def test_mage_source_donors_report_real_point_deficits(self):
+        # These are the three PINNED engine mage fixture talent strings.
+        # They have 49, 49, 46 points, not verified 51-point donors.
+        from native_joint_two_class import full_source_talent_builds
+        def request(cls, talent):
+            return {"raid": {"parties": [{"players": [
+                {"class": cls, "talentsString": talent}
+            ]}]}}
+        mage = [
+            request("ClassMage", "0551205003100301531-230500001-003"),
+            request("ClassMage", "2300205-03552020130135031-003"),
+            request("ClassMage", "05012050030000-03-053500000101301251"),
+            request("ClassWarlock", "1-2-3"),  # never cross class
+        ]
+        builds, counts = full_source_talent_builds("ClassMage", mage)
+        self.assertEqual([], builds)
+        self.assertEqual({"46": 1, "49": 2}, counts)
+
+    def test_full_source_donors_deduplicate_and_skip_invalid_encodings(self):
+        from native_joint_two_class import full_source_talent_builds
+        def request(talent):
+            return {"raid": {"parties": [{"players": [
+                {"class": "ClassRogue", "talentsString": talent}
+            ]}]}}
+        a = "0053031055110105-30230320201401"
+        b = "005303105-32030320201515221-002"
+        builds, counts = full_source_talent_builds(
+            "ClassRogue", [request(a), request(a), request(b), request("X")])
+        self.assertEqual(sorted([a, b]), builds)
+        self.assertEqual({"51": 3, "INVALID_ENCODING": 1}, counts)
+
     def test_invalid_talent_encoding_stays_rejected(self):
         from native_joint_two_class import talent_points
         for invalid in ("12345", "1-2-3-4", "1-2-X", "", None):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(ValueError):
                     talent_points(invalid)
+
+
+
+class NativeSourceBaselineContracts(unittest.TestCase):
+    """Mock-only contracts: production baseline must use the real Rust runner."""
+
+    def test_native_source_baseline_records_exact_request_and_separate_paid_count(self):
+        import json
+        import tempfile
+        from unittest.mock import patch
+        from native_joint_two_class import score_native_baseline, native_payload
+        from native_l60_matrix import fingerprint
+
+        reference = fixture("ClassDruid", 3, 1001, 2001)
+        snapshot = copy.deepcopy(reference)
+        calls = []
+
+        def fake_native(binary, request, iterations, seed, mode, deadline):
+            self.assertEqual("balanced", mode)
+            self.assertEqual(40, iterations)
+            self.assertEqual(731, seed)
+            self.assertEqual(snapshot, request)
+            calls.append(mode)
+            return 321.5, {}, 0.02, fingerprint(native_payload(request, iterations, seed))
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            with patch("native_joint_two_class.run", side_effect=fake_native):
+                result = score_native_baseline(
+                    Path("mock-binary-not-executed"), reference,
+                    iterations=40, seed=731, outdir=out)
+            self.assertEqual(["balanced"], calls)
+            self.assertEqual("RAN_NATIVE", result["baseline_status"])
+            self.assertEqual(1, result["baseline_native_paid"])
+            self.assertEqual(321.5, result["baseline_balanced_native"])
+            effective = json.loads((out / "baseline_effective_request.json").read_text())
+            self.assertEqual(fingerprint(effective), result["baseline_effective_request_sha256"])
+            self.assertEqual("731", effective["simOptions"]["randomSeed"])
+            self.assertEqual(snapshot, reference)
+
+    def test_failed_or_mismatched_baseline_is_not_a_paid_native_score(self):
+        import tempfile
+        from unittest.mock import patch
+        from native_joint_two_class import score_native_baseline
+
+        reference = fixture("ClassWarlock", 4, 2001, 3001)
+        for fake in (
+            RuntimeError("native scorer rejected request"),
+            (12.0, {}, 0.01, "forged-effective-request-hash"),
+            (float("nan"), {}, 0.01, "forged-effective-request-hash"),
+        ):
+            with self.subTest(fake=str(fake)):
+                with tempfile.TemporaryDirectory() as tmp:
+                    if isinstance(fake, Exception):
+                        patcher = patch("native_joint_two_class.run", side_effect=fake)
+                    else:
+                        patcher = patch("native_joint_two_class.run", return_value=fake)
+                    with patcher:
+                        result = score_native_baseline(
+                            Path("mock-binary-not-executed"), reference,
+                            iterations=40, seed=731, outdir=Path(tmp))
+                    self.assertEqual("BLOCKED_NATIVE_BASELINE", result["baseline_status"])
+                    self.assertEqual(0, result["baseline_native_paid"])
+                    self.assertNotIn("baseline_balanced_native", result)
+                    self.assertTrue((Path(tmp) / "baseline_effective_request.json").exists())
 
 
 if __name__ == "__main__":

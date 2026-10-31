@@ -37,6 +37,28 @@ class NativeGearAdapterTests(unittest.TestCase):
         self.assertEqual({20, 21}, set(adapter.pools[1]))
         self.assertNotIn(2, adapter.pools)  # no weapon/offhand guesswork
 
+    def test_profession_restricted_native_item_requires_player_profession(self):
+        # The Rust item DB declares profession requirements; a donor fixture
+        # cannot authorize equipping an item on a different profession.
+        items = copy.deepcopy(self.items)
+        items[11]["required_profession"] = "ProfessionEngineering"
+        no_profession = NativeGearAdapter(
+            "mage", self.fire, [self.fire, self.frost], items)
+        self.assertNotIn(11, no_profession.pools.get(0, {}))
+        illegally_equipped = copy.deepcopy(self.fire)
+        illegally_equipped["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
+        with self.assertRaises(GearRejected):
+            no_profession.validate(illegally_equipped)
+
+        engineer = copy.deepcopy(self.fire)
+        engineer["raid"]["parties"][0]["players"][0]["profession1"] = "Engineering"
+        engineering_adapter = NativeGearAdapter(
+            "mage", engineer, [engineer, self.frost], items)
+        self.assertIn(11, engineering_adapter.pools[0])
+        legal = copy.deepcopy(engineer)
+        legal["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
+        engineering_adapter.validate(legal)
+
     def test_native_mutation_preserves_reference_talents_apl_and_weapon(self):
         original = copy.deepcopy(self.fire)
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)

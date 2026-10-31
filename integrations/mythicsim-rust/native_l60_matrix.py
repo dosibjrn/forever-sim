@@ -31,14 +31,18 @@ H = "validation/2026-10-04-hunter-preset-matrix/variants/"
 
 # These paths have been inspected in the PINNED source tree. Each external
 # fixture is a smoke candidate, NOT a saved MythicSim ranking reference.
+# Mage census BASE requests are independent pinned 51-point smoke fixtures;
+# the prepared-v2 mage reference inputs have only 49/49/46 talent points.
+# This source substitution resets Mage provenance; it does NOT establish
+# rank/prerequisite legality, leaderboard parity, or prior-stage promotion.
 SOURCES = {
     "druid/balance": ("gsim", "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"),
     "druid/feral_cat": ("engine", V+"paladin-druid-references/feral-druid-2-targets.request.json"),
     "druid/feral_bear": ("engine", V+"paladin-druid-references/feral-bear-druid-2-targets.request.json"),
     "druid/restoration": ("engine", "fixtures/healers/restoration-druid.request.json"),
-    "mage/arcane": ("engine", P+"arcane-reference.request.json"),
-    "mage/fire": ("engine", P+"fire-reference.request.json"),
-    "mage/frost": ("engine", P+"frost-reference.request.json"),
+    "mage/arcane": ("engine", "validation/2026-10-04-mage-census/bases/arcane-mage.request.json"),
+    "mage/fire": ("engine", "validation/2026-10-04-mage-census/bases/fire-mage.request.json"),
+    "mage/frost": ("engine", "validation/2026-10-04-mage-census/bases/frost-mage.request.json"),
     "hunter/beast_mastery": ("engine", H+"preset-bm-bm-launch.request.json"),
     "hunter/marksmanship": ("engine", H+"preset-mm-mm-launch.request.json"),
     "hunter/survival": ("engine", H+"preset-sv-sv-launch.request.json"),
@@ -77,6 +81,59 @@ def fingerprint(obj) -> str:
 
 def player(request):
     return request["raid"]["parties"][0]["players"][0]
+
+
+
+def _source_talent_point_audit(request: dict | None) -> tuple[int | None, str]:
+    """Count source digits only; NEVER infer rank/prerequisite tree legality."""
+    if request is None:
+        return None, "NO_REQUEST"
+    try:
+        talents = player(request).get("talentsString")
+    except (KeyError, IndexError, TypeError, AttributeError):
+        return None, "INVALID_REQUEST"
+    if (not isinstance(talents, str) or talents.count("-") not in (1, 2)
+            or any(c not in "0123456789" for c in talents.replace("-", ""))):
+        return None, "INVALID_ENCODING"
+    count = sum(int(c) for c in talents if c != "-")
+    if count > 51:
+        return count, "OVERALLOCATED_51"
+    if count < 51:
+        return count, "INCOMPLETE_51"
+    return count, "POINTS_51_UNVERIFIED_TREE"
+
+
+def annotate_talent_inventory(
+    rows: list[tuple[dict, dict | None]],
+) -> list[tuple[dict, dict | None]]:
+    """Expose exact source talent gaps across classes without fabricating builds.
+
+    Distinct 51-point whole-build donors are a SOURCE COVERAGE count, not a
+    proof of valid talent ranks, prerequisites, spec identity or unrestricted
+    per-rank mutation. Never change the original request or certify a row.
+    """
+    donor_builds: dict[str, set[str]] = {}
+    audited = []
+    for source, request in rows:
+        cls = source["profile_id"].split("/", 1)[0]
+        points, status = _source_talent_point_audit(request)
+        if points == 51 and request is not None:
+            donor_builds.setdefault(cls, set()).add(player(request)["talentsString"])
+        audited.append((source, request, points, status, cls))
+    result = []
+    for source, request, points, status, cls in audited:
+        result.append(({
+            **source,
+            "source_talent_points": points,
+            "source_talent_points_missing_to_51": (
+                51 - points if points is not None and points <= 51 else None
+            ),
+            "source_talent_status": status,
+            "same_class_51_point_donor_builds": len(donor_builds.get(cls, ())),
+            "source_talent_validation_scope":
+                "POINT_TOTAL_ONLY_NOT_RANK_OR_PREREQUISITE_LEGALITY",
+        }, request))
+    return result
 
 
 def legal_apl_only_request(reference: dict, candidate: dict) -> bool:
@@ -236,7 +293,7 @@ def create_inventory(registry_path, engine_src):
             row["status"] = "BLOCKED_REQUEST_PARSE"
             row["blocker"] = "REQUEST_PARSE: "+str(exc)
             rows.append((row,None))
-    return rows
+    return annotate_talent_inventory(rows)
 
 
 def execute_row(row, reference, *, binary, budget, iterations, seed, outdir):
