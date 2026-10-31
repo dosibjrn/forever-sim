@@ -1,0 +1,46 @@
+[
+  {
+    "label": "periodic_crit_off",
+    "mobs": 100,
+    "all_defeated": true,
+    "seconds_per_mob": 6.743087557603685,
+    "total_damage_by_player": 23238.0,
+    "events": 1800,
+    "root_casts": 100,
+    "wall_s": 0.10114424599998983,
+    "cpu_s": 0.10095092300000008
+  },
+  {
+    "label": "periodic_crit_on",
+    "mobs": 100,
+    "all_defeated": true,
+    "seconds_per_mob": 6.743087557603685,
+    "total_damage_by_player": 23868.0,
+    "events": 1800,
+    "root_casts": 100,
+    "wall_s": 0.10382091600001786,
+    "cpu_s": 0.10361438399999989
+  },
+  {
+    "label": "hypothetical_break_0pct",
+    "mobs": 100,
+    "all_defeated": true,
+    "seconds_per_mob": 6.743087557603685,
+    "total_damage_by_player": 23868.0,
+    "events": 1800,
+    "root_casts": 100,
+    "wall_s": 0.097204081999962,
+    "cpu_s": 0.09700488899999993
+  },
+  {
+    "label": "hypothetical_break_100pct",
+    "mobs": 100,
+    "all_defeated": true,
+    "seconds_per_mob": 9.210829493087575,
+    "total_damage_by_player": 23868.0,
+    "events": 2750,
+    "root_casts": 200,
+    "wall_s": 0.12692039000000932,
+    "cpu_s": 0.1266013210000001
+  }
+]
