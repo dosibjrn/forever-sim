@@ -1,4 +1,6 @@
 import importlib.util
+import os
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
@@ -34,6 +36,41 @@ class VerifyPublicSnapshotTest(unittest.TestCase):
 
     def stage(self, root):
         git(root, 'add', '-A', '--force')
+
+    def test_selected_paths_never_include_untracked_private_files(self):
+        self.put('src/ok.py', b'print(1)')
+        self.put('README.md', b'protected')
+        self.put('.env', b'PRIVATE_TOKEN=secret')
+        self.stage(self.old)
+        git(self.old, 'rm', '-q', '--cached', '.env')
+        self.assertEqual(mod.selected_source_paths(self.old), ['src/ok.py'])
+
+    def test_tracked_only_tar_and_literal_stage_preserve_private_untracked(self):
+        self.put('.gitignore', b'*.sqlite\n')
+        self.put('data/asset[1].sqlite', b'SQLite format 3\x00payload')
+        self.put('README.md', b'private readme')
+        self.put('.env', b'PRIVATE_TOKEN=do_not_copy')
+        self.stage(self.old)
+        git(self.old, 'rm', '-q', '--cached', '.env')
+        selected = subprocess.check_output([
+            sys.executable, str(SCRIPT), '--source', str(self.old),
+            '--emit-selected-paths',
+        ])
+        self.assertEqual(set(selected.split(b'\0')) - {b''},
+                         {b'.gitignore', b'data/asset[1].sqlite'})
+        pathfile = Path(self.temp.name) / 'selected.z'
+        pathfile.write_bytes(selected)
+        archive = Path(self.temp.name) / 'tracked.tar'
+        subprocess.run(['tar', '-C', str(self.old), '--null', '-T', str(pathfile),
+                        '-cf', str(archive)], check=True, capture_output=True)
+        subprocess.run(['tar', '-C', str(self.new), '-xf', str(archive)],
+                       check=True, capture_output=True)
+        env = dict(os.environ, GIT_LITERAL_PATHSPECS='1')
+        subprocess.run(['git', '-C', str(self.new), 'add', '-A', '--force',
+                        '--pathspec-from-file=' + str(pathfile), '--pathspec-file-nul'],
+                       check=True, capture_output=True, env=env)
+        self.assertFalse((self.new / '.env').exists())
+        self.assertEqual(mod.verify(self.old, self.new), (2, 1, []))
 
     def test_byte_identical_binary_and_protected_exclusion(self):
         self.put('data/asset.sqlite', b'SQLite format 3\x00\x00\xff')
