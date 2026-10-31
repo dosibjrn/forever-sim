@@ -653,6 +653,85 @@ def _source_disabled_rune_ids(db_path: Path, class_key: str, level: int) -> dict
 
 
 
+
+
+def _verified_npc_acquisition_in_frontier(rec: dict) -> bool:
+    """Use the actual action_frontier evidence fields, not IR or level hints.
+
+    The frontier's acquisition extractor checks source-index row/batch
+    fingerprints and complete detail snapshots before yielding this category.
+    """
+    return (
+        rec.get('source_acquisition_category') ==
+            'DETAIL_OBSERVED_NPC_TEACHING_NOT_POSSESSION'
+        and str(rec.get('source_acquisition_evidence_status') or '')
+            .startswith('VERIFIED_DETAIL_')
+    )
+
+
+def _require_learned_source_proof(status: str, reason: str, *, spellbook_present: bool,
+                                  acquisition_verified: bool = False):
+    """A generated exact-ID GameIR action is not proof it was learned.
+
+    Source-index rank/level and a runnable effect are independent of client
+    skill acquisition. Only a matched versioned spellbook or independently
+    observed acquisition can establish the castable rank. This deliberately
+    leaves unresolved rows visible for P1 rather than guessing legal spells.
+    """
+    # _status may emit SOURCE_OBSERVED_NPC_TRAINING_METHOD from an
+    # acquisition-evidence row without checking its source index batch, row
+    # fingerprint or complete detail snapshot. Trust only the verified,
+    # same-source frontier joined above. A bare GameIR source ID is not a
+    # possession/acquisition witness either.
+    if (not spellbook_present and status == 'LEGAL'
+            and reason in ('SOURCE_INDEX_EXACT_ID_CHECKPOINT_GAME_IR_ACTION',
+                           'SOURCE_OBSERVED_NPC_TRAINING_METHOD')):
+        if acquisition_verified is True:
+            return 'LEGAL', 'SOURCE_VERIFIED_NPC_TEACHING_METHOD'
+        if reason == 'SOURCE_OBSERVED_NPC_TRAINING_METHOD':
+            return 'UNRESOLVED', 'NPC_TRAINING_SOURCE_BATCH_NOT_VERIFIED'
+        return 'UNRESOLVED', 'EXACT_GAME_IR_ACTION_IS_NOT_ACQUISITION_EVIDENCE'
+    return status, reason
+
+
+
+def _source_legality_evidence_rows(frontier: dict, ledger: dict) -> list[dict]:
+    """Full source-rank ledger: no highest-rank suppression or guessed grants.
+
+    Preserve every indexed rank's source identity, client evidence and status
+    so a failed L60 P1 run provides an actionable acquisition worklist.
+    An L0 or GameIR row is diagnostic, not a P1 execution certificate.
+    """
+    rows=[]; seen=set()
+    for rec in frontier.get('records',()):
+        if 'spell_id' not in rec:
+            continue
+        sid=int(rec['spell_id'])
+        if sid in seen:
+            raise P1SetupError('DUPLICATE_P1_SOURCE_LEGALITY_SPELL_ID:'+str(sid))
+        seen.add(sid)
+        if sid not in ledger:
+            raise P1SetupError('P1_SOURCE_LEGALITY_LEDGER_MISSING:'+str(sid))
+        status,reason=ledger[sid]
+        rows.append({
+            'spell_id':sid,
+            'name':rec.get('name'),
+            'rank_hint':rec.get('source_rank_hint'),
+            'level_hint':rec.get('source_level_hint'),
+            'source_url':rec.get('source_url'),
+            'source_index_batch':rec.get('source_index_batch'),
+            'source_row_sha256':rec.get('source_row_sha256'),
+            'game_ir_action_ids':list(rec.get('ir_action_ids') or ()),
+            'acquisition_category':rec.get('source_acquisition_category'),
+            'acquisition_evidence_status':rec.get('source_acquisition_evidence_status'),
+            'legality':status,
+            'reason':reason,
+        })
+    if set(ledger)!=seen:
+        raise P1SetupError('P1_SOURCE_LEGALITY_LEDGER_UNMATCHED_IDS')
+    return sorted(rows,key=lambda row:row['spell_id'])
+
+
 def _source_legality(root: Path, ir, class_key: str, level: int, db_path: Path):
     """Reuse the source compiler's own legal/conditional/passive frontier.
 
@@ -705,12 +784,20 @@ def _source_legality(root: Path, ir, class_key: str, level: int, db_path: Path):
         status, reason = _status(rec, acquisition.get(int(rec['spell_id'])),profile='unrestricted')
         if spellbook is not None:
             status, reason = spellbook.source_decision(rec)
+        # action_frontier exposes verified evidence category/status; a
+        # locally invented 'source_acquisition_verified' flag would be absent.
+        status, reason = _require_learned_source_proof(
+            status,reason,spellbook_present=spellbook is not None,
+            acquisition_verified=_verified_npc_acquisition_in_frontier(rec))
         ledger[int(rec['spell_id'])] = (status,reason)
     extra=[]
     if spellbook is not None:
         coverage=spellbook.coverage(frontier['records'])
         extra=coverage['missing_learned_action_rows']
+    detail_rows=_source_legality_evidence_rows(frontier,ledger)
     return ledger, {'spellbook_file':str(candidates[0].relative_to(root)) if candidates else None,
+                    'source_legality_evidence_rows':detail_rows,
+                    'source_legality_evidence_count':len(detail_rows),
                     'scope_context_exclusions': dict(spellbook.data.get('contextual_zero_when_solo_land_mob_no_allies_or_debuffs', {})) if spellbook else {},
                     'source_ledger_status_counts':{
                         status:sum(1 for s,_ in ledger.values() if s==status)
