@@ -6,6 +6,7 @@ from src.game.multi_pull import evaluate_repeated_pulls
 from src.game.model import PeriodicHealEffect
 from src.game.recovery import recover_actor_to_full
 from src.game.runtime import ActorState, CombatRuntime, TargetState
+from src.game.runtime.simulator import expected_periodic_tick_heal
 from src.shared.leveling.objective import representative_hp
 
 
@@ -49,6 +50,11 @@ def test_real_source_hot_carries_every_remaining_tick_into_next_pull_exactly_onc
     heals = [e for e in next_pull.trace if e.kind == 'Heal' and e.payload.get('periodic')]
     assert [e.time_s for e in heals] == pytest.approx([e.time_s for e in pending_ticks])
     assert [e.payload['tick_index'] for e in heals] == pending_indices
+    expected_heal = expected_periodic_tick_heal(
+        hot, healing_power=actor.effective_healing_power(0.))
+    assert expected_heal > 0
+    assert [e.payload['amount'] for e in heals] == pytest.approx(
+        [expected_heal] * len(pending_ticks))
     assert actor.resource_amount('health') <= actor.resource_capacity['health']
     assert not actor.active_auras
     assert not next_pull.persist_actor_periodics()
