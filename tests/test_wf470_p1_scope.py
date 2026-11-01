@@ -1,6 +1,7 @@
 """P1's changed meaning is a contract, not only a druid example."""
 from pathlib import Path
 import json
+import pytest
 import sys
 from types import SimpleNamespace as N
 ROOT=Path(__file__).resolve().parents[1]
@@ -62,3 +63,40 @@ def test_role_evidence_is_versioned_and_source_id_bound():
     assert set(facts)=={1735,5211,2637,6808,16810,5215}
     for sid,fact in facts.items():
         assert fact['source_url'].startswith('https://') and fact['name']
+
+
+def test_real_l30_spellbook_observations_resolve_source_roles_without_fake_ir():
+    from wf_gate_p1_live import (_source_rows, _source_legality,
+        _load_spellbook_observed_scope_facts)
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.game.data.forever.sqlite_talents import DEFAULT_DB
+    rows=_source_rows(DEFAULT_DB,'druid',30)
+    ir=build_game_ir_slice(class_key='druid',level=30,ability_db_path=DEFAULT_DB)
+    _,meta=_source_legality(ROOT,ir,'druid',30,DEFAULT_DB)
+    facts=_load_spellbook_observed_scope_facts(ROOT,meta['spellbook_file'],rows)
+    assert facts[740]['roles']==['healing']      # Tranquility: not P1 combat scope
+    assert facts[780]['roles']==['damage']       # Swipe
+    assert facts[783]['roles']==['buff']         # Travel Form
+    assert facts[1850]['roles']==['buff']        # Dash
+    assert facts[6798]['roles']==['cc']          # Bash
+    assert facts[6809]['roles']==['damage']      # Maul
+    assert facts[24974]['roles']==['damage','debuff']  # Talent-granted rank
+    # Role evidence does NOT fabricate the absent GameIR executor.
+    report=run_live(ROOT,'druid',30)
+    assert not any('P1_EFFECT_SCOPE_UNRESOLVED:' in reason and
+                   any(reason.split(':')[1]==str(sid) for sid in
+                       (740,780,783,1850,6798,6809))
+                   for reason in report['reasons'])
+    assert any(reason.startswith('MISSING_GAME_IR_ACTION:780:') for reason in report['reasons'])
+
+
+def test_spellbook_observed_role_rejects_wrong_exact_source_identity(tmp_path):
+    from wf_gate_p1_live import (_source_rows, _load_spellbook_observed_scope_facts,
+                                 P1SetupError)
+    from src.game.data.forever.sqlite_talents import DEFAULT_DB
+    rows=_source_rows(DEFAULT_DB,'druid',30)
+    document=json.loads((ROOT/'evidence/wf348/druid_spellbook_70338_level1_30.json').read_text())
+    document['observed_rank_numeric_by_id']['780']['name']='Not Swipe'
+    (tmp_path/'altered.json').write_text(json.dumps(document))
+    with pytest.raises(P1SetupError,match='P1_SPELLBOOK_OBSERVED_SCOPE_IDENTITY_DRIFT:780'):
+        _load_spellbook_observed_scope_facts(tmp_path,'altered.json',rows)
