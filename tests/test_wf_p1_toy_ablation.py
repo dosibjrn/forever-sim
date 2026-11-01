@@ -66,3 +66,23 @@ def test_one_real_source_heal_vs_inert_cast(monkeypatch):
     assert result["status"] == "EFFECT_OBSERVED", result
     assert ("player_hp" in result["difference"]
             or "healing" in result["difference"]), result
+
+
+def test_target_armor_debuff_is_captured_as_runtime_behavior(monkeypatch):
+    monkeypatch.setenv("WOW_FOREVER_BUILD_AS_OF", "2026-10-17")
+    ir, inventory, matched, _ = _source_actions(ROOT)
+    sid = _find(inventory, "Faerie Fire")
+    result = compare_action(ir, matched[sid])
+    assert result["status"] == "EFFECT_OBSERVED", result
+    assert any(key in result["difference"] for key in (
+        "mob_stat_modifiers", "debuff_event_count", "mob_hp")), result
+
+
+def test_queued_maul_requires_real_source_autoattack(monkeypatch):
+    monkeypatch.setenv("WOW_FOREVER_BUILD_AS_OF", "2026-10-17")
+    ir, inventory, matched, _ = _source_actions(ROOT)
+    sid = _find(inventory, "Maul")
+    result = compare_action(ir, matched[sid])
+    assert result["status"] == "EFFECT_OBSERVED", result
+    assert ("mob_hp" in result["difference"]
+            or "damage_dealt" in result["difference"]), result
