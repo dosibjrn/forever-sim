@@ -125,3 +125,26 @@ func TestWorldEffectACKHealthDeltaBoundToRealNativeDamage(t *testing.T) {
         t.Fatal("accepted health change not backed by native spell event")
     }
 }
+
+func TestWorldEffectACKAcceptsLethalSourceOverkillAndRejectsInventedHP(t *testing.T) {
+    tick:=goodTick(0,100)
+    events:=[]sourceNativeEventProof{nativeRealEventProof()} // raw 22.5 damage
+    var ack worldDamageAck
+    if err:=json.Unmarshal(ackFixture(tick,events,123),&ack);err!=nil {t.Fatal(err)}
+    before,after,maxHP:=10.0,0.0,10.0
+    ack.WorldTargetHealthBefore=&before
+    ack.WorldTargetHealthAfter=&after
+    ack.WorldTargetMaxHealth=&maxHP
+    raw,_:=json.Marshal(ack)
+    result,err:=checkWorldEffectACK(raw,tick,events,123)
+    if err!=nil || result.WorldTargetHealthAfter==nil || *result.WorldTargetHealthAfter!=0 {
+        t.Fatalf("rejected real lethal overkill: %+v %v",result,err)
+    }
+    // Raw native damage exceeded the world target's remaining HP. Any
+    // surviving HP or inflated HP loss is inconsistent with that event.
+    after=1
+    raw,_=json.Marshal(ack)
+    if _,err:=checkWorldEffectACK(raw,tick,events,123);err==nil {
+        t.Fatal("accepted world target surviving a lethal source event")
+    }
+}
