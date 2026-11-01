@@ -2075,6 +2075,7 @@ def independently_compare_shortlist(rows, replay, *, max_mobs=100):
                         'full_s_per_mob':result.get('mean_s_per_mob') if valid else None,
                         'status':result.get('status'), 'count':count,
                         'events':result.get('events'),
+                        'failed_pull_index':result.get('failed_pull_index'),
                         'reason':result.get('reason')})
     full=[r for r in results if r['full_s_per_mob'] is not None]
     winning=min(full,key=lambda r:r['full_s_per_mob']) if full else None
