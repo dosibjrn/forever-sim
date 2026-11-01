@@ -899,7 +899,8 @@ def run_source_persistent_joint_search(*,class_key: str,level: int,
                                        max_finalist_wall_s:float|None=None,
                                        source_gear_refinement:bool=True,
                                        max_gear_perturbations:int=24,
-                                       max_gear_refined_finalists:int=5) -> dict:
+                                       max_gear_refined_finalists:int=5,
+                                       recovery_policies:tuple[BetweenPullPolicy | None,...]=(None,)) -> dict:
     """Production-facing joint optimizer which *selects* on 100-mob objective."""
     start=monotonic()
     if joint_kwargs.get('initial_allocation'):
@@ -911,7 +912,8 @@ def run_source_persistent_joint_search(*,class_key: str,level: int,
         joint_result=joint,screen_mobs=screen_mobs,finalist_mobs=finalist_mobs,
         max_finalists=max_finalists,max_screen_candidates=max_screen_candidates,
         source_legal_neighbors_per_seed=source_legal_neighbors_per_seed,
-        max_screen_wall_s=max_screen_wall_s,max_finalist_wall_s=max_finalist_wall_s)
+        max_screen_wall_s=max_screen_wall_s,max_finalist_wall_s=max_finalist_wall_s,
+        recovery_policies=recovery_policies)
     gear_refinement=_refine_fullcycle_winner_with_source_gear(
         class_key=class_key,level=level,finalists=finalists,
         enabled=source_gear_refinement,max_proposals=max_gear_perturbations,
@@ -936,7 +938,8 @@ def run_source_persistent_profile_search(*,class_key: str, level: int,
                                          max_finalist_wall_s:float|None=None,
                                          source_gear_refinement:bool=True,
                                          max_gear_perturbations:int=24,
-                                         max_gear_refined_finalists:int=5) -> dict:
+                                         max_gear_refined_finalists:int=5,
+                                         recovery_policies:tuple[BetweenPullPolicy | None,...]=(None,)) -> dict:
     """Independent blind budget profiles; one paid persistent objective.
 
     Each profile independently starts from the source-empty talent build. It
@@ -968,7 +971,8 @@ def run_source_persistent_profile_search(*,class_key: str, level: int,
         joint_result=combined,screen_mobs=screen_mobs,finalist_mobs=finalist_mobs,
         max_finalists=max_finalists,max_screen_candidates=max_screen_candidates,
         source_legal_neighbors_per_seed=source_legal_neighbors_per_seed,
-        max_screen_wall_s=max_screen_wall_s,max_finalist_wall_s=max_finalist_wall_s)
+        max_screen_wall_s=max_screen_wall_s,max_finalist_wall_s=max_finalist_wall_s,
+        recovery_policies=recovery_policies)
     gear_refinement=_refine_fullcycle_winner_with_source_gear(
         class_key=class_key,level=level,finalists=finalists,
         enabled=source_gear_refinement,max_proposals=max_gear_perturbations,
