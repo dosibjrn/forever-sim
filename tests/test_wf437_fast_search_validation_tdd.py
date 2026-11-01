@@ -129,3 +129,27 @@ def test_direct_backend_refuses_full_horizon_or_legacy_full_search():
             search_bounded_joint_frontier(class_key='druid',level=30,
                 source_ir=ir,seed_stage=stage,screen_evaluator_backend='direct',
                 **kwargs)
+
+
+def test_real_source_paid_shortlist_never_replays_same_full_build_twice():
+    """A repeated paid source configuration must not consume two 100-mob slots."""
+    from copy import deepcopy
+    from src.v2.source_bounded_joint_frontier import _select_screen_finalists
+    ir,stage=fixture()
+    report=search_bounded_joint_frontier(
+        class_key='druid',level=30,source_ir=ir,seed_stage=stage,
+        bonus_talent_points=5,max_talents=2,max_gear_moves=0,
+        max_policies=2,max_recovery_policies=1,max_paid_builds=4,
+        max_cpu_s=5.,screen_mobs=2,per_candidate_wall_s=1.,
+        search_only=True,screen_evaluator_backend='direct',
+        refinement_top_n=1,refinement_rounds=0)
+    assert report['validation_shortlist'], report['status']
+    actual_paid_row=report['validation_shortlist'][0]
+    assert actual_paid_row['screen_status']=='COMPLETE'
+    # The search can reach one identical build through two frontier paths.
+    # Both entries are backed by the SAME real paid CombatRuntime screen.
+    shortlisted=_select_screen_finalists([
+        (actual_paid_row,None,None),
+        (deepcopy(actual_paid_row),None,None),
+    ],max_finalists=2)
+    assert len(shortlisted)==1, 'DUPLICATE_FULL_BUILD_WOULD_REPLAY_100_MOBS_TWICE'
