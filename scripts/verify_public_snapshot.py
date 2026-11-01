@@ -20,6 +20,7 @@ PROTECTED_EXACT = {
     'scripts/port_remaining_branches.sh',
     'scripts/verify_public_snapshot.py',
     'tests/test_verify_public_snapshot.py',
+    'tests/test_restore_private_source_workflow.py',
 }
 PROTECTED_PREFIX = ('docs/migration/', '.github/workflows/')
 LFS_POINTER = b'version https://git-lfs.github.com/spec/v1\n'
