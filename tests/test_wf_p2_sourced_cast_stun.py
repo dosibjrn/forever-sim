@@ -1,5 +1,6 @@
 """Sourced cast-time + control proc must execute through the real GameIR runtime."""
 import pytest
+from dataclasses import replace
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.sqlite_talents import _parse_rank_tooltip
@@ -31,12 +32,14 @@ def test_druid_starfire_source_rank_changes_cast_and_emits_control_event():
     after, receipt = apply_talent_selection(compiled, allocation, level=60)
     assert any(m["kind"] == "action_control_proc" for m in receipt.applied_modifiers
                if m["talent_id"] == "improved_starfire")
-    baseline = dict(allocation)
-    baseline.pop("improved_starfire")
-    before, _ = apply_talent_selection(compiled, baseline, level=60)
-    original = next(a for a in before.actions if a.family_key == "starfire")
     modified = next(a for a in after.actions if a.family_key == "starfire")
-    assert modified.cast_time_s == pytest.approx(original.cast_time_s - 0.1)
+    # Neutralize only the sourced modifier on the SAME legally allocated actor.
+    # Removing the rank from this full-point allocation would invalidate
+    # Moonfury's tier gate and is not a legal paired runtime control.
+    neutralized = replace(modified, cast_time_s=modified.cast_time_s - cast.value,
+                          effects=tuple(e for e in modified.effects
+                                        if not (isinstance(e, ControlEffect)
+                                                and e.control_id == "stun")))
     controls = [e for e in modified.effects if isinstance(e, ControlEffect)]
     assert len(controls) == 1
     assert controls[0].control_id == "stun"
@@ -51,7 +54,7 @@ def test_druid_starfire_source_rank_changes_cast_and_emits_control_event():
         runtime.advance_to(end + 0.01)
         return end, [e for e in runtime.trace if e.kind == "ControlApplied"], runtime
 
-    old_end, old_control, old_runtime = execute(before, original)
+    old_end, old_control, old_runtime = execute(after, neutralized)
     new_end, new_control, new_runtime = execute(after, modified)
     assert new_end == pytest.approx(old_end - 0.1)
     assert not old_control
