@@ -25,7 +25,7 @@ if str(ROOT) not in sys.path:
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.data.forever.source_indexed_action_coverage import _source_spell_ids
-from src.game.model.ir import IncomingAttackDefinition, QueuedSwingEffect, ResourceChangeEffect
+from src.game.model.ir import IncomingAttackDefinition, QueuedSwingEffect, ResourceChangeEffect, TargetStatDebuffEffect
 from src.game.runtime import ActorState, CombatRuntime, TargetState
 from src.game.runtime.simulator import action_eligibility
 from tools.wf_gate_p1_live import (_highest_usable_ranks, _source_ids, _source_rows, _source_legality, _source_disabled_rune_ids, _load_p1_scenario_nonimpact, run_live)
@@ -158,7 +158,19 @@ def _run_one(ir, action, mode, *, muted: bool):
         raise ValueError("SOURCE_QUEUED_SWING_AUTOATTACK_MISSING")
     rt = CombatRuntime(actor=actor, target=target, auto_attacks=attacks,
                        incoming_attacks=(incoming,))
-    real_or_muted = replace(action, effects=()) if muted else action
+    if muted and action.metadata.get("aoe_center") == "actor":
+        # The production engine correctly rejects a hostile-area cast without
+        # any hostile-target effect. Neutralize magnitude, not AoE eligibility.
+        # This is the SAME source-derived action, costs, time and area target.
+        if not action.effects or not all(
+            isinstance(effect, TargetStatDebuffEffect) and effect.target == "enemies"
+            for effect in action.effects
+        ):
+            raise ValueError("TOY_NEUTRAL_AOE_EFFECT_NOT_IMPLEMENTED")
+        real_or_muted = replace(
+            action, effects=tuple(replace(effect, delta=0.) for effect in action.effects))
+    else:
+        real_or_muted = replace(action, effects=()) if muted else action
     eligibility = action_eligibility(action=real_or_muted, actor=actor, target=target)
     if not eligibility.eligible:
         raise ValueError("ACTION_NOT_ELIGIBLE:" + str(eligibility.reason))
