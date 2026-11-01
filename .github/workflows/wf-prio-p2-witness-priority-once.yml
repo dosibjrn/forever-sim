@@ -5,6 +5,7 @@ on:
       - work/prio-p2-source-witness-priority-20261101
     paths:
       - src/v2/source_bounded_joint_frontier.py
+      - .github/workflows/wf-prio-p2-witness-priority-once.yml
 permissions:
   contents: read
 concurrency:
