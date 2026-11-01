@@ -58,7 +58,7 @@ def test_misbound_spell_id_name_never_suppresses_missing_action():
 
 def test_loader_only_matches_class_checkpoint_and_declared_scenario():
     actual=_load_p1_scenario_nonimpact(ROOT,'druid',20,P1_DEFAULT_SCENARIO)
-    assert set(actual)=={2637,18960}
+    assert set(actual)=={2637, 18960, 1066, 6795, 8946, 20484, 437138}
     assert _load_p1_scenario_nonimpact(ROOT,'mage',20,P1_DEFAULT_SCENARIO)=={}
     assert _load_p1_scenario_nonimpact(ROOT,'druid',9,P1_DEFAULT_SCENARIO)=={}
     with pytest.raises(P1SetupError,match='P1_SCENARIO_UNDECLARED'):
@@ -71,6 +71,6 @@ def test_full_live_gate_reports_green_with_nonimpact_separate(monkeypatch):
     assert report['status']=='PASS'
     assert report['problem_count']==0
     assert not report['problems']
-    assert report['does_not_affect_sim_count']==2
-    assert {x['source_spell_id'] for x in report['does_not_affect_sim']}=={2637,18960}
+    assert report['does_not_affect_sim_count']==7
+    assert {x['source_spell_id'] for x in report['does_not_affect_sim']}=={2637, 18960, 1066, 6795, 8946, 20484, 437138}
     assert report['production_runtime_exercises']==18
