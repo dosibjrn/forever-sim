@@ -28,19 +28,50 @@ class CheckpointP1:
 
 
 def _acquisition(db: sqlite3.Connection, cls: str) -> dict[int, dict]:
-    # NPC method is authoritative *source* evidence of a learnable skill. It
-    # does not claim that a particular vendor is currently spawned or accessed.
-    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ability_acquisition_evidence'").fetchone():
-        return {}
-    result = {}
-    for sid, status, methods in db.execute('''SELECT spell_id,evidence_status,methods_observed_json
-              FROM ability_acquisition_evidence WHERE class_key=?''', (cls,)):
-        seen = json.loads(methods)
-        if not isinstance(seen, dict):
-            raise ValueError('INVALID_ACQUISITION_METHOD_EVIDENCE')
-        result[int(sid)] = {'status': status, 'methods': seen}
-    return result
+    """Only current, verified source-detail snapshots may authorize NPC methods.
 
+    Index hints and stale acquisition rows are diagnostics, not evidence that a
+    spell can be taught. Reuse the same source identity check as the canonical
+    acquisition frontier; the P1 evaluator must not bypass it.
+    """
+    from .source_checkpoint_acquisition import _resolve_matching_acquisition_evidence
+
+    required = {'ability_acquisition_evidence', 'spell_index',
+                'spell_detail_snapshots', 'spell_details', 'capture_batches'}
+    tables = {r[0] for r in db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'")}
+    if not required.issubset(tables):
+        return {}
+    cursor = db.execute("""SELECT e.*, i.batch_id AS live_batch,
+            i.source_url AS live_url, i.level_hint AS live_level,
+            i.raw_listview_json AS live_raw,
+            s.html_sha256 AS snapshot_sha, d.details_verified,
+            b.status AS batch_status
+        FROM ability_acquisition_evidence e
+        JOIN spell_index i ON i.class_key=e.class_key
+            AND i.spell_id=e.spell_id AND i.kind='abilities'
+        LEFT JOIN spell_detail_snapshots s
+            ON s.batch_id=e.index_batch_id AND s.spell_id=e.spell_id
+        LEFT JOIN spell_details d
+            ON d.batch_id=e.index_batch_id AND d.spell_id=e.spell_id
+        LEFT JOIN capture_batches b ON b.batch_id=e.index_batch_id
+        WHERE e.class_key=?""", (cls,))
+    columns = [column[0] for column in cursor.description]
+    result = {}
+    for values in cursor:
+        evidence = dict(zip(columns, values))
+        source_row = {
+            'batch_id': evidence['live_batch'],
+            'source_url': evidence['live_url'],
+            'level_hint': evidence['live_level'],
+            'raw_listview_json': evidence['live_raw'],
+        }
+        status, methods = _resolve_matching_acquisition_evidence(
+            evidence, source_row)
+        if status.startswith('VERIFIED_DETAIL_'):
+            result[int(evidence['spell_id'])] = {
+                'status': status, 'methods': methods}
+    return result
 
 def _status(row: dict, acquisition: dict | None, *, profile: str) -> tuple[str, str]:
     reason = row.get('eligibility', '')

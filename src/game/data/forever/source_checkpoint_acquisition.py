@@ -18,6 +18,30 @@ from .source_action_scope import classify_indexed_ability
 from .sqlite_talents import DEFAULT_DB
 
 
+
+def _resolve_matching_acquisition_evidence(e: dict, row: dict) -> tuple[str,dict]:
+    """Validate the actual source snapshot before a DETAIL grant is trusted.
+
+    A VERIFIED_DETAIL_* label does not itself prove that the detail snapshot
+    still exists, was verified, or belongs to the current completed batch.
+    The source index row and detail snapshot are independent witnesses.
+    """
+    if (e['index_batch_id']!=row['batch_id'] or e['source_url']!=row['source_url']
+            or e['required_level_hint']!=row['level_hint']
+            or e['source_payload_sha256']!=sha256(row['raw_listview_json'].encode()).hexdigest()):
+        return 'STALE_INDEX_ACQUISITION_EVIDENCE', {}
+    detail_claim=str(e['evidence_status']).startswith('VERIFIED_DETAIL_')
+    if detail_claim or e['detail_html_sha256'] is not None:
+        if (not e['detail_html_sha256'] or not e['snapshot_sha']
+                or e['detail_html_sha256']!=e['snapshot_sha']
+                or e['details_verified']!=1 or e['batch_status']!='complete'):
+            return 'STALE_DETAIL_ACQUISITION_EVIDENCE', {}
+    methods=json.loads(e['methods_observed_json'])
+    if not isinstance(methods,dict):
+        raise ValueError('INVALID_ACQUISITION_METHOD_EVIDENCE')
+    return e['evidence_status'],methods
+
+
 def acquisition_frontier(*, class_key: str, level: int, db_path: str | Path = DEFAULT_DB) -> dict:
     cls = str(class_key).strip().lower()
     if not cls or not 1 <= int(level) <= 60:
@@ -58,17 +82,7 @@ def acquisition_frontier(*, class_key: str, level: int, db_path: str | Path = DE
         status='NO_MATCHING_ACQUISITION_EVIDENCE'
         methods={}
         if e:
-            if (e['index_batch_id']!=row['batch_id'] or e['source_url']!=row['source_url']
-                    or e['required_level_hint']!=row['level_hint']
-                    or e['source_payload_sha256']!=sha256(row['raw_listview_json'].encode()).hexdigest()):
-                status='STALE_INDEX_ACQUISITION_EVIDENCE'
-            elif e['detail_html_sha256'] is not None and (
-                    e['detail_html_sha256']!=e['snapshot_sha'] or e['details_verified']!=1
-                    or e['batch_status']!='complete'):
-                status='STALE_DETAIL_ACQUISITION_EVIDENCE'
-            else:
-                status=e['evidence_status']
-                methods=json.loads(e['methods_observed_json'])
+            status,methods=_resolve_matching_acquisition_evidence(e,row)
         if role['role']=='SOURCE_NAMED_EQUIPMENT_ENGRAVING_SETUP':
             category='EQUIPMENT_RUNE_SETUP_NOT_COMBAT_CAST'
         elif role['role']=='ZERO_OR_UNKNOWN_LEVEL_PASSIVE_TALENT_CANDIDATE':
