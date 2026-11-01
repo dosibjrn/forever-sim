@@ -1766,7 +1766,7 @@ def _joint_eval_child(queue, candidate, level, mobs, recovery_policy, timeout_s,
         queue.put({k:result.get(k) for k in ('status','mean_s_per_mob','events','count',
             'mob_completed','elapsed_cpu_s','elapsed_wall_s','recovery_s',
             'packs','pack_size','spatial_mode','incoming_attacks_scheduled',
-            'source_action_counts')})
+            'source_action_counts','reason','failed_pull_index')})
     except BaseException as exc:
         queue.put({'status':'BLOCKED_RUNTIME_EXCEPTION',
                    'reason':type(exc).__name__+':'+str(exc)[:320],
@@ -2075,6 +2075,7 @@ def independently_compare_shortlist(rows, replay, *, max_mobs=100):
                         'full_s_per_mob':result.get('mean_s_per_mob') if valid else None,
                         'status':result.get('status'), 'count':count,
                         'events':result.get('events'),
+                        'failed_pull_index':result.get('failed_pull_index'),
                         'reason':result.get('reason')})
     full=[r for r in results if r['full_s_per_mob'] is not None]
     winning=min(full,key=lambda r:r['full_s_per_mob']) if full else None
