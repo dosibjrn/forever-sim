@@ -45,7 +45,7 @@ jobs:
           ]
           for name in dbs:
               p = Path(name)
-              assert p.read_bytes()[:16] == b'SQLite format 3\\x00', name
+              assert p.read_bytes()[:16] == b'SQLite format 3\x00', name
               assert p.stat().st_size > 12000, name
           for name in payloads:
               p = Path(name)
