@@ -7,6 +7,11 @@ Neither artifact nor ingester promotes incomplete actions to L2 eligibility.
 from __future__ import annotations
 import hashlib,json,sqlite3
 from pathlib import Path
+import sys
+
+# Direct CLI execution starts with tools/ on sys.path, not the repository root.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from time import process_time
 from src.game.data.forever.source_verified_detail_effects import ingest as ingest_effects
 from src.game.data.forever.source_effect_atoms import ingest as ingest_atoms
