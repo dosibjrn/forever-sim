@@ -7,6 +7,7 @@ world-action ACK exists yet; never use this as P7 or 1/148 acceptance.
 from __future__ import annotations
 
 import argparse
+from collections import deque
 import hashlib
 import json
 import queue
@@ -61,9 +62,24 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     previous_ack_id = ''
     proc = subprocess.Popen([str(binary), '--request', str(request),
         '--source-revision', PINNED_GO_REVISION],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1)
     lines: queue.Queue[str] = queue.Queue()
+    # Drain native stderr concurrently: a dead native process must reveal its
+    # first actual Go error, not just an opaque stdout EOF. Bound memory use.
+    native_stderr = deque(maxlen=60)
+
+    def read_stderr():
+        for line in proc.stderr:
+            native_stderr.append(line.rstrip())
+
+    stderr_thread = threading.Thread(target=read_stderr, daemon=True)
+    stderr_thread.start()
+
+    def native_failure_details() -> str:
+        if proc.poll() is not None:
+            stderr_thread.join(timeout=1)
+        return f'exit={proc.poll()} stderr={chr(10).join(native_stderr)[-4096:]}'
 
     def read_lines():
         for line in proc.stdout:
@@ -84,9 +100,9 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
             try:
                 raw_reply = lines.get(timeout=timeout_s)
             except queue.Empty as exc:
-                raise RuntimeError('NATIVE_GO_RANGE_RECEIPT_TIMEOUT') from exc
+                raise RuntimeError('NATIVE_GO_RANGE_RECEIPT_TIMEOUT: ' + native_failure_details()) from exc
             if not raw_reply:
-                raise RuntimeError('NATIVE_GO_SESSION_TERMINATED_BEFORE_RECEIPT')
+                raise RuntimeError('NATIVE_GO_SESSION_TERMINATED_BEFORE_RECEIPT: ' + native_failure_details())
             response = json.loads(raw_reply)
             if (response.get('type') != 'native_go_range_receipt'
                     or response.get('sequence') != tick['sequence']
@@ -113,9 +129,9 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
             try:
                 raw_confirmation = lines.get(timeout=timeout_s)
             except queue.Empty as exc:
-                raise RuntimeError('NATIVE_GO_WORLD_ACK_CONFIRMATION_TIMEOUT') from exc
+                raise RuntimeError('NATIVE_GO_WORLD_ACK_CONFIRMATION_TIMEOUT: ' + native_failure_details()) from exc
             if not raw_confirmation:
-                raise RuntimeError('NATIVE_GO_WORLD_ACK_CONFIRMATION_MISSING')
+                raise RuntimeError('NATIVE_GO_WORLD_ACK_CONFIRMATION_MISSING: ' + native_failure_details())
             confirmation = json.loads(raw_confirmation)
             if (confirmation.get('type') != 'native_go_world_ack_accepted'
                     or confirmation.get('sequence') != tick['sequence']
@@ -138,7 +154,7 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                                  'native_world_ack_confirmation': confirmation})
         proc.stdin.close()
         if proc.wait(timeout=timeout_s) != 0:
-            raise RuntimeError('NATIVE_GO_RANGE_SESSION_FAILED_ON_CLOSE')
+            raise RuntimeError('NATIVE_GO_RANGE_SESSION_FAILED_ON_CLOSE: ' + native_failure_details())
     finally:
         if proc.poll() is None:
             proc.terminate()
@@ -147,6 +163,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
+        stderr_thread.join(timeout=1)
+        proc.stderr.close()
     return {'kind': 'real_gsim_2d_pinned_go_live_range_only_v1',
             'target_spawn_yards': target_spawn_yards,
             'enemy_move_speed_yards_s': enemy_move_speed_yards_s,
