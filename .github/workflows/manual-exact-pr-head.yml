@@ -1,0 +1,121 @@
+name: Manual exact-PR-HEAD verifier
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Open same-repository PR number'
+        required: true
+        type: string
+      expected_sha:
+        description: 'Exact 40-character lowercase PR HEAD SHA'
+        required: true
+        type: string
+      suite:
+        description: 'Bounded test suite; never arbitrary commands'
+        required: true
+        type: choice
+        options:
+          - migration-guard
+          - native-ack-unit
+          - paid-replay-unit
+          - p1p2-unit
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-exact-head-${{ inputs.pr_number }}-${{ inputs.suite }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Verify open same-repo PR and exact HEAD before checkout
+        id: verify-pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SUITE: ${{ inputs.suite }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]{0,5}$ ]] || { echo 'Invalid PR number' >&2; exit 2; }
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid expected SHA' >&2; exit 2; }
+          case "$SUITE" in
+            migration-guard|native-ack-unit|paid-replay-unit|p1p2-unit) ;;
+            *) echo 'Suite not allowlisted' >&2; exit 2 ;;
+          esac
+          pr_json="$(gh api -H 'Accept: application/vnd.github+json' "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
+          state="$(jq -r '.state // ""' <<< "$pr_json")"
+          head_repo="$(jq -r '.head.repo.full_name // ""' <<< "$pr_json")"
+          base_repo="$(jq -r '.base.repo.full_name // ""' <<< "$pr_json")"
+          base_ref="$(jq -r '.base.ref // ""' <<< "$pr_json")"
+          actual_sha="$(jq -r '.head.sha // ""' <<< "$pr_json")"
+          if [[ "$state" != open || "$head_repo" != "$GITHUB_REPOSITORY" ||
+                "$base_repo" != "$GITHUB_REPOSITORY" || "$base_ref" != main ||
+                "$actual_sha" != "$EXPECTED_SHA" ]]; then
+            echo 'PR closed, forked, wrong base, or expected HEAD stale' >&2
+            exit 3
+          fi
+          printf 'sha=%s\n' "$actual_sha" >> "$GITHUB_OUTPUT"
+          echo "Validated PR #$PR_NUMBER exact HEAD $actual_sha suite=$SUITE"
+
+      - name: Checkout verified commit without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ steps.verify-pr.outputs.sha }}
+          fetch-depth: 1
+          lfs: true
+          persist-credentials: false
+
+      - name: Set up bounded Python test environment
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+
+      - name: Re-check PR head before running untrusted tests
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_SHA: ${{ steps.verify-pr.outputs.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          [[ "$actual" == "$EXPECTED_SHA" ]] || { echo 'Checkout SHA mismatch' >&2; exit 4; }
+          current="$(gh api -H 'Accept: application/vnd.github+json' "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.sha')"
+          [[ "$current" == "$EXPECTED_SHA" ]] || { echo 'PR head moved after checkout' >&2; exit 5; }
+          echo "Verified checkout HEAD=$actual"
+
+      - name: Execute allowlisted tests without API token
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.verify-pr.outputs.sha }}
+          SUITE: ${{ inputs.suite }}
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_SHA" ]] || exit 4
+          sha256sum PROCESS.md OVERALL_PLAN.md
+          git lfs ls-files | head -30 || true
+          python -m pip install --disable-pip-version-check 'pytest==8.3.5'
+          case "$SUITE" in
+            migration-guard)
+              python -m unittest discover -s tests -p 'test_restore_private_source_workflow.py' -v
+              python -m unittest discover -s tests -p 'test_verify_public_snapshot.py' -v
+              ;;
+            native-ack-unit)
+              python -m pytest -q tests/test_wf28_pinned_native_damage_hook.py tests/test_wf_go_native_world_damage_ack.py tests/test_wf_go_paired_native_spell_probe.py tests/test_wf_native_spell_observations.py tests/test_wf_native_target_spell_observations.py
+              ;;
+            paid-replay-unit)
+              python -m pytest -q tests/test_wf61_live_persistent_replay.py
+              ;;
+            p1p2-unit)
+              python -m pytest -q tests/test_wf34_acquisition_snapshot_binding.py tests/test_wf34_p1_client_acquisition_proof.py tests/test_wf35_product_spec_profile_contract.py
+              ;;
+            *) echo 'Suite not allowlisted' >&2; exit 6 ;;
+          esac
