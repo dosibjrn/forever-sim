@@ -145,7 +145,7 @@ func TestWorldEffectACKAcceptsLethalSourceOverkillAndRejectsInventedHP(t *testin
     ack.WorldTargetMaxHealth=&maxHP
     raw,_:=json.Marshal(ack)
     result,err:=checkWorldEffectACK(raw,tick,events,123)
-    if err!=nil || result.WorldTargetHealthAfter==nil || *result.WorldTargetHealthAfter!=0 {
+    if err!=nil || result.WorldTargetHealthAfter==nil || *result.WorldTargetHealthAfter!=0 || result.AppliedNativeDamage!=22.5 {
         t.Fatalf("rejected real lethal overkill: %+v %v",result,err)
     }
     // Raw native damage exceeded the world target's remaining HP. Any

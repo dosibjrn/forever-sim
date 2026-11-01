@@ -44,6 +44,8 @@ type worldAckAccepted struct {
     WorldTargetHealthBefore *float64 `json:"-"`
     WorldTargetHealthAfter *float64 `json:"-"`
     WorldTargetMaxHealth *float64 `json:"-"`
+    // Raw native event damage (including overkill), not capped gsim HP loss.
+    AppliedNativeDamage float64 `json:"-"`
 }
 
 func validHash(value string) bool {
@@ -151,7 +153,8 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
         NativeSpellActionACK:len(events)>0,CheckpointCertified:false,
         WorldTargetHealthBefore:ack.WorldTargetHealthBefore,
         WorldTargetHealthAfter:ack.WorldTargetHealthAfter,
-        WorldTargetMaxHealth:ack.WorldTargetMaxHealth},nil
+        WorldTargetMaxHealth:ack.WorldTargetMaxHealth,
+        AppliedNativeDamage:applied},nil
 }
 
 func decodeStrictJSON(data []byte, out any) error {
