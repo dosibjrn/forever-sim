@@ -59,9 +59,15 @@ if args.replay_from is not None:
     raise SystemExit(0 if replay_ok else 1)
 start=time.monotonic()
 params=dict(class_key='druid',level=30,source_ir=ir,seed_stage=stage,
-    bonus_talent_points=5,max_talents=80,max_gear_moves=8,
-    max_policies=5,max_recovery_policies=2,
-    max_paid_builds=(1000 if args.budget==30 else 10000),
+    bonus_talent_points=5,max_talents=80,
+    # The previous 300s run exhausted its 8-gear x 5-APL source frontier
+    # after 211s (7,439 unique paid builds), leaving the search budget idle.
+    # Widen only the long cold search with the existing source-legal
+    # gear/APL proposal generators; do not reuse the 30s candidates.
+    max_gear_moves=(8 if args.budget==30 else 16),
+    max_policies=(5 if args.budget==30 else 8),
+    max_recovery_policies=2,
+    max_paid_builds=(1000 if args.budget==30 else 20000),
     max_cpu_s=float(args.budget),screen_mobs=2,finalist_mobs=100,
     per_candidate_wall_s=1.,search_only=True,screen_evaluator_backend='direct',
     refinement_top_n=(4 if args.budget==30 else 12),
