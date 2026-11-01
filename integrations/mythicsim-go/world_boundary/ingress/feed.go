@@ -97,3 +97,19 @@ func validateWorldTargetTransition(previous string, lethalACK bool, selected str
     }
     return nil
 }
+
+ // Before the next native scheduler step, the gsim tick must continue from
+ // the last world-effect ACK. The native health API already enforces this,
+ // but only AFTER gsim damage has been applied; fail before any side effects.
+func validateWorldHealthContinuity(t worldTick, previousTarget string, previousDead bool,
+    previousAfter, previousMax float64, hasACK bool) error {
+    if !hasACK || previousDead { return nil }
+    if t.SelectedTargetID != previousTarget {
+        return errors.New("WORLD_TARGET_SWITCH_WITHOUT_LETHAL_ACK")
+    }
+    if math.Abs(t.WorldTargetHealthBefore-previousAfter)>1e-6 ||
+        math.Abs(t.WorldTargetMaxHealth-previousMax)>1e-6 {
+        return errors.New("WORLD_HEALTH_CHANGED_WITHOUT_NATIVE_ACK")
+    }
+    return nil
+}
