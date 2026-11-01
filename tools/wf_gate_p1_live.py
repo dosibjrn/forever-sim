@@ -245,6 +245,75 @@ def _load_source_scope_facts(db_path, class_key):
     return result
 
 
+
+# Source-observed *numeric* spell effects can establish P1 scope, but not
+# acquisition, GameIR execution or a P2 effect witness. The vocabulary is
+# class-independent; unknown source domains remain unresolved.
+_SPELLBOOK_OBSERVED_DOMAIN_ROLES = {
+    'damage_per_activation': 'damage',
+    'direct_damage': 'damage',
+    'periodic_damage_total': 'damage',
+    'queued_swing_bonus_damage': 'damage',
+    'weapon_bonus_damage': 'damage',
+    'weapon_damage_multiplier': 'damage',
+    'enemy_armor_reduction': 'debuff',
+    'enemy_hit_chance_reduction_pct': 'debuff',
+    'movement_speed_increase_pct': 'buff',
+    'target_control_seconds': 'cc',
+    # 'heal_or_absorb_per_activation' is ambiguous: a shield is a P1 buff.
+    # Never exclude it as healing without more specific source evidence.
+    'channeled_healing_per_party_target_over_10s': 'healing',
+}
+
+
+def _load_spellbook_observed_scope_facts(root: Path, spellbook_path: str | None,
+                                          source_rows: list[dict]) -> dict[int,dict]:
+    """Use the exact-ID numeric observations from the already source-bound spellbook.
+
+    _source_legality selected this file only after its source-index fingerprint
+    matched the canonical frontier. Recheck each observation's spell ID, name,
+    learned level and URL; a name match alone never grants a P1 scope waiver.
+    """
+    if spellbook_path is None:
+        return {}
+    try:
+        document = json.loads((root / spellbook_path).read_text(encoding='utf-8'))
+    except (OSError, ValueError) as exc:
+        raise P1SetupError('P1_SPELLBOOK_OBSERVED_SCOPE_UNAVAILABLE') from exc
+    if document.get('schema') != 'forever_spellbook_level_ranks_v1':
+        raise P1SetupError('P1_SPELLBOOK_OBSERVED_SCOPE_SCHEMA_INVALID')
+    rows = {int(row['spell_id']): row for row in source_rows}
+    facts = {}
+    observations = document.get('observed_rank_numeric_by_id', {})
+    if not isinstance(observations, dict):
+        raise P1SetupError('P1_SPELLBOOK_OBSERVED_SCOPE_INVALID')
+    for raw_id, observation in observations.items():
+        try:
+            spell_id = int(raw_id)
+        except (ValueError, TypeError) as exc:
+            raise P1SetupError('P1_SPELLBOOK_OBSERVED_SCOPE_ID_INVALID') from exc
+        row = rows.get(spell_id)
+        if row is None:
+            continue  # The source observation is above this checkpoint.
+        if (not isinstance(observation, dict)
+                or observation.get('name') != row['name']
+                or observation.get('learned_level') != row.get('level_hint')
+                or not isinstance(observation.get('source_url'), str)
+                or not observation['source_url'].startswith('https://')):
+            raise P1SetupError('P1_SPELLBOOK_OBSERVED_SCOPE_IDENTITY_DRIFT:' + str(spell_id))
+        domains = observation.get('domains')
+        if not isinstance(domains, dict) or not domains:
+            raise P1SetupError('P1_SPELLBOOK_OBSERVED_SCOPE_DOMAINS_INVALID:' + str(spell_id))
+        roles = sorted({_SPELLBOOK_OBSERVED_DOMAIN_ROLES[domain]
+                        for domain, amount in domains.items()
+                        if domain in _SPELLBOOK_OBSERVED_DOMAIN_ROLES
+                        and type(amount) in (int, float) and amount > 0})
+        if roles:
+            facts[spell_id] = {'name': row['name'], 'roles': roles,
+                               'source_url': observation['source_url']}
+    return facts
+
+
 def _load_p1_scenario_nonimpact(root: Path, class_key: str, level: int,
                                 scenario_id: str) -> dict[int,dict]:
     """Load explicit, checkpoint-scoped acceptance decisions, NEVER engine facts.
@@ -860,7 +929,9 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
                   executor=lambda i,a:_runtime_exercise(i,a,level),
                   higher_level_rows=excluded_high_level, effect_checker=effect_execution_kind,
                   source_inactive_ids=inactive_ids,source_statuses=legality,
-                  scope_facts=_load_source_scope_facts(source_db,class_key),
+                  scope_facts={**_load_spellbook_observed_scope_facts(root,
+                      legality_meta.get('spellbook_file'),rows),
+                      **_load_source_scope_facts(source_db,class_key)},
                   context_exclusions=legality_meta.get('scope_context_exclusions',{}),
                   scenario_nonimpact=nonimpact,scenario_id=scenario_id)
         report.update(check)
