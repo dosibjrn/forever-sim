@@ -172,3 +172,24 @@ func TestWorldEffectACKCannotSkipNativeHealthFeedback(t *testing.T) {
         }
     }
 }
+
+
+func TestWorldEffectACKBindsRealPetCasterAndRejectsForgedCaster(t *testing.T) {
+    tick:=goodTick(0,100)
+    pet:=nativeRealEventProof()
+    pet.NativeCasterType="pet"
+    pet.NativeCasterUnitIndex=2
+    pet.NativeCasterLabel="Imp"
+    events:=[]sourceNativeEventProof{pet}
+    accepted,err:=checkWorldEffectACK(ackFixture(tick,events,123),tick,events,123)
+    if err!=nil || !accepted.NativeSpellActionACK {t.Fatalf("source pet ACK missing: %+v %v",accepted,err)}
+    var forged worldDamageAck
+    if err:=json.Unmarshal(ackFixture(tick,events,123),&forged);err!=nil {t.Fatal(err)}
+    forged.AppliedEvents[0].NativeCasterLabel="other-pet"
+    raw,_:=json.Marshal(forged)
+    if _,err:=checkWorldEffectACK(raw,tick,events,123);err==nil {t.Fatal("accepted forged pet caster identity")}
+    malformed:=pet
+    malformed.NativeCasterLabel=""
+    if _,err:=checkWorldEffectACK(ackFixture(tick,[]sourceNativeEventProof{malformed},123),
+        tick,[]sourceNativeEventProof{malformed},123);err==nil {t.Fatal("accepted pet with missing source label")}
+}
