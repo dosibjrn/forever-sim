@@ -76,6 +76,9 @@ jobs:
               assert len(before['native_actor_state']['cooldown_ready_at_ns'])==len(after['native_actor_state']['cooldown_ready_at_ns'])
               assert before['native_actor_state']['current_health']>0
               assert after['native_actor_state']['current_health']>0
+              assert after['native_actor_state']['current_mana']>before['native_actor_state']['current_mana'],label
+              assert set(before['native_actor_state']['active_auras'])==set(after['native_actor_state']['active_auras']),label
+              assert len(after['native_actor_state']['cooldown_ready_at_ns'])>0,label
               assert all(o['native_world_ack_confirmation']['native_process_id']==result['native_process_id'] for o in obs)
               events=[(o['world_tick']['selected_target_id'],e['event_id'])
                       for o in obs for e in o['native_damage_events']]
@@ -96,4 +99,26 @@ jobs:
           else:
               raise AssertionError('FORGED_ACK_ACCEPTED')
           print('REAL_NATIVE_RECOVERY_NOT_P7')
+          PY
+      - name: RED old main has no real native actor recovery state witness
+        run: |
+          git -C project fetch --no-tags --depth=1 origin b5e4a937a1ff58ce69590421b31f7ad1978db250
+          test "$(git -C project rev-parse FETCH_HEAD)" = "b5e4a937a1ff58ce69590421b31f7ad1978db250"
+          git -C project show FETCH_HEAD:integrations/mythicsim-go/world_boundary/ingress/main.go > upstream/cmd/wf_gsim_go_world_ingress/main.go
+          cd upstream
+          go build -tags=with_db -trimpath -o ../gsim-go-old-ingress ./cmd/wf_gsim_go_world_ingress
+          cd ../project
+          python3 - <<'PY'
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import run
+          try:
+              run(Path('../gsim-go-old-ingress'),
+                  Path('../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json'),
+                  ticks=100,target_spawn_yards=3.,enemy_move_speed_yards_s=.1,
+                  target_health=100.,pulls=2,recovery_s=2.)
+          except RuntimeError as exc:
+              assert 'NATIVE_GO_ACTOR_STATE_RECEIPT_INVALID' in str(exc),str(exc)
+              print('REAL_MAIN_RED_NATIVE_RECOVERY_STATE_UNOBSERVABLE')
+          else:
+              raise AssertionError('OLD_MAIN_UNEXPECTEDLY_PROVED_NATIVE_ACTOR_RECOVERY')
           PY
