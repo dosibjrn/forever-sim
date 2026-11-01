@@ -29,6 +29,8 @@ jobs:
           python tools/wf293_ingest_source_effect_atoms_sqlite.py --help >/dev/null
           python tools/wf315_source_index_typed_runtime_batch.py --help >/dev/null
           python tools/wf317_stage_canonical_verified_effects.py --help >/dev/null
+      - name: Guard direct and module invocation without PYTHONPATH
+        run: python -m unittest discover -s tests -p 'test_source_stage_direct_cli.py' -v
       - name: Real nine-class sourced ingest on isolated SQLite copy
         run: |
           set -euo pipefail
