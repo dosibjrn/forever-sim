@@ -1,0 +1,72 @@
+name: Bounded native selected-target source regression
+on:
+  push:
+    branches:
+      - work/first-native-world-selected-target-20261101
+    paths:
+      - .github/workflows/first-native-selected-target.yml
+      - src/game/runtime/go_native_world_damage_ack.py
+permissions:
+  contents: read
+jobs:
+  selected-target:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source runtime prerequisites
+        run: python -m pip install --disable-pip-version-check pytest beautifulsoup4
+      - name: Real gsim selected-target RED or GREEN and nearby ACK regressions
+        working-directory: project
+        run: |
+          python -m pytest -q tests/test_wf_go_native_world_damage_ack.py -k 'source_native_damage_cannot_apply_to_unselected_real_gsim_target or actual_gsim_health_changes_and_world_ack_is_measured or native_process_restart_rejected_before_world_mutation or serial_world_retarget_requires_acknowledged_lethal_gsim_damage'
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine-go
+          ref: a667dce8492bd9fb94269a9f864289cb74006775
+          path: upstream
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: upstream/go.mod
+          cache-dependency-path: upstream/go.sum
+      - name: Generate pinned Go source protobuf
+        run: |
+          test "$(git -C upstream rev-parse HEAD)" = "a667dce8492bd9fb94269a9f864289cb74006775"
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          cd upstream
+          make sim/core/proto/api.pb.go
+      - name: Compile real native ingress and focused source regressions
+        run: |
+          python3 project/integrations/mythicsim-go/world_boundary/patch_native_spell_result.py upstream/sim/core/spell_result.go
+          cp project/integrations/mythicsim-go/world_boundary/core/*.go upstream/sim/core/
+          mkdir -p upstream/cmd/wf_gsim_go_world_ingress
+          cp project/integrations/mythicsim-go/world_boundary/ingress/*.go upstream/cmd/wf_gsim_go_world_ingress/
+          cd upstream
+          go test ./sim/core -run 'Test(WorldHealth|WorldBoundary|NativeWorldDamageJournal)' -count=1
+          go build -tags=with_db -trimpath -o ../gsim-go-world-ingress ./cmd/wf_gsim_go_world_ingress
+      - name: Real source-native gsim world ACK and forged ACK negative control
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import run
+          b=Path('../gsim-go-world-ingress')
+          r=Path('../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json')
+          near=run(b,r,ticks=10,target_spawn_yards=3.,target_health=5000.)
+          far=run(b,r,ticks=10,target_spawn_yards=80.,target_health=5000.)
+          assert sum(len(o['native_damage_events']) for o in near['observations'])>0
+          assert sum(len(o['native_damage_events']) for o in far['observations'])==0
+          assert all(o['native_world_ack_confirmation']['native_world_health_applied'] for o in near['observations'])
+          assert all(o['native_world_ack_confirmation']['native_world_health_applied'] for o in far['observations'])
+          assert near['native_process_reused'] and far['native_process_reused']
+          print('REAL_NATIVE_WORLD_ACK_NEAR_FAR_PASS',len(near['observations']),len(far['observations']))
+          PY
+          python tools/wf_gsim_go_live_range_probe.py --binary ../gsim-go-world-ingress --request ../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json --out /tmp/invalid-ack.json --expect-invalid-ack-rejected
