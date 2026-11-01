@@ -31,6 +31,22 @@ class GsimNativeDamageWorldApplier:
         self._target_id = None
         self._native_target_identity = None
 
+    def begin_next_world_target(self, next_target_id: str) -> None:
+        """Retarget only after an ACKed lethal event, preserving PID/event clocks.
+
+        The same native enemy slot represents the next identical source mob;
+        the native actor and journal must never restart or renumber events.
+        """
+        if (self._target_id is None or next_target_id == self._target_id
+                or next_target_id not in self._runtime.targets
+                or self._runtime.targets[self._target_id].alive
+                or not self._runtime.targets[next_target_id].alive):
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_READY")
+        world = snapshot_gsim_world(self._runtime)
+        if world["selected_target_id"] != next_target_id:
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_SELECTED")
+        self._target_id = next_target_id
+
     def apply(self, tick: Mapping, response: Mapping) -> dict:
         if not isinstance(tick, Mapping) or not isinstance(response, Mapping):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_PAYLOAD_INVALID")
