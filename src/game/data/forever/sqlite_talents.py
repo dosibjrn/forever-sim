@@ -133,6 +133,36 @@ def _parse_rank_tooltip(text: str, *, action_families: set[str], source: dict,
             TalentModifier(kind='resource_cost_pct',target_type='action_family',
                 target_id=target,value=-float(cast_cost.group(3))*0.01,
                 provenance={'source':dict(source),'raw_text_summary':text}))),(),None
+    # Compound cast-time reduction and on-hit control proc. Both named
+    # action targets, probabilities and durations come from the captured rank
+    # tooltip; an unavailable target blocks the whole rank, not just the proc.
+    cast_stun = re.fullmatch(
+        r'Reduces the cast time of (?:your )?(.+?) (?:spell )?by (\\d+(?:\\.\\d+)?) sec '
+        r'and (?:your )?(.+?) has a (\\d+(?:\\.\\d+)?)% chance to stun '
+        r'its target for (\\d+(?:\\.\\d+)?) sec\\.',
+        text.strip(), re.IGNORECASE)
+    if cast_stun:
+        cast_targets = _source_action_targets(cast_stun.group(1))
+        proc_targets = _source_action_targets(cast_stun.group(3))
+        missing = tuple(sorted(set(cast_targets + proc_targets) - action_families))
+        if missing:
+            return (), missing, 'source_cast_stun_target_missing'
+        chance = float(cast_stun.group(4)) * .01
+        duration = float(cast_stun.group(5))
+        if not cast_targets or not proc_targets or not 0. < chance <= 1. or not 0. < duration <= 60.:
+            return (), (), 'invalid_source_cast_stun_values'
+        cast_mods = tuple(TalentModifier(kind='cast_time_delta_s',
+            target_type='action_family', target_id=target,
+            value=-float(cast_stun.group(2)),
+            provenance={'source':dict(source),'raw_text_summary':text})
+            for target in cast_targets)
+        proc_mods = tuple(TalentModifier(kind='action_control_proc',
+            target_type='action_family', target_id=target, value=chance,
+            provenance={'source':dict(source),'raw_text_summary':text,
+                'control_id':'stun','duration_s':duration,
+                'prevents_enemy_actions':True,'breaks_on_damage':False})
+            for target in proc_targets)
+        return cast_mods + proc_mods, (), None
     # Source's Swipe damage clause executes in the common damage modifier
     # path. Stealth detection is separately flagged as unimplemented; it is
     # never silently equated to a complete talent implementation.
