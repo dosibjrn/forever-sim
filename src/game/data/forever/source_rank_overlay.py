@@ -243,6 +243,13 @@ def source_enrich_action_ranks(ir):
                 'family':action.family_key,'spell_id':latest[0],
                 'source_url':latest[4]})
         upgraded.append(parsed)
+    # Rank promotion changes action identity. Explicit combat-mode permissions
+    # must follow the same source-verified ID mapping as policies; otherwise a
+    # correctly upgraded spell is rejected by the real runtime as mode-disabled.
+    modes = tuple(replace(mode, enabled_action_ids=(
+        None if mode.enabled_action_ids is None else
+        tuple(mapped.get(action_id, action_id) for action_id in mode.enabled_action_ids)))
+        for mode in ir.modes)
     policies = []
     for policy in ir.policies:
         rules = tuple(replace(rule, action_id=mapped.get(rule.action_id, rule.action_id))
@@ -253,7 +260,7 @@ def source_enrich_action_ranks(ir):
         blockers.append({'code':'source_index_ability_families_not_executable',
             'count':len(missing_ability_families),
             'families':missing_ability_families})
-    return replace(ir, actions=tuple(upgraded), policies=tuple(policies),
+    return replace(ir, actions=tuple(upgraded), modes=modes, policies=tuple(policies),
                    unsupported_semantics=(*ir.unsupported_semantics, *blockers),
                    source_facts=(*ir.source_facts, {'family': 'source_rank_promotion',
                        'rank_upgrades': mapped, 'unverified_upgrades': blockers,
