@@ -11,7 +11,7 @@ import math
 
 from src.game.model.ir import (
     IncomingAttackDefinition, QueuedSwingEffect, ResourceChangeEffect,
-    TargetStatDebuffEffect,
+    TargetStatDebuffEffect, ControlEffect, DamageEffect, WeaponDamageEffect,
 )
 from src.game.runtime import ActorState, CombatRuntime, TargetState
 from src.game.runtime.simulator import action_eligibility
@@ -145,13 +145,23 @@ def _run_one(ir, action, mode, *, muted: bool):
         # The production engine correctly rejects a hostile-area cast without
         # any hostile-target effect. Neutralize magnitude, not AoE eligibility.
         # This is the SAME source-derived action, costs, time and area target.
-        if not action.effects or not all(
-            isinstance(effect, TargetStatDebuffEffect) and effect.target == "enemies"
-            for effect in action.effects
-        ):
+        def neutral(effect):
+            if getattr(effect, "target", None) != "enemies":
+                raise ValueError("TOY_AOE_EFFECT_TARGET_UNKNOWN")
+            if isinstance(effect, TargetStatDebuffEffect):
+                return replace(effect, delta=0.)
+            if isinstance(effect, ControlEffect):
+                return replace(effect, proc_chance=0.)
+            if isinstance(effect, DamageEffect):
+                return replace(effect, base_min=0., base_max=0.)
+            if isinstance(effect, WeaponDamageEffect):
+                return replace(effect, weapon_damage_multiplier=0., flat_damage=0.)
+            raise ValueError("TOY_NEUTRAL_AOE_EFFECT_NOT_IMPLEMENTED:"
+                             + type(effect).__name__)
+        if not action.effects:
             raise ValueError("TOY_NEUTRAL_AOE_EFFECT_NOT_IMPLEMENTED")
         real_or_muted = replace(
-            action, effects=tuple(replace(effect, delta=0.) for effect in action.effects))
+            action, effects=tuple(neutral(effect) for effect in action.effects))
     else:
         real_or_muted = replace(action, effects=()) if muted else action
     eligibility = action_eligibility(action=real_or_muted, actor=actor, target=target)
