@@ -6,7 +6,7 @@ from src.game.runtime import ActorState, CombatRuntime, TargetState
 from src.shared.leveling.objective import representative_hp
 
 
-def _sourced_guarded_encounter(*, regen_enabled: bool):
+def _sourced_guarded_encounter(*, regen_enabled: bool, impossible_threshold: bool = False):
     ir = build_game_ir_slice(class_key='rogue', level=20)
     action = next(a for a in ir.actions if a.id == 'sinister_strike:1758')
     cost = sum(float(c.amount) for c in action.costs if c.resource_id == 'energy')
@@ -16,11 +16,10 @@ def _sourced_guarded_encounter(*, regen_enabled: bool):
     actor.resources['energy'] = cost - 5.0
     if not regen_enabled:
         actor.resource_regeneration_per_s['energy'] = 0.0
-    policy = PolicyDefinition(id='source_rogue_energy_guard',
+    guard = (PolicyCondition(kind='resource_threshold', resource_id='energy',\n        value=float(actor.resource_capacity['energy']) + 1.0) if impossible_threshold else\n        PolicyCondition(kind='resource_threshold', resource_id='energy',\n            threshold_source='action_cost'))\n    policy = PolicyDefinition(id='source_rogue_energy_guard',
         label='Source Rogue builder gated by its actual energy cost',
         rules=(PolicyRuleDefinition(id='source_builder', action_id=action.id,
-            conditions=(PolicyCondition(kind='resource_threshold', resource_id='energy',
-                threshold_source='action_cost'),)),))
+            conditions=(guard,)),))
     target = TargetState.with_health('canonical_leveling_target_L20',
         float(representative_hp(20)), level=20)
     runtime = CombatRuntime(actor=actor, target=target)
@@ -46,3 +45,11 @@ def test_sourced_rogue_guard_does_not_invent_energy_when_regen_absent():
     assert not result.selected_actions
     assert not result.timeline.target_defeated
     assert runtime.actor.resource_amount('energy') == cost - 5.0
+
+
+def test_sourced_rogue_guard_above_capacity_does_not_wait_forever():
+    result, runtime, cost = _sourced_guarded_encounter(
+        regen_enabled=True, impossible_threshold=True)
+    assert result.stopped_reason == 'no legal policy action'
+    assert not result.selected_actions
+    assert not result.timeline.target_defeated
