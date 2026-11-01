@@ -47,6 +47,7 @@ jobs:
           cp project/integrations/mythicsim-go/world_boundary/ingress/*.go upstream/cmd/wf_gsim_go_world_ingress/
           cd upstream
           go test -count=1 ./sim/core -run 'Test(WorldHealthACK|WorldBoundary|WorldSession)'
+          go test -count=1 ./cmd/wf_gsim_go_world_ingress -run 'Test(WorldTargetTransition|WorldRangeFeed|RealWorldEffectACK)'
           go build -tags=with_db -trimpath -o ../gsim-go-world-ingress ./cmd/wf_gsim_go_world_ingress
       - name: Actual source Paladin two gsim kills in same Go process and journal
         working-directory: project
@@ -74,4 +75,30 @@ jobs:
           assert all(x['native_world_ack_confirmation']['native_world_health_applied']
                      for x in two['observations'])
           print('REAL_RETAINED_NATIVE_TWO_PULLS_NOT_P7')
+          druid=Path('docs/evidence/druid-l60-balance/p7.3/saved_728_request.json')
+          sourced=run(binary,druid,ticks=100,target_spawn_yards=3.,
+                      enemy_move_speed_yards_s=.1,target_health=100.,pulls=2)
+          print('REAL_DRUID_L60_TWO_PULLS',sourced['killed_target_ids'],
+                len(sourced['observations']))
+          assert sourced['killed_target_ids']==['m1','m0'],sourced['killed_target_ids']
+          assert sourced['native_process_reused']
+          PY
+      - name: RED old main exits before source-native second pull
+        run: |
+          git -C project show 5144bd2310ae13ad99a6b704fffa340883afe01e:integrations/mythicsim-go/world_boundary/ingress/main.go > upstream/cmd/wf_gsim_go_world_ingress/main.go
+          cd upstream
+          go build -tags=with_db -trimpath -o ../gsim-go-old-ingress ./cmd/wf_gsim_go_world_ingress
+          cd ../project
+          python3 - <<'PY'
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import run
+          try:
+              run(Path('../gsim-go-old-ingress'),
+                  Path('../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json'),
+                  ticks=100,target_spawn_yards=3.,enemy_move_speed_yards_s=.1,
+                  target_health=100.,pulls=2)
+          except (RuntimeError,BrokenPipeError) as exc:
+              print('REAL_MAIN_RED_SECOND_PULL_TERMINATES',type(exc).__name__,str(exc)[:300])
+          else:
+              raise AssertionError('OLD_MAIN_UNEXPECTEDLY_SUPPORTED_RETAINED_SECOND_PULL')
           PY
