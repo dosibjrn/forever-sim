@@ -84,6 +84,17 @@ func run(requestRaw []byte, sourceRevision string) error {
             previousWorldTargetDead=false
             previousWorldTargetID=tick.SelectedTargetID
         }
+        // The first native action must see gsim's actual starting HP, not
+        // a full-health default from the native request. Reinitialize only
+        // after a genuine lethal ACK and serial retarget; later ticks use
+        // the previous ACK-confirmed health without speculative adjustment.
+        if _,_,initialized:=boundary.WorldHealthDecisionSnapshot();!initialized {
+            if _,err:=boundary.ApplyWorldTargetHealth(
+                tick.WorldTargetHealthBefore,tick.WorldTargetHealthBefore,
+                tick.WorldTargetMaxHealth,0);err!=nil {
+                return fmt.Errorf("tick %d initial world health: %w",count,err)
+            }
+        }
         if _,err:=boundary.AdvanceToWorldTick(time.Duration(tick.NativeClockNS),200000);err!=nil {return fmt.Errorf("tick %d native advance: %w",count,err)}
         receipt,err:=boundary.ApplyWorldDistance(tick.Sequence,tick.NativePlayerIndex,tick.DistanceYards)
         if err!=nil {return fmt.Errorf("tick %d native range apply: %w",count,err)}

@@ -115,6 +115,8 @@ func TestWorldEffectACKHealthDeltaBoundToRealNativeDamage(t *testing.T) {
     var ack worldDamageAck
     if err:=json.Unmarshal(ackFixture(tick,events,123),&ack);err!=nil {t.Fatal(err)}
     before,after,maxHP:=700.0,677.5,700.0
+    tick.WorldTargetHealthBefore=before
+    tick.WorldTargetMaxHealth=maxHP
     ack.WorldTargetHealthBefore=&before
     ack.WorldTargetHealthAfter=&after
     ack.WorldTargetMaxHealth=&maxHP
@@ -136,6 +138,8 @@ func TestWorldEffectACKAcceptsLethalSourceOverkillAndRejectsInventedHP(t *testin
     var ack worldDamageAck
     if err:=json.Unmarshal(ackFixture(tick,events,123),&ack);err!=nil {t.Fatal(err)}
     before,after,maxHP:=10.0,0.0,10.0
+    tick.WorldTargetHealthBefore=before
+    tick.WorldTargetMaxHealth=maxHP
     ack.WorldTargetHealthBefore=&before
     ack.WorldTargetHealthAfter=&after
     ack.WorldTargetMaxHealth=&maxHP
@@ -192,4 +196,21 @@ func TestWorldEffectACKBindsRealPetCasterAndRejectsForgedCaster(t *testing.T) {
     malformed.NativeCasterLabel=""
     if _,err:=checkWorldEffectACK(ackFixture(tick,[]sourceNativeEventProof{malformed},123),
         tick,[]sourceNativeEventProof{malformed},123);err==nil {t.Fatal("accepted pet with missing source label")}
+}
+
+// A native first-tick decision on 15% HP must never be ACKed against
+// a different actual gsim HP; this binds the initial source-world feed.
+func TestWorldEffectACKRejectsForgedInitialHealth(t *testing.T) {
+    tick:=goodTick(0,100)
+    events:=[]sourceNativeEventProof{nativeRealEventProof()}
+    var ack worldDamageAck
+    if err:=json.Unmarshal(ackFixture(tick,events,123),&ack);err!=nil {t.Fatal(err)}
+    before,after:=750.0,727.5
+    ack.WorldTargetHealthBefore=&before
+    ack.WorldTargetHealthAfter=&after
+    raw,_:=json.Marshal(ack)
+    if _,err:=checkWorldEffectACK(raw,tick,events,123);err==nil ||
+        !strings.Contains(err.Error(),"INITIAL_HEALTH_MISMATCH") {
+        t.Fatalf("accepted mismatched source-world starting HP: %v",err)
+    }
 }

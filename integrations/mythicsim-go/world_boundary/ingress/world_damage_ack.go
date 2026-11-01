@@ -115,6 +115,12 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
         return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_FIELDS_INCOMPLETE")
     }
     before,after,maxHP:=*ack.WorldTargetHealthBefore,*ack.WorldTargetHealthAfter,*ack.WorldTargetMaxHealth
+    // The ACK must confirm the very HP that native used for this tick's
+    // decision. A forged initial-HP feed cannot be legitimized post hoc.
+    if math.Abs(before-tick.WorldTargetHealthBefore)>1e-6 ||
+        math.Abs(maxHP-tick.WorldTargetMaxHealth)>1e-6 {
+        return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_INITIAL_HEALTH_MISMATCH")
+    }
     if math.IsNaN(before) || math.IsNaN(after) || math.IsNaN(maxHP) ||
         math.IsInf(before,0) || math.IsInf(after,0) || math.IsInf(maxHP,0) ||
         maxHP<=0 || before<0 || after<0 || before>maxHP || after>before ||
