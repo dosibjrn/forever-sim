@@ -52,7 +52,7 @@ def test_real_druid_l20_p1_staged_sourced_action_coverage(monkeypatch):
     assert result['matched_source_abilities']==18
     assert result['production_runtime_exercises']==18  # includes *damage* on queued Maul
     assert any(r['source_spell_id']==6807 and r['role']=='LOWER_LEARNED_RANK' for r in result['excluded_nonaction_or_inactive_rows'])
-    assert any(r['source_spell_id']==6795 and r['role']=='OUT_OF_P1_EFFECT_SCOPE' for r in result['excluded_nonaction_or_inactive_rows'])
+    assert any(r['source_spell_id']==6795 and r['role']=='DOES_NOT_AFFECT_SIM' for r in result['excluded_nonaction_or_inactive_rows'])
 
 
 def test_role_evidence_is_versioned_and_source_id_bound():
