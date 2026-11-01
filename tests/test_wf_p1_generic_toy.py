@@ -41,3 +41,27 @@ def test_inventory_unknown_class_fails_not_empty_green():
 def test_inventory_unknown_level_fails_not_empty_green():
     with pytest.raises(ValueError, match="LEVEL_OUT_OF_RANGE"):
         source_inventory(ROOT, "druid", 99)
+
+
+def test_mage_l20_frost_nova_source_area_control_uses_same_real_runtime():
+    report = run_gsim(ROOT, class_key="mage", level=20, spec="frost")
+    source = [x for x in report["results"] if x["name"] == "Frost Nova"]
+    assert len(source) == 1
+    assert source[0]["status"] == "EFFECT_OBSERVED", source
+    assert report["p1_certified"] is False
+
+
+def test_warrior_l20_uses_same_source_derived_runner_without_class_branches():
+    report = run_gsim(ROOT, class_key="warrior", level=20, spec="arms")
+    assert report["checked"] > 0
+    assert report["observed"] > 0
+    assert report["class"] == "warrior"
+    assert report["hybrid_rust_executed"] is False
+
+
+def test_druid_l60_source_unknowns_are_reported_not_silently_removed():
+    report = run_gsim(ROOT, class_key="druid", level=60, spec="feral-cat")
+    assert report["level"] == 60
+    assert report["checked"] >= report["observed"] > 0
+    assert report["source_acquisition_unresolved_count"] > 0
+    assert report["p1_certified"] is False
