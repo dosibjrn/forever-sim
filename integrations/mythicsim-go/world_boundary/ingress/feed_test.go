@@ -87,3 +87,24 @@ func TestWorldHealthPreflightRejectsUnACKedTargetDrift(t *testing.T) {
         t.Fatalf("blocked first real world tick: %v",err)
     }
 }
+
+
+func TestRetainedNativePlayerCannotSwitchAcrossWorldTicks(t *testing.T) {
+    v:=&tickValidator{}
+    if err:=v.validate(goodTick(0,0));err!=nil {t.Fatal(err)}
+    switched:=goodTick(1,100)
+    switched.NativePlayerIndex=1
+    if err:=v.validate(switched);err==nil {
+        t.Fatal("accepted native actor switch inside retained world session")
+    }
+    if err:=v.validate(goodTick(1,100));err!=nil {
+        t.Fatalf("rejected original retained actor after failed switch: %v",err)
+    }
+    other:=&tickValidator{}
+    first:=goodTick(0,0);first.NativePlayerIndex=1
+    next:=goodTick(1,100);next.NativePlayerIndex=1
+    if err:=other.validate(first);err!=nil {t.Fatal(err)}
+    if err:=other.validate(next);err!=nil {
+        t.Fatalf("rejected stable alternate actor: %v",err)
+    }
+}
