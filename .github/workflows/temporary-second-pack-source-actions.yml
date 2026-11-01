@@ -19,4 +19,19 @@ jobs:
       - name: Real sourced 2D pack action provenance
         run: |
           python -m pip install --disable-pip-version-check pytest beautifulsoup4
-          python -m pytest -q tests/test_wf397_2d_joint_frontier_tdd.py::test_source_pack_actions_are_proven_by_executed_runtime_events
+          python -m pytest -q tests/test_wf397_2d_joint_frontier_tdd.py::test_source_pack_actions_are_proven_by_executed_runtime_events tests/test_wf397_2d_joint_frontier_tdd.py::test_same_prepared_source_candidate_runs_100_real_2d_mobs_with_incoming_and_recovery
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from src.game.data.forever.registry import build_game_ir_slice
+          from src.v2.source_persistent_joint_finalists import prepare_candidate,evaluate_persistent_candidate
+          ir=build_game_ir_slice(class_key='druid',level=30,ability_db_path=Path('data/forever/staged_druid_l30_talents_70338.sqlite'))
+          stage=json.loads(Path('evidence/wf351/WF351_L30_SEED_STAGE.json').read_text())
+          candidate=prepare_candidate(class_key='druid',level=30,stage=stage,source_ir=ir,allow_partial_gear_stats=True)
+          result=evaluate_persistent_candidate(candidate,level=30,mobs=100,pack_size=2)
+          counts=result['source_action_counts']
+          legal={a.id for a in candidate.ir.actions}
+          assert result['status']=='COMPLETE' and result['count']==100
+          assert counts and set(counts).issubset(legal)
+          print('SOURCE_PACK_100_REAL_ACTION_COUNTS',counts,'events',result['events'])
+          PY
