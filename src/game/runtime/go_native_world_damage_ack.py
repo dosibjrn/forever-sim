@@ -66,6 +66,11 @@ class GsimNativeDamageWorldApplier:
                 ordinal = int(event_id.removeprefix("native-effect-"))
             except ValueError as exc:
                 raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_EVENT_ID_INVALID") from exc
+            # The pinned native Go journal emits a gapless, monotonic event
+            # sequence across drains. Accepting a skipped ID would let an
+            # omitted native effect disappear without changing gsim HP.
+            if ordinal != last_event_id + 1 or event_id != f"native-effect-{ordinal}":
+                raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_EVENT_ID_GAP")
             timestamp = event.get("native_time_ns")
             value = event.get("damage")
             current_native_target = (event.get("native_target_index"),
