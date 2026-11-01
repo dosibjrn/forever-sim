@@ -58,8 +58,10 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
 def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
         corrupt_ack: bool = False, target_health: float = 10_000_000.,
-        target_initial_health_fraction: float = 1., pulls: int = 1) -> dict:
-    if ticks < 2 or ticks > 100 or timeout_s <= 0 or pulls not in (1, 2):
+        target_initial_health_fraction: float = 1., pulls: int = 1,
+        recovery_s: float = 0.) -> dict:
+    if (ticks < 2 or ticks > 100 or timeout_s <= 0 or pulls not in (1, 2)
+            or not math.isfinite(recovery_s) or recovery_s < 0 or recovery_s > 10):
         raise ValueError('INVALID_PROBE_LIMITS')
     binary, request = binary.resolve(), request.resolve()
     raw = request.read_bytes()
@@ -104,9 +106,10 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     observations = []
     killed_target_ids = []
     native_pid = None
+    recovery_offset_s = 0.
     try:
         for idx in range(ticks):
-            runtime.advance_to(idx / 10.)
+            runtime.advance_to(idx / 10. + recovery_offset_s)
             tick = feed.next_tick()
             tick['previous_world_ack_id'] = previous_ack_id
             proc.stdin.write(json.dumps(tick, sort_keys=True, allow_nan=False) + '\n')
@@ -132,6 +135,12 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                 native_pid = response['native_process_id']
             elif native_pid != response['native_process_id']:
                 raise RuntimeError('NATIVE_GO_PROCESS_RESTARTED')
+            actor_state = response.get('native_actor_state')
+            if (not isinstance(actor_state, dict)
+                    or actor_state.get('native_clock_ns') != tick['native_clock_ns']
+                    or not isinstance(actor_state.get('cooldown_ready_at_ns'), list)
+                    or not isinstance(actor_state.get('active_auras'), list)):
+                raise RuntimeError('NATIVE_GO_ACTOR_STATE_RECEIPT_INVALID')
             spell_deltas = spell_ledger.observe(response.get('native_spell_counters'), sequence=tick['sequence'])
             target_deltas = target_spell_ledger.observe(
                 response.get('native_target_spell_counters'),
@@ -174,6 +183,7 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                                  'native_target_spell_counter_deltas': target_deltas,
                                  'validated_range_only': fields,
                                  'native_damage_events': response['native_damage_events'],
+                                 'native_actor_state': actor_state,
                                  'gsim_applied_world_ack': world_ack,
                                  'native_world_ack_confirmation': confirmation,
                                  'native_health_fraction_at_boundary': response['native_health_fraction'],
@@ -194,6 +204,9 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                 runtime.select_target(next_id)
                 world_applier.begin_next_world_target(next_id)
                 target_spell_ledger.begin_next_world_target(actual_target.id, next_id)
+                # This is paid wall-clock recovery in the real gsim controller;
+                # the retained native scheduler advances through the same gap.
+                recovery_offset_s += recovery_s
         proc.stdin.close()
         if proc.wait(timeout=timeout_s) != 0:
             raise RuntimeError('NATIVE_GO_RANGE_SESSION_FAILED_ON_CLOSE: ' + native_failure_details())
@@ -219,6 +232,7 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
             'native_process_id': native_pid,
             'killed_target_ids': killed_target_ids,
             'pulls_requested': pulls,
+            'recovery_seconds_between_pulls': recovery_s,
             'observations': observations,
             'native_process_reused': True,
             'native_spell_counters_observed': all('native_spell_counters' in x for x in observations),
@@ -239,11 +253,14 @@ def main():
     parser.add_argument('--expect-invalid-ack-rejected', action='store_true')
     parser.add_argument('--target-initial-health-fraction', type=float, default=1.)
     parser.add_argument('--ticks', type=int, default=20)
+    parser.add_argument('--pulls', type=int, choices=(1, 2), default=1)
+    parser.add_argument('--recovery-seconds', type=float, default=0.)
     args = parser.parse_args()
     if args.expect_invalid_ack_rejected:
         try:
             run(args.binary, args.request, ticks=args.ticks, corrupt_ack=True,
-                target_initial_health_fraction=args.target_initial_health_fraction)
+                target_initial_health_fraction=args.target_initial_health_fraction,
+                pulls=args.pulls, recovery_s=args.recovery_seconds)
         except RuntimeError as exc:
             if 'WORLD_EFFECT_ACK_ID_OR_HASH_MISMATCH' not in str(exc):
                 raise
@@ -251,7 +268,8 @@ def main():
             return
         raise SystemExit('NATIVE_GO_ACCEPTED_FORGED_WORLD_ACK')
     result = run(args.binary, args.request, ticks=args.ticks,
-        target_initial_health_fraction=args.target_initial_health_fraction)
+        target_initial_health_fraction=args.target_initial_health_fraction,
+        pulls=args.pulls, recovery_s=args.recovery_seconds)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + '\n')
     print(f'{result["status"]}: {len(result["observations"])} ticks (NOT P7)')
