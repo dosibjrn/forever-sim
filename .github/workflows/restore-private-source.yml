@@ -37,8 +37,8 @@ jobs:
     timeout-minutes: 30
     if: github.repository == 'dosibjrn/forever-sim'
     env:
-      MIGRATION_MODE: ${{ github.event_name == 'push' && github.event.head_commit.message == 'migration: publish audited source 3bd46df7e3b95a8a3bfdc7455de659341a905826 [one-shot]' && 'publish' || inputs.mode || 'audit' }}
-      APPROVED_SOURCE_SHA: ${{ github.event_name == 'push' && github.event.head_commit.message == 'migration: publish audited source 3bd46df7e3b95a8a3bfdc7455de659341a905826 [one-shot]' && '3bd46df7e3b95a8a3bfdc7455de659341a905826' || inputs.approved_source_sha }}
+      MIGRATION_MODE: ${{ inputs.mode }}
+      APPROVED_SOURCE_SHA: ${{ inputs.approved_source_sha }}
       PRIVATE_READ_TOKEN: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN_2 }}
     steps:
       - name: Checkout PUBLIC destination main
