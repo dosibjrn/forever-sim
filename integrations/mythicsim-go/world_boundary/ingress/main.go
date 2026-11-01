@@ -1,5 +1,6 @@
 // Consume real gsim 2D range ticks in one retained pinned native Go Simulation.
-// This does NOT ACK spells, facing or CC and does not certify PROCESS gates.
+// Native damage events must be applied in gsim and ACKed BEFORE next tick.
+// Facing/CC and source-matched Druid PROCESS evidence are still missing.
 package main
 
 import (
@@ -30,6 +31,9 @@ type rangeReply struct {
     NativeSourceRevision string `json:"native_source_revision"`
     NativeRequestSHA256 string `json:"native_request_sha256"`
     NativeProcessID int `json:"native_process_id"`
+    NativeSpellCounters []core.WorldNativeSpellCounter `json:"native_spell_counters"`
+    NativeTargetSpellCounters []core.WorldNativeTargetSpellCounter `json:"native_target_spell_counters"`
+    NativeDamageEvents []core.WorldNativeDamageEvent `json:"native_damage_events"`
     NativeSpellActionACK bool `json:"native_spell_action_ack"`
     CheckpointCertified bool `json:"checkpoint_certified"`
 }
@@ -45,31 +49,68 @@ func run(requestRaw []byte, sourceRevision string) error {
     native.PrePull()
     boundary,err:=core.NewWorldBoundarySession(native)
     if err!=nil {return err}
+    if err:=boundary.StartWorldDamageJournal();err!=nil {return err}
+    defer boundary.CloseWorldDamageJournal()
     reqHash:=sha256.Sum256(requestRaw)
     writer:=bufio.NewWriter(os.Stdout)
     scanner:=bufio.NewScanner(os.Stdin)
     scanner.Buffer(make([]byte,64*1024),2*1024*1024)
     validator:=&tickValidator{}
     count:=0
+    previousACKID:=""
     for scanner.Scan() {
         if count>=10000 {return errors.New("WORLD_TICK_LIMIT_EXCEEDED")}
         tick,err:=decodeWorldTick(scanner.Bytes())
         if err!=nil {return fmt.Errorf("tick %d parse: %w",count,err)}
         if err:=validator.validate(tick);err!=nil {return fmt.Errorf("tick %d validate: %w",count,err)}
+        if tick.PreviousWorldACKID!=previousACKID {return errors.New("WORLD_EFFECT_PREVIOUS_ACK_NOT_ECHOED")}
         if _,err:=boundary.AdvanceToWorldTick(time.Duration(tick.NativeClockNS),200000);err!=nil {return fmt.Errorf("tick %d native advance: %w",count,err)}
         receipt,err:=boundary.ApplyWorldDistance(tick.Sequence,tick.NativePlayerIndex,tick.DistanceYards)
         if err!=nil {return fmt.Errorf("tick %d native range apply: %w",count,err)}
         if receipt.Sequence!=tick.Sequence || receipt.NativeClockNS!=tick.NativeClockNS || receipt.AppliedYards!=tick.DistanceYards || receipt.PlayerIndex!=tick.NativePlayerIndex {
             return errors.New("NATIVE_RANGE_RECEIPT_MISMATCH")
         }
+        targetCounters,err:=boundary.NativeSingleTargetSpellCounters(tick.NativePlayerIndex)
+        if err!=nil {return fmt.Errorf("tick %d native target counter read: %w",count,err)}
+        spellCounters,err:=boundary.NativeSpellCounters(tick.NativePlayerIndex)
+        if err!=nil {return fmt.Errorf("tick %d native spell counter read: %w",count,err)}
+        nativeEffects,err:=boundary.DrainWorldDamageEvents()
+        if err!=nil {return fmt.Errorf("tick %d native effect journal: %w",count,err)}
         reply:=rangeReply{Type:"native_go_range_receipt",Sequence:tick.Sequence,
             ObservedInputWorldSHA256:tick.WorldSHA256,NativeRangeReceipt:receipt,
             NativeSourceRevision:sourceRevision,NativeRequestSHA256:hex.EncodeToString(reqHash[:]),NativeProcessID:os.Getpid(),
+            NativeSpellCounters:spellCounters,NativeTargetSpellCounters:targetCounters,
+            NativeDamageEvents:nativeEffects,
             NativeSpellActionACK:false,CheckpointCertified:false}
         output,err:=json.Marshal(reply)
         if err!=nil {return err}
         if _,err:=writer.Write(append(output,'\n'));err!=nil {return err}
         if err:=writer.Flush();err!=nil {return err}
+        // Strict synchronization: don't run another native scheduler event
+        // until gsim sends a correctly bound world-effect ACK.
+        if !scanner.Scan() {
+            if scanner.Err()!=nil {return scanner.Err()}
+            return errors.New("WORLD_EFFECT_ACK_MISSING_BEFORE_NEXT_NATIVE_TICK")
+        }
+        proofs:=make([]sourceNativeEventProof,0,len(nativeEffects))
+        for _,effect:=range nativeEffects {
+            proofs=append(proofs,sourceNativeEventProof{
+                EventID:effect.EventID,NativeTimeNS:effect.NativeTimeNS,
+                SourceActionID:effect.SourceActionID,Rank:effect.Rank,
+                NativeTargetIndex:effect.NativeTargetIndex,
+                NativeTargetUnitIndex:effect.NativeTargetUnitIndex,
+                NativeTargetLabel:effect.NativeTargetLabel,
+                Damage:effect.Damage,Landed:effect.Landed,
+                Crit:effect.Crit,Periodic:effect.Periodic,
+            })
+        }
+        accepted,err:=checkWorldEffectACK(scanner.Bytes(),tick,proofs,os.Getpid())
+        if err!=nil {return fmt.Errorf("tick %d world effect ACK: %w",count,err)}
+        confirmation,err:=json.Marshal(accepted)
+        if err!=nil {return err}
+        if _,err:=writer.Write(append(confirmation,'\n'));err!=nil {return err}
+        if err:=writer.Flush();err!=nil {return err}
+        previousACKID=accepted.ACKID
         count++
     }
     if err:=scanner.Err();err!=nil {return err}

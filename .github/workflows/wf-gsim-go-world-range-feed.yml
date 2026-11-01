@@ -1,0 +1,39 @@
+name: gsim-to-Go native world-effect ACK contracts (NOT P7)
+# Migration safety: original pull_request triggers intentionally withheld until public baseline and runner are verified.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  real-gsim-source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile exact PR source before any dependency installation
+        run: |
+          python -m py_compile \
+            tests/test_wf_go_native_world_damage_ack.py \
+            tests/test_wf28_pinned_native_damage_hook.py \
+            tests/test_wf_gsim_go_world_range_feed.py \
+            tests/test_wf_native_spell_observations.py \
+            tests/test_wf_native_target_spell_observations.py \
+            tests/test_wf_go_paired_native_spell_probe.py \
+            tools/wf_gsim_go_live_range_probe.py \
+            tools/wf_gsim_go_paired_native_spell_probe.py \
+            src/game/runtime/go_native_world_damage_ack.py \
+            src/game/runtime/go_world_range_feed.py \
+            src/game/runtime/go_native_spell_observations.py \
+            src/game/runtime/go_native_target_spell_observations.py \
+            integrations/mythicsim-go/world_boundary/patch_native_spell_result.py
+      - name: Install contract runner
+        run: python -m pip install --disable-pip-version-check pytest beautifulsoup4
+      - name: Source-backed gsim moving target and strict Go receipt contracts
+        run: |
+          python -m pytest -q tests/test_wf_gsim_go_world_range_feed.py tests/test_wf_native_spell_observations.py tests/test_wf_native_target_spell_observations.py tests/test_wf_go_paired_native_spell_probe.py tests/test_wf_go_native_world_damage_ack.py tests/test_wf28_pinned_native_damage_hook.py tests/test_wf_druid_l60_native_step_protocol.py

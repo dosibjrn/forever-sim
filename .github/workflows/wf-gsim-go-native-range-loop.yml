@@ -1,0 +1,161 @@
+name: Live gsim 2D to pinned native Go world-effect ACK (NOT P7)
+# Migration safety: original pull_request triggers intentionally withheld until public baseline and runner are verified.
+on:
+  workflow_dispatch:
+  # One controlled native build on this implementation branch; this workflow
+  # file is the sole path trigger. Other source/doc pushes cannot start it.
+  push:
+    branches:
+      - work/wf28-native-spell-observation-ack-20261031
+    paths:
+      - .github/workflows/wf-gsim-go-native-range-loop.yml
+      - tools/wf_gsim_go_live_range_probe.py
+
+permissions:
+  contents: read
+jobs:
+  native-go-range-loop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine-go
+          ref: a667dce8492bd9fb94269a9f864289cb74006775
+          path: upstream
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: upstream/go.mod
+          cache-dependency-path: upstream/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Python source-backed test prerequisites
+        run: python -m pip install --disable-pip-version-check pytest beautifulsoup4
+      - name: Exact-HEAD native world-ACK Python source regressions
+        run: |
+          cd project
+          python -m compileall -q \
+            tests/test_wf_go_native_world_damage_ack.py \
+            tests/test_wf_go_paired_native_spell_probe.py \
+            src/game/runtime/go_native_world_damage_ack.py \
+            tools/wf_gsim_go_live_range_probe.py
+          python -m pytest -q \
+            tests/test_wf_gsim_go_world_range_feed.py \
+            tests/test_wf_native_spell_observations.py \
+            tests/test_wf_native_target_spell_observations.py \
+            tests/test_wf_go_native_world_damage_ack.py \
+            tests/test_wf_go_paired_native_spell_probe.py \
+            tests/test_wf28_pinned_native_damage_hook.py \
+            tests/test_wf_druid_l60_native_step_protocol.py
+      - name: Install Go proto and verify exact upstream pin
+        run: |
+          test "$(git -C upstream rev-parse HEAD)" = "a667dce8492bd9fb94269a9f864289cb74006775"
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          cd upstream
+          make sim/core/proto/api.pb.go
+      - name: Standalone ingress validator (before native build)
+        working-directory: project/integrations/mythicsim-go/world_boundary/ingress
+        run: |
+          GO111MODULE=off go test -count=1 -v feed.go feed_test.go world_damage_ack.go world_damage_ack_test.go
+          GO111MODULE=off go vet feed.go feed_test.go world_damage_ack.go world_damage_ack_test.go
+      - name: Build real pinned native Go world-ingress binary
+        run: |
+          python3 project/integrations/mythicsim-go/world_boundary/patch_native_spell_result.py upstream/sim/core/spell_result.go
+          cp project/integrations/mythicsim-go/world_boundary/core/*.go upstream/sim/core/
+          mkdir -p upstream/cmd/wf_gsim_go_world_ingress
+          cp project/integrations/mythicsim-go/world_boundary/ingress/*.go upstream/cmd/wf_gsim_go_world_ingress/
+          cd upstream
+          go test ./sim/core -run 'Test(WorldTick|WorldDistance|WorldBoundary|NextWorld|NativeSpellCounters|NativeTargetSpells|NativeWorldDamageJournal)' -count=1 -v
+          # Upstream database_load.go is guarded by //go:build with_db.
+          # Without this tag, the native request panics on source item 12640.
+          go build -tags=with_db -trimpath -o ../gsim-go-world-ingress ./cmd/wf_gsim_go_world_ingress
+      - name: Couple moving real gsim 2D with native source-event world ACK (NOT P7)
+        run: |
+          mkdir -p evidence
+          cd project
+          python tools/wf_gsim_go_live_range_probe.py \
+            --binary ../gsim-go-world-ingress \
+            --request ../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json \
+            --out ../evidence/gsim-go-live-range-only.json
+          cd ..
+          python3 - <<'PY'
+          import json
+          r=json.load(open('evidence/gsim-go-live-range-only.json'))
+          assert r['status']=='NATIVE_GO_WORLD_DAMAGE_ACK_NOT_P7'
+          assert r['native_process_reused'] and r['gsim_runtime_real']
+          assert len(r['observations'])==20
+          assert r['observations'][0]['world_tick']['distance_yards']==20
+          assert 14 < r['observations'][10]['world_tick']['distance_yards'] < 16
+          assert all(x['world_tick']['distance_yards']==x['native_range_receipt']['applied_yards'] for x in r['observations'])
+          assert len({x['world_tick']['world_sha256'] for x in r['observations']}) > 1
+          assert all(isinstance(x['native_spell_counters'],list) for x in r['observations'])
+          assert r['native_spell_counters_observed']
+          assert r['native_target_spell_counters_observed']
+          assert all(isinstance(x['native_target_spell_counters'],list) for x in r['observations'])
+          assert all('gsim_applied_world_ack' in x and 'native_world_ack_confirmation' in x for x in r['observations'])
+          assert r['native_spell_action_ack'] == any(bool(x['gsim_applied_world_ack']['applied_event_ids']) for x in r['observations'])
+          assert not r['checkpoint_certified']
+          PY
+      - name: Paired near/far genuine native spell delta and gsim world ACK (NOT Druid P7)
+        run: |
+          cd project
+          python tools/wf_gsim_go_paired_native_spell_probe.py \
+            --binary ../gsim-go-world-ingress \
+            --request ../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json \
+            --ticks 60 --require-native-spell-delta \
+            --out ../evidence/gsim-go-paired-spell-metrics-not-ack.json
+      - name: Run saved Druid L60 Balance source request through real native/gsim ACK (NOT P7)
+        run: |
+          cd project
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json')
+          r=json.loads(p.read_text())
+          players=[pl for party in r['raid']['parties'] for pl in party['players']]
+          assert len(players)==1, 'DRUID_REFERENCE_MULTI_PLAYER'
+          assert players[0]['class']=='ClassDruid' and 'balanceDruid' in players[0], 'NOT_BALANCE_DRUID_REFERENCE'
+          assert len(r['encounter']['targets'])==1 and r['encounter']['targets'][0]['level']==63, 'NOT_SAVED_L63_ENCOUNTER'
+          assert int(r['simOptions']['randomSeed'])>0, 'ZERO_SOURCE_RANDOM_SEED'
+          print('SAVED_DRUID_L60_BALANCE_REFERENCE_ACCEPTED',p)
+          PY
+          python tools/wf_gsim_go_paired_native_spell_probe.py \
+            --binary ../gsim-go-world-ingress \
+            --request docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json \
+            --ticks 60 --require-native-spell-delta \
+            --out ../evidence/gsim-go-druid-l60-balance-saved-p73-paired.json
+          cd ..
+          python3 - <<'PY'
+          import json
+          r=json.load(open('evidence/gsim-go-druid-l60-balance-saved-p73-paired.json'))
+          assert r['status']=='NATIVE_SPELL_DELTA_AND_WORLD_ACK_NOT_DRUID_P7'
+          assert r['native_spell_counter_delta_observed'] and r['native_spell_action_ack']
+          assert not r['checkpoint_certified'] and not r['druid_l60_balance_proven']
+          for mode in ('near','far'):
+              scenario=r['scenarios'][mode]
+              assert len(scenario['observations'])==60
+              assert scenario['native_process_reused'] and scenario['gsim_runtime_real']
+              assert all(row['native_world_ack_confirmation']['ack_id'] for row in scenario['observations'])
+          print('REAL_SAVED_DRUID_SOURCE_PAIRED_CAUSAL_ACK_PASS_NOT_P7')
+          PY
+      - name: Reject forged gsim world ACK in the real native Go process
+        run: |
+          cd project
+          python tools/wf_gsim_go_live_range_probe.py \
+            --binary ../gsim-go-world-ingress \
+            --request ../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json \
+            --out ../evidence/invalid-ack-unused.json \
+            --expect-invalid-ack-rejected
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-gsim-go-world-effect-ack-not-p7
+          path: evidence/
+          if-no-files-found: warn

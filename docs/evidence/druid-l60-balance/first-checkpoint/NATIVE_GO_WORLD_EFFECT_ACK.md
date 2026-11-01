@@ -1,0 +1,67 @@
+# WF #28 — source-native spell damage → real gsim world application → native ACK
+
+**Scope:** first **damage-only single-player/single-enemy** Go↔gsim world-action feedback seam. This is a partial implementation of issue #28, not a Druid L60 Balance P7.1–P7.5 certificate or a 100-mob leveling evaluator.
+
+## Why it is not another cumulative metrics report
+
+The prior #58 logic reads `Spellbook/SpellMetrics` counters only; these lack exact event times. The new hook is deliberately placed **inside the real pinned** `sim/core/spell_result.go` `Spell.dealDamageInternal`. `patch_native_spell_result.py` refuses any source not matching upstream Git blob **`f196a60831571c2ff2ccf536aabe17cfa873b5ea`** from `sage3648/mythicsim-forever-engine-go@a667dce8492bd9fb94269a9f864289cb74006775`. It adds exactly one `recordWorldDamageForGsim` call without changing the native spell calculation. The source file and unique anchor were independently read from that exact commit. The runtime code uses `SpellResult.Damage`, native simulation time, real source ActionID/rank, source-native enemy index/unit index/label, critical-hit and periodic flags.
+
+The Go `WorldBoundarySession` journal only registers after one `core.NewSim/Reset/PrePull` and persists across ticks; it never invents an event when a spell was merely registered or from a DPS sum. It rejects invalid source damage, chronology regression and ambiguous enemy targets. When a native world tick is processed, the ingress returns **the actual event list** with the range receipt, then **does not advance the native scheduler again** until a matching gsim world ACK arrives.
+
+## Source-checked acknowledgment sequence
+
+1. Python `GsimGoRangeFeed` snapshots a real `CombatRuntime` 2D world and sends `gsim_world_range_tick` with source hash, selected target, native clock and previous native-accepted ACK ID.
+2. One pinned native Go session advances with the supplied range, emits recorded native spell damage events (event ID, nanosecond time, native enemy target ID, source spell/rank, damage) and its independent cumulative spell metrics.
+3. Python `GsimNativeDamageWorldApplier` validates the **real gsim world hash** and native event IDs/clock/source target, applies **exact native event damage to `TargetState.apply_damage`**, measures the actual target HP difference and new gsim world hash, and sends `gsim_native_damage_applied_ack` with *all* native event IDs, both hashes, native PID and exact applied damage.
+4. Go compares those IDs and damage totals against its own genuine source journal and its pending world tick, verifies the PID, timestamp, source hash and actual-world-changed condition, and returns `native_go_world_ack_accepted` with an ACK ID bound to the event list. The **next** world tick must echo that exact ACK ID before another native combat scheduler advance.
+5. Missing/replayed/forged ACK or wrong damage, event ID, PID, world hash, timestamp, sequence or process restart fails closed. Empty event batches receive an explicit no-action ACK but never masquerade as spell action proof.
+
+## Tests and evidence
+
+**Verified locally on identical GitHub blobs:**
+- `world_damage_ack.go` blob `fb2ad0cbd40c4baf30d18dd4cabeab3cad44d757` and `world_damage_ack_test.go` blob `7e69b3c026b68f832d8e171ead330161faf21b7a`. `GO111MODULE=off go test -count=1 -v feed.go feed_test.go world_damage_ack.go world_damage_ack_test.go`: **7 PASS**. `go vet`: **PASS**. The locally formatted older `feed*.go` has equivalent content but different blob hashes.
+- `patch_native_spell_result.py` blob `8b33f35abf1241bf018733a41626adb9d8b7555c`, its unit test blob `368606253a27bd76a5a5e625d61e2f16815634d4`; **2 PASS** for wrong-source and exactly-once source hook installation.
+- Existing native spell counter / native-target identity focused Python tests, alongside hook tests: **25 PASS** locally; most local supporting Python source files were not all byte-identical to the GitHub head. This is **not whole-head tested native Go evidence**.
+
+**NOT YET VERIFIED**: exact pinned native-Go full compilation after the source hook, real `Spell.dealDamageInternal` firing in one pinned Go binary, real gsim target damage effect followed by native ACK, near/far native action outcome difference, source-matched Druid L60 Balance. GitHub Actions jobs have repeatedly failed **with zero runner steps** (#42), so no actual native Go execution verdict is available. No fabricated measured DPS or claimed end-to-end PASS.
+
+## Known semantic limits — do not certify P7
+
+- This is a **damage-only, one-player/one-native-enemy** seam; pets, healing, buffs, debuffs, CC, facing, target retarget and full gsim/native HP/aggro parity are not yet unified.
+- Native exact event time is captured, but the first harness applies each event to gsim at the **next world tick**, with nonzero tick granularity, not necessarily precisely at its native event time. This must be refined or bounded for strict production P7 world semantics.
+- Diagnostic upstream native fixture is **Paladin** while gsim uses a minimal moving 2D world. It is not source-matched Druid L60 Balance and not proof the *same* legal spell/gear/talent encounter was used.
+- An ACK verifies the native event list against a world hash *measured by the gsim controller process*. It does not magically make external arbitrary JSON a trusted gsim world. The Python side refuses non-`CombatRuntime` controllers and uses actual target HP deltas.
+- 100 consecutive mobs with paid recovery (#61) and all P1–P7.5 gates are still separate requirements. **0/148 unchanged**.
+
+**Next action:** independently build and run the exact pinned overlay + 20 ticks + 3/80 yd paired scenarios on a working runner or writable upstream checkout. Preserve raw native JSONL effects, ACK IDs, world hashes, PID, binary SHA, request/seed and test output. Then replace minimal Paladin fixture with Druid L60 Balance source-matched input, implement other world effect types and tick-accurate causality, and connect the same interface to #61 persistent recovery.
+
+## Source-native ACK v2 hardening (2026-10-31)
+
+The first ACK validator checked ordered native event IDs and summed damage, but not the echoed action/rank, enemy unit/label, native time, or crit/periodic/landed flags. The new required `applied_events` list is compared **field-for-field** with native Go journal events before a world ACK can be accepted. The subsequent `ACKID` now commits to the **full native event list**, world before/after hashes, PID and tick sequence (`gsim-native-ACK-v2`, SHA256). The Python gsim applier echoes the exact native event metadata only after validating the real measured target HP change.
+
+**Exact-byte local evidence:** checked GitHub blob IDs `world_damage_ack.go=8392076c8b7af8e7d38ff21a192541b649ee790a` and `world_damage_ack_test.go=8149df30b5a55ad3b32392dce1b060fa752759e4`. Executed `GO111MODULE=off go test -count=1 -v world_damage_ack.go world_damage_ack_test.go stub_test.go`: **5/5 Go test functions PASS**; `go vet` PASS. The `stub_test.go` file supplies ONLY `worldTick` and `goodTick`, not native combat. Python `go_native_world_damage_ack.py` blob `e7d3fe25a98638d3c776916ff2681f1632e34364` passed **15 isolated local Python fake-runtime tests** for HP/hash application, metadata tampering, overkill, duplicate event and target-identity mismatch; not an authentic full gsim run.
+
+**Important: not yet verified** is an actual pinned Go engine build with source callback, true Go↔gsim process execution, a causal paired native spell outcome, or a matched Druid L60 Balance trial. GitHub Actions still fails before job steps (#42). All full P1–P7.5 checkpoints **0/148**.
+
+
+## 2026-11-01 — REAL pinned native-Go ↔ gsim Druid L60 Balance paired run (NOT P7 certification)
+
+**First actual source-saved Druid positive/negative causal evidence.** Hosted [Actions run #41288674992](https://github.com/dosibjrn/forever-sim/actions/runs/41288674992), job `124795150486`, **SUCCESS** with the entire pinned Go build and all steps completed. Exact PR #20 source HEAD **`19eed998e9447bf7ee96818b261e7d46d3212483`**. Native backend pinned to `sage3648/mythicsim-forever-engine-go@a667dce8492bd9fb94269a9f864289cb74006775`, binary SHA-256 `c117da9311aa50db8160c2392b269cd5251f26cceff1732856b5c98eddcf5b9f`.
+
+**Saved unchanged source-native request:** `docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json`, Druid Balance (one player), level-63 target (one enemy), nonzero stored seed, native request SHA-256 `b954aa9acf5c327dc0d2f754a29c2ded2ea940c7d70675d6dd91857a79d73cde`. Real gsim 2D target movement/range was varied, while the native input request, seed and binary remained identical within each paired experiment. This **does not** make the minimal gsim player a source-legal Druid build or certify native/gsim combat-state parity.
+
+**Measured from the actual saved JSON artifact**, not invented or a test fixture:
+
+- Near **3 yards**, **60 ticks**, **6 real Go source-native spell-damage events**, `3562.506517097399` total damage applied to gsim target HP with source event IDs, measured before/after world hashes and native-accepted ACKs. Native spell IDs observed include `{SpellID: 25298}`, `{SpellID: 9835}`, periodic `{SpellID: 9835, Tag: 1}`, `{SpellID: 9912}` and `{SpellID: 24977}`. First event at native t=0 ns, observed and world-ACKed on tick 1. Subsequent genuine effects occur after the ACK barrier, including later damage at 1.5s and 4.65s.
+- Far **80 yards**, **60 ticks**, **0 real Go native spell-damage events** and `0` applied damage; the moving target remained outside damage-producing range over the sampled window. All ticks received native no-effect ACKs without a fabricated action claim.
+- The paired report status is `NATIVE_SPELL_DELTA_AND_WORLD_ACK_NOT_DRUID_P7`; both scenarios have native `native_process_reused=true` and `gsim_runtime_real=true`. Native spell counter signatures differ, and at least one near native action effect is acknowledged. The first new native ACK is echoed by later world ticks, so the same retained native process proceeds beyond the gsim application.
+- Raw report **`gsim-go-druid-l60-balance-saved-p73-paired.json`**, SHA-256 `dd8675d0dd87a2256189dc5040ddd5f562041e0440bcdf13b2f13711c8082a5a` (733,706 UTF-8 bytes), is in the [Actions artifact `live-gsim-go-world-effect-ack-not-p7`](https://github.com/dosibjrn/forever-sim/actions/runs/41288674992), artifact ID **`13075957889`**. The artifact was downloaded and its actual raw JSON parsed to reproduce event counts, damage totals, native action IDs, hashes and ACK metadata. Paladin legacy control (20 moving ticks, one event) and original Paladin 3/80yd pair (9 vs 0 events) also passed in the same hosted run.
+- Negative control: the same workflow executes a real malformed gsim world ACK against the retained native process, which rejects it; the step passed in this run.
+
+**Remaining #7/#13 truth:** This establishes a genuine saved Druid *native request* through the same real Go↔gsim causal bridge. The current gsim actor is still a minimal diagnostic controller, not an independently verified Druid L60 gear/talents/APL/material-state mirror. Native spell effects are applied to gsim on world tick boundaries, not yet guaranteed at exact native event time; full controls, facing, healing, player health/resources, shared target state and persistent 100-mob recovery are not covered. The saved P7.3 native request is only an input fixture for this diagnostic, not proof of P7.3 or other P1–P7.5 acceptance. **0/148 remains correct**. Next useful work: verify complete source-matched Druid world/actor state and hook this verified native ACK session into real source-paid continuous pulls under issue #19, while keeping the externally pinned P7 comparison independent.
+
+## 2026-11-01 — exact latest source HEAD end-to-end Python + pinned-Go regression
+
+[Hosted Actions run #41288901823](https://github.com/dosibjrn/forever-sim/actions/runs/41288901823), native job `124795832397` completed **SUCCESS** at exact PR #20 HEAD `11ffe565918b786a7ddc0bdae384f4aa67c69895`. This reran the identical saved Druid L60 Balance + Paladin source-native↔gsim paired experiments and the real malformed native-process ACK negative control, **and** added focused source-regression tests before the Go build. The actual job log states **`79 passed in 0.39s`**, covering `test_wf_gsim_go_world_range_feed.py`, `test_wf_native_spell_observations.py`, `test_wf_native_target_spell_observations.py`, `test_wf_go_native_world_damage_ack.py`, `test_wf_go_paired_native_spell_probe.py`, `test_wf28_pinned_native_damage_hook.py` and `test_wf_druid_l60_native_step_protocol.py`. Python compileall, Go ingress test/vet, the pinned full native core overlay, `-tags=with_db` Go build, real 20-tick gsim process, both paired runs, and forged-ACK rejection completed successfully in the same job.
+
+**Pre-merge bounded integration increment now has executed evidence:** real source-native spell/target outcomes and ACKs, source saved Druid L60 request, 79 tests against exact PR HEAD, and compatible older Paladin control. **Still NOT a checkpoint or full production parity proof**: the gsim actor remains diagnostic; native and world target HP/resources and timing are not fully reconciled for continuous 100-mob survival/recovery; P1–P7.5 gates stay **0/148**. Integration/merge owner may review this bounded PR without demanding complete P7 acceptance.
