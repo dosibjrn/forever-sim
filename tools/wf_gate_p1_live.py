@@ -315,7 +315,10 @@ def _load_spellbook_observed_scope_facts(root: Path, spellbook_path: str | None,
         unknown_positive = sorted(domain for domain, amount in domains.items()
             if domain not in _SPELLBOOK_OBSERVED_DOMAIN_ROLES
             and type(amount) in (int, float) and amount > 0)
-        if roles:
+        if roles or unknown_positive:
+            # Unknown-only positive effects must remain visible to the gate.
+            # Otherwise a healing tooltip fallback could incorrectly waive a
+            # sourced shield/control whose numeric domain is not yet typed.
             facts[spell_id] = {'name': row['name'], 'roles': roles,
                                'unresolved_domains': unknown_positive,
                                'source_url': observation['source_url']}
