@@ -26,6 +26,7 @@ class GsimNativeDamageWorldApplier:
         self._next_seq = 0
         self._previous_event_id = 0
         self._last_native_time_ns = -1
+        self._last_world_tick_ns = -1
         self._target_id = None
         self._native_target_identity = None
 
@@ -35,6 +36,10 @@ class GsimNativeDamageWorldApplier:
         seq = tick.get("sequence")
         if type(seq) is not int or seq != self._next_seq or response.get("sequence") != seq:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_SEQUENCE_REPLAY")
+        clock_ns = tick.get("native_clock_ns")
+        if (type(clock_ns) is not int or clock_ns < 0
+                or clock_ns <= self._last_world_tick_ns):
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_CLOCK_INVALID")
         before = snapshot_gsim_world(self._runtime)
         digest = state_hash(before)
         if digest != tick.get("world_sha256") or digest != response.get("observed_input_world_sha256"):
@@ -77,7 +82,8 @@ class GsimNativeDamageWorldApplier:
                                      event.get("native_target_unit_index"),
                                      event.get("native_target_label"))
             if (ordinal <= last_event_id or type(timestamp) is not int
-                    or timestamp < last_native_time or timestamp > tick.get("native_clock_ns", -1)
+                    or timestamp < 0 or timestamp < last_native_time
+                    or timestamp < self._last_world_tick_ns or timestamp > clock_ns
                     or type(value) not in (float, int) or not isfinite(value) or value <= 0
                     or type(event.get("native_target_index")) is not int
                     or event["native_target_index"] != 0
@@ -115,6 +121,9 @@ class GsimNativeDamageWorldApplier:
         self._next_seq += 1
         self._previous_event_id = last_event_id
         self._last_native_time_ns = last_native_time
+        # Even an empty world ACK is a causal barrier: source effects reported
+        # in a later tick may not be backdated before this acknowledged tick.
+        self._last_world_tick_ns = clock_ns
         return {
             "type": "gsim_native_damage_applied_ack",
             "sequence": seq, "native_process_id": pid,
