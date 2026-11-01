@@ -137,9 +137,9 @@ def _parse_rank_tooltip(text: str, *, action_families: set[str], source: dict,
     # action targets, probabilities and durations come from the captured rank
     # tooltip; an unavailable target blocks the whole rank, not just the proc.
     cast_stun = re.fullmatch(
-        r'Reduces the cast time of (?:your )?(.+?) (?:spell )?by (\\d+(?:\\.\\d+)?) sec '
-        r'and (?:your )?(.+?) has a (\\d+(?:\\.\\d+)?)% chance to stun '
-        r'its target for (\\d+(?:\\.\\d+)?) sec\\.',
+        r'Reduces the cast time of (?:your )?(.+?) (?:spell )?by (\d+(?:\.\d+)?) sec '
+        r'and (?:your )?(.+?) has a (\d+(?:\.\d+)?)% chance to stun '
+        r'its target for (\d+(?:\.\d+)?) sec\.',
         text.strip(), re.IGNORECASE)
     if cast_stun:
         cast_targets = _source_action_targets(cast_stun.group(1))
