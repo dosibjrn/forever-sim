@@ -20,6 +20,14 @@ import shutil
 from tempfile import TemporaryDirectory
 from math import isfinite
 from pathlib import Path
+import sys
+
+# The documented direct-file CLI starts with tools/ on sys.path, not the
+# repository root. Make its production src.game imports resolvable without
+# requiring a caller-specific PYTHONPATH or switching to a test-only runner.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 COUNTS = (1, 2, 100)
 
 
