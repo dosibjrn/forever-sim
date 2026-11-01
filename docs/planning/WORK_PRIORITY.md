@@ -2,6 +2,19 @@
 
 **Canonical repository:** [dosibjrn/forever-sim](https://github.com/dosibjrn/forever-sim). Updated 2026-11-01. The former private `dosibjrn/mage-level-sim` is a **read-only historical source**, not a work target. The old Mage Sim recurring agents have been paused; **do not automatically restart or redirect them** without a separate instruction.
 
+## AKTIIVINEN TYÖNJAKO — Prio päättää, työagentit toteuttavat
+
+**Tämä on 1st workin ja 2nd workin ajantasainen toimeksianto.** Prio-agentti saa muuttaa kummankin teknisen työnkuvaa ja tehtävien jakoa aina kun kriittinen polku sitä vaatii. Alapuolinen historiallinen PR-/työlinjalista ei syrjäytä näitä toimeksiantoja; tarkista nykyinen toteutustila aina issueista, PR:istä ja mainista. Pysyvät ajastuspromptit kuvaavat vain työmenetelmän.
+
+| Agentti | Omistettava työ ja issue | Seuraava toimiva tuotantotulos ja nopein oikea todennus |
+| --- | --- | --- |
+| **1st work** | [#7](https://github.com/dosibjrn/forever-sim/issues/7): native ↔ gsim-world; liitos jatkuvaan actor/world-stateen | Integroitu source-native action → gsim-tilamuutos → ACK → seuraava päätös samassa jatkuvassa tilassa. Todennus ensin lyhyellä oikealla lähdeajolla ja tarvittavalla lähi/etä-negatiivisella kontrollilla. |
+| **2nd work** | [#19](https://github.com/dosibjrn/forever-sim/issues/19), [#15](https://github.com/dosibjrn/forever-sim/issues/15): persistent evaluator → yhteinen whole-build-haku | Jo toimivan 100-mob gsim-evaluoinnin käyttö tuotannon yhteisessä natiivisessiossa ja 30/300 s gear × talents × APL -haussa. Todennus ensin nopealla aidolla lähdedatallisella yhden tilanteen ajolla; laajenna hyväksytyn PROCESSin vaatiessa. |
+
+**Uudelleenjaon sääntö:** Prio muuttaa tätä kahta riviä **vain** todellisen prioriteetti-/riippuvuusmuutoksen vuoksi. Merkitse issue, vastuu, odotettu oikea käyttäytyminen ja nopein aito todennus, ei uusia KPI:itä eikä hyväksymisportteja. Tarkista vanhojen omistajien keskeneräiset PR:t ja anna handoff; älä pakota turhaa context switchingia tai hylkää keskeneräistä koodia. Työagentit seuraavat tämän osion toimeksiantoa seuraavasta ajostaan.
+
+**Testibudjetti:** RED voi olla todellinen virheajon tulos, ei pakollinen uusi testi. Valitse pienin nopea aito source+tuotantomoottori-reproduktio. Älä korvaa todellista simulaatiota mockilla; älä myöskään aja 100 mobia, 300 sekuntia tai stochastic holdoutia rutiinina joka tunti. Laajat ajot tehdään, kun muuttunut semantiikka tai PROCESSin hyväksyntä niitä tarvitsee.
+
 **Approved project contracts:** [OVERALL PLAN v5](../../OVERALL_PLAN.md) and [PROCESS v2.10](../../PROCESS.md). This page is a mutable routing index; actual work items and acceptance criteria belong in GitHub issues. **Fully certified checkpoints: 0/148.** Historical P1–P6-only or independent native/P7 results are not full accepted P1–P7.5 checkpoints. **New 2026-11-01 audit:** PR #20 has a genuine successful pinned Go↔gsim source-effect/ACK diagnostic, but **later native decision consumption of changed gsim HP is not yet proven**, so this is still not P7 or 1/148.
 
 ## 2026-11-01 source migration COMPLETE — public baseline independently verified
