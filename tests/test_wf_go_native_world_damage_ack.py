@@ -271,3 +271,33 @@ def test_empty_native_effect_cannot_ack_future_world_clock():
                        match="WORLD_DAMAGE_ACK_WORLD_CLOCK_MISMATCH"):
         GsimNativeDamageWorldApplier(rt).apply(tick, reply)
     assert rt.targets["m1"].health == before
+
+
+def test_real_gsim_world_applies_native_pet_damage_with_source_caster_identity():
+    rt, tick, response = fixture()
+    event = response["native_damage_events"][0]
+    event.update(native_caster_type="pet", native_caster_unit_index=2,
+                 native_caster_label="Imp")
+    before = rt.targets["m1"].health
+    ack = GsimNativeDamageWorldApplier(rt).apply(tick, response)
+    assert rt.targets["m1"].health == before - event["damage"]
+    assert ack["applied_events"][0]["native_caster_label"] == "Imp"
+    assert ack["applied_events"][0]["native_caster_unit_index"] == 2
+
+
+@pytest.mark.parametrize("bad_fields", [
+    {"native_caster_type": "pet", "native_caster_label": ""},
+    {"native_caster_type": "pet", "native_caster_unit_index": -1,
+     "native_caster_label": "Imp"},
+    {"native_caster_type": "pet", "native_caster_unit_index": True,
+     "native_caster_label": "Imp"},
+    {"native_caster_type": "enemy", "native_caster_label": "Imp"},
+    {"native_caster_type": "", "native_caster_label": "Imp"},
+])
+def test_invalid_native_pet_provenance_cannot_change_gsim_health(bad_fields):
+    rt, tick, response = fixture()
+    response["native_damage_events"][0].update(bad_fields)
+    before = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
+        GsimNativeDamageWorldApplier(rt).apply(tick, response)
+    assert rt.targets["m1"].health == before
