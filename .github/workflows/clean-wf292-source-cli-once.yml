@@ -45,4 +45,5 @@ jobs:
             echo "FAILED: canonical overwrite accepted"; exit 10
           fi
           grep -q CANONICAL_MUST_NEVER_BE_CAPTURE_STAGE "$RUNNER_TEMP/negative.out"
-          python -m pytest -q tests/test_wf292_source_batch_pipeline.py -k nine_class_bulk_queue_and_source_immunity
+          python -m pytest -q tests/test_wf292_source_batch_pipeline.py -k 'nine_class_bulk_queue_and_source_immunity or wf292_direct_source_cli_without_pythonpath'
+          python -m pytest -q tests/test_source_policy_resource_guard_regen.py
