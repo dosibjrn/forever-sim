@@ -1,0 +1,51 @@
+name: One-shot 2nd source cold 300 frontier verification
+on:
+  push:
+    branches:
+      - work/2nd-expand-source-cold300-frontier-20261101
+    paths:
+      - .github/workflows/one-shot-2nd-cold300-frontier-20261101.yml
+permissions:
+  contents: read
+jobs:
+  real-source-search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Real source-backed cold 30 and 300 and independent paid replay
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          python -m tools.wf437_direct_budgeted_run --budget 30 --output /tmp/cold30.json
+          python -m tools.wf437_direct_budgeted_run --budget 300 --output /tmp/cold300.json
+          python - <<'PY'
+          import json
+          a=json.load(open('/tmp/cold30.json'))
+          b=json.load(open('/tmp/cold300.json'))
+          assert a['source_db_sha256']==b['source_db_sha256']
+          for name,report in [('30',a),('300',b)]:
+              print('COLD_SOURCE_RESULT',name,'wall',report['wall_s'],
+                    'paid',report['paid_candidates'],'unique',report['unique_full_builds'],
+                    'complete_replays',report['validation']['complete_100mob_replays'],
+                    'replays',report['validation']['100mob_replays'],flush=True)
+          assert b['paid_candidates']>a['paid_candidates']
+          assert b['wall_s']>a['wall_s']
+          assert b['validation']['complete_100mob_replays']>=1
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-cold-300-widened-evidence
+          path: |
+            /tmp/cold30.json
+            /tmp/cold300.json
+          retention-days: 7
+          if-no-files-found: warn
