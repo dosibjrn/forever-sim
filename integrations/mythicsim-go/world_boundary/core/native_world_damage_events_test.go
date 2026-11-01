@@ -63,7 +63,23 @@ func TestNativeWorldDamageJournalCapturesPetSourceSpellResult(t *testing.T) {
     recordWorldDamageForGsim(sim,spell,result,false)
     events,err:=session.DrainWorldDamageEvents()
     if err!=nil || len(events)!=1 {t.Fatalf("lost source-native pet damage: %+v %v",events,err)}
-    if events[0].Damage!=40 || events[0].SourceActionID=="" {
+    if events[0].Damage!=40 || events[0].SourceActionID=="" ||
+        events[0].NativeCasterType!="pet" || events[0].NativeCasterUnitIndex!=2 ||
+        events[0].NativeCasterLabel!="Imp" {
         t.Fatalf("source pet identity/damage missing: %+v",events[0])
+    }
+}
+
+func TestNativeWorldDamageJournalRejectsPetWithoutSinglePlayerOwner(t *testing.T) {
+    sim:=&Simulation{Environment:&Environment{Raid:&Raid{}},CurrentTime:75*time.Millisecond}
+    session:=&WorldBoundarySession{native:sim}
+    if err:=session.StartWorldDamageJournal();err!=nil {t.Fatal(err)}
+    defer session.CloseWorldDamageJournal()
+    pet:=&Unit{Type:PetUnit,Index:1,UnitIndex:2,Label:"other-player-pet"}
+    enemy:=&Unit{Type:EnemyUnit,Index:0,UnitIndex:1,Label:"native-enemy"}
+    recordWorldDamageForGsim(sim,&Spell{Unit:pet,ActionID:ActionID{SpellID:3110},Rank:1},
+        &SpellResult{Target:enemy,Damage:40,Outcome:OutcomeHit},false)
+    if _,err:=session.DrainWorldDamageEvents();err==nil {
+        t.Fatal("silently attributed an unowned pet's damage to player zero")
     }
 }
