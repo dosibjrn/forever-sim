@@ -89,12 +89,17 @@ def _executable_rank_prefix(talent):
                 if set(range(1, n+1)).issubset(ranks)), default=0)
 
 
-def _source_unlock_full_point_allocation(ir, target, *, level, bonus_talent_points=0, target_rank=1):
+def _source_unlock_full_point_allocation(ir, target, *, level, bonus_talent_points=0,
+                                         target_rank=1, preferred_tree=None,
+                                         minimum_tree_points=0):
     """Find a legal complete source-talent witness without class/build templates.
 
     The target's prerequisite is paid first, tier gates are filled with lower
     row executable ranks, and every intermediate point uses the real validator.
     Failure means no witness was constructed, NOT proof of unreachability.
+    When a product spec constrains one tree, preserve its minimum even while
+    witnessing a rank in a *different* source tree. No tree or talent IDs are
+    hardcoded into this builder.
     """
     cap = available_talent_points(level, bonus_talent_points=bonus_talent_points)
     definitions = {t.id: t for t in ir.talents}
@@ -102,6 +107,11 @@ def _source_unlock_full_point_allocation(ir, target, *, level, bonus_talent_poin
     points_per_row = int((ir.provenance.get('talent_tree_rules') or {}).get('points_per_row', 5))
     allocation = {}
     active = set()
+    preferred_tree = target.tree_key if preferred_tree is None else preferred_tree
+    if (type(minimum_tree_points) is not int or minimum_tree_points < 0
+            or minimum_tree_points > cap
+            or preferred_tree not in {t.tree_key for t in ir.talents}):
+        return None
 
     def add_one(talent):
         rank = allocation.get(talent.id, 0) + 1
@@ -152,9 +162,17 @@ def _source_unlock_full_point_allocation(ir, target, *, level, bonus_talent_poin
 
     if not ensure(target.id, target_rank):
         return None
+    # Pay the named-tree constraint before generic filler consumes the budget.
+    # Every added point still passes the same canonical talent validator.
+    while sum(rank for tid, rank in allocation.items()
+              if definitions[tid].tree_key == preferred_tree) < minimum_tree_points:
+        donors = sorted((t for t in ir.talents if t.tree_key == preferred_tree),
+                        key=lambda t:(int(t.metadata.get('row') or 0), t.id))
+        if not any(add_one(t) for t in donors):
+            return None
     while sum(allocation.values()) < cap:
         donors = sorted(ir.talents, key=lambda t:(
-            t.tree_key != target.tree_key,
+            t.tree_key != preferred_tree,
             int(t.metadata.get('row') or 0), t.id))
         if not any(add_one(t) for t in donors):
             return None
@@ -356,17 +374,17 @@ def source_spec_talent_frontier(ir, candidates, *, tree_key, minimum_points,
 
     seeds = [dict(a) for a in candidates if legal(a)]
     # One unrestricted beam allocation is not adequate spec exploration.
-    # Admit real *source-derived* legal full-budget witnesses for each rank
-    # cap in this tree, including a multi-rank proc talent that ordinary
-    # one-point local search cannot reach. This is not a preset build.
+    # A named spec constrains the full build, not the set of testable ranks.
+    # Witness *every* executable rank in every source tree, including outside
+    # the preferred tree. Otherwise P2 falsely reports off-tree ranks absent
+    # simply because its bounded beam never sampled their exact rank.
     for talent in ir.talents:
-        if talent.tree_key != tree_key:
-            continue
         cap = _executable_rank_prefix(talent)
-        for rank in sorted({1,cap} - {0}):
+        for rank in range(1, cap + 1):
             proposal = _source_unlock_full_point_allocation(ir,talent,
                 level=level,bonus_talent_points=bonus_talent_points,
-                target_rank=rank)
+                target_rank=rank,preferred_tree=tree_key,
+                minimum_tree_points=minimum_points)
             if proposal and legal(proposal):
                 seeds.append(proposal)
     if not seeds:
