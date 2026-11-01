@@ -73,9 +73,9 @@ jobs:
           binary=Path('../gsim-go-world-ingress')
           request=Path('../source-execute-request.json')
           high=run(binary,request,ticks=80,target_spawn_yards=3.,
-                   enemy_move_speed_yards_s=0.,target_initial_health_fraction=1.)
+                   enemy_move_speed_yards_s=0.1,target_initial_health_fraction=1.)
           low=run(binary,request,ticks=80,target_spawn_yards=3.,
-                  enemy_move_speed_yards_s=0.,target_initial_health_fraction=.1)
+                  enemy_move_speed_yards_s=0.1,target_initial_health_fraction=.1)
           assert len(high['observations'])==len(low['observations'])==80
           assert high['native_binary_sha256']==low['native_binary_sha256']
           assert high['native_request_sha256']==low['native_request_sha256']
