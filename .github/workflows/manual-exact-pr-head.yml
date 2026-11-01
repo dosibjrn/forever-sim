@@ -56,10 +56,16 @@ jobs:
           base_repo="$(jq -r '.base.repo.full_name // ""' <<< "$pr_json")"
           base_ref="$(jq -r '.base.ref // ""' <<< "$pr_json")"
           actual_sha="$(jq -r '.head.sha // ""' <<< "$pr_json")"
+          # Stacked PRs may target an implementation work/* branch; keep the
+          # base inside this repository and reject unrelated branch families.
+          case "$base_ref" in
+            main|work/*) ;;
+            *) echo 'PR base is not main or an approved work/* branch' >&2; exit 3 ;;
+          esac
           if [[ "$state" != open || "$head_repo" != "$GITHUB_REPOSITORY" ||
-                "$base_repo" != "$GITHUB_REPOSITORY" || "$base_ref" != main ||
+                "$base_repo" != "$GITHUB_REPOSITORY" ||
                 "$actual_sha" != "$EXPECTED_SHA" ]]; then
-            echo 'PR closed, forked, wrong base, or expected HEAD stale' >&2
+            echo 'PR closed, forked, or expected HEAD stale' >&2
             exit 3
           fi
           printf 'sha=%s\n' "$actual_sha" >> "$GITHUB_OUTPUT"
