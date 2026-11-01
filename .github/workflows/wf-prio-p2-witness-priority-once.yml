@@ -1,0 +1,30 @@
+name: One-shot source P2 witness priority (remove after verification)
+on:
+  push:
+    branches:
+      - work/prio-p2-source-witness-priority-20261101
+    paths:
+      - src/v2/source_bounded_joint_frontier.py
+permissions:
+  contents: read
+concurrency:
+  group: one-shot-prio-p2-witness-priority
+  cancel-in-progress: false
+jobs:
+  source-witness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Exact-HEAD source GameIR candidate admission and negative controls
+        run: |
+          git rev-parse HEAD
+          python -m pytest -q tests/test_wf_p2_source_witness_priority.py tests/test_wf_p2_cross_tree_source_witness.py tests/test_wf35_source_spec_p2_adapter.py tests/test_wf35_product_spec_profile_contract.py
