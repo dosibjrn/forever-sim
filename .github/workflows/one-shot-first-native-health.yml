@@ -1,0 +1,70 @@
+name: One-shot native first-world-health causal RED GREEN
+on:
+  push:
+    branches: [work/first-native-world-initial-health-20261101]
+    paths:
+      - .github/workflows/one-shot-first-native-health.yml
+      - src/game/runtime/go_world_range_feed.py
+      - integrations/mythicsim-go/world_boundary/ingress/feed.go
+      - integrations/mythicsim-go/world_boundary/ingress/main.go
+      - integrations/mythicsim-go/world_boundary/ingress/world_damage_ack.go
+permissions:
+  contents: read
+jobs:
+  source-native-first-health:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+          lfs: true
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine-go
+          ref: a667dce8492bd9fb94269a9f864289cb74006775
+          path: upstream
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: upstream/go.mod
+          cache-dependency-path: upstream/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real source runtime prerequisites
+        run: python -m pip install --disable-pip-version-check pytest beautifulsoup4
+      - name: Build pinned source-native binary
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          cd upstream
+          make sim/core/proto/api.pb.go
+          cd ..
+          python3 project/integrations/mythicsim-go/world_boundary/patch_native_spell_result.py upstream/sim/core/spell_result.go
+          cp project/integrations/mythicsim-go/world_boundary/core/*.go upstream/sim/core/
+          mkdir -p upstream/cmd/wf_gsim_go_world_ingress
+          cp project/integrations/mythicsim-go/world_boundary/ingress/*.go upstream/cmd/wf_gsim_go_world_ingress/
+          cd upstream
+          go test ./sim/core -run 'Test(WorldTick|WorldDistance|WorldBoundary|NextWorld|NativeWorldHealth)' -count=1
+          go build -tags=with_db -trimpath -o ../gsim-go-world-ingress ./cmd/wf_gsim_go_world_ingress
+      - name: Source-native initial gsim HP must affect first native decision
+        run: |
+          cd project
+          python - <<'PY'
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import run
+          binary=Path('../gsim-go-world-ingress')
+          request=Path('../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json')
+          for fraction in (0.15,1.0):
+              r=run(binary,request,ticks=3,target_spawn_yards=80.,
+                    target_health=5000.,target_initial_health_fraction=fraction)
+              first=r['observations'][0]
+              print('REAL_FIRST_WORLD_HEALTH',fraction,
+                    first['native_world_health_feedback_active_at_boundary'],
+                    first['native_health_fraction_at_boundary'],
+                    first['native_execute_phase_at_boundary'])
+              assert first['native_world_health_feedback_active_at_boundary']
+              assert abs(first['native_health_fraction_at_boundary']-fraction)<1e-8
+          PY
