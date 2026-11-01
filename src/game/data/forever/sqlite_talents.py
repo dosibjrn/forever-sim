@@ -480,6 +480,21 @@ def _parse_rank_tooltip(text: str, *, action_families: set[str], source: dict,
             target_id=x,value=-float(spell_cost.group(2))*0.01,
             provenance={'source':dict(source),'raw_text_summary':text}) for x in active), absent, (
             None if active else 'no_mentioned_actions_in_current_ir')
+    # A sourced critical-damage *bonus* scales the excess over the normal
+    # crit multiplier, not the base spell damage.  The school list and value
+    # come exclusively from the captured rank tooltip, never a class preset.
+    school_critical_damage = re.fullmatch(
+        r'Increases the critical strike damage bonus of your (.+?) spells by (\d+(?:\.\d+)?)%\.',
+        text.strip(), re.IGNORECASE)
+    if school_critical_damage:
+        schools = _source_action_targets(school_critical_damage.group(1))
+        if not schools or len(schools) != len(set(schools)):
+            return (), (), 'invalid_source_critical_damage_school_scope'
+        return (TalentModifier(kind='critical_damage_bonus_pct',
+            target_type='action_filter',
+            target_id='damage_schools:' + ','.join(schools),
+            value=float(school_critical_damage.group(2)) * 0.01,
+            provenance={'source':dict(source),'raw_text_summary':text}),), (), None
     school_damage = re.fullmatch(
         r'Increases the damage done by your (.+?) spells by (\d+(?:\.\d+)?)%\.',
         text.strip(), re.IGNORECASE)
