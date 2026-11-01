@@ -65,7 +65,10 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
         from .source_verified_detail_headers import verified_headers_for_class
         header_rows=verified_headers_for_class(path,class_key.strip().lower())
         from .source_effect_atoms import verified_class_effect_atoms
-        atom_evidence_by_id=verified_class_effect_atoms(path,class_key=class_key.strip().lower())
+        atom_evidence_by_id=verified_class_effect_atoms(
+            path,class_key=class_key.strip().lower(),
+            allow_stale_index=(db_path is not None and
+                               path.resolve() != Path(DEFAULT_DB).resolve()))
         from .source_stat_aura_candidates import read_current_candidates
         stat_aura_evidence={int(x['spell_id']):x for x in read_current_candidates(path,class_key=class_key.strip().lower())}
         # Source parser drift is an explicit rank-level blocker. A known IR
@@ -140,11 +143,16 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
             record['source_stat_aura_candidate']={k:v for k,v in stat_aura.items() if k not in ('class_key','spell_id')}
             record['source_stat_aura_execution_status']=stat_aura['execution_status']
         if atom_evidence is not None:
-            record['source_effect_atom_count']=atom_evidence['atom_count']
-            record['source_effect_atom_kinds']=[a['kind'] for a in atom_evidence['atoms']]
-            record['source_effect_residual_text']=atom_evidence['residual_text']
-            record['source_effect_evidence_scope']=atom_evidence['source_authority']
-            record['source_effect_execution_status']='BLOCKED_PARTIAL_EFFECT_EVIDENCE'
+            if atom_evidence['execution_status']=='STALE_ATOM_INDEX_REINGEST_REQUIRED':
+                # An explicit stage changed the indexed source after atom
+                # ingestion. Expose the blocker; never reuse its old atoms.
+                record['source_effect_execution_status']='STALE_ATOM_INDEX_REINGEST_REQUIRED'
+            else:
+                record['source_effect_atom_count']=atom_evidence['atom_count']
+                record['source_effect_atom_kinds']=[a['kind'] for a in atom_evidence['atoms']]
+                record['source_effect_residual_text']=atom_evidence['residual_text']
+                record['source_effect_evidence_scope']=atom_evidence['source_authority']
+                record['source_effect_execution_status']='BLOCKED_PARTIAL_EFFECT_EVIDENCE'
         if header:
             record['verified_detail_header_status'] = header['effect_execution_status']
             record['verified_detail_cost'] = ({'resource':header['cost_resource'],

@@ -65,6 +65,16 @@ class VerifiedAtomClassCacheTest(unittest.TestCase):
             self.assertNotEqual(source_db_content_identity(path),before)
             with self.assertRaisesRegex(ValueError,'STALE_ATOM_INDEX'):
                 verified_class_effect_atoms(path,class_key='druid')
+            # The untrusted staged GameIR may still evaluate independently
+            # sourced executable semantics, but must not reuse stale atoms.
+            staged = build_game_ir_slice(class_key='druid',level=20,ability_db_path=path)
+            ledger = next(f for f in staged.source_facts
+                          if f.get('fact_kind')=='canonical_indexed_ability_coverage')
+            record = next(r for r in ledger['records'] if r['spell_id']==5176)
+            self.assertEqual(record['source_effect_execution_status'],
+                             'STALE_ATOM_INDEX_REINGEST_REQUIRED')
+            self.assertNotIn('source_effect_atom_count',record)
+            self.assertFalse(staged.provenance['complete_source_action_coverage'])
 
     def test_coverage_is_still_blocked_not_executable(self):
         ir=build_game_ir_slice(class_key='mage',level=20)

@@ -59,12 +59,15 @@ def test_data_only_source_change_flips_real_optimizer_winner(tmp_path):
     a,b=result['arms']['canonical'],result['arms']['staging']
     assert a['candidate_count']==b['candidate_count']==28
     assert a['evaluated_count']==b['evaluated_count']==28
-    # WF284: source-backed Regrowth downrank enters the real recovery frontier,
-    # changing the full-cycle ranking without changing this staged Claw fact.
-    assert a['winner']['actions']==['rake:1822','rip:20','claw:20']
+    # Current source CombatRuntime + recovery evaluated all 28 policies in
+    # each arm (Actions #41333726542). The old Rake policy and timings were
+    # superseded by the real resource/recovery changes; never hardcode a
+    # source winner without rerunning the full-cycle evaluator.
+    assert a['winner']['actions']==['rip:20','claw:20']
     assert b['winner']['actions']==['claw:20']
-    assert a['winner']['seconds_per_mob']==pytest.approx(20.360723933009186)
-    assert b['winner']['seconds_per_mob']==pytest.approx(4.590329551593733)
+    assert a['winner']['seconds_per_mob']==pytest.approx(22.4660305549568)
+    assert b['winner']['seconds_per_mob']==pytest.approx(3.8569962182604)
+    assert b['winner']['seconds_per_mob'] < a['winner']['seconds_per_mob']
     assert hashlib.sha256(old.read_bytes()).hexdigest()==before
 
 
