@@ -2214,12 +2214,21 @@ class CombatRuntime:
             px,py=self.player_position_yards
             dx,dy=tx-px,ty-py
             distance=hypot(dx,dy)
-            if distance<=1e-12:raise ValueError('SOURCE_SPATIAL_CHARGE_ZERO_VECTOR')
             offset=float(effect.arrival_distance_yards)
-            # A behind-position arrival is a geometric proxy: actual target
-            # facing/turning dynamics are not source-certified by this model.
-            sign=(-1. if effect.arrival_position_kind=='behind_target' else 1.)
-            new_pos=(tx - sign*dx/distance*offset,ty - sign*dy/distance*offset)
+            # The source permits zero minimum range for contact charges. When
+            # the actor already overlaps the target, there is no direction to
+            # normalize and no distance to close: retain the real position.
+            # A behind-target charge still requires a defined approach vector;
+            # never fabricate an orientation from an arbitrary world axis.
+            if distance<=1e-12:
+                if effect.arrival_position_kind!='target_contact':
+                    raise ValueError('SOURCE_SPATIAL_CHARGE_ZERO_VECTOR')
+                new_pos=(px,py)
+            else:
+                # A behind-position arrival is a geometric proxy: actual target
+                # facing/turning dynamics are not source-certified by this model.
+                sign=(-1. if effect.arrival_position_kind=='behind_target' else 1.)
+                new_pos=(tx - sign*dx/distance*offset,ty - sign*dy/distance*offset)
             self._player_move_generation+=1
             self._player_route_end_s=float(event.time_s)
             self.player_position_yards=new_pos
