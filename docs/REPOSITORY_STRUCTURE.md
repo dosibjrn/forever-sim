@@ -1,13 +1,13 @@
 # Repository structure — current ownership and migration guide
 
-This is a **navigation and maintenance guide**, not a replacement for the approved [PROCESS](../PROCESS.md) or [OVERALL PLAN](../OVERALL_PLAN.md). The counts below are tracked Git blobs from the **public `main` tree at `d87380c8` (2026-11-01)**, not live counters. P0 source/data/LFS migration is complete under [public issue #25](https://github.com/dosibjrn/forever-sim/issues/25), with [independent LFS checkout and 13/13 snapshot tests](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045); full checkpoint certification remains **0/148**. Historical *private-repository* issue #14 covered launcher relocation phases 2A/2B; public issue #14 is a **different** native/world integration issue. A folder's location does not confer a gate PASS.
+This is a **navigation and maintenance guide**, not a replacement for the approved [PROCESS](../PROCESS.md) or [OVERALL PLAN](../OVERALL_PLAN.md). The counts below are tracked Git blobs from the **public `main` tree at `4befea2a` (2026-11-01)**, not live counters. P0 source/data/LFS migration is complete under [public issue #25](https://github.com/dosibjrn/forever-sim/issues/25), with [independent LFS checkout and 13/13 snapshot tests](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045); full checkpoint certification remains **0/148**. Historical *private-repository* issue #14 covered launcher relocation phases 2A/2B; public issue #14 is a **different** native/world integration issue. A folder's location does not confer a gate PASS.
 
 ## Current repository map
 
 | Path | Tracked files | Ownership / status | Safe next step |
 | --- | ---: | --- | --- |
 | `src/` | 388 | Production Python runtime. `game/` = generic GameIR and world/runtime, `rulesets/` = class/ruleset implementations, `v2/` = legacy/current analytic optimizer code, `service/` = local services | Keep as-is while changing engine backends; refactor by import-safe subsystem with tests |
-| `tests/` | 668 | Growing test suite, with `release/` (explicit slow tests) and `maintenance/` (root launcher, release-layout and SQLite hygiene contracts) | Organize remaining tests incrementally; audit imports, explicit CLI targets and relative paths before moving |
+| `tests/` | 669 | Growing test suite, with `release/` (explicit slow tests) and `maintenance/` (root launcher, release-layout and SQLite hygiene contracts) | Organize remaining tests incrementally; audit imports, explicit CLI targets and relative paths before moving |
 | `tools/` | 293 | Existing Python command entrypoints and support files (capture, ingest, gates, audit, validation) | Classify; do not break `python tools/wf_gate.py` or internal imports by moving blindly |
 | `scripts/` | 47 | Auxiliary launchers under `commands/`, diagnostics, migration/maintenance and benchmarks | Keep administrative/non-library scripts here; disentangle from Python CLI `tools/` later |
 | `docs/` | 79 | Documentation, the **curated formal evidence index**, planning/reference/archive | Keep docs here; archive obsolete handovers, link certified evidence from README |
@@ -21,7 +21,7 @@ This is a **navigation and maintenance guide**, not a replacement for the approv
 | `fixtures/` | 1 | Historical held-out Druid L20 build | Candidate for `tests/fixtures/` after search for absolute/relative path consumers |
 | `tests/release/` | 3 | Explicit release-only suite (migrated from `release_tests/`); normal pytest collection skips this folder | Run with `scripts/commands/run-release-smoke.sh` or direct `pytest -q tests/release` |
 | `integrations/` | 57 | MythicSim Go world-boundary overlays and Rust native diagnostics/search adapters; pinned engines are external | Add Rust/Go adapters here only as real runnable integrations with pinned revisions |
-| `.github/` | 2 | Public workflow definitions; retain controlled triggers and exact-HEAD evidence | Extend acceptance CI incrementally; green compilation is not a P7 PASS |
+| `.github/` | 3 | Public workflow definitions: migration/publish guard, runner smoke, and bounded exact-PR-HEAD verifier | Keep manual-only triggers, read-only test credentials, and exact-HEAD provenance; green tests are not a P7 PASS |
 
 Directory counts are **tracked files**; they include some historical outputs. Other small root-level files include `README.md`, `PROCESS.md`, `OVERALL_PLAN.md`, `VERSION`, `pytest.ini`, entry scripts and an old coverage report.
 
@@ -41,6 +41,15 @@ The **target direction** below is an architecture rule for future small changes,
 **Intended flow:** pinned source → source-legal GameIR/ruleset → persistent 2D world + selected native combat session (shared clock, native event → applied world HP/hash → full ACK → next native decision) → continuous paid recovery and 100-mob evaluator → reusable gear × talents × APL search → gate validator and independently reproducible evidence. The Go `world_boundary.go` explicitly labels range receipts as *not* world-damage ACK; the native→world proof is still tracked under [public issue #7](https://github.com/dosibjrn/forever-sim/issues/7), and the paid evaluator under [public issue #19](https://github.com/dosibjrn/forever-sim/issues/19). Neither is certified by directory placement.
 
 **Compatibility invariants:** preserve `./run.sh`, `./run.ps1`, `python tools/wf_gate.py --class ... --level ... --gate ...`, the existing `gate_config/` / `gate_sources/` / `gate_evidence/` paths and the evidence contract. Do not reparent imports, rename test fixtures or redirect native engines without exact-HEAD import/CLI, Linux/Windows, Rust/Go and gate-regression proof. See [current priorities](planning/WORK_PRIORITY.md) before starting a layout-only PR.
+
+## Manual PR verification boundary (public CI)
+
+The public main workflow [`.github/workflows/manual-exact-pr-head.yml`](../.github/workflows/manual-exact-pr-head.yml) and its [contract test](../tests/test_manual_exact_pr_head_workflow.py) were added by [PR #41](https://github.com/dosibjrn/forever-sim/pull/41). They are **integration/merge infrastructure**, not a production simulator backend or a checkpoint gate. [Issue #39](https://github.com/dosibjrn/forever-sim/issues/39) owns hosted-runner verification; merging the workflow and passing its static tests do not prove that a hosted exact-HEAD run has succeeded.
+
+- Entry point: manual `workflow_dispatch` on **main** with an open same-repository PR number, expected 40-character HEAD SHA, and one bounded suite (`migration-guard`, `native-ack-unit`, `paid-replay-unit`, `p1p2-unit`). No `push`, `pull_request`, or scheduled trigger.
+- Trust boundary: the main-branch workflow verifies PR identity, base and HEAD before checking out the exact commit; checkout uses LFS and does not persist credentials. It checks the HEAD again before running allowlisted tests. Workflow permissions are `contents: read`, and the test step has no `GH_TOKEN` environment variable.
+- Evidence boundary: log the actual checked-out SHA, executed suite and test result. A hosted **unit PASS** is not a native↔world integration PASS, a 100-mob paid replay, or a P1–P7.5 checkpoint PASS. The selected production executor, pinned source and independent gate evidence remain required under [PROCESS](../PROCESS.md).
+- Change safety: edits to the workflow's inputs, allowlist, token exposure or triggers must update the contract test and receive focused review. Do not restore the legacy private auto-trigger workflows or launch repeated CI retries when a runner has not executed any steps.
 
 ## Evidence: three distinct responsibilities
 
@@ -97,7 +106,7 @@ Long-term desirable consolidation: move auxiliary CLI wrappers into `scripts/` o
 1. **Completed root launcher cleanup (historical)** — [historical private issue #14](https://github.com/dosibjrn/mage-level-sim/issues/14). Phases 2A/2B relocate auxiliary and alternate launchers; preserve root `./run.sh` / `./run.ps1`. Legacy coverage reports remain a separately audited optional move.
 2. **Gate config & evidence consolidation** — identify every reference to `gate_config`, `gate_sources`, `gate_evidence` and `config/validation`; introduce a resolver/compatibility tests; move **one** class of files in a separate branch.
 3. **Fixture and acceptance test consolidation** — release-only modules live in `tests/release/` (excluded from default pytest discovery); next audit the standalone `fixtures/` reader and move only after path-consumer validation.
-4. **Tools/tests hierarchy** — independently classify the 293 tracked `tools/` paths and 668 tracked `tests/` paths. Start with a single narrow functional group and preserve public CLI/module imports; do **not** wholesale rename hundreds of files.
+4. **Tools/tests hierarchy** — independently classify the 293 tracked `tools/` paths and 669 tracked `tests/` paths. Start with a single narrow functional group and preserve public CLI/module imports; do **not** wholesale rename hundreds of files.
 5. **Source data/state provenance** — distinguish canonical Wowhead source, generated catalogue DBs, staged snapshots and runtime outputs. SQLite transient `-wal`/`-shm` sidecars were removed from version control after checking the WAL was zero bytes; real SQLite catalogues remain tracked and unchanged. Next audit genuine staged database redundancy separately.
 
 For every migration: one branch → list all moved paths and readers → minimal edits → runnable relevant regression tests → approved PR → integrator merge to `main`. Do not bundle these migrations with a P7 gate implementation.
