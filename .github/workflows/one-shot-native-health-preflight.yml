@@ -63,3 +63,35 @@ jobs:
           assert sum(len(row['native_damage_events']) for row in far['observations'])==0
           print('REAL_GSIM_NATIVE_HEALTH_CONTINUITY_NEAR_FAR_PASS')
           PY
+      - name: Real gsim unACKed HP perturbation must fail before second world mutation
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
+          from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApplier
+          from tools.wf_gsim_go_live_range_probe import run
+          original_tick=GsimGoRangeFeed.next_tick
+          original_apply=GsimNativeDamageWorldApplier.apply
+          applied=[]
+          def real_perturbed_tick(self):
+              if self._sequence==1:
+                  target=self._runtime.targets[self._runtime.target.id]
+                  target.health-=1
+              return original_tick(self)
+          def record_apply(self,tick,response):
+              applied.append(tick['sequence'])
+              return original_apply(self,tick,response)
+          GsimGoRangeFeed.next_tick=real_perturbed_tick
+          GsimNativeDamageWorldApplier.apply=record_apply
+          try:
+              run(Path('../gsim-go-world-ingress'),
+                  Path('../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json'),
+                  ticks=5,target_spawn_yards=3.,target_health=5000.)
+          except RuntimeError as exc:
+              assert 'WORLD_HEALTH_CHANGED_WITHOUT_NATIVE_ACK' in str(exc),str(exc)
+          else:
+              raise AssertionError('UNACKED_GSIM_HEALTH_CHANGE_ACCEPTED')
+          assert applied==[0],applied
+          print('REAL_GSIM_UNACKED_HEALTH_REJECTED_BEFORE_SECOND_WORLD_MUTATION')
+          PY
