@@ -1,0 +1,50 @@
+name: One-shot 2nd cold source legal-space parity
+on:
+  push:
+    branches:
+      - work/second-cold-legal-space-parity-20261102
+    paths:
+      - .github/workflows/second-cold-legal-space-one-shot.yml
+jobs:
+  source-paid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Real independent 30s and 300s cold source search and paid replay
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          python -m tools.wf437_direct_budgeted_run --budget 30 --output /tmp/cold30.json
+          python -m tools.wf437_direct_budgeted_run --budget 300 --output /tmp/cold300.json
+          python - <<'PY'
+          import json
+          a=json.load(open('/tmp/cold30.json'))
+          b=json.load(open('/tmp/cold300.json'))
+          for label,r in (('30',a),('300',b)):
+              v=r['validation']
+              print('SOURCE_COLD',label,'wall',r['wall_s'],'paid',r['paid_candidates'],
+                    'full_paid',v['complete_100mob_replays'],'status',v['status'],flush=True)
+              assert v['complete_100mob_replays']>=1
+              assert v['rows'][0]['status']=='COMPLETE'
+              assert v['rows'][0]['count']==100
+          assert a['source_db_sha256']==b['source_db_sha256']
+          assert b['paid_candidates']>=10*a['paid_candidates'], (a['paid_candidates'],b['paid_candidates'])
+          x=a['validation']['rows'][0]['full_s_per_mob']
+          y=b['validation']['rows'][0]['full_s_per_mob']
+          print('INDEPENDENT_REPLAY_T30_T300',x,y,'ratio',x/y,flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: second-cold-same-space-evidence
+          path: |
+            /tmp/cold30.json
+            /tmp/cold300.json
+          retention-days: 3
