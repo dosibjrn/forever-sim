@@ -225,4 +225,4 @@ LFS migration or approval to remove staged databases.
 - [Approved OVERALL PLAN](../OVERALL_PLAN.md)
 - [Worker contract and next gate](WORKER.md)
 - [Gate and engineering evidence](evidence/README.md)
-- [Old WF handovers](archive/README.md)
+- Historical WF handovers and obsolete v0.10 plans were removed from the current tree; retrieve them through [pre-cleanup Git history](https://github.com/dosibjrn/forever-sim/tree/7ef099b0b3264e8180595780176ba26e87465421/docs/archive).
