@@ -25,7 +25,7 @@ if str(ROOT) not in sys.path:
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.data.forever.source_indexed_action_coverage import _source_spell_ids
-from src.game.model.ir import IncomingAttackDefinition
+from src.game.model.ir import IncomingAttackDefinition, QueuedSwingEffect, ResourceChangeEffect
 from src.game.runtime import ActorState, CombatRuntime, TargetState
 from src.game.runtime.simulator import action_eligibility
 from tools.wf_gate_p1_live import (_highest_usable_ranks, _source_ids, _source_rows, _source_legality, _source_disabled_rune_ids, _load_p1_scenario_nonimpact, run_live)
@@ -51,7 +51,10 @@ def _starting_state(ir, action, mode):
     for resource, capacity in actor.resource_capacity.items():
         if resource != "health" and resource in actor.resources and actor.resource_is_active(resource):
             actor.resources[resource] = float(capacity)
-    target = TargetState.with_health("toy_mob", TOY_MOB_HP, armor=0.)
+    # Realistic nonzero toy mitigation/debuff channels; these are fixture
+    # numbers, NOT Forever source coefficients or class-specific game rules.
+    target = TargetState.with_health("toy_mob", TOY_MOB_HP, armor=200.,
+                                     attack_power=200., melee_attack_power=200.)
     if hasattr(target, "bind_resource_definitions"):
         target.bind_resource_definitions(ir.resources)
     for req in action.requirements:
@@ -70,6 +73,15 @@ def _starting_state(ir, action, mode):
             rid = str(req.get("resource_id") or "")
             if rid in actor.resource_capacity and rid in actor.resources:
                 actor.resources[rid] = max(0., float(actor.resource_capacity[rid]) - 1.)
+    # Generic resource-generating actions require room to show an effect.
+    for effect in action.effects:
+        if (isinstance(effect, ResourceChangeEffect)
+                and effect.target in ("actor", "self")
+                and effect.operation == "add"):
+            rid = str(effect.resource_id)
+            if rid in actor.resources and rid in actor.resource_capacity:
+                actor.resources[rid] = min(float(actor.resources[rid]),
+                                           float(actor.resource_capacity[rid]) * 0.25)
     return actor, target
 
 
@@ -96,6 +108,14 @@ def observable_state(rt):
             total_taken += float(event.payload.get("post_mitigation_damage", 0.))
     return {
         "mob_hp": _numeric(target.health),
+        "mob_stat_modifiers": {
+            str(k): [str(v[0]), _numeric(v[1]), int(v[2])]
+            for k, v in sorted(target.active_stat_modifiers.items())
+        },
+        "mob_school_power_modifiers": {
+            str(k): [str(v[0]), _numeric(v[1]), int(v[2])]
+            for k, v in sorted(target.active_school_power.items())
+        },
         "player_hp": _numeric(actor.resources.get("health", 0.)),
         "player_resources": {k: _numeric(v) for k, v in sorted(actor.resources.items())},
         "player_stats": {k: _numeric(v) for k, v in sorted(actor.stats.items())},
@@ -112,6 +132,7 @@ def observable_state(rt):
         "damage_event_count": kinds.get("Damage", 0),
         "heal_event_count": kinds.get("Heal", 0),
         "control_event_count": kinds.get("ControlApplied", 0),
+        "debuff_event_count": kinds.get("TargetStatDebuffApplied", 0),
     }
 
 
@@ -125,7 +146,15 @@ def _run_one(ir, action, mode, *, muted: bool):
         metadata={"representative_swing_s": SWING_SECONDS},
         provenance=({"source": "user_defined_P1_toy_mob_fixture", "damage": MOB_HIT},),
     )
-    rt = CombatRuntime(actor=actor, target=target, incoming_attacks=(incoming,))
+    # A queued-swing spell (Maul) only deals damage on the real next white
+    # swing. Use the exact sourced autoattack definition, not a fake proc.
+    queued = [e for e in action.effects if isinstance(e, QueuedSwingEffect)]
+    attacks = tuple(a for a in ir.auto_attacks
+                    if a.id in {e.auto_attack_id for e in queued})
+    if len(attacks) != len(queued):
+        raise ValueError("SOURCE_QUEUED_SWING_AUTOATTACK_MISSING")
+    rt = CombatRuntime(actor=actor, target=target, auto_attacks=attacks,
+                       incoming_attacks=(incoming,))
     real_or_muted = replace(action, effects=()) if muted else action
     eligibility = action_eligibility(action=real_or_muted, actor=actor, target=target)
     if not eligibility.eligible:
