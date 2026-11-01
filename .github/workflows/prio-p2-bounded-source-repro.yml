@@ -1,5 +1,10 @@
 name: prio-p2-bounded-source-repro
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/prio-p2-bounded-source-repro.yml
+      - tools/wf_gate_p2_live.py
   push:
     branches:
       - work/prio-p2-source-fullpoint-20261101-2356
@@ -10,6 +15,7 @@ permissions:
   contents: read
 jobs:
   real-p2:
+    if: github.event_name == 'push' || github.head_ref == 'work/prio-p2-source-fullpoint-20261101-2356'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
