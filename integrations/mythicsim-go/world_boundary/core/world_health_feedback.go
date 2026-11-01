@@ -40,3 +40,36 @@ func (session *WorldBoundarySession) WorldHealthDecisionSnapshot() (float64,int3
     if session==nil||session.native==nil||!session.worldHealthInitialized {return 0,0,false}
     return session.native.GetRemainingDurationPercent(),session.native.executePhase,true
 }
+
+
+// BeginNextWorldTarget retains the *same* native Simulation, actor, cooldowns,
+// resources, RNG, and event journal after a real lethal gsim world ACK.
+// This serial one-native-target-slot contract is valid only for successive
+// identical source enemy templates; the gsim controller owns target identity.
+// Native target auras are encounter-scoped and must not leak to the next mob.
+func (session *WorldBoundarySession) BeginNextWorldTarget() error {
+    if session==nil || session.native==nil || session.awaitingWorld ||
+        !session.worldHealthInitialized || session.worldHealthLast!=0 {
+        return errors.New("NATIVE_WORLD_NEXT_TARGET_REQUIRES_LETHAL_ACK")
+    }
+    sim:=session.native
+    if sim.Encounter==nil || len(sim.Encounter.AllTargets)!=1 ||
+        sim.Raid==nil || len(sim.Raid.AllPlayerUnits)!=1 ||
+        sim.Raid.AllPlayerUnits[0]==nil || sim.Raid.AllPlayerUnits[0].Moving {
+        return errors.New("NATIVE_WORLD_NEXT_TARGET_REQUIRES_SINGLE_NATIVE_SLOT")
+    }
+    target:=sim.Encounter.AllTargets[0]
+    if target==nil {return errors.New("NATIVE_WORLD_NEXT_TARGET_MISSING")}
+    // A native DOT/control aura belongs to the dead mob, never the new one.
+    target.auraTracker.expireAll(sim)
+    // Park the real player out of combat range while native time, regen and
+    // cooldowns advance through gsim's recovery interval.
+    applyWorldDistanceToPlayer(sim,sim.Raid.AllPlayerUnits[0],10000)
+    sim.Encounter.DamageTaken=0
+    sim.executePhase=0
+    sim.nextExecutePhase()
+    session.worldHealthInitialized=false
+    session.worldHealthMax=0
+    session.worldHealthLast=0
+    return nil
+}
