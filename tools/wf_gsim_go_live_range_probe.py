@@ -260,7 +260,7 @@ def main():
         try:
             run(args.binary, args.request, ticks=args.ticks, corrupt_ack=True,
                 target_initial_health_fraction=args.target_initial_health_fraction,
-        pulls=args.pulls, recovery_s=args.recovery_seconds)
+                pulls=args.pulls, recovery_s=args.recovery_seconds)
         except RuntimeError as exc:
             if 'WORLD_EFFECT_ACK_ID_OR_HASH_MISMATCH' not in str(exc):
                 raise
@@ -268,7 +268,8 @@ def main():
             return
         raise SystemExit('NATIVE_GO_ACCEPTED_FORGED_WORLD_ACK')
     result = run(args.binary, args.request, ticks=args.ticks,
-        target_initial_health_fraction=args.target_initial_health_fraction)
+        target_initial_health_fraction=args.target_initial_health_fraction,
+        pulls=args.pulls, recovery_s=args.recovery_seconds)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + '\n')
     print(f'{result["status"]}: {len(result["observations"])} ticks (NOT P7)')
