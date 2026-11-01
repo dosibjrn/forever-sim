@@ -6,6 +6,11 @@ from collections import Counter
 import json
 from pathlib import Path
 import sqlite3
+import sys
+
+# Direct-file CLI must resolve the same source packages as module invocation.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.game.data.forever.registry import registered_class_keys, build_game_ir_slice
 from src.game.data.forever.source_acquisition import audit_learned_action_legality
@@ -13,12 +18,12 @@ from src.game.data.forever.sqlite_talents import DEFAULT_DB
 
 
 def audit(*, level: int = 20, db_path: Path = DEFAULT_DB) -> dict:
-    with sqlite3.connect(db_path) as db:
+    with sqlite3.connect(f'file:{db_path.resolve()}?mode=ro', uri=True) as db:
         db.row_factory=sqlite3.Row
         rows=db.execute('SELECT class_key,evidence_status,methods_observed_json FROM ability_acquisition_evidence').fetchall()
     classes={}
     for cls in registered_class_keys():
-        ir=build_game_ir_slice(class_key=cls,level=level)
+        ir=build_game_ir_slice(class_key=cls,level=level,ability_db_path=db_path)
         if ir is None:
             classes[cls]={'status':'NO_SOURCE_IR_AT_LEVEL'}
             continue
