@@ -61,12 +61,23 @@ func run(requestRaw []byte, sourceRevision string) error {
     validator:=&tickValidator{}
     count:=0
     previousACKID:=""
+    previousWorldTargetDead:=false
+    previousWorldTargetID:=""
     for scanner.Scan() {
         if count>=10000 {return errors.New("WORLD_TICK_LIMIT_EXCEEDED")}
         tick,err:=decodeWorldTick(scanner.Bytes())
         if err!=nil {return fmt.Errorf("tick %d parse: %w",count,err)}
         if err:=validator.validate(tick);err!=nil {return fmt.Errorf("tick %d validate: %w",count,err)}
         if tick.PreviousWorldACKID!=previousACKID {return errors.New("WORLD_EFFECT_PREVIOUS_ACK_NOT_ECHOED")}
+        if previousWorldTargetDead {
+            if tick.SelectedTargetID==previousWorldTargetID {
+                return errors.New("WORLD_NEXT_TARGET_MUST_DIFFER_FROM_DEAD_TARGET")
+            }
+            if err:=boundary.BeginNextWorldTarget();err!=nil {
+                return fmt.Errorf("tick %d retained native next target: %w",count,err)
+            }
+            previousWorldTargetDead=false
+        }
         if _,err:=boundary.AdvanceToWorldTick(time.Duration(tick.NativeClockNS),200000);err!=nil {return fmt.Errorf("tick %d native advance: %w",count,err)}
         receipt,err:=boundary.ApplyWorldDistance(tick.Sequence,tick.NativePlayerIndex,tick.DistanceYards)
         if err!=nil {return fmt.Errorf("tick %d native range apply: %w",count,err)}
@@ -131,12 +142,13 @@ func run(requestRaw []byte, sourceRevision string) error {
         if err:=writer.Flush();err!=nil {return err}
         previousACKID=accepted.ACKID
         count++
-        // A source-native lethal event has been applied to the actual gsim
-        // target and ACKed. Stop this retained one-target native session:
-        // advancing its scheduler against the dead enemy would fabricate
-        // post-kill actions instead of ending the encounter.
+        // The world has certified the old target's death. The same native
+        // process may serve a second serial source-identical mob, but ONLY
+        // after gsim selects a different living target on the next world tick.
+        // EOF after this ACK remains a valid one-pull session.
         if accepted.WorldTargetHealthAfter!=nil && *accepted.WorldTargetHealthAfter==0 {
-            return nil
+            previousWorldTargetDead=true
+            previousWorldTargetID=tick.SelectedTargetID
         }
     }
     if err:=scanner.Err();err!=nil {return err}
