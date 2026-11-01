@@ -12,6 +12,7 @@ on:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
       - tests/test_wf_go_native_world_damage_ack.py
+      - integrations/mythicsim-go/world_boundary/core/world_health_feedback.go
 
 permissions:
   contents: read
