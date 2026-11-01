@@ -20,7 +20,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --disable-pip-version-check beautifulsoup4 pytest
-          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P1
+          python tools/wf_gate.py --class druid --level 30 --spec balance --gate P1
       - name: Focused acquisition regressions
         if: always()
         run: python -m pytest -q tests/test_wf34_acquisition_snapshot_binding.py tests/test_wf34_p1_client_acquisition_proof.py
