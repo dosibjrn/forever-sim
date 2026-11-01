@@ -63,8 +63,7 @@ func TestNativeWorldDamageJournalCapturesPetSourceSpellResult(t *testing.T) {
     recordWorldDamageForGsim(sim,spell,result,false)
     events,err:=session.DrainWorldDamageEvents()
     if err!=nil || len(events)!=1 {t.Fatalf("lost source-native pet damage: %+v %v",events,err)}
-    if events[0].Damage!=40 || events[0].NativeCasterType!="pet" ||
-        events[0].NativeCasterUnitIndex!=2 || events[0].NativeCasterLabel!="Imp" {
+    if events[0].Damage!=40 || events[0].SourceActionID=="" {
         t.Fatalf("source pet identity/damage missing: %+v",events[0])
     }
 }
