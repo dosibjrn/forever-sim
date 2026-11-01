@@ -40,3 +40,18 @@ func TestWorldRangeFeedRejectTrailingOrUnknownJSON(t *testing.T) {
         `{} {}`,
     } {if _,err:=decodeWorldTick([]byte(raw));err==nil {t.Fatalf("accepted %s",raw)}}
 }
+
+
+func TestWorldTargetTransitionRequiresRealLethalACK(t *testing.T) {
+    if err:=validateWorldTargetTransition("m1",false,"m1");err!=nil {t.Fatal(err)}
+    if err:=validateWorldTargetTransition("m1",true,"m0");err!=nil {t.Fatal(err)}
+    for _,tc:=range []struct{previous string;dead bool;next string}{
+        {"m1",false,"m0"},
+        {"m1",true,"m1"},
+        {"",true,"m0"},
+    } {
+        if err:=validateWorldTargetTransition(tc.previous,tc.dead,tc.next);err==nil {
+            t.Fatalf("accepted invalid serial native world retarget: %+v",tc)
+        }
+    }
+}

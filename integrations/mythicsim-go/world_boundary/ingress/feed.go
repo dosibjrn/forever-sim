@@ -71,3 +71,21 @@ func (v *tickValidator) validate(t worldTick) error {
     v.next++
     return nil
 }
+
+
+// The selected gsim target is fixed until its lethal world ACK is accepted.
+// A subsequent pull may use the same retained native enemy slot, but the
+// target identity must actually change; a fake world hash is not permission
+// to silently retarget a living enemy.
+func validateWorldTargetTransition(previous string, lethalACK bool, selected string) error {
+    if previous=="" {
+        if lethalACK {return errors.New("WORLD_TARGET_TRANSITION_WITHOUT_FIRST_TARGET")}
+        return nil
+    }
+    if lethalACK {
+        if selected==previous {return errors.New("WORLD_NEXT_TARGET_MUST_DIFFER_FROM_DEAD_TARGET")}
+    } else if selected!=previous {
+        return errors.New("WORLD_TARGET_SWITCH_WITHOUT_LETHAL_ACK")
+    }
+    return nil
+}

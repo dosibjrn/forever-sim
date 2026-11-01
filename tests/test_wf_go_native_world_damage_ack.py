@@ -301,3 +301,39 @@ def test_invalid_native_pet_provenance_cannot_change_gsim_health(bad_fields):
     with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
         GsimNativeDamageWorldApplier(rt).apply(tick, response)
     assert rt.targets["m1"].health == before
+
+
+def test_serial_world_retarget_requires_acknowledged_lethal_gsim_damage():
+    rt, tick, reply = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick, reply)
+    rt.select_target("m0")
+    with pytest.raises(NativeDamageWorldApplicationError, match="NEXT_TARGET_NOT_READY"):
+        applier.begin_next_world_target("m0")
+    assert rt.targets["m1"].alive
+
+    # Real source-effect overkill kills the first gsim target. Retargeting
+    # retains the native process, event ordinals and world clock.
+    rt2, tick2, reply2 = fixture()
+    rt2.targets["m1"].health = 10.
+    rt2.targets["m1"].max_health = 10.
+    tick2["world_sha256"] = state_hash(snapshot_gsim_world(rt2))
+    reply2["observed_input_world_sha256"] = tick2["world_sha256"]
+    second = GsimNativeDamageWorldApplier(rt2)
+    second.apply(tick2, reply2)
+    rt2.engage_target("m0")
+    rt2.select_target("m0")
+    second.begin_next_world_target("m0")
+    rt2.advance_to(.1)
+    world = snapshot_gsim_world(rt2)
+    next_tick = {"sequence": 1, "clock_ms": 100, "native_clock_ns": 100_000_000,
+                 "selected_target_id": "m0", "world_sha256": state_hash(world)}
+    next_reply = {"sequence": 1, "native_process_id": 123,
+                  "observed_input_world_sha256": next_tick["world_sha256"],
+                  "native_damage_events": [{**reply2["native_damage_events"][0],
+                                            "event_id": "native-effect-2",
+                                            "native_time_ns": 100_000_000}]}
+    old = rt2.targets["m0"].health
+    ack = second.apply(next_tick, next_reply)
+    assert rt2.targets["m0"].health == old - 75
+    assert ack["applied_event_ids"] == ["native-effect-2"]

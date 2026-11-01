@@ -20,6 +20,15 @@ class NativeTargetSpellObservationLedger:
         self._native_identity: tuple[int, int, str] | None = None
         self._gsim_target_id: str | None = None
 
+    def begin_next_world_target(self, previous_target_id: str, next_target_id: str) -> None:
+        # Keep cumulative native source counters: only the gsim mapping
+        # changes between serial pulls, never the native process or target slot.
+        if (self._gsim_target_id != previous_target_id
+                or not isinstance(next_target_id, str)
+                or not next_target_id or next_target_id == previous_target_id):
+            raise NativeSpellObservationError("NATIVE_TARGET_LEDGER_INVALID_SERIAL_RETARGET")
+        self._gsim_target_id = next_target_id
+
     def observe(self, rows, *, sequence: int, gsim_target_id: str) -> list[dict]:
         if not isinstance(gsim_target_id, str) or not gsim_target_id:
             raise NativeSpellObservationError("GSIM_TARGET_ID_MISSING")

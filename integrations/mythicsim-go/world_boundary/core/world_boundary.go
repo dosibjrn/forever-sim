@@ -103,30 +103,9 @@ func (session *WorldBoundarySession) AdvanceToWorldTick(tick time.Duration, maxS
 	return steps, nil
 }
 
-// ApplyWorldDistance acknowledges only the real native distance mutation.
-// The next native event at this timestamp can now run with the new range.
-// Full gsim 2D position/facing/CC and native spell action ACK are separate work.
-func (session *WorldBoundarySession) ApplyWorldDistance(sequence uint64, playerIndex int, yards float64) (WorldRangeReceipt, error) {
-	if session == nil || session.native == nil || !session.awaitingWorld {
-		return WorldRangeReceipt{}, errors.New("WORLD_DISTANCE_WITHOUT_PENDING_TICK")
-	}
-	if sequence != session.sequence {
-		return WorldRangeReceipt{}, fmt.Errorf("WORLD_SEQUENCE_MISMATCH: got=%d want=%d", sequence, session.sequence)
-	}
-	if err := validateWorldDistance(yards); err != nil {
-		return WorldRangeReceipt{}, err
-	}
-	sim := session.native
-	if sim.CurrentTime != session.lastTick {
-		return WorldRangeReceipt{}, errors.New("NATIVE_CLOCK_CHANGED_BEFORE_WORLD_APPLY")
-	}
-	if playerIndex < 0 || playerIndex >= len(sim.Raid.AllPlayerUnits) {
-		return WorldRangeReceipt{}, errors.New("WORLD_PLAYER_INDEX_INVALID")
-	}
-	unit := sim.Raid.AllPlayerUnits[playerIndex]
-	if unit == nil || unit.Moving {
-		return WorldRangeReceipt{}, errors.New("NATIVE_MOVEMENT_CONFLICT_OR_MISSING_PLAYER")
-	}
+// Apply the same real native movement and auto-attack bookkeeping both
+// during ordinary world ticks and when parking between serial world targets.
+func applyWorldDistanceToPlayer(sim *Simulation, unit *Unit, yards float64) {
 	old := unit.DistanceFromTarget
 	unit.DistanceFromTarget = yards
 	if old != yards {
@@ -151,6 +130,34 @@ func (session *WorldBoundarySession) ApplyWorldDistance(sequence uint64, playerI
 			}
 		}
 	}
+
+}
+
+// ApplyWorldDistance acknowledges only the real native distance mutation.
+// The next native event at this timestamp can now run with the new range.
+// Full gsim 2D position/facing/CC and native spell action ACK are separate work.
+func (session *WorldBoundarySession) ApplyWorldDistance(sequence uint64, playerIndex int, yards float64) (WorldRangeReceipt, error) {
+	if session == nil || session.native == nil || !session.awaitingWorld {
+		return WorldRangeReceipt{}, errors.New("WORLD_DISTANCE_WITHOUT_PENDING_TICK")
+	}
+	if sequence != session.sequence {
+		return WorldRangeReceipt{}, fmt.Errorf("WORLD_SEQUENCE_MISMATCH: got=%d want=%d", sequence, session.sequence)
+	}
+	if err := validateWorldDistance(yards); err != nil {
+		return WorldRangeReceipt{}, err
+	}
+	sim := session.native
+	if sim.CurrentTime != session.lastTick {
+		return WorldRangeReceipt{}, errors.New("NATIVE_CLOCK_CHANGED_BEFORE_WORLD_APPLY")
+	}
+	if playerIndex < 0 || playerIndex >= len(sim.Raid.AllPlayerUnits) {
+		return WorldRangeReceipt{}, errors.New("WORLD_PLAYER_INDEX_INVALID")
+	}
+	unit := sim.Raid.AllPlayerUnits[playerIndex]
+	if unit == nil || unit.Moving {
+		return WorldRangeReceipt{}, errors.New("NATIVE_MOVEMENT_CONFLICT_OR_MISSING_PLAYER")
+	}
+	applyWorldDistanceToPlayer(sim, unit, yards)
 	if unit.DistanceNow(sim) != yards {
 		return WorldRangeReceipt{}, errors.New("NATIVE_WORLD_DISTANCE_NOT_APPLIED")
 	}
