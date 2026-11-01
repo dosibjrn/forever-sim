@@ -1,0 +1,41 @@
+name: one-shot sourced cast/stun RED-GREEN
+on:
+  push:
+    branches: [work/prio-p2-source-cast-stun-20261101]
+    paths:
+      - '.github/workflows/one-shot-prio-p2-cast-stun.yml'
+      - 'src/game/data/forever/sqlite_talents.py'
+      - 'tests/test_wf_p2_sourced_cast_stun.py'
+permissions:
+  contents: read
+jobs:
+  sourced-cast-stun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Source-backed RED on pinned main, GREEN on this exact HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp src/game/data/forever/sqlite_talents.py /tmp/cast-stun-new.py
+          git fetch --no-tags --depth=1 origin 8944e54e046d22af893637f0990f48de40196238
+          git show 8944e54e046d22af893637f0990f48de40196238:src/game/data/forever/sqlite_talents.py > src/game/data/forever/sqlite_talents.py
+          set +e
+          python -m pytest -q tests/test_wf_p2_sourced_cast_stun.py >/tmp/source-red.log 2>&1
+          red_code=$?
+          set -e
+          cat /tmp/source-red.log
+          if [ "$red_code" -eq 0 ]; then
+            echo "RED unexpectedly passed on pinned main"
+            exit 1
+          fi
+          cp /tmp/cast-stun-new.py src/game/data/forever/sqlite_talents.py
+          python -m pytest -q tests/test_wf_p2_sourced_cast_stun.py tests/test_wf35_sourced_critical_damage_rank.py
