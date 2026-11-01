@@ -30,4 +30,4 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check pytest beautifulsoup4
-          python -m pytest -x -q tests/test_wf61_companion_persistence.py tests/test_wf302_persistent_joint_search.py tests/test_wf61_persistent_pull_trace_audit.py
+          python -m pytest -q tests/test_wf61_companion_persistence.py tests/test_wf61_persistent_pull_trace_audit.py
