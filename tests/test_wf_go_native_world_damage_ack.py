@@ -75,7 +75,7 @@ def test_replayed_effect_does_not_double_apply_world_damage():
     lambda n: n["native_damage_events"][0].update(periodic="false"),
     lambda n: n["native_damage_events"][0].update(damage=math.nan),
     lambda n: n["native_damage_events"][0].update(damage=-1),
-    lambda n: n["native_damage_events"][0].update(damage=10**20),
+    lambda n: n["native_damage_events"][0].update(damage="100000000000000000000"),
     lambda n: n["native_damage_events"][0].update(native_time_ns=100_000_000),
     lambda n: n["native_damage_events"][0].update(event_id="fake-1"),
     lambda n: n.update(observed_input_world_sha256="forged"),
