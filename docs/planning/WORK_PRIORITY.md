@@ -4,7 +4,7 @@
 
 ## AKTIIVINEN TYÖNJAKO — Prio päättää, työagentit toteuttavat
 
-**Tämä on 1st workin ja 2nd workin ajantasainen toimeksianto.** Prio-agentti saa muuttaa kummankin teknisen työnkuvaa ja tehtävien jakoa aina kun kriittinen polku sitä vaatii. Alapuolinen historiallinen PR-/työlinjalista ei syrjäytä näitä toimeksiantoja; tarkista nykyinen toteutustila aina issueista, PR:istä ja mainista. Pysyvät ajastuspromptit kuvaavat vain työmenetelmän.
+**Tämä on Work1:n #1 ja Work2:n #2+ ajantasainen toimeksianto.** Prio omistaa kriittisen polun ja ensimmäisen täyden 0/148 → 1/148 -hyväksynnän. Work1 jatkaa pysyvästi #1-itemiään; Work2 jatkaa korkeinta siitä riippumatonta #2+-itemiä. Prio saa vaihtaa omistajuutta vain todellisen riippuvuus-/prioriteettimuutoksen vuoksi. Viiden agentin kanoninen työnjako: [AUTONOMOUS_AGENTS.md](AUTONOMOUS_AGENTS.md). Clean omistaa [ideaalin repoarkkitehtuurin](../REPOSITORY_STRUCTURE.md). Alapuolinen historiallinen PR-/työlinjalista ei syrjäytä näitä toimeksiantoja; tarkista nykyinen toteutustila aina issueista, PR:istä ja mainista. Pysyvät ajastuspromptit kuvaavat vain työmenetelmän.
 
 | Agentti | Omistettava työ ja issue | Seuraava toimiva tuotantotulos ja nopein oikea todennus |
 | --- | --- | --- |
@@ -15,7 +15,7 @@
 
 **Testibudjetti:** RED voi olla todellinen virheajon tulos, ei pakollinen uusi testi. Valitse pienin nopea aito source+tuotantomoottori-reproduktio. Älä korvaa todellista simulaatiota mockilla; älä myöskään aja 100 mobia, 300 sekuntia tai stochastic holdoutia rutiinina joka tunti. Laajat ajot tehdään, kun muuttunut semantiikka tai PROCESSin hyväksyntä niitä tarvitsee.
 
-**Approved project contracts:** [OVERALL PLAN v5](../../OVERALL_PLAN.md) and [PROCESS v2.10](../../PROCESS.md). This page is a mutable routing index; actual work items and acceptance criteria belong in GitHub issues. **Fully certified checkpoints: 0/148.** Historical P1–P6-only or independent native/P7 results are not full accepted P1–P7.5 checkpoints. **New 2026-11-01 audit:** PR #20 has a genuine successful pinned Go↔gsim source-effect/ACK diagnostic, but **later native decision consumption of changed gsim HP is not yet proven**, so this is still not P7 or 1/148.
+**Approved project contracts:** [current approved OVERALL PLAN](../../OVERALL_PLAN.md) and [current approved PROCESS](../../PROCESS.md), including the [gate contracts](../gates/README.md). This page is a mutable routing index; actual work items and acceptance criteria belong in GitHub issues. **Fully certified checkpoints: 0/148.** Historical P1–P6-only or independent native/P7 results are not full accepted P1–P7.5 checkpoints. **New 2026-11-01 audit:** PR #20 has a genuine successful pinned Go↔gsim source-effect/ACK diagnostic, but **later native decision consumption of changed gsim HP is not yet proven**, so this is still not P7 or 1/148.
 
 ## CI failure remediation — 2026-11-01, newer than the historical PR queue below
 
