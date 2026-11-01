@@ -68,7 +68,30 @@ def source_control_actions(ir, *, class_key: str, level: int, db_path=None):
             or obs['learn_level'] != r['required_level']):
             raise ValueError(f'SOURCE_CONTROL_PROVENANCE_DRIFT:{sid}')
         if sid in known_ids:
-            raise ValueError(f'SOURCE_CONTROL_ACTION_ID_COLLISION:{sid}')
+            # The generic source-ability compiler may already have built this
+            # exact observed control rank. Reuse its executable action instead
+            # of failing the entire sourced GameIR build or adding a second
+            # button for the same spell. A conflicting implementation must
+            # still fail closed rather than silently override source facts.
+            matches=[action for action in ir.actions if sid in _source_spell_ids(action)]
+            if (len(matches)!=1
+                    or not any(
+                        isinstance(effect,ControlEffect)
+                        and effect.control_id=='stun'
+                        and effect.target=='enemy'
+                        and abs(float(effect.duration_s)-float(r['duration_s']))<=1e-7
+                        for effect in matches[0].effects)
+                    or not any(
+                        req.get('kind')=='mode_is' and req.get('value')==r['required_mode_id']
+                        for req in matches[0].requirements if isinstance(req,dict))
+                    or len(matches[0].costs)!=1
+                    or matches[0].costs[0].resource_id!=r['cost_resource']
+                    or abs(float(matches[0].costs[0].amount)-float(r['cost_amount']))>1e-7
+                    or abs(float(matches[0].cast_time_s)-float(r['cast_time_s']))>1e-7
+                    or abs(float(matches[0].gcd_s)-float(r['gcd_s']))>1e-7
+                    or abs(float(matches[0].cooldown_s)-float(r['cooldown_s']))>1e-7):
+                raise ValueError(f'SOURCE_CONTROL_ACTION_ID_COLLISION:{sid}')
+            continue
         source={'authority':'sourced_public_forever_web_page_observation',
                 'source_url':r['source_url'],'index_source_url':r['index_url'],
                 'index_batch_id':r['batch_id'],'source_spell_id':sid,

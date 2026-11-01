@@ -1,0 +1,41 @@
+name: WF61 actual sourced gsim 1-2-100 paid replay (not native ACK)
+
+# Migration safety: pull_request trigger withheld pending public main/runtime verification.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-paid-gsim-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          lfs: true
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install source test dependencies
+        run: python -m pip install --disable-pip-version-check pytest beautifulsoup4
+      - name: Run fail-closed replay contract regressions
+        run: python -m pytest -q tests/test_wf61_live_persistent_replay.py
+      - name: Execute actual staged-source Druid L30 1, 2, 100 gsim pulls
+        run: |
+          mkdir -p wf61-evidence
+          python tools/wf61_live_persistent_replay.py \
+            --class druid --level 30 \
+            --stage evidence/wf353/WF353_L30_P3_BEST_JOINT_ITEM_STAGE.json \
+            --ability-db data/forever/staged_druid_l30_talents_70338.sqlite \
+            --observations evidence/WF322_DRUID_L20_WEB_TEXT_OBSERVATIONS_70338.json \
+            --control-observations evidence/wf321/druid_l20_control_observations.json \
+            --build-as-of 2026-10-13 --max-wall-s 180 \
+            --out wf61-evidence/actual-gsim-1-2-100.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wf61-actual-source-gsim-1-2-100-not-native
+          path: wf61-evidence/
+          if-no-files-found: warn
