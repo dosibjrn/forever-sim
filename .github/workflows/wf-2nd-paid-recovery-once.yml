@@ -28,7 +28,7 @@ jobs:
         run: python -m pytest -q tests/test_wf302_persistent_joint_search.py -k source_paid_recovery_frontier
       - name: Real class-neutral joint optimizer with recovery choices and 100-mob finalists
         run: |
-          timeout 900s python tools/wf302_persistent_joint_optimizer.py --class-key druid --level 20 --screen-candidates 4 --finalists 1 --output /tmp/source-paid-2nd.json
+          timeout 900s python -m tools.wf302_persistent_joint_optimizer --class-key druid --level 20 --screen-candidates 4 --finalists 1 --output /tmp/source-paid-2nd.json
           python - <<'PY'
           import json
           r=json.load(open('/tmp/source-paid-2nd.json'))
