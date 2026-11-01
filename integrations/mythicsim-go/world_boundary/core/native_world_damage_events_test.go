@@ -85,3 +85,24 @@ func TestNativeWorldDamageJournalRejectsPetWithoutSinglePlayerOwner(t *testing.T
         t.Fatal("silently attributed an unowned pet's damage to player zero")
     }
 }
+
+
+func TestNativeWorldDamageJournalKeepsCommittedHPUntilWorldACK(t *testing.T) {
+    sim:=&Simulation{Environment:&Environment{Raid:&Raid{},Encounter:&Encounter{}},CurrentTime:time.Second}
+    sim.Encounter.DamageTaken=250
+    // Outside a coupled session, upstream native damage remains authoritative.
+    sim.Encounter.DamageTaken+=75
+    undoUnackedWorldDamageForGsim(sim,75)
+    if sim.Encounter.DamageTaken!=325 {t.Fatalf("altered ordinary native combat HP: %f",sim.Encounter.DamageTaken)}
+    session:=&WorldBoundarySession{native:sim}
+    if err:=session.StartWorldDamageJournal();err!=nil {t.Fatal(err)}
+    // Actual spell_result.go adds raw damage, then the SHA-pinned hook
+    // removes it until ApplyWorldTargetHealth receives measured gsim HP.
+    sim.Encounter.DamageTaken+=75
+    undoUnackedWorldDamageForGsim(sim,75)
+    if sim.Encounter.DamageTaken!=325 {t.Fatalf("unACKed source damage reached native APL: %f",sim.Encounter.DamageTaken)}
+    session.CloseWorldDamageJournal()
+    sim.Encounter.DamageTaken+=75
+    undoUnackedWorldDamageForGsim(sim,75)
+    if sim.Encounter.DamageTaken!=400 {t.Fatalf("native behavior not restored after close: %f",sim.Encounter.DamageTaken)}
+}
