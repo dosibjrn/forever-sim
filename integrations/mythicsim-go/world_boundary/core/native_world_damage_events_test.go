@@ -88,7 +88,7 @@ func TestNativeWorldDamageJournalRejectsPetWithoutSinglePlayerOwner(t *testing.T
 
 
 func TestNativeWorldDamageJournalKeepsCommittedHPUntilWorldACK(t *testing.T) {
-    sim:=&Simulation{Environment:&Environment{Raid:&Raid{},Encounter:&Encounter{}},CurrentTime:time.Second}
+    sim:=&Simulation{Environment:&Environment{Raid:&Raid{},Encounter:Encounter{}},CurrentTime:time.Second}
     sim.Encounter.DamageTaken=250
     // Outside a coupled session, upstream native damage remains authoritative.
     sim.Encounter.DamageTaken+=75
