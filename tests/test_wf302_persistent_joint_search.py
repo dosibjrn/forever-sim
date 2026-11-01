@@ -74,10 +74,23 @@ def test_source_paid_recovery_frontier_is_not_starved_by_tight_screen_budget():
     """Both sourced stage and recovery axes reach actual CombatRuntime."""
     from src.game.recovery_between_pulls import BetweenPullPolicy
 
-    other=json.loads((ROOT/'WF298_DRUID_L20_BLIND_FACTORIAL_EVIDENCE.json').read_text())['independent_search_winner']
+    stages=[
+        json.loads((ROOT/'evidence/wf353'/name).read_text())
+        for name in ('WF353_L30_P3_BEST_JOINT_ITEM_STAGE.json',
+                     'WF353_L30_P3_BEST_DIRECT_SWAP_STAGE.json')
+    ]
+    # These published stages intentionally have no old one-mob score.
+    # Measure it now on the actual source-backed CombatRuntime instead of
+    # fabricating a score to make the candidates eligible.
+    for stage in stages:
+        measured=evaluate_persistent_candidate(
+            prepare_candidate(class_key='druid',level=30,stage=stage),
+            level=30,mobs=1)
+        assert measured['status']=='COMPLETE'
+        stage['score_s_per_mob']=measured['mean_s_per_mob']
     policy=BetweenPullPolicy(health_fraction=.5,mana_fraction=.1)
     result=select_persistent_finalists(
-        class_key='druid',level=20,joint_result={'stages':[_winner(),other]},
+        class_key='druid',level=30,joint_result={'stages':stages},
         screen_mobs=2,finalist_mobs=2,max_screen_candidates=2,max_finalists=2,
         recovery_policies=(None,policy))
     assert result['screen_evaluated']==2
