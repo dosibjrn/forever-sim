@@ -1,0 +1,64 @@
+name: One-shot 2nd source failed pull provenance
+on:
+  push:
+    branches:
+      - work/2nd-paid-failure-pull-provenance-20261101
+    paths:
+      - .github/workflows/one-shot-2nd-failed-pull-20261101.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-saved-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: source-cold-300-widened-evidence
+          run-id: 41351179529
+          github-token: ${{ github.token }}
+          path: /tmp/saved-search
+      - name: Real source paid replay failed pack and positive control
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          set +e
+          python -m tools.wf437_direct_budgeted_run --replay-from /tmp/saved-search/cold300.json --replay-row 4 --output /tmp/failed.json
+          failed_exit=$?
+          set -e
+          test "$failed_exit" -eq 1
+          python - <<'PY'
+          import json,re
+          result=json.load(open('/tmp/failed.json'))
+          row=result['validation']['rows'][0]
+          print('REAL_FAILED_SOURCE_PULL',row,flush=True)
+          assert row['status']=='BLOCKED_ACTOR_DIED'
+          assert re.fullmatch(r'pull [0-9]+ failed: actor_died',row['reason'])
+          assert row['count']==int(row['reason'].split()[1])*2
+          assert 0 <= row['count'] < 100
+          PY
+          python -m tools.wf437_direct_budgeted_run --replay-from /tmp/saved-search/cold300.json --replay-row 0 --output /tmp/passed.json
+          python - <<'PY'
+          import json
+          row=json.load(open('/tmp/passed.json'))['validation']['rows'][0]
+          print('REAL_COMPLETE_SOURCE_PULL',row,flush=True)
+          assert row['status']=='COMPLETE' and row['count']==100
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-paid-failure-pull-evidence
+          path: |
+            /tmp/failed.json
+            /tmp/passed.json
+          retention-days: 7
+          if-no-files-found: warn
