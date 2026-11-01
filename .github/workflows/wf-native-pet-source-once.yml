@@ -46,7 +46,7 @@ jobs:
         run: |
           cd project/integrations/mythicsim-go/world_boundary/ingress
           GO111MODULE=off go test -count=1 -v feed.go feed_test.go world_damage_ack.go world_damage_ack_test.go
-          cd ../../../../
+          cd "$GITHUB_WORKSPACE"
           mkdir -p upstream/cmd/wf_gsim_go_world_ingress
           cp project/integrations/mythicsim-go/world_boundary/ingress/*.go upstream/cmd/wf_gsim_go_world_ingress/
           cd upstream
