@@ -86,3 +86,29 @@ def test_queued_maul_requires_real_source_autoattack(monkeypatch):
     assert result["status"] == "EFFECT_OBSERVED", result
     assert ("mob_hp" in result["difference"]
             or "damage_dealt" in result["difference"]), result
+
+
+def test_demoralizing_roar_in_bear_with_toy_rage_reduces_incoming_damage(monkeypatch):
+    monkeypatch.setenv("WOW_FOREVER_BUILD_AS_OF", "2026-10-17")
+    ir, inventory, matched, _ = _source_actions(ROOT)
+    sid = _find(inventory, "Demoralizing Roar")
+    result = compare_action(ir, matched[sid])
+    assert result["status"] == "EFFECT_OBSERVED", result
+    assert result["mode"] == "bear"
+    assert ("damage_taken" in result["difference"]
+            or "player_hp" in result["difference"]), result
+
+
+def test_noncombat_spells_separately_classified_not_counted_as_effect_failures(monkeypatch):
+    monkeypatch.setenv("WOW_FOREVER_BUILD_AS_OF", "2026-10-17")
+    report = run_gsim()
+    assert {r["spell_id"] for r in report["not_relevant"]} == {
+        2637, 18960, 1066, 6795, 8946, 20484, 437138
+    }
+    assert report["not_relevant_count"] == 7
+    assert not {r["spell_id"] for r in report["not_relevant"]} & {
+        r["spell_id"] for r in report["results"]
+    }
+    assert all(r["status"] == "NOT_RELEVANT_TO_SIMULATION"
+               for r in report["not_relevant"])
+    assert report["p1_certified"] is False
