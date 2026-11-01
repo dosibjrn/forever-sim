@@ -2561,11 +2561,12 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     prior_wall=float(recovered['wall_s_at_snapshot']) if recovered else 0.
     if prior_wall<0 or prior_wall>max_cpu_s:
         raise ValueError('SOURCE_JOINT_PROGRESS_WALL_BUDGET_EXHAUSTED')
-    # Allow the final audit, serialization and selection a small bounded
-    # margin inside the user wall budget, rather than finishing milliseconds
-    # beyond the 30s/300s hard deadline.
+    # Thousands of paid rows make the final source-coverage audit and
+    # shortlist serialization nontrivial. Reserve their time *inside* the
+    # requested 30s/300s wall budget, not after it. A 0.25s reserve allowed
+    # a measured 300.784s run on a 300s budget (Actions #41316147893).
     requested_wall_budget_s=max_cpu_s
-    max_cpu_s-=min(.25,max_cpu_s*.005)
+    max_cpu_s-=min(2.0,max_cpu_s*.01)
     t0,c0=monotonic()-prior_wall,process_time()
     compiled,coverage=compile_talent_runtime(source_ir)
     if compiled.actor.metadata['class_key']!=class_key or compiled.actor.metadata['level']!=level:
