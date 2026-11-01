@@ -78,6 +78,15 @@ def source_inventory(root: Path, class_key: str, level: int, *,
                                "rank": row.get("rank_hint"),
                                "status": "SOURCE_ACQUISITION_UNRESOLVED",
                                "reason": str(reason)})
+            # Fast P1 experiment asks what SOURCE-INDEXED spells do in the
+            # production engine, even when acquisition is not independently
+            # established. A recorded learned-level <= checkpoint is enough
+            # to try the action, NOT enough to certify legal acquisition.
+            # This prevents unknown source metadata from turning 60 source
+            # actions into a meaningless 0/0 effect test.
+            learned = row.get("level_hint")
+            if learned is not None and int(learned) <= level:
+                selected[sid] = row
         # PASSIVE/ILLEGAL are not castable actions and do not qualify as
         # missing runtime effects. Their source legality is owned by P1.
     # Empty selected may be legitimate for an incomplete class acquisition
