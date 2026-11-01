@@ -46,7 +46,8 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
 
 
 def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
-        target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.) -> dict:
+        target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
+        corrupt_ack: bool = False) -> dict:
     if ticks < 2 or ticks > 100 or timeout_s <= 0:
         raise ValueError('INVALID_PROBE_LIMITS')
     binary, request = binary.resolve(), request.resolve()
@@ -124,6 +125,10 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                 sequence=tick['sequence'], gsim_target_id=tick['selected_target_id'])
             fields = feed.accept_range_receipt(response.get('native_range_receipt'))
             world_ack = world_applier.apply(tick, response)
+            if corrupt_ack and idx == 0:
+                # Negative control: real gsim has applied the source events,
+                # but the native process must reject this forged before-hash.
+                world_ack['world_before_sha256'] = '0' * 64
             proc.stdin.write(json.dumps(world_ack, sort_keys=True, allow_nan=False) + '\n')
             proc.stdin.flush()
             try:
@@ -191,7 +196,17 @@ def main():
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--request', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--expect-invalid-ack-rejected', action='store_true')
     args = parser.parse_args()
+    if args.expect_invalid_ack_rejected:
+        try:
+            run(args.binary, args.request, corrupt_ack=True)
+        except RuntimeError as exc:
+            if 'WORLD_EFFECT_ACK_ID_OR_HASH_MISMATCH' not in str(exc):
+                raise
+            print('REAL_NATIVE_GO_REJECTED_FORGED_WORLD_ACK')
+            return
+        raise SystemExit('NATIVE_GO_ACCEPTED_FORGED_WORLD_ACK')
     result = run(args.binary, args.request)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + '\n')
