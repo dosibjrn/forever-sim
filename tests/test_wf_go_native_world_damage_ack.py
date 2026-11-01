@@ -74,6 +74,40 @@ def test_forged_native_effect_rejected_before_health_change(mutate):
     assert rt.targets["m1"].health == original
 
 
+
+@pytest.mark.parametrize("bad_id", ["native-effect-2", "native-effect-999"])
+def test_missing_source_native_event_id_rejected_before_world_mutation(bad_id):
+    # Go's source journal increments event IDs exactly once per recorded event.
+    # Skipping the first ordinal means the gsim world never saw an effect.
+    rt, tick, reply = fixture()
+    reply["native_damage_events"][0]["event_id"] = bad_id
+    original_health = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError, match="EVENT_ID_GAP"):
+        GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert rt.targets["m1"].health == original_health
+
+
+def test_missing_source_native_event_between_ticks_rejected_before_world_mutation():
+    rt, tick0, reply0 = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick0, reply0)
+    rt.advance_to(0.1)
+    tick1 = {"sequence": 1, "clock_ms": 100, "native_clock_ns": 100_000_000,
+             "selected_target_id": "m1",
+             "world_sha256": state_hash(snapshot_gsim_world(rt))}
+    reply1 = {"sequence": 1, "native_process_id": 123,
+              "observed_input_world_sha256": tick1["world_sha256"],
+              "native_damage_events": [{
+                  **reply0["native_damage_events"][0],
+                  "event_id": "native-effect-3",
+                  "native_time_ns": 100_000_000,
+              }]}
+    original_health = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError, match="EVENT_ID_GAP"):
+        applier.apply(tick1, reply1)
+    assert rt.targets["m1"].health == original_health
+
+
 def test_no_native_effect_does_not_claim_world_mutation():
     rt, tick, response = fixture()
     response["native_damage_events"] = []
