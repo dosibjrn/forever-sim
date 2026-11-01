@@ -49,3 +49,22 @@ func TestNativeWorldDamageJournalDoesNotInventRegisteredSpellEvents(t *testing.T
         t.Fatalf("reported invented native spell events: %+v %v",got,err)
     }
 }
+
+
+func TestNativeWorldDamageJournalCapturesPetSourceSpellResult(t *testing.T) {
+    sim:=&Simulation{Environment:&Environment{Raid:&Raid{}},CurrentTime:75*time.Millisecond}
+    session:=&WorldBoundarySession{native:sim}
+    if err:=session.StartWorldDamageJournal();err!=nil {t.Fatal(err)}
+    defer session.CloseWorldDamageJournal()
+    pet:=&Unit{Type:PetUnit,Index:0,UnitIndex:2,Label:"Imp"}
+    enemy:=&Unit{Type:EnemyUnit,Index:0,UnitIndex:1,Label:"native-enemy"}
+    spell:=&Spell{Unit:pet,ActionID:ActionID{SpellID:3110},Rank:1}
+    result:=&SpellResult{Target:enemy,Damage:40,Outcome:OutcomeHit}
+    recordWorldDamageForGsim(sim,spell,result,false)
+    events,err:=session.DrainWorldDamageEvents()
+    if err!=nil || len(events)!=1 {t.Fatalf("lost source-native pet damage: %+v %v",events,err)}
+    if events[0].Damage!=40 || events[0].NativeCasterType!="pet" ||
+        events[0].NativeCasterUnitIndex!=2 || events[0].NativeCasterLabel!="Imp" {
+        t.Fatalf("source pet identity/damage missing: %+v",events[0])
+    }
+}
