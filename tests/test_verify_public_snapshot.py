@@ -39,6 +39,21 @@ class VerifyPublicSnapshotTest(unittest.TestCase):
     def stage(self, root):
         git(root, 'add', '-A', '--force')
 
+    def test_public_workflow_contract_test_is_protected_from_private_snapshot(self):
+        # This public-only publication guard must survive future private source restores.
+        guard = 'tests/test_restore_private_source_workflow.py'
+        self.put(guard, b'private replacement')
+        self.put(guard, b'public safety contract', self.new)
+        self.put('src/allowed.py', b'allowed')
+        self.put('src/allowed.py', b'allowed', self.new)
+        self.stage(self.old)
+        self.stage(self.new)
+        git(self.new, 'commit', '-m', 'public baseline')
+        self.assertTrue(mod.protected(guard))
+        self.assertEqual(mod.selected_source_paths(self.old), ['src/allowed.py'])
+        self.assertEqual((self.new / guard).read_bytes(), b'public safety contract')
+        self.assertEqual(mod.verify(self.old, self.new), (1, 1, []))
+
     def test_selected_paths_never_include_untracked_private_files(self):
         self.put('src/ok.py', b'print(1)')
         self.put('README.md', b'protected')
