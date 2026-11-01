@@ -928,7 +928,9 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
                   executor=lambda i,a:_runtime_exercise(i,a,level),
                   higher_level_rows=excluded_high_level, effect_checker=effect_execution_kind,
                   source_inactive_ids=inactive_ids,source_statuses=legality,
-                  scope_facts={**_load_spellbook_observed_scope_facts(root,\n                      legality_meta.get('spellbook_file'),rows),\n                      **_load_source_scope_facts(source_db,class_key)},
+                  scope_facts={**_load_spellbook_observed_scope_facts(root,
+                      legality_meta.get('spellbook_file'),rows),
+                      **_load_source_scope_facts(source_db,class_key)},
                   context_exclusions=legality_meta.get('scope_context_exclusions',{}),
                   scenario_nonimpact=nonimpact,scenario_id=scenario_id)
         report.update(check)
