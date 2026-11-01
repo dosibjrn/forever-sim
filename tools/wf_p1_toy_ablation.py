@@ -123,6 +123,7 @@ def _run_one(ir, action, mode, *, muted: bool):
         school="physical", raw_damage=MOB_HIT, hit_chance=1.,
         health_resource_id="health",
         metadata={"representative_swing_s": SWING_SECONDS},
+        provenance=({"source": "user_defined_P1_toy_mob_fixture", "damage": MOB_HIT},),
     )
     rt = CombatRuntime(actor=actor, target=target, incoming_attacks=(incoming,))
     real_or_muted = replace(action, effects=()) if muted else action
