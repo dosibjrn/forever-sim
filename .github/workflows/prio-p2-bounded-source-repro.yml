@@ -1,0 +1,56 @@
+name: prio-p2-bounded-source-repro
+on:
+  push:
+    branches:
+      - work/prio-p2-source-fullpoint-20261101-2356
+    paths:
+      - .github/prio-p2-repro-trigger.txt
+      - tools/wf_gate_p2_live.py
+permissions:
+  contents: read
+jobs:
+  real-p2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Real sourced P2 gate plus bounded source rank diagnostics
+        run: |
+          set -uo pipefail
+          python -m pip install --disable-pip-version-check beautifulsoup4==4.13.4 pytest==8.3.5
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P2
+          rc=$?
+          echo "P2_GATE_EXIT=$rc"
+          python - <<'PY'
+          from src.game.data.forever.registry import build_game_ir_slice
+          from src.game.data.forever.sqlite_talents import DEFAULT_DB
+          from src.game.talent_execution_coverage import compile_talent_runtime
+          from src.game.talents import talented_bonus_for_level, available_talent_points
+          from src.v2.source_bounded_joint_frontier import _executable_rank_prefix, _source_unlock_full_point_allocation
+          ir=build_game_ir_slice(class_key='druid',level=60,ability_db_path=DEFAULT_DB)
+          compiled,_=compile_talent_runtime(ir)
+          bonus=talented_bonus_for_level(60)
+          points=available_talent_points(60,bonus_talent_points=bonus)
+          trees={}
+          for t in compiled.talents:
+              tree=trees.setdefault(t.tree_key,{'ranks':0,'executable':0,'talents':0,'nonexec':[]})
+              tree['ranks']+=len(t.ranks)
+              tree['executable']+=_executable_rank_prefix(t)
+              tree['talents']+=1
+              if _executable_rank_prefix(t)==0:tree['nonexec'].append(t.id)
+          print('P2_SOURCE_RANKS',trees,'budget',points,flush=True)
+          for t in compiled.talents:
+              if t.tree_key!='balance':continue
+              candidate=_source_unlock_full_point_allocation(compiled,t,level=60,bonus_talent_points=bonus,target_rank=1,preferred_tree='balance',minimum_tree_points=31)
+              if candidate is not None:
+                  print('P2_FIRST_LEGAL_FULL_BUILD',t.id,len(candidate),sum(candidate.values()),flush=True)
+                  break
+          else:print('P2_NO_FULL_BUILD_FOR_ANY_BALANCE_TALENT',flush=True)
+          PY
+          exit "$rc"
