@@ -337,3 +337,18 @@ def test_serial_world_retarget_requires_acknowledged_lethal_gsim_damage():
     ack = second.apply(next_tick, next_reply)
     assert rt2.targets["m0"].health == old - 75
     assert ack["applied_event_ids"] == ["native-effect-2"]
+
+
+def test_source_native_damage_cannot_apply_to_unselected_real_gsim_target():
+    # The native target slot belongs to the actual gsim selected target.
+    # A forged tick may carry the correct world hash, PID, event and time,
+    # but must not redirect source-native damage to a different live mob.
+    rt, tick, reply = fixture()
+    assert snapshot_gsim_world(rt)["selected_target_id"] == "m1"
+    assert rt.targets["m0"].alive and rt.targets["m1"].alive
+    tick["selected_target_id"] = "m0"
+    before = {key: target.health for key, target in rt.targets.items()}
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="WORLD_DAMAGE_ACK_TARGET_NOT_SELECTED"):
+        GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert {key: target.health for key, target in rt.targets.items()} == before

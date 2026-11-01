@@ -72,6 +72,12 @@ class GsimNativeDamageWorldApplier:
         target_id = tick.get("selected_target_id")
         if not isinstance(target_id, str) or target_id not in self._runtime.targets:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_MISSING")
+        # The native single-target slot must map to the target actually
+        # selected by the live gsim controller at this exact world snapshot.
+        # A valid world hash does not authorize a forged tick to redirect
+        # source-native damage to another living mob.
+        if target_id != before["selected_target_id"]:
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_NOT_SELECTED")
         if self._target_id is not None and target_id != self._target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_GSIM_TARGET_SWITCH")
         target = self._runtime.targets[target_id]
