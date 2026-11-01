@@ -32,7 +32,7 @@ This is an independent Forever simulation and optimization research project. The
 
 **Gate order within a checkpoint:** P1 abilities → P2 talents → P3 gear smoke → P4 independent cold 30 s search → P5 cold 300 s → P6 100-mob saturation replay → P7.1 reference → P7.2 rotation → P7.3 talents → P7.4 gear → P7.5 joint search. The historical overall checkpoint priority is Druid L20 → Druid L30 → Mage L30; the mutable milestone plan controls future execution order.
 
-**Work and promotion:** worker implements **one formal gate per branch**, commits tests/results under [docs/evidence](docs/evidence/README.md); integrator reviews and merges accepted gates into `main`. No incomplete gate code should reach `main`. Canonical approved [PROCESS.md](PROCESS.md) is v2.10 and [OVERALL_PLAN.md](OVERALL_PLAN.md) is v5; the Git history contains earlier versions.
+**Work and promotion:** worker implements **one formal gate per branch**, commits tests/results under [docs/evidence](docs/evidence/README.md); integrator reviews and merges accepted gates into `main`. No incomplete gate code should reach `main`. Canonical approved [PROCESS.md](PROCESS.md) is v2.10, with [formal gate predicates](docs/gates/README.md) split into focused contracts; [OVERALL_PLAN.md](OVERALL_PLAN.md) is v5. Git history holds the former consolidated process and earlier versions.
 
 ## Command launchers
 
