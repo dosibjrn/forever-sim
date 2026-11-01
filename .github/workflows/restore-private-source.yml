@@ -92,15 +92,13 @@ jobs:
 
           # PRIVATE audit paths stay on the ephemeral runner only. The PUBLIC artifact
           # receives only summary counts; never print original content or suspect paths.
-          python3 - "$SOURCE" "$REPORT" <<'PYTHON_AUDIT'
+          python3 - "$SOURCE" "$REPORT" "$TARGET" <<'PYTHON_AUDIT'
           import hashlib, os, pathlib, re, subprocess, sys
+          sys.path.insert(0, str(pathlib.Path(sys.argv[3]) / 'scripts'))
+          from verify_public_snapshot import protected
           root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2]); out.mkdir(exist_ok=True)
           raw=subprocess.check_output(['git','-C',str(root),'ls-files','-z'])
           paths=[os.fsdecode(b) for b in raw.split(b'\0') if b]
-          protected=lambda p: (p.startswith('.github/workflows/') or
-            p in {'README.md','docs/planning/WORK_PRIORITY.md',
-                  'scripts/complete_public_migration.sh','scripts/port_remaining_branches.sh'} or
-            p.startswith('docs/migration/'))
           patterns=[re.compile(rb'gh[pousr]_[A-Za-z0-9]{30,}'),
                     re.compile(rb'github_pat_[A-Za-z0-9_]{40,}'),
                     re.compile(rb'-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----'),
@@ -138,44 +136,23 @@ jobs:
           dest_sha="$(git -C "$TARGET" rev-parse HEAD)"
           echo "Existing public main SHA: $dest_sha"
 
-          # Preserve the newly migrated public README, governance priority, and migration helpers,
-          # and the ONLY manually dispatched public smoke CI. Do NOT publish old auto workflows.
-          rsync -a \
-            --exclude='/.git/***' \
-            --exclude='/.github/workflows/***' \
-            --exclude='/README.md' \
-            --exclude='/docs/planning/WORK_PRIORITY.md' \
-            --exclude='/docs/migration/***' \
-            --exclude='/scripts/complete_public_migration.sh' \
-            --exclude='/scripts/port_remaining_branches.sh' \
-            "$SOURCE/" "$TARGET/"
+          # Reuse the audited Git-index selection and protected-path policy.
+          # NUL-delimited paths avoid shell splitting and literal pathspecs avoid
+          # wildcard expansion. Never copy/stage private untracked files.
+          python3 "$TARGET/scripts/verify_public_snapshot.py" \
+            --source "$SOURCE" --emit-selected-paths > "$REPORT/selected-paths.z"
+          tar -C "$SOURCE" --null -T "$REPORT/selected-paths.z" -cf - | tar -C "$TARGET" -xf -
 
-          # Verify actual working bytes, including original hydrated databases and JSON evidence.
-          python3 - "$SOURCE" "$TARGET" "$REPORT" <<'PYTHON_COMPARE'
-          import hashlib, pathlib, sys
-          source=pathlib.Path(sys.argv[1]); target=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3]); mismatches=[]
-          for line in (out/'manifest_sha256.tsv').read_text().splitlines():
-           expected,path=line.split('\t',1); copied=target/path
-           if not copied.is_file() or hashlib.sha256(copied.read_bytes()).hexdigest()!=expected:
-            mismatches.append(path)
-          (out/'copy_mismatches.txt').write_text('\n'.join(mismatches)+'\n',encoding='utf-8')
-          print('Byte-for-byte copy mismatches:',len(mismatches))
-          if mismatches: raise SystemExit(21)
-          PYTHON_COMPARE
-
-          # Force-stage original tracked paths; a .gitignore must not drop existing source assets.
+          # Stage ONLY the audited paths; LFS clean filters may produce pointer
+          # blobs while source and destination worktrees contain hydrated bytes.
           git -C "$TARGET" lfs install --local
-          git -C "$TARGET" add -A --force
-          python3 - "$TARGET" "$REPORT" <<'PYTHON_STAGE'
-          import pathlib,subprocess,sys,os
-          repo=sys.argv[1]; report=pathlib.Path(sys.argv[2]); stage=subprocess.check_output(['git','-C',repo,'ls-files','-z'])
-          staged=set(os.fsdecode(p) for p in stage.split(b'\0') if p)
-          expected=[line.split('\t',1)[1] for line in (report/'manifest_sha256.tsv').read_text().splitlines()]
-          missing=[p for p in expected if p not in staged]
-          (report/'unstaged_source_paths.txt').write_text('\n'.join(missing)+'\n',encoding='utf-8')
-          print('Source paths missing from staged git index:',len(missing))
-          if missing:raise SystemExit(22)
-          PYTHON_STAGE
+          GIT_LITERAL_PATHSPECS=1 git -C "$TARGET" add -A --force \
+            --pathspec-from-file="$REPORT/selected-paths.z" --pathspec-file-nul
+
+          # Fail closed on byte mismatches, incorrect staged object IDs/modes,
+          # extra staged files, and changes to protected public controls.
+          python3 "$TARGET/scripts/verify_public_snapshot.py" \
+            --source "$SOURCE" --target "$TARGET"
           if git -C "$TARGET" diff --cached --name-only --diff-filter=D | grep -q .; then
             echo 'Unexpected public-main deletions would occur: aborting.' >&2
             exit 23
