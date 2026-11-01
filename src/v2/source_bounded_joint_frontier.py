@@ -1928,16 +1928,20 @@ def _select_screen_finalists(screened, max_finalists, *, score_key="screen_s_per
     finalists=[]
     seen_configs=set()
     seen_behaviors=set()
-    seen_rows=set()
+    def configuration(row):
+        # Paid recovery is an actual search axis. A different frontier label
+        # that equips the same items is NOT a different 100-mob build.
+        gear=(json.dumps(row['equipped_gear'],sort_keys=True,default=str)
+              if 'equipped_gear' in row else row['gear_move'])
+        return (_key(row['allocation']),gear,
+                row.get('policy_signature',row['policy']),row['recovery'])
     def admit(entry):
         row=entry[0]
-        config=(_key(row['allocation']),row['gear_move'],
-                row.get('policy_signature',row['policy']))
+        config=configuration(row)
         if config in seen_configs:return False
         seen_configs.add(config)
         seen_behaviors.add(_policy_behavior_key(row))
         finalists.append(entry)
-        seen_rows.add(id(row))
         return True
     if diversify_apl:
         for entry in ranked:
@@ -1948,10 +1952,10 @@ def _select_screen_finalists(screened, max_finalists, *, score_key="screen_s_per
         for entry in ranked:
             admit(entry)
             if len(finalists)==max_finalists:break
-    if len(finalists)<max_finalists:
-        finalists.extend(x for x in ranked if id(x[0]) not in seen_rows)
-        finalists=finalists[:max_finalists]
-    if controls and not any(x[0] is controls[0][0] for x in finalists):
+    # Do not pad the shortlist with duplicate paid configurations: every
+    # slot below is an independently executed 100-mob replay.
+    if controls and not any(configuration(x[0])==configuration(controls[0][0])
+                            for x in finalists):
         finalists=finalists[:max_finalists-1]+[controls[0]]
     return finalists
 
