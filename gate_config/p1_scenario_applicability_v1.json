@@ -29,6 +29,61 @@
       "decision": "DOES_NOT_AFFECT_SIM",
       "reason": "User-approved P1 scope decision (2026-10-17): Moonglade travel teleport does not affect the current combat kill/recovery objective.",
       "review_if": "Route optimization includes Moonglade transport, noncombat travel or teleport transitions."
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 1066,
+      "name": "Aquatic Form",
+      "min_level": 16,
+      "max_level": 60,
+      "scenario_id": "current_solo_leveling_100mob_v1",
+      "decision": "DOES_NOT_AFFECT_SIM",
+      "reason": "User-approved P1 non-impact categorization (2026-11-01): Not relevant to current land-based solo mob combat/recovery; swimming form does not affect the target or combat in this scenario.",
+      "review_if": "The route includes swimming, underwater movement, or travel time."
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 6795,
+      "name": "Growl",
+      "min_level": 10,
+      "max_level": 60,
+      "scenario_id": "current_solo_leveling_100mob_v1",
+      "decision": "DOES_NOT_AFFECT_SIM",
+      "reason": "User-approved P1 non-impact categorization (2026-11-01): Not relevant to current one-player one-mob combat: no competing ally or pet threat target exists for Growl to redirect.",
+      "review_if": "Allied players, pets, companions or threat-target switching become part of the scenario."
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 8946,
+      "name": "Cure Poison",
+      "min_level": 14,
+      "max_level": 60,
+      "scenario_id": "current_solo_leveling_100mob_v1",
+      "decision": "DOES_NOT_AFFECT_SIM",
+      "reason": "User-approved P1 non-impact categorization (2026-11-01): Not relevant to current toy mob and solo target scenario without any poison status to cure.",
+      "review_if": "Poison-afflicting enemies, poison debuffs or dispel-dependent survival are included."
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 20484,
+      "name": "Rebirth",
+      "min_level": 20,
+      "max_level": 60,
+      "scenario_id": "current_solo_leveling_100mob_v1",
+      "decision": "DOES_NOT_AFFECT_SIM",
+      "reason": "User-approved P1 non-impact categorization (2026-11-01): Not relevant to solo living-player combat with no dead friendly combatant requiring battle resurrection.",
+      "review_if": "The scenario includes party members, dead friendly units or in-combat resurrection tactics."
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 437138,
+      "name": "Revive",
+      "min_level": 20,
+      "max_level": 60,
+      "scenario_id": "current_solo_leveling_100mob_v1",
+      "decision": "DOES_NOT_AFFECT_SIM",
+      "reason": "User-approved P1 non-impact categorization (2026-11-01): Not relevant to solo living-player combat with no dead friendly combatant to resurrect.",
+      "review_if": "The scenario includes dead allies and out-of-combat resurrection tactics."
     }
   ]
 }
