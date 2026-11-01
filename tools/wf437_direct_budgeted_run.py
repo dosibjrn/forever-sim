@@ -9,9 +9,15 @@ ap=argparse.ArgumentParser()
 ap.add_argument('--budget',type=int,choices=(30,300))
 ap.add_argument('--replay-from',help='Saved source search report containing full validation_shortlist')
 ap.add_argument('--replay-row',type=int,help='Zero-based finalist row to independently replay')
+ap.add_argument('--compare-30',help='Saved independent 30s cold source report')
+ap.add_argument('--compare-300',help='Saved independent 300s cold source report')
 ap.add_argument('--output',required=True)
 args=ap.parse_args()
-if args.replay_from is None:
+if args.compare_30 is not None or args.compare_300 is not None:
+    if (not args.compare_30 or not args.compare_300 or args.budget is not None
+            or args.replay_from is not None or args.replay_row is not None):
+        ap.error('comparison requires --compare-30 and --compare-300 only')
+elif args.replay_from is None:
     if args.budget is None or args.replay_row is not None:
         ap.error('cold search requires --budget; --replay-row requires --replay-from')
 elif args.budget is not None or args.replay_row is None:
@@ -21,6 +27,20 @@ db=root/'data/forever/staged_druid_l30_talents_70338.sqlite'
 sourcehash=hashlib.sha256(db.read_bytes()).hexdigest()
 ir=build_game_ir_slice(class_key='druid',level=30,ability_db_path=db)
 stage=source_cold_start_stage(class_key='druid',level=30,source_ir=ir,gear_role='druid_feral')
+if args.compare_30 is not None:
+    from src.v2.source_paid_cold_comparison import compare_saved_cold_winners
+    search30=json.loads(Path(args.compare_30).read_text())
+    search300=json.loads(Path(args.compare_300).read_text())
+    comparison=compare_saved_cold_winners(search30,search300,
+        source_ir=ir,seed_stage=stage,class_key='druid',level=30,
+        source_hash=sourcehash,bonus_talent_points=5)
+    Path(args.output).parent.mkdir(parents=True,exist_ok=True)
+    Path(args.output).write_text(json.dumps(comparison,indent=2,default=str))
+    print('INDEPENDENT_SOURCE_COLD_COMPARISON',comparison['status'],
+          'T30',comparison['T30_s_per_mob'],
+          'T300',comparison['T300_s_per_mob'],
+          'ratio',comparison['ratio_T30_T300'],flush=True)
+    raise SystemExit(0 if comparison['status'].startswith('PAID_COMPARISON_COMPLETE') else 1)
 if args.replay_from is not None:
     saved=json.loads(Path(args.replay_from).read_text())
     if saved.get('source_db_sha256') != sourcehash:
@@ -91,6 +111,13 @@ summary={k:v for k,v in r.items() if k not in ('rows','validation_shortlist','ba
 summary['refinement']={k:v for k,v in r['refinement'].items() if k!='rows'}
 summary['source_db_sha256']=sourcehash
 summary['source_db_path']=str(db)
+# Explicitly retain the legal proposal-universe limits for later P4/P5
+# same-space verification; budget-specific exploration depth is separate.
+summary['source_search_space']={k:params[k] for k in (
+    'class_key','level','bonus_talent_points','max_talents',
+    'max_gear_moves','max_policies','max_recovery_policies',
+    'screen_mobs','finalist_mobs','pack_size')}
+summary['source_search_space']['gear_role']='druid_feral'
 summary['search_runner_wall_s']=time.monotonic()-start
 summary['validation']=rv
 # Preserve exact source-legal gear, talent ranks, APL, opening and recovery.
