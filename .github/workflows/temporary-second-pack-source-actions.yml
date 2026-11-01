@@ -1,0 +1,22 @@
+name: Bounded source pack action provenance (temporary)
+on:
+  push:
+    branches:
+      - work/second-pack-source-action-provenance-20261102
+permissions:
+  contents: read
+jobs:
+  source-pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Real sourced 2D pack action provenance
+        run: |
+          python -m pip install --disable-pip-version-check pytest beautifulsoup4
+          python -m pytest -q tests/test_wf397_2d_joint_frontier_tdd.py::test_source_pack_actions_are_proven_by_executed_runtime_events
