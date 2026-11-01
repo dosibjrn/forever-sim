@@ -726,8 +726,21 @@ def select_persistent_finalists(*, class_key: str,level: int,joint_result: dict,
         raise ValueError('invalid shared CPU limit')
     # Recovery is an explicit joint-search axis. Each scored variant uses the
     # same source IR, CombatRuntime and 100-mob objective; no old-build seed.
-    proposed=[(stage,allocation,recovery) for stage,allocation in proposed
-              for recovery in recovery_policies][:max_screen_candidates]
+    # The screen budget is shared across gear/talent and recovery axes.
+    # Stage-major truncation silently evaluates only the first recovery
+    # policy whenever the stage frontier fills the screen budget. Rotate
+    # recovery choices across source-derived stages, then revisit each stage
+    # with the remaining policies if the budget permits.
+    stage_proposals=proposed
+    proposed=[]
+    for round_index in range(len(recovery_policies)):
+        for stage_index,(stage,allocation) in enumerate(stage_proposals):
+            recovery=recovery_policies[(stage_index+round_index)%len(recovery_policies)]
+            proposed.append((stage,allocation,recovery))
+            if len(proposed)>=max_screen_candidates:
+                break
+        if len(proposed)>=max_screen_candidates:
+            break
     paid_events=0;paid_cpu=0.0;cpu_t0=process_time()
     rows=[]
     for s,allocation,recovery in proposed:
@@ -816,9 +829,14 @@ def _refine_fullcycle_winner_with_source_gear(*, class_key: str, level: int, fin
         return {'status':'NOT_REQUESTED_OR_NO_SEED','winner':None}
     from src.v2.source_persistent_gear_neighborhood import refine_source_gear_persistent
     seed=finalists['winner']
+    # Gear challengers must pay the SAME recovery policy as the incumbent;
+    # otherwise a changed recovery strategy is mistaken for a gear gain.
+    recovery_record=seed.get('recovery_policy')
+    recovery=(None if recovery_record is None else BetweenPullPolicy(**recovery_record))
     outcome=refine_source_gear_persistent(class_key=class_key,level=level,
          stage=seed['stage'],screen_mobs=10,finalist_mobs=finalists['finalist_mobs'],
-         max_proposals=max_proposals,max_finalists=max_finalists)
+         max_proposals=max_proposals,max_finalists=max_finalists,
+         recovery_policy=recovery)
     candidate=outcome.get('winner')
     if candidate and candidate['persistent']['mean_s_per_mob'] < seed['persistent']['mean_s_per_mob']-1e-10:
         finalists['winner']={
@@ -828,6 +846,7 @@ def _refine_fullcycle_winner_with_source_gear(*, class_key: str, level: int, fin
             'persistent':candidate['persistent'],
             'source_policy_and_gear_reused':True,
             'gear_refinement_origin':'source_only_weight_perturbation_long_horizon',
+            'recovery_policy':recovery_record,
             'stage':candidate['stage']}
         finalists['post_search_source_gear_improved']=True
     else:

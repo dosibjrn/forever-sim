@@ -68,3 +68,36 @@ def test_blind_profile_rejects_old_seed_and_duplicate_names():
     with pytest.raises(ValueError,match='blind'):
         run_source_persistent_profile_search(class_key='druid',level=20,
             profiles=(('x',{'initial_allocation':{'ferocity':5}}),))
+
+
+def test_source_paid_recovery_frontier_is_not_starved_by_tight_screen_budget():
+    """Both sourced stage and recovery axes reach actual CombatRuntime."""
+    from src.game.recovery_between_pulls import BetweenPullPolicy
+
+    stages=[
+        json.loads((ROOT/'evidence/wf353'/name).read_text())
+        for name in ('WF353_L30_P3_BEST_JOINT_ITEM_STAGE.json',
+                     'WF353_L30_P3_BEST_DIRECT_SWAP_STAGE.json')
+    ]
+    # These published stages intentionally have no old one-mob score.
+    # Measure it now on the actual source-backed CombatRuntime instead of
+    # fabricating a score to make the candidates eligible.
+    for stage in stages:
+        measured=evaluate_persistent_candidate(
+            prepare_candidate(class_key='druid',level=30,stage=stage),
+            level=30,mobs=1)
+        assert measured['status']=='COMPLETE'
+        stage['score_s_per_mob']=measured['mean_s_per_mob']
+    policy=BetweenPullPolicy(health_fraction=.5,mana_fraction=.1)
+    result=select_persistent_finalists(
+        class_key='druid',level=30,joint_result={'stages':stages},
+        screen_mobs=2,finalist_mobs=2,max_screen_candidates=2,max_finalists=2,
+        recovery_policies=(None,policy))
+    assert result['screen_evaluated']==2
+    assert result['screen_completed']>=1
+    assert result['finalists_evaluated']>=1
+    assert [row['recovery_policy'] is None for row in result['screening']]==[True,False]
+    # A source-legal threshold policy may lose or fail the two-pull survival
+    # screen; the fix is that it is actually executed, not declared a winner.
+    assert all(row['screen'].get('events',0)>0 for row in result['screening']), [
+        (row['screen']['status'],row['screen'].get('reason')) for row in result['screening']]
