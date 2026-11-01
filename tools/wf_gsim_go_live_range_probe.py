@@ -30,14 +30,15 @@ from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApp
 PINNED_GO_REVISION = 'a667dce8492bd9fb94269a9f864289cb74006775'
 
 
-def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.):
+def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
+                          target_health: float = 10_000_000.):
     """Real gsim moving pack, but NOT a source-verified L60 Druid build."""
     actor = ActorState.from_ir(
         ActorDefinition('hero', 'player', base_stats={}),
         (ResourceDefinition('health', 'Health', 'hero', initial_amount=500, capacity=500),), ())
     runtime = CombatRuntime(
-        actor=actor, target=TargetState.with_health('m0', 10000000),
-        other_targets=(TargetState.with_health('m1', 10000000),),
+        actor=actor, target=TargetState.with_health('m0', target_health),
+        other_targets=(TargetState.with_health('m1', target_health),),
         spatial_positions_yards={'m0': (0., 0.), 'm1': (target_spawn_yards, 0.)},
         enemy_move_speed_yards_s=enemy_move_speed_yards_s, melee_radius_yards=5.)
     runtime.engage_target('m1')
@@ -47,7 +48,7 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
 
 def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
-        corrupt_ack: bool = False) -> dict:
+        corrupt_ack: bool = False, target_health: float = 10_000_000.) -> dict:
     if ticks < 2 or ticks > 100 or timeout_s <= 0:
         raise ValueError('INVALID_PROBE_LIMITS')
     binary, request = binary.resolve(), request.resolve()
@@ -55,7 +56,7 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     request_sha = hashlib.sha256(raw).hexdigest()
     binary_sha = hashlib.sha256(binary.read_bytes()).hexdigest()
     runtime = diagnostic_gsim_world(target_spawn_yards=target_spawn_yards,
-        enemy_move_speed_yards_s=enemy_move_speed_yards_s)
+        enemy_move_speed_yards_s=enemy_move_speed_yards_s, target_health=target_health)
     feed = GsimGoRangeFeed(runtime, native_player_index=0)
     spell_ledger = NativeSpellObservationLedger()
     target_spell_ledger = NativeTargetSpellObservationLedger()
@@ -147,6 +148,12 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                     or len(confirmation['ack_id']) != 64
                     or confirmation.get('native_spell_action_ack') != bool(world_ack['applied_event_ids'])):
                 raise RuntimeError('NATIVE_GO_WORLD_ACK_CONFIRMATION_FORGED_OR_WRONG')
+            if not confirmation.get('native_world_health_applied'):
+                raise RuntimeError('NATIVE_GO_WORLD_HEALTH_NOT_CONSUMED')
+            actual_target = runtime.targets[tick['selected_target_id']]
+            if abs(confirmation['native_remaining_health_fraction'] -
+                   actual_target.health / actual_target.max_health) > 1e-8:
+                raise RuntimeError('NATIVE_GO_HEALTH_FEEDBACK_MISMATCH')
             previous_ack_id = confirmation['ack_id']
             observations.append({'world_tick': tick, 'native_range_receipt': response['native_range_receipt'],
                                  'native_spell_counters': response['native_spell_counters'],
@@ -156,7 +163,10 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                                  'validated_range_only': fields,
                                  'native_damage_events': response['native_damage_events'],
                                  'gsim_applied_world_ack': world_ack,
-                                 'native_world_ack_confirmation': confirmation})
+                                 'native_world_ack_confirmation': confirmation,
+                                 'native_health_fraction_at_boundary': response['native_health_fraction'],
+                                 'native_execute_phase_at_boundary': response['native_execute_phase'],
+                                 'native_world_health_feedback_active_at_boundary': response['native_world_health_feedback_active']})
         proc.stdin.close()
         if proc.wait(timeout=timeout_s) != 0:
             raise RuntimeError('NATIVE_GO_RANGE_SESSION_FAILED_ON_CLOSE: ' + native_failure_details())

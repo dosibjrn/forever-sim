@@ -27,6 +27,9 @@ type WorldBoundarySession struct {
 	sequence      uint64
 	awaitingWorld bool
 	started       bool
+	worldHealthInitialized bool
+	worldHealthMax float64
+	worldHealthLast float64
 }
 
 func NewWorldBoundarySession(native *Simulation) (*WorldBoundarySession, error) {

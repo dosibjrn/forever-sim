@@ -115,6 +115,9 @@ class GsimNativeDamageWorldApplier:
         # acknowledged as full native damage or attributed to another target.
         if not isfinite(damage) or damage > target.health + 1e-8:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_OVERKILL_UNSUPPORTED")
+        max_health = float(target.max_health)
+        if not isfinite(max_health) or max_health <= 0 or target.health > max_health:
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_MAX_HEALTH_INVALID")
         old_health = float(target.health)
         for event in events:
             target.apply_damage(float(event["damage"]))
@@ -140,4 +143,7 @@ class GsimNativeDamageWorldApplier:
             "applied_event_ids": ids,
             "applied_events": [dict(event) for event in events],
             "applied_native_damage": damage,
+            "world_target_health_before": old_health,
+            "world_target_health_after": float(target.health),
+            "world_target_max_health": max_health,
         }
