@@ -24,9 +24,41 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.11'
-      - name: Exact HEAD source GameIR and real CombatRuntime tests
+      - name: Install real source test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: GREEN exact HEAD source GameIR and CombatRuntime
         run: |
           set -euo pipefail
           git rev-parse HEAD
-          python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
-          python -m pytest -q tests/test_wf441_source_spatial_charge_p2_tdd.py
+          python -m pytest -q tests/test_wf441_source_spatial_charge_p2_tdd.py -k 'not test_p2_rank_reduced_but_qualified_partial'
+      - name: Checkout pinned main base for negative controls
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: 69f5be0a718d3175bf835e2a1717406ade829b54
+          path: baseline
+          lfs: true
+          persist-credentials: false
+      - name: RED old runtime fails same source test; pre-existing P2 failure is independent
+        run: |
+          set -euo pipefail
+          cp tests/test_wf441_source_spatial_charge_p2_tdd.py baseline/tests/test_wf441_source_spatial_charge_p2_tdd.py
+          (
+            cd baseline
+            set +e
+            python -m pytest -q tests/test_wf441_source_spatial_charge_p2_tdd.py -k 'test_source_bear_contact_charge_at_zero_range_preserves_position_and_effects' > /tmp/charge-red.log 2>&1
+            code=$?
+            set -e
+            cat /tmp/charge-red.log
+            test "$code" -eq 1
+            grep -q SOURCE_SPATIAL_CHARGE_ZERO_VECTOR /tmp/charge-red.log
+          )
+          (
+            cd baseline
+            set +e
+            python -m pytest -q tests/test_wf441_source_spatial_charge_p2_tdd.py -k 'test_p2_rank_reduced_but_qualified_partial' > /tmp/p2-base.log 2>&1
+            code=$?
+            set -e
+            cat /tmp/p2-base.log
+            test "$code" -eq 1
+            grep -q 'assert 0 == 2' /tmp/p2-base.log
+          )
