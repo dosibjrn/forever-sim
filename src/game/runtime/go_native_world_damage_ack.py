@@ -41,6 +41,14 @@ class GsimNativeDamageWorldApplier:
                 or clock_ns <= self._last_world_tick_ns):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_CLOCK_INVALID")
         before = snapshot_gsim_world(self._runtime)
+        # Native time is not authority for gsim time. Reject a fabricated
+        # future tick before any source event can mutate target HP, including
+        # empty ticks that would otherwise establish a false ACK barrier.
+        world_clock_ms = before["clock_ms"]
+        if (type(tick.get("clock_ms")) is not int
+                or tick["clock_ms"] != world_clock_ms
+                or clock_ns != world_clock_ms * 1_000_000):
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_WORLD_CLOCK_MISMATCH")
         digest = state_hash(before)
         if digest != tick.get("world_sha256") or digest != response.get("observed_input_world_sha256"):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_SOURCE_WORLD_HASH_INVALID")
