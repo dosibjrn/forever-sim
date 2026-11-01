@@ -258,3 +258,18 @@ def test_generic_verified_detail_cost_fallback_and_no_invention(tmp_path):
         conn.execute("UPDATE verified_spell_detail_header_facts SET cost_amount=999 WHERE spell_id=17")
     with pytest.raises(ValueError,match='TAMPERED'):
         _source_cost_match('',db_path=db,class_key='priest',spell_id=17)
+
+
+def test_wf292_direct_source_cli_without_pythonpath():
+    """The documented direct entrypoint must import real source packages."""
+    import os
+    import sys
+
+    root = Path(__file__).resolve().parents[1]
+    env = {key: value for key, value in os.environ.items() if key != 'PYTHONPATH'}
+    completed = subprocess.run(
+        [sys.executable, str(root / 'tools/wf292_batch_verified_source_recovery.py'), '--help'],
+        cwd=root, env=env, capture_output=True, text=True, timeout=15,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert '--staging' in completed.stdout and '--offline' in completed.stdout
