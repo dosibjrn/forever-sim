@@ -40,4 +40,4 @@ jobs:
           test "$(git hash-object scripts/run_staged_joint_search.py)" = "d572fb8c58ca2354c76e3c01b976c90868dd7d70"
           env -u PYTHONPATH python scripts/run_staged_joint_search.py --help > /tmp/staged-green.log
           grep -F -- '--screening-gears' /tmp/staged-green.log
-          env -u PYTHONPATH python -m pytest -q tests/test_wf273_staged_source_search.py::test_data_only_source_change_flips_real_optimizer_winner
+          env -u PYTHONPATH python -m pytest -q tests/test_wf243_source_joint_repeated_pulls.py::test_same_stateful_scorer_supports_two_non_druid_classes tests/test_wf243_source_joint_repeated_pulls.py::test_heldout_illegal_action_and_talent_fail_closed
