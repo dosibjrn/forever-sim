@@ -50,6 +50,27 @@ def test_world_perturbation_without_native_effect_does_not_pass():
     assert pair["native_spell_counter_delta_observed"] is False
 
 
+
+def test_counter_delta_without_applied_native_events_is_not_a_world_ack():
+    # Counter differences alone cannot prove a source event changed gsim HP.
+    near, far = sample(3, 2), sample(80, 0)
+    near["native_spell_action_ack"] = False
+    near["observations"][-1]["gsim_applied_world_ack"]["applied_event_ids"] = []
+    near["observations"][-1]["native_world_ack_confirmation"]["native_spell_action_ack"] = False
+    pair = compare_paired_reports(near, far)
+    assert pair["native_spell_counter_delta_observed"] is True
+    assert pair["native_spell_action_ack"] is False
+    assert pair["status"] == "NATIVE_SPELL_DELTA_WITHOUT_WORLD_ACK_NOT_P7"
+    assert pair["checkpoint_certified"] is False
+
+
+def test_claimed_action_ack_without_applied_event_ids_fails_closed():
+    near, far = sample(3, 2), sample(80, 0)
+    near["observations"][-1]["gsim_applied_world_ack"]["applied_event_ids"] = []
+    with pytest.raises(ValueError, match="PAIRED_NATIVE_WORLD_APPLIED_ACK_NOT_VERIFIED"):
+        compare_paired_reports(near, far)
+
+
 @pytest.mark.parametrize("change", [
     lambda x: x.update(native_request_sha256="different-request"),
     lambda x: x.update(native_source_revision="different-source"),
