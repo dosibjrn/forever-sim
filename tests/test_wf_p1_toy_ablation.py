@@ -55,3 +55,13 @@ def test_one_real_source_wrath_vs_inert_cast(monkeypatch):
     assert report["observed"] == 1 and report["checked"] == 1
     assert report["p1_certified"] is False
     assert report["hybrid_rust_executed"] is False
+
+
+def test_one_real_source_heal_vs_inert_cast(monkeypatch):
+    monkeypatch.setenv("WOW_FOREVER_BUILD_AS_OF", "2026-10-17")
+    ir, inventory, matched, _ = _source_actions(ROOT)
+    sid = _find(inventory, "Healing Touch")
+    result = compare_action(ir, matched[sid])
+    assert result["status"] == "EFFECT_OBSERVED", result
+    assert ("player_hp" in result["difference"]
+            or "healing" in result["difference"]), result
