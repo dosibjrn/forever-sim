@@ -13,6 +13,11 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+import sys
+
+# Resolve the same canonical source modules for direct CLI and -m invocation.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.ingest_source_acquisition_evidence_sqlite import METHODS, _observed_methods
 from src.v2.source_sqlite_detail_snapshots import read_verified_spell_detail_snapshot

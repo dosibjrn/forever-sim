@@ -13,6 +13,12 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+import sys
+
+# Direct-file invocation starts with tools/ on sys.path, not the repo root.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from bs4 import BeautifulSoup
 
 from src.v2.source_sqlite_detail_snapshots import read_verified_spell_detail_snapshot, MissingVerifiedSpellDetail
