@@ -298,15 +298,19 @@ def source_db_content_identity(db_path: str | Path) -> str:
     return digest.hexdigest()
 
 
-def verified_class_effect_atoms(db_path: str | Path, *, class_key: str) -> dict[int, dict]:
+def verified_class_effect_atoms(db_path: str | Path, *, class_key: str,
+                                allow_stale_index: bool = False) -> dict[int, dict]:
     """Validate every derived rank once per full canonical SQLite identity.
 
     Fail closed on stale/tampered sources and return isolated per-call values.
+    Explicit untrusted stages may quarantine index-stale partial atoms without
+    using them as evidence. Tampered derived rows and canonical reads still fail.
     A partial atom is NEVER an acquired or complete executable action.
     """
     path = str(Path(db_path).resolve())
     before = source_db_content_identity(path)
-    evidence = _verified_class_effect_atoms_cached(path, before, class_key.lower())
+    evidence = _verified_class_effect_atoms_cached(
+        path, before, class_key.lower(), allow_stale_index)
     if source_db_content_identity(path) != before:
         raise ValueError('SOURCE_CHANGED_DURING_ATOM_COVERAGE')
     return deepcopy(evidence)
@@ -314,7 +318,8 @@ def verified_class_effect_atoms(db_path: str | Path, *, class_key: str) -> dict[
 
 @lru_cache(maxsize=48)
 def _verified_class_effect_atoms_cached(path: str, source_sha256: str,
-                                       class_key: str) -> dict[int, dict]:
+                                       class_key: str,
+                                       allow_stale_index: bool = False) -> dict[int, dict]:
     with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as db:
         db.row_factory = sqlite3.Row
         if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' "
@@ -323,8 +328,21 @@ def _verified_class_effect_atoms_cached(path: str, source_sha256: str,
         ids = [int(r[0]) for r in db.execute(
             'SELECT spell_id FROM ability_effect_atom_coverage WHERE class_key=? '
             'ORDER BY spell_id', (class_key,))]
-        result = {sid: read_effect_atom_coverage(
-            db, class_key=class_key, spell_id=sid) for sid in ids}
+        result = {}
+        for sid in ids:
+            try:
+                result[sid] = read_effect_atom_coverage(
+                    db, class_key=class_key, spell_id=sid)
+            except ValueError as exc:
+                # Only a deliberately staged index delta may quarantine an
+                # obsolete *partial* atom. Never trust its old values, and
+                # never suppress a ledger tamper/grammar/detail failure.
+                if not allow_stale_index or str(exc) != 'STALE_ATOM_INDEX_REINGEST_REQUIRED':
+                    raise
+                result[sid] = {
+                    'execution_status': 'STALE_ATOM_INDEX_REINGEST_REQUIRED',
+                    'not_legal_for_L2': True,
+                }
         if source_db_content_identity(path) != source_sha256:
             raise ValueError('SOURCE_CHANGED_DURING_ATOM_COVERAGE')
         return result
