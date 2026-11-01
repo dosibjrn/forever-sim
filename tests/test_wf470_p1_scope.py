@@ -75,6 +75,7 @@ def test_real_l30_spellbook_observations_resolve_source_roles_without_fake_ir():
     _,meta=_source_legality(ROOT,ir,'druid',30,DEFAULT_DB)
     facts=_load_spellbook_observed_scope_facts(ROOT,meta['spellbook_file'],rows)
     assert facts[740]['roles']==['healing']      # Tranquility: not P1 combat scope
+    assert 774 not in facts  # Heal-or-absorb domain alone cannot exclude a shield
     assert facts[780]['roles']==['damage']       # Swipe
     assert facts[783]['roles']==['buff']         # Travel Form
     assert facts[1850]['roles']==['buff']        # Dash
