@@ -1,0 +1,39 @@
+name: One-shot pinned Go native pet damage regression (NOT P7)
+on:
+  push:
+    branches: [work/first-native-pet-source-damage-20261101]
+    paths: [.github/workflows/wf-native-pet-source-once.yml]
+permissions:
+  contents: read
+jobs:
+  source-pet:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine-go
+          ref: a667dce8492bd9fb94269a9f864289cb74006775
+          path: upstream
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: upstream/go.mod
+          cache-dependency-path: upstream/go.sum
+      - name: Install pinned Go source prerequisites
+        run: |
+          test "$(git -C upstream rev-parse HEAD)" = "a667dce8492bd9fb94269a9f864289cb74006775"
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          cd upstream
+          make sim/core/proto/api.pb.go
+      - name: Actual source hook RED - pet damage is missing
+        run: |
+          python3 project/integrations/mythicsim-go/world_boundary/patch_native_spell_result.py upstream/sim/core/spell_result.go
+          cp project/integrations/mythicsim-go/world_boundary/core/*.go upstream/sim/core/
+          cd upstream
+          go test ./sim/core -run '^TestNativeWorldDamageJournalCapturesPetSourceSpellResult$' -count=1 -v
