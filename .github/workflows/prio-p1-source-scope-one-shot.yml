@@ -1,0 +1,41 @@
+name: Prio P1 sourced positive-domain exact-HEAD check (one-shot)
+on:
+  push:
+    branches:
+      - work/prio-p1-source-positive-domain-20261101
+    paths:
+      - .github/workflows/prio-p1-source-scope-one-shot.yml
+permissions:
+  contents: read
+jobs:
+  source-p1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source-backed regression and live P1 controls
+        env:
+          WOW_FOREVER_BUILD_AS_OF: '2026-10-17'
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check beautifulsoup4==4.13.4 pytest==8.3.5
+          python -m pytest -q tests/test_wf470_p1_scope.py
+          python tools/wf_gate.py --class druid --level 20 --gate P1
+          set +e
+          python tools/wf_gate.py --class druid --level 30 --gate P1 > /tmp/l30-p1.json
+          status=$?
+          set -e
+          cat /tmp/l30-p1.json
+          python - /tmp/l30-p1.json "$status" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1]))
+          assert int(sys.argv[2]) != 0, 'L30 P1 unexpectedly passed; inspect gate coverage'
+          assert data['status'] == 'FAIL'
+          print('L30 gate remains honestly FAIL with', len(data.get('results',[])), 'result groups')
+          PY
