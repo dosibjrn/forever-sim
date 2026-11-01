@@ -138,7 +138,13 @@ def _evaluate_concurrent_source_packs(candidate, *, level, mobs, pack_size,
     except ValueError as exc:
         reason = str(exc)
         if reason.startswith('pull ') and 'failed: actor_died' in reason:
-            return {'status':'BLOCKED_ACTOR_DIED','mob_completed':0,
+            # evaluate_repeated_pulls reports the zero-based failed pack.
+            # Earlier completed packs were real paid kills; reporting zero
+            # hid the first failure boundary in independent 100-mob replay.
+            failed_pack=int(reason.split(' ',2)[1])
+            return {'status':'BLOCKED_ACTOR_DIED',
+                    'mob_completed':min(mobs,failed_pack*pack_size),
+                    'failed_pull_index':failed_pack,
                     'reason':reason,'events':0}
         if reason.startswith('BLOCKED_SOURCE_MAINTENANCE_UPKEEP:'):
             return {'status':'BLOCKED_SOURCE_MAINTENANCE_UPKEEP',
