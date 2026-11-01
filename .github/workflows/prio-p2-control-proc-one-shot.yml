@@ -1,8 +1,8 @@
 name: Prio P2 sourced control proc one-shot
 on:
-  push:
-    branches:
-      - work/prio-p2-control-proc-runtime-witness-20261101
+  pull_request:
+    types: [opened]
+    branches: [main]
     paths:
       - .github/workflows/prio-p2-control-proc-one-shot.yml
 permissions:
@@ -14,8 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           lfs: true
           persist-credentials: false
+      - name: Confirm exact source HEAD
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
       - name: Install minimal source test dependencies
         run: python -m pip install pytest beautifulsoup4
       - name: Verify real source proc and negative control
