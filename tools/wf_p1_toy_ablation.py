@@ -217,7 +217,8 @@ def run_gsim(root=ROOT, *, ability_id=None):
             "proof_kind": PROOF_KIND,
             "p1_certified": False, "hybrid_rust_executed": False,
             "live_p1_current_status": source_p1["status"],
-            "checked": len(results),\n            "note": "full source-legal druid spellbook, including caster/healing, not just Cat Form",
+            "checked": len(results),
+            "note": "full source-legal druid spellbook, including caster/healing, not just Cat Form",
             "observed": sum(x["status"] == "EFFECT_OBSERVED" for x in results),
             "results": results}
 
