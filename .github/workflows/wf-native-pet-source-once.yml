@@ -59,7 +59,7 @@ jobs:
           from tools.wf_gsim_go_live_range_probe import run
           result=run(Path("../gsim-go-world-ingress"),
               Path("../upstream/sim/warlock/testdata/imp-brand/kerani.request.json"),
-              ticks=100,target_spawn_yards=3.,enemy_move_speed_yards_s=0.,
+              ticks=100,target_spawn_yards=3.,
               target_health=10000000.)
           pet=[(row,e) for row in result["observations"]
                for e in row["native_damage_events"]
