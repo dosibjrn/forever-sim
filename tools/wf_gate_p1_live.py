@@ -260,7 +260,8 @@ _SPELLBOOK_OBSERVED_DOMAIN_ROLES = {
     'enemy_hit_chance_reduction_pct': 'debuff',
     'movement_speed_increase_pct': 'buff',
     'target_control_seconds': 'cc',
-    'heal_or_absorb_per_activation': 'healing',
+    # 'heal_or_absorb_per_activation' is ambiguous: a shield is a P1 buff.
+    # Never exclude it as healing without more specific source evidence.
     'channeled_healing_per_party_target_over_10s': 'healing',
 }
 
