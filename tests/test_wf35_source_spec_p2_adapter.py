@@ -171,3 +171,60 @@ def test_p2_partial_witness_still_uses_generic_full_point_builder():
     assert full == rebuilt
     builder.assert_called_once_with(
         compiled, target, level=60, bonus_talent_points=0, target_rank=1)
+
+
+def test_spec_rank_probe_uses_legal_partial_effect_control_but_full_search_candidate():
+    """A 51-point profile may have no legal 50-point predecessor in that profile.
+
+    Behavioral comparison can use an independently legal smaller allocation;
+    actual search reachability is the validated full-point optimizer candidate.
+    Never call unrestricted neighbors on an out-of-profile predecessor.
+    """
+    full = _allocation()
+    isolated = {"source_t0": 5, "source_capstone": 1}
+    modifier = N(kind="stat_pct", target_type="actor", target_id="intellect",
+                 value=0.1, provenance={})
+    talent = N(id="source_capstone",
+               ranks=(N(rank=1, modifiers=(modifier,)),))
+    compiled = _ir()
+    receipt = N(applied_modifiers=[{"talent_id": "source_capstone", "rank": 1}])
+    with patch.object(p2, "available_talent_points", return_value=51), patch.object(
+        p2, "_witness", return_value=isolated
+    ), patch.object(p2, "validate_talent_selection"), patch.object(
+        p2, "apply_talent_selection", return_value=(compiled, receipt)
+    ), patch.object(p2, "_effect_change", return_value=True), patch.object(
+        p2, "_behavior_fixtures", return_value=([{"actually_executed": True, "passed": True}], [])
+    ), patch.object(p2, "replace", side_effect=lambda mod, **kw: mod), patch.object(
+        p2, "source_legal_talent_neighbors",
+        side_effect=AssertionError("must not use out-of-profile predecessor"),
+    ):
+        result = p2._rank_probe(compiled, talent, 1, full, level=60,
+                                bonus=0, profile_tree="balance")
+    assert result["status"] == "PASS"
+    assert result["witness"] == isolated
+    assert result["search_witness"] == full
+    assert result["search_reachable"] is True
+
+
+def test_unrestricted_rank_probe_still_checks_real_neighbor_reachability():
+    """A legal applied rank alone must not mark an unrestricted search PASS."""
+    modifier = N(kind="stat_pct", target_type="actor", target_id="intellect",
+                 value=0.1, provenance={})
+    talent = N(id="source_capstone",
+               ranks=(N(rank=1, modifiers=(modifier,)),))
+    compiled = _ir()
+    receipt = N(applied_modifiers=[{"talent_id": "source_capstone", "rank": 1}])
+    with patch.object(p2, "available_talent_points", return_value=51), patch.object(
+        p2, "_executable_filler_witness", return_value=None
+    ), patch.object(p2, "apply_talent_selection", return_value=(compiled, receipt)
+    ), patch.object(p2, "_effect_change", return_value=True), patch.object(
+        p2, "_behavior_fixtures", return_value=([], [])
+    ), patch.object(p2, "replace", side_effect=lambda mod, **kw: mod), patch.object(
+        p2, "source_legal_talent_neighbors", return_value={"neighbors": ()}
+    ) as neighbors:
+        result = p2._rank_probe(compiled, talent, 1, {"source_capstone": 1},
+                                level=60, bonus=0)
+    neighbors.assert_called_once()
+    assert result["status"] == "FAIL"
+    assert result["search_reachable"] is False
+    assert "SEARCH_RANK_NOT_GENERATED" in result["reasons"]
