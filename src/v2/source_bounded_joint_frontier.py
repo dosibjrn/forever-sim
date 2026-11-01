@@ -2101,7 +2101,6 @@ def replay_joint_shortlist_100mob(search_report, *, source_ir, seed_stage,
         policy=PolicyDefinition(id=policy_dict['id'],label=policy_dict['label'],
             rules=tuple(PolicyRuleDefinition(id=r['id'],action_id=r['action_id'],
                 phase=r.get('phase','combat'),provenance=r.get('provenance',{}),
-                target_selector=r.get('target_selector'),
                 conditions=tuple(PolicyCondition(**c) for c in r.get('conditions',())))
                 for r in policy_dict['rules']),
             maintenance=tuple(policy_dict.get('maintenance') or ()),
