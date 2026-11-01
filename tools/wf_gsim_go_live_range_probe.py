@@ -10,6 +10,7 @@ import argparse
 from collections import deque
 import hashlib
 import json
+import math
 import queue
 import subprocess
 import sys
@@ -31,8 +32,13 @@ PINNED_GO_REVISION = 'a667dce8492bd9fb94269a9f864289cb74006775'
 
 
 def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
-                          target_health: float = 10_000_000.):
+                          target_health: float = 10_000_000.,
+                          target_initial_health_fraction: float = 1.):
     """Real gsim moving pack, but NOT a source-verified L60 Druid build."""
+    if (not math.isfinite(target_health) or target_health <= 0
+            or not math.isfinite(target_initial_health_fraction)
+            or not 0 < target_initial_health_fraction <= 1):
+        raise ValueError('INVALID_SOURCE_WORLD_TARGET_HEALTH')
     actor = ActorState.from_ir(
         ActorDefinition('hero', 'player', base_stats={}),
         (ResourceDefinition('health', 'Health', 'hero', initial_amount=500, capacity=500),), ())
@@ -41,6 +47,9 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
         other_targets=(TargetState.with_health('m1', target_health),),
         spatial_positions_yards={'m0': (0., 0.), 'm1': (target_spawn_yards, 0.)},
         enemy_move_speed_yards_s=enemy_move_speed_yards_s, melee_radius_yards=5.)
+    # The actual gsim target owns starting HP. Native must consume it via
+    # the first measured world ACK, not via a synthetic native-only counter.
+    runtime.targets['m1'].health = target_health * target_initial_health_fraction
     runtime.engage_target('m1')
     runtime.select_target('m1')
     return runtime
@@ -48,7 +57,8 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
 
 def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
-        corrupt_ack: bool = False, target_health: float = 10_000_000.) -> dict:
+        corrupt_ack: bool = False, target_health: float = 10_000_000.,
+        target_initial_health_fraction: float = 1.) -> dict:
     if ticks < 2 or ticks > 100 or timeout_s <= 0:
         raise ValueError('INVALID_PROBE_LIMITS')
     binary, request = binary.resolve(), request.resolve()
@@ -56,7 +66,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     request_sha = hashlib.sha256(raw).hexdigest()
     binary_sha = hashlib.sha256(binary.read_bytes()).hexdigest()
     runtime = diagnostic_gsim_world(target_spawn_yards=target_spawn_yards,
-        enemy_move_speed_yards_s=enemy_move_speed_yards_s, target_health=target_health)
+        enemy_move_speed_yards_s=enemy_move_speed_yards_s, target_health=target_health,
+        target_initial_health_fraction=target_initial_health_fraction)
     feed = GsimGoRangeFeed(runtime, native_player_index=0)
     spell_ledger = NativeSpellObservationLedger()
     target_spell_ledger = NativeTargetSpellObservationLedger()
@@ -188,6 +199,7 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     return {'kind': 'real_gsim_2d_pinned_go_live_range_only_v1',
             'target_spawn_yards': target_spawn_yards,
             'enemy_move_speed_yards_s': enemy_move_speed_yards_s,
+            'target_initial_health_fraction': target_initial_health_fraction,
             'native_spell_activity_observed': any(bool(x['native_spell_counter_deltas']) for x in observations),
             'status': 'NATIVE_GO_WORLD_DAMAGE_ACK_NOT_P7',
             'native_binary_sha256': binary_sha,
@@ -212,17 +224,21 @@ def main():
     parser.add_argument('--request', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--expect-invalid-ack-rejected', action='store_true')
+    parser.add_argument('--target-initial-health-fraction', type=float, default=1.)
+    parser.add_argument('--ticks', type=int, default=20)
     args = parser.parse_args()
     if args.expect_invalid_ack_rejected:
         try:
-            run(args.binary, args.request, corrupt_ack=True)
+            run(args.binary, args.request, ticks=args.ticks, corrupt_ack=True,
+                target_initial_health_fraction=args.target_initial_health_fraction)
         except RuntimeError as exc:
             if 'WORLD_EFFECT_ACK_ID_OR_HASH_MISMATCH' not in str(exc):
                 raise
             print('REAL_NATIVE_GO_REJECTED_FORGED_WORLD_ACK')
             return
         raise SystemExit('NATIVE_GO_ACCEPTED_FORGED_WORLD_ACK')
-    result = run(args.binary, args.request)
+    result = run(args.binary, args.request, ticks=args.ticks,
+        target_initial_health_fraction=args.target_initial_health_fraction)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + '\n')
     print(f'{result["status"]}: {len(result["observations"])} ticks (NOT P7)')
