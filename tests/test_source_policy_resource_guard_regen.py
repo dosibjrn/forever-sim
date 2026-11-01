@@ -16,7 +16,11 @@ def _sourced_guarded_encounter(*, regen_enabled: bool, impossible_threshold: boo
     actor.resources['energy'] = cost - 5.0
     if not regen_enabled:
         actor.resource_regeneration_per_s['energy'] = 0.0
-    guard = (PolicyCondition(kind='resource_threshold', resource_id='energy',\n        value=float(actor.resource_capacity['energy']) + 1.0) if impossible_threshold else\n        PolicyCondition(kind='resource_threshold', resource_id='energy',\n            threshold_source='action_cost'))\n    policy = PolicyDefinition(id='source_rogue_energy_guard',
+    guard = (PolicyCondition(kind='resource_threshold', resource_id='energy',
+        value=float(actor.resource_capacity['energy']) + 1.0) if impossible_threshold else
+        PolicyCondition(kind='resource_threshold', resource_id='energy',
+            threshold_source='action_cost'))
+    policy = PolicyDefinition(id='source_rogue_energy_guard',
         label='Source Rogue builder gated by its actual energy cost',
         rules=(PolicyRuleDefinition(id='source_builder', action_id=action.id,
             conditions=(guard,)),))
