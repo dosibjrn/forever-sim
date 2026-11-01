@@ -64,6 +64,8 @@ func run(requestRaw []byte, sourceRevision string) error {
     previousACKID:=""
     previousWorldTargetDead:=false
     previousWorldTargetID:=""
+    previousWorldHealthAfter:=0.0
+    previousWorldMaxHealth:=0.0
     for scanner.Scan() {
         if count>=10000 {return errors.New("WORLD_TICK_LIMIT_EXCEEDED")}
         tick,err:=decodeWorldTick(scanner.Bytes())
@@ -72,6 +74,10 @@ func run(requestRaw []byte, sourceRevision string) error {
         if tick.PreviousWorldACKID!=previousACKID {return errors.New("WORLD_EFFECT_PREVIOUS_ACK_NOT_ECHOED")}
         if err:=validateWorldTargetTransition(previousWorldTargetID,previousWorldTargetDead,tick.SelectedTargetID);err!=nil {
             return fmt.Errorf("tick %d target transition: %w",count,err)
+        }
+        if err:=validateWorldHealthContinuity(tick,previousWorldTargetID,
+            previousWorldTargetDead,previousWorldHealthAfter,previousWorldMaxHealth,count>0);err!=nil {
+            return fmt.Errorf("tick %d world health preflight: %w",count,err)
         }
         if previousWorldTargetID=="" {previousWorldTargetID=tick.SelectedTargetID}
         if previousWorldTargetDead {
@@ -160,6 +166,8 @@ func run(requestRaw []byte, sourceRevision string) error {
         if _,err:=writer.Write(append(confirmation,'\n'));err!=nil {return err}
         if err:=writer.Flush();err!=nil {return err}
         previousACKID=accepted.ACKID
+        previousWorldHealthAfter=*accepted.WorldTargetHealthAfter
+        previousWorldMaxHealth=*accepted.WorldTargetMaxHealth
         count++
         // The world has certified the old target's death. The same native
         // process may serve a second serial source-identical mob, but ONLY

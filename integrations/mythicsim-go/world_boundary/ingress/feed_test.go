@@ -59,3 +59,31 @@ func TestWorldTargetTransitionRequiresRealLethalACK(t *testing.T) {
         }
     }
 }
+
+func TestWorldHealthPreflightRejectsUnACKedTargetDrift(t *testing.T) {
+    next:=goodTick(1,100)
+    next.WorldTargetHealthBefore=750
+    next.WorldTargetMaxHealth=1000
+    if err:=validateWorldHealthContinuity(next,"m1",false,750,1000,true);err!=nil {
+        t.Fatalf("rejected ACK-continuous real world HP: %v",err)
+    }
+    next.WorldTargetHealthBefore=749
+    if err:=validateWorldHealthContinuity(next,"m1",false,750,1000,true);err==nil {
+        t.Fatal("accepted world HP drift without native ACK")
+    }
+    next.WorldTargetHealthBefore=750
+    next.WorldTargetMaxHealth=1100
+    if err:=validateWorldHealthContinuity(next,"m1",false,750,1000,true);err==nil {
+        t.Fatal("accepted world max HP drift without native ACK")
+    }
+    // A real lethal ACK allows the next source-identical mob to start with
+    // its own HP; transition identity is validated independently.
+    next.SelectedTargetID="m0"
+    next.WorldTargetHealthBefore=1000
+    if err:=validateWorldHealthContinuity(next,"m1",true,0,1000,true);err!=nil {
+        t.Fatalf("blocked legitimate post-lethal retarget: %v",err)
+    }
+    if err:=validateWorldHealthContinuity(goodTick(0,0),"",false,0,0,false);err!=nil {
+        t.Fatalf("blocked first real world tick: %v",err)
+    }
+}
