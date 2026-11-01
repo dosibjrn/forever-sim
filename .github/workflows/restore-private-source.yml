@@ -1,8 +1,7 @@
 # INSTALL in PUBLIC dosibjrn/forever-sim at .github/workflows/restore-private-source.yml.
 # Add PUBLIC Actions secret FOREVER_SIM_PRIVATE_READ_TOKEN_2 granting read-only Contents
 # access to the PRIVATE dosibjrn/mage-level-sim repo (and its LFS objects).
-# One-shot owner-requested publication: ONLY the exact commit message + audited private SHA 3bd46df7e3b95a8a3bfdc7455de659341a905826 can publish via push.
-# Other pushes AUDIT only. Following successful publication, revert this one-shot trigger to manual-only.
+# Manual-only publish, gated on matching approved audit SHA.
 # Run Actions -> Restore private source to public Forever Sim -> mode=audit,
 # verify the private repository contains only material licensed/approved for PUBLIC release,
 # then mode=publish with exact audited private main SHA.
@@ -10,10 +9,6 @@
 # Existing public main-only governance/docs, existing PRs and the manual smoke are kept.
 name: Restore private source to public Forever Sim
 on:
-  # One-off audited migration check on this workflow's own edit. Push cannot publish.
-  push:
-    branches: [main]
-    paths: ['.github/workflows/restore-private-source.yml']
   workflow_dispatch:
     inputs:
       mode:
