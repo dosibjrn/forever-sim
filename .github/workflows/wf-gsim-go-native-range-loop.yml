@@ -2,6 +2,13 @@ name: Live gsim 2D to pinned native Go world-effect ACK (NOT P7)
 # Migration safety: original pull_request triggers intentionally withheld until public baseline and runner are verified.
 on:
   workflow_dispatch:
+  # One controlled native build on this implementation branch; this workflow
+  # file is the sole path trigger. Other source/doc pushes cannot start it.
+  push:
+    branches:
+      - work/wf28-native-spell-observation-ack-20261031
+    paths:
+      - .github/workflows/wf-gsim-go-native-range-loop.yml
 
 permissions:
   contents: read
