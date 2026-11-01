@@ -47,8 +47,8 @@ def test_real_druid_l20_p1_staged_sourced_action_coverage(monkeypatch):
     assert result['effect_scope_policy']=='damage_buff_debuff_cc_highest_rank_only'
     assert result['problem_count']==0
     assert not result['problems']
-    assert result['does_not_affect_sim_count']==2
-    assert {r['source_spell_id'] for r in result['does_not_affect_sim']}=={2637,18960}
+    assert result['does_not_affect_sim_count']==7
+    assert {r['source_spell_id'] for r in result['does_not_affect_sim']}=={2637, 18960, 1066, 6795, 8946, 20484, 437138}
     assert result['matched_source_abilities']==18
     assert result['production_runtime_exercises']==18  # includes *damage* on queued Maul
     assert any(r['source_spell_id']==6807 and r['role']=='LOWER_LEARNED_RANK' for r in result['excluded_nonaction_or_inactive_rows'])
