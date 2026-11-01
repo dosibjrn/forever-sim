@@ -128,6 +128,13 @@ func run(requestRaw []byte, sourceRevision string) error {
         if err:=writer.Flush();err!=nil {return err}
         previousACKID=accepted.ACKID
         count++
+        // A source-native lethal event has been applied to the actual gsim
+        // target and ACKed. Stop this retained one-target native session:
+        // advancing its scheduler against the dead enemy would fabricate
+        // post-kill actions instead of ending the encounter.
+        if accepted.WorldTargetHealthAfter!=nil && *accepted.WorldTargetHealthAfter==0 {
+            return nil
+        }
     }
     if err:=scanner.Err();err!=nil {return err}
     if count==0 {return errors.New("NO_GSIM_WORLD_TICKS_RECEIVED")}
