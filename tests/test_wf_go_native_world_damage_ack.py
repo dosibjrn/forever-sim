@@ -123,6 +123,52 @@ def test_missing_source_native_event_between_ticks_rejected_before_world_mutatio
     assert rt.targets["m1"].health == original_health
 
 
+
+@pytest.mark.parametrize("with_damage", [False, True])
+def test_native_process_restart_rejected_before_world_mutation(with_damage):
+    # Two real gsim ticks share one retained source-native session. Reusing
+    # plausible event ordinals from a different PID must never cross the ACK.
+    rt, tick0, reply0 = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick0, reply0)
+    rt.advance_to(0.1)
+    tick1 = {"sequence": 1, "clock_ms": 100, "native_clock_ns": 100_000_000,
+             "selected_target_id": "m1",
+             "world_sha256": state_hash(snapshot_gsim_world(rt))}
+    events = ([{**reply0["native_damage_events"][0],
+                "event_id": "native-effect-2",
+                "native_time_ns": 100_000_000}] if with_damage else [])
+    restarted = {"sequence": 1, "native_process_id": 124,
+                 "observed_input_world_sha256": tick1["world_sha256"],
+                 "native_damage_events": events}
+    before = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="WORLD_DAMAGE_ACK_NATIVE_PROCESS_RESTARTED"):
+        applier.apply(tick1, restarted)
+    assert rt.targets["m1"].health == before
+
+
+def test_same_retained_native_process_can_ack_next_real_gsim_tick():
+    rt, tick0, reply0 = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick0, reply0)
+    rt.advance_to(0.1)
+    tick1 = {"sequence": 1, "clock_ms": 100, "native_clock_ns": 100_000_000,
+             "selected_target_id": "m1",
+             "world_sha256": state_hash(snapshot_gsim_world(rt))}
+    continued = {"sequence": 1, "native_process_id": 123,
+                 "observed_input_world_sha256": tick1["world_sha256"],
+                 "native_damage_events": [{**reply0["native_damage_events"][0],
+                                           "event_id": "native-effect-2",
+                                           "native_time_ns": 100_000_000}]}
+    before = rt.targets["m1"].health
+    ack = applier.apply(tick1, continued)
+    assert ack["native_process_id"] == 123
+    assert ack["applied_event_ids"] == ["native-effect-2"]
+    assert rt.targets["m1"].health == before - 75
+
+
+
 def test_no_native_effect_does_not_claim_world_mutation():
     rt, tick, response = fixture()
     response["native_damage_events"] = []

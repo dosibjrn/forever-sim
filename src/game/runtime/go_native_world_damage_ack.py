@@ -25,6 +25,7 @@ class GsimNativeDamageWorldApplier:
         self._runtime = runtime
         self._next_seq = 0
         self._previous_event_id = 0
+        self._native_process_id = None
         self._last_native_time_ns = -1
         self._last_world_tick_ns = -1
         self._target_id = None
@@ -64,6 +65,11 @@ class GsimNativeDamageWorldApplier:
         pid = response.get("native_process_id")
         if not isinstance(events, list) or type(pid) is not int or pid <= 0:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_EVENTS_OR_PID_INVALID")
+        # Event ordinals are only meaningful within one retained native process.
+        # A restarted process cannot continue a paid world session by merely
+        # supplying plausible new event IDs and a valid gsim snapshot.
+        if self._native_process_id is not None and pid != self._native_process_id:
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_PROCESS_RESTARTED")
         last_event_id = self._previous_event_id
         last_native_time = self._last_native_time_ns
         target_identity = self._native_target_identity
@@ -132,6 +138,7 @@ class GsimNativeDamageWorldApplier:
         self._native_target_identity = target_identity
         self._next_seq += 1
         self._previous_event_id = last_event_id
+        self._native_process_id = pid
         self._last_native_time_ns = last_native_time
         # Even an empty world ACK is a causal barrier: source effects reported
         # in a later tick may not be backdated before this acknowledged tick.
