@@ -19,7 +19,7 @@ This is a **navigation and maintenance guide**, not a replacement for the approv
 | `gate_sources/` | 2 | Druid P2 source catalogue/RED input artifacts | Keep distinct from gate verdicts and static config; relocation requires importer/test audit |
 | `gate_evidence/` | 2 | Machine-generated Druid P2 gate verdict JSON; the current gate CLI defaults here | Do not move until CLI option/default and tests have migrated |
 | `fixtures/` | 1 | Historical held-out Druid L20 build | Candidate for `tests/fixtures/` after search for absolute/relative path consumers |
-| `tests/release/` | 2 | Explicit release-only suite (migrated from `release_tests/`); normal pytest collection skips this folder | Run with `scripts/commands/run-release-smoke.sh` or direct `pytest -q tests/release` |
+| `tests/release/` | 3 | Explicit release-only suite (migrated from `release_tests/`); normal pytest collection skips this folder | Run with `scripts/commands/run-release-smoke.sh` or direct `pytest -q tests/release` |
 | `integrations/` | 57 | MythicSim Go world-boundary overlays and Rust native diagnostics/search adapters; pinned engines are external | Add Rust/Go adapters here only as real runnable integrations with pinned revisions |
 | `.github/` | 2 | Public workflow definitions; retain controlled triggers and exact-HEAD evidence | Extend acceptance CI incrementally; green compilation is not a P7 PASS |
 
@@ -50,7 +50,7 @@ The **target direction** below is an architecture rule for future small changes,
 
 Never rename or merge these directories to make them visually uniform without updating the real readers and regression tests.
 
-## Root launcher cleanup — issue #14 phase 2A
+## Historical root launcher cleanup — private issue #14 phase 2A
 
 Auxiliary wrappers for validation (`run-validation-*`), release/listener smoke,
 service start/stop and Wowhead/talents capture now live in
@@ -72,7 +72,7 @@ implicit recursion, while explicit `pytest tests/release` still collects both
 release modules. Bash/PowerShell smoke wrappers point to the new directory.
 A focused test verifies both collection modes in an isolated miniature suite.
 
-## Root launcher cleanup — issue #14 phase 2B
+## Historical root launcher cleanup — private issue #14 phase 2B
 
 Ten alternate Bash/PowerShell launchers (`run-fast`, `run-both`, `run-forever`,
 `run-v2`, `run-mc`) now live under [`scripts/commands/`](../scripts/commands/README.md).
@@ -94,7 +94,7 @@ Long-term desirable consolidation: move auxiliary CLI wrappers into `scripts/` o
 
 ## Small, independently reviewable work items
 
-1. **Root launcher cleanup** — [historical private issue #14](https://github.com/dosibjrn/mage-level-sim/issues/14). Phases 2A/2B relocate auxiliary and alternate launchers; preserve root `./run.sh` / `./run.ps1`. Legacy coverage reports remain a separately audited optional move.
+1. **Completed root launcher cleanup (historical)** — [historical private issue #14](https://github.com/dosibjrn/mage-level-sim/issues/14). Phases 2A/2B relocate auxiliary and alternate launchers; preserve root `./run.sh` / `./run.ps1`. Legacy coverage reports remain a separately audited optional move.
 2. **Gate config & evidence consolidation** — identify every reference to `gate_config`, `gate_sources`, `gate_evidence` and `config/validation`; introduce a resolver/compatibility tests; move **one** class of files in a separate branch.
 3. **Fixture and acceptance test consolidation** — release-only modules live in `tests/release/` (excluded from default pytest discovery); next audit the standalone `fixtures/` reader and move only after path-consumer validation.
 4. **Tools/tests hierarchy** — independently classify the 293 tracked `tools/` paths and 668 tracked `tests/` paths. Start with a single narrow functional group and preserve public CLI/module imports; do **not** wholesale rename hundreds of files.
