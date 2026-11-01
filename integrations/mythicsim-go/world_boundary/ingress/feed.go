@@ -24,6 +24,8 @@ type worldTick struct {
     PreviousWorldACKID string `json:"previous_world_ack_id"`
     SelectedTargetID string `json:"selected_target_id"`
     DistanceYards float64 `json:"distance_yards"`
+    WorldTargetHealthBefore float64 `json:"world_target_health_before"`
+    WorldTargetMaxHealth float64 `json:"world_target_max_health"`
     WorldSource string `json:"world_source"`
     RangeOnly bool `json:"range_only"`
     FacingApplied bool `json:"facing_applied"`
@@ -59,6 +61,12 @@ func (v *tickValidator) validate(t worldTick) error {
     }
     if math.IsNaN(t.DistanceYards) || math.IsInf(t.DistanceYards, 0) || t.DistanceYards < 0 {
         return errors.New("WORLD_TICK_DISTANCE_INVALID")
+    }
+    if math.IsNaN(t.WorldTargetHealthBefore) || math.IsInf(t.WorldTargetHealthBefore,0) ||
+        math.IsNaN(t.WorldTargetMaxHealth) || math.IsInf(t.WorldTargetMaxHealth,0) ||
+        t.WorldTargetMaxHealth<=0 || t.WorldTargetHealthBefore<=0 ||
+        t.WorldTargetHealthBefore>t.WorldTargetMaxHealth {
+        return errors.New("WORLD_TICK_TARGET_HEALTH_INVALID")
     }
     digest, err := hex.DecodeString(t.WorldSHA256)
     if err != nil || len(digest) != 32 || len(t.WorldSHA256) != 64 {

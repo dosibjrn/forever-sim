@@ -68,6 +68,8 @@ def test_real_gsim_moving_target_emits_two_serial_range_ticks():
     feed = GsimGoRangeFeed(runtime, native_player_index=0)
     one = feed.next_tick()
     assert one["distance_yards"] == 20.
+    assert one["world_target_health_before"] == 500.
+    assert one["world_target_max_health"] == 500.
     with pytest.raises(GoWorldRangeError, match="PREVIOUS_NATIVE_RANGE_RECEIPT_MISSING"):
         feed.next_tick()
     ack = feed.accept_range_receipt(receipt(one))
@@ -98,3 +100,14 @@ def test_mismatched_receipts_and_live_world_mutation_fail_closed():
 def test_fake_runtime_not_accepted_as_gsim():
     with pytest.raises(Exception, match="WORLD_CONTROLLER_NOT_GSIM"):
         GsimGoRangeFeed(sample(), native_player_index=0)
+
+
+
+def test_partial_real_gsim_health_is_projected_before_first_native_action():
+    runtime = _runtime()
+    runtime.targets["m1"].health = 75.
+    feed = GsimGoRangeFeed(runtime, native_player_index=0)
+    tick = feed.next_tick()
+    assert tick["world_target_health_before"] == 75.
+    assert tick["world_target_max_health"] == 500.
+    assert tick["selected_target_id"] == "m1"

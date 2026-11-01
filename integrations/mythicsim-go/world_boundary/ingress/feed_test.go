@@ -10,7 +10,8 @@ func goodTick(seq uint64, ms int64) worldTick {
     return worldTick{Type:"gsim_world_range_tick", Protocol:protocol, Sequence:seq,
         ClockMS:ms, NativeClockNS:ms*1000000, NativePlayerIndex:0,
         WorldSHA256:strings.Repeat("a",64), SelectedTargetID:"m1",
-        WorldSource:"gsim.CombatRuntime", DistanceYards:20, RangeOnly:true}
+        WorldSource:"gsim.CombatRuntime", DistanceYards:20,
+        WorldTargetHealthBefore:1000,WorldTargetMaxHealth:1000,RangeOnly:true}
 }
 func TestWorldRangeFeedSerialLiveTicks(t *testing.T) {
     v:=&tickValidator{}
@@ -28,6 +29,9 @@ func TestWorldRangeFeedRejectReplayAndBadSource(t *testing.T) {
         func(x *worldTick){x.FacingApplied=true},
         func(x *worldTick){x.RangeOnly=false},
         func(x *worldTick){x.NativeActionACK=true},
+        func(x *worldTick){x.WorldTargetHealthBefore=0},
+        func(x *worldTick){x.WorldTargetHealthBefore=1001},
+        func(x *worldTick){x.WorldTargetMaxHealth=math.NaN()},
     } {
         x:=goodTick(0,0);mutate(&x);if err:=(&tickValidator{}).validate(x);err==nil {t.Fatalf("accepted invalid %+v",x)}
     }

@@ -93,8 +93,18 @@ class GsimGoRangeFeed:
     def next_tick(self) -> dict:
         if self._pending is not None:
             raise GoWorldRangeError("PREVIOUS_NATIVE_RANGE_RECEIPT_MISSING")
-        projection = _projection_from_snapshot(self._snapshot(self._runtime),
+        world = self._snapshot(self._runtime)
+        projection = _projection_from_snapshot(world,
             sequence=self._sequence, native_player_index=self._native_player_index)
+        # First native decision (and each new serial target) must consume the
+        # actual gsim target's starting HP, not the native request's full HP.
+        selected = projection["selected_target_id"]
+        health = _finite(world["enemies"][selected]["health"], "WORLD_TARGET_HEALTH")
+        max_health = _finite(self._runtime.targets[selected].max_health, "WORLD_TARGET_MAX_HEALTH")
+        if health <= 0 or max_health <= 0 or health > max_health:
+            raise GoWorldRangeError("WORLD_TARGET_HEALTH_INVALID")
+        projection["world_target_health_before"] = health
+        projection["world_target_max_health"] = max_health
         if projection["clock_ms"] <= self._last_clock_ms:
             raise GoWorldRangeError("WORLD_CLOCK_NOT_MONOTONIC")
         self._pending = projection
