@@ -183,6 +183,125 @@ def _evaluate_concurrent_source_packs(candidate, *, level, mobs, pack_size,
         'events':event_count,'elapsed_wall_s':wall_elapsed,
         'elapsed_cpu_s':cpu_elapsed}
 
+
+
+def _prepare_retained_companions(ir, actor):
+    """Create source pets once and apply source stat links once at spawn.
+
+    CombatRuntime applies actor_links at constructor time; this evaluator
+    constructs a new encounter runtime for each mob. Passing actor_links on
+    every encounter would *stack* add_scaled owner/pet stat inheritance even
+    though the pet did not respawn. Static source links belong to the shared
+    ActorState lifetime, not the per-target CombatRuntime lifetime.
+    """
+    from src.game.runtime.actor_links import apply_actor_link_modifiers
+    companions=tuple(ActorState.from_ir(definition,ir.resources)
+                     for definition in ir.companions)
+    actors={actor.id:actor}
+    for companion in companions:
+        if companion.id in actors:
+            raise ValueError('PERSISTENT_COMPANION_DUPLICATE_ACTOR_ID')
+        actors[companion.id]=companion
+    applied=apply_actor_link_modifiers(actors,tuple(ir.actor_links))
+    return companions,applied
+
+
+
+
+def _source_persistent_companion_policies(ir, companions) -> dict:
+    """Require one source-backed executable policy for each retained pet.
+
+    Running only the player's execute_priority_policy() with an attached pet
+    silently drops pet actions. Use the repository's shared multi-actor policy
+    driver, not a class-specific pet skill or fabricated DPS contribution.
+    """
+    owners={pet.id for pet in companions}
+    policies={}
+    for policy in ir.policies:
+        if not policy.provenance.get('companion_policy'):
+            continue
+        owner=str(policy.provenance.get('owner_actor_id',''))
+        if owner not in owners or owner in policies:
+            raise ValueError('PERSISTENT_COMPANION_SOURCE_POLICY_ID_MISMATCH')
+        policies[owner]=policy
+    if set(policies)!=owners:
+        raise ValueError('PERSISTENT_COMPANION_SOURCE_POLICY_MISSING')
+    return policies
+
+
+
+def _unpersisted_companion_periodics(runtime, companions) -> tuple[str,...]:
+    """Detect pet-owned aura ticks the shared runtime cannot carry across pulls.
+
+    CombatRuntime.persist_actor_periodics currently transfers only the primary
+    actor's queue into ActorState. Its end-of-combat drain discards other
+    actors' future events. Before that happens, reject still-current
+    companion actor-periodics rather than certifying a shortened DoT/HoT.
+    """
+    pets={pet.id:pet for pet in companions}
+    if not pets:
+        return ()
+    pending=set()
+    for _,_,event in runtime.queue._heap:
+        pet=pets.get(event.actor_id)
+        if pet is None or event.kind not in ('PeriodicTick','AuraExpired'):
+            continue
+        if event.payload.get('aura_scope')!='actor':
+            continue
+        aura=pet.active_auras.get(str(event.payload.get('aura_id')))
+        if aura is None or int(event.payload.get('generation',-1))!=aura.generation:
+            continue
+        if float(event.time_s)>float(pet.current_time_s)+1e-9:
+            pending.add(str(event.action_id))
+    return tuple(sorted(pending))
+
+
+def _persistent_companion_state_receipt(companions) -> dict:
+    """Immutable evidence for source-pet state across combat and paid downtime."""
+    return {pet.id:{
+        'clock_s':float(pet.current_time_s),
+        'resources':{name:float(value) for name,value in sorted(pet.resources.items())},
+        'cooldown_ready_s':{name:float(value) for name,value
+                            in sorted(pet.cooldown_ready_s.items())},
+        'auras':sorted(pet.active_auras),
+    } for pet in companions}
+
+
+def _carry_persistent_companion_clocks(companions, *, actor_time_s: float) -> None:
+    """Advance retained pets through paid noncombat time without a respawn.
+
+    Production CombatRuntime requires every actor to share an encounter clock.
+    Reconstructing ActorState.from_ir() each pull silently resets the pet's
+    resources/cooldowns (and starts it at zero even after player recovery).
+    Regen and aura expiry must be paid along the same monotonic player clock.
+    Actor-owned queued periodics need the real shared runtime, not silent
+    event dropping, and therefore remain an explicit implementation error.
+    """
+    from math import isfinite
+    target=float(actor_time_s)
+    if not isfinite(target):
+        raise ValueError('INVALID_PERSISTENT_COMPANION_TARGET_CLOCK')
+    for companion in companions:
+        current=float(companion.current_time_s)
+        if (not isfinite(current) or target+1e-12<current
+                or companion.pending_actor_periodic_events):
+            raise ValueError('PERSISTENT_COMPANION_CLOCK_OR_PERIODICS_UNSUPPORTED')
+    for companion in companions:
+        current=float(companion.current_time_s)
+        if target<=current:
+            continue
+        expiries=sorted({
+            float(aura.expires_at_s) for aura in companion.active_auras.values()
+            if current < float(aura.expires_at_s) < target
+        })
+        for next_time in [*expiries,target]:
+            if next_time<=current:continue
+            companion.regenerate_for(next_time-current)
+            companion.current_time_s=next_time
+            companion.expire_elapsed_auras(next_time)
+            current=next_time
+
+
 def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, mobs: int, max_wall_s: float | None = None,
                                   max_total_events: int | None = None, max_cpu_s: float | None = None,
                                   recovery_policy: BetweenPullPolicy | None = None,
@@ -219,6 +338,10 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
                             movement_speed_yards_s=movement_speed_yards_s)
     ir=candidate.ir
     actor=ActorState.from_ir(ir.actor,ir.resources,ir.modes)
+    # Retain companion ActorState across ALL pulls, like the player actor;
+    # recreating pet actors inside the loop resets resources and clock.
+    companions,companion_stat_links=_prepare_retained_companions(ir,actor)
+    companion_policies=_source_persistent_companion_policies(ir,companions)
     metadata=target_combat_metadata(ir) if ir.provenance.get('target_combat_profile') else {}
     events=0; kills=[]; recoveries=[]; maintenance_elapsed=0.; maintenance_casts=0;maintenance_events=0;skip_count=0;between_pull_events=0;hot_casts=0;full_recovery_count=0;carried_hot_ticks_at_pull=0;carried_hot_heals_in_combat=0
     executed_source_actions=Counter()
@@ -260,6 +383,16 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         maintenance_elapsed+=upkeep_s;maintenance_casts+=upkeep_casts
         maintenance_events+=upkeep_events;events+=upkeep_events
         at_start=float(actor.current_time_s)
+        # Recovery/travel/upkeep advanced the persistent PLAYER clock. Catch
+        # up retained companions through the same paid downtime BEFORE the
+        # next CombatRuntime constructor checks shared actor time.
+        try:
+            _carry_persistent_companion_clocks(companions,actor_time_s=at_start)
+        except ValueError as exc:
+            return {'status':'BLOCKED_PERSISTENT_COMPANION_STATE',
+                    'mob_completed':index,'reason':str(exc),
+                    'events':events,'elapsed_wall_s':monotonic()-start}
+        companion_before=_persistent_companion_state_receipt(companions) if trace_pulls else {}
         resources_before={key:actor.resource_amount(key) for key in ('health','mana','energy')}
         ready_long_cooldowns={aid:float(actor.cooldown_ready_s.get(aid,0.0))<=at_start+1e-7
                               for aid in long_actions}
@@ -270,7 +403,7 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         carried_hot_ticks_at_pull+=sum(e.kind=='PeriodicTick' for e in actor.pending_actor_periodic_events)
         runtime=CombatRuntime(actor=actor,target=target,
             spell_power=float(actor.stats.get('spell_power',0.0)),auto_attacks=ir.auto_attacks,
-            companions=tuple(ActorState.from_ir(d,()) for d in ir.companions),
+            companions=companions,
             timed_summons=ir.timed_summons,incoming_attacks=ir.incoming_attacks,
             mitigation_rules=ir.mitigation_rules,triggers=ir.triggers)
         runtime.event_budget_cap=None if max_total_events is None else max_total_events-events
@@ -279,19 +412,44 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         runtime.wall_deadline_ns=wall_deadline
         opening,skipped=opening_for_persistent_actor(
             opening_action_ids=candidate.opening,actions=ir.actions,actor=actor)
+        if companions and opening:
+            # The current shared multi-actor driver does not yet support a
+            # strict owner opening prefix while the pet acts concurrently.
+            # Never silently skip the prefix or substitute a pet-auto proxy.
+            return {'status':'BLOCKED_PERSISTENT_COMPANION_OPENING_POLICY',
+                    'mob_completed':index,'pending_opening':list(opening)}
         try:
-            result=execute_priority_policy(policy=candidate.policy,actions=ir.actions,
-                runtime=runtime,opening_action_ids=opening,max_actions=256)
+            if companions:
+                from src.game.multi_actor_policy import execute_multi_actor_priority_policies
+                result=execute_multi_actor_priority_policies(
+                    runtime=runtime,
+                    policies={actor.id:candidate.policy,**companion_policies},
+                    actions=ir.actions,max_time_s=180.,max_iterations=2048)
+                unsupported_periodics=_unpersisted_companion_periodics(runtime,companions)
+                if unsupported_periodics:
+                    return {'status':'BLOCKED_PERSISTENT_COMPANION_PERIODIC_CARRY',
+                        'mob_completed':index,
+                        'source_actions':list(unsupported_periodics),
+                        'reason':'SHARED_COMBATRUNTIME_TRANSFERS_ONLY_PRIMARY_ACTOR_PERIODICS',
+                        'events':events+runtime.event_transitions}
+                runtime.run_until_idle(preserve_actor_periodics=True)
+                timeline=runtime.result()
+            else:
+                result=execute_priority_policy(policy=candidate.policy,actions=ir.actions,
+                    runtime=runtime,opening_action_ids=opening,max_actions=256)
+                timeline=result.timeline
         except (EventTransitionBudgetExceeded,ComputeDeadlineExceeded) as exc:
             return {'status':'BLOCKED_EVALUATION_COMPUTE_BUDGET','mob_completed':index,
                 'reason':type(exc).__name__,'events':events+exc.events_processed,
                 'elapsed_cpu_s':process_time()-cpu_begin,'elapsed_wall_s':monotonic()-start}
         executed_source_actions.update(str(row['action_id']) for row in result.selected_actions)
-        proc_events=[e for e in result.timeline.events if e.kind=='ControlApplied'
+        proc_events=[e for e in timeline.events if e.kind=='ControlApplied'
                      and 'proc_triggered' in e.payload]
         control_proc_attempts+=len(proc_events)
         control_proc_triggered+=sum(bool(e.payload['proc_triggered']) for e in proc_events)
-        if result.stopped_reason or not result.timeline.target_defeated or not actor.resource_positive('health') or not result.selected_actions:
+        unsuccessful_reason=(result.stopped_reason not in (None,'','target_defeated')
+                             if companions else bool(result.stopped_reason))
+        if unsuccessful_reason or not timeline.target_defeated or not actor.resource_positive('health') or not result.selected_actions:
             return {'status':'BLOCKED_COMBAT','mob':index+1,
                 'reason':result.stopped_reason or 'death_or_empty_policy',
                 'source_action_counts':dict(sorted(executed_source_actions.items())),
@@ -299,9 +457,10 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
                 'elapsed_wall_s':monotonic()-start}
         selected_action_ids={row['action_id'] for row in result.selected_actions}
         carried_hot_heals_in_combat+=sum(e.kind=='Heal' and e.payload.get('periodic')
-            and e.action_id not in selected_action_ids for e in result.timeline.events)
-        kill=float(result.timeline.target_death_s)-at_start
+            and e.action_id not in selected_action_ids for e in timeline.events)
+        kill=float(timeline.target_death_s)-at_start
         resources_at_kill={key:actor.resource_amount(key) for key in ('health','mana','energy')}
+        companion_at_kill=_persistent_companion_state_receipt(companions) if trace_pulls else {}
         used_long_cooldowns={aid:sum(a['action_id']==aid for a in result.selected_actions)
                              for aid in long_actions}
         used_long_cooldowns={k:v for k,v in used_long_cooldowns.items() if v}
@@ -315,7 +474,7 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
                       'water_s':0.0,'food_s':0.0,'recovery_method':None}
             elif recovery_policy is None:
                 recovery=recover_actor_to_full(actor=actor,level=level,actions=ir.actions,
-                    start_time_s=float(result.timeline.target_death_s),
+                    start_time_s=float(timeline.target_death_s),
                     healing_power=float(actor.stats.get('spell_power',0.0)),
                     cpu_deadline_ns=cpu_deadline,wall_deadline_ns=wall_deadline)
                 recovery_s=float(recovery.total_s)
@@ -338,15 +497,28 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
             return {'status':'BLOCKED_SOURCE_BETWEEN_PULL_RECOVERY','mob':index+1,
                 'reason':str(exc),'events':events+runtime.event_transitions,
                 'elapsed_wall_s':monotonic()-start}
+        # Bring pets through the same paid downtime as the player. A
+        # completed pull must not leave the final companion clock behind.
+        try:
+            _carry_persistent_companion_clocks(companions,
+                actor_time_s=float(actor.current_time_s))
+        except ValueError as exc:
+            return {'status':'BLOCKED_PERSISTENT_COMPANION_STATE',
+                    'mob_completed':index+1,'reason':str(exc),
+                    'events':events+runtime.event_transitions,
+                    'elapsed_wall_s':monotonic()-start}
         kills.append(kill);recoveries.append(recovery_s)
         if trace_pulls:
             pull_trace.append({
                 'mob':index+1,'target_id':target.id,
-                'pull_started_s':at_start,'kill_finished_s':float(result.timeline.target_death_s),
+                'pull_started_s':at_start,'kill_finished_s':float(timeline.target_death_s),
                 'recovery_finished_s':float(actor.current_time_s),
                 'combat_s':kill,'recovery_s':recovery_s,
                 'health_mana_energy_before':resources_before,
                 'health_mana_energy_at_kill':resources_at_kill,
+                'companion_before':companion_before,
+                'companion_at_kill':companion_at_kill,
+                'companion_after_recovery':_persistent_companion_state_receipt(companions),
                 'health_mana_energy_after_recovery':{key:actor.resource_amount(key)
                     for key in ('health','mana','energy')},
                 'full_recovery':False if final_unsettled else
@@ -360,8 +532,8 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
                 'long_cooldown_timer_ready_at_pull':ready_long_cooldowns,
                 'long_cooldowns_used':used_long_cooldowns,
                 'long_cooldowns_not_ready_at_kill':{
-                    aid:float(ready-float(result.timeline.target_death_s)) for aid,ready in actor.cooldown_ready_s.items()
-                    if aid in long_actions and float(ready)>float(result.timeline.target_death_s)+1e-7},
+                    aid:float(ready-float(timeline.target_death_s)) for aid,ready in actor.cooldown_ready_s.items()
+                    if aid in long_actions and float(ready)>float(timeline.target_death_s)+1e-7},
                 'actions':dict(Counter(a['action_id'] for a in result.selected_actions)),
             })
         if not actor.resource_positive('health') or (must_be_full and
@@ -413,6 +585,9 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         'final_resources':{key:actor.resource_amount(key) for key in ('health','mana','energy')},
         **({'pull_trace':pull_trace,'pull_trace_audit':trace_audit} if trace_pulls else {}),
         'continuous_actor_state':True,'source_only':True,
+        'persistent_companion_count':len(companions),
+        'persistent_source_actor_links_applied_once':list(companion_stat_links),
+        'persistent_companion_final_state':_persistent_companion_state_receipt(companions),
         'elapsed_wall_s':monotonic()-start,'elapsed_cpu_s':process_time()-cpu_begin}
 
 
