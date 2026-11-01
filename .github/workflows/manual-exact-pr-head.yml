@@ -78,13 +78,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Verify checkout, re-check PR head, and execute allowlisted suite
+      - name: Re-check PR head before running untrusted tests
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ inputs.pr_number }}
           EXPECTED_SHA: ${{ steps.verify-pr.outputs.sha }}
-          SUITE: ${{ inputs.suite }}
         run: |
           set -euo pipefail
           actual="$(git rev-parse HEAD)"
@@ -92,6 +91,15 @@ jobs:
           current="$(gh api -H 'Accept: application/vnd.github+json' "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.sha')"
           [[ "$current" == "$EXPECTED_SHA" ]] || { echo 'PR head moved after checkout' >&2; exit 5; }
           echo "Verified checkout HEAD=$actual"
+
+      - name: Execute allowlisted tests without API token
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.verify-pr.outputs.sha }}
+          SUITE: ${{ inputs.suite }}
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_SHA" ]] || exit 4
           sha256sum PROCESS.md OVERALL_PLAN.md
           git lfs ls-files | head -30 || true
           python -m pip install --disable-pip-version-check 'pytest==8.3.5'
