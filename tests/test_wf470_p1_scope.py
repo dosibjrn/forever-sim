@@ -101,3 +101,30 @@ def test_spellbook_observed_role_rejects_wrong_exact_source_identity(tmp_path):
     (tmp_path/'altered.json').write_text(json.dumps(document))
     with pytest.raises(P1SetupError,match='P1_SPELLBOOK_OBSERVED_SCOPE_IDENTITY_DRIFT:780'):
         _load_spellbook_observed_scope_facts(tmp_path,'altered.json',rows)
+
+
+def test_mixed_healing_and_unclassified_positive_source_effect_stays_unresolved(tmp_path):
+    """Real source observation with an added unknown positive effect must not waive P1."""
+    from wf_gate_p1_live import (
+        _source_rows, _load_spellbook_observed_scope_facts, _effect_scope,
+    )
+    from src.game.data.forever.sqlite_talents import DEFAULT_DB
+
+    rows = _source_rows(DEFAULT_DB, 'druid', 30)
+    document = json.loads(
+        (ROOT/'evidence/wf348/druid_spellbook_70338_level1_30.json').read_text()
+    )
+    # The canonical Tranquility observation is healing-only. A newly observed
+    # positive domain with ambiguous shield semantics invalidates that waiver.
+    document['observed_rank_numeric_by_id']['740']['domains'][
+        'heal_or_absorb_per_activation'] = 32.0
+    (tmp_path/'mixed.json').write_text(json.dumps(document))
+    facts = _load_spellbook_observed_scope_facts(tmp_path, 'mixed.json', rows)
+    row740 = next(row for row in rows if row['spell_id'] == 740)
+    assert _effect_scope(row740, facts, {})[0] == 'UNRESOLVED'
+    assert facts[740]['unresolved_domains'] == ['heal_or_absorb_per_activation']
+
+    # A known positive buff remains in scope even if its duration is not an
+    # effect category: do not regress the actual sourced Dash observation.
+    row1850 = next(row for row in rows if row['spell_id'] == 1850)
+    assert _effect_scope(row1850, facts, {})[0] == 'IN_SCOPE'

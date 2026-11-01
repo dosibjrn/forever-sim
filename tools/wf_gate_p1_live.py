@@ -198,6 +198,10 @@ def _effect_scope(row, scope_facts, context_exclusions):
         roles = set(fact['roles'])
         if roles & P1_REQUIRED_ROLES:
             return 'IN_SCOPE', sorted(roles), 'SOURCE_ROLE_FACT'
+        # A positive, unclassified numeric effect can still be a buff/debuff
+        # or control. Never waive P1 on a partial healing-only observation.
+        if fact.get('unresolved_domains'):
+            return 'UNRESOLVED', sorted(roles), 'SOURCE_EFFECT_DOMAIN_UNRESOLVED'
         return 'EXCLUDED', sorted(roles), 'SOURCE_ROLE_FACT'
     if row['name'] in context_exclusions:
         return 'EXCLUDED', ['utility'], str(context_exclusions[row['name']])
@@ -308,8 +312,12 @@ def _load_spellbook_observed_scope_facts(root: Path, spellbook_path: str | None,
                         for domain, amount in domains.items()
                         if domain in _SPELLBOOK_OBSERVED_DOMAIN_ROLES
                         and type(amount) in (int, float) and amount > 0})
+        unknown_positive = sorted(domain for domain, amount in domains.items()
+            if domain not in _SPELLBOOK_OBSERVED_DOMAIN_ROLES
+            and type(amount) in (int, float) and amount > 0)
         if roles:
             facts[spell_id] = {'name': row['name'], 'roles': roles,
+                               'unresolved_domains': unknown_positive,
                                'source_url': observation['source_url']}
     return facts
 
