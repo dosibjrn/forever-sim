@@ -69,17 +69,23 @@ def compare_paired_reports(near: dict, far: dict) -> dict:
         raise ValueError("PAIRED_WORLD_PERTURBATION_ABSENT")
     a, b = _native_spell_signature(near), _native_spell_signature(far)
     observed = a != b
+    action_ack = near["native_spell_action_ack"] or far["native_spell_action_ack"]
+    # A source-owned counter delta is not an applied-world effect. An empty
+    # native event journal cannot establish native→gsim HP→native ACK causality.
+    status = ("NATIVE_SPELL_DELTA_AND_WORLD_ACK_NOT_DRUID_P7"
+              if observed and action_ack else
+              "NATIVE_SPELL_DELTA_WITHOUT_WORLD_ACK_NOT_P7"
+              if observed else "NO_NATIVE_SPELL_DELTA_OBSERVED")
     return {
         "kind": "pinned_go_real_gsim_range_to_native_spell_pair_v1",
-        "status": ("NATIVE_SPELL_DELTA_AND_WORLD_ACK_NOT_DRUID_P7" if observed
-                   else "NO_NATIVE_SPELL_DELTA_OBSERVED"),
+        "status": status,
         "source_revision": near["native_source_revision"],
         "native_binary_sha256": near["native_binary_sha256"],
         "request_sha256": near["native_request_sha256"],
         "scenarios": {"near": near, "far": far},
         "range_perturbation_applied": True,
         "native_spell_counter_delta_observed": observed,
-        "native_spell_action_ack": near["native_spell_action_ack"] or far["native_spell_action_ack"],
+        "native_spell_action_ack": action_ack,
         "druid_l60_balance_proven": False,
         "checkpoint_certified": False,
     }
@@ -109,9 +115,12 @@ def main():
     report = run_pair(args.binary, args.request, ticks=args.ticks)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + "\n")
-    print(report["status"], "(real native event/gsim ACK, NOT Druid P7)")
-    if args.require_native_spell_delta and not report["native_spell_counter_delta_observed"]:
-        raise SystemExit("NATIVE_SPELL_DIFFERENCE_NOT_OBSERVED")
+    print(report["status"], "(native/gsim diagnostic, NOT Druid P7)")
+    if args.require_native_spell_delta:
+        if not report["native_spell_counter_delta_observed"]:
+            raise SystemExit("NATIVE_SPELL_DIFFERENCE_NOT_OBSERVED")
+        if not report["native_spell_action_ack"]:
+            raise SystemExit("NATIVE_SPELL_APPLIED_WORLD_ACK_NOT_OBSERVED")
 
 
 if __name__ == "__main__":
