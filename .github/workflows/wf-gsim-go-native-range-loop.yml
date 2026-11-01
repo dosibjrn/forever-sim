@@ -95,6 +95,14 @@ jobs:
             --request ../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json \
             --ticks 60 --require-native-spell-delta \
             --out ../evidence/gsim-go-paired-spell-metrics-not-ack.json
+      - name: Reject forged gsim world ACK in the real native Go process
+        run: |
+          cd project
+          python tools/wf_gsim_go_live_range_probe.py \
+            --binary ../gsim-go-world-ingress \
+            --request ../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json \
+            --out ../evidence/invalid-ack-unused.json \
+            --expect-invalid-ack-rejected
       - uses: actions/upload-artifact@v4
         if: always()
         with:
