@@ -65,6 +65,11 @@ def run_gsim(root=ROOT, *, class_key="druid", level=20, spec="feral-cat",
     if ability_id is not None and not results:
         raise ValueError("ABILITY_NOT_IN_P1_UNIVERSE:" + str(ability_id))
     observed = sum(x["status"] == "EFFECT_OBSERVED" for x in results)
+    # Measured effect-only progression is not the official gate verdict.
+    # Final P1.10 requires the actual selected backend and full P1 PASS.
+    thresholds = (0.50, 0.80, 0.85, 0.88, 0.91, 0.93, 0.95, 0.97, 0.99)
+    ratio = (observed / len(results)) if results else 0.
+    partial_ticks = sum(ratio + 1e-12 >= limit for limit in thresholds)
     return {"class": class_key, "level": level, "spec": spec, "scenario": scenario,
             "proof_kind": PROOF_KIND,
             "p1_certified": False, "hybrid_rust_executed": False,
@@ -72,6 +77,8 @@ def run_gsim(root=ROOT, *, class_key="druid", level=20, spec="feral-cat",
             "live_p1_current_status": live_p1["status"],
             "checked": len(results), "observed": observed,
             "not_observed": len(results)-observed,
+            "effect_probe_progress_naksut": partial_ticks,
+            "effect_probe_progress_max_before_full_gate": 9,
             "not_relevant_count": len(non_relevant),
             "not_relevant": sorted(non_relevant, key=lambda r:r["spell_id"]),
             "source_acquisition_unresolved_count": len(unresolved),
