@@ -1,0 +1,47 @@
+name: WF61 2nd-work real source-paid replay one-shot
+
+on:
+  push:
+    branches:
+      - work/wf61-paid-trace-clock-audit-20261031
+
+permissions:
+  contents: read
+
+jobs:
+  real-source-paid-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Hydrate actual source SQLite and identify HEAD
+        run: |
+          git lfs pull
+          git rev-parse HEAD
+          file data/forever/staged_druid_l30_talents_70338.sqlite
+      - name: Install runtime dependencies
+        run: python -m pip install --disable-pip-version-check pytest beautifulsoup4
+      - name: Execute real persistent GameIR/CombatRuntime source replay
+        run: |
+          mkdir -p wf61-evidence
+          python tools/wf61_live_persistent_replay.py \
+            --class druid --level 30 \
+            --stage evidence/wf353/WF353_L30_P3_BEST_JOINT_ITEM_STAGE.json \
+            --ability-db data/forever/staged_druid_l30_talents_70338.sqlite \
+            --observations evidence/WF322_DRUID_L20_WEB_TEXT_OBSERVATIONS_70338.json \
+            --control-observations evidence/wf321/druid_l20_control_observations.json \
+            --build-as-of 2026-10-13 --max-wall-s 180 \
+            --out wf61-evidence/actual-gsim-1-2-100.json
+      - name: Upload raw replay even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wf61-2nd-work-source-paid-raw
+          path: wf61-evidence/
+          if-no-files-found: warn
