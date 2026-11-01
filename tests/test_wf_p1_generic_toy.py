@@ -18,6 +18,8 @@ def test_checkpoint_identity_not_hardcoded_to_druid_feral():
     assert baseline["checked"] == other_spec["checked"]
     assert baseline["observed"] == other_spec["observed"]
     assert baseline["observed"] > 0
+    assert baseline["effect_probe_progress_naksut"] == 9
+    assert baseline["effect_probe_progress_max_before_full_gate"] == 9
     assert baseline["hybrid_rust_executed"] is False
     assert other_spec["p1_certified"] is False
     assert other_spec["spec_ability_scope"].endswith("no_fixed_talent_allocation")
