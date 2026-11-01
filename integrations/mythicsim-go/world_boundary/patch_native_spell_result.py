@@ -17,6 +17,20 @@ ORIGINAL = (
     b"\tif sim.CurrentTime >= 0 {\n"
 )
 REPLACEMENT = ORIGINAL + b"\t\trecordWorldDamageForGsim(sim, spell, result, isPeriodic)\n"
+# The upstream engine also adds raw native damage to the encounter-health
+# accumulator before callbacks/APL can read it. In a live world session only
+# the later gsim HP ACK may change that authoritative decision input.
+HEALTH_ORIGINAL = (
+    b"\tif result.Target.Type == EnemyUnit {\n"
+    b"\t\tsim.Encounter.DamageTaken += result.Damage\n"
+    b"\t}\n"
+)
+HEALTH_REPLACEMENT = (
+    b"\tif result.Target.Type == EnemyUnit {\n"
+    b"\t\tsim.Encounter.DamageTaken += result.Damage\n"
+    b"\t\tundoUnackedWorldDamageForGsim(sim, result.Damage)\n"
+    b"\t}\n"
+)
 
 
 def git_blob_sha(raw: bytes) -> str:
@@ -28,12 +42,17 @@ def patch_native_spell_result(path: Path) -> None:
     observed = git_blob_sha(raw)
     if observed != PINNED_BLOB_SHA:
         raise ValueError("PINNED_NATIVE_SPELL_RESULT_BLOB_MISMATCH:" + observed)
-    if raw.count(ORIGINAL) != 1 or b"recordWorldDamageForGsim(" in raw:
+    if (raw.count(ORIGINAL) != 1 or raw.count(HEALTH_ORIGINAL) != 1
+            or b"recordWorldDamageForGsim(" in raw
+            or b"undoUnackedWorldDamageForGsim(" in raw):
         raise ValueError("PINNED_NATIVE_SPELL_HOOK_ANCHOR_INVALID")
-    updated = raw.replace(ORIGINAL, REPLACEMENT, 1)
+    updated = raw.replace(ORIGINAL, REPLACEMENT, 1).replace(
+        HEALTH_ORIGINAL, HEALTH_REPLACEMENT, 1)
     path.write_bytes(updated)
     if updated.count(b"recordWorldDamageForGsim(sim, spell, result, isPeriodic)") != 1:
         raise ValueError("PINNED_NATIVE_SPELL_HOOK_NOT_SINGLE")
+    if updated.count(b"undoUnackedWorldDamageForGsim(sim, result.Damage)") != 1:
+        raise ValueError("PINNED_NATIVE_WORLD_HEALTH_HOOK_NOT_SINGLE")
 
 
 if __name__ == "__main__":
