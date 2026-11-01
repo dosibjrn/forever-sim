@@ -313,6 +313,14 @@ def test_source_resource_presence_must_match_every_snapshot():
 
 def test_source_defined_channel_cannot_be_null_and_health_is_required():
     result = deepcopy(_contract_only())
+    # This two-channel source actor has no energy. Keep the rest of the
+    # evidence consistent so the intentionally null mana is the first error.
+    for row in result['pull_trace']:
+        for field in ('health_mana_energy_before',
+                      'health_mana_energy_at_kill',
+                      'health_mana_energy_after_recovery'):
+            row[field]['energy'] = None
+    result['final_resources']['energy'] = None
     result['pull_trace'][0]['health_mana_energy_before']['mana'] = None
     with pytest.raises(ValueError, match='WF61_INVALID_NUMBER'):
         validate_real_replay(
