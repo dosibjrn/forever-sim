@@ -1,5 +1,6 @@
 name: Live gsim 2D to pinned native Go world-effect ACK (NOT P7)
 # Migration safety: original pull_request triggers intentionally withheld until public baseline and runner are verified.
+# One bounded GREEN run: native source damage cannot speculatively change world-ACK HP.
 on:
   workflow_dispatch:
   # One controlled native build on this implementation branch; this workflow
