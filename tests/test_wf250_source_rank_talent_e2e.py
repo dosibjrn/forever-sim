@@ -30,6 +30,38 @@ def test_mage_l20_promotes_latest_sourced_rank_and_disambiguates_variant():
     assert ir.policies[0].rules[2].action_id == 'frostbolt:7322'
 
 
+
+def test_sourced_rank_upgrade_remains_castable_in_explicit_combat_mode():
+    # Mage's real pinned rank-one provider plus canonical SQLite promotion.
+    # The mode permission is explicit, as in the Druid provider; the upgrade
+    # must not leave it pointing at the superseded rank-one action.
+    from src.game.data.forever import mage
+    from src.game.data.forever.source_rank_overlay import source_enrich_action_ranks
+    from src.game.model.ir import ModeDefinition
+    from src.game.runtime.simulator import action_eligibility
+
+    source = mage.build_source_slice(20)
+    rank_one = next(a for a in source.actions if a.family_key == 'frostbolt')
+    mode = ModeDefinition(id='caster', label='Caster', initial=True,
+                          enabled_action_ids=(rank_one.id,))
+    upgraded = source_enrich_action_ranks(replace(source, modes=(mode,)))
+    frostbolt = next(a for a in upgraded.actions if a.family_key == 'frostbolt')
+    assert frostbolt.id == 'frostbolt:7322'
+    assert upgraded.modes[0].enabled_action_ids == (frostbolt.id,)
+
+    target = TargetState.with_health('source-rank-target', 10000)
+    stale = ActorState.from_ir(upgraded.actor, upgraded.resources, (mode,))
+    assert not action_eligibility(action=frostbolt, actor=stale, target=target).eligible
+
+    actor = ActorState.from_ir(upgraded.actor, upgraded.resources, upgraded.modes)
+    assert action_eligibility(action=frostbolt, actor=actor, target=target).eligible
+    runtime = CombatRuntime(actor=actor, target=target)
+    runtime.schedule_action(frostbolt)
+    runtime.advance_to(frostbolt.cast_time_s + 0.1)
+    assert any(e.kind == 'Damage' and e.action_id == frostbolt.id
+               for e in runtime.result().events)
+
+
 def test_cross_class_source_rank_promotion_and_full_index_visibility():
     mage = build_game_ir_slice(class_key='mage', level=20)
     assert len(mage.talents) == 54
