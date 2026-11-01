@@ -67,7 +67,8 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
         from .source_effect_atoms import verified_class_effect_atoms
         atom_evidence_by_id=verified_class_effect_atoms(
             path,class_key=class_key.strip().lower(),
-            allow_stale_index=db_path is not None)
+            allow_stale_index=(db_path is not None and
+                               path.resolve() != Path(DEFAULT_DB).resolve()))
         from .source_stat_aura_candidates import read_current_candidates
         stat_aura_evidence={int(x['spell_id']):x for x in read_current_candidates(path,class_key=class_key.strip().lower())}
         # Source parser drift is an explicit rank-level blocker. A known IR
