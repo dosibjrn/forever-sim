@@ -1,6 +1,6 @@
-# WoW Forever — PROCESS v2.10 (approved, reorganized)
+# WoW Forever — PROCESS v2.11 (approved, reorganized)
 
-**Scope:** This file governs HOW the project is developed. [OVERALL_PLAN.md](OVERALL_PLAN.md) v5 defines WHAT and the DONE DONE target. The detailed approved gate predicates now live in [docs/gates/](docs/gates/README.md). This is a **structural split of v2.10**, not a gate relaxation or a new approval of altered product goals. Git history preserves the former consolidated PROCESS and its v2.3–v2.10 change records.
+**Scope:** This file governs HOW the project is developed. [OVERALL_PLAN.md](OVERALL_PLAN.md) v5 defines WHAT and the DONE DONE target. The detailed approved gate predicates now live in [docs/gates/](docs/gates/README.md). This preserves the **structural split of v2.10**. **Owner-approved v2.11 (2026-11-01) clarifies P1 only:** selected native MythicSim ability effects are validated directly on that engine without requiring a duplicate Python GameIR/gsim ability wrapper; the actual normative text is in [P1–P2](docs/gates/P1-P2.md), with an [implementation guide](docs/gates/P1_VALIDATION.md). No other gate thresholds or product goals change. Git history preserves the former consolidated PROCESS and its v2.3–v2.10 change records.
 
 ## Authority and change control
 

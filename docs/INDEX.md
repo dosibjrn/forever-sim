@@ -1,8 +1,9 @@
 # Current project documents
 
 - [README](../README.md) — current checkpoint count (0/148), accepted engineering/test milestones and next gate.
-- [PROCESS](../PROCESS.md) — **canonical approved v2.10**, concise governance, engineering workflow and Git promotion policy.
+- [PROCESS](../PROCESS.md) — **canonical approved v2.11**, concise governance, engineering workflow and Git promotion policy.
 - [Gate contracts](gates/README.md) — exact approved P1–P7.5 predicates, runtime/source constraints, and live CLI authority.
+- [P1 native validation guide](gates/P1_VALIDATION.md) — selected MythicSim combat behavior without requiring duplicate Python GameIR.
 - [OVERALL PLAN](../OVERALL_PLAN.md) — **canonical approved v5**, product scope and finish line.
 - [Large assets / Git LFS](LARGE_ASSETS_LFS.md) — current 14-asset hydrated baseline, tracking rules, and verification for future additions.
 - [Repository structure](REPOSITORY_STRUCTURE.md) — src/tests/tools ownership, historical evidence vs gate outputs, safe cleanup phases.
