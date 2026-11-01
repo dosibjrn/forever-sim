@@ -1,0 +1,40 @@
+{
+  "checkpoint": "druid:L30:unrestricted",
+  "checkpoint_scoreboard": "1/148",
+  "druid_L30_decision_records": 0,
+  "druid_L30_per_level_rows": 0,
+  "druid_L30_route_present": false,
+  "gate": "P7_LEGACY_HOLDOUT",
+  "legacy_backend": "legacy",
+  "legacy_endpoint_targets": [
+    "20"
+  ],
+  "legacy_levels": [
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+  ],
+  "preflight_p7": {
+    "checkpoint": "druid:L30:unrestricted",
+    "checkpoint_accepted": false,
+    "gate": "P7_LEGACY_HOLDOUT",
+    "pass": false,
+    "reason": "LEGACY_LEVEL_WINNER_UNPUBLISHED",
+    "status": "BLOCKED"
+  },
+  "required_legacy_full_build_available": false,
+  "runtime_recovery_gap": {
+    "alternate_repeated_pulls": "src/game/multi_pull.py explicitly executes source post_combat mode exit and pre_combat re-entry",
+    "consequence": "L30 Cat/Resto winner and P3 stat weights cannot be accepted under gameplay-parity recovery",
+    "current_persistent_scorer": "src/v2/source_persistent_joint_finalists.py:evaluate_persistent_candidate calls recover_actor_to_full directly with Cat actor",
+    "missing": "opportunistic exit caster + cast HoT + re-enter cat + next mob with active HoT; no forced full mana/health per mob"
+  },
+  "status": "BLOCKED"
+}

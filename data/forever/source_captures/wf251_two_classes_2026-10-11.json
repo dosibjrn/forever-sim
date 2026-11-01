@@ -1,0 +1,289 @@
+{
+  "capture_id": "wf251_two_classes_2026-10-11",
+  "captured_at": "2026-10-11",
+  "classes": [
+    {
+      "class_key": "hunter",
+      "min_level": 10,
+      "max_level": 20,
+      "mana_scenario": {
+        "kind": "explicit_proxy",
+        "base": 180,
+        "per_level": 16,
+        "regen_per_s": 3,
+        "authority": "not_a_game_fact"
+      },
+      "auto": {
+        "kind": "ranged",
+        "spell_id": 75,
+        "source_url": "https://www.wowhead.com/forever/spell=75",
+        "swing_time_s": 2.8,
+        "dps_proxy_base": 6,
+        "dps_proxy_per_level": 0.4,
+        "exclusive_with_casts": true,
+        "caveat": "weapon_speed_and_equipped_ranged_item_not_source_verified"
+      },
+      "provenance": [
+        "https://www.wowhead.com/forever/spell=75"
+      ],
+      "actions": [
+        {
+          "spell_id": 1978,
+          "family_key": "serpent_sting",
+          "min_level": 4,
+          "cost": 15,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 0,
+          "effects": [
+            {
+              "kind": "periodic_damage",
+              "school": "nature",
+              "total": 10,
+              "duration": 15,
+              "tick": 3
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=1978",
+          "caveats": []
+        },
+        {
+          "spell_id": 13549,
+          "family_key": "serpent_sting",
+          "min_level": 10,
+          "cost": 30,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 0,
+          "effects": [
+            {
+              "kind": "periodic_damage",
+              "school": "nature",
+              "total": 30,
+              "duration": 15,
+              "tick": 3
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=13549",
+          "caveats": []
+        },
+        {
+          "spell_id": 13550,
+          "family_key": "serpent_sting",
+          "min_level": 18,
+          "cost": 50,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 0,
+          "effects": [
+            {
+              "kind": "periodic_damage",
+              "school": "nature",
+              "total": 60,
+              "duration": 15,
+              "tick": 3
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=13550",
+          "caveats": []
+        },
+        {
+          "spell_id": 3044,
+          "family_key": "arcane_shot",
+          "min_level": 6,
+          "cost": 25,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 6,
+          "effects": [
+            {
+              "kind": "direct_damage",
+              "school": "arcane",
+              "min": 20,
+              "max": 20,
+              "spell_power_coefficient": 0
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=3044",
+          "caveats": []
+        },
+        {
+          "spell_id": 14281,
+          "family_key": "arcane_shot",
+          "min_level": 12,
+          "cost": 35,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 6,
+          "effects": [
+            {
+              "kind": "direct_damage",
+              "school": "arcane",
+              "min": 26,
+              "max": 26,
+              "spell_power_coefficient": 0
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=14281",
+          "caveats": []
+        },
+        {
+          "spell_id": 14282,
+          "family_key": "arcane_shot",
+          "min_level": 20,
+          "cost": 50,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 6,
+          "effects": [
+            {
+              "kind": "direct_damage",
+              "school": "arcane",
+              "min": 39,
+              "max": 39,
+              "spell_power_coefficient": 0
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=14282",
+          "caveats": []
+        }
+      ]
+    },
+    {
+      "class_key": "paladin",
+      "min_level": 10,
+      "max_level": 20,
+      "mana_scenario": {
+        "kind": "pinned_class_level_fixture",
+        "fixture": "src/rulesets/forever/data/fixtures/forever_2026_09_26/shared/class_level_stats.json",
+        "regen_per_s": 3,
+        "authority": "inherited_vanilla_not_verified_forever"
+      },
+      "auto": {
+        "kind": "melee",
+        "source_url": "https://www.wowhead.com/forever/spell=1866",
+        "swing_time_s": 2.8,
+        "dps_proxy_base": 6,
+        "dps_proxy_per_level": 0.4,
+        "exclusive_with_casts": false,
+        "caveat": "ordinary_melee_auto_and_weapon_speed_scenario_proxy"
+      },
+      "provenance": [
+        "https://www.wowhead.com/forever/spell=1866",
+        "https://www.wowhead.com/forever/spell=647"
+      ],
+      "actions": [
+        {
+          "spell_id": 639,
+          "family_key": "holy_light",
+          "min_level": 6,
+          "cost": 60,
+          "cast_s": 2.5,
+          "gcd_s": 1.5,
+          "cooldown_s": 0,
+          "effects": [
+            {
+              "kind": "heal",
+              "min": 82,
+              "max": 96,
+              "spell_power_coefficient": 0.714
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=639",
+          "caveats": []
+        },
+        {
+          "spell_id": 647,
+          "family_key": "holy_light",
+          "min_level": 14,
+          "cost": 110,
+          "cast_s": 2.5,
+          "gcd_s": 1.5,
+          "cooldown_s": 0,
+          "effects": [
+            {
+              "kind": "heal",
+              "min": 151,
+              "max": 176,
+              "spell_power_coefficient": 0.714
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=647",
+          "caveats": []
+        },
+        {
+          "spell_id": 679,
+          "family_key": "holy_strike",
+          "min_level": 6,
+          "cost": 5,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 10,
+          "effects": [
+            {
+              "kind": "weapon_plus_holy",
+              "school": "holy",
+              "multiplier": 0.25,
+              "min": 11,
+              "max": 14,
+              "spell_power_coefficient": 0.429
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=679",
+          "caveats": [
+            "normalized_weapon_time_not_verified",
+            "holy_school_armor_split_not_verified"
+          ]
+        },
+        {
+          "spell_id": 678,
+          "family_key": "holy_strike",
+          "min_level": 12,
+          "cost": 9,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 10,
+          "effects": [
+            {
+              "kind": "weapon_plus_holy",
+              "school": "holy",
+              "multiplier": 0.29,
+              "min": 15,
+              "max": 20,
+              "spell_power_coefficient": 0.429
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=678",
+          "caveats": [
+            "normalized_weapon_time_not_verified",
+            "holy_school_armor_split_not_verified"
+          ]
+        },
+        {
+          "spell_id": 1866,
+          "family_key": "holy_strike",
+          "min_level": 20,
+          "cost": 12,
+          "cast_s": 0,
+          "gcd_s": 1.5,
+          "cooldown_s": 10,
+          "effects": [
+            {
+              "kind": "weapon_plus_holy",
+              "school": "holy",
+              "multiplier": 0.32,
+              "min": 18,
+              "max": 22,
+              "spell_power_coefficient": 0.429
+            }
+          ],
+          "source_url": "https://www.wowhead.com/forever/spell=1866",
+          "caveats": [
+            "normalized_weapon_time_not_verified",
+            "holy_school_armor_split_not_verified"
+          ]
+        }
+      ]
+    }
+  ]
+}

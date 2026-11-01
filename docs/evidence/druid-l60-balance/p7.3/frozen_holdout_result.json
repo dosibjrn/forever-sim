@@ -1,0 +1,1551 @@
+{
+  "engine": "forever-rust-0.1.0",
+  "schema_version": 2,
+  "source_revision": "a667dce8492bd9fb94269a9f864289cb74006775",
+  "identity": {
+    "engine": "forever-engine",
+    "package_version": "0.1.0",
+    "go_reference_revision": "a667dce8492bd9fb94269a9f864289cb74006775",
+    "client_build": "1.60.1.70425",
+    "release_manifest_schema_version": 1
+  },
+  "scenario_id": "rust",
+  "request_sha256": "b8a308bc369c82f1c160c2f05fd7b7175d5e86e5887936135caded031c660d5d",
+  "elapsed_ns": 412237470,
+  "result": {
+    "avgIterationDuration": 120.19638226192225,
+    "encounterMetrics": {
+      "targets": [
+        {
+          "actions": [
+            {
+              "id": {
+                "otherId": "OtherActionMove"
+              },
+              "isMelee": true,
+              "targets": [
+                {},
+                {
+                  "unitIndex": 1
+                }
+              ]
+            },
+            {
+              "id": {
+                "otherId": "OtherActionAttack",
+                "tag": 1
+              },
+              "isMelee": true,
+              "spellSchool": 1,
+              "targets": [
+                {},
+                {
+                  "unitIndex": 1
+                }
+              ]
+            },
+            {
+              "id": {
+                "otherId": "OtherActionAttack",
+                "tag": 2
+              },
+              "isMelee": true,
+              "spellSchool": 1,
+              "targets": [
+                {},
+                {
+                  "unitIndex": 1
+                }
+              ]
+            }
+          ],
+          "auras": [
+            {
+              "aggregatorData": {
+                "n": 4000,
+                "sumSq": 58092888.758757375
+              },
+              "id": {
+                "spellId": 20355,
+                "tag": -1
+              },
+              "procsAvg": 1.0,
+              "uptimeSecondsAvg": 120.19638226192204,
+              "uptimeSecondsStdev": 8.720772949415506
+            },
+            {
+              "aggregatorData": {
+                "n": 4000,
+                "sumSq": 58092888.758757375
+              },
+              "effects": [
+                {
+                  "category": "CurseOfElements",
+                  "uptimeSecondsAvg": 120.19638226192225
+                }
+              ],
+              "id": {
+                "spellId": 1311680,
+                "tag": -1
+              },
+              "procsAvg": 1.0,
+              "uptimeSecondsAvg": 120.19638226192204,
+              "uptimeSecondsStdev": 8.720772949415506
+            },
+            {
+              "aggregatorData": {
+                "n": 4000,
+                "sumSq": 58092888.758757375
+              },
+              "effects": [
+                {
+                  "category": "MinorArmorReductionArmorAdd",
+                  "uptimeSecondsAvg": 120.19638226192225
+                }
+              ],
+              "id": {
+                "spellId": 9907,
+                "tag": -1
+              },
+              "procsAvg": 1.0,
+              "uptimeSecondsAvg": 120.19638226192204,
+              "uptimeSecondsStdev": 8.720772949415506
+            },
+            {
+              "aggregatorData": {
+                "n": 4000,
+                "sumSq": 34399883.624971956
+              },
+              "id": {
+                "spellId": 24977
+              },
+              "procsAvg": 7.71075,
+              "uptimeSecondsAvg": 92.40346773837825,
+              "uptimeSecondsStdev": 7.846658917365888
+            },
+            {
+              "aggregatorData": {
+                "n": 4000,
+                "sumSq": 46490896.57128107
+              },
+              "id": {
+                "spellId": 24977
+              },
+              "procsAvg": 7.71075,
+              "uptimeSecondsAvg": 107.44155182668293,
+              "uptimeSecondsStdev": 8.890280304606481
+            },
+            {
+              "aggregatorData": {
+                "n": 4000,
+                "sumSq": 48364646.16616631
+              },
+              "id": {
+                "spellId": 9835,
+                "tag": 1
+              },
+              "procsAvg": 7.45125,
+              "uptimeSecondsAvg": 109.60351941074704,
+              "uptimeSecondsStdev": 8.84477666872233
+            },
+            {
+              "aggregatorData": {
+                "n": 4000
+              },
+              "effects": [
+                {
+                  "category": "MinorArmorReductionArmorAdd"
+                }
+              ],
+              "id": {
+                "spellId": 9907
+              }
+            },
+            {
+              "aggregatorData": {
+                "n": 4000
+              },
+              "id": {
+                "otherId": "OtherActionMove"
+              }
+            }
+          ],
+          "dps": {
+            "aggregatorData": {
+              "n": 4000
+            },
+            "hist": {
+              "0": 4000
+            },
+            "minSeed": "1300651010"
+          },
+          "dtps": {
+            "aggregatorData": {
+              "n": 4000,
+              "sumSq": 2112346330.182407
+            },
+            "avg": 725.4209773756572,
+            "hist": {
+              "560": 1,
+              "580": 3,
+              "590": 1,
+              "600": 4,
+              "610": 14,
+              "620": 11,
+              "630": 28,
+              "640": 46,
+              "650": 82,
+              "660": 113,
+              "670": 183,
+              "680": 242,
+              "690": 257,
+              "700": 284,
+              "710": 348,
+              "720": 383,
+              "730": 371,
+              "740": 332,
+              "750": 318,
+              "760": 254,
+              "770": 211,
+              "780": 173,
+              "790": 120,
+              "800": 90,
+              "810": 66,
+              "820": 20,
+              "830": 20,
+              "840": 11,
+              "850": 11,
+              "860": 2,
+              "870": 1
+            },
+            "max": 869.6133626406063,
+            "maxSeed": "1300647958",
+            "min": 561.3152860648559,
+            "minSeed": "1300648560",
+            "stdev": 43.023111567481536
+          },
+          "hps": {
+            "aggregatorData": {
+              "n": 4000
+            },
+            "hist": {
+              "0": 4000
+            },
+            "minSeed": "1300651010"
+          },
+          "name": "Target 1",
+          "threat": {
+            "aggregatorData": {
+              "n": 4000
+            },
+            "hist": {
+              "0": 4000
+            },
+            "minSeed": "1300651010"
+          },
+          "tmi": {
+            "aggregatorData": {
+              "n": 4000
+            },
+            "hist": {
+              "0": 4000
+            },
+            "minSeed": "1300651010"
+          },
+          "tto": {
+            "aggregatorData": {
+              "n": 4000
+            },
+            "hist": {
+              "0": 4000
+            },
+            "minSeed": "1300651010"
+          }
+        }
+      ]
+    },
+    "firstIterationDuration": 111.956100244,
+    "iterationsDone": 4000,
+    "logs": "[0.00] [Target 1] Aura gained: {SpellID: 20355, Tag: -1}\n[0.00] [Target 1] Aura gained: {SpellID: 1311680, Tag: -1}\n[0.00] [Target 1] Aura gained: {SpellID: 9907, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 17056}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 24932, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 10494, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 24907, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 25362, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 25360, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 25580, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 25587, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 23028, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 27681, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 21850, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 19900, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 10535, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 25898, Tag: -1}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 25918, Tag: -1}\n[-4.50] [balance-druid (#1)] Casting {SpellID: 24858} (Cost = 391.500, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[-4.50] [balance-druid (#1)] Completed cast {SpellID: 24858}\n[-4.50] [balance-druid (#1)] Spent 391.500 mana from {SpellID: 24858} (6574.000 --> 6182.500) of 6574 total.\n[-4.50] [balance-druid (#1)] Aura gained: {SpellID: 24858}\n[-3.00] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 3s, GCD = 1.5s, Effective Time = 3s)\n[-2.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (6182.500 --> 6208.500) of 6574 total.\n[-0.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (6208.500 --> 6234.500) of 6574 total.\n[0.00] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[0.00] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (6234.500 --> 5952.300) of 6574 total.\n[0.00] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1105.1, AfterAttackerMods:1276.4, AfterResistances:1276.4, AfterTargetMods:1404.1, AfterOutcome:1404.1, AfterPostOutcome:1404.1\n[0.00] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1404.079 damage (SpellSchool: 64). (Threat: 1404.079)\n[0.00] [balance-druid (#1)] Casting {SpellID: 1259799} (Cost = 0.000, Cast Time = 0s, GCD = 0s, Effective Time = 0s)\n[0.00] [balance-druid (#1)] Completed cast {SpellID: 1259799}\n[0.00] [balance-druid (#1)] Aura gained: {SpellID: 1259799}\n[0.00] [balance-druid (#1)] Gained {\"PhysicalCritPercent\": 10.000,\"SpellCritPercent\": 10.000,} from {SpellID: 1259799}.\n[0.00] [balance-druid (#1)] Major cooldown used: {SpellID: 1259799}\n[0.00] [balance-druid (#1)] Casting {ItemID: 11832} (Cost = 0.000, Cast Time = 0s, GCD = 0s, Effective Time = 0s)\n[0.00] [balance-druid (#1)] Completed cast {ItemID: 11832}\n[0.00] [balance-druid (#1)] Aura gained: {ItemID: 11832}\n[0.00] [balance-druid (#1)] Major cooldown used: {ItemID: 11832}\n[0.00] [balance-druid (#1)] Casting {ItemID: 250937} (Cost = 0.000, Cast Time = 0s, GCD = 0s, Effective Time = 0s)\n[0.00] [balance-druid (#1)] Completed cast {ItemID: 250937}\n[0.00] [balance-druid (#1)] Aura gained: {ItemID: 250937}\n[0.00] [balance-druid (#1)] Gained {\"SpellDamage\": 47.000,} from {ItemID: 250937}.\n[0.00] [balance-druid (#1)] Major cooldown used: {ItemID: 250937}\n[0.00] [balance-druid (#1)] Casting {SpellID: 24977} (Cost = 8.300, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[0.00] [balance-druid (#1)] Completed cast {SpellID: 24977}\n[0.00] [balance-druid (#1)] Spent 8.300 mana from {SpellID: 24977} (5952.300 --> 5944.000) of 6574 total.\n[0.00] [Target 1] Aura gained: {SpellID: 24977}\n[0.00] [Target 1] Aura gained: {SpellID: 24977}\n[0.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} Hit for 0.000 damage (SpellSchool: 8). (Threat: 0.000)\n[1.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5944.000 --> 5970.000) of 6574 total.\n[1.50] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 186.750, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[1.50] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[1.50] [balance-druid (#1)] Spent 186.750 mana from {SpellID: 9835} (5970.000 --> 5783.250) of 6574 total.\n[1.50] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:255.2, AfterAttackerMods:324.2, AfterResistances:324.2, AfterTargetMods:356.6, AfterOutcome:356.6, AfterPostOutcome:356.6\n[1.50] [Target 1] Aura gained: {SpellID: 9835, Tag: 1}\n[1.50] [balance-druid (#1)] [Target 1] {SpellID: 9835} Hit for 356.614 damage (SpellSchool: 64). (Threat: 356.614)\n[2.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:427.5, AfterPostOutcome:427.5\n[2.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 427.539 damage (SpellSchool: 8). (Threat: 427.539)\n[3.00] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 0.000, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[3.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5783.250 --> 5809.250) of 6574 total.\n[4.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:427.5, AfterPostOutcome:427.5\n[4.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 427.539 damage (SpellSchool: 8). (Threat: 427.539)\n[4.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:232.6, AfterPostOutcome:232.6\n[4.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 232.646 damage (SpellSchool: 64). (Threat: 232.646)\n[4.50] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[4.50] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:562.1, AfterAttackerMods:649.2, AfterResistances:649.2, AfterTargetMods:714.1, AfterOutcome:714.1, AfterPostOutcome:714.1\n[4.50] [balance-druid (#1)] Aura gained: {SpellID: 408255}\n[4.50] [balance-druid (#1)] {SpellID: 408255} stacks: 0 --> 2\n[4.50] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 157.700, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[5.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[5.25] [balance-druid (#1)] [Target 1] {SpellID: 9912} Hit for 714.090 damage (SpellSchool: 8). (Threat: 714.090)\n[5.26] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (5809.250 --> 5868.250) of 6574 total.\n[5.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5868.250 --> 5894.250) of 6574 total.\n[6.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:213.8, AfterPostOutcome:213.8\n[6.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 213.770 damage (SpellSchool: 8). (Threat: 213.770)\n[7.00] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[7.00] [balance-druid (#1)] Spent 157.700 mana from {SpellID: 25298} (5894.250 --> 5736.550) of 6574 total.\n[7.00] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:1113.1, AfterAttackerMods:1285.6, AfterResistances:1285.6, AfterTargetMods:1414.2, AfterOutcome:1414.2, AfterPostOutcome:1414.2\n[7.00] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1414.215 damage (SpellSchool: 64). (Threat: 1414.215)\n[7.00] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[7.00] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 157.700, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[7.01] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (5736.550 --> 5795.550) of 6574 total.\n[7.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5795.550 --> 5821.550) of 6574 total.\n[7.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:465.3, AfterPostOutcome:465.3\n[7.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 465.292 damage (SpellSchool: 64). (Threat: 465.292)\n[8.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:213.8, AfterPostOutcome:213.8\n[8.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 213.770 damage (SpellSchool: 8). (Threat: 213.770)\n[9.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5821.550 --> 5847.550) of 6574 total.\n[9.50] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[9.50] [balance-druid (#1)] Spent 157.700 mana from {SpellID: 25298} (5847.550 --> 5689.850) of 6574 total.\n[9.50] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:1115.7, AfterAttackerMods:1288.7, AfterResistances:1288.7, AfterTargetMods:1417.5, AfterOutcome:1417.5, AfterPostOutcome:1417.5\n[9.50] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1417.524 damage (SpellSchool: 64). (Threat: 1417.524)\n[9.50] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 0\n[9.50] [balance-druid (#1)] Aura faded: {SpellID: 408255}\n[9.50] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 0.000, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[9.51] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (5689.850 --> 5748.850) of 6574 total.\n[10.00] [balance-druid (#1)] Aura faded: {ItemID: 11832}\n[10.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[10.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:427.5, AfterPostOutcome:427.5\n[10.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 427.539 damage (SpellSchool: 8). (Threat: 427.539)\n[10.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:465.3, AfterPostOutcome:465.3\n[10.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 465.292 damage (SpellSchool: 64). (Threat: 465.292)\n[11.00] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[11.00] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (5748.850 --> 5709.250) of 6574 total.\n[11.00] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:561.3, AfterAttackerMods:648.3, AfterResistances:648.3, AfterTargetMods:713.2, AfterOutcome:713.2, AfterPostOutcome:713.2\n[11.00] [balance-druid (#1)] Aura gained: {SpellID: 408255}\n[11.00] [balance-druid (#1)] {SpellID: 408255} stacks: 0 --> 2\n[11.00] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[11.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5709.250 --> 5735.250) of 6574 total.\n[11.75] [balance-druid (#1)] [Target 1] {SpellID: 9912} Hit for 713.166 damage (SpellSchool: 8). (Threat: 713.166)\n[11.76] [balance-druid (#1)] Aura gained: {SpellID: 16870}\n[11.76] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (5735.250 --> 5794.250) of 6574 total.\n[12.00] [Target 1] Aura faded: {SpellID: 24977}\n[12.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:213.8, AfterPostOutcome:213.8\n[12.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 213.770 damage (SpellSchool: 8). (Threat: 213.770)\n[13.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5794.250 --> 5820.250) of 6574 total.\n[13.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:232.6, AfterPostOutcome:232.6\n[13.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 232.646 damage (SpellSchool: 64). (Threat: 232.646)\n[13.50] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[13.50] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:1109.2, AfterAttackerMods:1281.2, AfterResistances:1281.2, AfterTargetMods:1409.3, AfterOutcome:0.0, AfterPostOutcome:0.0\n[13.50] [balance-druid (#1)] [Target 1] {SpellID: 25298} Miss (SpellSchool: 64). (Threat: 0.000)\n[13.50] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[13.50] [balance-druid (#1)] Aura faded: {SpellID: 16870}\n[13.50] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[14.00] [Target 1] Aura faded: {SpellID: 24977}\n[14.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:427.5, AfterPostOutcome:427.5\n[14.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 427.539 damage (SpellSchool: 8). (Threat: 427.539)\n[15.00] [balance-druid (#1)] Aura faded: {SpellID: 1259799}\n[15.00] [balance-druid (#1)] Lost {\"PhysicalCritPercent\": 10.000,\"SpellCritPercent\": 10.000,} from fading {SpellID: 1259799}.\n[15.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[15.00] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[15.00] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (5820.250 --> 5780.650) of 6574 total.\n[15.00] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:559.0, AfterAttackerMods:645.6, AfterResistances:645.6, AfterTargetMods:710.2, AfterOutcome:1420.4, AfterPostOutcome:1420.4\n[15.00] [balance-druid (#1)] Aura refreshed: {SpellID: 408255}\n[15.00] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 3\n[15.00] [balance-druid (#1)] Casting {SpellID: 24977} (Cost = 132.800, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[15.00] [balance-druid (#1)] Completed cast {SpellID: 24977}\n[15.00] [balance-druid (#1)] Spent 132.800 mana from {SpellID: 24977} (5780.650 --> 5647.850) of 6574 total.\n[15.00] [balance-druid (#1)] [Target 1] {SpellID: 24977} Miss (SpellSchool: 8). (Threat: 0.000)\n[15.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5647.850 --> 5673.850) of 6574 total.\n[15.75] [balance-druid (#1)] [Target 1] {SpellID: 9912} Crit for 1420.404 damage (SpellSchool: 8). (Threat: 1420.404)\n[15.75] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[15.76] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (5673.850 --> 5732.850) of 6574 total.\n[16.50] [Target 1] Aura faded: {SpellID: 9835, Tag: 1}\n[16.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:232.6, AfterPostOutcome:232.6\n[16.50] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 232.646 damage (SpellSchool: 64). (Threat: 232.646)\n[16.50] [balance-druid (#1)] Casting {SpellID: 24977} (Cost = 132.800, Cast Time = 0s, GCD = 1.227s, Effective Time = 1.227s)\n[16.50] [balance-druid (#1)] Completed cast {SpellID: 24977}\n[16.50] [balance-druid (#1)] Spent 132.800 mana from {SpellID: 24977} (5732.850 --> 5600.050) of 6574 total.\n[16.50] [Target 1] Aura gained: {SpellID: 24977}\n[16.50] [Target 1] Aura gained: {SpellID: 24977}\n[16.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} Hit for 0.000 damage (SpellSchool: 8). (Threat: 0.000)\n[16.51] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (5600.050 --> 5659.050) of 6574 total.\n[17.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5659.050 --> 5685.050) of 6574 total.\n[17.73] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 311.250, Cast Time = 0s, GCD = 1.227s, Effective Time = 1.227s)\n[17.73] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[17.73] [balance-druid (#1)] Spent 311.250 mana from {SpellID: 9835} (5685.050 --> 5373.800) of 6574 total.\n[17.73] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:252.8, AfterAttackerMods:321.2, AfterResistances:321.2, AfterTargetMods:353.3, AfterOutcome:353.3, AfterPostOutcome:353.3\n[17.73] [Target 1] Aura gained: {SpellID: 9835, Tag: 1}\n[17.73] [balance-druid (#1)] [Target 1] {SpellID: 9835} Hit for 353.322 damage (SpellSchool: 64). (Threat: 353.322)\n[18.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:213.8, AfterPostOutcome:213.8\n[18.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 213.770 damage (SpellSchool: 8). (Threat: 213.770)\n[18.75] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[18.95] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[19.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5373.800 --> 5399.800) of 6574 total.\n[20.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[20.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:213.8, AfterPostOutcome:213.8\n[20.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 213.770 damage (SpellSchool: 8). (Threat: 213.770)\n[20.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:232.6, AfterPostOutcome:232.6\n[20.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 232.646 damage (SpellSchool: 64). (Threat: 232.646)\n[21.45] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[21.45] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (5399.800 --> 5117.600) of 6574 total.\n[21.45] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:1167.7, AfterAttackerMods:1348.7, AfterResistances:1348.7, AfterTargetMods:1483.6, AfterOutcome:2967.2, AfterPostOutcome:2967.2\n[21.45] [balance-druid (#1)] [Target 1] {SpellID: 25298} Crit for 2967.214 damage (SpellSchool: 64). (Threat: 2967.214)\n[21.45] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[21.45] [balance-druid (#1)] {SpellID: 408255} stacks: 3 --> 2\n[21.45] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[21.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5117.600 --> 5143.600) of 6574 total.\n[22.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:427.5, AfterPostOutcome:427.5\n[22.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 427.539 damage (SpellSchool: 8). (Threat: 427.539)\n[23.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (5143.600 --> 5169.600) of 6574 total.\n[23.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:465.3, AfterPostOutcome:465.3\n[23.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 465.292 damage (SpellSchool: 64). (Threat: 465.292)\n[23.73] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[23.73] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (5169.600 --> 4887.400) of 6574 total.\n[23.73] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:1153.9, AfterAttackerMods:1332.8, AfterResistances:1332.8, AfterTargetMods:1466.1, AfterOutcome:1466.1, AfterPostOutcome:1466.1\n[23.73] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1466.088 damage (SpellSchool: 64). (Threat: 1466.088)\n[23.73] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[23.73] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[24.45] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[24.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:213.8, AfterPostOutcome:213.8\n[24.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 213.770 damage (SpellSchool: 8). (Threat: 213.770)\n[25.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[25.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (4887.400 --> 4913.400) of 6574 total.\n[26.00] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[26.00] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (4913.400 --> 4631.200) of 6574 total.\n[26.00] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:1158.3, AfterAttackerMods:1337.8, AfterResistances:1337.8, AfterTargetMods:1471.6, AfterOutcome:0.0, AfterPostOutcome:0.0\n[26.00] [balance-druid (#1)] [Target 1] {SpellID: 25298} Miss (SpellSchool: 64). (Threat: 0.000)\n[26.00] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 0\n[26.00] [balance-druid (#1)] Aura faded: {SpellID: 408255}\n[26.00] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[26.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:213.8, AfterPostOutcome:213.8\n[26.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 213.770 damage (SpellSchool: 8). (Threat: 213.770)\n[26.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:232.6, AfterPostOutcome:232.6\n[26.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 232.646 damage (SpellSchool: 64). (Threat: 232.646)\n[27.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (4631.200 --> 4657.200) of 6574 total.\n[27.50] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[27.50] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (4657.200 --> 4617.600) of 6574 total.\n[27.50] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:562.0, AfterAttackerMods:649.2, AfterResistances:649.2, AfterTargetMods:714.1, AfterOutcome:1428.1, AfterPostOutcome:1428.1\n[27.50] [balance-druid (#1)] Aura gained: {SpellID: 408255}\n[27.50] [balance-druid (#1)] {SpellID: 408255} stacks: 0 --> 2\n[27.50] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[28.25] [balance-druid (#1)] [Target 1] {SpellID: 9912} Crit for 1428.149 damage (SpellSchool: 8). (Threat: 1428.149)\n[28.25] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[28.26] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (4617.600 --> 4676.600) of 6574 total.\n[28.50] [Target 1] Aura faded: {SpellID: 24977}\n[28.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 818.0, BaseDamage:160.2, AfterAttackerMods:194.3, AfterResistances:194.3, AfterTargetMods:213.8, AfterOutcome:213.8, AfterPostOutcome:213.8\n[28.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 213.770 damage (SpellSchool: 8). (Threat: 213.770)\n[29.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (4676.600 --> 4702.600) of 6574 total.\n[29.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 758.0, BaseDamage:158.5, AfterAttackerMods:211.5, AfterResistances:211.5, AfterTargetMods:232.6, AfterOutcome:232.6, AfterPostOutcome:232.6\n[29.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 232.646 damage (SpellSchool: 64). (Threat: 232.646)\n[30.00] [balance-druid (#1)] Aura faded: {ItemID: 250937}\n[30.00] [balance-druid (#1)] Lost {\"SpellDamage\": 47.000,} from fading {ItemID: 250937}.\n[30.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[30.00] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[30.00] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (4702.600 --> 4420.400) of 6574 total.\n[30.00] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1093.6, AfterAttackerMods:1263.1, AfterResistances:1263.1, AfterTargetMods:1389.4, AfterOutcome:1389.4, AfterPostOutcome:1389.4\n[30.00] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1389.396 damage (SpellSchool: 64). (Threat: 1389.396)\n[30.00] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[30.00] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.364s, GCD = 1.227s, Effective Time = 1.364s)\n[30.50] [Target 1] Aura faded: {SpellID: 24977}\n[30.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[30.50] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[31.25] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[31.36] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[31.36] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (4420.400 --> 4380.800) of 6574 total.\n[31.36] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:534.6, AfterAttackerMods:617.4, AfterResistances:617.4, AfterTargetMods:679.2, AfterOutcome:679.2, AfterPostOutcome:679.2\n[31.36] [balance-druid (#1)] Aura refreshed: {SpellID: 408255}\n[31.36] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 3\n[31.36] [balance-druid (#1)] Casting {SpellID: 24977} (Cost = 132.800, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[31.36] [balance-druid (#1)] Completed cast {SpellID: 24977}\n[31.36] [balance-druid (#1)] Spent 132.800 mana from {SpellID: 24977} (4380.800 --> 4248.000) of 6574 total.\n[31.36] [Target 1] Aura gained: {SpellID: 24977}\n[31.36] [Target 1] Aura gained: {SpellID: 24977}\n[31.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} Hit for 0.000 damage (SpellSchool: 8). (Threat: 0.000)\n[31.37] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (4248.000 --> 4307.000) of 6574 total.\n[31.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (4307.000 --> 4333.000) of 6574 total.\n[32.11] [balance-druid (#1)] [Target 1] {SpellID: 9912} Hit for 679.166 damage (SpellSchool: 8). (Threat: 679.166)\n[32.73] [Target 1] Aura faded: {SpellID: 9835, Tag: 1}\n[32.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[32.73] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[32.86] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 311.250, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[32.86] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[32.86] [balance-druid (#1)] Spent 311.250 mana from {SpellID: 9835} (4333.000 --> 4021.750) of 6574 total.\n[32.86] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:255.4, AfterAttackerMods:324.5, AfterResistances:324.5, AfterTargetMods:356.9, AfterOutcome:713.9, AfterPostOutcome:713.9\n[32.86] [Target 1] Aura gained: {SpellID: 9835, Tag: 1}\n[32.86] [balance-druid (#1)] [Target 1] {SpellID: 9835} Crit for 713.899 damage (SpellSchool: 64). (Threat: 713.899)\n[32.86] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[32.87] [balance-druid (#1)] Aura gained: {SpellID: 16870}\n[33.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[33.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[33.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (4021.750 --> 4047.750) of 6574 total.\n[34.36] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 0.000, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[35.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[35.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[35.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[35.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (4047.750 --> 4073.750) of 6574 total.\n[35.86] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[35.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[35.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[36.64] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[36.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1115.9, AfterAttackerMods:1288.9, AfterResistances:1288.9, AfterTargetMods:1417.8, AfterOutcome:0.0, AfterPostOutcome:0.0\n[36.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} Miss (SpellSchool: 64). (Threat: 0.000)\n[36.64] [balance-druid (#1)] {SpellID: 408255} stacks: 3 --> 2\n[36.64] [balance-druid (#1)] Aura faded: {SpellID: 16870}\n[36.64] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[37.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[37.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[37.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (4073.750 --> 4099.750) of 6574 total.\n[38.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[38.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[39.14] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[39.14] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (4099.750 --> 3817.550) of 6574 total.\n[39.14] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1073.8, AfterAttackerMods:1240.2, AfterResistances:1240.2, AfterTargetMods:1364.2, AfterOutcome:1364.2, AfterPostOutcome:1364.2\n[39.14] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1364.227 damage (SpellSchool: 64). (Threat: 1364.227)\n[39.14] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[39.14] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[39.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[39.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[39.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (3817.550 --> 3843.550) of 6574 total.\n[40.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[41.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[41.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[41.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (3843.550 --> 3869.550) of 6574 total.\n[41.64] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[41.64] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (3869.550 --> 3587.350) of 6574 total.\n[41.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1074.1, AfterAttackerMods:1240.6, AfterResistances:1240.6, AfterTargetMods:1364.6, AfterOutcome:1364.6, AfterPostOutcome:1364.6\n[41.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1364.611 damage (SpellSchool: 64). (Threat: 1364.611)\n[41.64] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 0\n[41.64] [balance-druid (#1)] Aura faded: {SpellID: 408255}\n[41.64] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[41.65] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (3587.350 --> 3646.350) of 6574 total.\n[41.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[41.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[43.14] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[43.14] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (3646.350 --> 3606.750) of 6574 total.\n[43.14] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:540.8, AfterAttackerMods:624.6, AfterResistances:624.6, AfterTargetMods:687.1, AfterOutcome:1374.2, AfterPostOutcome:1374.2\n[43.14] [balance-druid (#1)] Aura gained: {SpellID: 408255}\n[43.14] [balance-druid (#1)] {SpellID: 408255} stacks: 0 --> 2\n[43.14] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[43.36] [Target 1] Aura faded: {SpellID: 24977}\n[43.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[43.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[43.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (3606.750 --> 3632.750) of 6574 total.\n[43.89] [balance-druid (#1)] [Target 1] {SpellID: 9912} Crit for 1374.178 damage (SpellSchool: 8). (Threat: 1374.178)\n[43.89] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[44.64] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[44.64] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (3632.750 --> 3593.150) of 6574 total.\n[44.64] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:532.6, AfterAttackerMods:615.2, AfterResistances:615.2, AfterTargetMods:676.7, AfterOutcome:1353.5, AfterPostOutcome:1353.5\n[44.64] [balance-druid (#1)] Aura refreshed: {SpellID: 408255}\n[44.64] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 4\n[44.64] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[44.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[44.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[45.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[45.36] [Target 1] Aura faded: {SpellID: 24977}\n[45.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[45.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[45.39] [balance-druid (#1)] [Target 1] {SpellID: 9912} Crit for 1353.456 damage (SpellSchool: 8). (Threat: 1353.456)\n[45.39] [balance-druid (#1)] Aura refreshed: {SpellID: 16886}\n[45.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (3593.150 --> 3619.150) of 6574 total.\n[46.91] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[46.91] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (3619.150 --> 3336.950) of 6574 total.\n[46.91] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1090.5, AfterAttackerMods:1259.5, AfterResistances:1259.5, AfterTargetMods:1385.5, AfterOutcome:1385.5, AfterPostOutcome:1385.5\n[46.91] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1385.478 damage (SpellSchool: 64). (Threat: 1385.478)\n[46.91] [balance-druid (#1)] {SpellID: 408255} stacks: 4 --> 3\n[46.91] [balance-druid (#1)] Casting {SpellID: 24977} (Cost = 132.800, Cast Time = 0s, GCD = 1.227s, Effective Time = 1.227s)\n[46.91] [balance-druid (#1)] Completed cast {SpellID: 24977}\n[46.91] [balance-druid (#1)] Spent 132.800 mana from {SpellID: 24977} (3336.950 --> 3204.150) of 6574 total.\n[46.91] [Target 1] Aura gained: {SpellID: 24977}\n[46.91] [Target 1] Aura gained: {SpellID: 24977}\n[46.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} Hit for 0.000 damage (SpellSchool: 8). (Threat: 0.000)\n[46.92] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (3204.150 --> 3263.150) of 6574 total.\n[46.92] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (3263.150 --> 3322.150) of 6574 total.\n[47.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (3322.150 --> 3348.150) of 6574 total.\n[47.86] [Target 1] Aura faded: {SpellID: 9835, Tag: 1}\n[47.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[47.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[48.14] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 311.250, Cast Time = 0s, GCD = 1.227s, Effective Time = 1.227s)\n[48.14] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[48.14] [balance-druid (#1)] Spent 311.250 mana from {SpellID: 9835} (3348.150 --> 3036.900) of 6574 total.\n[48.14] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:242.6, AfterAttackerMods:308.2, AfterResistances:308.2, AfterTargetMods:339.0, AfterOutcome:0.0, AfterPostOutcome:0.0\n[48.14] [balance-druid (#1)] [Target 1] {SpellID: 9835} Miss (SpellSchool: 64). (Threat: 0.000)\n[48.39] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[48.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[48.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[49.36] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 311.250, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[49.36] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[49.36] [balance-druid (#1)] Spent 311.250 mana from {SpellID: 9835} (3036.900 --> 2725.650) of 6574 total.\n[49.36] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:250.8, AfterAttackerMods:318.7, AfterResistances:318.7, AfterTargetMods:350.6, AfterOutcome:350.6, AfterPostOutcome:350.6\n[49.36] [Target 1] Aura gained: {SpellID: 9835, Tag: 1}\n[49.36] [balance-druid (#1)] [Target 1] {SpellID: 9835} Hit for 350.568 damage (SpellSchool: 64). (Threat: 350.568)\n[49.37] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2725.650 --> 2784.650) of 6574 total.\n[49.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2784.650 --> 2810.650) of 6574 total.\n[50.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[50.86] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[50.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[50.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[51.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2810.650 --> 2836.650) of 6574 total.\n[52.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[52.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[52.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[52.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[53.36] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[53.36] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (2836.650 --> 2554.450) of 6574 total.\n[53.36] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1106.2, AfterAttackerMods:1277.7, AfterResistances:1277.7, AfterTargetMods:1405.4, AfterOutcome:1405.4, AfterPostOutcome:1405.4\n[53.36] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1405.430 damage (SpellSchool: 64). (Threat: 1405.430)\n[53.36] [balance-druid (#1)] {SpellID: 408255} stacks: 3 --> 2\n[53.36] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[53.37] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2554.450 --> 2613.450) of 6574 total.\n[53.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2613.450 --> 2639.450) of 6574 total.\n[54.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[54.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[55.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[55.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[55.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[55.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2639.450 --> 2665.450) of 6574 total.\n[55.86] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[55.86] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (2665.450 --> 2383.250) of 6574 total.\n[55.86] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1093.2, AfterAttackerMods:1262.7, AfterResistances:1262.7, AfterTargetMods:1388.9, AfterOutcome:1388.9, AfterPostOutcome:1388.9\n[55.86] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1388.919 damage (SpellSchool: 64). (Threat: 1388.919)\n[55.86] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[55.86] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[55.87] [balance-druid (#1)] Aura gained: {SpellID: 16870}\n[55.87] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2383.250 --> 2442.250) of 6574 total.\n[56.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[56.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[57.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2442.250 --> 2468.250) of 6574 total.\n[58.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[58.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[58.36] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[58.36] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1077.7, AfterAttackerMods:1244.7, AfterResistances:1244.7, AfterTargetMods:1369.2, AfterOutcome:1369.2, AfterPostOutcome:1369.2\n[58.36] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1369.176 damage (SpellSchool: 64). (Threat: 1369.176)\n[58.36] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 0\n[58.36] [balance-druid (#1)] Aura faded: {SpellID: 408255}\n[58.36] [balance-druid (#1)] Aura faded: {SpellID: 16870}\n[58.36] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[58.37] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2468.250 --> 2527.250) of 6574 total.\n[58.91] [Target 1] Aura faded: {SpellID: 24977}\n[58.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[58.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[59.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2527.250 --> 2553.250) of 6574 total.\n[59.86] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[59.86] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (2553.250 --> 2513.650) of 6574 total.\n[59.86] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:533.8, AfterAttackerMods:616.6, AfterResistances:616.6, AfterTargetMods:678.2, AfterOutcome:1356.5, AfterPostOutcome:1356.5\n[59.86] [balance-druid (#1)] Aura gained: {SpellID: 408255}\n[59.86] [balance-druid (#1)] {SpellID: 408255} stacks: 0 --> 2\n[59.86] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[60.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[60.61] [balance-druid (#1)] [Target 1] {SpellID: 9912} Crit for 1356.477 damage (SpellSchool: 8). (Threat: 1356.477)\n[60.61] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[60.62] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2513.650 --> 2572.650) of 6574 total.\n[60.91] [Target 1] Aura faded: {SpellID: 24977}\n[60.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[60.91] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[61.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[61.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[61.36] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[61.36] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (2572.650 --> 2533.050) of 6574 total.\n[61.36] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:533.0, AfterAttackerMods:615.7, AfterResistances:615.7, AfterTargetMods:677.2, AfterOutcome:1354.5, AfterPostOutcome:1354.5\n[61.36] [balance-druid (#1)] Aura refreshed: {SpellID: 408255}\n[61.36] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 4\n[61.36] [balance-druid (#1)] Casting {SpellID: 24977} (Cost = 132.800, Cast Time = 0s, GCD = 1.227s, Effective Time = 1.227s)\n[61.36] [balance-druid (#1)] Completed cast {SpellID: 24977}\n[61.36] [balance-druid (#1)] Spent 132.800 mana from {SpellID: 24977} (2533.050 --> 2400.250) of 6574 total.\n[61.36] [Target 1] Aura gained: {SpellID: 24977}\n[61.36] [Target 1] Aura gained: {SpellID: 24977}\n[61.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} Hit for 0.000 damage (SpellSchool: 8). (Threat: 0.000)\n[61.37] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2400.250 --> 2459.250) of 6574 total.\n[61.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2459.250 --> 2485.250) of 6574 total.\n[62.11] [balance-druid (#1)] [Target 1] {SpellID: 9912} Crit for 1354.479 damage (SpellSchool: 8). (Threat: 1354.479)\n[62.11] [balance-druid (#1)] Aura refreshed: {SpellID: 16886}\n[62.12] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2485.250 --> 2544.250) of 6574 total.\n[62.59] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[63.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[63.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[63.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2544.250 --> 2570.250) of 6574 total.\n[64.36] [Target 1] Aura faded: {SpellID: 9835, Tag: 1}\n[64.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[64.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[64.86] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[64.86] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (2570.250 --> 2288.050) of 6574 total.\n[64.86] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1103.6, AfterAttackerMods:1274.7, AfterResistances:1274.7, AfterTargetMods:1402.2, AfterOutcome:1402.2, AfterPostOutcome:1402.2\n[64.86] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1402.157 damage (SpellSchool: 64). (Threat: 1402.157)\n[64.86] [balance-druid (#1)] {SpellID: 408255} stacks: 4 --> 3\n[64.86] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 311.250, Cast Time = 0s, GCD = 1.227s, Effective Time = 1.227s)\n[64.86] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[64.86] [balance-druid (#1)] Spent 311.250 mana from {SpellID: 9835} (2288.050 --> 1976.800) of 6574 total.\n[64.86] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:251.8, AfterAttackerMods:319.9, AfterResistances:319.9, AfterTargetMods:351.9, AfterOutcome:703.8, AfterPostOutcome:703.8\n[64.86] [Target 1] Aura gained: {SpellID: 9835, Tag: 1}\n[64.86] [balance-druid (#1)] [Target 1] {SpellID: 9835} Crit for 703.845 damage (SpellSchool: 64). (Threat: 703.845)\n[64.86] [balance-druid (#1)] Aura refreshed: {SpellID: 16886}\n[64.87] [balance-druid (#1)] Aura gained: {SpellID: 16870}\n[64.87] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (1976.800 --> 2035.800) of 6574 total.\n[64.87] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2035.800 --> 2094.800) of 6574 total.\n[65.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[65.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[65.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[65.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2094.800 --> 2120.800) of 6574 total.\n[66.09] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 0.000, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[67.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[67.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[67.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2120.800 --> 2146.800) of 6574 total.\n[67.86] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[67.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[67.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[68.36] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[68.36] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1103.0, AfterAttackerMods:1274.0, AfterResistances:1274.0, AfterTargetMods:1401.4, AfterOutcome:1401.4, AfterPostOutcome:1401.4\n[68.36] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1401.380 damage (SpellSchool: 64). (Threat: 1401.380)\n[68.36] [balance-druid (#1)] {SpellID: 408255} stacks: 3 --> 2\n[68.36] [balance-druid (#1)] Aura faded: {SpellID: 16870}\n[68.36] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[68.37] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2146.800 --> 2205.800) of 6574 total.\n[69.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[69.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[69.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2205.800 --> 2231.800) of 6574 total.\n[70.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[70.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[70.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[70.86] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[70.86] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (2231.800 --> 1949.600) of 6574 total.\n[70.86] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1074.1, AfterAttackerMods:1240.6, AfterResistances:1240.6, AfterTargetMods:1364.6, AfterOutcome:1364.6, AfterPostOutcome:1364.6\n[70.86] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1364.640 damage (SpellSchool: 64). (Threat: 1364.640)\n[70.86] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[70.86] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[71.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[71.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[71.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (1949.600 --> 1975.600) of 6574 total.\n[73.36] [Target 1] Aura faded: {SpellID: 24977}\n[73.36] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[73.36] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (1975.600 --> 1693.400) of 6574 total.\n[73.36] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1105.8, AfterAttackerMods:1277.2, AfterResistances:1277.2, AfterTargetMods:1404.9, AfterOutcome:1404.9, AfterPostOutcome:1404.9\n[73.36] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1404.930 damage (SpellSchool: 64). (Threat: 1404.930)\n[73.36] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 0\n[73.36] [balance-druid (#1)] Aura faded: {SpellID: 408255}\n[73.36] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[73.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[73.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[73.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (1693.400 --> 1719.400) of 6574 total.\n[73.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[73.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[74.86] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[74.86] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (1719.400 --> 1679.800) of 6574 total.\n[74.86] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:537.9, AfterAttackerMods:621.3, AfterResistances:621.3, AfterTargetMods:683.4, AfterOutcome:1366.9, AfterPostOutcome:1366.9\n[74.86] [balance-druid (#1)] Aura gained: {SpellID: 408255}\n[74.86] [balance-druid (#1)] {SpellID: 408255} stacks: 0 --> 2\n[74.86] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[75.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[75.36] [Target 1] Aura faded: {SpellID: 24977}\n[75.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[75.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[75.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (1679.800 --> 1705.800) of 6574 total.\n[75.61] [balance-druid (#1)] [Target 1] {SpellID: 9912} Crit for 1366.869 damage (SpellSchool: 8). (Threat: 1366.869)\n[75.61] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[75.62] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (1705.800 --> 1764.800) of 6574 total.\n[76.36] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[76.36] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (1764.800 --> 1725.200) of 6574 total.\n[76.36] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:538.3, AfterAttackerMods:621.7, AfterResistances:621.7, AfterTargetMods:683.9, AfterOutcome:683.9, AfterPostOutcome:683.9\n[76.36] [balance-druid (#1)] Aura refreshed: {SpellID: 408255}\n[76.36] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 4\n[76.36] [balance-druid (#1)] Casting {SpellID: 24977} (Cost = 132.800, Cast Time = 0s, GCD = 1.227s, Effective Time = 1.227s)\n[76.36] [balance-druid (#1)] Completed cast {SpellID: 24977}\n[76.36] [balance-druid (#1)] Spent 132.800 mana from {SpellID: 24977} (1725.200 --> 1592.400) of 6574 total.\n[76.36] [Target 1] Aura gained: {SpellID: 24977}\n[76.36] [Target 1] Aura gained: {SpellID: 24977}\n[76.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} Hit for 0.000 damage (SpellSchool: 8). (Threat: 0.000)\n[76.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[76.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[77.11] [balance-druid (#1)] [Target 1] {SpellID: 9912} Hit for 683.861 damage (SpellSchool: 8). (Threat: 683.861)\n[77.12] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (1592.400 --> 1651.400) of 6574 total.\n[77.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (1651.400 --> 1677.400) of 6574 total.\n[77.59] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[78.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[78.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[78.61] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[79.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (1677.400 --> 1703.400) of 6574 total.\n[79.86] [Target 1] Aura faded: {SpellID: 9835, Tag: 1}\n[79.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[79.86] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[79.86] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[79.86] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (1703.400 --> 1421.200) of 6574 total.\n[79.86] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1109.0, AfterAttackerMods:1280.9, AfterResistances:1280.9, AfterTargetMods:1409.0, AfterOutcome:1409.0, AfterPostOutcome:1409.0\n[79.86] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1408.995 damage (SpellSchool: 64). (Threat: 1408.995)\n[79.86] [balance-druid (#1)] {SpellID: 408255} stacks: 4 --> 3\n[79.86] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 311.250, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[79.86] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[79.86] [balance-druid (#1)] Spent 311.250 mana from {SpellID: 9835} (1421.200 --> 1109.950) of 6574 total.\n[79.86] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:236.2, AfterAttackerMods:300.1, AfterResistances:300.1, AfterTargetMods:330.1, AfterOutcome:0.0, AfterPostOutcome:0.0\n[79.86] [balance-druid (#1)] [Target 1] {SpellID: 9835} Miss (SpellSchool: 64). (Threat: 0.000)\n[79.87] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (1109.950 --> 1168.950) of 6574 total.\n[80.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[80.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[80.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[81.36] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 311.250, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[81.36] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[81.36] [balance-druid (#1)] Spent 311.250 mana from {SpellID: 9835} (1168.950 --> 857.700) of 6574 total.\n[81.36] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:250.7, AfterAttackerMods:318.6, AfterResistances:318.6, AfterTargetMods:350.4, AfterOutcome:700.8, AfterPostOutcome:700.8\n[81.36] [Target 1] Aura gained: {SpellID: 9835, Tag: 1}\n[81.36] [balance-druid (#1)] [Target 1] {SpellID: 9835} Crit for 700.837 damage (SpellSchool: 64). (Threat: 700.837)\n[81.36] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[81.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (857.700 --> 883.700) of 6574 total.\n[82.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[82.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[82.86] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[83.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (883.700 --> 909.700) of 6574 total.\n[84.36] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[84.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[84.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[84.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[84.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[85.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[85.14] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[85.14] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (909.700 --> 627.500) of 6574 total.\n[85.14] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1066.4, AfterAttackerMods:1231.6, AfterResistances:1231.6, AfterTargetMods:1354.8, AfterOutcome:1354.8, AfterPostOutcome:1354.8\n[85.14] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1354.812 damage (SpellSchool: 64). (Threat: 1354.812)\n[85.14] [balance-druid (#1)] {SpellID: 408255} stacks: 3 --> 2\n[85.14] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[85.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (627.500 --> 653.500) of 6574 total.\n[86.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[86.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[87.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[87.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[87.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (653.500 --> 679.500) of 6574 total.\n[87.64] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[87.64] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (679.500 --> 397.300) of 6574 total.\n[87.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1079.6, AfterAttackerMods:1247.0, AfterResistances:1247.0, AfterTargetMods:1371.7, AfterOutcome:1371.7, AfterPostOutcome:1371.7\n[87.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1371.656 damage (SpellSchool: 64). (Threat: 1371.656)\n[87.64] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[87.64] [balance-druid (#1)] Casting {SpellID: 29166} (Cost = 62.000, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[87.64] [balance-druid (#1)] Completed cast {SpellID: 29166}\n[87.64] [balance-druid (#1)] Spent 62.000 mana from {SpellID: 29166} (397.300 --> 335.300) of 6574 total.\n[87.64] [balance-druid (#1)] Aura gained: {SpellID: 29166}\n[87.65] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (335.300 --> 394.300) of 6574 total.\n[88.36] [Target 1] Aura faded: {SpellID: 24977}\n[88.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[88.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[89.14] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[89.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (394.300 --> 733.300) of 6574 total.\n[90.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[90.36] [Target 1] Aura faded: {SpellID: 24977}\n[90.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[90.36] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[90.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[90.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[90.64] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[90.64] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (733.300 --> 693.700) of 6574 total.\n[90.64] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:534.5, AfterAttackerMods:617.4, AfterResistances:617.4, AfterTargetMods:679.1, AfterOutcome:679.1, AfterPostOutcome:679.1\n[90.64] [balance-druid (#1)] Aura refreshed: {SpellID: 408255}\n[90.64] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 3\n[90.64] [balance-druid (#1)] Casting {SpellID: 24977} (Cost = 132.800, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[90.64] [balance-druid (#1)] Completed cast {SpellID: 24977}\n[90.64] [balance-druid (#1)] Spent 132.800 mana from {SpellID: 24977} (693.700 --> 560.900) of 6574 total.\n[90.64] [Target 1] Aura gained: {SpellID: 24977}\n[90.64] [Target 1] Aura gained: {SpellID: 24977}\n[90.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} Hit for 0.000 damage (SpellSchool: 8). (Threat: 0.000)\n[90.65] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (560.900 --> 619.900) of 6574 total.\n[91.39] [balance-druid (#1)] [Target 1] {SpellID: 9912} Hit for 679.094 damage (SpellSchool: 8). (Threat: 679.094)\n[91.40] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (619.900 --> 678.900) of 6574 total.\n[91.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (678.900 --> 1017.900) of 6574 total.\n[92.14] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[92.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[92.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[93.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[93.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[93.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (1017.900 --> 1356.900) of 6574 total.\n[94.64] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[94.64] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (1356.900 --> 1074.700) of 6574 total.\n[94.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1075.0, AfterAttackerMods:1241.7, AfterResistances:1241.7, AfterTargetMods:1365.8, AfterOutcome:1365.8, AfterPostOutcome:1365.8\n[94.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1365.831 damage (SpellSchool: 64). (Threat: 1365.831)\n[94.64] [balance-druid (#1)] {SpellID: 408255} stacks: 3 --> 2\n[94.64] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[94.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[94.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[95.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[95.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (1074.700 --> 1413.700) of 6574 total.\n[96.14] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[96.14] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (1413.700 --> 1374.100) of 6574 total.\n[96.14] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:539.6, AfterAttackerMods:623.2, AfterResistances:623.2, AfterTargetMods:685.6, AfterOutcome:685.6, AfterPostOutcome:685.6\n[96.14] [balance-druid (#1)] Aura refreshed: {SpellID: 408255}\n[96.14] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 4\n[96.14] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[96.36] [Target 1] Aura faded: {SpellID: 9835, Tag: 1}\n[96.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[96.36] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[96.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[96.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[96.89] [balance-druid (#1)] [Target 1] {SpellID: 9912} Hit for 685.557 damage (SpellSchool: 8). (Threat: 685.557)\n[96.90] [balance-druid (#1)] Aura gained: {SpellID: 16870}\n[97.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (1374.100 --> 1713.100) of 6574 total.\n[98.64] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[98.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1072.3, AfterAttackerMods:1238.5, AfterResistances:1238.5, AfterTargetMods:1362.4, AfterOutcome:1362.4, AfterPostOutcome:1362.4\n[98.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1362.373 damage (SpellSchool: 64). (Threat: 1362.373)\n[98.64] [balance-druid (#1)] {SpellID: 408255} stacks: 4 --> 3\n[98.64] [balance-druid (#1)] Aura faded: {SpellID: 16870}\n[98.64] [balance-druid (#1)] Casting {SpellID: 9835} (Cost = 311.250, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s)\n[98.64] [balance-druid (#1)] Completed cast {SpellID: 9835}\n[98.64] [balance-druid (#1)] Spent 311.250 mana from {SpellID: 9835} (1713.100 --> 1401.850) of 6574 total.\n[98.64] [balance-druid (#1)] [Target 1] {SpellID: 9835} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:239.1, AfterAttackerMods:303.8, AfterResistances:303.8, AfterTargetMods:334.2, AfterOutcome:334.2, AfterPostOutcome:334.2\n[98.64] [Target 1] Aura gained: {SpellID: 9835, Tag: 1}\n[98.64] [balance-druid (#1)] [Target 1] {SpellID: 9835} Hit for 334.187 damage (SpellSchool: 64). (Threat: 334.187)\n[98.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[98.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[98.65] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (1401.850 --> 1460.850) of 6574 total.\n[98.65] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (1460.850 --> 1519.850) of 6574 total.\n[99.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (1519.850 --> 1858.850) of 6574 total.\n[100.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[100.14] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[100.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:407.7, AfterPostOutcome:407.7\n[100.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Crit for 407.726 damage (SpellSchool: 8). (Threat: 407.726)\n[101.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (1858.850 --> 2197.850) of 6574 total.\n[101.64] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:447.4, AfterPostOutcome:447.4\n[101.64] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Crit for 447.360 damage (SpellSchool: 64). (Threat: 447.360)\n[102.64] [Target 1] Aura faded: {SpellID: 24977}\n[102.64] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[102.64] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (2197.850 --> 1915.650) of 6574 total.\n[102.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1070.8, AfterAttackerMods:1236.8, AfterResistances:1236.8, AfterTargetMods:1360.5, AfterOutcome:2720.9, AfterPostOutcome:2720.9\n[102.64] [balance-druid (#1)] [Target 1] {SpellID: 25298} Crit for 2720.941 damage (SpellSchool: 64). (Threat: 2720.941)\n[102.64] [balance-druid (#1)] Aura gained: {SpellID: 16886}\n[102.64] [balance-druid (#1)] {SpellID: 408255} stacks: 3 --> 2\n[102.64] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[102.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[102.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[102.65] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (1915.650 --> 1974.650) of 6574 total.\n[103.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (1974.650 --> 2313.650) of 6574 total.\n[104.64] [Target 1] Aura faded: {SpellID: 24977}\n[104.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:152.8, AfterAttackerMods:185.3, AfterResistances:185.3, AfterTargetMods:203.9, AfterOutcome:203.9, AfterPostOutcome:203.9\n[104.64] [balance-druid (#1)] [Target 1] {SpellID: 24977} tick Hit for 203.863 damage (SpellSchool: 8). (Threat: 203.863)\n[104.64] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[104.64] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[104.91] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[104.91] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (2313.650 --> 2031.450) of 6574 total.\n[104.91] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1099.5, AfterAttackerMods:1269.9, AfterResistances:1269.9, AfterTargetMods:1396.9, AfterOutcome:1396.9, AfterPostOutcome:1396.9\n[104.91] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1396.853 damage (SpellSchool: 64). (Threat: 1396.853)\n[104.91] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[104.91] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.273s, GCD = 1.227s, Effective Time = 2.273s)\n[105.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[105.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (2031.450 --> 2370.450) of 6574 total.\n[105.64] [balance-druid (#1)] Aura faded: {SpellID: 16886}\n[107.18] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[107.18] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (2370.450 --> 2088.250) of 6574 total.\n[107.18] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1121.8, AfterAttackerMods:1295.7, AfterResistances:1295.7, AfterTargetMods:1425.3, AfterOutcome:1425.3, AfterPostOutcome:1425.3\n[107.18] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1425.296 damage (SpellSchool: 64). (Threat: 1425.296)\n[107.18] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 0\n[107.18] [balance-druid (#1)] Aura faded: {SpellID: 408255}\n[107.18] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[107.50] [balance-druid (#1)] Gained 339.000 mana from {OtherID: 2, Tag: 1} (2088.250 --> 2427.250) of 6574 total.\n[107.64] [balance-druid (#1)] Aura faded: {SpellID: 29166}\n[107.64] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[107.64] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[108.68] [balance-druid (#1)] Completed cast {SpellID: 9912}\n[108.68] [balance-druid (#1)] Spent 39.600 mana from {SpellID: 9912} (2427.250 --> 2387.650) of 6574 total.\n[108.68] [balance-druid (#1)] [Target 1] {SpellID: 9912} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 771.0, BaseDamage:541.5, AfterAttackerMods:625.4, AfterResistances:625.4, AfterTargetMods:688.0, AfterOutcome:688.0, AfterPostOutcome:688.0\n[108.68] [balance-druid (#1)] Aura gained: {SpellID: 408255}\n[108.68] [balance-druid (#1)] {SpellID: 408255} stacks: 0 --> 2\n[108.68] [balance-druid (#1)] Casting {SpellID: 25298} (Cost = 282.200, Cast Time = 2.5s, GCD = 1.5s, Effective Time = 2.5s)\n[109.43] [balance-druid (#1)] [Target 1] {SpellID: 9912} Hit for 687.987 damage (SpellSchool: 8). (Threat: 687.987)\n[109.44] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2387.650 --> 2446.650) of 6574 total.\n[109.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2446.650 --> 2472.650) of 6574 total.\n[110.00] [balance-druid (#1)] Aura refreshed: {SpellID: 25587, Tag: -1}\n[110.64] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:152.4, AfterAttackerMods:203.3, AfterResistances:203.3, AfterTargetMods:223.7, AfterOutcome:223.7, AfterPostOutcome:223.7\n[110.64] [balance-druid (#1)] [Target 1] {SpellID: 9835, Tag: 1} tick Hit for 223.680 damage (SpellSchool: 64). (Threat: 223.680)\n[111.18] [balance-druid (#1)] Completed cast {SpellID: 25298}\n[111.18] [balance-druid (#1)] Spent 282.200 mana from {SpellID: 25298} (2472.650 --> 2190.450) of 6574 total.\n[111.18] [balance-druid (#1)] [Target 1] {SpellID: 25298} [DEBUG] MAP: 268.0, RAP: 0.0, SP: 711.0, BaseDamage:1094.5, AfterAttackerMods:1264.2, AfterResistances:1264.2, AfterTargetMods:1390.6, AfterOutcome:1390.6, AfterPostOutcome:1390.6\n[111.18] [balance-druid (#1)] [Target 1] {SpellID: 25298} Hit for 1390.610 damage (SpellSchool: 64). (Threat: 1390.610)\n[111.18] [balance-druid (#1)] {SpellID: 408255} stacks: 2 --> 1\n[111.18] [balance-druid (#1)] Casting {SpellID: 9912} (Cost = 39.600, Cast Time = 1.5s, GCD = 1.5s, Effective Time = 1.5s)\n[111.19] [balance-druid (#1)] Gained 59.000 mana from {SpellID: 20355} (2190.450 --> 2249.450) of 6574 total.\n[111.50] [balance-druid (#1)] Gained 26.000 mana from {OtherID: 2, Tag: 1} (2249.450 --> 2275.450) of 6574 total.\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 24858}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 408255}\n[111.96] [balance-druid (#1)] {SpellID: 408255} stacks: 1 --> 0\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 17056}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 24932, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 10494, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 24907, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 25362, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 25360, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 25580, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 25587, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 23028, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 27681, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 21850, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 19900, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 10535, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 25898, Tag: -1}\n[111.96] [balance-druid (#1)] Aura faded: {SpellID: 25918, Tag: -1}\n[111.96] [Target 1] Aura faded: {SpellID: 20355, Tag: -1}\n[111.96] [Target 1] Aura faded: {SpellID: 1311680, Tag: -1}\n[111.96] [Target 1] Aura faded: {SpellID: 9907, Tag: -1}\n[111.96] [Target 1] Aura faded: {SpellID: 9835, Tag: 1}\n",
+    "raidMetrics": {
+      "dps": {
+        "aggregatorData": {
+          "n": 4000,
+          "sumSq": 2112346330.182407
+        },
+        "avg": 725.4209773756572,
+        "hist": {
+          "560": 1,
+          "580": 3,
+          "590": 1,
+          "600": 4,
+          "610": 14,
+          "620": 11,
+          "630": 28,
+          "640": 46,
+          "650": 82,
+          "660": 113,
+          "670": 183,
+          "680": 242,
+          "690": 257,
+          "700": 284,
+          "710": 348,
+          "720": 383,
+          "730": 371,
+          "740": 332,
+          "750": 318,
+          "760": 254,
+          "770": 211,
+          "780": 173,
+          "790": 120,
+          "800": 90,
+          "810": 66,
+          "820": 20,
+          "830": 20,
+          "840": 11,
+          "850": 11,
+          "860": 2,
+          "870": 1
+        },
+        "max": 869.6133626406063,
+        "maxSeed": "1300647958",
+        "min": 561.3152860648559,
+        "minSeed": "1300648560",
+        "stdev": 43.023111567481536
+      },
+      "hps": {
+        "aggregatorData": {
+          "n": 4000
+        },
+        "hist": {
+          "0": 4000
+        },
+        "minSeed": "1300651010"
+      },
+      "parties": [
+        {
+          "dps": {
+            "aggregatorData": {
+              "n": 4000,
+              "sumSq": 2112346330.182407
+            },
+            "avg": 725.4209773756572,
+            "hist": {
+              "560": 1,
+              "580": 3,
+              "590": 1,
+              "600": 4,
+              "610": 14,
+              "620": 11,
+              "630": 28,
+              "640": 46,
+              "650": 82,
+              "660": 113,
+              "670": 183,
+              "680": 242,
+              "690": 257,
+              "700": 284,
+              "710": 348,
+              "720": 383,
+              "730": 371,
+              "740": 332,
+              "750": 318,
+              "760": 254,
+              "770": 211,
+              "780": 173,
+              "790": 120,
+              "800": 90,
+              "810": 66,
+              "820": 20,
+              "830": 20,
+              "840": 11,
+              "850": 11,
+              "860": 2,
+              "870": 1
+            },
+            "max": 869.6133626406063,
+            "maxSeed": "1300647958",
+            "min": 561.3152860648559,
+            "minSeed": "1300648560",
+            "stdev": 43.023111567481536
+          },
+          "hps": {
+            "aggregatorData": {
+              "n": 4000
+            },
+            "hist": {
+              "0": 4000
+            },
+            "minSeed": "1300651010"
+          },
+          "players": [
+            {
+              "actions": [
+                {
+                  "id": {
+                    "otherId": "OtherActionManaGain"
+                  },
+                  "targets": [
+                    {
+                      "casts": 114501,
+                      "threat": 3377779.5
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 24858
+                  },
+                  "targets": [
+                    {
+                      "castTimeMs": 6000000.0,
+                      "casts": 4000
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 1259799
+                  },
+                  "targets": [
+                    {
+                      "casts": 4000
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "itemId": 11832
+                  },
+                  "targets": [
+                    {
+                      "casts": 4000
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 24977
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {
+                      "castTimeMs": 48290121.0,
+                      "casts": 33963,
+                      "critDamage": 19785454.8394685,
+                      "critTickDamage": 19785454.8394685,
+                      "critTickRange": {
+                        "count": 47790,
+                        "max": 427.5390200703756,
+                        "min": 407.7260798585081,
+                        "total": 19785454.8394685
+                      },
+                      "critTicks": 47790,
+                      "damage": 54174566.625524536,
+                      "hits": 30843,
+                      "misses": 3120,
+                      "threat": 54174566.625524536,
+                      "tickDamage": 54174566.625524536,
+                      "tickRange": {
+                        "count": 166577,
+                        "max": 213.7695100351878,
+                        "min": 203.86303992925406,
+                        "total": 34389111.78605602
+                      },
+                      "ticks": 166577
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "itemId": 250937
+                  },
+                  "targets": [
+                    {
+                      "casts": 5947
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 29166
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {
+                      "castTimeMs": 4391536.0,
+                      "casts": 3016
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 9910,
+                    "tag": 2
+                  },
+                  "isPassive": true,
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 9910
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 2912
+                  },
+                  "spellSchool": 64,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 8949
+                  },
+                  "spellSchool": 64,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 8950
+                  },
+                  "spellSchool": 64,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 8951
+                  },
+                  "spellSchool": 64,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 9875
+                  },
+                  "spellSchool": 64,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 9876
+                  },
+                  "spellSchool": 64,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 25298
+                  },
+                  "spellSchool": 64,
+                  "targets": [
+                    {
+                      "castTimeMs": 293359827.0,
+                      "casts": 119961,
+                      "critDamage": 67816253.02961637,
+                      "critRange": {
+                        "count": 24143,
+                        "max": 2973.0503397884913,
+                        "min": 2695.8889823543263,
+                        "total": 67816253.02961637
+                      },
+                      "crits": 24143,
+                      "damage": 187121381.21139544,
+                      "hitRange": {
+                        "count": 85119,
+                        "max": 1486.5327095154585,
+                        "min": 1347.9446730946513,
+                        "total": 119305128.1817794
+                      },
+                      "hits": 85119,
+                      "misses": 10699,
+                      "threat": 187121381.21139544
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 9835
+                  },
+                  "spellSchool": 64,
+                  "targets": [
+                    {
+                      "castTimeMs": 46999455.0,
+                      "casts": 32728,
+                      "critDamage": 6640271.140672842,
+                      "critRange": {
+                        "count": 9587,
+                        "max": 736.6079952276203,
+                        "min": 656.2948558069936,
+                        "total": 6640271.140672842
+                      },
+                      "crits": 9587,
+                      "damage": 13631723.103803031,
+                      "hitRange": {
+                        "count": 20218,
+                        "max": 368.3204513870803,
+                        "min": 328.15161699827974,
+                        "total": 6991451.963130198
+                      },
+                      "hits": 20218,
+                      "misses": 2923,
+                      "threat": 13631723.103803031
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 9835,
+                    "tag": 1
+                  },
+                  "isPassive": true,
+                  "spellSchool": 64,
+                  "targets": [
+                    {
+                      "critDamage": 21214374.904109072,
+                      "critTickDamage": 21214374.904109072,
+                      "critTickRange": {
+                        "count": 46893,
+                        "max": 465.29190109218496,
+                        "min": 447.3599376999255,
+                        "total": 21214374.904109072
+                      },
+                      "critTicks": 46893,
+                      "damage": 43392573.82227009,
+                      "threat": 43392573.82227009,
+                      "tickDamage": 43392573.82227009,
+                      "tickRange": {
+                        "count": 98199,
+                        "max": 232.64595054609248,
+                        "min": 223.67996884996276,
+                        "total": 22178198.91816093
+                      },
+                      "ticks": 98199
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 5176
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 5177
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 5178
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 5179
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 5180
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 6780
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 8905
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 9912
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {
+                      "castTimeMs": 102607148.0,
+                      "casts": 66541,
+                      "critDamage": 18695649.380650945,
+                      "critRange": {
+                        "count": 13450,
+                        "max": 1447.1128462603926,
+                        "min": 1351.3275048152173,
+                        "total": 18695649.380650945
+                      },
+                      "crits": 13729,
+                      "damage": 50421773.36622539,
+                      "hitRange": {
+                        "count": 45799,
+                        "max": 723.5616343891609,
+                        "min": 675.6636017402702,
+                        "total": 31726123.985574383
+                      },
+                      "hits": 46754,
+                      "misses": 6058,
+                      "threat": 50421773.36622539
+                    },
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 17402
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 1278759
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "spellId": 9907
+                  },
+                  "spellSchool": 8,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "otherId": "OtherActionMove"
+                  },
+                  "isMelee": true,
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                },
+                {
+                  "id": {
+                    "tag": 25584
+                  },
+                  "targets": [
+                    {},
+                    {
+                      "unitIndex": 1
+                    }
+                  ]
+                }
+              ],
+              "auras": [
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "id": {
+                    "spellId": 24858
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 900000.0
+                  },
+                  "id": {
+                    "spellId": 1259799
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 15.0
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 400000.0
+                  },
+                  "id": {
+                    "itemId": 11832
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 10.0
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 1324878.4284288816
+                  },
+                  "id": {
+                    "spellId": 16870
+                  },
+                  "procsAvg": 6.132,
+                  "uptimeSecondsAvg": 17.128380867553524,
+                  "uptimeSecondsStdev": 6.151274336529527
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 4448406.822565628
+                  },
+                  "id": {
+                    "spellId": 16886
+                  },
+                  "procsAvg": 11.795,
+                  "uptimeSecondsAvg": 32.283513770721754,
+                  "uptimeSecondsStdev": 8.359213136236326
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 43751395.61181406
+                  },
+                  "id": {
+                    "spellId": 408255
+                  },
+                  "procsAvg": 16.63525,
+                  "uptimeSecondsAvg": 104.25964407920443,
+                  "uptimeSecondsStdev": 8.232588865668298
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "id": {
+                    "spellId": 17056
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "LeaderOfThePack",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 24932,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "ManaSpringTotemMP5Add",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 10494,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "MoonkinAura",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 24907,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "StrengthOfEarthTotemStrengthAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 25362,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "GraceOfAirTotemAgilityAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 25360,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000
+                  },
+                  "effects": [
+                    {
+                      "category": "WindfuryTotemAttackPowerAdd"
+                    }
+                  ],
+                  "id": {
+                    "spellId": 10610,
+                    "tag": -1
+                  }
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "id": {
+                    "spellId": 25580,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "FlametongueTotem",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    },
+                    {
+                      "category": "WindfuryTotem",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 25587,
+                    "tag": -1
+                  },
+                  "procsAvg": 24.53825,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "StatBuffIntellectAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 23028,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "StatBuffSpiritAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 27681,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "ResistanceFireFireResistanceAdd"
+                    },
+                    {
+                      "category": "ResistanceNatureNatureResistanceAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    },
+                    {
+                      "category": "ResistanceFrostFrostResistanceAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    },
+                    {
+                      "category": "ResistanceShadowShadowResistanceAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    },
+                    {
+                      "category": "ResistanceArcaneArcaneResistanceAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 21850,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "ResistanceFireFireResistanceAdd"
+                    },
+                    {
+                      "category": "FireResistanceAura",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 19900,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "effects": [
+                    {
+                      "category": "ResistanceFireFireResistanceAdd",
+                      "uptimeSecondsAvg": 120.19638226192225
+                    }
+                  ],
+                  "id": {
+                    "spellId": 10535,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "id": {
+                    "spellId": 25898,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 58092888.758757375
+                  },
+                  "id": {
+                    "spellId": 25918,
+                    "tag": -1
+                  },
+                  "procsAvg": 1.0,
+                  "uptimeSecondsAvg": 120.19638226192204,
+                  "uptimeSecondsStdev": 8.720772949415506
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 4542885.580108675
+                  },
+                  "id": {
+                    "itemId": 250937
+                  },
+                  "procsAvg": 1.48675,
+                  "uptimeSecondsAvg": 33.39263987671549,
+                  "uptimeSecondsStdev": 4.544556864113271
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000,
+                    "sumSq": 1206400.0
+                  },
+                  "id": {
+                    "spellId": 29166
+                  },
+                  "procsAvg": 0.754,
+                  "uptimeSecondsAvg": 15.08,
+                  "uptimeSecondsStdev": 8.613570688164115
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000
+                  },
+                  "effects": [
+                    {
+                      "category": "Thorns"
+                    }
+                  ],
+                  "id": {
+                    "spellId": 9910
+                  }
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000
+                  },
+                  "id": {
+                    "spellId": 17402
+                  }
+                },
+                {
+                  "aggregatorData": {
+                    "n": 4000
+                  },
+                  "id": {
+                    "otherId": "OtherActionMove"
+                  }
+                }
+              ],
+              "dps": {
+                "aggregatorData": {
+                  "n": 4000,
+                  "sumSq": 2112346330.182407
+                },
+                "avg": 725.4209773756572,
+                "hist": {
+                  "560": 1,
+                  "580": 3,
+                  "590": 1,
+                  "600": 4,
+                  "610": 14,
+                  "620": 11,
+                  "630": 28,
+                  "640": 46,
+                  "650": 82,
+                  "660": 113,
+                  "670": 183,
+                  "680": 242,
+                  "690": 257,
+                  "700": 284,
+                  "710": 348,
+                  "720": 383,
+                  "730": 371,
+                  "740": 332,
+                  "750": 318,
+                  "760": 254,
+                  "770": 211,
+                  "780": 173,
+                  "790": 120,
+                  "800": 90,
+                  "810": 66,
+                  "820": 20,
+                  "830": 20,
+                  "840": 11,
+                  "850": 11,
+                  "860": 2,
+                  "870": 1
+                },
+                "max": 869.6133626406063,
+                "maxSeed": "1300647958",
+                "min": 561.3152860648559,
+                "minSeed": "1300648560",
+                "stdev": 43.023111567481536
+              },
+              "dtps": {
+                "aggregatorData": {
+                  "n": 4000
+                },
+                "hist": {
+                  "0": 4000
+                },
+                "minSeed": "1300651010"
+              },
+              "hps": {
+                "aggregatorData": {
+                  "n": 4000
+                },
+                "hist": {
+                  "0": 4000
+                },
+                "minSeed": "1300651010"
+              },
+              "name": "balance-druid",
+              "resources": [
+                {
+                  "actualGain": 6295900.0,
+                  "events": 242150,
+                  "gain": 6295900.0,
+                  "id": {
+                    "otherId": "OtherActionManaRegen",
+                    "tag": 1
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": 466301.7999999585,
+                  "events": 5263,
+                  "gain": 466301.7999999585,
+                  "id": {
+                    "otherId": "OtherActionManaRegen",
+                    "tag": 2
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": -1566000.0,
+                  "events": 4000,
+                  "gain": -1566000.0,
+                  "id": {
+                    "spellId": 24858
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": -3615704.099998146,
+                  "events": 31317,
+                  "gain": -3615704.099998146,
+                  "id": {
+                    "spellId": 24977
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": -186992.0,
+                  "events": 3016,
+                  "gain": -186992.0,
+                  "id": {
+                    "spellId": 29166
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": -27921249.799951006,
+                  "events": 101704,
+                  "gain": -27921249.799951006,
+                  "id": {
+                    "spellId": 25298
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": -8809682.25,
+                  "events": 29685,
+                  "gain": -8809682.25,
+                  "id": {
+                    "spellId": 9835
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": -2462961.600002891,
+                  "events": 62196,
+                  "gain": -2462961.600002891,
+                  "id": {
+                    "spellId": 9912
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": 6755559.0,
+                  "events": 114501,
+                  "gain": 6755559.0,
+                  "id": {
+                    "spellId": 20355
+                  },
+                  "type": "ResourceTypeMana"
+                },
+                {
+                  "actualGain": 9411722.20000008,
+                  "events": 30160,
+                  "gain": 9411722.20000008,
+                  "id": {
+                    "spellId": 29166,
+                    "tag": -2
+                  },
+                  "type": "ResourceTypeMana"
+                }
+              ],
+              "secondsOomAvg": 0.1311614242152501,
+              "threat": {
+                "aggregatorData": {
+                  "n": 4000,
+                  "sumSq": 2153428931.9378924
+                },
+                "avg": 732.4506378922873,
+                "hist": {
+                  "570": 1,
+                  "580": 1,
+                  "590": 3,
+                  "600": 2,
+                  "610": 6,
+                  "620": 13,
+                  "630": 15,
+                  "640": 32,
+                  "650": 61,
+                  "660": 94,
+                  "670": 126,
+                  "680": 203,
+                  "690": 242,
+                  "700": 266,
+                  "710": 309,
+                  "720": 362,
+                  "730": 378,
+                  "740": 361,
+                  "750": 329,
+                  "760": 290,
+                  "770": 242,
+                  "780": 200,
+                  "790": 158,
+                  "800": 108,
+                  "810": 78,
+                  "820": 63,
+                  "830": 19,
+                  "840": 16,
+                  "850": 14,
+                  "860": 7,
+                  "880": 1
+                },
+                "max": 877.0806302664728,
+                "maxSeed": "1300647958",
+                "min": 568.8298302598042,
+                "minSeed": "1300648560",
+                "stdev": 43.28159003149624
+              },
+              "tmi": {
+                "aggregatorData": {
+                  "n": 4000
+                },
+                "hist": {
+                  "0": 4000
+                },
+                "minSeed": "1300651010"
+              },
+              "tto": {
+                "aggregatorData": {
+                  "n": 4000,
+                  "sumSq": 72772226.37927957
+                },
+                "avg": 130.21829529171757,
+                "hist": {
+                  "100": 840,
+                  "110": 220,
+                  "120": 95,
+                  "130": 125,
+                  "140": 253,
+                  "150": 445,
+                  "160": 505,
+                  "170": 367,
+                  "180": 222,
+                  "190": 102,
+                  "200": 51,
+                  "210": 26,
+                  "220": 3,
+                  "230": 1,
+                  "240": 2,
+                  "70": 4,
+                  "80": 284,
+                  "90": 455
+                },
+                "max": 240.29289103,
+                "maxSeed": "1300648279",
+                "min": 72.547,
+                "minSeed": "1300650513",
+                "stdev": 35.16037778720444
+              },
+              "unitIndex": 1
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

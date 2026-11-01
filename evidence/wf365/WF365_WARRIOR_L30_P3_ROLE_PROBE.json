@@ -1,0 +1,5183 @@
+{
+  "accepted_checkpoints": "2/148",
+  "checkpoint": "warrior:L30:unrestricted",
+  "limitations": [
+    "Cross-class provisional membership is not proof of Warrior usability",
+    "Shields are recovered from Paladin source rows only as Warrior-proficiency candidates",
+    "Heuristic role priors are not measured 100-mob stat weights; cannot certify Top5",
+    "Unknown item effects excluded from role ranking, never assigned zero",
+    "Unrestricted talent directions remain unrestricted"
+  ],
+  "p1": {
+    "coverage": "54/54",
+    "source": "WF361",
+    "status": "PASS"
+  },
+  "p2": {
+    "coverage": "117/117",
+    "source": "WF362",
+    "status": "PASS"
+  },
+  "p3": {
+    "legal_denominator": null,
+    "provisional_denominator": 2951,
+    "provisional_l0": 2951,
+    "provisional_shields": 114,
+    "provisional_slots": 18,
+    "reason": "CLASS_1_SOURCE_MEMBERSHIP_UNVERIFIED",
+    "role_package_probe": "PROVISIONAL_NOT_BUILD_CALIBRATED",
+    "source_membership_verified": false,
+    "status": "FAIL",
+    "unresolved_effect_items": 105
+  },
+  "p4": {
+    "status": "NOT_RUN"
+  },
+  "p5": {
+    "status": "NOT_RUN"
+  },
+  "p6": {
+    "status": "NOT_RUN"
+  },
+  "probe_cpu_s": 1.1477695939999997,
+  "probe_wall_s": 1.149107248000007,
+  "roles": {
+    "warrior_arms": {
+      "gear": {
+        "back": {
+          "item_id": 271720,
+          "name": "Crocolisk Skin Gaiter",
+          "source_url": "https://www.wowhead.com/forever/item=271720"
+        },
+        "chest": {
+          "item_id": 2870,
+          "name": "Shining Silver Breastplate",
+          "source_url": "https://www.wowhead.com/forever/item=2870"
+        },
+        "feet": {
+          "item_id": 284403,
+          "name": "Shapeshifting Sentinel's Strides",
+          "source_url": "https://www.wowhead.com/forever/item=284403"
+        },
+        "hands": {
+          "item_id": 4107,
+          "name": "Tiger Hunter Gloves",
+          "source_url": "https://www.wowhead.com/forever/item=4107"
+        },
+        "head": {
+          "item_id": 252455,
+          "name": "Defender's Leather Helm",
+          "source_url": "https://www.wowhead.com/forever/item=252455"
+        },
+        "legs": {
+          "item_id": 250523,
+          "name": "Veteran's Silvered Chain Leggings",
+          "source_url": "https://www.wowhead.com/forever/item=250523"
+        },
+        "neck": {
+          "item_id": 7731,
+          "name": "Ghostshard Talisman",
+          "source_url": "https://www.wowhead.com/forever/item=7731"
+        },
+        "ranged": {
+          "item_id": 274748,
+          "name": "Booty Bay Bruiser's Buckshot",
+          "source_url": "https://www.wowhead.com/forever/item=274748"
+        },
+        "ring1": {
+          "item_id": 285190,
+          "name": "Wyvern Heart Band",
+          "source_url": "https://www.wowhead.com/forever/item=285190"
+        },
+        "ring2": {
+          "item_id": 19513,
+          "name": "Legionnaire's Band",
+          "source_url": "https://www.wowhead.com/forever/item=19513"
+        },
+        "shirt": {
+          "item_id": 3342,
+          "name": "Captain Sander's Shirt",
+          "source_url": "https://www.wowhead.com/forever/item=3342"
+        },
+        "shoulder": {
+          "item_id": 2278,
+          "name": "Forest Tracker Epaulets",
+          "source_url": "https://www.wowhead.com/forever/item=2278"
+        },
+        "trinket1": {
+          "item_id": 21566,
+          "name": "Rune of Perfection",
+          "source_url": "https://www.wowhead.com/forever/item=21566"
+        },
+        "trinket2": {
+          "item_id": 273298,
+          "name": "Lookie's Spyglass",
+          "source_url": "https://www.wowhead.com/forever/item=273298"
+        },
+        "waist": {
+          "item_id": 250556,
+          "name": "Officer's Belt",
+          "source_url": "https://www.wowhead.com/forever/item=250556"
+        },
+        "weapon": {
+          "item_id": 279841,
+          "name": "Defender of Dalaran",
+          "source_url": "https://www.wowhead.com/forever/item=279841"
+        },
+        "wrist": {
+          "item_id": 4438,
+          "name": "Pugilist Bracers",
+          "source_url": "https://www.wowhead.com/forever/item=4438"
+        }
+      },
+      "gear_item_count": 17,
+      "slots": {
+        "back": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 8.224,
+              "item_id": 271720,
+              "name": "Crocolisk Skin Gaiter",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=271720",
+              "stat_contributions": {
+                "agility": 2.2,
+                "armor": 0.024,
+                "stamina": 1.0,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.022,
+              "item_id": 282658,
+              "name": "Dragonmaw Battle Shroud",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=282658",
+              "stat_contributions": {
+                "armor": 0.022,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 6.873,
+              "item_id": 14593,
+              "name": "Hawkeye's Cloak",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14593",
+              "stat_contributions": {
+                "agility": 3.85,
+                "armor": 0.023,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 6.024,
+              "item_id": 273045,
+              "name": "Drape of Shifting Energy",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273045",
+              "stat_contributions": {
+                "armor": 0.024,
+                "attack_power": 6.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 5.825,
+              "item_id": 13108,
+              "name": "Tigerstrike Mantle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13108",
+              "stat_contributions": {
+                "agility": 4.4,
+                "armor": 0.025,
+                "stamina": 1.4
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 190,
+          "unresolved_effect_items": 0
+        },
+        "chest": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 15.414,
+              "item_id": 2870,
+              "name": "Shining Silver Breastplate",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2870",
+              "stat_contributions": {
+                "armor": 0.214,
+                "stamina": 1.2,
+                "strength": 14.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.908,
+              "item_id": 250518,
+              "name": "Veteran's Silvered Chain Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250518",
+              "stat_contributions": {
+                "agility": 3.3,
+                "armor": 0.208,
+                "stamina": 1.4,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.857,
+              "item_id": 14751,
+              "name": "Slayer's Surcoat",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14751",
+              "stat_contributions": {
+                "agility": 1.65,
+                "armor": 0.207,
+                "stamina": 1.0,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.204,
+              "item_id": 7914,
+              "name": "Barbaric Iron Breastplate",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7914",
+              "stat_contributions": {
+                "armor": 0.204,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.698,
+              "item_id": 252508,
+              "name": "Brawler's Leather Tunic",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252508",
+              "stat_contributions": {
+                "agility": 4.4,
+                "armor": 0.098,
+                "stamina": 1.2,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 328,
+          "unresolved_effect_items": 6
+        },
+        "feet": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 12.47,
+              "item_id": 284403,
+              "name": "Shapeshifting Sentinel's Strides",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=284403",
+              "stat_contributions": {
+                "agility": 4.4,
+                "armor": 0.07,
+                "attack_power": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.994,
+              "item_id": 4464,
+              "name": "Trouncing Boots",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4464",
+              "stat_contributions": {
+                "agility": 3.85,
+                "armor": 0.144,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.657,
+              "item_id": 20210,
+              "name": "Defiler's Plate Greaves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20210",
+              "stat_contributions": {
+                "agility": 3.3,
+                "armor": 0.157,
+                "stamina": 1.2,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.257,
+              "item_id": 20182,
+              "name": "Defiler's Lamellar Greaves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20182",
+              "stat_contributions": {
+                "agility": 3.3,
+                "armor": 0.157,
+                "stamina": 0.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            },
+            {
+              "heuristic_score": 8.611,
+              "item_id": 252439,
+              "name": "Brawler's Leather Boots",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252439",
+              "stat_contributions": {
+                "agility": 2.75,
+                "armor": 0.061,
+                "stamina": 0.8,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 266,
+          "unresolved_effect_items": 2
+        },
+        "hands": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 11.465,
+              "item_id": 4107,
+              "name": "Tiger Hunter Gloves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4107",
+              "stat_contributions": {
+                "agility": 4.4,
+                "armor": 0.065,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.128,
+              "item_id": 3341,
+              "name": "Gauntlets of Ogre Strength",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3341",
+              "stat_contributions": {
+                "armor": 0.128,
+                "attack_power": 8.0,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.73,
+              "item_id": 16978,
+              "name": "Warsong Gauntlets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=16978",
+              "stat_contributions": {
+                "armor": 0.13,
+                "stamina": 0.6,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.362,
+              "item_id": 6408,
+              "name": "Insignia Gloves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6408",
+              "stat_contributions": {
+                "agility": 3.3,
+                "armor": 0.062,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.331,
+              "item_id": 4075,
+              "name": "Mail Combat Gauntlets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4075",
+              "stat_contributions": {
+                "agility": 2.2,
+                "armor": 0.131,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 257,
+          "unresolved_effect_items": 2
+        },
+        "head": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 14.684,
+              "item_id": 252455,
+              "name": "Defender's Leather Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252455",
+              "stat_contributions": {
+                "armor": 0.084,
+                "stamina": 2.6,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.377,
+              "item_id": 250498,
+              "name": "Veteran's Chain Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250498",
+              "stat_contributions": {
+                "armor": 0.177,
+                "stamina": 2.2,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.123,
+              "item_id": 7915,
+              "name": "Barbaric Iron Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7915",
+              "stat_contributions": {
+                "agility": 4.95,
+                "armor": 0.173,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.308,
+              "item_id": 6686,
+              "name": "Tusken Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6686",
+              "stat_contributions": {
+                "armor": 0.308,
+                "strength": 13.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.218,
+              "item_id": 14753,
+              "name": "Slayer's Skullcap",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14753",
+              "stat_contributions": {
+                "agility": 1.65,
+                "armor": 0.168,
+                "stamina": 1.4,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 95,
+          "unresolved_effect_items": 6
+        },
+        "legs": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 16.641,
+              "item_id": 250523,
+              "name": "Veteran's Silvered Chain Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250523",
+              "stat_contributions": {
+                "agility": 3.85,
+                "armor": 0.191,
+                "stamina": 1.6,
+                "strength": 11.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.201,
+              "item_id": 9624,
+              "name": "Triprunner Dungarees",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=9624",
+              "stat_contributions": {
+                "agility": 9.9,
+                "armor": 0.101,
+                "stamina": 1.2,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.44,
+              "item_id": 252516,
+              "name": "Brawler's Leather Legguards",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252516",
+              "stat_contributions": {
+                "agility": 4.95,
+                "armor": 0.09,
+                "stamina": 1.4,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 13.326,
+              "item_id": 250493,
+              "name": "Veteran's Chain Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250493",
+              "stat_contributions": {
+                "agility": 2.75,
+                "armor": 0.176,
+                "stamina": 1.4,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.096,
+              "item_id": 6690,
+              "name": "Ferine Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6690",
+              "stat_contributions": {
+                "armor": 0.096,
+                "attack_power": 13.0
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            }
+          ],
+          "provisional_items": 266,
+          "unresolved_effect_items": 6
+        },
+        "neck": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 8.8,
+              "item_id": 7731,
+              "name": "Ghostshard Talisman",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7731",
+              "stat_contributions": {
+                "attack_power": 7.0,
+                "stamina": 1.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.0,
+              "item_id": 13084,
+              "name": "Kaleidoscope Chain",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13084",
+              "stat_contributions": {
+                "agility": 2.2,
+                "stamina": 0.8,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": [
+                "intellect",
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 6.2,
+              "item_id": 274068,
+              "name": "Thermaplugg Medal of Honor",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274068",
+              "stat_contributions": {
+                "attack_power": 5.0,
+                "stamina": 1.2
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 5.8,
+              "item_id": 13087,
+              "name": "River Pride Choker",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13087",
+              "stat_contributions": {
+                "stamina": 1.8,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 5.4,
+              "item_id": 19537,
+              "name": "Scout's Medallion",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19537",
+              "stat_contributions": {
+                "agility": 4.4,
+                "stamina": 1.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 31,
+          "unresolved_effect_items": 8
+        },
+        "offhand": {
+          "heuristic_top5": [],
+          "provisional_items": 173,
+          "unresolved_effect_items": 23
+        },
+        "ranged": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 95.3,
+              "item_id": 274748,
+              "name": "Booty Bay Bruiser's Buckshot",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274748",
+              "stat_contributions": {
+                "attack_power": 4.5,
+                "stamina": 0.6,
+                "weapon_dps": 90.2
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 90.8,
+              "item_id": 3463,
+              "name": "Silver Star",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3463",
+              "stat_contributions": {
+                "agility": 2.75,
+                "weapon_dps": 88.05
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 86.95,
+              "item_id": 6696,
+              "name": "Nightstalker Bow",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6696",
+              "stat_contributions": {
+                "agility": 1.65,
+                "weapon_dps": 85.3
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 85.45,
+              "item_id": 19561,
+              "name": "Outrider's Bow",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19561",
+              "stat_contributions": {
+                "agility": 1.1,
+                "stamina": 1.0,
+                "weapon_dps": 83.35
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 81.65,
+              "item_id": 13037,
+              "name": "Crystalpine Stinger",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13037",
+              "stat_contributions": {
+                "agility": 2.2,
+                "weapon_dps": 79.45
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            }
+          ],
+          "provisional_items": 92,
+          "unresolved_effect_items": 5
+        },
+        "ring1": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 11.25,
+              "item_id": 285190,
+              "name": "Wyvern Heart Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=285190",
+              "stat_contributions": {
+                "agility": 2.75,
+                "attack_power": 7.5,
+                "stamina": 1.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.1,
+              "item_id": 19513,
+              "name": "Legionnaire's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19513",
+              "stat_contributions": {
+                "agility": 3.3,
+                "stamina": 0.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.8,
+              "item_id": 18585,
+              "name": "Band of Allegiance",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18585",
+              "stat_contributions": {
+                "stamina": 0.8,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.65,
+              "item_id": 13097,
+              "name": "Thunderbrow Ring",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13097",
+              "stat_contributions": {
+                "agility": 1.65,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.95,
+              "item_id": 7686,
+              "name": "Ironspine's Eye",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7686",
+              "stat_contributions": {
+                "agility": 4.95,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 93,
+          "unresolved_effect_items": 28
+        },
+        "ring2": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 11.25,
+              "item_id": 285190,
+              "name": "Wyvern Heart Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=285190",
+              "stat_contributions": {
+                "agility": 2.75,
+                "attack_power": 7.5,
+                "stamina": 1.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.1,
+              "item_id": 19513,
+              "name": "Legionnaire's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19513",
+              "stat_contributions": {
+                "agility": 3.3,
+                "stamina": 0.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.8,
+              "item_id": 18585,
+              "name": "Band of Allegiance",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18585",
+              "stat_contributions": {
+                "stamina": 0.8,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.65,
+              "item_id": 13097,
+              "name": "Thunderbrow Ring",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13097",
+              "stat_contributions": {
+                "agility": 1.65,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.95,
+              "item_id": 7686,
+              "name": "Ironspine's Eye",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7686",
+              "stat_contributions": {
+                "agility": 4.95,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 93,
+          "unresolved_effect_items": 28
+        },
+        "shirt": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 0,
+              "item_id": 2575,
+              "name": "Red Linen Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2575",
+              "stat_contributions": {},
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 3342,
+              "name": "Captain Sander's Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3342",
+              "stat_contributions": {},
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 2,
+          "unresolved_effect_items": 0
+        },
+        "shoulder": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 11.128,
+              "item_id": 2278,
+              "name": "Forest Tracker Epaulets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2278",
+              "stat_contributions": {
+                "agility": 6.05,
+                "armor": 0.078,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.453,
+              "item_id": 7913,
+              "name": "Barbaric Iron Shoulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7913",
+              "stat_contributions": {
+                "agility": 3.3,
+                "armor": 0.153,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.026,
+              "item_id": 5964,
+              "name": "Barbaric Shoulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=5964",
+              "stat_contributions": {
+                "agility": 2.75,
+                "armor": 0.076,
+                "stamina": 1.2,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.36,
+              "item_id": 3841,
+              "name": "Golden Scale Shoulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3841",
+              "stat_contributions": {
+                "armor": 0.16,
+                "stamina": 1.2,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.162,
+              "item_id": 4443,
+              "name": "Grim Pauldrons",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4443",
+              "stat_contributions": {
+                "armor": 0.162,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 131,
+          "unresolved_effect_items": 1
+        },
+        "trinket1": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 0.8,
+              "item_id": 21566,
+              "name": "Rune of Perfection",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21566",
+              "stat_contributions": {
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0.8,
+              "item_id": 21568,
+              "name": "Rune of Duty",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21568",
+              "stat_contributions": {
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 273298,
+              "name": "Lookie's Spyglass",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273298",
+              "stat_contributions": {},
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 14,
+          "unresolved_effect_items": 11
+        },
+        "trinket2": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 0.8,
+              "item_id": 21566,
+              "name": "Rune of Perfection",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21566",
+              "stat_contributions": {
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0.8,
+              "item_id": 21568,
+              "name": "Rune of Duty",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21568",
+              "stat_contributions": {
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 273298,
+              "name": "Lookie's Spyglass",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273298",
+              "stat_contributions": {},
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 14,
+          "unresolved_effect_items": 11
+        },
+        "waist": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 14.832,
+              "item_id": 250556,
+              "name": "Officer's Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250556",
+              "stat_contributions": {
+                "agility": 3.3,
+                "armor": 0.132,
+                "stamina": 1.4,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.563,
+              "item_id": 252459,
+              "name": "Prowler's Leather Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252459",
+              "stat_contributions": {
+                "agility": 3.3,
+                "armor": 0.063,
+                "stamina": 1.2,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            },
+            {
+              "heuristic_score": 13.128,
+              "item_id": 20207,
+              "name": "Defiler's Plate Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20207",
+              "stat_contributions": {
+                "armor": 0.128,
+                "stamina": 1.0,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.061,
+              "item_id": 20152,
+              "name": "Defiler's Chain Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20152",
+              "stat_contributions": {
+                "armor": 0.061,
+                "attack_power": 12.0,
+                "stamina": 1.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.891,
+              "item_id": 20191,
+              "name": "Defiler's Leather Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20191",
+              "stat_contributions": {
+                "armor": 0.091,
+                "attack_power": 12.0,
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 256,
+          "unresolved_effect_items": 5
+        },
+        "weapon": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 172.6,
+              "item_id": 279841,
+              "name": "Defender of Dalaran",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279841",
+              "stat_contributions": {
+                "agility": 4.95,
+                "stamina": 2.6,
+                "strength": 9.0,
+                "weapon_dps": 156.05
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 172.05,
+              "item_id": 13045,
+              "name": "Viscous Hammer",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13045",
+              "stat_contributions": {
+                "attack_power": 17.0,
+                "stamina": 1.2,
+                "strength": 3.0,
+                "weapon_dps": 150.85
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 171.65,
+              "item_id": 279844,
+              "name": "Striking Staff",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279844",
+              "stat_contributions": {
+                "stamina": 1.2,
+                "strength": 14.0,
+                "weapon_dps": 156.45
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 163.85,
+              "item_id": 7689,
+              "name": "Morbid Dawn",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7689",
+              "stat_contributions": {
+                "stamina": 3.0,
+                "strength": 10.0,
+                "weapon_dps": 150.85
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 163.75,
+              "item_id": 9449,
+              "name": "Manual Crowd Pummeler",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=9449",
+              "stat_contributions": {
+                "agility": 2.75,
+                "strength": 16.0,
+                "weapon_dps": 145.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 547,
+          "unresolved_effect_items": 2
+        },
+        "wrist": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 8.695,
+              "item_id": 4438,
+              "name": "Pugilist Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4438",
+              "stat_contributions": {
+                "armor": 0.095,
+                "stamina": 0.6,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.341,
+              "item_id": 13012,
+              "name": "Yorgen Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13012",
+              "stat_contributions": {
+                "agility": 1.65,
+                "armor": 0.091,
+                "stamina": 0.6,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.496,
+              "item_id": 4132,
+              "name": "Darkspear Armsplints",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4132",
+              "stat_contributions": {
+                "armor": 0.096,
+                "stamina": 0.4,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.447,
+              "item_id": 18948,
+              "name": "Barbaric Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18948",
+              "stat_contributions": {
+                "agility": 2.2,
+                "armor": 0.047,
+                "stamina": 1.2,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.344,
+              "item_id": 14590,
+              "name": "Hawkeye's Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14590",
+              "stat_contributions": {
+                "agility": 3.3,
+                "armor": 0.044,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 210,
+          "unresolved_effect_items": 0
+        }
+      },
+      "weapon_package": "two_hand",
+      "weights": {
+        "agility": 0.55,
+        "armor": 0.001,
+        "attack_power": 0.5,
+        "stamina": 0.2,
+        "strength": 1.0,
+        "weapon_dps": 5.0
+      }
+    },
+    "warrior_fury": {
+      "gear": {
+        "back": {
+          "item_id": 271720,
+          "name": "Crocolisk Skin Gaiter",
+          "source_url": "https://www.wowhead.com/forever/item=271720"
+        },
+        "chest": {
+          "item_id": 250518,
+          "name": "Veteran's Silvered Chain Shirt",
+          "source_url": "https://www.wowhead.com/forever/item=250518"
+        },
+        "feet": {
+          "item_id": 284403,
+          "name": "Shapeshifting Sentinel's Strides",
+          "source_url": "https://www.wowhead.com/forever/item=284403"
+        },
+        "hands": {
+          "item_id": 4107,
+          "name": "Tiger Hunter Gloves",
+          "source_url": "https://www.wowhead.com/forever/item=4107"
+        },
+        "head": {
+          "item_id": 7915,
+          "name": "Barbaric Iron Helm",
+          "source_url": "https://www.wowhead.com/forever/item=7915"
+        },
+        "legs": {
+          "item_id": 250523,
+          "name": "Veteran's Silvered Chain Leggings",
+          "source_url": "https://www.wowhead.com/forever/item=250523"
+        },
+        "neck": {
+          "item_id": 7731,
+          "name": "Ghostshard Talisman",
+          "source_url": "https://www.wowhead.com/forever/item=7731"
+        },
+        "offhand": {
+          "item_id": 6692,
+          "name": "Pronged Reaver",
+          "source_url": "https://www.wowhead.com/forever/item=6692"
+        },
+        "ranged": {
+          "item_id": 274748,
+          "name": "Booty Bay Bruiser's Buckshot",
+          "source_url": "https://www.wowhead.com/forever/item=274748"
+        },
+        "ring1": {
+          "item_id": 285190,
+          "name": "Wyvern Heart Band",
+          "source_url": "https://www.wowhead.com/forever/item=285190"
+        },
+        "ring2": {
+          "item_id": 19513,
+          "name": "Legionnaire's Band",
+          "source_url": "https://www.wowhead.com/forever/item=19513"
+        },
+        "shirt": {
+          "item_id": 3342,
+          "name": "Captain Sander's Shirt",
+          "source_url": "https://www.wowhead.com/forever/item=3342"
+        },
+        "shoulder": {
+          "item_id": 2278,
+          "name": "Forest Tracker Epaulets",
+          "source_url": "https://www.wowhead.com/forever/item=2278"
+        },
+        "trinket1": {
+          "item_id": 21566,
+          "name": "Rune of Perfection",
+          "source_url": "https://www.wowhead.com/forever/item=21566"
+        },
+        "trinket2": {
+          "item_id": 273298,
+          "name": "Lookie's Spyglass",
+          "source_url": "https://www.wowhead.com/forever/item=273298"
+        },
+        "waist": {
+          "item_id": 250556,
+          "name": "Officer's Belt",
+          "source_url": "https://www.wowhead.com/forever/item=250556"
+        },
+        "weapon": {
+          "item_id": 7687,
+          "name": "Ironspine's Fist",
+          "source_url": "https://www.wowhead.com/forever/item=7687"
+        },
+        "wrist": {
+          "item_id": 4438,
+          "name": "Pugilist Bracers",
+          "source_url": "https://www.wowhead.com/forever/item=4438"
+        }
+      },
+      "gear_item_count": 18,
+      "slots": {
+        "back": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 8.624,
+              "item_id": 271720,
+              "name": "Crocolisk Skin Gaiter",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=271720",
+              "stat_contributions": {
+                "agility": 2.6,
+                "armor": 0.024,
+                "stamina": 1.0,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.573,
+              "item_id": 14593,
+              "name": "Hawkeye's Cloak",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14593",
+              "stat_contributions": {
+                "agility": 4.55,
+                "armor": 0.023,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.022,
+              "item_id": 282658,
+              "name": "Dragonmaw Battle Shroud",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=282658",
+              "stat_contributions": {
+                "armor": 0.022,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 6.625,
+              "item_id": 13108,
+              "name": "Tigerstrike Mantle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13108",
+              "stat_contributions": {
+                "agility": 5.2,
+                "armor": 0.025,
+                "stamina": 1.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 6.024,
+              "item_id": 273045,
+              "name": "Drape of Shifting Energy",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273045",
+              "stat_contributions": {
+                "armor": 0.024,
+                "attack_power": 6.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 190,
+          "unresolved_effect_items": 0
+        },
+        "chest": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 15.508,
+              "item_id": 250518,
+              "name": "Veteran's Silvered Chain Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250518",
+              "stat_contributions": {
+                "agility": 3.9,
+                "armor": 0.208,
+                "stamina": 1.4,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 15.414,
+              "item_id": 2870,
+              "name": "Shining Silver Breastplate",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2870",
+              "stat_contributions": {
+                "armor": 0.214,
+                "stamina": 1.2,
+                "strength": 14.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.157,
+              "item_id": 14751,
+              "name": "Slayer's Surcoat",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14751",
+              "stat_contributions": {
+                "agility": 1.95,
+                "armor": 0.207,
+                "stamina": 1.0,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.498,
+              "item_id": 252508,
+              "name": "Brawler's Leather Tunic",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252508",
+              "stat_contributions": {
+                "agility": 5.2,
+                "armor": 0.098,
+                "stamina": 1.2,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 12.204,
+              "item_id": 7914,
+              "name": "Barbaric Iron Breastplate",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7914",
+              "stat_contributions": {
+                "armor": 0.204,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 328,
+          "unresolved_effect_items": 6
+        },
+        "feet": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 13.27,
+              "item_id": 284403,
+              "name": "Shapeshifting Sentinel's Strides",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=284403",
+              "stat_contributions": {
+                "agility": 5.2,
+                "armor": 0.07,
+                "attack_power": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.694,
+              "item_id": 4464,
+              "name": "Trouncing Boots",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4464",
+              "stat_contributions": {
+                "agility": 4.55,
+                "armor": 0.144,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.257,
+              "item_id": 20210,
+              "name": "Defiler's Plate Greaves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20210",
+              "stat_contributions": {
+                "agility": 3.9,
+                "armor": 0.157,
+                "stamina": 1.2,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.857,
+              "item_id": 20182,
+              "name": "Defiler's Lamellar Greaves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20182",
+              "stat_contributions": {
+                "agility": 3.9,
+                "armor": 0.157,
+                "stamina": 0.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            },
+            {
+              "heuristic_score": 9.111,
+              "item_id": 252439,
+              "name": "Brawler's Leather Boots",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252439",
+              "stat_contributions": {
+                "agility": 3.25,
+                "armor": 0.061,
+                "stamina": 0.8,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 266,
+          "unresolved_effect_items": 2
+        },
+        "hands": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 12.265,
+              "item_id": 4107,
+              "name": "Tiger Hunter Gloves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4107",
+              "stat_contributions": {
+                "agility": 5.2,
+                "armor": 0.065,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.128,
+              "item_id": 3341,
+              "name": "Gauntlets of Ogre Strength",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3341",
+              "stat_contributions": {
+                "armor": 0.128,
+                "attack_power": 8.0,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.962,
+              "item_id": 6408,
+              "name": "Insignia Gloves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6408",
+              "stat_contributions": {
+                "agility": 3.9,
+                "armor": 0.062,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.731,
+              "item_id": 4075,
+              "name": "Mail Combat Gauntlets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4075",
+              "stat_contributions": {
+                "agility": 2.6,
+                "armor": 0.131,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.73,
+              "item_id": 16978,
+              "name": "Warsong Gauntlets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=16978",
+              "stat_contributions": {
+                "armor": 0.13,
+                "stamina": 0.6,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 257,
+          "unresolved_effect_items": 2
+        },
+        "head": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 15.023,
+              "item_id": 7915,
+              "name": "Barbaric Iron Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7915",
+              "stat_contributions": {
+                "agility": 5.85,
+                "armor": 0.173,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.684,
+              "item_id": 252455,
+              "name": "Defender's Leather Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252455",
+              "stat_contributions": {
+                "armor": 0.084,
+                "stamina": 2.6,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.377,
+              "item_id": 250498,
+              "name": "Veteran's Chain Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250498",
+              "stat_contributions": {
+                "armor": 0.177,
+                "stamina": 2.2,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.308,
+              "item_id": 6686,
+              "name": "Tusken Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6686",
+              "stat_contributions": {
+                "armor": 0.308,
+                "strength": 13.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.518,
+              "item_id": 14753,
+              "name": "Slayer's Skullcap",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14753",
+              "stat_contributions": {
+                "agility": 1.95,
+                "armor": 0.168,
+                "stamina": 1.4,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 95,
+          "unresolved_effect_items": 6
+        },
+        "legs": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 17.341,
+              "item_id": 250523,
+              "name": "Veteran's Silvered Chain Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250523",
+              "stat_contributions": {
+                "agility": 4.55,
+                "armor": 0.191,
+                "stamina": 1.6,
+                "strength": 11.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 16.001,
+              "item_id": 9624,
+              "name": "Triprunner Dungarees",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=9624",
+              "stat_contributions": {
+                "agility": 11.7,
+                "armor": 0.101,
+                "stamina": 1.2,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.34,
+              "item_id": 252516,
+              "name": "Brawler's Leather Legguards",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252516",
+              "stat_contributions": {
+                "agility": 5.85,
+                "armor": 0.09,
+                "stamina": 1.4,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 13.826,
+              "item_id": 250493,
+              "name": "Veteran's Chain Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250493",
+              "stat_contributions": {
+                "agility": 3.25,
+                "armor": 0.176,
+                "stamina": 1.4,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.498,
+              "item_id": 252457,
+              "name": "Defender's Leather Kilt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252457",
+              "stat_contributions": {
+                "agility": 4.55,
+                "armor": 0.148,
+                "stamina": 1.8,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 266,
+          "unresolved_effect_items": 6
+        },
+        "neck": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 8.8,
+              "item_id": 7731,
+              "name": "Ghostshard Talisman",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7731",
+              "stat_contributions": {
+                "attack_power": 7.0,
+                "stamina": 1.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.4,
+              "item_id": 13084,
+              "name": "Kaleidoscope Chain",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13084",
+              "stat_contributions": {
+                "agility": 2.6,
+                "stamina": 0.8,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": [
+                "intellect",
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 6.2,
+              "item_id": 19537,
+              "name": "Scout's Medallion",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19537",
+              "stat_contributions": {
+                "agility": 5.2,
+                "stamina": 1.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 6.2,
+              "item_id": 274068,
+              "name": "Thermaplugg Medal of Honor",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274068",
+              "stat_contributions": {
+                "attack_power": 5.0,
+                "stamina": 1.2
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 5.8,
+              "item_id": 13087,
+              "name": "River Pride Choker",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13087",
+              "stat_contributions": {
+                "stamina": 1.8,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 31,
+          "unresolved_effect_items": 8
+        },
+        "offhand": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 108.14,
+              "item_id": 6692,
+              "name": "Pronged Reaver",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6692",
+              "stat_contributions": {
+                "strength": 5.0,
+                "weapon_dps": 103.14
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 104.46,
+              "item_id": 7683,
+              "name": "Bloody Brass Knuckles",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7683",
+              "stat_contributions": {
+                "attack_power": 6.0,
+                "weapon_dps": 98.46
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 103.45,
+              "item_id": 19553,
+              "name": "Legionnaire's Sword",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19553",
+              "stat_contributions": {
+                "stamina": 0.6,
+                "strength": 7.0,
+                "weapon_dps": 95.85
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 100.46,
+              "item_id": 19545,
+              "name": "Scout's Blade",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19545",
+              "stat_contributions": {
+                "agility": 4.55,
+                "stamina": 0.6,
+                "weapon_dps": 95.31
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 99.63,
+              "item_id": 13033,
+              "name": "Zealot Blade",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13033",
+              "stat_contributions": {
+                "weapon_dps": 99.63
+              },
+              "unweighted_stat_axes": [
+                "intellect",
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 338,
+          "unresolved_effect_items": 23
+        },
+        "ranged": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 86.28,
+              "item_id": 274748,
+              "name": "Booty Bay Bruiser's Buckshot",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274748",
+              "stat_contributions": {
+                "attack_power": 4.5,
+                "stamina": 0.6,
+                "weapon_dps": 81.18
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 82.495,
+              "item_id": 3463,
+              "name": "Silver Star",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3463",
+              "stat_contributions": {
+                "agility": 3.25,
+                "weapon_dps": 79.245
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 78.72,
+              "item_id": 6696,
+              "name": "Nightstalker Bow",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6696",
+              "stat_contributions": {
+                "agility": 1.95,
+                "weapon_dps": 76.77
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 77.315,
+              "item_id": 19561,
+              "name": "Outrider's Bow",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19561",
+              "stat_contributions": {
+                "agility": 1.3,
+                "stamina": 1.0,
+                "weapon_dps": 75.015
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 74.105,
+              "item_id": 13037,
+              "name": "Crystalpine Stinger",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13037",
+              "stat_contributions": {
+                "agility": 2.6,
+                "weapon_dps": 71.505
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            }
+          ],
+          "provisional_items": 92,
+          "unresolved_effect_items": 5
+        },
+        "ring1": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 11.75,
+              "item_id": 285190,
+              "name": "Wyvern Heart Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=285190",
+              "stat_contributions": {
+                "agility": 3.25,
+                "attack_power": 7.5,
+                "stamina": 1.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.7,
+              "item_id": 19513,
+              "name": "Legionnaire's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19513",
+              "stat_contributions": {
+                "agility": 3.9,
+                "stamina": 0.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.95,
+              "item_id": 13097,
+              "name": "Thunderbrow Ring",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13097",
+              "stat_contributions": {
+                "agility": 1.95,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.85,
+              "item_id": 7686,
+              "name": "Ironspine's Eye",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7686",
+              "stat_contributions": {
+                "agility": 5.85,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.8,
+              "item_id": 18585,
+              "name": "Band of Allegiance",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18585",
+              "stat_contributions": {
+                "stamina": 0.8,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 93,
+          "unresolved_effect_items": 28
+        },
+        "ring2": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 11.75,
+              "item_id": 285190,
+              "name": "Wyvern Heart Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=285190",
+              "stat_contributions": {
+                "agility": 3.25,
+                "attack_power": 7.5,
+                "stamina": 1.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.7,
+              "item_id": 19513,
+              "name": "Legionnaire's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19513",
+              "stat_contributions": {
+                "agility": 3.9,
+                "stamina": 0.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.95,
+              "item_id": 13097,
+              "name": "Thunderbrow Ring",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13097",
+              "stat_contributions": {
+                "agility": 1.95,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.85,
+              "item_id": 7686,
+              "name": "Ironspine's Eye",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7686",
+              "stat_contributions": {
+                "agility": 5.85,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.8,
+              "item_id": 18585,
+              "name": "Band of Allegiance",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18585",
+              "stat_contributions": {
+                "stamina": 0.8,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 93,
+          "unresolved_effect_items": 28
+        },
+        "shirt": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 0,
+              "item_id": 2575,
+              "name": "Red Linen Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2575",
+              "stat_contributions": {},
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 3342,
+              "name": "Captain Sander's Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3342",
+              "stat_contributions": {},
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 2,
+          "unresolved_effect_items": 0
+        },
+        "shoulder": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 12.228,
+              "item_id": 2278,
+              "name": "Forest Tracker Epaulets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2278",
+              "stat_contributions": {
+                "agility": 7.15,
+                "armor": 0.078,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.053,
+              "item_id": 7913,
+              "name": "Barbaric Iron Shoulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7913",
+              "stat_contributions": {
+                "agility": 3.9,
+                "armor": 0.153,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.526,
+              "item_id": 5964,
+              "name": "Barbaric Shoulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=5964",
+              "stat_contributions": {
+                "agility": 3.25,
+                "armor": 0.076,
+                "stamina": 1.2,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.36,
+              "item_id": 3841,
+              "name": "Golden Scale Shoulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3841",
+              "stat_contributions": {
+                "armor": 0.16,
+                "stamina": 1.2,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.377,
+              "item_id": 2264,
+              "name": "Mantle of Thieves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2264",
+              "stat_contributions": {
+                "agility": 6.5,
+                "armor": 0.077,
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 131,
+          "unresolved_effect_items": 1
+        },
+        "trinket1": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 0.8,
+              "item_id": 21566,
+              "name": "Rune of Perfection",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21566",
+              "stat_contributions": {
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0.8,
+              "item_id": 21568,
+              "name": "Rune of Duty",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21568",
+              "stat_contributions": {
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 273298,
+              "name": "Lookie's Spyglass",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273298",
+              "stat_contributions": {},
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 14,
+          "unresolved_effect_items": 11
+        },
+        "trinket2": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 0.8,
+              "item_id": 21566,
+              "name": "Rune of Perfection",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21566",
+              "stat_contributions": {
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0.8,
+              "item_id": 21568,
+              "name": "Rune of Duty",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21568",
+              "stat_contributions": {
+                "stamina": 0.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 273298,
+              "name": "Lookie's Spyglass",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273298",
+              "stat_contributions": {},
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 14,
+          "unresolved_effect_items": 11
+        },
+        "waist": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 15.432,
+              "item_id": 250556,
+              "name": "Officer's Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250556",
+              "stat_contributions": {
+                "agility": 3.9,
+                "armor": 0.132,
+                "stamina": 1.4,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.163,
+              "item_id": 252459,
+              "name": "Prowler's Leather Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252459",
+              "stat_contributions": {
+                "agility": 3.9,
+                "armor": 0.063,
+                "stamina": 1.2,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            },
+            {
+              "heuristic_score": 13.128,
+              "item_id": 20207,
+              "name": "Defiler's Plate Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20207",
+              "stat_contributions": {
+                "armor": 0.128,
+                "stamina": 1.0,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.113,
+              "item_id": 252520,
+              "name": "Skulker's Leather Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252520",
+              "stat_contributions": {
+                "agility": 5.85,
+                "armor": 0.063,
+                "stamina": 1.2,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 13.061,
+              "item_id": 20152,
+              "name": "Defiler's Chain Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20152",
+              "stat_contributions": {
+                "armor": 0.061,
+                "attack_power": 12.0,
+                "stamina": 1.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 256,
+          "unresolved_effect_items": 5
+        },
+        "weapon": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 157.895,
+              "item_id": 279841,
+              "name": "Defender of Dalaran",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279841",
+              "stat_contributions": {
+                "agility": 5.85,
+                "stamina": 2.6,
+                "strength": 9.0,
+                "weapon_dps": 140.445
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 156.965,
+              "item_id": 13045,
+              "name": "Viscous Hammer",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13045",
+              "stat_contributions": {
+                "attack_power": 17.0,
+                "stamina": 1.2,
+                "strength": 3.0,
+                "weapon_dps": 135.765
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 156.005,
+              "item_id": 279844,
+              "name": "Striking Staff",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279844",
+              "stat_contributions": {
+                "stamina": 1.2,
+                "strength": 14.0,
+                "weapon_dps": 140.805
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 149.75,
+              "item_id": 9449,
+              "name": "Manual Crowd Pummeler",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=9449",
+              "stat_contributions": {
+                "agility": 3.25,
+                "strength": 16.0,
+                "weapon_dps": 130.5
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 148.765,
+              "item_id": 7689,
+              "name": "Morbid Dawn",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7689",
+              "stat_contributions": {
+                "stamina": 3.0,
+                "strength": 10.0,
+                "weapon_dps": 135.765
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 547,
+          "unresolved_effect_items": 2
+        },
+        "wrist": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 8.695,
+              "item_id": 4438,
+              "name": "Pugilist Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4438",
+              "stat_contributions": {
+                "armor": 0.095,
+                "stamina": 0.6,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.641,
+              "item_id": 13012,
+              "name": "Yorgen Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13012",
+              "stat_contributions": {
+                "agility": 1.95,
+                "armor": 0.091,
+                "stamina": 0.6,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.944,
+              "item_id": 14590,
+              "name": "Hawkeye's Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14590",
+              "stat_contributions": {
+                "agility": 3.9,
+                "armor": 0.044,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.847,
+              "item_id": 18948,
+              "name": "Barbaric Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18948",
+              "stat_contributions": {
+                "agility": 2.6,
+                "armor": 0.047,
+                "stamina": 1.2,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.496,
+              "item_id": 4132,
+              "name": "Darkspear Armsplints",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4132",
+              "stat_contributions": {
+                "armor": 0.096,
+                "stamina": 0.4,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 210,
+          "unresolved_effect_items": 0
+        }
+      },
+      "weapon_package": "dual_wield",
+      "weights": {
+        "agility": 0.65,
+        "armor": 0.001,
+        "attack_power": 0.5,
+        "stamina": 0.2,
+        "strength": 1.0,
+        "weapon_dps": 4.5
+      }
+    },
+    "warrior_protection": {
+      "gear": {
+        "back": {
+          "item_id": 13108,
+          "name": "Tigerstrike Mantle",
+          "source_url": "https://www.wowhead.com/forever/item=13108"
+        },
+        "chest": {
+          "item_id": 7688,
+          "name": "Ironspine's Ribcage",
+          "source_url": "https://www.wowhead.com/forever/item=7688"
+        },
+        "feet": {
+          "item_id": 10332,
+          "name": "Scarlet Boots",
+          "source_url": "https://www.wowhead.com/forever/item=10332"
+        },
+        "hands": {
+          "item_id": 279849,
+          "name": "Runebound Gloves",
+          "source_url": "https://www.wowhead.com/forever/item=279849"
+        },
+        "head": {
+          "item_id": 252455,
+          "name": "Defender's Leather Helm",
+          "source_url": "https://www.wowhead.com/forever/item=252455"
+        },
+        "legs": {
+          "item_id": 250523,
+          "name": "Veteran's Silvered Chain Leggings",
+          "source_url": "https://www.wowhead.com/forever/item=250523"
+        },
+        "neck": {
+          "item_id": 274749,
+          "name": "Souvenier Sea Shell",
+          "source_url": "https://www.wowhead.com/forever/item=274749"
+        },
+        "offhand": {
+          "item_id": 6725,
+          "name": "Marbled Buckler",
+          "source_url": "https://www.wowhead.com/forever/item=6725"
+        },
+        "ranged": {
+          "item_id": 274748,
+          "name": "Booty Bay Bruiser's Buckshot",
+          "source_url": "https://www.wowhead.com/forever/item=274748"
+        },
+        "ring1": {
+          "item_id": 285190,
+          "name": "Wyvern Heart Band",
+          "source_url": "https://www.wowhead.com/forever/item=285190"
+        },
+        "ring2": {
+          "item_id": 271911,
+          "name": "Theramore Signet",
+          "source_url": "https://www.wowhead.com/forever/item=271911"
+        },
+        "shirt": {
+          "item_id": 3342,
+          "name": "Captain Sander's Shirt",
+          "source_url": "https://www.wowhead.com/forever/item=3342"
+        },
+        "shoulder": {
+          "item_id": 279839,
+          "name": "Spellguard Pauldrons",
+          "source_url": "https://www.wowhead.com/forever/item=279839"
+        },
+        "trinket1": {
+          "item_id": 21566,
+          "name": "Rune of Perfection",
+          "source_url": "https://www.wowhead.com/forever/item=21566"
+        },
+        "trinket2": {
+          "item_id": 273298,
+          "name": "Lookie's Spyglass",
+          "source_url": "https://www.wowhead.com/forever/item=273298"
+        },
+        "waist": {
+          "item_id": 250556,
+          "name": "Officer's Belt",
+          "source_url": "https://www.wowhead.com/forever/item=250556"
+        },
+        "weapon": {
+          "item_id": 19553,
+          "name": "Legionnaire's Sword",
+          "source_url": "https://www.wowhead.com/forever/item=19553"
+        },
+        "wrist": {
+          "item_id": 3228,
+          "name": "Jimmied Handcuffs",
+          "source_url": "https://www.wowhead.com/forever/item=3228"
+        }
+      },
+      "gear_item_count": 18,
+      "slots": {
+        "back": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 10.1,
+              "item_id": 13108,
+              "name": "Tigerstrike Mantle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13108",
+              "stat_contributions": {
+                "agility": 2.8,
+                "armor": 0.3,
+                "stamina": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.792,
+              "item_id": 18427,
+              "name": "Sergeant's Cloak",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18427",
+              "stat_contributions": {
+                "armor": 0.792,
+                "stamina": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.688,
+              "item_id": 271720,
+              "name": "Crocolisk Skin Gaiter",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=271720",
+              "stat_contributions": {
+                "agility": 1.4,
+                "armor": 0.288,
+                "stamina": 5.0,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.164,
+              "item_id": 14763,
+              "name": "Enduring Cape",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14763",
+              "stat_contributions": {
+                "agility": 0.7,
+                "armor": 0.264,
+                "stamina": 7.0,
+                "strength": 1.2
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.74,
+              "item_id": 279865,
+              "name": "Grave Shroud",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279865",
+              "stat_contributions": {
+                "agility": 0.7,
+                "armor": 0.24,
+                "stamina": 5.0,
+                "strength": 1.8
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 190,
+          "unresolved_effect_items": 0
+        },
+        "chest": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 24.47,
+              "item_id": 7688,
+              "name": "Ironspine's Ribcage",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7688",
+              "stat_contributions": {
+                "agility": 1.05,
+                "armor": 2.82,
+                "stamina": 17.0,
+                "strength": 3.6
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 17.596,
+              "item_id": 250518,
+              "name": "Veteran's Silvered Chain Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250518",
+              "stat_contributions": {
+                "agility": 2.1,
+                "armor": 2.496,
+                "stamina": 7.0,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 16.968,
+              "item_id": 2870,
+              "name": "Shining Silver Breastplate",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2870",
+              "stat_contributions": {
+                "armor": 2.568,
+                "stamina": 6.0,
+                "strength": 8.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 16.932,
+              "item_id": 3416,
+              "name": "Martyr's Chain",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3416",
+              "stat_contributions": {
+                "armor": 2.532,
+                "stamina": 9.0,
+                "strength": 5.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 16.296,
+              "item_id": 6642,
+              "name": "Phantom Armor",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6642",
+              "stat_contributions": {
+                "armor": 2.496,
+                "stamina": 12.0,
+                "strength": 1.8
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 328,
+          "unresolved_effect_items": 6
+        },
+        "feet": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 15.682,
+              "item_id": 10332,
+              "name": "Scarlet Boots",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=10332",
+              "stat_contributions": {
+                "agility": 1.75,
+                "armor": 1.932,
+                "stamina": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.732,
+              "item_id": 13124,
+              "name": "Ravasaur Scale Boots",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13124",
+              "stat_contributions": {
+                "armor": 1.932,
+                "stamina": 11.0,
+                "strength": 1.8
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 14.728,
+              "item_id": 9510,
+              "name": "Caverndeep Trudgers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=9510",
+              "stat_contributions": {
+                "armor": 2.328,
+                "stamina": 10.0,
+                "strength": 2.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.616,
+              "item_id": 6335,
+              "name": "Grizzled Boots",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6335",
+              "stat_contributions": {
+                "armor": 0.816,
+                "stamina": 11.0,
+                "strength": 1.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.584,
+              "item_id": 20210,
+              "name": "Defiler's Plate Greaves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20210",
+              "stat_contributions": {
+                "agility": 2.1,
+                "armor": 1.884,
+                "stamina": 6.0,
+                "strength": 3.6
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 266,
+          "unresolved_effect_items": 2
+        },
+        "hands": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 14.852,
+              "item_id": 279849,
+              "name": "Runebound Gloves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279849",
+              "stat_contributions": {
+                "armor": 0.852,
+                "attack_power": 4.0,
+                "stamina": 10.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 14.032,
+              "item_id": 273810,
+              "name": "Ogre Grips",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273810",
+              "stat_contributions": {
+                "armor": 1.632,
+                "stamina": 10.0,
+                "strength": 2.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.34,
+              "item_id": 7690,
+              "name": "Ebon Vise",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7690",
+              "stat_contributions": {
+                "agility": 2.1,
+                "armor": 0.84,
+                "stamina": 8.0,
+                "strength": 2.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.544,
+              "item_id": 720,
+              "name": "Brawler Gloves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=720",
+              "stat_contributions": {
+                "armor": 0.744,
+                "stamina": 7.0,
+                "strength": 4.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.846,
+              "item_id": 14764,
+              "name": "Enduring Gauntlets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14764",
+              "stat_contributions": {
+                "agility": 1.05,
+                "armor": 1.596,
+                "stamina": 5.0,
+                "strength": 4.2
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 257,
+          "unresolved_effect_items": 2
+        },
+        "head": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 21.208,
+              "item_id": 252455,
+              "name": "Defender's Leather Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252455",
+              "stat_contributions": {
+                "armor": 1.008,
+                "stamina": 13.0,
+                "strength": 7.2
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 20.324,
+              "item_id": 250498,
+              "name": "Veteran's Chain Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250498",
+              "stat_contributions": {
+                "armor": 2.124,
+                "stamina": 11.0,
+                "strength": 7.2
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 19.584,
+              "item_id": 13127,
+              "name": "Frostreaver Crown",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13127",
+              "stat_contributions": {
+                "armor": 2.184,
+                "stamina": 15.0,
+                "strength": 2.4
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 17.508,
+              "item_id": 252512,
+              "name": "Brawler's Leather Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252512",
+              "stat_contributions": {
+                "agility": 3.5,
+                "armor": 1.008,
+                "stamina": 13.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 17.324,
+              "item_id": 250499,
+              "name": "Guard's Chain Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250499",
+              "stat_contributions": {
+                "agility": 4.2,
+                "armor": 2.124,
+                "stamina": 11.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 95,
+          "unresolved_effect_items": 6
+        },
+        "legs": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 19.342,
+              "item_id": 250523,
+              "name": "Veteran's Silvered Chain Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250523",
+              "stat_contributions": {
+                "agility": 2.45,
+                "armor": 2.292,
+                "stamina": 8.0,
+                "strength": 6.6
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 18.704,
+              "item_id": 273022,
+              "name": "Supple Bellyskin Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273022",
+              "stat_contributions": {
+                "armor": 1.104,
+                "stamina": 14.0,
+                "strength": 3.6
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 17.426,
+              "item_id": 252457,
+              "name": "Defender's Leather Kilt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252457",
+              "stat_contributions": {
+                "agility": 2.45,
+                "armor": 1.776,
+                "stamina": 9.0,
+                "strength": 4.2
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 16.262,
+              "item_id": 250493,
+              "name": "Veteran's Chain Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250493",
+              "stat_contributions": {
+                "agility": 1.75,
+                "armor": 2.112,
+                "stamina": 7.0,
+                "strength": 5.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 15.43,
+              "item_id": 252516,
+              "name": "Brawler's Leather Legguards",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252516",
+              "stat_contributions": {
+                "agility": 3.15,
+                "armor": 1.08,
+                "stamina": 7.0,
+                "strength": 4.2
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 266,
+          "unresolved_effect_items": 6
+        },
+        "neck": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 13.0,
+              "item_id": 274749,
+              "name": "Souvenier Sea Shell",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274749",
+              "stat_contributions": {
+                "stamina": 13.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.5,
+              "item_id": 7731,
+              "name": "Ghostshard Talisman",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7731",
+              "stat_contributions": {
+                "attack_power": 3.5,
+                "stamina": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.4,
+              "item_id": 13087,
+              "name": "River Pride Choker",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13087",
+              "stat_contributions": {
+                "stamina": 9.0,
+                "strength": 2.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.0,
+              "item_id": 15200,
+              "name": "Senior Sergeant's Insignia",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=15200",
+              "stat_contributions": {
+                "stamina": 9.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 8.5,
+              "item_id": 274068,
+              "name": "Thermaplugg Medal of Honor",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274068",
+              "stat_contributions": {
+                "attack_power": 2.5,
+                "stamina": 6.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 31,
+          "unresolved_effect_items": 8
+        },
+        "offhand": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 19.062,
+              "item_id": 6725,
+              "name": "Marbled Buckler",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6725",
+              "stat_contributions": {
+                "agility": 1.75,
+                "armor": 9.312,
+                "stamina": 5.0,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 16.136,
+              "item_id": 16788,
+              "name": "Captain Rackmore's Wheel",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=16788",
+              "stat_contributions": {
+                "armor": 8.136,
+                "stamina": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 15.704,
+              "item_id": 7002,
+              "name": "Arctic Buckler",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7002",
+              "stat_contributions": {
+                "armor": 7.704,
+                "stamina": 8.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 14.932,
+              "item_id": 3761,
+              "name": "Deadskull Shield",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3761",
+              "stat_contributions": {
+                "armor": 7.332,
+                "stamina": 7.0,
+                "strength": 0.6
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.856,
+              "item_id": 274290,
+              "name": "Painwalker Buckler",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274290",
+              "stat_contributions": {
+                "armor": 8.856,
+                "stamina": 6.0
+              },
+              "unweighted_stat_axes": [
+                "spell_power"
+              ]
+            }
+          ],
+          "provisional_items": 173,
+          "unresolved_effect_items": 23
+        },
+        "ranged": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 32.31,
+              "item_id": 274748,
+              "name": "Booty Bay Bruiser's Buckshot",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274748",
+              "stat_contributions": {
+                "attack_power": 2.25,
+                "stamina": 3.0,
+                "weapon_dps": 27.06
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 30.705,
+              "item_id": 19561,
+              "name": "Outrider's Bow",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19561",
+              "stat_contributions": {
+                "agility": 0.7,
+                "stamina": 5.0,
+                "weapon_dps": 25.005
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 28.32,
+              "item_id": 4086,
+              "name": "Flash Rifle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4086",
+              "stat_contributions": {
+                "stamina": 3.0,
+                "strength": 2.4,
+                "weapon_dps": 22.92
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 28.165,
+              "item_id": 3463,
+              "name": "Silver Star",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3463",
+              "stat_contributions": {
+                "agility": 1.75,
+                "weapon_dps": 26.415
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 28.09,
+              "item_id": 6798,
+              "name": "Blasting Hackbut",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6798",
+              "stat_contributions": {
+                "agility": 1.05,
+                "stamina": 4.0,
+                "weapon_dps": 23.04
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 92,
+          "unresolved_effect_items": 5
+        },
+        "ring1": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 10.5,
+              "item_id": 285190,
+              "name": "Wyvern Heart Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=285190",
+              "stat_contributions": {
+                "agility": 1.75,
+                "attack_power": 3.75,
+                "stamina": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.25,
+              "item_id": 271911,
+              "name": "Theramore Signet",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=271911",
+              "stat_contributions": {
+                "attack_power": 2.25,
+                "stamina": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.25,
+              "item_id": 272067,
+              "name": "Insurgent's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=272067",
+              "stat_contributions": {
+                "attack_power": 2.25,
+                "stamina": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.7,
+              "item_id": 19513,
+              "name": "Legionnaire's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19513",
+              "stat_contributions": {
+                "agility": 2.1,
+                "stamina": 4.0,
+                "strength": 3.6
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.5,
+              "item_id": 6414,
+              "name": "Seal of Sylvanas",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6414",
+              "stat_contributions": {
+                "attack_power": 1.5,
+                "stamina": 8.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 93,
+          "unresolved_effect_items": 28
+        },
+        "ring2": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 10.5,
+              "item_id": 285190,
+              "name": "Wyvern Heart Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=285190",
+              "stat_contributions": {
+                "agility": 1.75,
+                "attack_power": 3.75,
+                "stamina": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.25,
+              "item_id": 271911,
+              "name": "Theramore Signet",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=271911",
+              "stat_contributions": {
+                "attack_power": 2.25,
+                "stamina": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.25,
+              "item_id": 272067,
+              "name": "Insurgent's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=272067",
+              "stat_contributions": {
+                "attack_power": 2.25,
+                "stamina": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.7,
+              "item_id": 19513,
+              "name": "Legionnaire's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19513",
+              "stat_contributions": {
+                "agility": 2.1,
+                "stamina": 4.0,
+                "strength": 3.6
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.5,
+              "item_id": 6414,
+              "name": "Seal of Sylvanas",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6414",
+              "stat_contributions": {
+                "attack_power": 1.5,
+                "stamina": 8.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 93,
+          "unresolved_effect_items": 28
+        },
+        "shirt": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 0,
+              "item_id": 2575,
+              "name": "Red Linen Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2575",
+              "stat_contributions": {},
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 3342,
+              "name": "Captain Sander's Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3342",
+              "stat_contributions": {},
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 2,
+          "unresolved_effect_items": 0
+        },
+        "shoulder": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 15.536,
+              "item_id": 279839,
+              "name": "Spellguard Pauldrons",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279839",
+              "stat_contributions": {
+                "armor": 2.136,
+                "stamina": 11.0,
+                "strength": 2.4
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 15.536,
+              "item_id": 279842,
+              "name": "Battle Spaulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279842",
+              "stat_contributions": {
+                "armor": 2.136,
+                "stamina": 11.0,
+                "strength": 2.4
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 14.052,
+              "item_id": 273028,
+              "name": "Reliquary Mantle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273028",
+              "stat_contributions": {
+                "armor": 2.052,
+                "stamina": 12.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 13.76,
+              "item_id": 7727,
+              "name": "Watchman Pauldrons",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7727",
+              "stat_contributions": {
+                "armor": 0.96,
+                "stamina": 11.0,
+                "strength": 1.8
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 13.332,
+              "item_id": 13131,
+              "name": "Sparkleshell Mantle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13131",
+              "stat_contributions": {
+                "agility": 1.4,
+                "armor": 1.932,
+                "stamina": 10.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 131,
+          "unresolved_effect_items": 1
+        },
+        "trinket1": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 4.0,
+              "item_id": 21566,
+              "name": "Rune of Perfection",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21566",
+              "stat_contributions": {
+                "stamina": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 4.0,
+              "item_id": 21568,
+              "name": "Rune of Duty",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21568",
+              "stat_contributions": {
+                "stamina": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 273298,
+              "name": "Lookie's Spyglass",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273298",
+              "stat_contributions": {},
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 14,
+          "unresolved_effect_items": 11
+        },
+        "trinket2": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 4.0,
+              "item_id": 21566,
+              "name": "Rune of Perfection",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21566",
+              "stat_contributions": {
+                "stamina": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 4.0,
+              "item_id": 21568,
+              "name": "Rune of Duty",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21568",
+              "stat_contributions": {
+                "stamina": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 273298,
+              "name": "Lookie's Spyglass",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273298",
+              "stat_contributions": {},
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 14,
+          "unresolved_effect_items": 11
+        },
+        "waist": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 16.684,
+              "item_id": 250556,
+              "name": "Officer's Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250556",
+              "stat_contributions": {
+                "agility": 2.1,
+                "armor": 1.584,
+                "stamina": 7.0,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 15.912,
+              "item_id": 252460,
+              "name": "Warden's Leather Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252460",
+              "stat_contributions": {
+                "agility": 2.1,
+                "armor": 1.212,
+                "stamina": 9.0,
+                "strength": 3.6
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.256,
+              "item_id": 252459,
+              "name": "Prowler's Leather Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252459",
+              "stat_contributions": {
+                "agility": 2.1,
+                "armor": 0.756,
+                "stamina": 6.0,
+                "strength": 5.4
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            },
+            {
+              "heuristic_score": 13.736,
+              "item_id": 20207,
+              "name": "Defiler's Plate Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20207",
+              "stat_contributions": {
+                "armor": 1.536,
+                "stamina": 5.0,
+                "strength": 7.2
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.506,
+              "item_id": 252520,
+              "name": "Skulker's Leather Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252520",
+              "stat_contributions": {
+                "agility": 3.15,
+                "armor": 0.756,
+                "stamina": 6.0,
+                "strength": 3.6
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 256,
+          "unresolved_effect_items": 5
+        },
+        "weapon": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 68.365,
+              "item_id": 279841,
+              "name": "Defender of Dalaran",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279841",
+              "stat_contributions": {
+                "agility": 3.15,
+                "stamina": 13.0,
+                "strength": 5.4,
+                "weapon_dps": 46.815
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 66.255,
+              "item_id": 7689,
+              "name": "Morbid Dawn",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7689",
+              "stat_contributions": {
+                "stamina": 15.0,
+                "strength": 6.0,
+                "weapon_dps": 45.255
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 61.555,
+              "item_id": 13045,
+              "name": "Viscous Hammer",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13045",
+              "stat_contributions": {
+                "attack_power": 8.5,
+                "stamina": 6.0,
+                "strength": 1.8,
+                "weapon_dps": 45.255
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 61.335,
+              "item_id": 279844,
+              "name": "Striking Staff",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279844",
+              "stat_contributions": {
+                "stamina": 6.0,
+                "strength": 8.4,
+                "weapon_dps": 46.935
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 60.425,
+              "item_id": 6687,
+              "name": "Corpsemaker",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6687",
+              "stat_contributions": {
+                "stamina": 8.0,
+                "strength": 9.0,
+                "weapon_dps": 43.425
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 547,
+          "unresolved_effect_items": 2
+        },
+        "wrist": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 10.904,
+              "item_id": 3228,
+              "name": "Jimmied Handcuffs",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3228",
+              "stat_contributions": {
+                "armor": 1.104,
+                "stamina": 8.0,
+                "strength": 1.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.364,
+              "item_id": 18948,
+              "name": "Barbaric Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18948",
+              "stat_contributions": {
+                "agility": 1.4,
+                "armor": 0.564,
+                "stamina": 6.0,
+                "strength": 2.4
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.028,
+              "item_id": 270032,
+              "name": "Cultist's Armguards",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=270032",
+              "stat_contributions": {
+                "armor": 0.528,
+                "attack_power": 2.5,
+                "stamina": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.94,
+              "item_id": 4438,
+              "name": "Pugilist Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4438",
+              "stat_contributions": {
+                "armor": 1.14,
+                "stamina": 3.0,
+                "strength": 4.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.756,
+              "item_id": 3230,
+              "name": "Black Wolf Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3230",
+              "stat_contributions": {
+                "armor": 0.756,
+                "attack_power": 1.0,
+                "stamina": 7.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 210,
+          "unresolved_effect_items": 0
+        }
+      },
+      "weapon_package": "one_hand_shield",
+      "weights": {
+        "agility": 0.35,
+        "armor": 0.012,
+        "attack_power": 0.25,
+        "stamina": 1.0,
+        "strength": 0.6,
+        "weapon_dps": 1.5
+      }
+    },
+    "warrior_unrestricted": {
+      "gear": {
+        "back": {
+          "item_id": 271720,
+          "name": "Crocolisk Skin Gaiter",
+          "source_url": "https://www.wowhead.com/forever/item=271720"
+        },
+        "chest": {
+          "item_id": 2870,
+          "name": "Shining Silver Breastplate",
+          "source_url": "https://www.wowhead.com/forever/item=2870"
+        },
+        "feet": {
+          "item_id": 20210,
+          "name": "Defiler's Plate Greaves",
+          "source_url": "https://www.wowhead.com/forever/item=20210"
+        },
+        "hands": {
+          "item_id": 279849,
+          "name": "Runebound Gloves",
+          "source_url": "https://www.wowhead.com/forever/item=279849"
+        },
+        "head": {
+          "item_id": 252455,
+          "name": "Defender's Leather Helm",
+          "source_url": "https://www.wowhead.com/forever/item=252455"
+        },
+        "legs": {
+          "item_id": 250523,
+          "name": "Veteran's Silvered Chain Leggings",
+          "source_url": "https://www.wowhead.com/forever/item=250523"
+        },
+        "neck": {
+          "item_id": 7731,
+          "name": "Ghostshard Talisman",
+          "source_url": "https://www.wowhead.com/forever/item=7731"
+        },
+        "offhand": {
+          "item_id": 6692,
+          "name": "Pronged Reaver",
+          "source_url": "https://www.wowhead.com/forever/item=6692"
+        },
+        "ranged": {
+          "item_id": 274748,
+          "name": "Booty Bay Bruiser's Buckshot",
+          "source_url": "https://www.wowhead.com/forever/item=274748"
+        },
+        "ring1": {
+          "item_id": 285190,
+          "name": "Wyvern Heart Band",
+          "source_url": "https://www.wowhead.com/forever/item=285190"
+        },
+        "ring2": {
+          "item_id": 18585,
+          "name": "Band of Allegiance",
+          "source_url": "https://www.wowhead.com/forever/item=18585"
+        },
+        "shirt": {
+          "item_id": 3342,
+          "name": "Captain Sander's Shirt",
+          "source_url": "https://www.wowhead.com/forever/item=3342"
+        },
+        "shoulder": {
+          "item_id": 2278,
+          "name": "Forest Tracker Epaulets",
+          "source_url": "https://www.wowhead.com/forever/item=2278"
+        },
+        "trinket1": {
+          "item_id": 21566,
+          "name": "Rune of Perfection",
+          "source_url": "https://www.wowhead.com/forever/item=21566"
+        },
+        "trinket2": {
+          "item_id": 273298,
+          "name": "Lookie's Spyglass",
+          "source_url": "https://www.wowhead.com/forever/item=273298"
+        },
+        "waist": {
+          "item_id": 250556,
+          "name": "Officer's Belt",
+          "source_url": "https://www.wowhead.com/forever/item=250556"
+        },
+        "weapon": {
+          "item_id": 7687,
+          "name": "Ironspine's Fist",
+          "source_url": "https://www.wowhead.com/forever/item=7687"
+        },
+        "wrist": {
+          "item_id": 4438,
+          "name": "Pugilist Bracers",
+          "source_url": "https://www.wowhead.com/forever/item=4438"
+        }
+      },
+      "gear_item_count": 18,
+      "slots": {
+        "back": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 9.346,
+              "item_id": 271720,
+              "name": "Crocolisk Skin Gaiter",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=271720",
+              "stat_contributions": {
+                "agility": 2.0,
+                "armor": 0.096,
+                "stamina": 2.25,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.25,
+              "item_id": 13108,
+              "name": "Tigerstrike Mantle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13108",
+              "stat_contributions": {
+                "agility": 4.0,
+                "armor": 0.1,
+                "stamina": 3.15
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.088,
+              "item_id": 282658,
+              "name": "Dragonmaw Battle Shroud",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=282658",
+              "stat_contributions": {
+                "armor": 0.088,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 6.592,
+              "item_id": 14593,
+              "name": "Hawkeye's Cloak",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14593",
+              "stat_contributions": {
+                "agility": 3.5,
+                "armor": 0.092,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 6.438,
+              "item_id": 6314,
+              "name": "Wolfmaster Cape",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6314",
+              "stat_contributions": {
+                "armor": 0.088,
+                "attack_power": 5.0,
+                "stamina": 1.35
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 190,
+          "unresolved_effect_items": 0
+        },
+        "chest": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 17.556,
+              "item_id": 2870,
+              "name": "Shining Silver Breastplate",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2870",
+              "stat_contributions": {
+                "armor": 0.856,
+                "stamina": 2.7,
+                "strength": 14.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 16.982,
+              "item_id": 250518,
+              "name": "Veteran's Silvered Chain Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250518",
+              "stat_contributions": {
+                "agility": 3.0,
+                "armor": 0.832,
+                "stamina": 3.15,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 16.09,
+              "item_id": 7688,
+              "name": "Ironspine's Ribcage",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7688",
+              "stat_contributions": {
+                "agility": 1.5,
+                "armor": 0.94,
+                "stamina": 7.65,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.578,
+              "item_id": 14751,
+              "name": "Slayer's Surcoat",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14751",
+              "stat_contributions": {
+                "agility": 1.5,
+                "armor": 0.828,
+                "stamina": 2.25,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 13.894,
+              "item_id": 3416,
+              "name": "Martyr's Chain",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3416",
+              "stat_contributions": {
+                "armor": 0.844,
+                "stamina": 4.05,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 328,
+          "unresolved_effect_items": 6
+        },
+        "feet": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 12.328,
+              "item_id": 20210,
+              "name": "Defiler's Plate Greaves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20210",
+              "stat_contributions": {
+                "agility": 3.0,
+                "armor": 0.628,
+                "stamina": 2.7,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 12.28,
+              "item_id": 284403,
+              "name": "Shapeshifting Sentinel's Strides",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=284403",
+              "stat_contributions": {
+                "agility": 4.0,
+                "armor": 0.28,
+                "attack_power": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.428,
+              "item_id": 20182,
+              "name": "Defiler's Lamellar Greaves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20182",
+              "stat_contributions": {
+                "agility": 3.0,
+                "armor": 0.628,
+                "stamina": 1.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            },
+            {
+              "heuristic_score": 11.076,
+              "item_id": 4464,
+              "name": "Trouncing Boots",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4464",
+              "stat_contributions": {
+                "agility": 3.5,
+                "armor": 0.576,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.778,
+              "item_id": 273042,
+              "name": "Manascale Treads",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273042",
+              "stat_contributions": {
+                "armor": 0.628,
+                "stamina": 3.15,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 266,
+          "unresolved_effect_items": 2
+        },
+        "hands": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 12.784,
+              "item_id": 279849,
+              "name": "Runebound Gloves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279849",
+              "stat_contributions": {
+                "armor": 0.284,
+                "attack_power": 8.0,
+                "stamina": 4.5
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 11.87,
+              "item_id": 16978,
+              "name": "Warsong Gauntlets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=16978",
+              "stat_contributions": {
+                "armor": 0.52,
+                "stamina": 1.35,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.512,
+              "item_id": 3341,
+              "name": "Gauntlets of Ogre Strength",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3341",
+              "stat_contributions": {
+                "armor": 0.512,
+                "attack_power": 8.0,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.398,
+              "item_id": 720,
+              "name": "Brawler Gloves",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=720",
+              "stat_contributions": {
+                "armor": 0.248,
+                "stamina": 3.15,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 11.282,
+              "item_id": 14764,
+              "name": "Enduring Gauntlets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14764",
+              "stat_contributions": {
+                "agility": 1.5,
+                "armor": 0.532,
+                "stamina": 2.25,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 257,
+          "unresolved_effect_items": 2
+        },
+        "head": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 18.186,
+              "item_id": 252455,
+              "name": "Defender's Leather Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252455",
+              "stat_contributions": {
+                "armor": 0.336,
+                "stamina": 5.85,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 17.658,
+              "item_id": 250498,
+              "name": "Veteran's Chain Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250498",
+              "stat_contributions": {
+                "armor": 0.708,
+                "stamina": 4.95,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.702,
+              "item_id": 250528,
+              "name": "Veteran's Silvered Chain Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250528",
+              "stat_contributions": {
+                "armor": 0.652,
+                "stamina": 4.05,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.322,
+              "item_id": 14753,
+              "name": "Slayer's Skullcap",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=14753",
+              "stat_contributions": {
+                "agility": 1.5,
+                "armor": 0.672,
+                "stamina": 3.15,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.232,
+              "item_id": 6686,
+              "name": "Tusken Helm",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6686",
+              "stat_contributions": {
+                "armor": 1.232,
+                "strength": 13.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 95,
+          "unresolved_effect_items": 6
+        },
+        "legs": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 18.864,
+              "item_id": 250523,
+              "name": "Veteran's Silvered Chain Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250523",
+              "stat_contributions": {
+                "agility": 3.5,
+                "armor": 0.764,
+                "stamina": 3.6,
+                "strength": 11.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 15.354,
+              "item_id": 250493,
+              "name": "Veteran's Chain Leggings",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250493",
+              "stat_contributions": {
+                "agility": 2.5,
+                "armor": 0.704,
+                "stamina": 3.15,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 15.142,
+              "item_id": 252457,
+              "name": "Defender's Leather Kilt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252457",
+              "stat_contributions": {
+                "agility": 3.5,
+                "armor": 0.592,
+                "stamina": 4.05,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 15.104,
+              "item_id": 9624,
+              "name": "Triprunner Dungarees",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=9624",
+              "stat_contributions": {
+                "agility": 9.0,
+                "armor": 0.404,
+                "stamina": 2.7,
+                "strength": 3.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 15.01,
+              "item_id": 252516,
+              "name": "Brawler's Leather Legguards",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252516",
+              "stat_contributions": {
+                "agility": 4.5,
+                "armor": 0.36,
+                "stamina": 3.15,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 266,
+          "unresolved_effect_items": 6
+        },
+        "neck": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 11.05,
+              "item_id": 7731,
+              "name": "Ghostshard Talisman",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7731",
+              "stat_contributions": {
+                "attack_power": 7.0,
+                "stamina": 4.05
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.05,
+              "item_id": 13087,
+              "name": "River Pride Choker",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13087",
+              "stat_contributions": {
+                "stamina": 4.05,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 7.8,
+              "item_id": 13084,
+              "name": "Kaleidoscope Chain",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13084",
+              "stat_contributions": {
+                "agility": 2.0,
+                "stamina": 1.8,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": [
+                "intellect",
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 7.7,
+              "item_id": 274068,
+              "name": "Thermaplugg Medal of Honor",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274068",
+              "stat_contributions": {
+                "attack_power": 5.0,
+                "stamina": 2.7
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 6.25,
+              "item_id": 19537,
+              "name": "Scout's Medallion",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19537",
+              "stat_contributions": {
+                "agility": 4.0,
+                "stamina": 2.25
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 31,
+          "unresolved_effect_items": 8
+        },
+        "offhand": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 85.22,
+              "item_id": 6692,
+              "name": "Pronged Reaver",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6692",
+              "stat_contributions": {
+                "strength": 5.0,
+                "weapon_dps": 80.22
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 82.9,
+              "item_id": 19553,
+              "name": "Legionnaire's Sword",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19553",
+              "stat_contributions": {
+                "stamina": 1.35,
+                "strength": 7.0,
+                "weapon_dps": 74.55
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 82.58,
+              "item_id": 7683,
+              "name": "Bloody Brass Knuckles",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7683",
+              "stat_contributions": {
+                "attack_power": 6.0,
+                "weapon_dps": 76.58
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 78.98,
+              "item_id": 19545,
+              "name": "Scout's Blade",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19545",
+              "stat_contributions": {
+                "agility": 3.5,
+                "stamina": 1.35,
+                "weapon_dps": 74.13
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 77.49,
+              "item_id": 13033,
+              "name": "Zealot Blade",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13033",
+              "stat_contributions": {
+                "weapon_dps": 77.49
+              },
+              "unweighted_stat_axes": [
+                "intellect",
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 338,
+          "unresolved_effect_items": 23
+        },
+        "ranged": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 68.99,
+              "item_id": 274748,
+              "name": "Booty Bay Bruiser's Buckshot",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=274748",
+              "stat_contributions": {
+                "attack_power": 4.5,
+                "stamina": 1.35,
+                "weapon_dps": 63.14
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 64.135,
+              "item_id": 3463,
+              "name": "Silver Star",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3463",
+              "stat_contributions": {
+                "agility": 2.5,
+                "weapon_dps": 61.635
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 61.595,
+              "item_id": 19561,
+              "name": "Outrider's Bow",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19561",
+              "stat_contributions": {
+                "agility": 1.0,
+                "stamina": 2.25,
+                "weapon_dps": 58.345
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 61.21,
+              "item_id": 6696,
+              "name": "Nightstalker Bow",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=6696",
+              "stat_contributions": {
+                "agility": 1.5,
+                "weapon_dps": 59.71
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 58.83,
+              "item_id": 4086,
+              "name": "Flash Rifle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4086",
+              "stat_contributions": {
+                "stamina": 1.35,
+                "strength": 4.0,
+                "weapon_dps": 53.48
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 92,
+          "unresolved_effect_items": 5
+        },
+        "ring1": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 12.25,
+              "item_id": 285190,
+              "name": "Wyvern Heart Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=285190",
+              "stat_contributions": {
+                "agility": 2.5,
+                "attack_power": 7.5,
+                "stamina": 2.25
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.8,
+              "item_id": 18585,
+              "name": "Band of Allegiance",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18585",
+              "stat_contributions": {
+                "stamina": 1.8,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.8,
+              "item_id": 19513,
+              "name": "Legionnaire's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19513",
+              "stat_contributions": {
+                "agility": 3.0,
+                "stamina": 1.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.5,
+              "item_id": 13097,
+              "name": "Thunderbrow Ring",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13097",
+              "stat_contributions": {
+                "agility": 1.5,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.5,
+              "item_id": 7686,
+              "name": "Ironspine's Eye",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7686",
+              "stat_contributions": {
+                "agility": 4.5,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 93,
+          "unresolved_effect_items": 28
+        },
+        "ring2": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 12.25,
+              "item_id": 285190,
+              "name": "Wyvern Heart Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=285190",
+              "stat_contributions": {
+                "agility": 2.5,
+                "attack_power": 7.5,
+                "stamina": 2.25
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.8,
+              "item_id": 18585,
+              "name": "Band of Allegiance",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18585",
+              "stat_contributions": {
+                "stamina": 1.8,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.8,
+              "item_id": 19513,
+              "name": "Legionnaire's Band",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=19513",
+              "stat_contributions": {
+                "agility": 3.0,
+                "stamina": 1.8,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.5,
+              "item_id": 13097,
+              "name": "Thunderbrow Ring",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13097",
+              "stat_contributions": {
+                "agility": 1.5,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.5,
+              "item_id": 7686,
+              "name": "Ironspine's Eye",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7686",
+              "stat_contributions": {
+                "agility": 4.5,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 93,
+          "unresolved_effect_items": 28
+        },
+        "shirt": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 0,
+              "item_id": 2575,
+              "name": "Red Linen Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2575",
+              "stat_contributions": {},
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 3342,
+              "name": "Captain Sander's Shirt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3342",
+              "stat_contributions": {},
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 2,
+          "unresolved_effect_items": 0
+        },
+        "shoulder": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 10.812,
+              "item_id": 2278,
+              "name": "Forest Tracker Epaulets",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=2278",
+              "stat_contributions": {
+                "agility": 5.5,
+                "armor": 0.312,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.504,
+              "item_id": 5964,
+              "name": "Barbaric Shoulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=5964",
+              "stat_contributions": {
+                "agility": 2.5,
+                "armor": 0.304,
+                "stamina": 2.7,
+                "strength": 5.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 10.34,
+              "item_id": 3841,
+              "name": "Golden Scale Shoulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=3841",
+              "stat_contributions": {
+                "armor": 0.64,
+                "stamina": 2.7,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.662,
+              "item_id": 279839,
+              "name": "Spellguard Pauldrons",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279839",
+              "stat_contributions": {
+                "armor": 0.712,
+                "stamina": 4.95,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 9.662,
+              "item_id": 279842,
+              "name": "Battle Spaulders",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279842",
+              "stat_contributions": {
+                "armor": 0.712,
+                "stamina": 4.95,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 131,
+          "unresolved_effect_items": 1
+        },
+        "trinket1": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 1.8,
+              "item_id": 21566,
+              "name": "Rune of Perfection",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21566",
+              "stat_contributions": {
+                "stamina": 1.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 1.8,
+              "item_id": 21568,
+              "name": "Rune of Duty",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21568",
+              "stat_contributions": {
+                "stamina": 1.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 273298,
+              "name": "Lookie's Spyglass",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273298",
+              "stat_contributions": {},
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 14,
+          "unresolved_effect_items": 11
+        },
+        "trinket2": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 1.8,
+              "item_id": 21566,
+              "name": "Rune of Perfection",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21566",
+              "stat_contributions": {
+                "stamina": 1.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 1.8,
+              "item_id": 21568,
+              "name": "Rune of Duty",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=21568",
+              "stat_contributions": {
+                "stamina": 1.8
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 0,
+              "item_id": 273298,
+              "name": "Lookie's Spyglass",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=273298",
+              "stat_contributions": {},
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            }
+          ],
+          "provisional_items": 14,
+          "unresolved_effect_items": 11
+        },
+        "waist": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 16.678,
+              "item_id": 250556,
+              "name": "Officer's Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=250556",
+              "stat_contributions": {
+                "agility": 3.0,
+                "armor": 0.528,
+                "stamina": 3.15,
+                "strength": 10.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.952,
+              "item_id": 252459,
+              "name": "Prowler's Leather Belt",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=252459",
+              "stat_contributions": {
+                "agility": 3.0,
+                "armor": 0.252,
+                "stamina": 2.7,
+                "strength": 9.0
+              },
+              "unweighted_stat_axes": [
+                "intellect"
+              ]
+            },
+            {
+              "heuristic_score": 14.762,
+              "item_id": 20207,
+              "name": "Defiler's Plate Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20207",
+              "stat_contributions": {
+                "armor": 0.512,
+                "stamina": 2.25,
+                "strength": 12.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.494,
+              "item_id": 20152,
+              "name": "Defiler's Chain Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20152",
+              "stat_contributions": {
+                "armor": 0.244,
+                "attack_power": 12.0,
+                "stamina": 2.25
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 14.164,
+              "item_id": 20191,
+              "name": "Defiler's Leather Girdle",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=20191",
+              "stat_contributions": {
+                "armor": 0.364,
+                "attack_power": 12.0,
+                "stamina": 1.8
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 256,
+          "unresolved_effect_items": 5
+        },
+        "weapon": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 128.585,
+              "item_id": 279841,
+              "name": "Defender of Dalaran",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279841",
+              "stat_contributions": {
+                "agility": 4.5,
+                "stamina": 5.85,
+                "strength": 9.0,
+                "weapon_dps": 109.235
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 128.295,
+              "item_id": 13045,
+              "name": "Viscous Hammer",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13045",
+              "stat_contributions": {
+                "attack_power": 17.0,
+                "stamina": 2.7,
+                "strength": 3.0,
+                "weapon_dps": 105.595
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 126.215,
+              "item_id": 279844,
+              "name": "Striking Staff",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=279844",
+              "stat_contributions": {
+                "stamina": 2.7,
+                "strength": 14.0,
+                "weapon_dps": 109.515
+              },
+              "unweighted_stat_axes": [
+                "spirit"
+              ]
+            },
+            {
+              "heuristic_score": 122.345,
+              "item_id": 7689,
+              "name": "Morbid Dawn",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=7689",
+              "stat_contributions": {
+                "stamina": 6.75,
+                "strength": 10.0,
+                "weapon_dps": 105.595
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 120.0,
+              "item_id": 9449,
+              "name": "Manual Crowd Pummeler",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=9449",
+              "stat_contributions": {
+                "agility": 2.5,
+                "strength": 16.0,
+                "weapon_dps": 101.5
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 547,
+          "unresolved_effect_items": 2
+        },
+        "wrist": {
+          "heuristic_top5": [
+            {
+              "heuristic_score": 9.73,
+              "item_id": 4438,
+              "name": "Pugilist Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4438",
+              "stat_contributions": {
+                "armor": 0.38,
+                "stamina": 1.35,
+                "strength": 8.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 9.214,
+              "item_id": 13012,
+              "name": "Yorgen Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=13012",
+              "stat_contributions": {
+                "agility": 1.5,
+                "armor": 0.364,
+                "stamina": 1.35,
+                "strength": 6.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.888,
+              "item_id": 18948,
+              "name": "Barbaric Bracers",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=18948",
+              "stat_contributions": {
+                "agility": 2.0,
+                "armor": 0.188,
+                "stamina": 2.7,
+                "strength": 4.0
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.326,
+              "item_id": 270032,
+              "name": "Cultist's Armguards",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=270032",
+              "stat_contributions": {
+                "armor": 0.176,
+                "attack_power": 5.0,
+                "stamina": 3.15
+              },
+              "unweighted_stat_axes": []
+            },
+            {
+              "heuristic_score": 8.284,
+              "item_id": 4132,
+              "name": "Darkspear Armsplints",
+              "proxy_uncertainty": "UNCALIBRATED_ROLE_PRIOR_NOT_COMBATRUNTIME_MARGINAL",
+              "source_url": "https://www.wowhead.com/forever/item=4132",
+              "stat_contributions": {
+                "armor": 0.384,
+                "stamina": 0.9,
+                "strength": 7.0
+              },
+              "unweighted_stat_axes": []
+            }
+          ],
+          "provisional_items": 210,
+          "unresolved_effect_items": 0
+        }
+      },
+      "weapon_package": "best_package",
+      "weights": {
+        "agility": 0.5,
+        "armor": 0.004,
+        "attack_power": 0.5,
+        "stamina": 0.45,
+        "strength": 1.0,
+        "weapon_dps": 3.5
+      }
+    }
+  },
+  "search_wall_cpu_events_attempts_unique_prediction_actual": "NOT_MEASURED",
+  "staged_db_sha256": "0cfa75f3adaa703bef925797d42b5057749104886d02f2068ddb9ef1c9abcd04"
+}

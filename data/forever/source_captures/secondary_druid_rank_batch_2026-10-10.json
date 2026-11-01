@@ -1,0 +1,196 @@
+{
+  "schema": "forever_secondary_client_talent_rank_capture_v1",
+  "class_key": "druid",
+  "capture_id": "secondary_druid_rank_batch_20261010_70245",
+  "captured_at": "2026-10-10",
+  "client_build_claim": "1.60.1.70245",
+  "authority_note": "Secondary transcription, not primary Wowhead trait ID; later builds require reconciliation.",
+  "entries": [
+    {
+      "spell_id": 1223081,
+      "name": "Genesis",
+      "tree_row": 0,
+      "tree_col": 2,
+      "max_rank": 5,
+      "tooltip_source_url": "https://theforeverera.com/en/talents/druid/genesis/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Increases the periodic damage and healing done by your spells and abilities by 1%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Increases the periodic damage and healing done by your spells and abilities by 2%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Increases the periodic damage and healing done by your spells and abilities by 3%."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Increases the periodic damage and healing done by your spells and abilities by 4%."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Increases the periodic damage and healing done by your spells and abilities by 5%."
+        }
+      ]
+    },
+    {
+      "spell_id": 16845,
+      "name": "Moonglow",
+      "tree_row": 1,
+      "tree_col": 0,
+      "max_rank": 3,
+      "tooltip_source_url": "https://theforeverera.com/en/talents/druid/moonglow/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Reduces the Mana cost of your damaging spells by 8%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Reduces the Mana cost of your damaging spells by 17%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Reduces the Mana cost of your damaging spells by 25%."
+        }
+      ]
+    },
+    {
+      "spell_id": 16833,
+      "name": "Natural Shapeshifter",
+      "tree_row": 1,
+      "tree_col": 2,
+      "max_rank": 3,
+      "tooltip_source_url": "https://theforeverera.com/en/talents/druid/natural-shapeshifter/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Reduces the mana cost of all shapeshifting by 10%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Reduces the mana cost of all shapeshifting by 20%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Reduces the mana cost of all shapeshifting by 30%."
+        }
+      ]
+    },
+    {
+      "spell_id": 17104,
+      "name": "Gift of Nature",
+      "tree_row": 2,
+      "tree_col": 2,
+      "max_rank": 5,
+      "tooltip_source_url": "https://theforeverera.com/en/talents/druid/gift-of-nature/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Increases the effect of all your healing spells by 2%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Increases the effect of all your healing spells by 4%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Increases the effect of all your healing spells by 6%."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Increases the effect of all your healing spells by 8%."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Increases the effect of all your healing spells by 10%."
+        }
+      ]
+    },
+    {
+      "spell_id": 17111,
+      "name": "Improved Rejuvenation",
+      "tree_row": 3,
+      "tree_col": 2,
+      "max_rank": 3,
+      "tooltip_source_url": "https://theforeverera.com/en/talents/druid/improved-rejuvenation/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Increases the effect of your Rejuvenation spell by 5%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Increases the effect of your Rejuvenation spell by 10%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Increases the effect of your Rejuvenation spell by 15%."
+        }
+      ]
+    },
+    {
+      "spell_id": 24968,
+      "name": "Tranquil Spirit",
+      "tree_row": 3,
+      "tree_col": 1,
+      "max_rank": 5,
+      "tooltip_source_url": "https://theforeverera.com/en/talents/druid/tranquil-spirit/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Reduces the mana cost of your Healing Touch and Tranquility spells by 2%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Reduces the mana cost of your Healing Touch and Tranquility spells by 4%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Reduces the mana cost of your Healing Touch and Tranquility spells by 6%."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Reduces the mana cost of your Healing Touch and Tranquility spells by 8%."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Reduces the mana cost of your Healing Touch and Tranquility spells by 10%."
+        }
+      ]
+    },
+    {
+      "spell_id": 16896,
+      "name": "Moonfury",
+      "tree_row": 5,
+      "tree_col": 1,
+      "max_rank": 5,
+      "tooltip_source_url": "https://theforeverera.com/en/talents/druid/moonfury/",
+      "ranks": [
+        {
+          "rank": 1,
+          "raw_tooltip": "Increases the damage done by your Arcane and Nature spells by 2%."
+        },
+        {
+          "rank": 2,
+          "raw_tooltip": "Increases the damage done by your Arcane and Nature spells by 4%."
+        },
+        {
+          "rank": 3,
+          "raw_tooltip": "Increases the damage done by your Arcane and Nature spells by 6%."
+        },
+        {
+          "rank": 4,
+          "raw_tooltip": "Increases the damage done by your Arcane and Nature spells by 8%."
+        },
+        {
+          "rank": 5,
+          "raw_tooltip": "Increases the damage done by your Arcane and Nature spells by 10%."
+        }
+      ]
+    }
+  ]
+}

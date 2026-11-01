@@ -1,0 +1,236 @@
+# INSTALL in PUBLIC dosibjrn/forever-sim at .github/workflows/restore-private-source.yml.
+# Add PUBLIC Actions secret FOREVER_SIM_PRIVATE_READ_TOKEN_2 granting read-only Contents
+# access to the PRIVATE dosibjrn/mage-level-sim repo (and its LFS objects).
+# Manual-only audit/publish; publishing requires an explicitly approved exact audited source SHA.
+# Run Actions -> Restore private source to public Forever Sim -> mode=audit,
+# verify the private repository contains only material licensed/approved for PUBLIC release,
+# then mode=publish with exact audited private main SHA.
+# Public GITHUB_TOKEN handles destination writes. NO private audit path lists are uploaded.
+# Existing public main-only governance/docs, existing PRs and the manual smoke are kept.
+name: Restore private source to public Forever Sim
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Audit source first; publish only after approving private data for public release
+        type: choice
+        options: [audit, publish]
+        required: true
+        default: audit
+      approved_source_sha:
+        description: Exact 40-character private main SHA from successful audit (publish only)
+        type: string
+        required: false
+permissions:
+  contents: write
+concurrency:
+  group: forever-public-snapshot-migration
+  cancel-in-progress: false
+jobs:
+  migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.repository == 'dosibjrn/forever-sim'
+    env:
+      MIGRATION_MODE: ${{ inputs.mode }}
+      APPROVED_SOURCE_SHA: ${{ inputs.approved_source_sha }}
+      PRIVATE_READ_TOKEN: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN_2 }}
+    steps:
+      - name: Checkout PUBLIC destination main
+        uses: actions/checkout@v4
+        with:
+          path: public-target
+          ref: main
+          fetch-depth: 1
+          lfs: true
+          persist-credentials: true
+      - name: Checkout PRIVATE source main with LFS
+        uses: actions/checkout@v4
+        with:
+          repository: dosibjrn/mage-level-sim
+          token: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN_2 }}
+          path: private-source
+          ref: main
+          fetch-depth: 1
+          lfs: true
+          persist-credentials: false
+      - name: Audit and optionally publish exact snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE="$GITHUB_WORKSPACE/private-source"
+          TARGET="$GITHUB_WORKSPACE/public-target"
+          REPORT="$RUNNER_TEMP/forever-migration-audit"
+          mkdir -p "$REPORT"
+
+          # Separate checkout uses the private-read token; public GITHUB_TOKEN handles writes.
+          source_sha="$(git -C "$SOURCE" rev-parse HEAD)"
+          mode="$MIGRATION_MODE"
+          echo "Audited private source SHA: $source_sha"
+          echo "Mode: $mode"
+          if [[ "$GITHUB_REPOSITORY" != "dosibjrn/forever-sim" ]]; then
+            echo 'Run ONLY from the PUBLIC dosibjrn/forever-sim repo.' >&2
+            exit 10
+          fi
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo 'Run from public main branch, not from a PR or another branch.' >&2
+            exit 10
+          fi
+          if [[ "$mode" != 'audit' && "$mode" != 'publish' ]]; then
+            echo 'Explicit audit or publish mode is required.' >&2
+            exit 12
+          fi
+          if [[ "$mode" == 'publish' ]]; then
+            if [[ "$APPROVED_SOURCE_SHA" != "$source_sha" || ! "$APPROVED_SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]; then
+              echo 'Approval SHA does not match this exact private main checkout. Audit and approve the current SHA first.' >&2
+              exit 11
+            fi
+          fi
+
+          echo 'Checking hydrated original private LFS content...'
+          git -C "$SOURCE" lfs ls-files | wc -l
+
+          # PRIVATE audit paths stay on the ephemeral runner only. The PUBLIC artifact
+          # receives only summary counts; never print original content or suspect paths.
+          python3 - "$SOURCE" "$REPORT" <<'PYTHON_AUDIT'
+          import hashlib, os, pathlib, re, subprocess, sys
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2]); out.mkdir(exist_ok=True)
+          raw=subprocess.check_output(['git','-C',str(root),'ls-files','-z'])
+          paths=[os.fsdecode(b) for b in raw.split(b'\0') if b]
+          protected=lambda p: (p.startswith('.github/workflows/') or
+            p in {'README.md','docs/planning/WORK_PRIORITY.md',
+                  'scripts/complete_public_migration.sh','scripts/port_remaining_branches.sh'} or
+            p.startswith('docs/migration/'))
+          patterns=[re.compile(rb'gh[pousr]_[A-Za-z0-9]{30,}'),
+                    re.compile(rb'github_pat_[A-Za-z0-9_]{40,}'),
+                    re.compile(rb'-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----'),
+                    re.compile(rb'AKIA[A-Z0-9]{16}'),
+                    re.compile(rb'(?i)(?:api[_-]?key|secret[_-]?key|access[_-]?token|password)\s*[:=]\s*[\"\']?[A-Za-z0-9+/_-]{24,}')]
+          suspicious=[]; unresolved=[]; missing=[]; selected=[]
+          suspname=re.compile(r'(^|/)(?:\.env(?:$|\.)|id_(?:rsa|ed25519)(?:$|\.)|[^/]+\.(?:pem|p12|pfx|key)$|credentials[^/]*\.json$)',re.I)
+          with (out/'manifest_sha256.tsv').open('w',encoding='utf-8') as f:
+           for p in paths:
+            if protected(p): continue
+            file=root/p
+            if not file.is_file(): missing.append(p); continue
+            data=file.read_bytes()
+            selected.append(p)
+            f.write(hashlib.sha256(data).hexdigest()+'\t'+p+'\n')
+            if data.startswith(b'version https://git-lfs.github.com/spec/v1\n'):
+             unresolved.append(p)
+            if suspname.search(p): suspicious.append(p+' [filename]')
+            if b'\0' not in data[:4096] and len(data)<8_000_000:
+             if any(rx.search(data) for rx in patterns): suspicious.append(p+' [potential credential]')
+            if p.endswith('.sqlite') and not data.startswith(b'SQLite format 3\x00'):
+             unresolved.append(p+' [not hydrated SQLite]')
+          (out/'possible_sensitive_paths.txt').write_text('\n'.join(suspicious)+'\n',encoding='utf-8')
+          (out/'unresolved_assets.txt').write_text('\n'.join(unresolved)+'\n',encoding='utf-8')
+          (out/'missing_source_paths.txt').write_text('\n'.join(missing)+'\n',encoding='utf-8')
+          (out/'summary.txt').write_text(f'Tracked source paths: {len(paths)}\nSelected: {len(selected)}\nProtected: {len(paths)-len(selected)}\nSuspect paths: {len(suspicious)}\nUnresolved assets: {len(unresolved)}\nMissing: {len(missing)}\n',encoding='utf-8')
+          print(f'Source tracked={len(paths)}, selected={len(selected)}, excluded={len(paths)-len(selected)}')
+          print(f'Suspect files={len(suspicious)}, unresolved LFS/SQLite={len(unresolved)}, missing={len(missing)}')
+          if suspicious or unresolved or missing:
+           print('Preflight FAILED; inspect private audit artifact, never copy suspect files blindly.',file=sys.stderr)
+           sys.exit(20)
+          PYTHON_AUDIT
+
+          echo 'Using the checked-out PUBLIC destination main...'
+          dest_sha="$(git -C "$TARGET" rev-parse HEAD)"
+          echo "Existing public main SHA: $dest_sha"
+
+          # Preserve the newly migrated public README, governance priority, and migration helpers,
+          # and the ONLY manually dispatched public smoke CI. Do NOT publish old auto workflows.
+          rsync -a \
+            --exclude='/.git/***' \
+            --exclude='/.github/workflows/***' \
+            --exclude='/README.md' \
+            --exclude='/docs/planning/WORK_PRIORITY.md' \
+            --exclude='/docs/migration/***' \
+            --exclude='/scripts/complete_public_migration.sh' \
+            --exclude='/scripts/port_remaining_branches.sh' \
+            "$SOURCE/" "$TARGET/"
+
+          # Verify actual working bytes, including original hydrated databases and JSON evidence.
+          python3 - "$SOURCE" "$TARGET" "$REPORT" <<'PYTHON_COMPARE'
+          import hashlib, pathlib, sys
+          source=pathlib.Path(sys.argv[1]); target=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3]); mismatches=[]
+          for line in (out/'manifest_sha256.tsv').read_text().splitlines():
+           expected,path=line.split('\t',1); copied=target/path
+           if not copied.is_file() or hashlib.sha256(copied.read_bytes()).hexdigest()!=expected:
+            mismatches.append(path)
+          (out/'copy_mismatches.txt').write_text('\n'.join(mismatches)+'\n',encoding='utf-8')
+          print('Byte-for-byte copy mismatches:',len(mismatches))
+          if mismatches: raise SystemExit(21)
+          PYTHON_COMPARE
+
+          # Force-stage original tracked paths; a .gitignore must not drop existing source assets.
+          git -C "$TARGET" lfs install --local
+          git -C "$TARGET" add -A --force
+          python3 - "$TARGET" "$REPORT" <<'PYTHON_STAGE'
+          import pathlib,subprocess,sys,os
+          repo=sys.argv[1]; report=pathlib.Path(sys.argv[2]); stage=subprocess.check_output(['git','-C',repo,'ls-files','-z'])
+          staged=set(os.fsdecode(p) for p in stage.split(b'\0') if p)
+          expected=[line.split('\t',1)[1] for line in (report/'manifest_sha256.tsv').read_text().splitlines()]
+          missing=[p for p in expected if p not in staged]
+          (report/'unstaged_source_paths.txt').write_text('\n'.join(missing)+'\n',encoding='utf-8')
+          print('Source paths missing from staged git index:',len(missing))
+          if missing:raise SystemExit(22)
+          PYTHON_STAGE
+          if git -C "$TARGET" diff --cached --name-only --diff-filter=D | grep -q .; then
+            echo 'Unexpected public-main deletions would occur: aborting.' >&2
+            exit 23
+          fi
+
+          git -C "$TARGET" diff --cached --stat > "$REPORT/staged_diff_stat.txt"
+          echo "Public staged paths changed: $(git -C "$TARGET" diff --cached --name-only | wc -l)"
+          echo "Protected public workflows: $(git -C "$TARGET" ls-files '.github/workflows/*' | wc -l)"
+
+          if [[ "$mode" == 'audit' ]]; then
+            echo "AUDIT SUCCESS: Review private source for public-disclosure safety, SHA $source_sha."
+            echo 'Rerun mode=publish with approved_source_sha=<audited SHA> after reviewing private source rights, secrets and personal data.'
+            exit 0
+          fi
+
+          # Do NOT publish solely on automated secret patterns: the human must explicitly approve
+          # the exact audited private commit. Public source material cannot be retracted by a git revert.
+          echo 'Publish authorized for exact audited source SHA.'
+          echo 'Ensuring public main has not changed since the clone...'
+          git -C "$TARGET" fetch --quiet origin main
+          if [[ "$(git -C "$TARGET" rev-parse FETCH_HEAD)" != "$dest_sha" ]]; then
+            echo 'Public main moved while auditing; restart migration for safe reconciliation.' >&2
+            exit 24
+          fi
+
+          # The public repository's scoped GITHUB_TOKEN credentials are persisted by checkout.
+          # No personal write PAT is needed. The private read PAT is never used for pushes.
+          if git -C "$TARGET" diff --cached --quiet; then
+            echo 'Already matched: no commit needed.'
+          else
+            git -C "$TARGET" -c user.name='forever-sim-migrator[bot]' \
+              -c user.email='57290345+dosibjrn@users.noreply.github.com' \
+              commit -m "migration: restore approved current private source snapshot ($source_sha)"
+            # Git LFS pre-push hook uploads any converted DB/binary payloads before Git refs.
+            git -C "$TARGET" push origin HEAD:main
+          fi
+
+          git -C "$TARGET" fetch --quiet origin main
+          new_sha="$(git -C "$TARGET" rev-parse HEAD)"
+          remote_sha="$(git -C "$TARGET" rev-parse FETCH_HEAD)"
+          if [[ "$new_sha" != "$remote_sha" ]]; then
+            echo 'Public remote head differs from completed snapshot; inspect before proceeding.' >&2
+            exit 25
+          fi
+          printf '%s\n' "$new_sha" > "$REPORT/verified_public_head.txt"
+          echo "PUBLISHED AND VERIFIED: https://github.com/dosibjrn/forever-sim/commit/$new_sha"
+          echo 'PRs #20-#24 remain DRAFT pending exact-head tests/rebase. No checkpoint PASS asserted.'
+
+          echo 'The successfully executed public runner/steps establish public Actions allocation.'
+          echo 'Next: verify public main exact contents and reconcile draft PRs #20-#24.'
+      - name: Upload only public-safe audit SUMMARY
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-safe-migration-summary
+          path: ${{ runner.temp }}/forever-migration-audit/summary.txt
+          if-no-files-found: warn
+          retention-days: 7

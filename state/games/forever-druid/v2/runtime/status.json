@@ -1,0 +1,19 @@
+{
+  "state": "running",
+  "phase": "searching",
+  "outer_stage": "fixed_point",
+  "level": null,
+  "progress": {
+    "mode": "determinate",
+    "current": 0,
+    "total": 1,
+    "fraction": 0.0,
+    "unit": "levels"
+  },
+  "message": "fixed-point 3/3 · elapsed 0s",
+  "elapsed_seconds": 0.0,
+  "eta_seconds": null,
+  "updated_at": 1791668829.2356203,
+  "fixed_point_iteration": 3,
+  "fixed_point_max_iters": 3
+}

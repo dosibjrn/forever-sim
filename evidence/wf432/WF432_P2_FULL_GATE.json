@@ -1,0 +1,4510 @@
+{
+  "available_points": 26,
+  "bonus_talent_points": 5,
+  "certified_checkpoint": false,
+  "checkpoint": "druid:L30:unrestricted",
+  "existing_compilation": {
+    "preexisting_rank_count": 93,
+    "promoted_rank_count": 24,
+    "unscored_rank_count": 31
+  },
+  "gate": "P2",
+  "green": false,
+  "provably_unreachable": [
+    {
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/moonfury/",
+      "talent_id": "moonfury",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/moonfury/",
+      "talent_id": "moonfury",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 1,
+      "rank": 4,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/moonfury/",
+      "talent_id": "moonfury",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 1,
+      "rank": 5,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/moonfury/",
+      "talent_id": "moonfury",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 6,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/moonkin-form/",
+      "talent_id": "moonkin_form",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "talent_id": "natural_reaction",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 3,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "talent_id": "natural_reaction",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 4,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "talent_id": "natural_reaction",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 5,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "talent_id": "natural_reaction",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "conditional_damage_pct"
+      ],
+      "source_url": "https://theforeverera.com/en/talents/druid/rend-and-tear/",
+      "talent_id": "rend_and_tear",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "conditional_damage_pct"
+      ],
+      "source_url": "https://theforeverera.com/en/talents/druid/rend-and-tear/",
+      "talent_id": "rend_and_tear",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 1,
+      "rank": 4,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "conditional_damage_pct"
+      ],
+      "source_url": "https://theforeverera.com/en/talents/druid/rend-and-tear/",
+      "talent_id": "rend_and_tear",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 1,
+      "rank": 5,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "conditional_damage_pct"
+      ],
+      "source_url": "https://theforeverera.com/en/talents/druid/rend-and-tear/",
+      "talent_id": "rend_and_tear",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 6,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/berserk/",
+      "talent_id": "berserk",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "talent_id": "improved_regrowth",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 3,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "talent_id": "improved_regrowth",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 4,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "talent_id": "improved_regrowth",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 5,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "talent_id": "improved_regrowth",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    },
+    {
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 6,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_url": "https://theforeverera.com/en/talents/druid/wild-growth/",
+      "talent_id": "wild_growth",
+      "why": "TIER_MINIMUM_EXCEEDS_BUDGET"
+    }
+  ],
+  "rank_application_failure_count": 25,
+  "rank_application_failures": [
+    {
+      "application": {
+        "detail": "unsupported talent effect for overgrowth rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "extra_concurrent_rooted_targets"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/overgrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "overgrowth",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "overgrowth": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for overgrowth rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "extra_concurrent_rooted_targets"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/overgrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "overgrowth",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "overgrowth": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natures_grace rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "on_spell_crit_cast_speed_bonus_fraction",
+        "on_spell_crit_gcd_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-grace/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natures_grace",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_grace": 1,
+        "natures_majesty": 2,
+        "natures_reach": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "stun_duration_bonus_seconds",
+        "bash_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "brutal_impact",
+      "witness": {
+        "brutal_impact": 1,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "stun_duration_bonus_seconds",
+        "bash_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "brutal_impact",
+      "witness": {
+        "brutal_impact": 2,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for feral_charge rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "charge_immobilize_interrupt_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-charge/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "feral_charge",
+      "witness": {
+        "feral_charge": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for shifting_power rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "on_use_energy_restoration"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "attack_flat_weapon_addition",
+        "normal_weapon_damage_multiplier"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/primal-bite/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "primal_bite",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "primal_bite": 1,
+        "savage_fury": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 3,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for blood_frenzy rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "critical_bear_rage_proc_probability",
+        "critical_cat_bonus_combo_point_proc_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "blood_frenzy",
+      "witness": {
+        "blood_frenzy": 1,
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for blood_frenzy rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "critical_bear_rage_proc_probability",
+        "critical_cat_bonus_combo_point_proc_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "blood_frenzy",
+      "witness": {
+        "blood_frenzy": 2,
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_shifting_power rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shifting_power_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "improved_shifting_power": 1,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_shifting_power rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shifting_power_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "improved_shifting_power": 2,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for leader_of_the_pack rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_party_crit_chance_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/leader-of-the-pack/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "leader_of_the_pack",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "leader_of_the_pack": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_instinct rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "melee_critical_damage_bonus_fraction",
+        "spell_healing_from_intellect_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_instinct",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_instinct": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_instinct rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "melee_critical_damage_bonus_fraction",
+        "spell_healing_from_intellect_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_instinct",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_instinct": 2,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_reaction rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": true,
+      "source_rank_curve_deferred": true,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_reaction",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_charge": 1,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_reaction": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "conditional_damage_pct"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/rend-and-tear/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "rend_and_tear",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_charge": 1,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 3,
+        "rend_and_tear": 1,
+        "savage_fury": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for swiftmend rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "instant_hot_full_remaining_heal_multiplier"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/swiftmend/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "swiftmend",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "swiftmend": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natures_swiftness rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "instant_next_nature_cast_count"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-swiftness/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natures_swiftness",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "natures_swiftness": 1,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_tranquility rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "tranquility_cooldown_reduction_fraction",
+        "tranquility_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_tranquility",
+      "witness": {
+        "furor": 5,
+        "improved_tranquility": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_tranquility rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "tranquility_cooldown_reduction_fraction",
+        "tranquility_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_tranquility",
+      "witness": {
+        "furor": 5,
+        "improved_tranquility": 2,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_regrowth rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": true,
+      "source_rank_curve_deferred": true,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_regrowth",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 4,
+        "improved_regrowth": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 3
+      }
+    }
+  ],
+  "reachability_scope": "STRUCTURAL_WITHIN_PINNED_STAGED_SOURCE_NOT_FINAL_PREREQUISITE_CERTIFICATION",
+  "reachable_deferred_source_curve": 2,
+  "reachable_rank_count": 129,
+  "reachable_without_executor": 20,
+  "remaining_executable_blockers": [
+    {
+      "application": {
+        "detail": "unsupported talent effect for overgrowth rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "extra_concurrent_rooted_targets"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/overgrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "overgrowth",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "overgrowth": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for overgrowth rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "extra_concurrent_rooted_targets"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/overgrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "overgrowth",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "overgrowth": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natures_grace rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "on_spell_crit_cast_speed_bonus_fraction",
+        "on_spell_crit_gcd_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-grace/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natures_grace",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_grace": 1,
+        "natures_majesty": 2,
+        "natures_reach": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "stun_duration_bonus_seconds",
+        "bash_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "brutal_impact",
+      "witness": {
+        "brutal_impact": 1,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "stun_duration_bonus_seconds",
+        "bash_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "brutal_impact",
+      "witness": {
+        "brutal_impact": 2,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for feral_charge rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "charge_immobilize_interrupt_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-charge/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "feral_charge",
+      "witness": {
+        "feral_charge": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for shifting_power rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "on_use_energy_restoration"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "attack_flat_weapon_addition",
+        "normal_weapon_damage_multiplier"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/primal-bite/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "primal_bite",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "primal_bite": 1,
+        "savage_fury": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 3,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for blood_frenzy rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "critical_bear_rage_proc_probability",
+        "critical_cat_bonus_combo_point_proc_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "blood_frenzy",
+      "witness": {
+        "blood_frenzy": 1,
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for blood_frenzy rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "critical_bear_rage_proc_probability",
+        "critical_cat_bonus_combo_point_proc_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "blood_frenzy",
+      "witness": {
+        "blood_frenzy": 2,
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_shifting_power rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shifting_power_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "improved_shifting_power": 1,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_shifting_power rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shifting_power_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "improved_shifting_power": 2,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for leader_of_the_pack rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_party_crit_chance_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/leader-of-the-pack/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "leader_of_the_pack",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "leader_of_the_pack": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_instinct rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "melee_critical_damage_bonus_fraction",
+        "spell_healing_from_intellect_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_instinct",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_instinct": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_instinct rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "melee_critical_damage_bonus_fraction",
+        "spell_healing_from_intellect_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_instinct",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_instinct": 2,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_reaction rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": true,
+      "source_rank_curve_deferred": true,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_reaction",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_charge": 1,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_reaction": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "conditional_damage_pct"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/rend-and-tear/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "rend_and_tear",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_charge": 1,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 3,
+        "rend_and_tear": 1,
+        "savage_fury": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for swiftmend rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "instant_hot_full_remaining_heal_multiplier"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/swiftmend/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "swiftmend",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "swiftmend": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natures_swiftness rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "instant_next_nature_cast_count"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-swiftness/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natures_swiftness",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "natures_swiftness": 1,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_tranquility rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "tranquility_cooldown_reduction_fraction",
+        "tranquility_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_tranquility",
+      "witness": {
+        "furor": 5,
+        "improved_tranquility": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_tranquility rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "tranquility_cooldown_reduction_fraction",
+        "tranquility_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_tranquility",
+      "witness": {
+        "furor": 5,
+        "improved_tranquility": 2,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_regrowth rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": true,
+      "source_rank_curve_deferred": true,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_regrowth",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 4,
+        "improved_regrowth": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 3
+      }
+    }
+  ],
+  "remaining_gate_fail_reasons": [
+    "REACHABLE_RANK_MISSING_EXECUTABLE_MODIFIER",
+    "SOURCE_STRUCTURAL_WITNESS_FAILS_TALENT_APPLICATION",
+    "SOURCE_PREREQUISITE_OR_RANK_CURVE_UNVERIFIED",
+    "REAL_COMBAT_RUNTIME_SEMANTIC_PARITY_NOT_CERTIFIED"
+  ],
+  "source_build": "1.60.1.70338",
+  "source_prerequisite_or_curve_unverified": [
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_reaction rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": true,
+      "source_rank_curve_deferred": true,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_reaction",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_charge": 1,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_reaction": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_regrowth rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": true,
+      "source_rank_curve_deferred": true,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_regrowth",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 4,
+        "improved_regrowth": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 3
+      }
+    }
+  ],
+  "source_prerequisite_or_curve_unverified_count": 2,
+  "source_rank_total": 148,
+  "source_sha256": "e71c2a670e5063e7b9d4bd04e267ad5052ddb3b0f1f068ddfec80642b0e03152",
+  "status": "RED_REACHABLE_TALENT_EXECUTION",
+  "structural_witnesses": [
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-wrath/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_wrath",
+      "witness": {
+        "improved_wrath": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-wrath/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_wrath",
+      "witness": {
+        "improved_wrath": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 3,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-wrath/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_wrath",
+      "witness": {
+        "improved_wrath": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 4,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-wrath/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_wrath",
+      "witness": {
+        "improved_wrath": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 5,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-wrath/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_wrath",
+      "witness": {
+        "improved_wrath": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 12
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/genesis/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "genesis",
+      "witness": {
+        "genesis": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 12
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/genesis/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "genesis",
+      "witness": {
+        "genesis": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 12
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/genesis/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "genesis",
+      "witness": {
+        "genesis": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 12
+      },
+      "modifier_count": 1,
+      "rank": 4,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/genesis/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "genesis",
+      "witness": {
+        "genesis": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 12
+      },
+      "modifier_count": 1,
+      "rank": 5,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/genesis/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "genesis",
+      "witness": {
+        "genesis": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/moonglow/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "moonglow",
+      "witness": {
+        "genesis": 5,
+        "moonglow": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/moonglow/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "moonglow",
+      "witness": {
+        "genesis": 5,
+        "moonglow": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/moonglow/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "moonglow",
+      "witness": {
+        "genesis": 5,
+        "moonglow": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-moonfire/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_moonfire",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-moonfire/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_moonfire",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 16
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-majesty/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_majesty",
+      "witness": {
+        "genesis": 5,
+        "natures_majesty": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 16
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-majesty/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_majesty",
+      "witness": {
+        "genesis": 5,
+        "natures_majesty": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-reach/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_reach",
+      "witness": {
+        "genesis": 5,
+        "natures_reach": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-reach/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_reach",
+      "witness": {
+        "genesis": 5,
+        "natures_reach": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 3
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-entangling-roots/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_entangling_roots",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_wrath": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 3
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-entangling-roots/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_entangling_roots",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 2,
+        "improved_wrath": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 3
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-entangling-roots/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_entangling_roots",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 3,
+        "improved_wrath": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 6
+      },
+      "modifier_count": 3,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-splendor/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_splendor",
+      "witness": {
+        "genesis": 5,
+        "improved_wrath": 5,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "nature_dot_base_damage",
+        "target_hit_chance_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/insect-swarm/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "insect_swarm",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "insect_swarm": 1,
+        "moonglow": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spell_critical_damage_bonus_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/vengeance/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "vengeance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "vengeance": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spell_critical_damage_bonus_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/vengeance/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "vengeance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "vengeance": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spell_critical_damage_bonus_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/vengeance/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "vengeance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "vengeance": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 4,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spell_critical_damage_bonus_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/vengeance/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "vengeance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "vengeance": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 5,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spell_critical_damage_bonus_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/vengeance/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "vengeance",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "vengeance": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 4
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "starfire_cast_time_reduction_seconds",
+        "starfire_stun_chance"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_starfire",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_starfire": 1,
+        "improved_wrath": 5,
+        "moonglow": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 4
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "starfire_cast_time_reduction_seconds",
+        "starfire_stun_chance"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_starfire",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_starfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 4
+      },
+      "modifier_count": 2,
+      "rank": 3,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "starfire_cast_time_reduction_seconds",
+        "starfire_stun_chance"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_starfire",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_starfire": 3,
+        "improved_wrath": 5,
+        "moonglow": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 4
+      },
+      "modifier_count": 2,
+      "rank": 4,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "starfire_cast_time_reduction_seconds",
+        "starfire_stun_chance"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_starfire",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_starfire": 4,
+        "improved_wrath": 5,
+        "moonglow": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 4
+      },
+      "modifier_count": 2,
+      "rank": 5,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "starfire_cast_time_reduction_seconds",
+        "starfire_stun_chance"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-starfire/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_starfire",
+      "witness": {
+        "genesis": 5,
+        "improved_moonfire": 2,
+        "improved_starfire": 5,
+        "improved_wrath": 5,
+        "moonglow": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for overgrowth rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "extra_concurrent_rooted_targets"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/overgrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "overgrowth",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "overgrowth": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for overgrowth rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "extra_concurrent_rooted_targets"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/overgrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "overgrowth",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "overgrowth": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natures_grace rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "on_spell_crit_cast_speed_bonus_fraction",
+        "on_spell_crit_gcd_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-grace/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natures_grace",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_grace": 1,
+        "natures_majesty": 2,
+        "natures_reach": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "starfire_cast_time_reduction_seconds_per_charge"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/eclipse/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "eclipse",
+      "witness": {
+        "eclipse": 1,
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "starfire_cast_time_reduction_seconds_per_charge"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/eclipse/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "eclipse",
+      "witness": {
+        "eclipse": 2,
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "starfire_cast_time_reduction_seconds_per_charge"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/eclipse/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "eclipse",
+      "witness": {
+        "eclipse": 3,
+        "genesis": 5,
+        "improved_entangling_roots": 1,
+        "improved_moonfire": 2,
+        "improved_wrath": 5,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/moonfury/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "moonfury",
+      "witness": {
+        "genesis": 5,
+        "improved_entangling_roots": 3,
+        "improved_moonfire": 2,
+        "improved_starfire": 2,
+        "improved_wrath": 5,
+        "moonfury": 1,
+        "moonglow": 3,
+        "natures_majesty": 2,
+        "natures_reach": 2,
+        "natures_splendor": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 4,
+      "rank": 1,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/ferocity/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "ferocity",
+      "witness": {
+        "ferocity": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 4,
+      "rank": 2,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/ferocity/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "ferocity",
+      "witness": {
+        "ferocity": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 4,
+      "rank": 3,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/ferocity/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "ferocity",
+      "witness": {
+        "ferocity": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 4,
+      "rank": 4,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/ferocity/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "ferocity",
+      "witness": {
+        "ferocity": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 4,
+      "rank": 5,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/ferocity/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "ferocity",
+      "witness": {
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 5,
+      "rank": 1,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/heart-of-the-wild/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "heart_of_the_wild",
+      "witness": {
+        "heart_of_the_wild": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 5,
+      "rank": 2,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/heart-of-the-wild/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "heart_of_the_wild",
+      "witness": {
+        "heart_of_the_wild": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 5,
+      "rank": 3,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/heart-of-the-wild/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "heart_of_the_wild",
+      "witness": {
+        "heart_of_the_wild": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 5,
+      "rank": 4,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/heart-of-the-wild/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "heart_of_the_wild",
+      "witness": {
+        "heart_of_the_wild": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 5
+      },
+      "modifier_count": 5,
+      "rank": 5,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/heart-of-the-wild/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "heart_of_the_wild",
+      "witness": {
+        "heart_of_the_wild": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-swiftness/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "feral_swiftness",
+      "witness": {
+        "feral_swiftness": 1,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-swiftness/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "feral_swiftness",
+      "witness": {
+        "feral_swiftness": 2,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-instinct/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "feral_instinct",
+      "witness": {
+        "feral_instinct": 1,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-instinct/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "feral_instinct",
+      "witness": {
+        "feral_instinct": 2,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-instinct/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "feral_instinct",
+      "witness": {
+        "feral_instinct": 3,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "stun_duration_bonus_seconds",
+        "bash_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "brutal_impact",
+      "witness": {
+        "brutal_impact": 1,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "stun_duration_bonus_seconds",
+        "bash_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/brutal-impact/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "brutal_impact",
+      "witness": {
+        "brutal_impact": 2,
+        "ferocity": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 4
+      },
+      "modifier_count": 4,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/thick-hide/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "thick_hide",
+      "witness": {
+        "ferocity": 5,
+        "thick_hide": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 4
+      },
+      "modifier_count": 4,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/thick-hide/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "thick_hide",
+      "witness": {
+        "ferocity": 5,
+        "thick_hide": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 4
+      },
+      "modifier_count": 4,
+      "rank": 3,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/thick-hide/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "thick_hide",
+      "witness": {
+        "ferocity": 5,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shred_energy_cost_reduction",
+        "lacerate_rage_cost_reduction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/shredding-attacks/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "shredding_attacks",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shredding_attacks": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shred_energy_cost_reduction",
+        "lacerate_rage_cost_reduction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/shredding-attacks/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "shredding_attacks",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shredding_attacks": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shred_energy_cost_reduction",
+        "lacerate_rage_cost_reduction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/shredding-attacks/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "shredding_attacks",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 6
+      },
+      "modifier_count": 4,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/savage-fury/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "savage_fury",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "savage_fury": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 6
+      },
+      "modifier_count": 4,
+      "rank": 2,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/savage-fury/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "savage_fury",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "savage_fury": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for feral_charge rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "charge_immobilize_interrupt_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/feral-charge/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "feral_charge",
+      "witness": {
+        "feral_charge": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/sharpened-claws/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "sharpened_claws",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/sharpened-claws/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "sharpened_claws",
+      "witness": {
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for shifting_power rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "on_use_energy_restoration"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "attack_flat_weapon_addition",
+        "normal_weapon_damage_multiplier"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/primal-bite/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "primal_bite",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "primal_bite": 1,
+        "savage_fury": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 2,
+      "rank": 3,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_melee_attack_power_from_level"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/predatory-strikes/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "predatory_strikes",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for blood_frenzy rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "critical_bear_rage_proc_probability",
+        "critical_cat_bonus_combo_point_proc_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "blood_frenzy",
+      "witness": {
+        "blood_frenzy": 1,
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for blood_frenzy rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "critical_bear_rage_proc_probability",
+        "critical_cat_bonus_combo_point_proc_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "blood_frenzy",
+      "witness": {
+        "blood_frenzy": 2,
+        "brutal_impact": 2,
+        "feral_instinct": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "sharpened_claws": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_shifting_power rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shifting_power_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "improved_shifting_power": 1,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_shifting_power rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "shifting_power_cooldown_reduction_seconds"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-shifting-power/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_shifting_power",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 1,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "improved_shifting_power": 2,
+        "shifting_power": 1,
+        "shredding_attacks": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for leader_of_the_pack rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "form_party_crit_chance_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/leader-of-the-pack/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "leader_of_the_pack",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "leader_of_the_pack": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_instinct rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "melee_critical_damage_bonus_fraction",
+        "spell_healing_from_intellect_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_instinct",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_instinct": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_instinct rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "melee_critical_damage_bonus_fraction",
+        "spell_healing_from_intellect_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_instinct",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_instinct": 2,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natural_reaction rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": true,
+      "source_rank_curve_deferred": true,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-reaction/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natural_reaction",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_charge": 1,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "natural_reaction": 1,
+        "savage_fury": 2,
+        "sharpened_claws": 2,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for brutal_impact rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "conditional_damage_pct"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/rend-and-tear/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "rend_and_tear",
+      "witness": {
+        "brutal_impact": 2,
+        "feral_charge": 1,
+        "feral_instinct": 3,
+        "feral_swiftness": 2,
+        "ferocity": 5,
+        "heart_of_the_wild": 5,
+        "predatory_strikes": 3,
+        "rend_and_tear": 1,
+        "savage_fury": 1,
+        "thick_hide": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 6
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "casting_pushback_avoidance_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_focus",
+      "witness": {
+        "natures_focus": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 6
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "casting_pushback_avoidance_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_focus",
+      "witness": {
+        "natures_focus": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 6
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "casting_pushback_avoidance_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_focus",
+      "witness": {
+        "natures_focus": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 6
+      },
+      "modifier_count": 1,
+      "rank": 4,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "casting_pushback_avoidance_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_focus",
+      "witness": {
+        "natures_focus": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 6
+      },
+      "modifier_count": 1,
+      "rank": 5,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "casting_pushback_avoidance_probability"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-focus/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natures_focus",
+      "witness": {
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/furor/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "furor",
+      "witness": {
+        "furor": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/furor/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "furor",
+      "witness": {
+        "furor": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 3,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/furor/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "furor",
+      "witness": {
+        "furor": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 4,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/furor/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "furor",
+      "witness": {
+        "furor": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 2,
+      "rank": 5,
+      "row": 0,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/furor/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "furor",
+      "witness": {
+        "furor": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 21
+      },
+      "modifier_count": 2,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/naturalist/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "naturalist",
+      "witness": {
+        "furor": 5,
+        "naturalist": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 21
+      },
+      "modifier_count": 2,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/naturalist/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "naturalist",
+      "witness": {
+        "furor": 5,
+        "naturalist": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 21
+      },
+      "modifier_count": 2,
+      "rank": 3,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/naturalist/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "naturalist",
+      "witness": {
+        "furor": 5,
+        "naturalist": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 21
+      },
+      "modifier_count": 2,
+      "rank": 4,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/naturalist/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "naturalist",
+      "witness": {
+        "furor": 5,
+        "naturalist": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 21
+      },
+      "modifier_count": 2,
+      "rank": 5,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/naturalist/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "naturalist",
+      "witness": {
+        "furor": 5,
+        "naturalist": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spell_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/subtlety/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "subtlety",
+      "witness": {
+        "furor": 5,
+        "subtlety": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spell_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/subtlety/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "subtlety",
+      "witness": {
+        "furor": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 7
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spell_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/subtlety/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "subtlety",
+      "witness": {
+        "furor": 5,
+        "subtlety": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-shapeshifter/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natural_shapeshifter",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-shapeshifter/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natural_shapeshifter",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 2
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 1,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-shapeshifter/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "natural_shapeshifter",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/reflection/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "reflection",
+      "witness": {
+        "furor": 5,
+        "natures_focus": 5,
+        "reflection": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/reflection/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "reflection",
+      "witness": {
+        "furor": 5,
+        "natures_focus": 5,
+        "reflection": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/reflection/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "reflection",
+      "witness": {
+        "furor": 5,
+        "natures_focus": 5,
+        "reflection": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 8
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/gift-of-nature/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "gift_of_nature",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 1,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 8
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/gift-of-nature/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "gift_of_nature",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 2,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 8
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/gift-of-nature/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "gift_of_nature",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 3,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 8
+      },
+      "modifier_count": 1,
+      "rank": 4,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/gift-of-nature/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "gift_of_nature",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 4,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 8
+      },
+      "modifier_count": 1,
+      "rank": 5,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/gift-of-nature/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "gift_of_nature",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 5,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 2,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/gift-of-the-earthmother/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "gift_of_the_earthmother",
+      "witness": {
+        "furor": 5,
+        "gift_of_the_earthmother": 1,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 3
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/tranquil-spirit/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "tranquil_spirit",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 1
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 3
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/tranquil-spirit/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "tranquil_spirit",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 3
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/tranquil-spirit/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "tranquil_spirit",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 3
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 3
+      },
+      "modifier_count": 1,
+      "rank": 4,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/tranquil-spirit/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "tranquil_spirit",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 4
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 3
+      },
+      "modifier_count": 1,
+      "rank": 5,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/tranquil-spirit/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "tranquil_spirit",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "tranquil_spirit": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-rejuvenation/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_rejuvenation",
+      "witness": {
+        "furor": 5,
+        "improved_rejuvenation": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-rejuvenation/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_rejuvenation",
+      "witness": {
+        "furor": 5,
+        "improved_rejuvenation": 2,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-rejuvenation/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "improved_rejuvenation",
+      "witness": {
+        "furor": 5,
+        "improved_rejuvenation": 3,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for swiftmend rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 3,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "instant_hot_full_remaining_heal_multiplier"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/swiftmend/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "swiftmend",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 2,
+        "natures_focus": 5,
+        "swiftmend": 1
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for natures_swiftness rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "instant_next_nature_cast_count"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/natures-swiftness/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "natures_swiftness",
+      "witness": {
+        "furor": 5,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "natures_swiftness": 1,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spirit_stat_increase_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/living-spirit/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "living_spirit",
+      "witness": {
+        "furor": 5,
+        "living_spirit": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spirit_stat_increase_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/living-spirit/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "living_spirit",
+      "witness": {
+        "furor": 5,
+        "living_spirit": 2,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "status": "APPLIED_IN_GAME_IR",
+        "target_modifier_applications": 1
+      },
+      "modifier_count": 1,
+      "rank": 3,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "spirit_stat_increase_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/living-spirit/",
+      "status": "MODIFIER_PRESENT_RUNTIME_PARITY_NOT_PROVEN",
+      "talent_id": "living_spirit",
+      "witness": {
+        "furor": 5,
+        "living_spirit": 3,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_tranquility rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "tranquility_cooldown_reduction_fraction",
+        "tranquility_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_tranquility",
+      "witness": {
+        "furor": 5,
+        "improved_tranquility": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_tranquility rank 2; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 2,
+      "row": 4,
+      "source_build": "1.60.1.70338",
+      "source_domains": [
+        "tranquility_cooldown_reduction_fraction",
+        "tranquility_threat_reduction_fraction"
+      ],
+      "source_prerequisites_unverified": false,
+      "source_rank_curve_deferred": false,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-tranquility/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_tranquility",
+      "witness": {
+        "furor": 5,
+        "improved_tranquility": 2,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 2
+      }
+    },
+    {
+      "application": {
+        "detail": "unsupported talent effect for improved_regrowth rank 1; refusing no-op selection",
+        "status": "RED_LEGAL_BUILD_FAILS_TALENT_APPLICATION"
+      },
+      "modifier_count": 0,
+      "rank": 1,
+      "row": 5,
+      "source_build": "1.60.1.70338",
+      "source_domains": [],
+      "source_prerequisites_unverified": true,
+      "source_rank_curve_deferred": true,
+      "source_url": "https://theforeverera.com/en/talents/druid/improved-regrowth/",
+      "status": "RED_NO_EXECUTOR",
+      "talent_id": "improved_regrowth",
+      "witness": {
+        "furor": 5,
+        "gift_of_nature": 4,
+        "improved_regrowth": 1,
+        "natural_shapeshifter": 3,
+        "naturalist": 5,
+        "natures_focus": 5,
+        "subtlety": 3
+      }
+    }
+  ],
+  "unreachable_rank_count": 19,
+  "unreachable_without_executor": 11,
+  "unresolved": [],
+  "unresolved_reachability_count": 0
+}

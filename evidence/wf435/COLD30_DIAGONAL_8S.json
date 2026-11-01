@@ -1,0 +1,432 @@
+{
+  "status": "BOUNDED_JOINT_PAID_DIAGNOSTIC",
+  "wall_s": 30.01437384199994,
+  "parent_cpu_s": 5.003903081,
+  "worker_cpu_s_reported": 19.777846946,
+  "events": 29217,
+  "paid_candidates": 65,
+  "unique_full_builds": 64,
+  "screen_complete_candidates": 53,
+  "complete_100mob_candidates": 2,
+  "full_evaluated_candidates": 3,
+  "screen_phase_wall_s": 15.008386271999939,
+  "finalist_phase_wall_s": 15.005000209000059,
+  "hybrid_paid": [
+    {
+      "attempt": 11,
+      "gear_move": "source_stat_package:spell_power+crit",
+      "screen_status": "COMPLETE",
+      "screen_s_per_mob": 15.5174172591007,
+      "status": "COMPLETE",
+      "seconds_per_mob": 13.897995414916092
+    },
+    {
+      "attempt": 12,
+      "gear_move": "source_stat_package:spell_power+crit",
+      "screen_status": "COMPLETE",
+      "screen_s_per_mob": 16.00995507373696,
+      "status": "OS_TIMEOUT",
+      "seconds_per_mob": null
+    }
+  ],
+  "finalists": [
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 31.827780729930534,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 24.419640704862466,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 24.218441630618813,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 28.348415941049204,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 27.411231154826716,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 30.881513546973526,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 27.848415941049204,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 36.60310747991658,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 24.218441630618813,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 27.411231154826716,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "source_stat_package:spell_power+crit",
+      "screen_s_per_mob": 15.5174172591007,
+      "status": "COMPLETE",
+      "seconds_per_mob": 13.897995414916092
+    },
+    {
+      "gear_move": "source_stat_package:spell_power+crit",
+      "screen_s_per_mob": 16.00995507373696,
+      "status": "OS_TIMEOUT",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 23.767089418460248,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 23.64291315889267,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 28.00331432099949,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 23.972044429366747,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 22.982250788457268,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 24.044650892261377,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 24.23394396614936,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 24.218441630618813,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 31.272299429275467,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 23.888955132417326,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 26.169533824453406,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 26.474046368604228,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 28.365143419356233,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 35.53185988469986,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 24.436427001513223,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 23.649633698350126,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 23.767089418460248,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 23.64291315889267,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "chest:6226",
+      "screen_s_per_mob": 23.64936526698181,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 29.23459839453681,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 27.42776640228782,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 25.995158546240248,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 35.53185988469986,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 31.861121147831742,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 35.59337685740697,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 35.53185988469986,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 24.23394396614936,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 24.07144575544929,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 22.982250788457268,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 30.930876446397463,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 24.218441630618813,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 35.89019017614255,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "chest:6226",
+      "screen_s_per_mob": 27.9272975839946,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 37.14901946806488,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "chest:6226",
+      "screen_s_per_mob": 25.977973590028512,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "chest:6226",
+      "screen_s_per_mob": 22.813472086441976,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 29.285059028521214,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "source_stat_package:spell_power",
+      "screen_s_per_mob": 13.412176742948564,
+      "status": "COMPLETE",
+      "seconds_per_mob": 11.728208837635073
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": 26.4903893852194,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": 35.59337685740697,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:14149",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "incumbent",
+      "screen_s_per_mob": 35.53185988469986,
+      "status": "SCREEN_COMPLETE_NOT_PROMOTED",
+      "seconds_per_mob": null
+    },
+    {
+      "gear_move": "back:4790",
+      "screen_s_per_mob": null,
+      "status": "NOT_FULL_EVALUATED_SCREEN_FAILED_OR_BUDGET",
+      "seconds_per_mob": null
+    }
+  ],
+  "winner": {
+    "seconds_per_mob": 11.728208837635073,
+    "screen_s_per_mob": 13.412176742948564,
+    "gear_move": "source_stat_package:spell_power",
+    "policy_origin": "talent_modified:improved_wrath:wrath:5180",
+    "full_events": 3109,
+    "mobs": 100
+  }
+}

@@ -1,0 +1,101 @@
+[
+  {
+    "aliases": [],
+    "class_key": "warrior",
+    "col": null,
+    "icon_key": "ability_rogue_ambush",
+    "local_key": "improved_heroic_strike",
+    "max_rank": 3,
+    "name": "Improved Heroic Strike",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "a2d7dd1943c401713f730602a833ed43cc0bf55f331a9f5df4ffc001db686fc0",
+        "entity_id": 12664,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Forever rank-3 talent anchor; family identity is resolved while per-rank IDs remain partial."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12664/improved-heroic-strike"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arms"
+  },
+  {
+    "aliases": [],
+    "class_key": "warrior",
+    "col": null,
+    "icon_key": "ability_gouge",
+    "local_key": "improved_rend",
+    "max_rank": 3,
+    "name": "Improved Rend",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "675a08e6bb17a8874aab704d7b772b1cea27c3cab64eece714f31c8a75ef8346",
+        "entity_id": 12286,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever talent entity with trait rank metadata."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=12286/improved-rend"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arms"
+  },
+  {
+    "aliases": [],
+    "class_key": "warrior",
+    "col": null,
+    "icon_key": "ability_parry",
+    "local_key": "deflection",
+    "max_rank": 5,
+    "name": "Deflection",
+    "prerequisite": null,
+    "rank_records": [],
+    "row": null,
+    "source_refs": [
+      {
+        "confidence": "high",
+        "content_fingerprint": "31a40cf71e56365a599d7c74a20d7cec8de310e08860a7f66efa112a7dfc0a9d",
+        "entity_id": 16462,
+        "entity_kind": "talent",
+        "fingerprint_scope": "normalized_capture",
+        "notes": [
+          "Exact Wowhead Forever talent entity with trait rank metadata."
+        ],
+        "parser_version": "forever-source-v1",
+        "provider": "wowhead",
+        "retrieved_at": "2026-09-25",
+        "ruleset": "forever",
+        "source_build": null,
+        "source_patch": "1.60.1",
+        "url": "https://www.wowhead.com/forever/spell=16462/deflection"
+      }
+    ],
+    "source_status": "resolved_anchor",
+    "tree_key": "arms"
+  }
+]

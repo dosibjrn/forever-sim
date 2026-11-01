@@ -1,0 +1,506 @@
+{
+  "attribution": "Talents Forever (talentsforever.com), WoW Forever beta client-derived icon keys",
+  "license": "CC-BY-4.0",
+  "source_generated": "2026-09-24",
+  "source_url": "https://talentsforever.com/data.json",
+  "spells": {
+    "amplify_magic": {
+      "icon_key": "spell_holy_flashheal",
+      "name": "Amplify Magic"
+    },
+    "arcane_blast": {
+      "icon_key": "spell_arcane_blast",
+      "name": "Arcane Blast"
+    },
+    "arcane_brilliance": {
+      "icon_key": "spell_holy_arcaneintellect",
+      "name": "Arcane Brilliance"
+    },
+    "arcane_explosion": {
+      "icon_key": "spell_nature_wispsplode",
+      "name": "Arcane Explosion"
+    },
+    "arcane_intellect": {
+      "icon_key": "spell_holy_magicalsentry",
+      "name": "Arcane Intellect"
+    },
+    "arcane_missiles": {
+      "icon_key": "spell_nature_starfall",
+      "name": "Arcane Missiles"
+    },
+    "arcane_power": {
+      "icon_key": "spell_nature_lightning",
+      "name": "Arcane Power"
+    },
+    "blast_wave": {
+      "icon_key": "spell_holy_excorcism_02",
+      "name": "Blast Wave"
+    },
+    "blink": {
+      "icon_key": "spell_arcane_blink",
+      "name": "Blink"
+    },
+    "blizzard": {
+      "icon_key": "spell_frost_icestorm",
+      "name": "Blizzard"
+    },
+    "cold_snap": {
+      "icon_key": "spell_frost_wizardmark",
+      "name": "Cold Snap"
+    },
+    "combustion": {
+      "icon_key": "spell_fire_sealoffire",
+      "name": "Combustion"
+    },
+    "cone_of_cold": {
+      "icon_key": "spell_frost_glacier",
+      "name": "Cone of Cold"
+    },
+    "conjure_food": {
+      "icon_key": "inv_misc_food_10",
+      "name": "Conjure Food"
+    },
+    "conjure_food_rank_2": {
+      "icon_key": "inv_misc_food_09",
+      "name": "Conjure Food|Rank 2"
+    },
+    "conjure_food_rank_3": {
+      "icon_key": "inv_misc_food_12",
+      "name": "Conjure Food|Rank 3"
+    },
+    "conjure_food_rank_4": {
+      "icon_key": "inv_misc_food_08",
+      "name": "Conjure Food|Rank 4"
+    },
+    "conjure_food_rank_5": {
+      "icon_key": "inv_misc_food_11",
+      "name": "Conjure Food|Rank 5"
+    },
+    "conjure_food_rank_6": {
+      "icon_key": "inv_misc_food_33",
+      "name": "Conjure Food|Rank 6"
+    },
+    "conjure_food_rank_7": {
+      "icon_key": "inv_misc_food_73cinnamonroll",
+      "name": "Conjure Food|Rank 7"
+    },
+    "conjure_mana_agate": {
+      "icon_key": "inv_misc_gem_emerald_01",
+      "name": "Conjure Mana Agate"
+    },
+    "conjure_mana_citrine": {
+      "icon_key": "inv_misc_gem_opal_01",
+      "name": "Conjure Mana Citrine"
+    },
+    "conjure_mana_jade": {
+      "icon_key": "inv_misc_gem_emerald_02",
+      "name": "Conjure Mana Jade"
+    },
+    "conjure_mana_ruby": {
+      "icon_key": "inv_misc_gem_ruby_01",
+      "name": "Conjure Mana Ruby"
+    },
+    "conjure_water": {
+      "icon_key": "inv_drink_06",
+      "name": "Conjure Water"
+    },
+    "conjure_water_rank_2": {
+      "icon_key": "inv_drink_07",
+      "name": "Conjure Water|Rank 2"
+    },
+    "conjure_water_rank_3": {
+      "icon_key": "inv_drink_milk_02",
+      "name": "Conjure Water|Rank 3"
+    },
+    "conjure_water_rank_4": {
+      "icon_key": "inv_drink_10",
+      "name": "Conjure Water|Rank 4"
+    },
+    "conjure_water_rank_5": {
+      "icon_key": "inv_drink_09",
+      "name": "Conjure Water|Rank 5"
+    },
+    "conjure_water_rank_6": {
+      "icon_key": "inv_drink_11",
+      "name": "Conjure Water|Rank 6"
+    },
+    "conjure_water_rank_7": {
+      "icon_key": "inv_drink_18",
+      "name": "Conjure Water|Rank 7"
+    },
+    "counterspell": {
+      "icon_key": "spell_frost_iceshock",
+      "name": "Counterspell"
+    },
+    "dampen_magic": {
+      "icon_key": "spell_nature_abolishmagic",
+      "name": "Dampen Magic"
+    },
+    "evocation": {
+      "icon_key": "spell_nature_purge",
+      "name": "Evocation"
+    },
+    "fire_blast": {
+      "icon_key": "spell_fire_fireball",
+      "name": "Fire Blast"
+    },
+    "fire_ward": {
+      "icon_key": "spell_fire_firearmor",
+      "name": "Fire Ward"
+    },
+    "fireball": {
+      "icon_key": "spell_fire_flamebolt",
+      "name": "Fireball"
+    },
+    "flamestrike": {
+      "icon_key": "spell_fire_selfdestruct",
+      "name": "Flamestrike"
+    },
+    "frost_armor": {
+      "icon_key": "spell_frost_frostarmor02",
+      "name": "Frost Armor"
+    },
+    "frost_nova": {
+      "icon_key": "spell_frost_frostnova",
+      "name": "Frost Nova"
+    },
+    "frost_ward": {
+      "icon_key": "spell_frost_frostward",
+      "name": "Frost Ward"
+    },
+    "frostbolt": {
+      "icon_key": "spell_frost_frostbolt02",
+      "name": "Frostbolt"
+    },
+    "frostfire_bolt": {
+      "icon_key": "ability_mage_frostfirebolt",
+      "name": "Frostfire Bolt"
+    },
+    "ice_armor": {
+      "icon_key": "spell_frost_frostarmor02",
+      "name": "Ice Armor"
+    },
+    "ice_barrier": {
+      "icon_key": "spell_ice_lament",
+      "name": "Ice Barrier"
+    },
+    "ice_block": {
+      "icon_key": "spell_frost_frost",
+      "name": "Ice Block"
+    },
+    "ice_lance": {
+      "icon_key": "spell_frost_frostblast",
+      "name": "Ice Lance"
+    },
+    "mage_armor": {
+      "icon_key": "spell_magearmor",
+      "name": "Mage Armor"
+    },
+    "mana_shield": {
+      "icon_key": "spell_shadow_detectlesserinvisibility",
+      "name": "Mana Shield"
+    },
+    "polymorph": {
+      "icon_key": "spell_nature_polymorph",
+      "name": "Polymorph"
+    },
+    "polymorph_pig": {
+      "icon_key": "spell_magic_polymorphpig",
+      "name": "Polymorph|Pig"
+    },
+    "polymorph_turtle": {
+      "icon_key": "ability_hunter_pet_turtle",
+      "name": "Polymorph|Turtle"
+    },
+    "portal_darnassus": {
+      "icon_key": "spell_arcane_portaldarnassus",
+      "name": "Portal: Darnassus"
+    },
+    "portal_ironforge": {
+      "icon_key": "spell_arcane_portalironforge",
+      "name": "Portal: Ironforge"
+    },
+    "portal_orgrimmar": {
+      "icon_key": "spell_arcane_portalorgrimmar",
+      "name": "Portal: Orgrimmar"
+    },
+    "portal_stormwind": {
+      "icon_key": "spell_arcane_portalstormwind",
+      "name": "Portal: Stormwind"
+    },
+    "portal_thunder_bluff": {
+      "icon_key": "spell_arcane_portalthunderbluff",
+      "name": "Portal: Thunder Bluff"
+    },
+    "portal_undercity": {
+      "icon_key": "spell_arcane_portalundercity",
+      "name": "Portal: Undercity"
+    },
+    "presence_of_mind": {
+      "icon_key": "spell_nature_enchantarmor",
+      "name": "Presence of Mind"
+    },
+    "pyroblast": {
+      "icon_key": "spell_fire_fireball02",
+      "name": "Pyroblast"
+    },
+    "remove_lesser_curse": {
+      "icon_key": "spell_nature_removecurse",
+      "name": "Remove Lesser Curse"
+    },
+    "scorch": {
+      "icon_key": "spell_fire_soulburn",
+      "name": "Scorch"
+    },
+    "slow_fall": {
+      "icon_key": "spell_magic_featherfall",
+      "name": "Slow Fall"
+    },
+    "teleport_dalaran": {
+      "icon_key": "spell_arcane_teleporthalloftheguardian",
+      "name": "Teleport: Dalaran"
+    },
+    "teleport_darnassus": {
+      "icon_key": "spell_arcane_teleportdarnassus",
+      "name": "Teleport: Darnassus"
+    },
+    "teleport_ironforge": {
+      "icon_key": "spell_arcane_teleportironforge",
+      "name": "Teleport: Ironforge"
+    },
+    "teleport_orgrimmar": {
+      "icon_key": "spell_arcane_teleportorgrimmar",
+      "name": "Teleport: Orgrimmar"
+    },
+    "teleport_stormwind": {
+      "icon_key": "spell_arcane_teleportstormwind",
+      "name": "Teleport: Stormwind"
+    },
+    "teleport_thunder_bluff": {
+      "icon_key": "spell_arcane_teleportthunderbluff",
+      "name": "Teleport: Thunder Bluff"
+    },
+    "teleport_undercity": {
+      "icon_key": "spell_arcane_teleportundercity",
+      "name": "Teleport: Undercity"
+    }
+  },
+  "talents": {
+    "arcane_blast": {
+      "icon_key": "spell_arcane_blast",
+      "name": "Arcane Blast"
+    },
+    "arcane_concentration": {
+      "icon_key": "spell_shadow_manaburn",
+      "name": "Arcane Concentration"
+    },
+    "arcane_focus": {
+      "icon_key": "spell_holy_devotion",
+      "name": "Arcane Focus"
+    },
+    "arcane_geometry": {
+      "icon_key": "inv_ability_mage_radiantspark",
+      "name": "Arcane Geometry"
+    },
+    "arcane_impact": {
+      "icon_key": "spell_nature_wispsplode",
+      "name": "Arcane Impact"
+    },
+    "arcane_instability": {
+      "icon_key": "spell_shadow_teleport",
+      "name": "Arcane Instability"
+    },
+    "arcane_meditation": {
+      "icon_key": "spell_shadow_siphonmana",
+      "name": "Arcane Meditation"
+    },
+    "arcane_mind": {
+      "icon_key": "spell_shadow_charm",
+      "name": "Arcane Mind"
+    },
+    "arcane_power": {
+      "icon_key": "spell_nature_lightning",
+      "name": "Arcane Power"
+    },
+    "arcane_resilience": {
+      "icon_key": "spell_arcane_arcaneresilience",
+      "name": "Arcane Resilience"
+    },
+    "arcane_shielding": {
+      "icon_key": "spell_shadow_detectlesserinvisibility",
+      "name": "Arcane Shielding"
+    },
+    "arcane_subtlety": {
+      "icon_key": "spell_holy_dispelmagic",
+      "name": "Arcane Subtlety"
+    },
+    "arctic_reach": {
+      "icon_key": "spell_shadow_darkritual",
+      "name": "Arctic Reach"
+    },
+    "blast_wave": {
+      "icon_key": "spell_holy_excorcism_02",
+      "name": "Blast Wave"
+    },
+    "burning_soul": {
+      "icon_key": "spell_fire_fire",
+      "name": "Burning Soul"
+    },
+    "cold_snap": {
+      "icon_key": "spell_frost_wizardmark",
+      "name": "Cold Snap"
+    },
+    "combustion": {
+      "icon_key": "spell_fire_sealoffire",
+      "name": "Combustion"
+    },
+    "critical_mass": {
+      "icon_key": "spell_nature_wispheal",
+      "name": "Critical Mass"
+    },
+    "elemental_precision": {
+      "icon_key": "spell_ice_magicdamage",
+      "name": "Elemental Precision"
+    },
+    "fingers_of_frost": {
+      "icon_key": "ability_mage_wintersgrasp",
+      "name": "Fingers of Frost"
+    },
+    "fire_power": {
+      "icon_key": "spell_fire_immolation",
+      "name": "Fire Power"
+    },
+    "flame_throwing": {
+      "icon_key": "spell_fire_flare",
+      "name": "Flame Throwing"
+    },
+    "frost_channeling": {
+      "icon_key": "spell_frost_stun",
+      "name": "Frost Channeling"
+    },
+    "frost_warding": {
+      "icon_key": "spell_frost_frostward",
+      "name": "Frost Warding"
+    },
+    "frostbite": {
+      "icon_key": "spell_frost_frostarmor",
+      "name": "Frostbite"
+    },
+    "hot_streak": {
+      "icon_key": "ability_mage_hotstreak",
+      "name": "Hot Streak"
+    },
+    "ice_barrier": {
+      "icon_key": "spell_ice_lament",
+      "name": "Ice Barrier"
+    },
+    "ice_block": {
+      "icon_key": "spell_frost_frost",
+      "name": "Ice Block"
+    },
+    "ice_lance": {
+      "icon_key": "spell_frost_frostblast",
+      "name": "Ice Lance"
+    },
+    "ice_shards": {
+      "icon_key": "spell_frost_iceshard",
+      "name": "Ice Shards"
+    },
+    "ignite": {
+      "icon_key": "spell_fire_incinerate",
+      "name": "Ignite"
+    },
+    "impact": {
+      "icon_key": "spell_fire_meteorstorm",
+      "name": "Impact"
+    },
+    "improved_blizzard": {
+      "icon_key": "spell_frost_icestorm",
+      "name": "Improved Blizzard"
+    },
+    "improved_channeling": {
+      "icon_key": "spell_nature_starfall",
+      "name": "Improved Channeling"
+    },
+    "improved_cone_of_cold": {
+      "icon_key": "spell_frost_glacier",
+      "name": "Improved Cone of Cold"
+    },
+    "improved_counterspell": {
+      "icon_key": "spell_frost_iceshock",
+      "name": "Improved Counterspell"
+    },
+    "improved_fire_ward": {
+      "icon_key": "spell_fire_firearmor",
+      "name": "Improved Fire Ward"
+    },
+    "improved_fireball": {
+      "icon_key": "spell_fire_flamebolt",
+      "name": "Improved Fireball"
+    },
+    "improved_flamestrike": {
+      "icon_key": "spell_fire_selfdestruct",
+      "name": "Improved Flamestrike"
+    },
+    "improved_frost_nova": {
+      "icon_key": "spell_frost_freezingbreath",
+      "name": "Improved Frost Nova"
+    },
+    "improved_frostbolt": {
+      "icon_key": "spell_frost_frostbolt02",
+      "name": "Improved Frostbolt"
+    },
+    "improved_scorch": {
+      "icon_key": "spell_fire_windsofwoe",
+      "name": "Improved Scorch"
+    },
+    "incineration": {
+      "icon_key": "spell_fire_flameshock",
+      "name": "Incineration"
+    },
+    "magic_absorption": {
+      "icon_key": "spell_nature_astralrecalgroup",
+      "name": "Magic Absorption"
+    },
+    "master_of_elements": {
+      "icon_key": "spell_fire_masterofelements",
+      "name": "Master of Elements"
+    },
+    "missile_barrage": {
+      "icon_key": "ability_mage_missilebarrage",
+      "name": "Missile Barrage"
+    },
+    "permafrost": {
+      "icon_key": "spell_frost_wisp",
+      "name": "Permafrost"
+    },
+    "piercing_ice": {
+      "icon_key": "spell_frost_frostbolt",
+      "name": "Piercing Ice"
+    },
+    "presence_of_mind": {
+      "icon_key": "spell_nature_enchantarmor",
+      "name": "Presence of Mind"
+    },
+    "pyroblast": {
+      "icon_key": "spell_fire_fireball02",
+      "name": "Pyroblast"
+    },
+    "shatter": {
+      "icon_key": "spell_frost_frostshock",
+      "name": "Shatter"
+    },
+    "wake_of_fire": {
+      "icon_key": "spell_fire_lavaspawn",
+      "name": "Wake of Fire"
+    },
+    "wand_specialization": {
+      "icon_key": "inv_wand_01",
+      "name": "Wand Specialization"
+    },
+    "winters_chill": {
+      "icon_key": "spell_frost_chillingblast",
+      "name": "Winter's Chill"
+    }
+  }
+}

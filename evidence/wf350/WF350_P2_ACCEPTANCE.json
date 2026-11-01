@@ -1,0 +1,38 @@
+{
+  "accepted_total": 1,
+  "checkpoint": "druid:L30:unrestricted",
+  "next": "Druid L30 unrestricted P3: legal item universe, context-specific stat weights, Top 5 per slot.",
+  "p1": {
+    "coverage": "86/86",
+    "pass": true
+  },
+  "p2": {
+    "blocked": [],
+    "l0_scored_legal_ranks": 117,
+    "l2_unsupported_scored_rank_count": 39,
+    "legal_rank_witnesses": 117,
+    "pass": true,
+    "source_catalogue_identities": 52,
+    "source_only_l0_rank_count": 42,
+    "source_rank_mismatches": [],
+    "source_rank_uncertainty": "Fan-site beta client-derived; L0 effect vectors, not full L2 runtime support",
+    "unknown_positions": [],
+    "witnesses_replayed": 117
+  },
+  "p3": {
+    "l0_assessed": 1974,
+    "legal_items": 1974,
+    "missing": "build-context finite-difference stat weights and defensible Top 5 per slot",
+    "nonempty_slots": 18,
+    "status": "PARTIAL_NOT_ACCEPTED",
+    "uncertain_effect_items": 73
+  },
+  "p4": "NOT_RUN",
+  "p5": "NOT_RUN",
+  "p6": "NOT_RUN",
+  "source_build": "1.60.1.70338",
+  "source_evidence_sha256": "a1ac6c6f9b1c2169e2e3ffbeb9c5db90acf2e0281590a291b3bc7023f6fd20c0",
+  "sqlite_integrity": "ok",
+  "staged_sqlite_sha256": "eca9e19111f4079fdd60b19cf9e3cd1fce0f4a374cfd84c88d234badea1412c5",
+  "target_total": 148
+}

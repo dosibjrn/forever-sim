@@ -1,0 +1,53 @@
+{
+  "class_key": "paladin",
+  "capture_id": "wf257_paladin_l21_30_20261011",
+  "captured_at": "2026-10-11",
+  "rank_promotions": [
+    {
+      "kind": "native_weapon_plus_holy",
+      "family_key": "holy_strike",
+      "spell_id": 680,
+      "indexed_name": "Holy Strike",
+      "required_level": 28,
+      "mana_cost": 14.0,
+      "weapon_fraction": 0.36,
+      "damage_min": 23.0,
+      "damage_max": 29.0,
+      "source_url": "https://www.wowhead.com/forever/spell=680",
+      "source_build": "wowhead_forever_live_20261011",
+      "source_conflict": "Forever Era build 1.60.1.70245 has 21-27; current Wowhead displays 23-29; 0.36 weapon fraction both"
+    },
+    {
+      "kind": "timed_aura_damage_rank",
+      "family_key": "seal_of_righteousness",
+      "spell_id": 20289,
+      "indexed_name": "Seal of Righteousness",
+      "required_level": 26,
+      "mana_cost": 90.0,
+      "swing_min": 8.0,
+      "swing_max": 29.0,
+      "judge_min": 74.0,
+      "judge_max": 80.0,
+      "index_tooltip_fragment": "8 to 29 Holy damage",
+      "source_url": "https://www.wowhead.com/forever/spell=20289",
+      "crosscheck_url": "https://theforeverera.com/en/spells/paladin/seal-of-righteousness/",
+      "source_build": "wowhead_forever_index_20261008",
+      "source_conflict": "Forever Era 1.60.1.70245 tooltip reports 6.2-21.6 and Judgement 57-63; current Wowhead listview reports 8-29 and 74-80"
+    },
+    {
+      "kind": "talent_granted_rank",
+      "family_key": "seal_of_command",
+      "spell_id": 20915,
+      "grant_parent_spell_id": 20375,
+      "indexed_name": "Seal of Command",
+      "required_level": 30,
+      "mana_cost": 110.0,
+      "judge_min": 97.0,
+      "judge_max": 104.0,
+      "index_tooltip_fragment": "97 to 104 Holy damage",
+      "source_url": "https://www.wowhead.com/forever/spell=20915",
+      "source_build": "wowhead_forever_index_20261008",
+      "source_conflict": "Forever Era build 1.60.1.70245 reports 76.5 Holy damage; Wowhead listview reports 97-104; patch/build disagreement unverified"
+    }
+  ]
+}

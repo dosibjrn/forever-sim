@@ -1,0 +1,55 @@
+{
+  "viewer_snapshot_version": 2,
+  "generated_at": 1791099782.3506157,
+  "water_mode": "conjured_water",
+  "status": {},
+  "best": {
+    "best_validated_hours": null,
+    "objective_version": "classic_era_lplus1_lplus2_xp_weight_v2",
+    "sim_code_hash": "5bfcf60c16467900bf4c",
+    "stale_previous_hours": null,
+    "stale_previous_hash": null
+  },
+  "best_by_water": {
+    "buy_water": {
+      "best_validated_hours": null,
+      "objective_version": "classic_era_lplus1_lplus2_xp_weight_v2",
+      "sim_code_hash": "5bfcf60c16467900bf4c",
+      "stale_previous_hours": null,
+      "stale_previous_hash": null
+    },
+    "conjured_water": {
+      "best_validated_hours": null,
+      "objective_version": "classic_era_lplus1_lplus2_xp_weight_v2",
+      "sim_code_hash": "5bfcf60c16467900bf4c",
+      "stale_previous_hours": null,
+      "stale_previous_hash": null
+    }
+  },
+  "best_all_school": {
+    "best_validated_hours": null,
+    "objective_version": "classic_era_lplus1_lplus2_xp_weight_v2",
+    "sim_code_hash": "5bfcf60c16467900bf4c",
+    "stale_previous_hours": null,
+    "stale_previous_hash": null
+  },
+  "reference": {},
+  "candidates": [],
+  "top_by_school": {},
+  "controller": {},
+  "seed_levels": [],
+  "seed_levels_by_water": {
+    "buy_water": [],
+    "conjured_water": []
+  },
+  "user_config": {
+    "max_respecs": 2
+  },
+  "pnp_cache": {
+    "sim_code_hash": "5bfcf60c16467900bf4c",
+    "db_bytes": 0,
+    "wal_bytes": 0,
+    "cache_schema": "pnp_head_metrics_v5_metadata_landscape",
+    "stats_mode": "fast_no_table_scan"
+  }
+}

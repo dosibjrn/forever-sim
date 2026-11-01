@@ -1,0 +1,52 @@
+{
+  "charge_witness": [
+    {
+      "status": "COMPLETE",
+      "count": 100,
+      "mean_s_per_mob": 29.463556748067646,
+      "events": 6093,
+      "elapsed_wall_s": 0.2347573099998499,
+      "elapsed_cpu_s": 0.23458481900000017,
+      "source_action_counts": {
+        "source_spell:8949": 533,
+        "wrath:5180": 267
+      }
+    },
+    {
+      "status": "COMPLETE",
+      "count": 100,
+      "mean_s_per_mob": 29.463556748067646,
+      "events": 6093,
+      "elapsed_wall_s": 0.22857993799993892,
+      "elapsed_cpu_s": 0.22834242400000004,
+      "source_action_counts": {
+        "source_spell:8949": 533,
+        "wrath:5180": 267
+      }
+    }
+  ],
+  "winner": [
+    {
+      "status": "COMPLETE",
+      "count": 100,
+      "mean_s_per_mob": 11.623120172935218,
+      "events": 3115,
+      "elapsed_wall_s": 0.8311172209998858,
+      "elapsed_cpu_s": 0.8302834089999998,
+      "source_action_counts": {
+        "wrath:5180": 601
+      }
+    },
+    {
+      "status": "COMPLETE",
+      "count": 100,
+      "mean_s_per_mob": 11.623120172935218,
+      "events": 3115,
+      "elapsed_wall_s": 0.8346945639998467,
+      "elapsed_cpu_s": 0.8337737550000002,
+      "source_action_counts": {
+        "wrath:5180": 601
+      }
+    }
+  ]
+}

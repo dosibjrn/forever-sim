@@ -1,0 +1,4449 @@
+{
+  "checkpoint": {
+    "class_key": "druid",
+    "level": 20,
+    "profile": "unrestricted",
+    "use_runes": false,
+    "required_level_policy": "observed"
+  },
+  "build_identity_sha256": "b97142ad3be8814e5a7ab0601272881bd66986b07fe4d047b4848f4e0465a7bf",
+  "catalogue_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "class_key": "druid",
+  "level": 20,
+  "requested_top_n": 5,
+  "total_legal_items": 1175,
+  "unknown_item_count": 255,
+  "stat_weights": {
+    "base_s_per_mob": 13.46412880141965,
+    "base_events": 7282,
+    "mobs": 100,
+    "weights": {
+      "agility": {
+        "status": "DISCRETE_SMOOTHED",
+        "weight_s_saved_per_mob_per_unit": 0.0012555716324804678,
+        "probe_delta": 10.0,
+        "perturbed_s_per_mob": 13.451573085094845,
+        "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+        "short_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.675941996097606,
+            "improvement_s_per_mob": 0.08985556963089891
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.673977772237473,
+            "improvement_s_per_mob": 0.09181979349103209
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.670086989404274,
+            "improvement_s_per_mob": 0.09571057632423141
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 13.612452755369299,
+            "improvement_s_per_mob": 0.1533448103592061
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.49702630047799,
+            "improvement_s_per_mob": -0.03289749905833972,
+            "events": 7288
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.451573085094845,
+            "improvement_s_per_mob": 0.012555716324804678,
+            "events": 7284
+          }
+        ],
+        "interpretation": "coarse_search_prior_not_continuous_gradient"
+      },
+      "armor": {
+        "status": "DISCRETE_SMOOTHED",
+        "weight_s_saved_per_mob_per_unit": 0.0007311892381975227,
+        "probe_delta": 200.0,
+        "perturbed_s_per_mob": 13.317890953780145,
+        "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+        "short_probes": [
+          {
+            "delta": 100.0,
+            "mean_s_per_mob": 13.667314311255733,
+            "improvement_s_per_mob": 0.09848325447277162
+          },
+          {
+            "delta": 200.0,
+            "mean_s_per_mob": 13.554333559070887,
+            "improvement_s_per_mob": 0.2114640066576179
+          },
+          {
+            "delta": 400.0,
+            "mean_s_per_mob": 13.37280867812826,
+            "improvement_s_per_mob": 0.39298888760024475
+          },
+          {
+            "delta": 800.0,
+            "mean_s_per_mob": 13.208352153064984,
+            "improvement_s_per_mob": 0.5574454126635207
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 100.0,
+            "mean_s_per_mob": 13.490891057923772,
+            "improvement_s_per_mob": -0.02676225650412256,
+            "events": 7290
+          },
+          {
+            "delta": 200.0,
+            "mean_s_per_mob": 13.317890953780145,
+            "improvement_s_per_mob": 0.14623784763950454,
+            "events": 7290
+          }
+        ],
+        "interpretation": "coarse_search_prior_not_continuous_gradient"
+      },
+      "attack_power": {
+        "status": "DISCRETE_SMOOTHED",
+        "weight_s_saved_per_mob_per_unit": 0.0004530237575124385,
+        "probe_delta": 40.0,
+        "perturbed_s_per_mob": 13.446007851119152,
+        "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+        "short_probes": [
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.765797565728505,
+            "improvement_s_per_mob": 0.0
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.67791893749649,
+            "improvement_s_per_mob": 0.08787862823201564
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 13.627918937496489,
+            "improvement_s_per_mob": 0.13787862823201635
+          },
+          {
+            "delta": 80.0,
+            "mean_s_per_mob": 12.395492555805493,
+            "improvement_s_per_mob": 1.3703050099230119
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.48843212547275,
+            "improvement_s_per_mob": -0.02430332405310054,
+            "events": 7272
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 13.446007851119152,
+            "improvement_s_per_mob": 0.01812095030049754,
+            "events": 7253
+          }
+        ],
+        "interpretation": "coarse_search_prior_not_continuous_gradient"
+      },
+      "crit": {
+        "status": "UNMODELED_RATING_CONVERSION",
+        "weight_s_saved_per_mob_per_unit": null,
+        "reason": "SOURCE_RATING_TO_COMBAT_SEMANTIC_NOT_VERIFIED"
+      },
+      "defense": {
+        "status": "UNMODELED_RATING_CONVERSION",
+        "weight_s_saved_per_mob_per_unit": null,
+        "reason": "SOURCE_RATING_TO_COMBAT_SEMANTIC_NOT_VERIFIED"
+      },
+      "dodge": {
+        "status": "UNMODELED_RATING_CONVERSION",
+        "weight_s_saved_per_mob_per_unit": null,
+        "reason": "SOURCE_RATING_TO_COMBAT_SEMANTIC_NOT_VERIFIED"
+      },
+      "healing": {
+        "status": "UNSUPPORTED_RUNTIME_AXIS",
+        "weight_s_saved_per_mob_per_unit": null,
+        "reason": "NO_EXECUTABLE_SOURCE_STAT_SEMANTIC"
+      },
+      "hit": {
+        "status": "UNMODELED_RATING_CONVERSION",
+        "weight_s_saved_per_mob_per_unit": null,
+        "reason": "SOURCE_RATING_TO_COMBAT_SEMANTIC_NOT_VERIFIED"
+      },
+      "intellect": {
+        "status": "MEASURED",
+        "weight_s_saved_per_mob_per_unit": 3.9551645082624987e-05,
+        "probe_delta": 5.0,
+        "perturbed_s_per_mob": 13.463931043194236,
+        "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+        "short_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.764808774601438,
+            "improvement_s_per_mob": 0.000988791127067401
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.763986073809267,
+            "improvement_s_per_mob": 0.0018114919192377954
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.762695624628066,
+            "improvement_s_per_mob": 0.003101941100439376
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 13.760979509782473,
+            "improvement_s_per_mob": 0.004818055946032018
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.463931043194236,
+            "improvement_s_per_mob": 0.00019775822541312493,
+            "events": 7282
+          }
+        ],
+        "interpretation": "coarse_search_prior_not_continuous_gradient"
+      },
+      "mp5": {
+        "status": "INCONCLUSIVE_DISCRETE_PROBES",
+        "weight_s_saved_per_mob_per_unit": null,
+        "reason": "NO_POSITIVE_CONFIRMED_100MOB_PROBE",
+        "short_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.75764406349673,
+            "improvement_s_per_mob": 0.008153502231774468
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.749824721192487,
+            "improvement_s_per_mob": 0.01597284453601766
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.735109580950644,
+            "improvement_s_per_mob": 0.030687984777861388
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 13.708901593950571,
+            "improvement_s_per_mob": 0.056895971777933596
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.491649973733589,
+            "improvement_s_per_mob": -0.027521172313939246,
+            "events": 7284
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.49008610527274,
+            "improvement_s_per_mob": -0.025957303853090252,
+            "events": 7284
+          }
+        ]
+      },
+      "spell_power": {
+        "status": "MEASURED_ZERO_RANGE",
+        "weight_s_saved_per_mob_per_unit": 0.0,
+        "probe_delta": 20.0,
+        "short_probes": [
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.765797565728505,
+            "improvement_s_per_mob": 0.0
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.765797565728505,
+            "improvement_s_per_mob": 0.0
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 13.765797565728505,
+            "improvement_s_per_mob": 0.0
+          },
+          {
+            "delta": 80.0,
+            "mean_s_per_mob": 13.765797565728505,
+            "improvement_s_per_mob": 0.0
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.46412880141965,
+            "improvement_s_per_mob": 0.0,
+            "events": 7282
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.46412880141965,
+            "improvement_s_per_mob": 0.0,
+            "events": 7282
+          }
+        ],
+        "method": "100mob_no_detected_effect_in_tested_range",
+        "interpretation": "zero_in_this_fixed_policy_and_tested_range"
+      },
+      "spirit": {
+        "status": "INCONCLUSIVE_DISCRETE_PROBES",
+        "weight_s_saved_per_mob_per_unit": null,
+        "reason": "NO_POSITIVE_CONFIRMED_100MOB_PROBE",
+        "short_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.761677719991942,
+            "improvement_s_per_mob": 0.004119845736562766
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.75764406349673,
+            "improvement_s_per_mob": 0.008153502231774468
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.749824721192487,
+            "improvement_s_per_mob": 0.01597284453601766
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 13.735109580950644,
+            "improvement_s_per_mob": 0.030687984777861388
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.49245670503263,
+            "improvement_s_per_mob": -0.028327903612980876,
+            "events": 7284
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.491649973733589,
+            "improvement_s_per_mob": -0.027521172313939246,
+            "events": 7284
+          }
+        ]
+      },
+      "stamina": {
+        "status": "MEASURED_ZERO_RANGE",
+        "weight_s_saved_per_mob_per_unit": 0.0,
+        "probe_delta": 10.0,
+        "short_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.765797565728505,
+            "improvement_s_per_mob": 0.0
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.765797565728505,
+            "improvement_s_per_mob": 0.0
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.765797565728509,
+            "improvement_s_per_mob": -3.552713678800501e-15
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 13.765797565728509,
+            "improvement_s_per_mob": -3.552713678800501e-15
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.46412880141965,
+            "improvement_s_per_mob": 0.0,
+            "events": 7282
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.46412880141965,
+            "improvement_s_per_mob": 0.0,
+            "events": 7282
+          }
+        ],
+        "method": "100mob_no_detected_effect_in_tested_range",
+        "interpretation": "zero_in_this_fixed_policy_and_tested_range"
+      },
+      "strength": {
+        "status": "DISCRETE_SMOOTHED",
+        "weight_s_saved_per_mob_per_unit": 0.000906047515024877,
+        "probe_delta": 20.0,
+        "perturbed_s_per_mob": 13.446007851119152,
+        "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+        "short_probes": [
+          {
+            "delta": 5.0,
+            "mean_s_per_mob": 13.765797565728505,
+            "improvement_s_per_mob": 0.0
+          },
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.67791893749649,
+            "improvement_s_per_mob": 0.08787862823201564
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.627918937496489,
+            "improvement_s_per_mob": 0.13787862823201635
+          },
+          {
+            "delta": 40.0,
+            "mean_s_per_mob": 12.30791683015909,
+            "improvement_s_per_mob": 1.4578807355694146
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 10.0,
+            "mean_s_per_mob": 13.47843212547275,
+            "improvement_s_per_mob": -0.014303324053100752,
+            "events": 7268
+          },
+          {
+            "delta": 20.0,
+            "mean_s_per_mob": 13.446007851119152,
+            "improvement_s_per_mob": 0.01812095030049754,
+            "events": 7253
+          }
+        ],
+        "interpretation": "coarse_search_prior_not_continuous_gradient"
+      },
+      "wand_dps": {
+        "status": "UNSUPPORTED_RUNTIME_AXIS",
+        "weight_s_saved_per_mob_per_unit": null,
+        "reason": "NO_EXECUTABLE_SOURCE_STAT_SEMANTIC"
+      },
+      "weapon_dps": {
+        "status": "MEASURED",
+        "weight_s_saved_per_mob_per_unit": 0.00906047515024877,
+        "probe_delta": 2.0,
+        "perturbed_s_per_mob": 13.446007851119152,
+        "method": "20mob_screen_100mob_confirmed_multiscale_difference",
+        "short_probes": [
+          {
+            "delta": 2.0,
+            "mean_s_per_mob": 13.627918937496489,
+            "improvement_s_per_mob": 0.13787862823201635
+          },
+          {
+            "delta": 4.0,
+            "mean_s_per_mob": 12.445492555805492,
+            "improvement_s_per_mob": 1.320305009923013
+          },
+          {
+            "delta": 8.0,
+            "mean_s_per_mob": 12.30791683015909,
+            "improvement_s_per_mob": 1.4578807355694146
+          },
+          {
+            "delta": 16.0,
+            "mean_s_per_mob": 12.100302902585613,
+            "improvement_s_per_mob": 1.6654946631428924
+          }
+        ],
+        "full_probes": [
+          {
+            "delta": 2.0,
+            "mean_s_per_mob": 13.446007851119152,
+            "improvement_s_per_mob": 0.01812095030049754,
+            "events": 7253
+          }
+        ],
+        "interpretation": "coarse_search_prior_not_continuous_gradient"
+      }
+    },
+    "probe_failures": {},
+    "build_identity_sha256": "b97142ad3be8814e5a7ab0601272881bd66986b07fe4d047b4848f4e0465a7bf",
+    "class_key": "druid",
+    "level": 20,
+    "scope": "FIXED_GEAR_TALENTS_POLICY; COARSE_DISCRETE_MARGINAL_PRIOR"
+  },
+  "slots": {
+    "back": {
+      "available_legal": 121,
+      "top": [
+        {
+          "item_id": 6449,
+          "name": "Glowing Lizardscale Cloak",
+          "item_url": "https://www.wowhead.com/forever/item=6449",
+          "known_score_s_saved_per_mob": 0.02215721455883326,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 20.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.014623784763950454
+            },
+            {
+              "stat": "agility",
+              "amount": 6.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.007533429794882807
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 2.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "back"
+          }
+        },
+        {
+          "item_id": 5193,
+          "name": "Cape of the Brotherhood",
+          "item_url": "https://www.wowhead.com/forever/item=5193",
+          "known_score_s_saved_per_mob": 0.021632832164550315,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 21.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.015354974002147977
+            },
+            {
+              "stat": "agility",
+              "amount": 5.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.006277858162402339
+            },
+            {
+              "stat": "stamina",
+              "amount": 3.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "back"
+          }
+        },
+        {
+          "item_id": 2059,
+          "name": "Sentry Cloak",
+          "item_url": "https://www.wowhead.com/forever/item=2059",
+          "known_score_s_saved_per_mob": 0.020377260532069848,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 21.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.015354974002147977
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "stamina",
+              "amount": 5.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "back"
+          }
+        },
+        {
+          "item_id": 279865,
+          "name": "Grave Shroud",
+          "item_url": "https://www.wowhead.com/forever/item=279865",
+          "known_score_s_saved_per_mob": 0.01985307057398602,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 20.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.014623784763950454
+            },
+            {
+              "stat": "strength",
+              "amount": 3.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.002718142545074631
+            },
+            {
+              "stat": "agility",
+              "amount": 2.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.0025111432649609355
+            },
+            {
+              "stat": "stamina",
+              "amount": 5.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "back"
+          }
+        },
+        {
+          "item_id": 16990,
+          "name": "Spritekin Cloak",
+          "item_url": "https://www.wowhead.com/forever/item=16990",
+          "known_score_s_saved_per_mob": 0.019646071293872323,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 20.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.014623784763950454
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "stamina",
+              "amount": 3.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "back"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        6449,
+        5193,
+        2059,
+        279865,
+        16990,
+        3018,
+        2316,
+        274740,
+        4706,
+        14571,
+        271097,
+        5444,
+        5314,
+        6179,
+        14149,
+        279899,
+        1355,
+        6667,
+        6629,
+        20427,
+        273084,
+        277289,
+        6466,
+        4790,
+        4793,
+        4797,
+        4798,
+        5969,
+        6632,
+        9794,
+        9805,
+        12979,
+        14179,
+        15124,
+        15526,
+        285329,
+        14745,
+        14376,
+        4710,
+        2241,
+        4792,
+        4799,
+        6381,
+        9812,
+        15333,
+        15519,
+        14724,
+        284187,
+        1190,
+        1749,
+        1774,
+        4311,
+        6564,
+        6575,
+        6585,
+        7283,
+        9770,
+        273005,
+        14563,
+        5542,
+        1798,
+        1930,
+        3582,
+        4695,
+        5343,
+        9779,
+        14161,
+        14167,
+        15114,
+        15508,
+        14365,
+        285228,
+        6378,
+        2284,
+        2584,
+        4701,
+        4771,
+        5111,
+        9786,
+        14123,
+        15501,
+        286426,
+        1741,
+        1766,
+        2308,
+        3449,
+        6542,
+        10638,
+        10821,
+        15309,
+        2310,
+        286744,
+        1733,
+        1790,
+        1497,
+        4680,
+        4683,
+        4689,
+        4772,
+        6549,
+        6555,
+        14116,
+        15015,
+        15490,
+        2580,
+        3331,
+        4677,
+        4686,
+        4692,
+        4944,
+        1505,
+        3008,
+        4854,
+        9745,
+        9754,
+        9761,
+        1421,
+        6514,
+        14098,
+        15299,
+        15483
+      ],
+      "ranking_complete": false
+    },
+    "chest": {
+      "available_legal": 157,
+      "top": [
+        {
+          "item_id": 252434,
+          "name": "Defender's Leather Armor",
+          "item_url": "https://www.wowhead.com/forever/item=252434",
+          "known_score_s_saved_per_mob": 0.09638937760992322,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 118.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.08628033010730768
+            },
+            {
+              "stat": "strength",
+              "amount": 7.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.006342332605174139
+            },
+            {
+              "stat": "agility",
+              "amount": 3.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.0037667148974414033
+            },
+            {
+              "stat": "stamina",
+              "amount": 5.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "chest"
+          }
+        },
+        {
+          "item_id": 6670,
+          "name": "Panther Armor",
+          "item_url": "https://www.wowhead.com/forever/item=6670",
+          "known_score_s_saved_per_mob": 0.07818808192195349,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 89.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.06507584219957953
+            },
+            {
+              "stat": "agility",
+              "amount": 9.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.01130014469232421
+            },
+            {
+              "stat": "strength",
+              "amount": 2.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.001812095030049754
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "chest"
+          }
+        },
+        {
+          "item_id": 271212,
+          "name": "Bloodied Chestwraps",
+          "item_url": "https://www.wowhead.com/forever/item=271212",
+          "known_score_s_saved_per_mob": 0.07653419347223424,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 89.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.06507584219957953
+            },
+            {
+              "stat": "agility",
+              "amount": 9.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.01130014469232421
+            },
+            {
+              "stat": "intellect",
+              "amount": 4.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00015820658033049995
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "chest"
+          }
+        },
+        {
+          "item_id": 252490,
+          "name": "Brawler's Leather Armor",
+          "item_url": "https://www.wowhead.com/forever/item=252490",
+          "known_score_s_saved_per_mob": 0.07547032424927709,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 85.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.06215108524678943
+            },
+            {
+              "stat": "agility",
+              "amount": 7.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.008789001427363274
+            },
+            {
+              "stat": "strength",
+              "amount": 5.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.004530237575124385
+            },
+            {
+              "stat": "stamina",
+              "amount": 3.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 3.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "chest"
+          }
+        },
+        {
+          "item_id": 1489,
+          "name": "Gloomshroud Armor",
+          "item_url": "https://www.wowhead.com/forever/item=1489",
+          "known_score_s_saved_per_mob": 0.07326202596569152,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 94.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.06873178839056714
+            },
+            {
+              "stat": "strength",
+              "amount": 5.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.004530237575124385
+            },
+            {
+              "stat": "stamina",
+              "amount": 8.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 8.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "chest"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        252434,
+        6670,
+        271212,
+        252490,
+        1489,
+        10399,
+        6473,
+        252491,
+        14562,
+        252435,
+        5317,
+        12988,
+        2317,
+        5781,
+        5316,
+        6584,
+        252492,
+        252493,
+        286536,
+        3585,
+        6197,
+        9782,
+        15311,
+        3313,
+        2314,
+        4243,
+        2985,
+        20575,
+        4244,
+        15018,
+        236,
+        6524,
+        2973,
+        6552,
+        6709,
+        1211,
+        1802,
+        15304,
+        1794,
+        5341,
+        9757,
+        846,
+        6523,
+        3288,
+        2069,
+        2087,
+        2311,
+        821,
+        257344,
+        6268,
+        277086,
+        277092,
+        276998,
+        277022,
+        17922,
+        277004,
+        277028,
+        2300,
+        4861,
+        281284,
+        284165,
+        2961,
+        15010,
+        277062,
+        277068,
+        5957,
+        3000,
+        3444,
+        4968,
+        799,
+        1509,
+        2370,
+        6465,
+        277213,
+        2292,
+        14369,
+        14371,
+        3752,
+        6226,
+        286978,
+        5202,
+        2034,
+        6567,
+        6569,
+        6263,
+        3461,
+        14127,
+        14133,
+        253901,
+        253903,
+        253905,
+        253907,
+        253909,
+        253911,
+        6264,
+        14172,
+        14175,
+        271206,
+        6503,
+        6787,
+        2981,
+        2585,
+        270261,
+        3019,
+        14150,
+        2616,
+        6561,
+        200,
+        4781,
+        14120,
+        14121,
+        1778,
+        6536,
+        6538,
+        6243,
+        3310,
+        6531,
+        4782,
+        2969,
+        6528,
+        2582,
+        5110,
+        837,
+        2614,
+        5109,
+        14096,
+        14109,
+        10553,
+        284167,
+        9748,
+        9749,
+        1770,
+        2578,
+        5420,
+        6242,
+        263332,
+        3292,
+        6527,
+        6266,
+        6512,
+        277098,
+        6239,
+        277010,
+        277034,
+        2613,
+        6240,
+        1501,
+        6511,
+        2957,
+        14091,
+        14094,
+        277074,
+        2572,
+        6241,
+        6238,
+        795,
+        2364
+      ],
+      "ranking_complete": false
+    },
+    "feet": {
+      "available_legal": 119,
+      "top": [
+        {
+          "item_id": 252441,
+          "name": "Defender's Leather Boots",
+          "item_url": "https://www.wowhead.com/forever/item=252441",
+          "known_score_s_saved_per_mob": 0.07691797215667913,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 99.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.07238773458155474
+            },
+            {
+              "stat": "strength",
+              "amount": 5.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.004530237575124385
+            },
+            {
+              "stat": "stamina",
+              "amount": 5.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "feet"
+          }
+        },
+        {
+          "item_id": 1121,
+          "name": "Feet of the Lynx",
+          "item_url": "https://www.wowhead.com/forever/item=1121",
+          "known_score_s_saved_per_mob": 0.0588276376113623,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 63.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.04606492200644393
+            },
+            {
+              "stat": "agility",
+              "amount": 8.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.010044573059843742
+            },
+            {
+              "stat": "strength",
+              "amount": 3.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.002718142545074631
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "feet"
+          }
+        },
+        {
+          "item_id": 252439,
+          "name": "Brawler's Leather Boots",
+          "item_url": "https://www.wowhead.com/forever/item=252439",
+          "known_score_s_saved_per_mob": 0.05541063926757561,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 61.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.04460254353004889
+            },
+            {
+              "stat": "agility",
+              "amount": 5.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.006277858162402339
+            },
+            {
+              "stat": "strength",
+              "amount": 5.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.004530237575124385
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "feet"
+          }
+        },
+        {
+          "item_id": 10411,
+          "name": "Footpads of the Fang",
+          "item_url": "https://www.wowhead.com/forever/item=10411",
+          "known_score_s_saved_per_mob": 0.052135973324931695,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 61.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.04460254353004889
+            },
+            {
+              "stat": "agility",
+              "amount": 6.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.007533429794882807
+            },
+            {
+              "stat": "stamina",
+              "amount": 6.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "feet"
+          }
+        },
+        {
+          "item_id": 252440,
+          "name": "Trapper's Leather Boots",
+          "item_url": "https://www.wowhead.com/forever/item=252440",
+          "known_score_s_saved_per_mob": 0.05103860827278173,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 61.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.04460254353004889
+            },
+            {
+              "stat": "agility",
+              "amount": 5.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.006277858162402339
+            },
+            {
+              "stat": "intellect",
+              "amount": 4.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00015820658033049995
+            },
+            {
+              "stat": "stamina",
+              "amount": 5.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "feet"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        252441,
+        1121,
+        252439,
+        10411,
+        252440,
+        10402,
+        6668,
+        252442,
+        14568,
+        3057,
+        2315,
+        4788,
+        252443,
+        252444,
+        273007,
+        252425,
+        15330,
+        252426,
+        2307,
+        11853,
+        6582,
+        2987,
+        283361,
+        5311,
+        15111,
+        252424,
+        238,
+        1796,
+        9776,
+        252427,
+        14560,
+        4789,
+        15305,
+        281993,
+        6557,
+        15012,
+        273875,
+        843,
+        2309,
+        1788,
+        2975,
+        3311,
+        277091,
+        277097,
+        1503,
+        15301,
+        277003,
+        277027,
+        263309,
+        3284,
+        4942,
+        6201,
+        9751,
+        277009,
+        277033,
+        277067,
+        285268,
+        277073,
+        6518,
+        796,
+        2373,
+        4320,
+        271214,
+        276274,
+        4660,
+        2232,
+        9792,
+        16985,
+        14374,
+        285345,
+        3065,
+        3076,
+        9767,
+        14159,
+        1560,
+        2168,
+        202,
+        6562,
+        253889,
+        253891,
+        253893,
+        253895,
+        253897,
+        253899,
+        1772,
+        4313,
+        14129,
+        2583,
+        14364,
+        14174,
+        2983,
+        840,
+        4312,
+        14114,
+        3307,
+        1764,
+        6537,
+        263406,
+        2569,
+        2971,
+        3454,
+        263339,
+        277103,
+        14110,
+        1495,
+        9743,
+        3289,
+        7351,
+        277015,
+        277039,
+        277079,
+        792,
+        2367,
+        6148,
+        14086,
+        257340,
+        285264,
+        286751,
+        1427
+      ],
+      "ranking_complete": false
+    },
+    "hands": {
+      "available_legal": 118,
+      "top": [
+        {
+          "item_id": 252496,
+          "name": "Defender's Leather Gloves",
+          "item_url": "https://www.wowhead.com/forever/item=252496",
+          "known_score_s_saved_per_mob": 0.06723765378328399,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 87.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.06361346372318448
+            },
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "hands"
+          }
+        },
+        {
+          "item_id": 10413,
+          "name": "Gloves of the Fang",
+          "item_url": "https://www.wowhead.com/forever/item=10413",
+          "known_score_s_saved_per_mob": 0.0491794602412535,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 52.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.03802184038627118
+            },
+            {
+              "stat": "agility",
+              "amount": 6.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.007533429794882807
+            },
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "hands"
+          }
+        },
+        {
+          "item_id": 252494,
+          "name": "Brawler's Leather Gloves",
+          "item_url": "https://www.wowhead.com/forever/item=252494",
+          "known_score_s_saved_per_mob": 0.047399506214490086,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 53.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.03875302962446871
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            },
+            {
+              "stat": "stamina",
+              "amount": 3.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "hands"
+          }
+        },
+        {
+          "item_id": 14572,
+          "name": "Bristlebark Gloves",
+          "item_url": "https://www.wowhead.com/forever/item=14572",
+          "known_score_s_saved_per_mob": 0.04666831697629256,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 52.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.03802184038627118
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "hands"
+          }
+        },
+        {
+          "item_id": 270231,
+          "name": "Flamefist Grips",
+          "item_url": "https://www.wowhead.com/forever/item=270231",
+          "known_score_s_saved_per_mob": 0.044125032708045284,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 51.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.03729065114807366
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "strength",
+              "amount": 2.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.001812095030049754
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 4.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "hands"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        252496,
+        10413,
+        252494,
+        14572,
+        270231,
+        252495,
+        3058,
+        10401,
+        7285,
+        252497,
+        1314,
+        270008,
+        2167,
+        14564,
+        6467,
+        285351,
+        252498,
+        252499,
+        5299,
+        7348,
+        7284,
+        6586,
+        2988,
+        15115,
+        1944,
+        3314,
+        286533,
+        239,
+        9780,
+        283259,
+        2976,
+        1945,
+        1799,
+        15310,
+        6554,
+        15016,
+        2312,
+        844,
+        4239,
+        1965,
+        1791,
+        15300,
+        277088,
+        277094,
+        9755,
+        263306,
+        277000,
+        277024,
+        285254,
+        3286,
+        1506,
+        277006,
+        277030,
+        5970,
+        6521,
+        277064,
+        277070,
+        5195,
+        797,
+        2375,
+        2964,
+        4940,
+        15008,
+        279877,
+        286979,
+        3066,
+        6628,
+        3074,
+        4331,
+        9771,
+        12977,
+        253913,
+        253915,
+        253917,
+        253919,
+        253921,
+        253923,
+        14162,
+        892,
+        1775,
+        6565,
+        282636,
+        4768,
+        203,
+        10919,
+        14124,
+        14168,
+        4767,
+        2984,
+        14367,
+        10637,
+        4310,
+        3308,
+        281315,
+        839,
+        1767,
+        5337,
+        6541,
+        14117,
+        1498,
+        2972,
+        277100,
+        6202,
+        9746,
+        14102,
+        273876,
+        263310,
+        284323,
+        285253,
+        3290,
+        277012,
+        277036,
+        4307,
+        6515,
+        277076,
+        793,
+        2369,
+        14089
+      ],
+      "ranking_complete": false
+    },
+    "head": {
+      "available_legal": 16,
+      "top": [
+        {
+          "item_id": 252504,
+          "name": "Brawler's Leather Hood",
+          "item_url": "https://www.wowhead.com/forever/item=252504",
+          "known_score_s_saved_per_mob": 0.06561495516285547,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 76.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.055570382103011726
+            },
+            {
+              "stat": "agility",
+              "amount": 8.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.010044573059843742
+            },
+            {
+              "stat": "stamina",
+              "amount": 10.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "head"
+          }
+        },
+        {
+          "item_id": 252447,
+          "name": "Defender's Leather Hood",
+          "item_url": "https://www.wowhead.com/forever/item=252447",
+          "known_score_s_saved_per_mob": 0.06281876222321074,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 76.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.055570382103011726
+            },
+            {
+              "stat": "strength",
+              "amount": 8.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.007248380120199016
+            },
+            {
+              "stat": "stamina",
+              "amount": 10.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "head"
+          }
+        },
+        {
+          "item_id": 252505,
+          "name": "Trapper's Leather Hood",
+          "item_url": "https://www.wowhead.com/forever/item=252505",
+          "known_score_s_saved_per_mob": 0.055886795263672726,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 76.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.055570382103011726
+            },
+            {
+              "stat": "intellect",
+              "amount": 8.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.0003164131606609999
+            },
+            {
+              "stat": "stamina",
+              "amount": 10.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "head"
+          }
+        },
+        {
+          "item_id": 211857,
+          "name": "Resilient Leather Mask",
+          "item_url": "https://www.wowhead.com/forever/item=211857",
+          "known_score_s_saved_per_mob": 0.055570382103011726,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 76.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.055570382103011726
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:resipct"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "head"
+          }
+        },
+        {
+          "item_id": 252448,
+          "name": "Totemic Leather Hood",
+          "item_url": "https://www.wowhead.com/forever/item=252448",
+          "known_score_s_saved_per_mob": 0.055570382103011726,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 76.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.055570382103011726
+            },
+            {
+              "stat": "spell_power",
+              "amount": 9.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            },
+            {
+              "stat": "stamina",
+              "amount": 10.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "head"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        252504,
+        252447,
+        252505,
+        211857,
+        252448,
+        252506,
+        252507,
+        211500,
+        253949,
+        253951,
+        253953,
+        253955,
+        253957,
+        253959,
+        279391,
+        7996
+      ],
+      "ranking_complete": false
+    },
+    "legs": {
+      "available_legal": 118,
+      "top": [
+        {
+          "item_id": 252445,
+          "name": "Defender's Leather Pants",
+          "item_url": "https://www.wowhead.com/forever/item=252445",
+          "known_score_s_saved_per_mob": 0.10384417970163858,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 124.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.09066746553649281
+            },
+            {
+              "stat": "strength",
+              "amount": 9.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.008154427635223893
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "stamina",
+              "amount": 6.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "legs"
+          }
+        },
+        {
+          "item_id": 252501,
+          "name": "Trapper's Leather Pants",
+          "item_url": "https://www.wowhead.com/forever/item=252501",
+          "known_score_s_saved_per_mob": 0.07685215389500083,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 82.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.059957517532196865
+            },
+            {
+              "stat": "agility",
+              "amount": 9.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.01130014469232421
+            },
+            {
+              "stat": "strength",
+              "amount": 6.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.005436285090149262
+            },
+            {
+              "stat": "intellect",
+              "amount": 4.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00015820658033049995
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 4.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "legs"
+          }
+        },
+        {
+          "item_id": 252500,
+          "name": "Brawler's Leather Pants",
+          "item_url": "https://www.wowhead.com/forever/item=252500",
+          "known_score_s_saved_per_mob": 0.07669394731467033,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 82.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.059957517532196865
+            },
+            {
+              "stat": "agility",
+              "amount": 9.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.01130014469232421
+            },
+            {
+              "stat": "strength",
+              "amount": 6.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.005436285090149262
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 4.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "legs"
+          }
+        },
+        {
+          "item_id": 10410,
+          "name": "Leggings of the Fang",
+          "item_url": "https://www.wowhead.com/forever/item=10410",
+          "known_score_s_saved_per_mob": 0.07286314284685537,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 78.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.057032760579406774
+            },
+            {
+              "stat": "agility",
+              "amount": 9.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.01130014469232421
+            },
+            {
+              "stat": "strength",
+              "amount": 5.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.004530237575124385
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "legs"
+          }
+        },
+        {
+          "item_id": 252446,
+          "name": "Totemic Leather Pants",
+          "item_url": "https://www.wowhead.com/forever/item=252446",
+          "known_score_s_saved_per_mob": 0.06827015174775125,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 82.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.059957517532196865
+            },
+            {
+              "stat": "strength",
+              "amount": 9.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.008154427635223893
+            },
+            {
+              "stat": "intellect",
+              "amount": 4.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00015820658033049995
+            },
+            {
+              "stat": "spell_power",
+              "amount": 7.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "legs"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        252445,
+        252501,
+        252500,
+        10410,
+        252446,
+        10400,
+        1934,
+        3022,
+        5961,
+        279900,
+        252502,
+        252503,
+        6480,
+        14565,
+        270020,
+        5422,
+        15450,
+        270260,
+        5199,
+        7282,
+        5327,
+        6587,
+        15117,
+        9781,
+        5958,
+        2986,
+        15312,
+        4909,
+        3315,
+        2974,
+        237,
+        2818,
+        1800,
+        15017,
+        6553,
+        263330,
+        4242,
+        845,
+        9756,
+        15303,
+        263016,
+        1792,
+        277090,
+        277096,
+        3287,
+        277066,
+        286752,
+        1507,
+        6269,
+        277002,
+        277008,
+        277026,
+        277032,
+        7280,
+        15009,
+        277072,
+        2303,
+        2962,
+        798,
+        2372,
+        257334,
+        273289,
+        1929,
+        23173,
+        253937,
+        253939,
+        253941,
+        253943,
+        253945,
+        253947,
+        271207,
+        12987,
+        4317,
+        14165,
+        274741,
+        5310,
+        3563,
+        6568,
+        4434,
+        15449,
+        4316,
+        14171,
+        201,
+        14125,
+        270011,
+        2982,
+        10048,
+        14370,
+        3309,
+        3457,
+        6540,
+        284192,
+        1768,
+        1776,
+        14119,
+        2970,
+        838,
+        10554,
+        10047,
+        4309,
+        9747,
+        14097,
+        263015,
+        3291,
+        277102,
+        6267,
+        277014,
+        277038,
+        4261,
+        281283,
+        14090,
+        263307,
+        277078,
+        1499,
+        2958,
+        4343,
+        794,
+        2366
+      ],
+      "ranking_complete": false
+    },
+    "neck": {
+      "available_legal": 8,
+      "top": [
+        {
+          "item_id": 20442,
+          "name": "Scout's Medallion",
+          "item_url": "https://www.wowhead.com/forever/item=20442",
+          "known_score_s_saved_per_mob": 0.007533429794882807,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 6.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.007533429794882807
+            },
+            {
+              "stat": "stamina",
+              "amount": 2.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "neck"
+          }
+        },
+        {
+          "item_id": 277204,
+          "name": "Erudite's Amulet",
+          "item_url": "https://www.wowhead.com/forever/item=277204",
+          "known_score_s_saved_per_mob": 0.005022286529921871,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "stamina",
+              "amount": 6.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "neck"
+          }
+        },
+        {
+          "item_id": 285331,
+          "name": "Mark of the Pack Leader",
+          "item_url": "https://www.wowhead.com/forever/item=285331",
+          "known_score_s_saved_per_mob": 0.00472799580053751,
+          "contributions": [
+            {
+              "stat": "strength",
+              "amount": 5.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.004530237575124385
+            },
+            {
+              "stat": "intellect",
+              "amount": 5.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00019775822541312493
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "neck"
+          }
+        },
+        {
+          "item_id": 273088,
+          "name": "Snake Eye Kaleidoscope",
+          "item_url": "https://www.wowhead.com/forever/item=273088",
+          "known_score_s_saved_per_mob": 0.0022011707925879698,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 1.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.0012555716324804678
+            },
+            {
+              "stat": "strength",
+              "amount": 1.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.000906047515024877
+            },
+            {
+              "stat": "intellect",
+              "amount": 1.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 3.9551645082624987e-05
+            },
+            {
+              "stat": "stamina",
+              "amount": 1.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 1.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:arcres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:firres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:frores"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:natres"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "neck"
+          }
+        },
+        {
+          "item_id": 273457,
+          "name": "Sorcerer Collar",
+          "item_url": "https://www.wowhead.com/forever/item=273457",
+          "known_score_s_saved_per_mob": 7.910329016524997e-05,
+          "contributions": [
+            {
+              "stat": "intellect",
+              "amount": 2.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 7.910329016524997e-05
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 2.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "neck"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        20442,
+        277204,
+        285331,
+        273088,
+        273457,
+        270227,
+        277203,
+        281265
+      ],
+      "ranking_complete": false
+    },
+    "offhand": {
+      "available_legal": 31,
+      "top": [
+        {
+          "item_id": 11855,
+          "name": "Tork Wrench",
+          "item_url": "https://www.wowhead.com/forever/item=11855",
+          "known_score_s_saved_per_mob": 0.001891198320215004,
+          "contributions": [
+            {
+              "stat": "strength",
+              "amount": 2.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.001812095030049754
+            },
+            {
+              "stat": "intellect",
+              "amount": 2.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 7.910329016524997e-05
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "off_hand"
+          }
+        },
+        {
+          "item_id": 274743,
+          "name": "Defective Samophlange",
+          "item_url": "https://www.wowhead.com/forever/item=274743",
+          "known_score_s_saved_per_mob": 0.00019775822541312493,
+          "contributions": [
+            {
+              "stat": "intellect",
+              "amount": 5.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00019775822541312493
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 5.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "off_hand"
+          }
+        },
+        {
+          "item_id": 7608,
+          "name": "Seer's Fine Stein",
+          "item_url": "https://www.wowhead.com/forever/item=7608",
+          "known_score_s_saved_per_mob": 0.00011865493524787496,
+          "contributions": [
+            {
+              "stat": "intellect",
+              "amount": 3.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00011865493524787496
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 1.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "off_hand"
+          }
+        },
+        {
+          "item_id": 15926,
+          "name": "Spellbinder Orb",
+          "item_url": "https://www.wowhead.com/forever/item=15926",
+          "known_score_s_saved_per_mob": 0.00011865493524787496,
+          "contributions": [
+            {
+              "stat": "intellect",
+              "amount": 3.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00011865493524787496
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "off_hand"
+          }
+        },
+        {
+          "item_id": 281294,
+          "name": "Expended Apothecary Vial",
+          "item_url": "https://www.wowhead.com/forever/item=281294",
+          "known_score_s_saved_per_mob": 0.00011865493524787496,
+          "contributions": [
+            {
+              "stat": "intellect",
+              "amount": 3.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00011865493524787496
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 3.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "off_hand"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        11855,
+        274743,
+        7608,
+        15926,
+        281294,
+        15866,
+        15944,
+        1172,
+        2879,
+        3451,
+        5183,
+        5323,
+        6182,
+        6341,
+        7554,
+        7558,
+        7559,
+        15912,
+        15925,
+        15932,
+        15933,
+        15945,
+        15946,
+        15969,
+        15970,
+        15971,
+        15972,
+        19295,
+        273137,
+        284668,
+        287090
+      ],
+      "ranking_complete": false
+    },
+    "relic": {
+      "available_legal": 5,
+      "top": [
+        {
+          "item_id": 206954,
+          "name": "Idol of Ursine Rage",
+          "item_url": "https://www.wowhead.com/forever/item=206954",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "relic"
+          }
+        },
+        {
+          "item_id": 208689,
+          "name": "Ferocious Idol",
+          "item_url": "https://www.wowhead.com/forever/item=208689",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "relic"
+          }
+        },
+        {
+          "item_id": 210195,
+          "name": "Unbalanced Idol",
+          "item_url": "https://www.wowhead.com/forever/item=210195",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "relic"
+          }
+        },
+        {
+          "item_id": 210534,
+          "name": "Idol of the Wild",
+          "item_url": "https://www.wowhead.com/forever/item=210534",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "relic"
+          }
+        },
+        {
+          "item_id": 249396,
+          "name": "Mystic Mushroom",
+          "item_url": "https://www.wowhead.com/forever/item=249396",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "relic"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        206954,
+        208689,
+        210195,
+        210534,
+        249396
+      ],
+      "ranking_complete": false
+    },
+    "ring1": {
+      "available_legal": 36,
+      "top": [
+        {
+          "item_id": 20429,
+          "name": "Legionnaire's Band",
+          "item_url": "https://www.wowhead.com/forever/item=20429",
+          "known_score_s_saved_per_mob": 0.00864647659002138,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            },
+            {
+              "stat": "stamina",
+              "amount": 2.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        },
+        {
+          "item_id": 285330,
+          "name": "Signet of the Zhevra",
+          "item_url": "https://www.wowhead.com/forever/item=285330",
+          "known_score_s_saved_per_mob": 0.007533429794882807,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 6.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.007533429794882807
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 2.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        },
+        {
+          "item_id": 284715,
+          "name": "First Mate Band",
+          "item_url": "https://www.wowhead.com/forever/item=284715",
+          "known_score_s_saved_per_mob": 0.005436285090149262,
+          "contributions": [
+            {
+              "stat": "strength",
+              "amount": 6.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.005436285090149262
+            },
+            {
+              "stat": "stamina",
+              "amount": 2.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        },
+        {
+          "item_id": 5351,
+          "name": "Bounty Hunter's Ring",
+          "item_url": "https://www.wowhead.com/forever/item=5351",
+          "known_score_s_saved_per_mob": 0.0037667148974414033,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 3.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.0037667148974414033
+            },
+            {
+              "stat": "stamina",
+              "amount": 1.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        },
+        {
+          "item_id": 12054,
+          "name": "Demon Band",
+          "item_url": "https://www.wowhead.com/forever/item=12054",
+          "known_score_s_saved_per_mob": 0.003624190060099508,
+          "contributions": [
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            },
+            {
+              "stat": "stamina",
+              "amount": 2.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 2.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        20429,
+        285330,
+        284715,
+        5351,
+        12054,
+        1156,
+        1189,
+        8350,
+        12052,
+        3739,
+        5313,
+        12053,
+        6332,
+        1462,
+        3235,
+        4998,
+        6463,
+        6669,
+        11965,
+        11967,
+        11981,
+        11982,
+        11993,
+        11994,
+        12006,
+        12007,
+        12985,
+        12996,
+        17692,
+        20426,
+        210250,
+        210251,
+        279867,
+        281252,
+        286535,
+        286745
+      ],
+      "ranking_complete": false
+    },
+    "ring2": {
+      "available_legal": 36,
+      "top": [
+        {
+          "item_id": 20429,
+          "name": "Legionnaire's Band",
+          "item_url": "https://www.wowhead.com/forever/item=20429",
+          "known_score_s_saved_per_mob": 0.00864647659002138,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            },
+            {
+              "stat": "stamina",
+              "amount": 2.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        },
+        {
+          "item_id": 285330,
+          "name": "Signet of the Zhevra",
+          "item_url": "https://www.wowhead.com/forever/item=285330",
+          "known_score_s_saved_per_mob": 0.007533429794882807,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 6.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.007533429794882807
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 2.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        },
+        {
+          "item_id": 284715,
+          "name": "First Mate Band",
+          "item_url": "https://www.wowhead.com/forever/item=284715",
+          "known_score_s_saved_per_mob": 0.005436285090149262,
+          "contributions": [
+            {
+              "stat": "strength",
+              "amount": 6.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.005436285090149262
+            },
+            {
+              "stat": "stamina",
+              "amount": 2.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        },
+        {
+          "item_id": 5351,
+          "name": "Bounty Hunter's Ring",
+          "item_url": "https://www.wowhead.com/forever/item=5351",
+          "known_score_s_saved_per_mob": 0.0037667148974414033,
+          "contributions": [
+            {
+              "stat": "agility",
+              "amount": 3.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.0037667148974414033
+            },
+            {
+              "stat": "stamina",
+              "amount": 1.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        },
+        {
+          "item_id": 12054,
+          "name": "Demon Band",
+          "item_url": "https://www.wowhead.com/forever/item=12054",
+          "known_score_s_saved_per_mob": 0.003624190060099508,
+          "contributions": [
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            },
+            {
+              "stat": "stamina",
+              "amount": 2.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 2.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "finger"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        20429,
+        285330,
+        284715,
+        5351,
+        12054,
+        1156,
+        1189,
+        8350,
+        12052,
+        3739,
+        5313,
+        12053,
+        6332,
+        1462,
+        3235,
+        4998,
+        6463,
+        6669,
+        11965,
+        11967,
+        11981,
+        11982,
+        11993,
+        11994,
+        12006,
+        12007,
+        12985,
+        12996,
+        17692,
+        20426,
+        210250,
+        210251,
+        279867,
+        281252,
+        286535,
+        286745
+      ],
+      "ranking_complete": false
+    },
+    "shirt": {
+      "available_legal": 2,
+      "top": [
+        {
+          "item_id": 2575,
+          "name": "Red Linen Shirt",
+          "item_url": "https://www.wowhead.com/forever/item=2575",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "shirt"
+          }
+        },
+        {
+          "item_id": 3342,
+          "name": "Captain Sander's Shirt",
+          "item_url": "https://www.wowhead.com/forever/item=3342",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "shirt"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        2575,
+        3342
+      ],
+      "ranking_complete": true
+    },
+    "shoulder": {
+      "available_legal": 30,
+      "top": [
+        {
+          "item_id": 5254,
+          "name": "Rugged Spaulders",
+          "item_url": "https://www.wowhead.com/forever/item=5254",
+          "known_score_s_saved_per_mob": 0.06361346372318448,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 87.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.06361346372318448
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:arcres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:firres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:frores"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:natres"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "shoulder"
+          }
+        },
+        {
+          "item_id": 5404,
+          "name": "Serpent's Shoulders",
+          "item_url": "https://www.wowhead.com/forever/item=5404",
+          "known_score_s_saved_per_mob": 0.055998726359833884,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 68.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.049720868197431545
+            },
+            {
+              "stat": "agility",
+              "amount": 5.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.006277858162402339
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "shoulder"
+          }
+        },
+        {
+          "item_id": 270023,
+          "name": "Tanned Shoulderpads",
+          "item_url": "https://www.wowhead.com/forever/item=270023",
+          "known_score_s_saved_per_mob": 0.05337681438841916,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 73.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.05337681438841916
+            },
+            {
+              "stat": "spell_power",
+              "amount": 3.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            },
+            {
+              "stat": "stamina",
+              "amount": 9.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "shoulder"
+          }
+        },
+        {
+          "item_id": 4709,
+          "name": "Forest Leather Mantle",
+          "item_url": "https://www.wowhead.com/forever/item=4709",
+          "known_score_s_saved_per_mob": 0.046796111244641454,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 64.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.046796111244641454
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 4.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "shoulder"
+          }
+        },
+        {
+          "item_id": 14566,
+          "name": "Prospector's Pads",
+          "item_url": "https://www.wowhead.com/forever/item=14566",
+          "known_score_s_saved_per_mob": 0.046796111244641454,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 64.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.046796111244641454
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 4.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "shoulder"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        5254,
+        5404,
+        270023,
+        4709,
+        14566,
+        15313,
+        6588,
+        1801,
+        10405,
+        4700,
+        15019,
+        5319,
+        1793,
+        3324,
+        10657,
+        12998,
+        6461,
+        6664,
+        4315,
+        4314,
+        6566,
+        14157,
+        14126,
+        14170,
+        14368,
+        4698,
+        14169,
+        1777,
+        1769,
+        280363
+      ],
+      "ranking_complete": false
+    },
+    "trinket1": {
+      "available_legal": 3,
+      "top": [
+        {
+          "item_id": 21566,
+          "name": "Rune of Perfection",
+          "item_url": "https://www.wowhead.com/forever/item=21566",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "trinket"
+          }
+        },
+        {
+          "item_id": 21568,
+          "name": "Rune of Duty",
+          "item_url": "https://www.wowhead.com/forever/item=21568",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:arcres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:firres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:frores"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:holres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:natres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "trinket"
+          }
+        },
+        {
+          "item_id": 273298,
+          "name": "Lookie's Spyglass",
+          "item_url": "https://www.wowhead.com/forever/item=273298",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 1.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "trinket"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        21566,
+        21568,
+        273298
+      ],
+      "ranking_complete": false
+    },
+    "trinket2": {
+      "available_legal": 3,
+      "top": [
+        {
+          "item_id": 21566,
+          "name": "Rune of Perfection",
+          "item_url": "https://www.wowhead.com/forever/item=21566",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "trinket"
+          }
+        },
+        {
+          "item_id": 21568,
+          "name": "Rune of Duty",
+          "item_url": "https://www.wowhead.com/forever/item=21568",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:arcres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:firres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:frores"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:holres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "unmodeled_source_extra:natres"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "trinket"
+          }
+        },
+        {
+          "item_id": 273298,
+          "name": "Lookie's Spyglass",
+          "item_url": "https://www.wowhead.com/forever/item=273298",
+          "known_score_s_saved_per_mob": 0.0,
+          "contributions": [],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 1.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            },
+            {
+              "stat": "item_effect",
+              "reason": "item_effect_tooltip_not_typed"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "trinket"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        21566,
+        21568,
+        273298
+      ],
+      "ranking_complete": false
+    },
+    "waist": {
+      "available_legal": 109,
+      "top": [
+        {
+          "item_id": 252430,
+          "name": "Defender's Leather Belt",
+          "item_url": "https://www.wowhead.com/forever/item=252430",
+          "known_score_s_saved_per_mob": 0.05773219368671619,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 74.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.054108003626616684
+            },
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            },
+            {
+              "stat": "stamina",
+              "amount": 4.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "waist"
+          }
+        },
+        {
+          "item_id": 6468,
+          "name": "Deviate Scale Belt",
+          "item_url": "https://www.wowhead.com/forever/item=6468",
+          "known_score_s_saved_per_mob": 0.04628665185555063,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 51.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.03729065114807366
+            },
+            {
+              "stat": "agility",
+              "amount": 5.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.006277858162402339
+            },
+            {
+              "stat": "strength",
+              "amount": 3.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.002718142545074631
+            },
+            {
+              "stat": "stamina",
+              "amount": 6.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "waist"
+          }
+        },
+        {
+          "item_id": 10403,
+          "name": "Blackened Defias Belt",
+          "item_url": "https://www.wowhead.com/forever/item=10403",
+          "known_score_s_saved_per_mob": 0.04471388954510003,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 50.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.036559461909876134
+            },
+            {
+              "stat": "attack_power",
+              "amount": 18.0,
+              "weight": 0.0004530237575124385,
+              "contribution_s_saved_per_mob": 0.008154427635223893
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "waist"
+          }
+        },
+        {
+          "item_id": 16987,
+          "name": "Screecher Belt",
+          "item_url": "https://www.wowhead.com/forever/item=16987",
+          "known_score_s_saved_per_mob": 0.04219350522543852,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 50.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.036559461909876134
+            },
+            {
+              "stat": "attack_power",
+              "amount": 12.0,
+              "weight": 0.0004530237575124385,
+              "contribution_s_saved_per_mob": 0.005436285090149262
+            },
+            {
+              "stat": "intellect",
+              "amount": 5.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00019775822541312493
+            },
+            {
+              "stat": "stamina",
+              "amount": 3.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 2.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "waist"
+          }
+        },
+        {
+          "item_id": 252428,
+          "name": "Brawler's Leather Belt",
+          "item_url": "https://www.wowhead.com/forever/item=252428",
+          "known_score_s_saved_per_mob": 0.0415499923089099,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 45.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.03290351571888852
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "strength",
+              "amount": 4.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.003624190060099508
+            },
+            {
+              "stat": "stamina",
+              "amount": 3.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "waist"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        252430,
+        6468,
+        10403,
+        16987,
+        252428,
+        4249,
+        5975,
+        10412,
+        3429,
+        1215,
+        14567,
+        252429,
+        6382,
+        252431,
+        5780,
+        4250,
+        9801,
+        15329,
+        252432,
+        252433,
+        6581,
+        263405,
+        15110,
+        4246,
+        1849,
+        9775,
+        2899,
+        1795,
+        14559,
+        6379,
+        15308,
+        16608,
+        5275,
+        1843,
+        6558,
+        15011,
+        1787,
+        4693,
+        277089,
+        277095,
+        263335,
+        283460,
+        1502,
+        4690,
+        3583,
+        6147,
+        9750,
+        4237,
+        285273,
+        15302,
+        277001,
+        277007,
+        277025,
+        277031,
+        1839,
+        2371,
+        4675,
+        6517,
+        263424,
+        2911,
+        3229,
+        14373,
+        271210,
+        253925,
+        253927,
+        253929,
+        253931,
+        253933,
+        253935,
+        273089,
+        286980,
+        4436,
+        4708,
+        14025,
+        1299,
+        6570,
+        9766,
+        14164,
+        4786,
+        5967,
+        6477,
+        3597,
+        14173,
+        4699,
+        3378,
+        14131,
+        253885,
+        253887,
+        10820,
+        2283,
+        3344,
+        3376,
+        3589,
+        6539,
+        14113,
+        4687,
+        277101,
+        3374,
+        4684,
+        3442,
+        9742,
+        14099,
+        277013,
+        277037,
+        285272,
+        3602,
+        3606,
+        4672,
+        6513
+      ],
+      "ranking_complete": false
+    },
+    "weapon": {
+      "available_legal": 208,
+      "top": [
+        {
+          "item_id": 270018,
+          "name": "Hammerbone",
+          "item_url": "https://www.wowhead.com/forever/item=270018",
+          "known_score_s_saved_per_mob": 0.19425658722133365,
+          "contributions": [
+            {
+              "stat": "weapon_dps",
+              "amount": 20.44,
+              "weight": 0.00906047515024877,
+              "contribution_s_saved_per_mob": 0.18519611207108488
+            },
+            {
+              "stat": "strength",
+              "amount": 10.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.00906047515024877
+            },
+            {
+              "stat": "stamina",
+              "amount": 7.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 2,
+            "catalogue_slot": "two_hand"
+          }
+        },
+        {
+          "item_id": 7230,
+          "name": "Smite's Mighty Hammer",
+          "item_url": "https://www.wowhead.com/forever/item=7230",
+          "known_score_s_saved_per_mob": 0.19357077440659878,
+          "contributions": [
+            {
+              "stat": "weapon_dps",
+              "amount": 19.71,
+              "weight": 0.00906047515024877,
+              "contribution_s_saved_per_mob": 0.17858196521140327
+            },
+            {
+              "stat": "strength",
+              "amount": 11.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.009966522665273647
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 2,
+            "catalogue_slot": "two_hand"
+          }
+        },
+        {
+          "item_id": 890,
+          "name": "Twisted Chanter's Staff",
+          "item_url": "https://www.wowhead.com/forever/item=890",
+          "known_score_s_saved_per_mob": 0.18559162852191113,
+          "contributions": [
+            {
+              "stat": "weapon_dps",
+              "amount": 20.44,
+              "weight": 0.00906047515024877,
+              "contribution_s_saved_per_mob": 0.18519611207108488
+            },
+            {
+              "stat": "intellect",
+              "amount": 10.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00039551645082624987
+            },
+            {
+              "stat": "stamina",
+              "amount": 6.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 2,
+            "catalogue_slot": "two_hand"
+          }
+        },
+        {
+          "item_id": 20425,
+          "name": "Advisor's Gnarled Staff",
+          "item_url": "https://www.wowhead.com/forever/item=20425",
+          "known_score_s_saved_per_mob": 0.17828714803422133,
+          "contributions": [
+            {
+              "stat": "weapon_dps",
+              "amount": 19.66,
+              "weight": 0.00906047515024877,
+              "contribution_s_saved_per_mob": 0.17812894145389083
+            },
+            {
+              "stat": "intellect",
+              "amount": 4.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00015820658033049995
+            },
+            {
+              "stat": "stamina",
+              "amount": 8.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "mp5",
+              "amount": 3.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 2,
+            "catalogue_slot": "two_hand"
+          }
+        },
+        {
+          "item_id": 271203,
+          "name": "Segmented Spider Leg",
+          "item_url": "https://www.wowhead.com/forever/item=271203",
+          "known_score_s_saved_per_mob": 0.17438869739680207,
+          "contributions": [
+            {
+              "stat": "weapon_dps",
+              "amount": 17.5,
+              "weight": 0.00906047515024877,
+              "contribution_s_saved_per_mob": 0.15855831512935348
+            },
+            {
+              "stat": "agility",
+              "amount": 9.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.01130014469232421
+            },
+            {
+              "stat": "strength",
+              "amount": 5.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.004530237575124385
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 2,
+            "catalogue_slot": "two_hand"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        270018,
+        7230,
+        890,
+        20425,
+        271203,
+        12983,
+        5322,
+        5187,
+        3194,
+        911,
+        7956,
+        15259,
+        273297,
+        2194,
+        1935,
+        276887,
+        2236,
+        251485,
+        274744,
+        6505,
+        20441,
+        284704,
+        1458,
+        2271,
+        284386,
+        2256,
+        6472,
+        251534,
+        4437,
+        273456,
+        928,
+        3198,
+        880,
+        3571,
+        271215,
+        6631,
+        1218,
+        6448,
+        1483,
+        5197,
+        5201,
+        271204,
+        1484,
+        3193,
+        1539,
+        920,
+        3490,
+        3491,
+        6360,
+        1300,
+        4778,
+        15224,
+        1936,
+        15445,
+        4575,
+        3227,
+        1473,
+        2026,
+        272998,
+        4439,
+        6333,
+        15223,
+        14151,
+        1938,
+        270228,
+        2030,
+        1391,
+        15444,
+        6205,
+        925,
+        4777,
+        16889,
+        5540,
+        15903,
+        1405,
+        6214,
+        2848,
+        1457,
+        2567,
+        2209,
+        1296,
+        263935,
+        789,
+        2235,
+        3452,
+        250602,
+        279874,
+        16894,
+        271216,
+        5279,
+        3184,
+        3848,
+        4570,
+        3902,
+        1440,
+        1214,
+        899,
+        5306,
+        2028,
+        15222,
+        5345,
+        854,
+        5093,
+        2821,
+        3440,
+        257345,
+        284166,
+        284177,
+        3581,
+        2020,
+        1822,
+        4564,
+        1197,
+        2169,
+        820,
+        4566,
+        827,
+        257343,
+        5112,
+        1958,
+        2254,
+        1820,
+        2079,
+        4571,
+        277109,
+        2208,
+        4964,
+        3570,
+        286754,
+        277106,
+        5324,
+        272996,
+        273003,
+        276888,
+        6174,
+        7170,
+        15443,
+        284173,
+        271095,
+        1928,
+        1926,
+        263936,
+        284174,
+        1394,
+        263937,
+        1287,
+        1933,
+        2088,
+        2267,
+        4303,
+        5340,
+        1814,
+        4569,
+        2632,
+        2207,
+        2266,
+        1813,
+        263312,
+        2765,
+        257346,
+        3223,
+        15905,
+        3446,
+        1913,
+        1823,
+        283462,
+        4971,
+        1917,
+        284287,
+        2075,
+        4974,
+        4938,
+        286730,
+        277107,
+        269716,
+        4302,
+        852,
+        282064,
+        277108,
+        816,
+        4947,
+        3225,
+        7166,
+        4948,
+        2140,
+        3334,
+        281274,
+        2067,
+        7094,
+        1514,
+        2257,
+        4961,
+        263314,
+        263313,
+        2764,
+        3445,
+        241089,
+        6651,
+        1815,
+        1515,
+        5516,
+        2064,
+        3329,
+        257332,
+        277247,
+        2763,
+        1510,
+        2056
+      ],
+      "ranking_complete": false
+    },
+    "wrist": {
+      "available_legal": 94,
+      "top": [
+        {
+          "item_id": 3202,
+          "name": "Forest Leather Bracers",
+          "item_url": "https://www.wowhead.com/forever/item=3202",
+          "known_score_s_saved_per_mob": 0.033331859975710684,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 37.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.027054001813308342
+            },
+            {
+              "stat": "agility",
+              "amount": 5.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.006277858162402339
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "wrist"
+          }
+        },
+        {
+          "item_id": 279875,
+          "name": "Spare Part Bindings",
+          "item_url": "https://www.wowhead.com/forever/item=279875",
+          "known_score_s_saved_per_mob": 0.03301428442534231,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 40.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.029247569527900908
+            },
+            {
+              "stat": "agility",
+              "amount": 3.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.0037667148974414033
+            },
+            {
+              "stat": "stamina",
+              "amount": 5.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 3.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "wrist"
+          }
+        },
+        {
+          "item_id": 271202,
+          "name": "Witherbite Bracers",
+          "item_url": "https://www.wowhead.com/forever/item=271202",
+          "known_score_s_saved_per_mob": 0.03219494327847809,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 37.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.027054001813308342
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "intellect",
+              "amount": 3.0,
+              "weight": 3.9551645082624987e-05,
+              "contribution_s_saved_per_mob": 0.00011865493524787496
+            }
+          ],
+          "unknown_effects": [
+            {
+              "stat": "spirit",
+              "amount": 3.0,
+              "reason": "INCONCLUSIVE_DISCRETE_PROBES"
+            }
+          ],
+          "fully_rankable": false,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "wrist"
+          }
+        },
+        {
+          "item_id": 4794,
+          "name": "Wolf Bracers",
+          "item_url": "https://www.wowhead.com/forever/item=4794",
+          "known_score_s_saved_per_mob": 0.032076288343230216,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 37.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.027054001813308342
+            },
+            {
+              "stat": "agility",
+              "amount": 4.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.005022286529921871
+            },
+            {
+              "stat": "stamina",
+              "amount": 2.0,
+              "weight": 0.0,
+              "contribution_s_saved_per_mob": 0.0
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "wrist"
+          }
+        },
+        {
+          "item_id": 14569,
+          "name": "Bristlebark Bindings",
+          "item_url": "https://www.wowhead.com/forever/item=14569",
+          "known_score_s_saved_per_mob": 0.031170433264404454,
+          "contributions": [
+            {
+              "stat": "armor",
+              "amount": 35.0,
+              "weight": 0.0007311892381975227,
+              "contribution_s_saved_per_mob": 0.025591623336913297
+            },
+            {
+              "stat": "agility",
+              "amount": 3.0,
+              "weight": 0.0012555716324804678,
+              "contribution_s_saved_per_mob": 0.0037667148974414033
+            },
+            {
+              "stat": "strength",
+              "amount": 2.0,
+              "weight": 0.000906047515024877,
+              "contribution_s_saved_per_mob": 0.001812095030049754
+            }
+          ],
+          "unknown_effects": [],
+          "fully_rankable": true,
+          "slot_requirements": {
+            "weapon_hands": 0,
+            "catalogue_slot": "wrist"
+          }
+        }
+      ],
+      "all_ranked_item_ids": [
+        3202,
+        279875,
+        271202,
+        4794,
+        14569,
+        274742,
+        12999,
+        1306,
+        4796,
+        4795,
+        15122,
+        15331,
+        15453,
+        14561,
+        6583,
+        1850,
+        15112,
+        9777,
+        7281,
+        3205,
+        1789,
+        1797,
+        15306,
+        1844,
+        6556,
+        283473,
+        284320,
+        1213,
+        3207,
+        15013,
+        263338,
+        277087,
+        277093,
+        3312,
+        763,
+        9752,
+        281271,
+        276999,
+        277023,
+        277005,
+        277029,
+        281270,
+        15297,
+        1504,
+        1840,
+        2327,
+        2374,
+        3285,
+        4973,
+        6519,
+        251486,
+        270028,
+        1974,
+        9793,
+        14375,
+        3647,
+        281926,
+        15452,
+        14148,
+        16981,
+        3598,
+        6563,
+        9768,
+        271096,
+        3379,
+        14122,
+        14160,
+        14166,
+        14366,
+        3645,
+        3377,
+        3590,
+        6543,
+        283471,
+        3643,
+        14115,
+        263336,
+        277099,
+        3224,
+        4308,
+        3375,
+        3453,
+        3644,
+        9744,
+        14095,
+        277011,
+        277035,
+        3323,
+        3603,
+        3607,
+        6062,
+        7350,
+        263425,
+        281269
+      ],
+      "ranking_complete": false
+    }
+  },
+  "p3_pass": false,
+  "ranking_method": "100mob_multiscale_coarse_positive_marginal_prior_s_saved_per_mob_per_stat_unit",
+  "selection_limitations": [
+    "Build-local linear approximation, not L2 evaluation of every item",
+    "Weapon+offhand packages and fixed-stat interactions require joint-gear search",
+    "Unresolved rating/proc semantics prevent an unconditional top-N proof"
+  ]
+}

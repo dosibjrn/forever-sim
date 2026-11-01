@@ -1,0 +1,204 @@
+{
+  "schema": "forever_external_rank_observations_v1",
+  "observations": [
+    {
+      "class_key": "druid",
+      "spell_id": 5176,
+      "name": "Wrath",
+      "required_level": 1,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "000a8734009b71e9d209ed0618fbcd504bddd23d322baf447f2b1449579ace10",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/wrath/",
+        "https://wowforever.wclbox.com/en/fashu/druid/druid-wrath"
+      ],
+      "effect_kind": "direct_damage",
+      "after": {
+        "name": "Wrath",
+        "cost": "10 Mana",
+        "cast": "1.5 sec cast",
+        "text": "Causes 14 to 16 Nature damage to the target."
+      }
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 5177,
+      "name": "Wrath",
+      "required_level": 6,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "f889140bbd1019d079a6540abc28dd0a78041ad35c9c4217ccec269dde569321",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/wrath/",
+        "https://wowforever.wclbox.com/en/fashu/druid/druid-wrath"
+      ],
+      "effect_kind": "direct_damage",
+      "after": {
+        "name": "Wrath",
+        "cost": "20 Mana",
+        "cast": "1.7 sec cast",
+        "text": "Causes 19 to 23 Nature damage to the target."
+      }
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 5178,
+      "name": "Wrath",
+      "required_level": 14,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "05decf889114fcaeb2ce8413029504a6bd8287aeb8e95fb36c58a4dd200d8ecb",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/wrath/",
+        "https://wow-forever.gg/db/spells/5178-wrath/"
+      ],
+      "effect_kind": "direct_damage",
+      "after": {
+        "name": "Wrath",
+        "cost": "40 Mana",
+        "cast": "2 sec cast",
+        "text": "Causes 27 to 33 Nature damage to the target."
+      }
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 8921,
+      "name": "Moonfire",
+      "required_level": 4,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "4b1861f3854a56b65679133ee54a26eb200f5f0556190a64496e21c26bf65aac",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/moonfire/",
+        "https://wowforever.wclbox.com/en/fashu/druid/druid-moonfire"
+      ],
+      "effect_kind": "direct_periodic_damage",
+      "after": {
+        "name": "Moonfire",
+        "cost": "25 Mana",
+        "cast": "Instant",
+        "text": "Burns the enemy for 7 to 9 Arcane damage and then an additional 12 Arcane damage over 9 sec."
+      }
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 8924,
+      "name": "Moonfire",
+      "required_level": 10,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "74a41d5f61ef615ae39af96acd9947088d017b0e3e0c3f371f435f83b0a4aa7e",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/moonfire/",
+        "https://wowforever.wclbox.com/en/fashu/druid/druid-moonfire"
+      ],
+      "effect_kind": "direct_periodic_damage",
+      "after": {
+        "name": "Moonfire",
+        "cost": "50 Mana",
+        "cast": "Instant",
+        "text": "Burns the enemy for 11 to 15 Arcane damage and then an additional 24 Arcane damage over 12 sec."
+      }
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 8925,
+      "name": "Moonfire",
+      "required_level": 16,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "bed0b209ffff97436da83a12e5ef578a8925cfc923857b6856655bbf91fe9e3e",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/moonfire/",
+        "https://wowforever.wclbox.com/en/fashu/druid/druid-moonfire"
+      ],
+      "effect_kind": "direct_periodic_damage",
+      "after": {
+        "name": "Moonfire",
+        "cost": "75 Mana",
+        "cast": "Instant",
+        "text": "Burns the enemy for 20 to 24 Arcane damage and then an additional 36 Arcane damage over 12 sec."
+      }
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 1430,
+      "name": "Rejuvenation",
+      "required_level": 16,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "4407ed83eacd098db1f4037ac70cdfe3907541487ad553a5bbc8600b85e0be8f",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/rejuvenation/",
+        "https://foreverdb.net/spell/1430"
+      ],
+      "effect_kind": "periodic_heal",
+      "after": {
+        "name": "Rejuvenation",
+        "cost": "75 Mana",
+        "cast": "Instant",
+        "text": "Heals the target for 92 over 12 sec."
+      }
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 5188,
+      "name": "Healing Touch",
+      "required_level": 20,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "a657c867962b48fb44b5115e8b0c7959c87d082138a00dff8f64c4869ee1755f",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/healing-touch/",
+        "https://wow-forever.gg/db/spells/5188-healing-touch/"
+      ],
+      "effect_kind": "direct_heal",
+      "after": {
+        "name": "Healing Touch",
+        "cost": "190 Mana",
+        "cast": "3 sec cast",
+        "text": "Heals a friendly target for 325 to 399."
+      }
+    },
+    {
+      "class_key": "druid",
+      "spell_id": 2912,
+      "name": "Starfire",
+      "required_level": 20,
+      "index_batch_id": "20261008T145657Z",
+      "index_sha256": "a394d638704a724a29d35dac8b331980175bddbcf84cd2586585b4438f4c30ab",
+      "source_build": "1.60.1.70338",
+      "source_build_date": "2026-10-11",
+      "observed_at": "2026-10-13",
+      "source_urls": [
+        "https://theforeverera.com/en/spells/druid/starfire/",
+        "https://wowforever.wclbox.com/en/fashu/druid/druid-starfire"
+      ],
+      "effect_kind": "direct_damage",
+      "after": {
+        "name": "Starfire",
+        "cost": "95 Mana",
+        "cast": "3.5 sec cast",
+        "text": "Causes 73 to 89 Arcane damage to the target."
+      }
+    }
+  ],
+  "limitations": "Two public beta-client-derived websites per rank; neither HTML is stored or SHA-verified in this environment. Values are NOT server verified. Current index remains canonical, observations only stage."
+}

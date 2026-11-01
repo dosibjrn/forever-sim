@@ -1,0 +1,8 @@
+profession,family,name,slot,item_level,required_level,armor,strength,agility,stamina,intellect,spirit,spell_damage,healing,spell_power,source_url,checked_date
+tailoring,novice_arcanist,Novice Arcanist's Sash,waist,15,10,17,0,0,3,3,0,0,0,4,https://www.wowhead.com/forever/item=253885/novice-arcanists-sash,2026-09-21
+tailoring,pristine,Pristine Gloves,hands,20,15,23,0,0,4,3,0,4,11,0,https://www.wowhead.com/forever/spell=1257382/pristine-gloves,2026-09-21
+tailoring,pristine,Pristine Sash,waist,22,17,22,0,0,5,4,0,4,11,0,https://www.wowhead.com/forever/item=253925/pristine-sash,2026-09-21
+tailoring,filigreed_shadow,Filigreed Shadow Gown,chest,20,15,37,0,0,4,5,3,0,0,0,https://www.wowhead.com/forever/spell=1257379/filigreed-shadow-gown,2026-09-21
+tailoring,filigreed_pristine,Filigreed Pristine Leggings,legs,25,20,37,0,0,5,6,4,6,18,0,https://www.wowhead.com/forever/item=253937/filigreed-pristine-leggings,2026-09-21
+tailoring,pristine,Pristine Circlet,head,25,20,35,0,0,10,0,0,6,18,0,https://www.wowhead.com/forever/item=253949/pristine-circlet,2026-09-21
+tailoring,filigreed_pristine,Filigreed Pristine Circlet,head,30,25,38,0,0,12,0,0,8,22,0,https://www.wowhead.com/forever/item=253975/filigreed-pristine-circlet,2026-09-21

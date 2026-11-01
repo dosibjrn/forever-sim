@@ -1,0 +1,138 @@
+{
+  "canonical_candidate_ranks_seen": 105,
+  "canonical_candidate_ranks_with_numeric_l0": 105,
+  "checkpoint": "druid:L30:unrestricted",
+  "known_source_rank_gaps_at_l30": [
+    {
+      "rank": 2,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 3,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 4,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 5,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "rank": 2,
+      "talent_id": "vengeance"
+    },
+    {
+      "rank": 3,
+      "talent_id": "vengeance"
+    },
+    {
+      "rank": 4,
+      "talent_id": "vengeance"
+    },
+    {
+      "rank": 5,
+      "talent_id": "vengeance"
+    },
+    {
+      "rank": 2,
+      "talent_id": "predatory_strikes"
+    },
+    {
+      "rank": 3,
+      "talent_id": "predatory_strikes"
+    },
+    {
+      "rank": 2,
+      "talent_id": "blood_frenzy"
+    }
+  ],
+  "note": "Verified subset only; NOT a complete denominator for all live source talents. L2 joint search must fail closed on this certificate.",
+  "p2_pass": false,
+  "source_build": "1.60.1.70338",
+  "source_identity_gaps": [
+    {
+      "identity_status": "STALE_OLD_TALENT_NAME_REPLACED_WITH_NATURAL_INSTINCT",
+      "max_rank": 1,
+      "reason": "SOURCE_TALENT_IDENTITY_SUPERSEDED_REQUIRES_CANONICAL_REINGEST",
+      "source_url": "https://theforeverera.com/en/talents/druid/natural-instinct/",
+      "talent_id": "predatory_instincts",
+      "tree_key": "feral"
+    }
+  ],
+  "source_rank_mismatches": [
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 5,
+      "talent_id": "improved_starfire"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 5,
+      "talent_id": "vengeance"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 2,
+      "talent_id": "overgrowth"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [
+        2,
+        3
+      ],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 3,
+      "talent_id": "predatory_strikes"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [
+        2
+      ],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 2,
+      "talent_id": "blood_frenzy"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 2,
+      "talent_id": "improved_shifting_power"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 2,
+      "talent_id": "improved_tranquility"
+    },
+    {
+      "canonical_ir_max_rank": 1,
+      "possibly_missing_source_ranks_at_checkpoint": [],
+      "reason": "CURRENT_SOURCE_RANK_CATALOGUE_DIFFERS_FROM_CANONICAL_IR",
+      "source_max_rank": 3,
+      "talent_id": "living_spirit"
+    }
+  ],
+  "unscored_canonical_candidates": []
+}

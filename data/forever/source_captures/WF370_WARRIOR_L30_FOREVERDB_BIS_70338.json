@@ -1,0 +1,143 @@
+{
+  "schema": "forever_warrior_l30_source_bis_witness_v1",
+  "class_key": "warrior",
+  "level": 30,
+  "profile": "unrestricted",
+  "source_build": "1.60.1.70338",
+  "source_extracted": "2026-10-11",
+  "checked_at": "2026-10-14",
+  "bis_source": "https://foreverdb.net/bis/warrior",
+  "source_limitations": "These are source-backed legal item witnesses for Warrior L30, not an exhaustive legal item universe or an optimization seed.",
+  "items": [
+    {
+      "item_id": 6976,
+      "name": "Whirlwind Warhammer",
+      "source_url": "https://foreverdb.net/item/6976",
+      "bis_profiles": [
+        "arms_pve",
+        "arms_pvp"
+      ],
+      "new_item": {
+        "slot": "two_hand",
+        "item_level": 40,
+        "required_level": 0,
+        "required_level_origin": "source_confirmed_no_requirement",
+        "quality": 3,
+        "weapon_type": "two_hand_mace",
+        "weapon_hands": 2,
+        "weapon_min_damage": 97,
+        "weapon_max_damage": 146,
+        "weapon_speed": 3.4,
+        "weapon_dps": 35.7,
+        "stamina": 15,
+        "strength": 16
+      },
+      "acquisition": "Warrior Whirlwind Weapon quest, quest entry level 30, reward quest level 40; may require group assistance; no equip-level restriction stated",
+      "acquisition_min_level": 30,
+      "acquisition_source_url": "https://www.wowhead.com/forever/quests/classes/warrior"
+    },
+    {
+      "item_id": 1488,
+      "name": "Avenger's Armor",
+      "source_url": "https://foreverdb.net/item/1488",
+      "bis_profiles": [
+        "arms_pve",
+        "fury_pve"
+      ],
+      "new_item": {
+        "slot": "chest",
+        "item_level": 31,
+        "required_level": 26,
+        "required_level_origin": "observed",
+        "quality": 3,
+        "armor_type": "mail",
+        "armor": 221,
+        "strength": 15,
+        "stamina": 6
+      },
+      "acquisition": "World drop and Razorfen Kraul boss drops; observed in Forever auction-house scans"
+    },
+    {
+      "item_id": 250523,
+      "name": "Veteran's Silvered Chain Leggings",
+      "source_url": "https://foreverdb.net/item/250523",
+      "bis_profiles": [
+        "arms_pve",
+        "arms_pvp",
+        "fury_pve",
+        "fury_pvp"
+      ]
+    },
+    {
+      "item_id": 7915,
+      "name": "Barbaric Iron Helm",
+      "source_url": "https://foreverdb.net/item/7915",
+      "bis_profiles": [
+        "arms_pve",
+        "fury_pve"
+      ]
+    },
+    {
+      "item_id": 7688,
+      "name": "Ironspine's Ribcage",
+      "source_url": "https://foreverdb.net/item/7688",
+      "bis_profiles": [
+        "arms_pvp",
+        "fury_pvp",
+        "protection_pve",
+        "protection_pvp"
+      ]
+    },
+    {
+      "item_id": 250498,
+      "name": "Veteran's Chain Helm",
+      "source_url": "https://foreverdb.net/item/250498",
+      "bis_profiles": [
+        "arms_pvp",
+        "fury_pvp",
+        "protection_pvp"
+      ]
+    },
+    {
+      "item_id": 7687,
+      "name": "Ironspine's Fist",
+      "source_url": "https://foreverdb.net/item/7687",
+      "bis_profiles": [
+        "fury_pve"
+      ]
+    },
+    {
+      "item_id": 4977,
+      "name": "Sword of Hammerfall",
+      "source_url": "https://foreverdb.net/item/4977",
+      "bis_profiles": [
+        "fury_pvp",
+        "protection_pvp"
+      ]
+    },
+    {
+      "item_id": 13048,
+      "name": "Looming Gavel",
+      "source_url": "https://foreverdb.net/item/13048",
+      "bis_profiles": [
+        "protection_pve"
+      ]
+    },
+    {
+      "item_id": 9625,
+      "name": "Dual Reinforced Leggings",
+      "source_url": "https://foreverdb.net/item/9625",
+      "bis_profiles": [
+        "protection_pve"
+      ]
+    },
+    {
+      "item_id": 250500,
+      "name": "Protector's Chain Helm",
+      "source_url": "https://foreverdb.net/item/250500",
+      "bis_profiles": [
+        "protection_pve"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "winner": {
+    "seconds_per_mob": 11.623120172935218,
+    "screen_s_per_mob": 13.270389931786765,
+    "policy_origin": "talent_modified:improved_wrath:wrath:5180",
+    "gear_move": "source_stat_package:spell_power",
+    "recovery": "threshold_0.50_0.10"
+  },
+  "replay": [
+    {
+      "status": "COMPLETE",
+      "count": 100,
+      "mean_s_per_mob": 11.623120172935218,
+      "events": 3115,
+      "elapsed_wall_s": 0.9612275239999235,
+      "elapsed_cpu_s": 0.9596872949999999,
+      "source_action_counts": {
+        "wrath:5180": 601
+      }
+    },
+    {
+      "status": "COMPLETE",
+      "count": 100,
+      "mean_s_per_mob": 11.623120172935218,
+      "events": 3115,
+      "elapsed_wall_s": 1.0567393929999298,
+      "elapsed_cpu_s": 1.055551017,
+      "source_action_counts": {
+        "wrath:5180": 601
+      }
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_generic_damage_break_probability_extremes_on_real_2d_target[0.0-False] __
+
+chance = 0.0, expected_broken = False
+
+    @pytest.mark.parametrize('chance,expected_broken',[(0.,False),(1.,True)])
+    def test_generic_damage_break_probability_extremes_on_real_2d_target(chance,expected_broken):
+>       rt=_synthetic(chance)
+           ^^^^^^^^^^^^^^^^^^
+
+tests/test_wf434_generic_control_damage_break_tdd.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = 0.0
+
+    def _synthetic(p):
+        actor=ActorState.from_ir(ActorDefinition('hero','player',base_stats={}),
+            (ResourceDefinition('health','Health','hero',initial_amount=500,capacity=500),),())
+        rt=CombatRuntime(actor=actor,target=TargetState.with_health('m0',1000.),
+            other_targets=(TargetState.with_health('m1',1000.),),
+            spatial_positions_yards={'m0':(0.,0.),'m1':(20.,0.)},
+            enemy_move_speed_yards_s=5.,melee_radius_yards=5.)
+        root=ActionDefinition('root','root','root','hero',requirements=(),costs=(),
+>           cast_time_s=0,gcd_s=0,cooldown_s=0,effects=(ControlEffect('control','root','enemy',12.,
+            breaks_on_damage=False,break_chance_on_damage=p),))
+E       TypeError: ControlEffect.__init__() got an unexpected keyword argument 'break_chance_on_damage'
+
+tests/test_wf434_generic_control_damage_break_tdd.py:19: TypeError
+__ test_generic_damage_break_probability_extremes_on_real_2d_target[1.0-True] __
+
+chance = 1.0, expected_broken = True
+
+    @pytest.mark.parametrize('chance,expected_broken',[(0.,False),(1.,True)])
+    def test_generic_damage_break_probability_extremes_on_real_2d_target(chance,expected_broken):
+>       rt=_synthetic(chance)
+           ^^^^^^^^^^^^^^^^^^
+
+tests/test_wf434_generic_control_damage_break_tdd.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = 1.0
+
+    def _synthetic(p):
+        actor=ActorState.from_ir(ActorDefinition('hero','player',base_stats={}),
+            (ResourceDefinition('health','Health','hero',initial_amount=500,capacity=500),),())
+        rt=CombatRuntime(actor=actor,target=TargetState.with_health('m0',1000.),
+            other_targets=(TargetState.with_health('m1',1000.),),
+            spatial_positions_yards={'m0':(0.,0.),'m1':(20.,0.)},
+            enemy_move_speed_yards_s=5.,melee_radius_yards=5.)
+        root=ActionDefinition('root','root','root','hero',requirements=(),costs=(),
+>           cast_time_s=0,gcd_s=0,cooldown_s=0,effects=(ControlEffect('control','root','enemy',12.,
+            breaks_on_damage=False,break_chance_on_damage=p),))
+E       TypeError: ControlEffect.__init__() got an unexpected keyword argument 'break_chance_on_damage'
+
+tests/test_wf434_generic_control_damage_break_tdd.py:19: TypeError
+___ test_generic_fractional_break_is_deterministic_and_source_parameterized ____
+
+    def test_generic_fractional_break_is_deterministic_and_source_parameterized():
+>       a=_synthetic(0.5);b=_synthetic(0.5)
+          ^^^^^^^^^^^^^^^
+
+tests/test_wf434_generic_control_damage_break_tdd.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = 0.5
+
+    def _synthetic(p):
+        actor=ActorState.from_ir(ActorDefinition('hero','player',base_stats={}),
+            (ResourceDefinition('health','Health','hero',initial_amount=500,capacity=500),),())
+        rt=CombatRuntime(actor=actor,target=TargetState.with_health('m0',1000.),
+            other_targets=(TargetState.with_health('m1',1000.),),
+            spatial_positions_yards={'m0':(0.,0.),'m1':(20.,0.)},
+            enemy_move_speed_yards_s=5.,melee_radius_yards=5.)
+        root=ActionDefinition('root','root','root','hero',requirements=(),costs=(),
+>           cast_time_s=0,gcd_s=0,cooldown_s=0,effects=(ControlEffect('control','root','enemy',12.,
+            breaks_on_damage=False,break_chance_on_damage=p),))
+E       TypeError: ControlEffect.__init__() got an unexpected keyword argument 'break_chance_on_damage'
+
+tests/test_wf434_generic_control_damage_break_tdd.py:19: TypeError
+_____ test_paid_2d_100mob_source_root_break_sensitivity_is_diagnostic_only _____
+
+    def test_paid_2d_100mob_source_root_break_sensitivity_is_diagnostic_only():
+        ir=_selected(2)
+        root=_root(ir)
+        wrath=next(a for a in ir.actions if a.family_key=='wrath')
+        policy=PolicyDefinition('root_break_sensitivity','Root then Wrath',rules=(
+            PolicyRuleDefinition('root',root.id,conditions=(PolicyCondition(kind='target_control_missing',value='root'),)),
+            PolicyRuleDefinition('wrath',wrath.id)))
+        results=[]
+        for chance in (0.,1.):
+>           actions=tuple(replace(a,effects=tuple(
+                replace(e,break_chance_on_damage=chance) if isinstance(e,ControlEffect)
+                and e.control_id=='root' else e for e in a.effects))
+                if a.family_key=='entangling_roots' else a for a in ir.actions)
+
+tests/test_wf434_generic_control_damage_break_tdd.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_wf434_generic_control_damage_break_tdd.py:60: in <genexpr>
+    actions=tuple(replace(a,effects=tuple(
+tests/test_wf434_generic_control_damage_break_tdd.py:61: in <genexpr>
+    replace(e,break_chance_on_damage=chance) if isinstance(e,ControlEffect)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.13/dataclasses.py:1596: in replace
+    return _replace(obj, **changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ControlEffect(effect_type='control', control_id='root', target='enemy', duration_s=18.0, prevents_enemy_actions=False, breaks_on_damage=False, proc_chance=1.0)
+changes = {'break_chance_on_damage': 0.0, 'breaks_on_damage': False, 'control_id': 'root', 'duration_s': 18.0, ...}
+f = Field(name='proc_chance',type='float',default=1.0,default_factory=<dataclasses._MISSING_TYPE object at 0x7f9e8e2cc830>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD)
+
+    def _replace(self, /, **changes):
+        # We're going to mutate 'changes', but that's okay because it's a
+        # new dict, even if called with 'replace(self, **my_changes)'.
+    
+        # It's an error to have init=False fields in 'changes'.
+        # If a field is not in 'changes', read its value from the provided 'self'.
+    
+        for f in getattr(self, _FIELDS).values():
+            # Only consider normal fields or InitVars.
+            if f._field_type is _FIELD_CLASSVAR:
+                continue
+    
+            if not f.init:
+                # Error if this field is specified in changes.
+                if f.name in changes:
+                    raise TypeError(f'field {f.name} is declared with '
+                                    f'init=False, it cannot be specified with '
+                                    f'replace()')
+                continue
+    
+            if f.name not in changes:
+                if f._field_type is _FIELD_INITVAR and f.default is MISSING:
+                    raise TypeError(f"InitVar {f.name!r} "
+                                    f'must be specified with replace()')
+                changes[f.name] = getattr(self, f.name)
+    
+        # Create the new object, which calls __init__() and
+        # __post_init__() (if defined), using all of the init fields we've
+        # added and/or left in 'changes'.  If there are values supplied in
+        # changes that aren't fields, this will correctly raise a
+        # TypeError.
+>       return self.__class__(**changes)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: ControlEffect.__init__() got an unexpected keyword argument 'break_chance_on_damage'
+
+/usr/lib/python3.13/dataclasses.py:1630: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_wf434_generic_control_damage_break_tdd.py::test_generic_damage_break_probability_extremes_on_real_2d_target[0.0-False] - TypeError: ControlEffect.__init__() got an unexpected keyword argument 'break_chance_on_damage'
+FAILED tests/test_wf434_generic_control_damage_break_tdd.py::test_generic_damage_break_probability_extremes_on_real_2d_target[1.0-True] - TypeError: ControlEffect.__init__() got an unexpected keyword argument 'break_chance_on_damage'
+FAILED tests/test_wf434_generic_control_damage_break_tdd.py::test_generic_fractional_break_is_deterministic_and_source_parameterized - TypeError: ControlEffect.__init__() got an unexpected keyword argument 'break_chance_on_damage'
+FAILED tests/test_wf434_generic_control_damage_break_tdd.py::test_paid_2d_100mob_source_root_break_sensitivity_is_diagnostic_only - TypeError: ControlEffect.__init__() got an unexpected keyword argument 'break_chance_on_damage'
+4 failed in 0.66s

@@ -1,0 +1,22 @@
+{
+  "state": "running",
+  "phase": "searching",
+  "outer_stage": "fixed_point",
+  "level": 13,
+  "progress": {
+    "mode": "determinate",
+    "current": 0,
+    "total": 1,
+    "fraction": 0.3390804597701149,
+    "unit": "levels"
+  },
+  "message": "L13 · candidate 30/87 · fixed-point 3/3 · elapsed 34s · ETA ~1m 06s",
+  "elapsed_seconds": 33.89503312110901,
+  "eta_seconds": 66.06658998182266,
+  "updated_at": 1790795145.6470728,
+  "candidate_current": 30,
+  "candidate_total": 87,
+  "fixed_point_iteration": 3,
+  "fixed_point_max_iters": 3,
+  "talent_added": "redoubt"
+}

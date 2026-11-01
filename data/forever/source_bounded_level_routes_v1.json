@@ -1,0 +1,5409 @@
+{
+  "canonical_item_db_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "canonical_talent_db_sha256": "83d6f2162726955ab1c7765b765de1c7ada78b7b2f429c9111a71e775221c46a",
+  "classes": {
+    "druid": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 11,
+      "class_key": "druid",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 0,
+        "charged_total_events": 13491,
+        "event_transitions": 13491,
+        "l1_attempts": 0,
+        "l2_attempts": 264,
+        "scorer_cpu_ns": 2650498185,
+        "successful_source_legal_states": 22,
+        "total_cpu_ns": 4465784710,
+        "total_wall_ns": 4467084877
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 20,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 945,
+          "cumulative_real_l2_attempts": 24,
+          "cumulative_scorer_cpu_ns": 116533123,
+          "level": 10,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 1895,
+          "cumulative_real_l2_attempts": 48,
+          "cumulative_scorer_cpu_ns": 240437991,
+          "level": 11,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 3309,
+          "cumulative_real_l2_attempts": 72,
+          "cumulative_scorer_cpu_ns": 399281034,
+          "level": 12,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 4651,
+          "cumulative_real_l2_attempts": 96,
+          "cumulative_scorer_cpu_ns": 607658625,
+          "level": 13,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 5771,
+          "cumulative_real_l2_attempts": 120,
+          "cumulative_scorer_cpu_ns": 825213315,
+          "level": 14,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 7009,
+          "cumulative_real_l2_attempts": 144,
+          "cumulative_scorer_cpu_ns": 1039458450,
+          "level": 15,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 8128,
+          "cumulative_real_l2_attempts": 168,
+          "cumulative_scorer_cpu_ns": 1264254520,
+          "level": 16,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 9372,
+          "cumulative_real_l2_attempts": 192,
+          "cumulative_scorer_cpu_ns": 1508510127,
+          "level": 17,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 10567,
+          "cumulative_real_l2_attempts": 216,
+          "cumulative_scorer_cpu_ns": 1829088509,
+          "level": 18,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 11889,
+          "cumulative_real_l2_attempts": 240,
+          "cumulative_scorer_cpu_ns": 2186279119,
+          "level": 19,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 13491,
+          "cumulative_real_l2_attempts": 264,
+          "cumulative_scorer_cpu_ns": 2650498185,
+          "level": 20,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 65149176,
+          "executor_event_transitions": 439,
+          "fallback": "wrath:5177",
+          "full_cycle_s_per_mob": 14.374193548387098,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "wrath:5177"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "wrath:5177"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "b0aab27a28eb3c5439ff9aebfbb1f550c7681d38f5a88cc4850ea01bdbe825ac",
+          "source_legal_transition": null,
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_wrath": 1
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 61990095,
+          "executor_event_transitions": 475,
+          "fallback": "wrath:5177",
+          "full_cycle_s_per_mob": 13.738936725811843,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "wrath:5177"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "wrath:5177"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "fbd8e2d83081e4621bb613787c83eb4ce5fae1072c8a3b81c8e83ac257924cc0",
+          "source_legal_transition": {
+            "available_unspent_after": 0,
+            "class_key": "druid",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_wrath": 1
+            },
+            "to_level": 11
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_wrath": 2
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 79159198,
+          "executor_event_transitions": 708,
+          "fallback": "wrath:5177",
+          "full_cycle_s_per_mob": 16.5,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "moonfire:8924"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "moonfire:8924",
+            "wrath:5177"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "e571ade5b26ed8411697f1e0ab12edaee146a163f20139d993597df5047d0022",
+          "source_legal_transition": {
+            "available_unspent_after": 1,
+            "class_key": "druid",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 12
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_wrath": 2
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 80472375,
+          "executor_event_transitions": 747,
+          "fallback": "wrath:5177",
+          "full_cycle_s_per_mob": 18.0,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "moonfire:8924"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "moonfire:8924",
+            "wrath:5177"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "d768cf944a88d12f92d5ee4e6f73b62943e4eb471ac46b5e47f28674b3dfe579",
+          "source_legal_transition": {
+            "available_unspent_after": 1,
+            "class_key": "druid",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_wrath": 1
+            },
+            "to_level": 13
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_wrath": 3
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 106278948,
+          "executor_event_transitions": 560,
+          "fallback": "wrath:5178",
+          "full_cycle_s_per_mob": 17.824203821656052,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "wrath:5178"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "wrath:5178"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "96b987b6f830baa7a97a2cd740731ccfced306c014733bee8d4348a3c7f5969b",
+          "source_legal_transition": {
+            "available_unspent_after": 1,
+            "class_key": "druid",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_wrath": 1
+            },
+            "to_level": 14
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_wrath": 4
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 111485863,
+          "executor_event_transitions": 598,
+          "fallback": "wrath:5178",
+          "full_cycle_s_per_mob": 14.456043956043956,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "wrath:5178"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "wrath:5178"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "7a58f6b022f37ccb37924968a4fedc55be28e33da7f2e67a533db0dd8afe5d65",
+          "source_legal_transition": {
+            "available_unspent_after": 1,
+            "class_key": "druid",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_wrath": 1
+            },
+            "to_level": 15
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_wrath": 5
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 108294674,
+          "executor_event_transitions": 589,
+          "fallback": "wrath:5178",
+          "full_cycle_s_per_mob": 15.05730293819655,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "moonfire:8925"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "moonfire:8925",
+            "wrath:5178"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "6f1dc2795ef042e666651e14ba2bfb118b49d0e417166481d3ccc137da21b481",
+          "source_legal_transition": {
+            "available_unspent_after": 1,
+            "class_key": "druid",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_moonfire": 1
+            },
+            "to_level": 16
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_moonfire": 1,
+            "improved_wrath": 5
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 125190102,
+          "executor_event_transitions": 577,
+          "fallback": "wrath:5178",
+          "full_cycle_s_per_mob": 17.142231947483587,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "wrath:5178"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "wrath:5178"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "9b8f74edf0c3f3904d23b36dc29a263844fa86867e16dbacb05520560f47c310",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "druid",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_moonfire": 1,
+            "improved_wrath": 5
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 159094866,
+          "executor_event_transitions": 593,
+          "fallback": "wrath:5178",
+          "full_cycle_s_per_mob": 17.854336075205637,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "wrath:5178",
+            "moonfire:8925"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "wrath:5178",
+            "moonfire:8925"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "16155c9bf7e9a04a2272d8c309ec885ed84352f0bbe8e50fc3b7a04a0dc12450",
+          "source_legal_transition": {
+            "available_unspent_after": 3,
+            "class_key": "druid",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 18
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_moonfire": 1,
+            "improved_wrath": 5
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 177739988,
+          "executor_event_transitions": 661,
+          "fallback": "wrath:5178",
+          "full_cycle_s_per_mob": 19.542684102104793,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 19,
+          "prefix": [
+            "moonfire:8925"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "moonfire:8925",
+            "wrath:5178"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "7da86ef0e096545de7f89c640d4730a1d6a3a001a12c3b113eef65b8c9c2e01c",
+          "source_legal_transition": {
+            "available_unspent_after": 4,
+            "class_key": "druid",
+            "from_level": 18,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 19
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_moonfire": 1,
+            "improved_wrath": 5
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 256899895,
+          "executor_event_transitions": 783,
+          "fallback": "wrath:5178",
+          "full_cycle_s_per_mob": 19.739377334283674,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 20,
+          "prefix": [
+            "wrath:5178",
+            "moonfire:8925"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "wrath:5178",
+            "moonfire:8925"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "1253be46b90ebd2546c601f6769b3682294d2bfaa73302272d0a8e6186e309ea",
+          "source_legal_transition": {
+            "available_unspent_after": 5,
+            "class_key": "druid",
+            "from_level": 19,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": "tauren",
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 20
+          },
+          "source_scenario_race": "tauren",
+          "talents": {
+            "improved_moonfire": 1,
+            "improved_wrath": 5
+          },
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": true,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": true,
+      "source_player_action_filter_applied": false,
+      "status": "EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 184.22931044917317,
+      "travel_and_xp_timing_verified": false
+    },
+    "hunter": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 11,
+      "class_key": "hunter",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 0,
+        "charged_total_events": 7518,
+        "event_transitions": 7518,
+        "l1_attempts": 0,
+        "l2_attempts": 88,
+        "scorer_cpu_ns": 195320671,
+        "successful_source_legal_states": 11,
+        "total_cpu_ns": 940738473,
+        "total_wall_ns": 940815801
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 20,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 522,
+          "cumulative_real_l2_attempts": 8,
+          "cumulative_scorer_cpu_ns": 14604533,
+          "level": 10,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 1088,
+          "cumulative_real_l2_attempts": 16,
+          "cumulative_scorer_cpu_ns": 31119547,
+          "level": 11,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 1654,
+          "cumulative_real_l2_attempts": 24,
+          "cumulative_scorer_cpu_ns": 46745644,
+          "level": 12,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 2259,
+          "cumulative_real_l2_attempts": 32,
+          "cumulative_scorer_cpu_ns": 63492812,
+          "level": 13,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 2909,
+          "cumulative_real_l2_attempts": 40,
+          "cumulative_scorer_cpu_ns": 81254123,
+          "level": 14,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 3598,
+          "cumulative_real_l2_attempts": 48,
+          "cumulative_scorer_cpu_ns": 98851541,
+          "level": 15,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 4323,
+          "cumulative_real_l2_attempts": 56,
+          "cumulative_scorer_cpu_ns": 117339429,
+          "level": 16,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 5085,
+          "cumulative_real_l2_attempts": 64,
+          "cumulative_scorer_cpu_ns": 136381327,
+          "level": 17,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 5881,
+          "cumulative_real_l2_attempts": 72,
+          "cumulative_scorer_cpu_ns": 156173658,
+          "level": 18,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 6712,
+          "cumulative_real_l2_attempts": 80,
+          "cumulative_scorer_cpu_ns": 175869035,
+          "level": 19,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 7518,
+          "cumulative_real_l2_attempts": 88,
+          "cumulative_scorer_cpu_ns": 195320671,
+          "level": 20,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 14604533,
+          "executor_event_transitions": 522,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 20.855172413793106,
+          "guarded_action": "arcane_shot:3044",
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "arcane_shot:3044"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:3044"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "ece505707e543f6daece381bc29cd84c7a2cf43b10565721dbc03377a5061116",
+          "source_legal_transition": null,
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 16515014,
+          "executor_event_transitions": 566,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 21.24827586206897,
+          "guarded_action": "arcane_shot:3044",
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "arcane_shot:3044"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:3044"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "efb6c445559ab5b59029e06b1b53a3d18f364579433bb6c4dbd6935d19cd00cf",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "hunter",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 11
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 15626097,
+          "executor_event_transitions": 566,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 21.641379310344817,
+          "guarded_action": "arcane_shot:14281",
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "arcane_shot:14281"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14281"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "c1b231336b4686c91a6483ecead0bed6f69bd2f5e02858b440abd9a62f52db1d",
+          "source_legal_transition": {
+            "available_unspent_after": 3,
+            "class_key": "hunter",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 12
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 16747168,
+          "executor_event_transitions": 605,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 25.70689655172413,
+          "guarded_action": "arcane_shot:14281",
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "arcane_shot:14281"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14281"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "fbb3bdae0e130e933ad7b172d5adf4c3e1e9b47cce81ab103b622328f1c94d06",
+          "source_legal_transition": {
+            "available_unspent_after": 4,
+            "class_key": "hunter",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 13
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 17761311,
+          "executor_event_transitions": 650,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 26.96551724137932,
+          "guarded_action": "arcane_shot:14281",
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "arcane_shot:14281"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14281"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "61908e4a9fe53ce0b281d398dbdc3bfad6d337d568c0b6cc47a1894fea83d2fd",
+          "source_legal_transition": {
+            "available_unspent_after": 5,
+            "class_key": "hunter",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 14
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 17597418,
+          "executor_event_transitions": 689,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 23.27652173913044,
+          "guarded_action": "arcane_shot:14281",
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "arcane_shot:14281"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14281"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "342683ac1773e57d5cceffc1e00b9c5ed33a4b29435ae1e7825fadbc6a8f8157",
+          "source_legal_transition": {
+            "available_unspent_after": 6,
+            "class_key": "hunter",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 15
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 18487888,
+          "executor_event_transitions": 725,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 25.140869565217393,
+          "guarded_action": "arcane_shot:14281",
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "arcane_shot:14281"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14281"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "ce6b15608fd5d02d1440713524c51596e4f1a64ba9de240767840b0dcb29e88d",
+          "source_legal_transition": {
+            "available_unspent_after": 7,
+            "class_key": "hunter",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 16
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19041898,
+          "executor_event_transitions": 762,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 26.78086956521739,
+          "guarded_action": "arcane_shot:14281",
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "arcane_shot:14281"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14281"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "166367c74e215eb8b0f2b05535b91bf8089ce074a92b48e5b1f8dd52b1569052",
+          "source_legal_transition": {
+            "available_unspent_after": 8,
+            "class_key": "hunter",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19792331,
+          "executor_event_transitions": 796,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 27.07826086956521,
+          "guarded_action": "arcane_shot:14281",
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "arcane_shot:14281"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14281"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "69948386f629c6e9bd3724e630393ac9c31a1889feb624f41f164e08ff4cdf4b",
+          "source_legal_transition": {
+            "available_unspent_after": 9,
+            "class_key": "hunter",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 18
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19695377,
+          "executor_event_transitions": 831,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 30.417391304347817,
+          "guarded_action": "arcane_shot:14281",
+          "guarded_conditions": [],
+          "level": 19,
+          "prefix": [
+            "arcane_shot:14281"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14281"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "86398b54e8e84608f237893b9b34bb75cc3af958dc266fe6b12a2bc5f74d3272",
+          "source_legal_transition": {
+            "available_unspent_after": 10,
+            "class_key": "hunter",
+            "from_level": 18,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 19
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19451636,
+          "executor_event_transitions": 806,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 27.67304347826088,
+          "guarded_action": "arcane_shot:14282",
+          "guarded_conditions": [],
+          "level": 20,
+          "prefix": [
+            "arcane_shot:14282"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 8,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "arcane_shot:14282"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "91f5983d732d85a66777c11989a2e8119e8cd4bfa9061d8ffd9f06d95b4d85e4",
+          "source_legal_transition": {
+            "available_unspent_after": 11,
+            "class_key": "hunter",
+            "from_level": 19,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 20
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": true,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": true,
+      "source_player_action_filter_applied": false,
+      "status": "EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 276.7841979010495,
+      "travel_and_xp_timing_verified": false
+    },
+    "mage": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 11,
+      "class_key": "mage",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 0,
+        "charged_total_events": 21240,
+        "event_transitions": 21240,
+        "l1_attempts": 0,
+        "l2_attempts": 264,
+        "scorer_cpu_ns": 891550639,
+        "successful_source_legal_states": 22,
+        "total_cpu_ns": 2175537721,
+        "total_wall_ns": 2175653935
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 20,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 1703,
+          "cumulative_real_l2_attempts": 24,
+          "cumulative_scorer_cpu_ns": 73258684,
+          "level": 10,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 3567,
+          "cumulative_real_l2_attempts": 48,
+          "cumulative_scorer_cpu_ns": 150719354,
+          "level": 11,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 5224,
+          "cumulative_real_l2_attempts": 72,
+          "cumulative_scorer_cpu_ns": 225212336,
+          "level": 12,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 7152,
+          "cumulative_real_l2_attempts": 96,
+          "cumulative_scorer_cpu_ns": 302753235,
+          "level": 13,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 8893,
+          "cumulative_real_l2_attempts": 120,
+          "cumulative_scorer_cpu_ns": 378749786,
+          "level": 14,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 10886,
+          "cumulative_real_l2_attempts": 144,
+          "cumulative_scorer_cpu_ns": 457985838,
+          "level": 15,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 12885,
+          "cumulative_real_l2_attempts": 168,
+          "cumulative_scorer_cpu_ns": 537095673,
+          "level": 16,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 15273,
+          "cumulative_real_l2_attempts": 192,
+          "cumulative_scorer_cpu_ns": 619806965,
+          "level": 17,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 17145,
+          "cumulative_real_l2_attempts": 216,
+          "cumulative_scorer_cpu_ns": 700741945,
+          "level": 18,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 19241,
+          "cumulative_real_l2_attempts": 240,
+          "cumulative_scorer_cpu_ns": 784661708,
+          "level": 19,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 21240,
+          "cumulative_real_l2_attempts": 264,
+          "cumulative_scorer_cpu_ns": 891550639,
+          "level": 20,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 38411974,
+          "executor_event_transitions": 804,
+          "fallback": "fireball:143",
+          "full_cycle_s_per_mob": 18.75512367491166,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "frostbolt:205",
+            "fire_blast:2136"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "frostbolt:205",
+            "fire_blast:2136",
+            "fireball:143"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "a6f210b3d48a8a38adcc40050e490d14908402558cdda882ca623de7806726e2",
+          "source_legal_transition": null,
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 1
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 40376164,
+          "executor_event_transitions": 932,
+          "fallback": "fireball:143",
+          "full_cycle_s_per_mob": 18.75088339222615,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "fireball:143",
+            "fire_blast:2136"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fireball:143",
+            "fire_blast:2136"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "80789f395acc805957b2b7541bac805c393271273cc3e0fbc530ee2babb983e2",
+          "source_legal_transition": {
+            "available_unspent_after": 0,
+            "class_key": "mage",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_fireball": 1
+            },
+            "to_level": 11
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 2
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 37192386,
+          "executor_event_transitions": 824,
+          "fallback": "fireball:145",
+          "full_cycle_s_per_mob": 19.80883392226148,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "fire_blast:2136"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fire_blast:2136",
+            "fireball:145"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "ed696a9570c9d584fe9e973b28df48adfc8840c79f68c629d148d583aac95b78",
+          "source_legal_transition": {
+            "available_unspent_after": 0,
+            "class_key": "mage",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_fireball": 1
+            },
+            "to_level": 12
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 3
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 38647933,
+          "executor_event_transitions": 964,
+          "fallback": "fireball:145",
+          "full_cycle_s_per_mob": 20.871024734982328,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "fireball:145"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fireball:145"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "77ea03e5fd51783c194884f6431fc80c3e42c63fa6a21293461674ef75646034",
+          "source_legal_transition": {
+            "available_unspent_after": 0,
+            "class_key": "mage",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_fireball": 1
+            },
+            "to_level": 13
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 4
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 37213728,
+          "executor_event_transitions": 890,
+          "fallback": "fireball:145",
+          "full_cycle_s_per_mob": 23.61484098939929,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "fire_blast:2137",
+            "frost_nova:122"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fire_blast:2137",
+            "frost_nova:122",
+            "fireball:145"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "97fccb83bd08dd92d902705d8376444b807632aee941c0189fb96fc43e6abc09",
+          "source_legal_transition": {
+            "available_unspent_after": 0,
+            "class_key": "mage",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_fireball": 1
+            },
+            "to_level": 14
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 5
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 39462270,
+          "executor_event_transitions": 990,
+          "fallback": "fireball:145",
+          "full_cycle_s_per_mob": 19.878959810874704,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "fireball:145",
+            "frostbolt:837",
+            "fire_blast:2137"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fireball:145",
+            "frostbolt:837",
+            "fire_blast:2137"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "fe6a99999c05c1c09c48d4d71ee2502dcf3b7e3ab3e76e4fd29cd03e0f041a6f",
+          "source_legal_transition": {
+            "available_unspent_after": 0,
+            "class_key": "mage",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_frostbolt": 1
+            },
+            "to_level": 15
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 5,
+            "improved_frostbolt": 1
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 38671949,
+          "executor_event_transitions": 977,
+          "fallback": "frostbolt:837",
+          "full_cycle_s_per_mob": 22.09826086956522,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "fire_blast:2137",
+            "fire_blast:2137"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fire_blast:2137",
+            "frostbolt:837"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "356c43c3c72ff2c57ee9d3f4446f7f2cb9f1aab8507dd261844b16fd6c497074",
+          "source_legal_transition": {
+            "available_unspent_after": 0,
+            "class_key": "mage",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_frostbolt": 1
+            },
+            "to_level": 16
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 5,
+            "improved_frostbolt": 2
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 41304040,
+          "executor_event_transitions": 1195,
+          "fallback": "fireball:145",
+          "full_cycle_s_per_mob": 22.55673758865248,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "fireball:145",
+            "fire_blast:2137",
+            "fire_blast:2137"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fireball:145",
+            "fire_blast:2137"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "063ed7521e7c49a16cf45435483ab99eb218163b004ef06dcc54585d36a989f1",
+          "source_legal_transition": {
+            "available_unspent_after": 1,
+            "class_key": "mage",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 5,
+            "improved_frostbolt": 2
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 40600257,
+          "executor_event_transitions": 936,
+          "fallback": "fireball:3140",
+          "full_cycle_s_per_mob": 24.388179669030734,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "frostbolt:837",
+            "fire_blast:2137"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "frostbolt:837",
+            "fire_blast:2137",
+            "fireball:3140"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "2eb276a5e68dd94b52f303d2bcd250a0bd28d1e731bfdaca843a29ddbd9371cb",
+          "source_legal_transition": {
+            "available_unspent_after": 1,
+            "class_key": "mage",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_frostbolt": 1
+            },
+            "to_level": 18
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 5,
+            "improved_frostbolt": 3
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 42901547,
+          "executor_event_transitions": 1048,
+          "fallback": "fireball:3140",
+          "full_cycle_s_per_mob": 26.009456264775412,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 19,
+          "prefix": [
+            "fire_blast:2137"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fire_blast:2137",
+            "fireball:3140"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "ce6b4a5ff777a0cc0aa1672d318bc3dba0257f30943474df312861af5abe3fb4",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "mage",
+            "from_level": 18,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 19
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 5,
+            "improved_frostbolt": 3
+          },
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 53613130,
+          "executor_event_transitions": 993,
+          "fallback": "frostbolt:7322",
+          "full_cycle_s_per_mob": 25.638297872340427,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 20,
+          "prefix": [
+            "fire_blast:2137",
+            "fireball:3140"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "fire_blast:2137",
+            "fireball:3140",
+            "frostbolt:7322"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "f8718374f90da885dc6f33d3212e7db580b51452914b635deff7eb2b2467d50e",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "mage",
+            "from_level": 19,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 1,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {
+              "improved_frostbolt": 1
+            },
+            "to_level": 20
+          },
+          "source_scenario_race": null,
+          "talents": {
+            "improved_fireball": 5,
+            "improved_frostbolt": 4
+          },
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": true,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": true,
+      "source_player_action_filter_applied": false,
+      "status": "EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 242.37059878901988,
+      "travel_and_xp_timing_verified": false
+    },
+    "paladin": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 11,
+      "class_key": "paladin",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 0,
+        "charged_total_events": 21678,
+        "event_transitions": 21678,
+        "l1_attempts": 0,
+        "l2_attempts": 264,
+        "scorer_cpu_ns": 921709274,
+        "successful_source_legal_states": 22,
+        "total_cpu_ns": 2062363866,
+        "total_wall_ns": 2062527797
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 20,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 1558,
+          "cumulative_real_l2_attempts": 24,
+          "cumulative_scorer_cpu_ns": 90328190,
+          "level": 10,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 3200,
+          "cumulative_real_l2_attempts": 48,
+          "cumulative_scorer_cpu_ns": 175243148,
+          "level": 11,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 4964,
+          "cumulative_real_l2_attempts": 72,
+          "cumulative_scorer_cpu_ns": 262608397,
+          "level": 12,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 6806,
+          "cumulative_real_l2_attempts": 96,
+          "cumulative_scorer_cpu_ns": 355202293,
+          "level": 13,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 8738,
+          "cumulative_real_l2_attempts": 120,
+          "cumulative_scorer_cpu_ns": 441094078,
+          "level": 14,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 10752,
+          "cumulative_real_l2_attempts": 144,
+          "cumulative_scorer_cpu_ns": 517222806,
+          "level": 15,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 12802,
+          "cumulative_real_l2_attempts": 168,
+          "cumulative_scorer_cpu_ns": 597533911,
+          "level": 16,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 14918,
+          "cumulative_real_l2_attempts": 192,
+          "cumulative_scorer_cpu_ns": 674150010,
+          "level": 17,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 17076,
+          "cumulative_real_l2_attempts": 216,
+          "cumulative_scorer_cpu_ns": 752788576,
+          "level": 18,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 19352,
+          "cumulative_real_l2_attempts": 240,
+          "cumulative_scorer_cpu_ns": 835261485,
+          "level": 19,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 21678,
+          "cumulative_real_l2_attempts": 264,
+          "cumulative_scorer_cpu_ns": 921709274,
+          "level": 20,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 45820112,
+          "executor_event_transitions": 779,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 29.385159010600706,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "seal_of_the_crusader:21082",
+            "holy_strike:679"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "seal_of_the_crusader:21082",
+            "holy_strike:679"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "aa97a7b2e1bd231228631f98ceea6eab654d3786c8768a10c771e8899160765c",
+          "source_legal_transition": null,
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 43112890,
+          "executor_event_transitions": 821,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 29.785159010600704,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "seal_of_fury:1311649",
+            "holy_strike:679"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "seal_of_fury:1311649",
+            "holy_strike:679"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "3cccb4b95c6c25f20f71e89fee2157b6908928ae4091a439ebb645af714a738a",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "paladin",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 11
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 42947065,
+          "executor_event_transitions": 882,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 32.937931034482745,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "07bfefa383a5c27ac8ed1c7303769a22588127c5af393a2f78be836288a3e672",
+          "source_legal_transition": {
+            "available_unspent_after": 3,
+            "class_key": "paladin",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 12
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 46627418,
+          "executor_event_transitions": 921,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 37.07773851590106,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "72819c67f6c57c20dcbc6ecfde3f02dcaf59d087b3124985b19e4ed1ddd8f050",
+          "source_legal_transition": {
+            "available_unspent_after": 4,
+            "class_key": "paladin",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 13
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 42651406,
+          "executor_event_transitions": 966,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 38.918727915194346,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "9269aac3944fdfaa9946e48a523b28b0d22c787700b43a284179a2e3ad347778",
+          "source_legal_transition": {
+            "available_unspent_after": 5,
+            "class_key": "paladin",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 14
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 37644136,
+          "executor_event_transitions": 1007,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 39.83478260869566,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "seal_of_fury:1311649",
+            "holy_strike:678"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "seal_of_fury:1311649",
+            "holy_strike:678"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "dd00cbf50a5728dc0e70d220ca9875b88791bcb8c888bd03eaab483bbe40456b",
+          "source_legal_transition": {
+            "available_unspent_after": 6,
+            "class_key": "paladin",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 15
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 39281663,
+          "executor_event_transitions": 1025,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 41.75981087470448,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "a9488ea501c104edba4511873fcf87f05eeeac6245b351a18545bb6f498232ab",
+          "source_legal_transition": {
+            "available_unspent_after": 7,
+            "class_key": "paladin",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 16
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 38032711,
+          "executor_event_transitions": 1058,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 44.55981087470448,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "seal_of_the_crusader:20162",
+            "holy_strike:678"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "f61d804e3c52cd40171a0813747c41c506e85f272fd0ce435e49b9e698aae667",
+          "source_legal_transition": {
+            "available_unspent_after": 8,
+            "class_key": "paladin",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 38558851,
+          "executor_event_transitions": 1079,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 42.55981087470449,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "holy_strike:678",
+            "seal_of_fury:1311656"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "holy_strike:678",
+            "seal_of_fury:1311656"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "2e9236b8a4c3aee984481acc673491c41e2e87516966e539f8387e7b76cff7b6",
+          "source_legal_transition": {
+            "available_unspent_after": 9,
+            "class_key": "paladin",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 18
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 39445375,
+          "executor_event_transitions": 1138,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 45.93391304347826,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 19,
+          "prefix": [
+            "holy_strike:678",
+            "seal_of_fury:1311656"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "holy_strike:678",
+            "seal_of_fury:1311656"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "7e6238bf9ae3f69193f209fae79df14002dbbe0d22a4e4e88632cfac866ac5c1",
+          "source_legal_transition": {
+            "available_unspent_after": 10,
+            "class_key": "paladin",
+            "from_level": 18,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 19
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 41607950,
+          "executor_event_transitions": 1163,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 50.40347826086957,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 20,
+          "prefix": [
+            "holy_strike:1866",
+            "seal_of_fury:1311656"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "holy_strike:1866",
+            "seal_of_fury:1311656"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "4068dc9f362eaf1e3af36fb0d8231d7ae4e5bda11600c383f0e3f9b239bceeda",
+          "source_legal_transition": {
+            "available_unspent_after": 11,
+            "class_key": "paladin",
+            "from_level": 19,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 20
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": true,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": true,
+      "source_player_action_filter_applied": false,
+      "status": "EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 433.15632202393647,
+      "travel_and_xp_timing_verified": false
+    },
+    "priest": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 11,
+      "class_key": "priest",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 0,
+        "charged_total_events": 8912,
+        "event_transitions": 8912,
+        "l1_attempts": 0,
+        "l2_attempts": 122,
+        "scorer_cpu_ns": 257540504,
+        "successful_source_legal_states": 11,
+        "total_cpu_ns": 935754010,
+        "total_wall_ns": 935796673
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 20,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 646,
+          "cumulative_real_l2_attempts": 11,
+          "cumulative_scorer_cpu_ns": 16338532,
+          "level": 10,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 1374,
+          "cumulative_real_l2_attempts": 22,
+          "cumulative_scorer_cpu_ns": 33187130,
+          "level": 11,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 2184,
+          "cumulative_real_l2_attempts": 33,
+          "cumulative_scorer_cpu_ns": 50786280,
+          "level": 12,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 3076,
+          "cumulative_real_l2_attempts": 44,
+          "cumulative_scorer_cpu_ns": 70434517,
+          "level": 13,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 3756,
+          "cumulative_real_l2_attempts": 55,
+          "cumulative_scorer_cpu_ns": 90848519,
+          "level": 14,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 4446,
+          "cumulative_real_l2_attempts": 66,
+          "cumulative_scorer_cpu_ns": 111419183,
+          "level": 15,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 5227,
+          "cumulative_real_l2_attempts": 77,
+          "cumulative_scorer_cpu_ns": 139167214,
+          "level": 16,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 6053,
+          "cumulative_real_l2_attempts": 88,
+          "cumulative_scorer_cpu_ns": 166499218,
+          "level": 17,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 6934,
+          "cumulative_real_l2_attempts": 99,
+          "cumulative_scorer_cpu_ns": 194548244,
+          "level": 18,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 7852,
+          "cumulative_real_l2_attempts": 110,
+          "cumulative_scorer_cpu_ns": 223434071,
+          "level": 19,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 8912,
+          "cumulative_real_l2_attempts": 122,
+          "cumulative_scorer_cpu_ns": 257540504,
+          "level": 20,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 16338532,
+          "executor_event_transitions": 646,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 24.331034482758625,
+          "guarded_action": "smite:591",
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "smite:591"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:591"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "d6175024ae2d87ca2b7c158956be8802c3d5a41fdd1753528e1960c601a6ce89",
+          "source_legal_transition": null,
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 16848598,
+          "executor_event_transitions": 728,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 28.331034482758618,
+          "guarded_action": "smite:591",
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "smite:591"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:591"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "520d6540f94e12930e2d153bad4296c0af7953f045b5213915e3381d405db409",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "priest",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 11
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 17599150,
+          "executor_event_transitions": 810,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 32.46206896551723,
+          "guarded_action": "smite:591",
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "smite:591"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:591"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "51191e24256e05e669e5ef22e2327b9acb62efc4026bacfb79d8115686e0368b",
+          "source_legal_transition": {
+            "available_unspent_after": 3,
+            "class_key": "priest",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 12
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19648237,
+          "executor_event_transitions": 892,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 36.72413793103448,
+          "guarded_action": "smite:591",
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "smite:591"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:591"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "703d0919d208c2c932f1bec2c942e8a644c53d2cc290e1f59229ee3bb71665da",
+          "source_legal_transition": {
+            "available_unspent_after": 4,
+            "class_key": "priest",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 13
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20414002,
+          "executor_event_transitions": 680,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 31.403448275862083,
+          "guarded_action": "smite:598",
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "smite:598"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:598"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "d43653251fee6df6dc8e17e1f221139b24444004244a28e39569c44aa2fdce21",
+          "source_legal_transition": {
+            "available_unspent_after": 5,
+            "class_key": "priest",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 14
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20570664,
+          "executor_event_transitions": 690,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 26.187943262411345,
+          "guarded_action": "smite:598",
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "smite:598"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:598"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "43531c6363204a0b601d9ba5880800631ac3bdc005c9cfe99f958c23b77dc69c",
+          "source_legal_transition": {
+            "available_unspent_after": 6,
+            "class_key": "priest",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 15
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 27748031,
+          "executor_event_transitions": 781,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 29.929078014184398,
+          "guarded_action": "smite:598",
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "smite:598"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:598"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "f6523d30a82e6c69b04eacd83a66761162f638fbde04531b632343bbee88af29",
+          "source_legal_transition": {
+            "available_unspent_after": 7,
+            "class_key": "priest",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 16
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 27332004,
+          "executor_event_transitions": 826,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 32.732173913043475,
+          "guarded_action": "smite:598",
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "smite:598"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:598"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "13a148fcfe21dcfc8decbbaa5c6b0f994beed550093f969f3ce04fb58e3b424f",
+          "source_legal_transition": {
+            "available_unspent_after": 8,
+            "class_key": "priest",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 28049026,
+          "executor_event_transitions": 881,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 36.10434782608695,
+          "guarded_action": "smite:598",
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "smite:598"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:598"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "57f7f6d61a5579c1d95860545879e20f91709fe3e0f69ff1576d5086c52436df",
+          "source_legal_transition": {
+            "available_unspent_after": 9,
+            "class_key": "priest",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 18
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 28885827,
+          "executor_event_transitions": 918,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 37.000869565217386,
+          "guarded_action": "smite:598",
+          "guarded_conditions": [],
+          "level": 19,
+          "prefix": [
+            "smite:598"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 11,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:598"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "ad5fb3182b8e3f3bf9393e84f616504dfbca23a04bca0c2473bc4908d0209d5d",
+          "source_legal_transition": {
+            "available_unspent_after": 10,
+            "class_key": "priest",
+            "from_level": 18,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 19
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 34106433,
+          "executor_event_transitions": 1060,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 40.47217391304349,
+          "guarded_action": "smite:598",
+          "guarded_conditions": [],
+          "level": 20,
+          "prefix": [
+            "smite:598"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "smite:598"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "b02a76c86ff32b1bb1c0f2c2159b47d7c00eb9cf7008a1e16fc0d6c5e700fc8b",
+          "source_legal_transition": {
+            "available_unspent_after": 11,
+            "class_key": "priest",
+            "from_level": 19,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 20
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": true,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": true,
+      "source_player_action_filter_applied": false,
+      "status": "EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 355.6783106319181,
+      "travel_and_xp_timing_verified": false
+    },
+    "rogue": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 11,
+      "class_key": "rogue",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 0,
+        "charged_total_events": 12972,
+        "event_transitions": 12972,
+        "l1_attempts": 0,
+        "l2_attempts": 264,
+        "scorer_cpu_ns": 417535464,
+        "successful_source_legal_states": 22,
+        "total_cpu_ns": 1438128566,
+        "total_wall_ns": 1446202201
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 20,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 936,
+          "cumulative_real_l2_attempts": 24,
+          "cumulative_scorer_cpu_ns": 33069927,
+          "level": 10,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 1882,
+          "cumulative_real_l2_attempts": 48,
+          "cumulative_scorer_cpu_ns": 65505033,
+          "level": 11,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 2938,
+          "cumulative_real_l2_attempts": 72,
+          "cumulative_scorer_cpu_ns": 101331214,
+          "level": 12,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 4006,
+          "cumulative_real_l2_attempts": 96,
+          "cumulative_scorer_cpu_ns": 138321471,
+          "level": 13,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 5084,
+          "cumulative_real_l2_attempts": 120,
+          "cumulative_scorer_cpu_ns": 175237497,
+          "level": 14,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 6272,
+          "cumulative_real_l2_attempts": 144,
+          "cumulative_scorer_cpu_ns": 213270319,
+          "level": 15,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 7472,
+          "cumulative_real_l2_attempts": 168,
+          "cumulative_scorer_cpu_ns": 252012432,
+          "level": 16,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 8782,
+          "cumulative_real_l2_attempts": 192,
+          "cumulative_scorer_cpu_ns": 292108300,
+          "level": 17,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 10102,
+          "cumulative_real_l2_attempts": 216,
+          "cumulative_scorer_cpu_ns": 332758260,
+          "level": 18,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 11532,
+          "cumulative_real_l2_attempts": 240,
+          "cumulative_scorer_cpu_ns": 375444698,
+          "level": 19,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 12972,
+          "cumulative_real_l2_attempts": 264,
+          "cumulative_scorer_cpu_ns": 417535464,
+          "level": 20,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 16874036,
+          "executor_event_transitions": 468,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 13.903448275862072,
+          "guarded_action": "sinister_strike:1757",
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "sinister_strike:1757"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1757"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "f55dfe153767a1c05e1865988e9fb4dc27cdd1ac94009aa5d4b24deb0dd06af5",
+          "source_legal_transition": null,
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 16160559,
+          "executor_event_transitions": 473,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 14.165517241379309,
+          "guarded_action": "sinister_strike:1757",
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "sinister_strike:1757"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1757"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "7b63e96d7efa1f3e873410ddf7999af70ac2074430ce9667a3d481f2574a4bfc",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "rogue",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 11
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 17462337,
+          "executor_event_transitions": 528,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 18.034482758620683,
+          "guarded_action": "sinister_strike:1757",
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "sinister_strike:1757"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1757"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "7f367079322cc201e56c8fb87c70d4a11fe26ae34b9e6126929f3139e3a621e6",
+          "source_legal_transition": {
+            "available_unspent_after": 3,
+            "class_key": "rogue",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 12
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 18439486,
+          "executor_event_transitions": 534,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 18.36206896551723,
+          "guarded_action": "sinister_strike:1757",
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "sinister_strike:1757"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1757"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "d73442c30929a1efbb598922aca79a35f44436552f1545666cf98094f935470a",
+          "source_legal_transition": {
+            "available_unspent_after": 4,
+            "class_key": "rogue",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 13
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 18012383,
+          "executor_event_transitions": 539,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 18.689655172413804,
+          "guarded_action": "sinister_strike:1758",
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "sinister_strike:1758"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1758"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "8305d58d90279a4f70b41aedd8f31a333fd0eeba56424d9017a429a54e322cf6",
+          "source_legal_transition": {
+            "available_unspent_after": 5,
+            "class_key": "rogue",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 14
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19217039,
+          "executor_event_transitions": 594,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 17.95739130434783,
+          "guarded_action": "sinister_strike:1758",
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "sinister_strike:1758"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1758"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "e1db4717d6407312bd395da170c4e561abcd2698f63960e58c966f9e70ca3976",
+          "source_legal_transition": {
+            "available_unspent_after": 6,
+            "class_key": "rogue",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 15
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19009000,
+          "executor_event_transitions": 600,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 18.155652173913047,
+          "guarded_action": "sinister_strike:1758",
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "sinister_strike:1758"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1758"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "d1e61b16d5ae36612e9bc0d4fea00c38a814e512891ed1e66e47acb3c7527a91",
+          "source_legal_transition": {
+            "available_unspent_after": 7,
+            "class_key": "rogue",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 16
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20007189,
+          "executor_event_transitions": 655,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 18.35391304347826,
+          "guarded_action": "sinister_strike:1758",
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "sinister_strike:1758"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1758"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "da942a90fe15ed647eb6f6775bdba3f44d5add8205ad5f793e2456b7d0c1ff7c",
+          "source_legal_transition": {
+            "available_unspent_after": 8,
+            "class_key": "rogue",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20146205,
+          "executor_event_transitions": 660,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 18.552173913043475,
+          "guarded_action": "sinister_strike:1758",
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "sinister_strike:1758"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1758"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "2ec6e7a1ca90a5785a6e6fd718e8469003e2476c0839a9be9158c910a904a79b",
+          "source_legal_transition": {
+            "available_unspent_after": 9,
+            "class_key": "rogue",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 18
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 21550957,
+          "executor_event_transitions": 715,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 22.29217391304347,
+          "guarded_action": "sinister_strike:1758",
+          "guarded_conditions": [],
+          "level": 19,
+          "prefix": [
+            "sinister_strike:1758"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1758"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "d64c8ef2bbbf1f52e5d39232c0b28c64f3bcd1463620799e3b537ace14a685b9",
+          "source_legal_transition": {
+            "available_unspent_after": 10,
+            "class_key": "rogue",
+            "from_level": 18,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 19
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20796399,
+          "executor_event_transitions": 720,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 22.523478260869574,
+          "guarded_action": "sinister_strike:1758",
+          "guarded_conditions": [],
+          "level": 20,
+          "prefix": [
+            "sinister_strike:1758"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "sinister_strike:1758"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "fe025b4d66a3d7bed198fdeebbd35ff157d420e8e291caeb2b8f354feea1cbcb",
+          "source_legal_transition": {
+            "available_unspent_after": 11,
+            "class_key": "rogue",
+            "from_level": 19,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 20
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": true,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": true,
+      "source_player_action_filter_applied": false,
+      "status": "EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 200.98995502248874,
+      "travel_and_xp_timing_verified": false
+    },
+    "shaman": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 11,
+      "class_key": "shaman",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 0,
+        "charged_total_events": 5530,
+        "event_transitions": 5530,
+        "l1_attempts": 0,
+        "l2_attempts": 132,
+        "scorer_cpu_ns": 231493134,
+        "successful_source_legal_states": 11,
+        "total_cpu_ns": 858192865,
+        "total_wall_ns": 858244426
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 20,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 402,
+          "cumulative_real_l2_attempts": 12,
+          "cumulative_scorer_cpu_ns": 18975460,
+          "level": 10,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 837,
+          "cumulative_real_l2_attempts": 24,
+          "cumulative_scorer_cpu_ns": 39534617,
+          "level": 11,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 1329,
+          "cumulative_real_l2_attempts": 36,
+          "cumulative_scorer_cpu_ns": 59886788,
+          "level": 12,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 1837,
+          "cumulative_real_l2_attempts": 48,
+          "cumulative_scorer_cpu_ns": 80902462,
+          "level": 13,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 2294,
+          "cumulative_real_l2_attempts": 60,
+          "cumulative_scorer_cpu_ns": 101869513,
+          "level": 14,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 2795,
+          "cumulative_real_l2_attempts": 72,
+          "cumulative_scorer_cpu_ns": 123260703,
+          "level": 15,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 3305,
+          "cumulative_real_l2_attempts": 84,
+          "cumulative_scorer_cpu_ns": 144103120,
+          "level": 16,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 3824,
+          "cumulative_real_l2_attempts": 96,
+          "cumulative_scorer_cpu_ns": 164831928,
+          "level": 17,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 4385,
+          "cumulative_real_l2_attempts": 108,
+          "cumulative_scorer_cpu_ns": 186986028,
+          "level": 18,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 4975,
+          "cumulative_real_l2_attempts": 120,
+          "cumulative_scorer_cpu_ns": 209535334,
+          "level": 19,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 5530,
+          "cumulative_real_l2_attempts": 132,
+          "cumulative_scorer_cpu_ns": 231493134,
+          "level": 20,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 18975460,
+          "executor_event_transitions": 402,
+          "fallback": "lightning_bolt:529",
+          "full_cycle_s_per_mob": 14.003448275862075,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "lightning_bolt:529",
+            "earth_shock:8044"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "lightning_bolt:529",
+            "earth_shock:8044"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "07ac64895544853f3811861f80ef6a808c6f9c0c23370470e579fd614a2d4a5e",
+          "source_legal_transition": null,
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20559157,
+          "executor_event_transitions": 435,
+          "fallback": "lightning_bolt:529",
+          "full_cycle_s_per_mob": 15.165517241379309,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "rockbiter:8018",
+            "earth_shock:8044"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8018",
+            "earth_shock:8044",
+            "lightning_bolt:529"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "4d40c41969c03f0ce7f79aa13f0bc6a00dd1e2e233550a8984efdb92e14ac581",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "shaman",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 11
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20352171,
+          "executor_event_transitions": 492,
+          "fallback": "lightning_bolt:529",
+          "full_cycle_s_per_mob": 18.834482758620684,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "rockbiter:8018"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8018",
+            "lightning_bolt:529"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "212803ea3ebf79f527e742e25533184151b6056d71eaf3f108a44091e9a1340c",
+          "source_legal_transition": {
+            "available_unspent_after": 3,
+            "class_key": "shaman",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 12
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 21015674,
+          "executor_event_transitions": 508,
+          "fallback": "lightning_bolt:529",
+          "full_cycle_s_per_mob": 19.162068965517232,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "rockbiter:8018"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8018",
+            "lightning_bolt:529"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "f873ccc6c2ea1487ee25640f5f827d5c33c374fabb925049b28cd313c031a65e",
+          "source_legal_transition": {
+            "available_unspent_after": 4,
+            "class_key": "shaman",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 13
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20967051,
+          "executor_event_transitions": 457,
+          "fallback": "lightning_bolt:548",
+          "full_cycle_s_per_mob": 19.189655172413804,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "rockbiter:8018",
+            "earth_shock:8045"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8018",
+            "earth_shock:8045",
+            "lightning_bolt:548"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "2ac4626587119d4179ecc9266688be6544d927c6b8dd1421d2849e4e92a2acdd",
+          "source_legal_transition": {
+            "available_unspent_after": 5,
+            "class_key": "shaman",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 14
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 21391190,
+          "executor_event_transitions": 501,
+          "fallback": "lightning_bolt:548",
+          "full_cycle_s_per_mob": 16.889834515366427,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "rockbiter:8018",
+            "earth_shock:8045"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8018",
+            "earth_shock:8045",
+            "lightning_bolt:548"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "49777aa6d539932c05f264ef1c00266a19ff03e42c4e9350029d14e2eb4afdd4",
+          "source_legal_transition": {
+            "available_unspent_after": 6,
+            "class_key": "shaman",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 15
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20842417,
+          "executor_event_transitions": 510,
+          "fallback": "lightning_bolt:548",
+          "full_cycle_s_per_mob": 16.21304347826087,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "rockbiter:8019"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8019",
+            "lightning_bolt:548"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "89cd926cc88e58e34e4b160892ddfa26d3062cfc7bc29def96164f56f7be0775",
+          "source_legal_transition": {
+            "available_unspent_after": 7,
+            "class_key": "shaman",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 16
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20728808,
+          "executor_event_transitions": 519,
+          "fallback": "lightning_bolt:548",
+          "full_cycle_s_per_mob": 16.378260869565217,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "rockbiter:8019"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8019",
+            "lightning_bolt:548"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "1cc3b28a090c9d6347d93c77ebc5931d4281e2f197c0d4801db7f36df8f4e5a1",
+          "source_legal_transition": {
+            "available_unspent_after": 8,
+            "class_key": "shaman",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 22154100,
+          "executor_event_transitions": 561,
+          "fallback": "lightning_bolt:548",
+          "full_cycle_s_per_mob": 19.52482269503546,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "rockbiter:8019",
+            "earth_shock:8045"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8019",
+            "earth_shock:8045",
+            "lightning_bolt:548"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "5fcd7cac23acfe3f56983616dabc086499021a1758874171b23d7061ea273f75",
+          "source_legal_transition": {
+            "available_unspent_after": 9,
+            "class_key": "shaman",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 18
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 22549306,
+          "executor_event_transitions": 590,
+          "fallback": "lightning_bolt:548",
+          "full_cycle_s_per_mob": 19.52482269503546,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 19,
+          "prefix": [
+            "rockbiter:8019",
+            "earth_shock:8045"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8019",
+            "earth_shock:8045",
+            "lightning_bolt:548"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "e9b844ae8ed1ac97134412691c43e4a0d7d9cb09ceb80c75e3a737fa19b87fc3",
+          "source_legal_transition": {
+            "available_unspent_after": 10,
+            "class_key": "shaman",
+            "from_level": 18,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 19
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 21957800,
+          "executor_event_transitions": 555,
+          "fallback": "lightning_bolt:915",
+          "full_cycle_s_per_mob": 20.81678486997636,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 20,
+          "prefix": [
+            "rockbiter:8019"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "rockbiter:8019",
+            "lightning_bolt:915"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "c8561c6692ac5a2003fc0b6e1b0f53466d2e8030e5887b4e450fcaddf4384664",
+          "source_legal_transition": {
+            "available_unspent_after": 11,
+            "class_key": "shaman",
+            "from_level": 19,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 20
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": true,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": true,
+      "source_player_action_filter_applied": false,
+      "status": "EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 195.70274153703292,
+      "travel_and_xp_timing_verified": false
+    },
+    "warlock": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 9,
+      "class_key": "warlock",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 1,
+        "charged_total_events": 4803,
+        "event_transitions": 4803,
+        "l1_attempts": 0,
+        "l2_attempts": 90,
+        "scorer_cpu_ns": 165166495,
+        "successful_source_legal_states": 9,
+        "total_cpu_ns": 718442447,
+        "total_wall_ns": 718465040
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [
+        {
+          "level": 19,
+          "reason": "BLOCKED_NO_L2_KILL",
+          "scratch_completed": 0,
+          "talents": {}
+        }
+      ],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 18,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 198,
+          "cumulative_real_l2_attempts": 6,
+          "cumulative_scorer_cpu_ns": 9934442,
+          "level": 10,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 420,
+          "cumulative_real_l2_attempts": 12,
+          "cumulative_scorer_cpu_ns": 20202188,
+          "level": 11,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 582,
+          "cumulative_real_l2_attempts": 18,
+          "cumulative_scorer_cpu_ns": 28726471,
+          "level": 12,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 768,
+          "cumulative_real_l2_attempts": 24,
+          "cumulative_scorer_cpu_ns": 39043590,
+          "level": 13,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 1393,
+          "cumulative_real_l2_attempts": 36,
+          "cumulative_scorer_cpu_ns": 60071392,
+          "level": 14,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 1951,
+          "cumulative_real_l2_attempts": 48,
+          "cumulative_scorer_cpu_ns": 80949772,
+          "level": 15,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 2749,
+          "cumulative_real_l2_attempts": 60,
+          "cumulative_scorer_cpu_ns": 104846435,
+          "level": 16,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 3477,
+          "cumulative_real_l2_attempts": 72,
+          "cumulative_scorer_cpu_ns": 127424224,
+          "level": 17,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        },
+        {
+          "cumulative_executor_events": 4409,
+          "cumulative_real_l2_attempts": 84,
+          "cumulative_scorer_cpu_ns": 153030811,
+          "level": 18,
+          "proposed_source_legal_states": 1,
+          "retained_paths": 1,
+          "scorer_attempted_states": 1,
+          "scratch_verified_states": 1
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 9934442,
+          "executor_event_transitions": 198,
+          "fallback": "shadow_bolt:695",
+          "full_cycle_s_per_mob": 29.406896551724138,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "shadow_bolt:695"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 6,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "shadow_bolt:695"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "a3c83f85fa97a0f2346c588679b5623653c3b4c90aeb11270db2c0336714bf41",
+          "source_legal_transition": null,
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 10267746,
+          "executor_event_transitions": 222,
+          "fallback": "shadow_bolt:695",
+          "full_cycle_s_per_mob": 33.672413793103445,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "shadow_bolt:695"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 6,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "shadow_bolt:695"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "3a5f4ed3a66a4d101f54df7273e2148663fe885c47822b07e6a745576bd4c47c",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "warlock",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 11
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 8524283,
+          "executor_event_transitions": 162,
+          "fallback": "shadow_bolt:705",
+          "full_cycle_s_per_mob": 29.86007067137809,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "shadow_bolt:705"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 6,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "shadow_bolt:705"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "cf32992939ce8d87cd192d1981018c8e6d7075369ae0e046a134dcc79f345363",
+          "source_legal_transition": {
+            "available_unspent_after": 3,
+            "class_key": "warlock",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 12
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 10317119,
+          "executor_event_transitions": 186,
+          "fallback": "shadow_bolt:705",
+          "full_cycle_s_per_mob": 34.83674911660778,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "shadow_bolt:705"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 6,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "shadow_bolt:705"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "eb384f8678a90830882e6cfedb65eaa2e5645089fcb0005a880066a167d0ec6d",
+          "source_legal_transition": {
+            "available_unspent_after": 4,
+            "class_key": "warlock",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 13
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 21027802,
+          "executor_event_transitions": 625,
+          "fallback": "shadow_bolt:705",
+          "full_cycle_s_per_mob": 36.27349823321555,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "shadow_bolt:705",
+            "drain_life:689"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "shadow_bolt:705",
+            "drain_life:689"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "281ca7603d3392da8a12925bee5170fae3fecb906d321b36fb3184af46f22b8b",
+          "source_legal_transition": {
+            "available_unspent_after": 5,
+            "class_key": "warlock",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 14
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 20878380,
+          "executor_event_transitions": 558,
+          "fallback": "shadow_bolt:705",
+          "full_cycle_s_per_mob": 34.42174940898345,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "shadow_bolt:705"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "shadow_bolt:705"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "6f81885c9805e11a9fb5f180dd45fea0db5fe5a533057f3054e25a638a90a993",
+          "source_legal_transition": {
+            "available_unspent_after": 6,
+            "class_key": "warlock",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 15
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 23896663,
+          "executor_event_transitions": 798,
+          "fallback": "shadow_bolt:705",
+          "full_cycle_s_per_mob": 41.68510638297873,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "drain_life:689",
+            "drain_life:689"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "drain_life:689",
+            "shadow_bolt:705"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "1c1f3ea42c7d159e386c5c2e89abfde391b80f71c689fb2dec9daa7c00cb6ef0",
+          "source_legal_transition": {
+            "available_unspent_after": 7,
+            "class_key": "warlock",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 16
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 22577789,
+          "executor_event_transitions": 728,
+          "fallback": "shadow_bolt:705",
+          "full_cycle_s_per_mob": 40.36737588652481,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "drain_life:689"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "drain_life:689",
+            "shadow_bolt:705"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "787b9d04356b1deb2505e8db4a0f1e34b034c670bf847ac40c2fa1723d35598c",
+          "source_legal_transition": {
+            "available_unspent_after": 8,
+            "class_key": "warlock",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 25606587,
+          "executor_event_transitions": 932,
+          "fallback": "shadow_bolt:705",
+          "full_cycle_s_per_mob": 47.63073286052009,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "drain_life:689",
+            "drain_life:689",
+            "drain_life:689"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "drain_life:689",
+            "shadow_bolt:705"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "179ff72f34beba1c4948167b8763bb404ee7f11dc845c25fdfd1358ca8685fa4",
+          "source_legal_transition": {
+            "available_unspent_after": 9,
+            "class_key": "warlock",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 18
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": false,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": false,
+      "source_player_action_filter_applied": false,
+      "status": "PARTIAL_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 328.1545929050361,
+      "travel_and_xp_timing_verified": false
+    },
+    "warrior": {
+      "ability_trainer_quest_rune_acquisition_verified": false,
+      "accepted_class_level_checkpoints": 0,
+      "bounded_contiguous_levels": 11,
+      "class_key": "warrior",
+      "compute": {
+        "acquisition_event_attempts": 0,
+        "blocked_scorer_states": 0,
+        "charged_total_events": 17364,
+        "event_transitions": 17364,
+        "l1_attempts": 0,
+        "l2_attempts": 264,
+        "scorer_cpu_ns": 488375357,
+        "successful_source_legal_states": 22,
+        "total_cpu_ns": 1589359732,
+        "total_wall_ns": 1589446673
+      },
+      "cross_level_resource_carry_verified": false,
+      "failures": [],
+      "full_route_complete": false,
+      "global_budget": {
+        "max_cpu_ns": null,
+        "max_events": 60000,
+        "max_l2_attempts": 300,
+        "max_wall_ns": null
+      },
+      "independent_reference_verified": false,
+      "indexed_effect_source_complete": false,
+      "initial_acquisition_state_world_proven": false,
+      "initial_learned_spells_are_assumed_not_verified": false,
+      "last_contiguous_level": 20,
+      "level_stats": [
+        {
+          "cumulative_executor_events": 1188,
+          "cumulative_real_l2_attempts": 24,
+          "cumulative_scorer_cpu_ns": 37436958,
+          "level": 10,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 2520,
+          "cumulative_real_l2_attempts": 48,
+          "cumulative_scorer_cpu_ns": 76771249,
+          "level": 11,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 3852,
+          "cumulative_real_l2_attempts": 72,
+          "cumulative_scorer_cpu_ns": 117015167,
+          "level": 12,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 5352,
+          "cumulative_real_l2_attempts": 96,
+          "cumulative_scorer_cpu_ns": 164641997,
+          "level": 13,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 6852,
+          "cumulative_real_l2_attempts": 120,
+          "cumulative_scorer_cpu_ns": 209875339,
+          "level": 14,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 8496,
+          "cumulative_real_l2_attempts": 144,
+          "cumulative_scorer_cpu_ns": 256439925,
+          "level": 15,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 10140,
+          "cumulative_real_l2_attempts": 168,
+          "cumulative_scorer_cpu_ns": 299548288,
+          "level": 16,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 11784,
+          "cumulative_real_l2_attempts": 192,
+          "cumulative_scorer_cpu_ns": 344613049,
+          "level": 17,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 13596,
+          "cumulative_real_l2_attempts": 216,
+          "cumulative_scorer_cpu_ns": 391944414,
+          "level": 18,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 15408,
+          "cumulative_real_l2_attempts": 240,
+          "cumulative_scorer_cpu_ns": 437584078,
+          "level": 19,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        },
+        {
+          "cumulative_executor_events": 17364,
+          "cumulative_real_l2_attempts": 264,
+          "cumulative_scorer_cpu_ns": 488375357,
+          "level": 20,
+          "proposed_source_legal_states": 2,
+          "retained_paths": 1,
+          "scorer_attempted_states": 2,
+          "scratch_verified_states": 2
+        }
+      ],
+      "limitations": [
+        "Representative naked source actor only, no equipment acquisition",
+        "Full L2 kill+recovery+survival independently verified per level",
+        "Levels scored separately; real XP/travel and carryover not modeled",
+        "Talent alternatives truncated by explicit source-legal beam",
+        "Missing indexed effects and source mechanics block validated checkpoints"
+      ],
+      "named_gear_acquisition_verified": false,
+      "requested_levels": [
+        10,
+        20
+      ],
+      "selected_route": [
+        {
+          "cpu_ns": 18045592,
+          "executor_event_transitions": 594,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 34.12413793103448,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 10,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "22aa057c4d3783ceab8c146547e4fb8b53866ee515bd796b4bac5fe253c394c3",
+          "source_legal_transition": null,
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19595549,
+          "executor_event_transitions": 666,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 39.3,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 11,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "32bf881b0aac57e3e948ce92ea026f0c020a40e4ad9a535a0b46059615934783",
+          "source_legal_transition": {
+            "available_unspent_after": 2,
+            "class_key": "warrior",
+            "from_level": 10,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 11
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 19803827,
+          "executor_event_transitions": 666,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 40.19999999999999,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 12,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "bc805d7b250e9070847287902c10982d8bdbcc6b9b956a37af4f73ab3e5e838e",
+          "source_legal_transition": {
+            "available_unspent_after": 3,
+            "class_key": "warrior",
+            "from_level": 11,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 12
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 21133929,
+          "executor_event_transitions": 750,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 47.2448275862069,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 13,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "f3de5cb846978687f2be566ed6326e1532ff67572e24bde2a9edbc4f2cee455e",
+          "source_legal_transition": {
+            "available_unspent_after": 4,
+            "class_key": "warrior",
+            "from_level": 12,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 13
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 22839797,
+          "executor_event_transitions": 750,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 48.27586206896551,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 14,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "7d0f0e8c7e273d1cce6d56abeb5708414df58df6feb0d1982932eb1ab684a83c",
+          "source_legal_transition": {
+            "available_unspent_after": 5,
+            "class_key": "warrior",
+            "from_level": 13,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 14
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 24634447,
+          "executor_event_transitions": 822,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 39.68000000000001,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 15,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "abc8c4520856a15101d2ab6e0233fe169c0cc3a2357fc200b282bb12909a17f1",
+          "source_legal_transition": {
+            "available_unspent_after": 6,
+            "class_key": "warrior",
+            "from_level": 14,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 15
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 21740297,
+          "executor_event_transitions": 822,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 40.23304347826088,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 16,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "a9095ee7fc688176bc9f71ba7ade8caa8a64bc89f3f640bb4b66250cf617392c",
+          "source_legal_transition": {
+            "available_unspent_after": 7,
+            "class_key": "warrior",
+            "from_level": 15,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 16
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 21356188,
+          "executor_event_transitions": 822,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 40.78608695652174,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 17,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "bfef3fc32815203e82ac18afe4bb12317c82396b4d70fe78282f24feb2f627eb",
+          "source_legal_transition": {
+            "available_unspent_after": 8,
+            "class_key": "warrior",
+            "from_level": 16,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 17
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 23187842,
+          "executor_event_transitions": 906,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 46.15652173913044,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 18,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "500749b2a5b1fdd65b2814df3e86789ef178795845ef388227d55767ed2251af",
+          "source_legal_transition": {
+            "available_unspent_after": 9,
+            "class_key": "warrior",
+            "from_level": 17,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 18
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 22863171,
+          "executor_event_transitions": 906,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 46.77565217391304,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 19,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "37e4fefd4971087d4f1dad52dde33a060aff8fcb83a63ca9ea9e507f5c3ca5b2",
+          "source_legal_transition": {
+            "available_unspent_after": 10,
+            "class_key": "warrior",
+            "from_level": 18,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 19
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        },
+        {
+          "cpu_ns": 24115737,
+          "executor_event_transitions": 978,
+          "fallback": "__source_verified_auto_attack_only__",
+          "full_cycle_s_per_mob": 51.26956521739132,
+          "guarded_action": null,
+          "guarded_conditions": [],
+          "level": 20,
+          "prefix": [
+            "bloodrage:2687"
+          ],
+          "real_l1_attempts": 0,
+          "real_l2_attempts": 12,
+          "scratch_verification_complete": true,
+          "source_acquisition_events": [],
+          "source_action_ids": [
+            "bloodrage:2687"
+          ],
+          "source_consistent_acquisition": false,
+          "source_context": "b5a2bea80aa79c0f223333f1a3eb38670fbcc54929c49f7be7cfae8d7d7a55a2",
+          "source_legal_transition": {
+            "available_unspent_after": 11,
+            "class_key": "warrior",
+            "from_level": 19,
+            "gear_status": "naked_only",
+            "optimization_ready": false,
+            "race_key": null,
+            "race_status": "representative_scenario_only",
+            "resource_carry_forward_proven": false,
+            "route_complete": false,
+            "ruleset": "forever",
+            "spent_new_points": 0,
+            "status": "LEGAL_SOURCE_TRANSITION",
+            "talent_changes": {},
+            "to_level": 20
+          },
+          "source_scenario_race": null,
+          "talents": {},
+          "world_acquisition_verified": false
+        }
+      ],
+      "source_actions_level_available": true,
+      "source_consistent_local_acquisition_events": 0,
+      "source_legal_talent_transitions": true,
+      "source_player_action_filter_applied": false,
+      "status": "EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO",
+      "sum_per_level_s_per_mob": 474.0456971514243,
+      "travel_and_xp_timing_verified": false
+    }
+  },
+  "end_level": 20,
+  "producer": "source_budgeted_level_route / production source_stateful_budgeted",
+  "scenario": "representative naked source actor, incoming full kill+recovery+survival",
+  "software_version": "0.11.48.289",
+  "start_level": 10,
+  "summary": {
+    "accepted_source_complete_class_level_checkpoints": 0,
+    "all_route_acquisitions_verified": false,
+    "full_bounded_legal_source_scenario_corridors": 8,
+    "levels_per_requested_corridor": 11,
+    "required_class_corridors": 9,
+    "required_source_complete_class_level_checkpoints": 540,
+    "required_source_scenario_steps": 99,
+    "source_legal_scratch_verified_steps_in_selected_paths": 97,
+    "total_real_L2_attempts": 1752,
+    "total_real_executor_events_all_attempts": 113508,
+    "total_route_controller_cpu_ms": 15184.302,
+    "total_scorer_cpu_ms": 6219.19,
+    "validated_full_continuous_leveling_routes": 0
+  }
+}

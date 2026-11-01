@@ -1,0 +1,71 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_________ test_source_flag_canonical_sqlite_and_patch_only_uncertainty _________
+
+    def test_source_flag_canonical_sqlite_and_patch_only_uncertainty():
+        with sqlite3.connect(DB) as c:
+            tables={r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+>           assert 'sourced_periodic_spell_flags' in tables
+E           AssertionError: assert 'sourced_periodic_spell_flags' in {'ability_acquisition_entities', 'ability_acquisition_evidence', 'ability_effect_atom_coverage', 'ability_effect_atom_observations', 'ability_index_effect_candidates', 'ability_semantic_source_facts', ...}
+
+tests/test_wf434_root_periodic_crit_source_tdd.py:21: AssertionError
+____ test_source_all_root_ranks_have_periodic_crit_but_break_still_unknown _____
+
+    def test_source_all_root_ranks_have_periodic_crit_but_break_still_unknown():
+        ir=_selected(2)
+        roots=[a for a in ir.actions if a.family_key=='entangling_roots']
+        assert len(roots)==3
+        for a in roots:
+            dot=_dot(a)
+>           assert dot.crit_chance_stat_id=='spell_crit_chance'
+E           AssertionError: assert None == 'spell_crit_chance'
+E            +  where None = PeriodicEffect(effect_type='periodic_damage', school='nature', target='enemy', aura_id='source_periodic:5195', total_b...on_damage_or_heartbeat', 'status': 'not_yet_modeled'}, {'semantic': 'periodic_can_crit', 'status': 'not_yet_modeled'})).crit_chance_stat_id
+
+tests/test_wf434_root_periodic_crit_source_tdd.py:37: AssertionError
+____________ test_missing_source_flag_does_not_invent_periodic_crit ____________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-1/test_missing_source_flag_does_0')
+
+    def test_missing_source_flag_does_not_invent_periodic_crit(tmp_path):
+        dst=tmp_path/'tampered.sqlite'
+        with sqlite3.connect(DB) as source,sqlite3.connect(dst) as dest:
+            source.backup(dest)
+>           dest.execute('DELETE FROM sourced_periodic_spell_flags WHERE spell_id=5195')
+E           sqlite3.OperationalError: no such table: sourced_periodic_spell_flags
+
+tests/test_wf434_root_periodic_crit_source_tdd.py:47: OperationalError
+____ test_paid_2d_100mob_periodic_crit_ablation_with_same_direct_spell_crit ____
+
+    def test_paid_2d_100mob_periodic_crit_ablation_with_same_direct_spell_crit():
+        ir=_selected(2)
+        root=_root(ir)
+        wrath=next(a for a in ir.actions if a.family_key=='wrath')
+        policy=PolicyDefinition('root_crit','root_crit',rules=(
+            PolicyRuleDefinition('root',root.id,conditions=(PolicyCondition(kind='target_control_missing',value='root'),)),
+            PolicyRuleDefinition('wrath',wrath.id)))
+        ir=replace(ir,actor=replace(ir.actor,base_stats={**ir.actor.base_stats,'spell_crit_chance':0.4}))
+        without=replace(ir,actions=tuple(replace(a,effects=tuple(
+            replace(e,crit_chance_stat_id=None) if isinstance(e,PeriodicEffect) else e for e in a.effects))
+            if a.family_key=='entangling_roots' else a for a in ir.actions))
+        results=[]
+        for case in (without,ir):
+            r=evaluate_repeated_pulls(ir_slice=case,policy=policy,level=30,target_health=200.,
+                count=100,pack_size=2,schedule_incoming_attacks=True,recovery_mode='always',max_actions=256)
+            assert len(r.pulls)==50 and all(p['pack_all_defeated'] for p in r.pulls)
+            results.append(r)
+        damage=lambda r:sum(p['damage_by_role']['player'] for p in r.pulls)
+>       assert damage(results[1])>damage(results[0])
+E       AssertionError: assert 23238.0 > 23238.0
+E        +  where 23238.0 = <function test_paid_2d_100mob_periodic_crit_ablation_with_same_direct_spell_crit.<locals>.<lambda> at 0x7f7f02038860>(RepeatedPullResult(seconds_per_mob=6.743087557603685, pulls=({'pull_index': 0, 'mob_count': 2, 'pack_all_defeated': Tr...liers={}, absorb_shields={}, aura_generations={}, pending_actor_periodic_events=(), pending_actor_periodic_actions={})))
+E        +  and   23238.0 = <function test_paid_2d_100mob_periodic_crit_ablation_with_same_direct_spell_crit.<locals>.<lambda> at 0x7f7f02038860>(RepeatedPullResult(seconds_per_mob=6.743087557603685, pulls=({'pull_index': 0, 'mob_count': 2, 'pack_all_defeated': Tr...liers={}, absorb_shields={}, aura_generations={}, pending_actor_periodic_events=(), pending_actor_periodic_actions={})))
+
+tests/test_wf434_root_periodic_crit_source_tdd.py:73: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_wf434_root_periodic_crit_source_tdd.py::test_source_flag_canonical_sqlite_and_patch_only_uncertainty - AssertionError: assert 'sourced_periodic_spell_flags' in {'ability_acquisition_entities', 'ability_acquisition_evidence', 'ability_effect_atom_coverage', 'ability_effect_atom_observations', 'ability_index_effect_candidates', 'ability_semantic_source_facts', ...}
+FAILED tests/test_wf434_root_periodic_crit_source_tdd.py::test_source_all_root_ranks_have_periodic_crit_but_break_still_unknown - AssertionError: assert None == 'spell_crit_chance'
+ +  where None = PeriodicEffect(effect_type='periodic_damage', school='nature', target='enemy', aura_id='source_periodic:5195', total_b...on_damage_or_heartbeat', 'status': 'not_yet_modeled'}, {'semantic': 'periodic_can_crit', 'status': 'not_yet_modeled'})).crit_chance_stat_id
+FAILED tests/test_wf434_root_periodic_crit_source_tdd.py::test_missing_source_flag_does_not_invent_periodic_crit - sqlite3.OperationalError: no such table: sourced_periodic_spell_flags
+FAILED tests/test_wf434_root_periodic_crit_source_tdd.py::test_paid_2d_100mob_periodic_crit_ablation_with_same_direct_spell_crit - AssertionError: assert 23238.0 > 23238.0
+ +  where 23238.0 = <function test_paid_2d_100mob_periodic_crit_ablation_with_same_direct_spell_crit.<locals>.<lambda> at 0x7f7f02038860>(RepeatedPullResult(seconds_per_mob=6.743087557603685, pulls=({'pull_index': 0, 'mob_count': 2, 'pack_all_defeated': Tr...liers={}, absorb_shields={}, aura_generations={}, pending_actor_periodic_events=(), pending_actor_periodic_actions={})))
+ +  and   23238.0 = <function test_paid_2d_100mob_periodic_crit_ablation_with_same_direct_spell_crit.<locals>.<lambda> at 0x7f7f02038860>(RepeatedPullResult(seconds_per_mob=6.743087557603685, pulls=({'pull_index': 0, 'mob_count': 2, 'pack_all_defeated': Tr...liers={}, absorb_shields={}, aura_generations={}, pending_actor_periodic_events=(), pending_actor_periodic_actions={})))
+4 failed in 0.91s

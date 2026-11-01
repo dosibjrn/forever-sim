@@ -1,0 +1,10 @@
+{
+  "best_validated_hours": null,
+  "candidate_id": null,
+  "source": null,
+  "validation_mobs": null,
+  "objective_version": "classic_era_lplus1_lplus2_xp_weight_v2",
+  "target_ding_level": 60,
+  "updated_at": 1791098161.3840468,
+  "note": "Awaiting first XP-weighted replayable 11->60 validation. Old equal-100 objective archived."
+}

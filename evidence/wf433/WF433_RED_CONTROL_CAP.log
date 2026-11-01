@@ -1,0 +1,189 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_ test_exact_build_source_baseline_and_two_ranks_compile_to_generic_action_metadata _
+
+    def test_exact_build_source_baseline_and_two_ranks_compile_to_generic_action_metadata():
+        ir=_ir()
+        rows=next(t.ranks for t in ir.talents if t.id=='overgrowth')
+>       assert [r.modifiers[0].kind for r in rows]==['control_target_cap_bonus']*2
+                ^^^^^^^^^^^^^^
+E       IndexError: tuple index out of range
+
+tests/test_wf433_source_root_concurrency_tdd.py:64: IndexError
+_ test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent[0-expected0] _
+
+rank = 0, expected = {'m3'}
+
+    @pytest.mark.parametrize('rank,expected',[(0,{'m3'}),(1,{'m2','m3'}),(2,{'m1','m2','m3'})])
+    def test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent(rank,expected):
+        rt,root=_runtime(rank)
+        for i in range(4):
+            _cast(rt,root,f'm{i}')
+>       assert _rooted(rt)==expected
+E       AssertionError: assert {'m0', 'm1', 'm2', 'm3'} == {'m3'}
+E         
+E         Extra items in the left set:
+E         'm0'
+E         'm1'
+E         'm2'
+E         
+E         Full diff:
+E           {
+E         +     'm0',
+E         +     'm1',
+E         +     'm2',
+E               'm3',
+E           }
+
+tests/test_wf433_source_root_concurrency_tdd.py:80: AssertionError
+_ test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent[1-expected1] _
+
+rank = 1, expected = {'m2', 'm3'}
+
+    @pytest.mark.parametrize('rank,expected',[(0,{'m3'}),(1,{'m2','m3'}),(2,{'m1','m2','m3'})])
+    def test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent(rank,expected):
+>       rt,root=_runtime(rank)
+                ^^^^^^^^^^^^^^
+
+tests/test_wf433_source_root_concurrency_tdd.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_wf433_source_root_concurrency_tdd.py:37: in _runtime
+    ir=_selected(rank)
+       ^^^^^^^^^^^^^^^
+tests/test_wf433_source_root_concurrency_tdd.py:27: in _selected
+    return apply_talent_selection(ir,{**FILLER,'overgrowth':rank,'ferocity':4},
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'ferocity': 4, 'genesis': 5, 'improved_entangling_roots': 1, 'improved_moonfire': 2, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for overgrowth rank 1; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+_ test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent[2-expected2] _
+
+rank = 2, expected = {'m1', 'm2', 'm3'}
+
+    @pytest.mark.parametrize('rank,expected',[(0,{'m3'}),(1,{'m2','m3'}),(2,{'m1','m2','m3'})])
+    def test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent(rank,expected):
+>       rt,root=_runtime(rank)
+                ^^^^^^^^^^^^^^
+
+tests/test_wf433_source_root_concurrency_tdd.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_wf433_source_root_concurrency_tdd.py:37: in _runtime
+    ir=_selected(rank)
+       ^^^^^^^^^^^^^^^
+tests/test_wf433_source_root_concurrency_tdd.py:27: in _selected
+    return apply_talent_selection(ir,{**FILLER,'overgrowth':rank,'ferocity':4},
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'ferocity': 4, 'genesis': 5, 'improved_entangling_roots': 1, 'improved_moonfire': 2, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for overgrowth rank 2; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+________ test_source_control_cap_fails_closed_without_matching_baseline ________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_source_control_cap_fails_0')
+
+    def test_source_control_cap_fails_closed_without_matching_baseline(tmp_path):
+        copy=tmp_path/'corrupt.sqlite'
+        with sqlite3.connect(DB) as src, sqlite3.connect(copy) as dst:
+            src.backup(dst)
+>           dst.execute("DELETE FROM sourced_control_target_cap_facts WHERE class_key='druid'")
+E           sqlite3.OperationalError: no such table: sourced_control_target_cap_facts
+
+tests/test_wf433_source_root_concurrency_tdd.py:94: OperationalError
+_____ test_paid_100mob_simultaneous_2d_root_policy_survives_with_recovery ______
+
+    def test_paid_100mob_simultaneous_2d_root_policy_survives_with_recovery():
+        from src.game.multi_pull import evaluate_repeated_pulls
+>       ir=_selected(2)
+           ^^^^^^^^^^^^
+
+tests/test_wf433_source_root_concurrency_tdd.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_wf433_source_root_concurrency_tdd.py:27: in _selected
+    return apply_talent_selection(ir,{**FILLER,'overgrowth':rank,'ferocity':4},
+src/game/talents.py:137: in apply_talent_selection
+    validate_talent_selection(ir_slice, selection, level=level, bonus_talent_points=bonus_talent_points)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ir_slice = GameIRSlice(id='forever:druid:caster-healing-slice@30', ruleset='forever', actor=ActorDefinition(id='player', actor_ty...CIT_SOURCE_PROOF', 'rune_disabled_action_ids': []}, companions=(), actor_links=(), timed_summons=(), schema_version=17)
+selection = {'ferocity': 4, 'genesis': 5, 'improved_entangling_roots': 1, 'improved_moonfire': 2, ...}
+
+    def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> None:
+        definitions = _definition_map(ir_slice)
+        normalized = {str(k): int(v) for k, v in selection.items() if int(v) != 0}
+        unknown = sorted(set(normalized) - set(definitions))
+        if unknown:
+            raise ValueError(f"unknown talent selection: {', '.join(unknown)}")
+        for talent_id, rank in normalized.items():
+            talent = definitions[talent_id]
+            if rank < 0 or rank > int(talent.max_rank):
+                raise ValueError(f"illegal rank for {talent_id}: {rank}/{talent.max_rank}")
+            rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
+            if rank_row is None:
+                raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
+            if not rank_row.modifiers:
+>               raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
+E               ValueError: unsupported talent effect for overgrowth rank 2; refusing no-op selection
+
+src/game/talents.py:77: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_wf433_source_root_concurrency_tdd.py::test_exact_build_source_baseline_and_two_ranks_compile_to_generic_action_metadata - IndexError: tuple index out of range
+FAILED tests/test_wf433_source_root_concurrency_tdd.py::test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent[0-expected0] - AssertionError: assert {'m0', 'm1', 'm2', 'm3'} == {'m3'}
+  
+  Extra items in the left set:
+  'm0'
+  'm1'
+  'm2'
+  
+  Full diff:
+    {
+  +     'm0',
+  +     'm1',
+  +     'm2',
+        'm3',
+    }
+FAILED tests/test_wf433_source_root_concurrency_tdd.py::test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent[1-expected1] - ValueError: unsupported talent effect for overgrowth rank 1; refusing no-op selection
+FAILED tests/test_wf433_source_root_concurrency_tdd.py::test_real_2d_casts_evict_oldest_root_and_keep_other_targets_independent[2-expected2] - ValueError: unsupported talent effect for overgrowth rank 2; refusing no-op selection
+FAILED tests/test_wf433_source_root_concurrency_tdd.py::test_source_control_cap_fails_closed_without_matching_baseline - sqlite3.OperationalError: no such table: sourced_control_target_cap_facts
+FAILED tests/test_wf433_source_root_concurrency_tdd.py::test_paid_100mob_simultaneous_2d_root_policy_survives_with_recovery - ValueError: unsupported talent effect for overgrowth rank 2; refusing no-op selection
+6 failed in 1.36s

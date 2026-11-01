@@ -1,0 +1,853 @@
+{
+  "rows": [
+    {
+      "catalogue_name": "Abomination Bones",
+      "item_id": 271205,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271205",
+      "name": "Abomination Bones",
+      "icon": "inv_chest_chain_15",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Acidic Walkers",
+      "item_id": 9454,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/9454",
+      "name": "Acidic Walkers",
+      "icon": "inv_boots_05",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Advisor's Ring",
+      "item_id": 20426,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/20426",
+      "name": "Advisor's Ring",
+      "icon": "inv_jewelry_ring_20",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Aetherwisp Bracers",
+      "item_id": 271096,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271096",
+      "name": "Aetherwisp Bracers",
+      "icon": "inv_bracer_11",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Arcane Crystal Pendant",
+      "item_id": 20037,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/20037",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Atrophic Girdle",
+      "item_id": 271201,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271201",
+      "name": "Atrophic Girdle",
+      "icon": "inv_belt_21",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Band of the Better Half",
+      "item_id": 284716,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/284716",
+      "name": "Band of the Better Half",
+      "icon": "inv_jewelry_ring_54",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Battle Healer's Cloak",
+      "item_id": 20427,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/20427",
+      "name": "Battle Healer's Cloak",
+      "icon": "inv_misc_cape_18",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Belt of Arugal",
+      "item_id": 6392,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/6392",
+      "name": "Belt of Arugal",
+      "icon": "inv_belt_10",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Black Mageweave Gloves",
+      "item_id": 10003,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/10003",
+      "name": "Black Mageweave Gloves",
+      "icon": "inv_gauntlets_05",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Blackstone Ring",
+      "item_id": 17713,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/17713",
+      "name": "Blackstone Ring",
+      "icon": "inv_jewelry_ring_17",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Blackveil Cape",
+      "item_id": 11626,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/11626",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Bonerust Leggings",
+      "item_id": 271209,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271209",
+      "name": "Bonerust Leggings",
+      "icon": "inv_pants_mail_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Brawler's Leather Belt",
+      "item_id": 252428,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/252428",
+      "name": "Brawler's Leather Belt",
+      "icon": "inv_belt_04",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Brawler's Leather Boots",
+      "item_id": 252439,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/252439",
+      "name": "Brawler's Leather Boots",
+      "icon": "inv_boots_09",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Brawler's Leather Hood",
+      "item_id": 252504,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/252504",
+      "name": "Brawler's Leather Hood",
+      "icon": "inv_helmet_31",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Brawler's Leather Legguards",
+      "item_id": 252516,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/252516",
+      "name": "Brawler's Leather Legguards",
+      "icon": "inv_pants_leather_19",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Cavedweller Bracers",
+      "item_id": 14147,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/14147",
+      "name": "Cavedweller Bracers",
+      "icon": "inv_bracer_07",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Celestial Stave",
+      "item_id": 9517,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/9517",
+      "name": "Celestial Stave",
+      "icon": "inv_staff_14",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Chausses of Westfall",
+      "item_id": 6087,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/6087",
+      "name": "Chausses of Westfall",
+      "icon": "inv_pants_03",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Cookie's Stirring Rod",
+      "item_id": 5198,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/5198",
+      "name": "Cookie's Stirring Rod",
+      "icon": "inv_staff_02",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Cryptwalker Bracers",
+      "item_id": 280095,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/280095",
+      "name": "Cryptwalker Bracers",
+      "icon": "inv_bracer_03",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Crystalline Cuffs",
+      "item_id": 14148,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/14148",
+      "name": "Crystalline Cuffs",
+      "icon": "inv_bracer_13",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Crystalline Threaded Cape",
+      "item_id": 20697,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/20697",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Cyclopean Band",
+      "item_id": 11824,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/11824",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Deep Fathom Ring",
+      "item_id": 6463,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/6463",
+      "name": "Deep Fathom Ring",
+      "icon": "inv_jewelry_ring_15",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Deepgrave Trousers",
+      "item_id": 279900,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/279900",
+      "name": "Deepgrave Trousers",
+      "icon": "inv_pants_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Double-Stitched Woolen Shoulders",
+      "item_id": 4314,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/4314",
+      "name": "Double-Stitched Woolen Shoulders",
+      "icon": "inv_shoulder_06",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Dreamweave Circlet",
+      "item_id": 10041,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/10041",
+      "name": "Dreamweave Circlet",
+      "icon": "inv_crown_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Dreamweave Gloves",
+      "item_id": 10019,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/10019",
+      "name": "Dreamweave Gloves",
+      "icon": "inv_gauntlets_18",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Dreamweave Vest",
+      "item_id": 10021,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/10021",
+      "name": "Dreamweave Vest",
+      "icon": "inv_chest_cloth_42",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Dwarven Tome",
+      "item_id": 279898,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/279898",
+      "name": "Dwarven Tome",
+      "icon": "inv_misc_book_07",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Embalmed Shroud",
+      "item_id": 7691,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/7691",
+      "name": "Embalmed Shroud",
+      "icon": "inv_helmet_28",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Ephemeral Choker",
+      "item_id": 270257,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/270257",
+      "name": "Captain Sander's Locker",
+      "icon": "inv_box_01",
+      "status": "mismatch"
+    },
+    {
+      "catalogue_name": "Feline Mantle",
+      "item_id": 3748,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/3748",
+      "name": "Feline Mantle",
+      "icon": "inv_shoulder_05",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Filigreed Pristine Circlet",
+      "item_id": 253975,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/253975",
+      "name": "Filigreed Pristine Circlet",
+      "icon": "inv_crown_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Filigreed Pristine Leggings",
+      "item_id": 253937,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/253937",
+      "name": "Filigreed Pristine Leggings",
+      "icon": "inv_pants_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "First Mate Band",
+      "item_id": 284715,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/284715",
+      "name": "First Mate Band",
+      "icon": "inv_jewelry_ring_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Frostbane Treads",
+      "item_id": 271214,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271214",
+      "name": "Rotmender's Treads",
+      "icon": "inv_boots_05",
+      "status": "mismatch"
+    },
+    {
+      "catalogue_name": "Gemshard Heart",
+      "item_id": 17707,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/17707",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Glowing Eye of Mordresh",
+      "item_id": 10769,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/10769",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Golden Scale Shoulders",
+      "item_id": 3841,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/3841",
+      "name": "Golden Scale Shoulders",
+      "icon": "inv_shoulder_09",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Gravestone Scepter",
+      "item_id": 7001,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/7001",
+      "name": "Gravestone Scepter",
+      "icon": "inv_wand_04",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Grip of Fear",
+      "item_id": 271208,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271208",
+      "name": "Grip of Fear",
+      "icon": "inv_gauntlets_04",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Heavy Woolen Cloak",
+      "item_id": 4311,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/4311",
+      "name": "Heavy Woolen Cloak",
+      "icon": "inv_misc_cape_14",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Heavy Woolen Gloves",
+      "item_id": 4310,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/4310",
+      "name": "Heavy Woolen Gloves",
+      "icon": "inv_gauntlets_05",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Herod's Shoulder",
+      "item_id": 7718,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/7718",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Illusionary Rod",
+      "item_id": 7713,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/7713",
+      "name": "Illusionary Rod",
+      "icon": "inv_wand_04",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Kaleidoscope Chain",
+      "item_id": 13084,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/13084",
+      "name": "Kaleidoscope Chain",
+      "icon": "inv_jewelry_amulet_07",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Lavishly Jeweled Ring",
+      "item_id": 1156,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/1156",
+      "name": "Lavishly Jeweled Ring",
+      "icon": "inv_jewelry_ring_09",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Leftover Abomination Skin",
+      "item_id": 271208,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271208",
+      "name": "Grip of Fear",
+      "icon": "inv_gauntlets_04",
+      "status": "mismatch"
+    },
+    {
+      "catalogue_name": "Lesser Magic Wand",
+      "item_id": 11287,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/11287",
+      "name": "Lesser Magic Wand",
+      "icon": "inv_staff_02",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Lookie's Spyglass",
+      "item_id": 273298,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/273298",
+      "name": "Lookie's Spyglass",
+      "icon": "inv_misc_spyglass_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Lorekeeper's Ring",
+      "item_id": 20431,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/20431",
+      "name": "Lorekeeper's Ring",
+      "icon": "inv_jewelry_ring_28",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Magni's Will",
+      "item_id": 12548,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/12548",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Maiden's Circle",
+      "item_id": 13001,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/13001",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Mana Channeling Wand",
+      "item_id": 18483,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/18483",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Mantle of Doan",
+      "item_id": 7712,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/7712",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Mark of the Pack Leader",
+      "item_id": 285331,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/285331",
+      "name": "Mark of the Pack Leader",
+      "icon": "inv_jewelry_necklace_04",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Mindthrust Bracers",
+      "item_id": 1974,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/1974",
+      "name": "Mindthrust Bracers",
+      "icon": "inv_bracer_07",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Novice Arcanist's Sash",
+      "item_id": 253885,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/253885",
+      "name": "Novice Arcanist's Sash",
+      "icon": "inv_belt_43a",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Noxious Shooter",
+      "item_id": 17745,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/17745",
+      "name": "Noxious Shooter",
+      "icon": "inv_wand_04",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Pristine Circlet",
+      "item_id": 253949,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/253949",
+      "name": "Pristine Circlet",
+      "icon": "inv_crown_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Pristine Sash",
+      "item_id": 253925,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/253925",
+      "name": "Pristine Sash",
+      "icon": "inv_belt_43",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Raptor Hide Cloak",
+      "item_id": 285329,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/285329",
+      "name": "Raptor Hide Cloak",
+      "icon": "inv_misc_cape_17",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Red Mageweave Pants",
+      "item_id": 10009,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/10009",
+      "name": "Red Mageweave Pants",
+      "icon": "inv_pants_06",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Rift Bracers",
+      "item_id": 5943,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/5943",
+      "name": "Rift Bracers",
+      "icon": "inv_bracer_03",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Robe of Evocation",
+      "item_id": 14150,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/14150",
+      "name": "Robe of Evocation",
+      "icon": "inv_chest_cloth_24",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Robes of Arugal",
+      "item_id": 6324,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/6324",
+      "name": "Robes of Arugal",
+      "icon": "inv_chest_cloth_31",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Robes of the Disgraced Thane",
+      "item_id": 270261,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/270261",
+      "name": "Robes of the Disgraced Thane",
+      "icon": "inv_chest_cloth_09",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Rod of the Ogre Magi",
+      "item_id": 18534,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/18534",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Rune of Perfection",
+      "item_id": 21566,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/21566",
+      "name": "Rune of Perfection",
+      "icon": "inv_misc_rune_05",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Scholarly Pendant",
+      "item_id": 279897,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/279897",
+      "name": "Dusty Belt",
+      "icon": "inv_belt_03",
+      "status": "mismatch"
+    },
+    {
+      "catalogue_name": "Scorn's Icy Choker",
+      "item_id": 23169,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/23169",
+      "name": "Scorn's Icy Choker",
+      "icon": "inv_jewelry_necklace_03",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Searing Dagger",
+      "item_id": 14151,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/14151",
+      "name": "Chanting Blade",
+      "icon": "inv_weapon_shortblade_25",
+      "status": "mismatch"
+    },
+    {
+      "catalogue_name": "Signet of the Zhevra",
+      "item_id": 285330,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/285330",
+      "name": "Signet of the Zhevra",
+      "icon": "inv_jewelry_ring_03",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Silvered Bronze Shoulders",
+      "item_id": 3481,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/3481",
+      "name": "Silvered Bronze Shoulders",
+      "icon": "inv_shoulder_09",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Skullplate Bracers",
+      "item_id": 9432,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/9432",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Slain Baron's Signet",
+      "item_id": 279867,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/279867",
+      "name": "Slain Baron's Signet",
+      "icon": "inv_jewelry_ring_19",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Spritecaster Cape",
+      "item_id": 11623,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/11623",
+      "name": "Spritecaster Cape",
+      "icon": "inv_misc_cape_20",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Staff of Orgrimmar",
+      "item_id": 15444,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/15444",
+      "name": "Staff of Orgrimmar",
+      "icon": "inv_staff_goldfeathered_01",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Staff of Westfall",
+      "item_id": 2042,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/2042",
+      "name": "Staff of Westfall",
+      "icon": "inv_staff_10",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Star Belt",
+      "item_id": 4329,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/4329",
+      "name": "Star Belt",
+      "icon": "inv_belt_06",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Star of Mystaria",
+      "item_id": 12103,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/12103",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Starfaller",
+      "item_id": 13063,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/13063",
+      "name": "Starfaller",
+      "icon": "inv_staff_02",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Stoneskin Gargoyle Cape",
+      "item_id": 13397,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/13397",
+      "name": "Stoneskin Gargoyle Cape",
+      "icon": "inv_misc_cape_19",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Talbar Mantle",
+      "item_id": 10657,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/10657",
+      "name": "Talbar Mantle",
+      "icon": "inv_shoulder_09",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Tarnished Locket",
+      "item_id": 279870,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/279870",
+      "name": "Tarnished Locket",
+      "icon": "inv_jewelry_necklace_08",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Thoughtblighter",
+      "item_id": 19967,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/19967",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Thunderwood",
+      "item_id": 13062,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/13062",
+      "name": "Thunderwood",
+      "icon": "inv_staff_02",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Totemic Leather Hood",
+      "item_id": 252448,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/252448",
+      "name": "Totemic Leather Hood",
+      "icon": "inv_helmet_15",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Triune Amulet",
+      "item_id": 7722,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/7722",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Tuskwrap Belt",
+      "item_id": 271210,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271210",
+      "name": "Tuskwrap Belt",
+      "icon": "inv_belt_26",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Wind Spirit Staff",
+      "item_id": 6689,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/6689",
+      "status": "unresolved",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "catalogue_name": "Wispcloth Leggings",
+      "item_id": 271207,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271207",
+      "name": "Rotmender's Leggings",
+      "icon": "inv_pants_cloth_05",
+      "status": "mismatch"
+    },
+    {
+      "catalogue_name": "Searing Dagger",
+      "name": "Searing Dagger",
+      "item_id": 273003,
+      "icon": "inv_weapon_shortblade_03",
+      "status": "matched",
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/273003"
+    },
+    {
+      "catalogue_name": "Ephemeral Choker",
+      "name": "Ephemeral Choker",
+      "item_id": 270227,
+      "icon": "inv_misc_necklacea8",
+      "status": "matched",
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/270227"
+    },
+    {
+      "catalogue_name": "Scholarly Pendant",
+      "name": "Scholarly Pendant",
+      "item_id": 277203,
+      "icon": "inv_jewelry_necklace_11",
+      "status": "matched",
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/277203"
+    },
+    {
+      "catalogue_name": "Leftover Abomination Skin",
+      "name": "Leftover Abomination Skin",
+      "item_id": 271206,
+      "icon": "inv_chest_cloth_46",
+      "status": "matched",
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271206"
+    },
+    {
+      "catalogue_name": "Rotmender's Leggings",
+      "name": "Rotmender's Leggings",
+      "item_id": 271207,
+      "icon": "inv_pants_cloth_05",
+      "status": "matched",
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271207"
+    },
+    {
+      "catalogue_name": "Rotmender's Treads",
+      "name": "Rotmender's Treads",
+      "item_id": 271214,
+      "icon": "inv_boots_05",
+      "status": "matched",
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/271214"
+    },
+    {
+      "catalogue_name": "Wolfsbane",
+      "name": "Wolfsbane",
+      "item_id": 267369,
+      "icon": "inv_sword_25",
+      "status": "matched",
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/267369"
+    },
+    {
+      "catalogue_name": "Wolfsbane",
+      "item_id": 267369,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/267369",
+      "name": "Wolfsbane",
+      "icon": "inv_sword_25",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Crusader's Chain Shirt",
+      "item_id": 250492,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/250492",
+      "name": "Crusader's Chain Shirt",
+      "icon": "inv_chest_chain_09",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Crusader's Gloves",
+      "item_id": 250512,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/250512",
+      "name": "Crusader's Gloves",
+      "icon": "inv_gauntlets_12",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Crusader's Chain Belt",
+      "item_id": 250517,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/250517",
+      "name": "Crusader's Chain Belt",
+      "icon": "inv_belt_22",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Crusader's Boots",
+      "item_id": 250507,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/250507",
+      "name": "Crusader's Boots",
+      "icon": "inv_boots_chain_05",
+      "status": "matched"
+    },
+    {
+      "catalogue_name": "Crusader's Chain Leggings",
+      "item_id": 250497,
+      "source_url": "https://nether.wowhead.com/forever/tooltip/item/250497",
+      "name": "Crusader's Chain Leggings",
+      "icon": "inv_pants_mail_13",
+      "status": "matched"
+    }
+  ],
+  "checked_at": "2026-09-25",
+  "scope": "Identity only; source stats/set bonuses are not exhaustively audited. Unresolved IDs are not verified."
+}

@@ -1,0 +1,70 @@
+{
+  "axes": {
+    "agility": {
+      "probes": [
+        {
+          "delta": -10.0,
+          "events": 10269,
+          "s_per_mob": 19.656003255449544,
+          "status": "COMPLETE"
+        },
+        {
+          "delta": -5.0,
+          "events": 10272,
+          "s_per_mob": 19.653972981458022,
+          "status": "COMPLETE"
+        },
+        {
+          "delta": 5.0,
+          "events": 10019,
+          "s_per_mob": 19.038628661077908,
+          "status": "COMPLETE"
+        },
+        {
+          "delta": 10.0,
+          "events": 10004,
+          "s_per_mob": 18.989388401074248,
+          "status": "COMPLETE"
+        },
+        {
+          "delta": 20.0,
+          "events": 9996,
+          "s_per_mob": 18.986961195098463,
+          "status": "COMPLETE"
+        },
+        {
+          "delta": 40.0,
+          "events": 9340,
+          "s_per_mob": 18.072561252681254,
+          "status": "COMPLETE"
+        }
+      ]
+    },
+    "weapon_dps": {
+      "probes": [
+        {
+          "delta": -2.0,
+          "events": 10480,
+          "s_per_mob": 19.9619517890861,
+          "status": "COMPLETE"
+        },
+        {
+          "delta": 2.0,
+          "events": 9988,
+          "s_per_mob": 18.99183949687263,
+          "status": "COMPLETE"
+        },
+        {
+          "delta": 4.0,
+          "events": 9340,
+          "s_per_mob": 18.074318057742783,
+          "status": "COMPLETE"
+        }
+      ]
+    }
+  },
+  "base_s_per_mob": 19.02888801859612,
+  "build_identity_sha256": "360a386f047335f12524feadcbc7b7d9d8d4bac717602b021c2eeb68f6671b4b",
+  "catalogue_sha256": "d7d5a8519b227a761312bf4d1da56955b58184239a5a2ed7a06f84eb134dc854",
+  "mobs": 100
+}

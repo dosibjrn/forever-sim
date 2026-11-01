@@ -1,0 +1,20 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_cold_full_point_frontier_reserves_sourced_max_rank_control_witness ____
+
+    def test_cold_full_point_frontier_reserves_sourced_max_rank_control_witness():
+        from src.v2.source_bounded_joint_frontier import bounded_full_point_talent_frontier
+        from src.game.talents import validate_talent_selection
+        ir,_=_compiled()
+        allocations,ledger=bounded_full_point_talent_frontier(ir,level=30,
+            max_frontier=64,bonus_talent_points=5)
+        assert len(allocations)<=64
+>       assert any(a.get('improved_starfire')==5 for a in allocations)
+E       assert False
+E        +  where False = any(<generator object test_cold_full_point_frontier_reserves_sourced_max_rank_control_witness.<locals>.<genexpr> at 0x7f8a12e43b90>)
+
+tests/test_wf430_source_compound_stun_tdd.py:147: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_wf430_source_compound_stun_tdd.py::test_cold_full_point_frontier_reserves_sourced_max_rank_control_witness - assert False
+ +  where False = any(<generator object test_cold_full_point_frontier_reserves_sourced_max_rank_control_witness.<locals>.<genexpr> at 0x7f8a12e43b90>)
+1 failed in 1.81s

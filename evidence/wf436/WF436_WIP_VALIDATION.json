@@ -1,0 +1,45 @@
+{
+  "source_parent": "WF435_SOURCE_MIXED_STAT_PAID_100MOB_TDD_ON_WF434.zip",
+  "type": "SOURCE_ONLY_WIP_NOT_ACCEPTED",
+  "checkpoint": "Druid L30 Talented ON 26pt P2",
+  "accepted_checkpoints": "0/148",
+  "working_gate": "P2 RED",
+  "source_build": "1.60.1.70338",
+  "changes": [
+    "Source-typed atomic Natural Instinct R1 and R2 both clauses: melee critical bonus and dynamic intellect-derived healing",
+    "Critical damage executor now includes weapon/action auto-attacks and excludes bleed periodic crit",
+    "Current live healing power from actor primary stat applied to direct and carried HoT ticks",
+    "Source-structural witness fallback tries actually executable earlier-row fillers, with unchanged structural legality and full real effect application checks"
+  ],
+  "p2_before_WF435": {
+    "reachable_executor_missing": 18,
+    "allocation_application_failures": 23
+  },
+  "p2_now": {
+    "reachable_executor_missing": 16,
+    "allocation_application_failures": 16,
+    "prerequisite_or_curve_uncertainties": 2,
+    "green": false
+  },
+  "validation": {
+    "targeted_regressions_pass": 37,
+    "targeted_regressions_log": "WF436_REGRESSIONS_FINAL.log",
+    "strict_gate_exit_code": 1,
+    "full_suite": false,
+    "100mob_two_build_ablation": "both 100/100 kills complete, R2 player damage > R1, same rounded GCD time",
+    "known_unrelated_cross_regression": "WF432 test_cold_search_independently_generates_source_charge_apl_witness FAIL on reconstructed WF435: optimizer selects improved_wrath witness rather than charge label; NOT repaired here"
+  },
+  "protected_plan_sha256": {
+    "PROCESS_WOW_FOREVER_v2_2026-10-15.md": "f605840ba8321cf0494a2fe813a596fd873a800e1c4f9a05b65bf69281345a5d",
+    "OVERALL_PLAN_WOW_FOREVER_v5_APPROVED_2026-10-15.md": "841162fa6817c8c8b20e2804c5e77f9589d167765ad537bdad6daa508e1e5e5a"
+  },
+  "source_file_sha256": {
+    "src/game/data/forever/source_rank_promotion.py": "7a6f1e584ed94fc7dd9460da6f03076b1c8898a0c03ac928e6d4eb33df84c1dd",
+    "src/game/data/forever/source_checkpoint_talent_stage.py": "8f96eab4258fcc5a068b402544e83280819e49c43ca317b61a942c0fa276bfcf",
+    "src/game/data/forever/checkpoint_p2_execution_gate.py": "38d5543e431c185ab1aea93fac1e87c13d33734465d0cbb20ba4ffebab802f66",
+    "src/game/talents.py": "e340d517bf1d165ab2df01b92ea6a8afe481bc7c5775baa3fc663ba28ea40bfe",
+    "src/game/runtime/simulator.py": "0a9e3b78572300f653f45bcded2538cf7148e1379851dec20424316d58649bc1",
+    "tests/test_wf430_p2_whole_gate_26point_tdd.py": "fea47e4efbc80ad8d7b60aaecf84ff53c78ca034e456ab577016a7c14c87b054",
+    "tests/test_wf436_source_natural_instinct_runtime_tdd.py": "7551dce81e694da3b44e91de3d6f93ebf57c97877267873e6055873ce518b24a"
+  }
+}

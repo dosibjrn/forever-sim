@@ -1,0 +1,90 @@
+[
+  {
+    "rank": 0,
+    "source_db_sha256": "b06fdc26b042f6b2c3a493298875c695440abc59a3e48962585058fa5a48f35c",
+    "source_build": "1.60.1.70338",
+    "status": "COMPLETE",
+    "mob_completed": 100,
+    "packs": 50,
+    "seconds_per_mob": 8.66647465437789,
+    "wall_s": 0.17244248899999093,
+    "cpu_s": 0.17245101500000004,
+    "events": 2300,
+    "combat_s": 642.8571428571432,
+    "recovery_s": 223.79032258064586,
+    "root_casts": 100,
+    "incoming_enabled": true,
+    "spatial_mode": "simultaneous_2d_pack",
+    "source_effect_gaps": [
+      "root_break_on_damage_or_heartbeat",
+      "periodic_can_crit"
+    ],
+    "certifying_P4": false
+  },
+  {
+    "rank": 1,
+    "source_db_sha256": "b06fdc26b042f6b2c3a493298875c695440abc59a3e48962585058fa5a48f35c",
+    "source_build": "1.60.1.70338",
+    "status": "COMPLETE",
+    "mob_completed": 100,
+    "packs": 50,
+    "seconds_per_mob": 8.66647465437789,
+    "wall_s": 0.151047425999991,
+    "cpu_s": 0.15105571399999973,
+    "events": 2300,
+    "combat_s": 642.8571428571432,
+    "recovery_s": 223.79032258064586,
+    "root_casts": 100,
+    "incoming_enabled": true,
+    "spatial_mode": "simultaneous_2d_pack",
+    "source_effect_gaps": [
+      "root_break_on_damage_or_heartbeat",
+      "periodic_can_crit"
+    ],
+    "certifying_P4": false
+  },
+  {
+    "rank": 2,
+    "source_db_sha256": "b06fdc26b042f6b2c3a493298875c695440abc59a3e48962585058fa5a48f35c",
+    "source_build": "1.60.1.70338",
+    "status": "COMPLETE",
+    "mob_completed": 100,
+    "packs": 50,
+    "seconds_per_mob": 8.66647465437789,
+    "wall_s": 0.17699751899999683,
+    "cpu_s": 0.17700624500000028,
+    "events": 2300,
+    "combat_s": 642.8571428571432,
+    "recovery_s": 223.79032258064586,
+    "root_casts": 100,
+    "incoming_enabled": true,
+    "spatial_mode": "simultaneous_2d_pack",
+    "source_effect_gaps": [
+      "root_break_on_damage_or_heartbeat",
+      "periodic_can_crit"
+    ],
+    "certifying_P4": false
+  },
+  {
+    "rank": 2,
+    "source_db_sha256": "b06fdc26b042f6b2c3a493298875c695440abc59a3e48962585058fa5a48f35c",
+    "source_build": "1.60.1.70338",
+    "status": "COMPLETE",
+    "mob_completed": 100,
+    "packs": 50,
+    "seconds_per_mob": 8.66647465437789,
+    "wall_s": 0.16911924900000486,
+    "cpu_s": 0.16910552499999998,
+    "events": 2300,
+    "combat_s": 642.8571428571432,
+    "recovery_s": 223.79032258064586,
+    "root_casts": 100,
+    "incoming_enabled": true,
+    "spatial_mode": "simultaneous_2d_pack",
+    "source_effect_gaps": [
+      "root_break_on_damage_or_heartbeat",
+      "periodic_can_crit"
+    ],
+    "certifying_P4": false
+  }
+]

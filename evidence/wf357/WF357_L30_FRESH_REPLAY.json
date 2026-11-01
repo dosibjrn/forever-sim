@@ -1,0 +1,54 @@
+{
+  "checkpoint": "druid:L30:unrestricted",
+  "p3": "PARTIAL_NOT_ACCEPTED",
+  "p4_p5_p6": "NOT_RUN",
+  "policy": {
+    "exit_action_id": "cancel_mode:cat",
+    "health_fraction": 0.25,
+    "hot_action_id": null,
+    "hot_min_missing_health_fraction": 0.0,
+    "mana_fraction": 0.1,
+    "reentry_action_id": "cat_form:768"
+  },
+  "result": {
+    "between_pull_full_recoveries": 16,
+    "between_pull_hot_casts": 0,
+    "between_pull_runtime_events": 124,
+    "carried_hot_heals_in_combat": 44,
+    "carried_hot_ticks_at_pull": 44,
+    "combat_s": 1460.5,
+    "continuous_actor_state": true,
+    "count": 100,
+    "elapsed_cpu_s": 4.367801562,
+    "elapsed_wall_s": 4.368039987999964,
+    "end_to_end_child_cpu_s": 4.9598884519999995,
+    "end_to_end_child_wall_s": 4.960096557999918,
+    "events": 10203,
+    "maintenance_casts": 4,
+    "maintenance_runtime_events": 24,
+    "maintenance_s": 7.5,
+    "mean_s_per_mob": 16.643524161926152,
+    "outer_wall_s": 6.045392332999995,
+    "recovery_policy": {
+      "exit_action_id": "cancel_mode:cat",
+      "health_fraction": 0.25,
+      "hot_action_id": null,
+      "hot_min_missing_health_fraction": 0.0,
+      "mana_fraction": 0.1,
+      "reentry_action_id": "cat_form:768"
+    },
+    "recovery_s": 196.35241619261495,
+    "skipped_satisfied_mode_prefixes": 97,
+    "source_only": true,
+    "status": "COMPLETE",
+    "total_s": 1664.352416192615
+  },
+  "source_db_sha256": "63c56b316c9ed6ba175c5f895870c372fb553fc78962fc8ee15c1e8cd5423244",
+  "stage_sha256": "cad420c3e76ec83476fbf54c6fe6581eae5f7a7f5cd219441e66659ac3bf7142",
+  "swaps": {
+    "chest": 7374,
+    "hands": 4107,
+    "shoulder": 2278,
+    "weapon": 279844
+  }
+}

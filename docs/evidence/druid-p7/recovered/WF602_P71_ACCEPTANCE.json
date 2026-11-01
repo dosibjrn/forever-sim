@@ -1,0 +1,20 @@
+{
+  "gate": "P7.1",
+  "class": "Druid",
+  "spec": "Feral Cat",
+  "level": 60,
+  "reference_id": "c31e596c-a30c-4b99-8789-0848fede6ea6",
+  "engine": "gsim-2D live world -> WF598 native MythicSim-Go session -> gsim-2D",
+  "reference_dps": 811.0237260012982,
+  "e2e_dps_mean": 819.6066985490899,
+  "e2e_std": 29.994768438465982,
+  "e2e_n": 3000,
+  "delta_dps": 8.582972547791655,
+  "one_sided_95_lower_delta_dps": 7.5702755883143436,
+  "accepted_backend": "hybrid",
+  "hybrid_status": "PASS",
+  "source_revision": "a667dce",
+  "causal_2d_world_test": "PASS 3/3 LIVE",
+  "full_P71": "PASS",
+  "checkpoint_P1_to_P6": "NOT_AUDITED_BY_THIS_RELEASE"
+}

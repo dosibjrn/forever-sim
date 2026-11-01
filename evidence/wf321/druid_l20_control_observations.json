@@ -1,0 +1,23 @@
+{
+  "schema": "forever_public_control_observation_v1",
+  "observations": [
+    {
+      "class_key": "druid", "spell_id": 5211, "name": "Bash",
+      "source_url": "https://www.wowhead.com/forever/spell=5211/bash",
+      "index_batch_id": "20261008T145657Z",
+      "observed_at": "2026-10-13T09:00:00Z",
+      "learn_level": 14,
+      "rank": 1,
+      "cost": "10 Rage",
+      "cast": "Instant",
+      "cooldown": "1 min",
+      "gcd": "1.5 sec",
+      "form_requirement": "Bear Form, Dire Bear Form",
+      "required_mode_id": "bear",
+      "effect_text": "Stuns the target for 2 sec.",
+      "source_description": "WoWhead Forever spell page read through web results, not an independently saved HTML snapshot",
+      "source_build": "current_public_page_build_unspecified",
+      "acquisition": "trainer_entry_indexed; availability not separately proven in client"
+    }
+  ]
+}

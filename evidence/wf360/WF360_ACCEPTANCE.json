@@ -1,0 +1,61 @@
+{
+  "accepted_checkpoints": "2/148",
+  "checkpoint": "druid:L30:unrestricted",
+  "old_legacy_used_as_seed": false,
+  "ports": {
+    "P1": {
+      "covered": 86,
+      "legal": 86,
+      "status": "PASS"
+    },
+    "P2": {
+      "covered": 117,
+      "legal": 117,
+      "status": "PASS"
+    },
+    "P3": {
+      "covered": 1974,
+      "legal": 1974,
+      "legal_slots": 18,
+      "status": "PASS",
+      "top5_legal_packages": 83,
+      "unknown_effect_items": 73
+    },
+    "P4": {
+      "actual_s_per_mob": 16.709756866643524,
+      "attempts": 188,
+      "cpu_s": 23.404003428,
+      "events": 81326,
+      "predicted_s_per_mob": 20.947419708974053,
+      "status": "PASS",
+      "unique": 29,
+      "wall_s": 24.242595759999972
+    },
+    "P5": {
+      "actual_s_per_mob": 16.709756866643524,
+      "attempts": 1206,
+      "cpu_s": 60.563059648999996,
+      "events": 220613,
+      "predicted_s_per_mob": 20.947419708974053,
+      "relative_unique_growth_percent": 86.20689655172413,
+      "status": "PASS",
+      "unique": 54,
+      "wall_s": 61.40334150399997
+    },
+    "P6": {
+      "T300_s_per_mob": 16.709756866643524,
+      "T30_s_per_mob": 16.709756866643524,
+      "relative_percent": 0.0,
+      "status": "PASS"
+    }
+  },
+  "recovery_equal": true,
+  "release": "WF360",
+  "source_db_sha256": "63c56b316c9ed6ba175c5f895870c372fb553fc78962fc8ee15c1e8cd5423244",
+  "source_equal": true,
+  "uncertainty": [
+    "73 source items have unresolved effects and are L0-only; not scored as zero",
+    "two-mob predictions are uncertain; P6 uses independent actual 100-mob replays",
+    "empirical 10x saturation does not prove a global optimum"
+  ]
+}

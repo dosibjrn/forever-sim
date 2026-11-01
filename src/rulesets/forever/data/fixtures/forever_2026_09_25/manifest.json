@@ -1,0 +1,87 @@
+{
+  "classes": [
+    "mage",
+    "paladin",
+    "druid",
+    "warrior"
+  ],
+  "counts": {
+    "druid": {
+      "source_roster_spells": 60,
+      "source_roster_talents": 51,
+      "spell_rank_records": 12,
+      "talent_records": 8,
+      "unresolved_records": 92
+    },
+    "mage": {
+      "source_roster_spells": 70,
+      "source_roster_talents": 54,
+      "spell_rank_records": 13,
+      "talent_records": 39,
+      "unresolved_records": 77
+    },
+    "paladin": {
+      "source_roster_spells": 53,
+      "source_roster_talents": 52,
+      "spell_rank_records": 13,
+      "talent_records": 36,
+      "unresolved_records": 59
+    },
+    "warrior": {
+      "source_roster_spells": 42,
+      "source_roster_talents": 53,
+      "spell_rank_records": 1,
+      "talent_records": 3,
+      "unresolved_records": 91
+    }
+  },
+  "file_sha256": {
+    "druid/roster.json": "51bec818a71fb4571404b571522109ed96dc03058a0061f163053b211152861b",
+    "druid/spells.json": "19d8abe59c0266f53fc92633fee9a8f8cf65cbcc6d2884943b3b438c70468aa1",
+    "druid/talents.json": "5e9059ac865122917634293940d87a78499931d88ef2803ff830e80d31e63bab",
+    "druid/unresolved.json": "b95250cb5dd8ef65088c5dd8b3245eea64426c13aa2476db6aa26931c9c6c4c1",
+    "mage/roster.json": "2cfa25fc213ff4150f7a7d5d6ef365510b59feb57522cb1bb2017847bb75d154",
+    "mage/spells.json": "99bca6f7e06c7a9f813683cacfb6aad272e2fcac91c3f605731e1588dacf9903",
+    "mage/talents.json": "48ef5398ee1853639595afa04e7585ba55da8053841facf70e59b5203aa78abd",
+    "mage/unresolved.json": "0510e18452bbeb13dac9e0e15d2b10ceff18c1c2645a35e054b199099f521ada",
+    "paladin/roster.json": "7e5c8df23b453429c9f5e5e677ac97e84ce92c373e67116028978701e7c14a6f",
+    "paladin/spells.json": "8d517e92b37b02ca4706f68be34325422707557e404ca1f684dab8fe0f633b45",
+    "paladin/talents.json": "7878cfc13d9285276b023b711d50106379a41caf79e353710295873084262f19",
+    "paladin/unresolved.json": "9a91ac757a1aa98489818466ba3a5773ba19997781c6e7bfdc30fd5535b88a1c",
+    "warrior/roster.json": "ec9d72697d935b532c863653053a0232feef222dfc5acb8f433426bc1642a046",
+    "warrior/spells.json": "6307b76e00d7e8d591a6892682ee5acbbe5baa6a14205923abeeac5f69714f80",
+    "warrior/talents.json": "803fcb1081697f38f513ea4f4ad1e45fcf707a0460cac7bfefd85e8ac40dc82a",
+    "warrior/unresolved.json": "40d5300642545c1a4e2a8bc8d7c51b55515618e34c1f4394babe7a350e272329"
+  },
+  "normalized_fingerprint": "f5de4f5e8c37967dd3aaed632033552a78d1c026f70538f86b49e622a9c06b25",
+  "parser_version": "forever-source-v1",
+  "providers": [
+    "wowhead",
+    "talentsforever"
+  ],
+  "retrieved_at": "2026-09-25",
+  "ruleset": "forever",
+  "schema_version": 1,
+  "snapshot_id": "forever_2026_09_25",
+  "source_index_urls": [
+    "https://www.wowhead.com/forever/spells",
+    "https://talentsforever.com/data.json"
+  ],
+  "source_metadata": {
+    "talentsforever": {
+      "generated": "2026-09-24",
+      "note": "Client-derived roster/icon snapshot; public export currently contains mixed beta build metadata, so no single build is asserted here."
+    },
+    "wowhead": {
+      "build": null,
+      "note": "Exact entity pages audited 2026-09-25; build not asserted.",
+      "patch": "1.60.1"
+    }
+  },
+  "warnings": [
+    "Multi-rank legacy talent anchors do not imply complete rank-ID mapping.",
+    "Unresolved source entities are explicit per class.",
+    "M43 normalizes a bounded set of source effects; unsupported/server-scripted semantics remain explicit overrides.",
+    "Warrior is an M45 thin onboarding proof only; its source coverage is explicit but mechanics fidelity is intentionally low."
+  ]
+}
