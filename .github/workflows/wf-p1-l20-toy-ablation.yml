@@ -22,6 +22,20 @@ jobs:
         env:
           WOW_FOREVER_BUILD_AS_OF: '2026-10-17'
         run: python -m pytest -q tests/test_wf_p1_toy_ablation.py
+      - name: Execute EVERY source-legal Druid L20 ability once against genuine gsim
+        env:
+          WOW_FOREVER_BUILD_AS_OF: '2026-10-17'
+        run: |
+          python tools/wf_p1_toy_ablation.py --backend gsim-diagnostic > /tmp/p1-l20-toy.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/p1-l20-toy.json'))
+          print(f"source-legal spell probes: {d['observed']}/{d['checked']} observational gsim differences")
+          for r in d['results']:
+              print(f"  {r['spell_id']} {r['name']}: {r['status']}")
+          assert d['checked'] > 0 and d['observed'] > 0
+          assert d['p1_certified'] is False and d['hybrid_rust_executed'] is False
+          PY
       - name: Hybrid Rust cannot claim PASS without real native source-action support
         run: |
           if python tools/wf_p1_toy_ablation.py --backend hybrid-rust; then
