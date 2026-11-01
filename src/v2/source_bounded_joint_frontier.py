@@ -372,7 +372,11 @@ def source_spec_talent_frontier(ir, candidates, *, tree_key, minimum_points,
                 and _is_executable_full_source_allocation(ir, allocation,
                     level=level, bonus_talent_points=bonus_talent_points))
 
-    seeds = [dict(a) for a in candidates if legal(a)]
+    # Source-rank witnesses must precede incoming optimizer seeds: otherwise
+    # a full bounded input frontier can evict every independently sourced rank
+    # before P2 ever evaluates it. Preserve legal incoming seeds afterward.
+    candidate_seeds = [dict(a) for a in candidates if legal(a)]
+    seeds = []
     # One unrestricted beam allocation is not adequate spec exploration.
     # A named spec constrains the full build, not the set of testable ranks.
     # Witness *every* executable rank in every source tree, including outside
@@ -387,6 +391,7 @@ def source_spec_talent_frontier(ir, candidates, *, tree_key, minimum_points,
                 minimum_tree_points=minimum_points)
             if proposal and legal(proposal):
                 seeds.append(proposal)
+    seeds.extend(candidate_seeds)
     if not seeds:
         raise ValueError('NO_LEGAL_SOURCE_SPEC_FULL_POINT_ALLOCATION')
 
