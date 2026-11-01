@@ -34,6 +34,20 @@ def test_same_prepared_source_candidate_runs_100_real_2d_mobs_with_incoming_and_
     assert result['mean_s_per_mob']>0
 
 
+def test_source_pack_actions_are_proven_by_executed_runtime_events():
+    # Actual sourced Druid + 2D CombatRuntime, not a mock or proxy policy.
+    from src.v2.source_persistent_joint_finalists import evaluate_persistent_candidate
+    ir,stage=_scenario()
+    candidate=prepare_candidate(class_key='druid',level=30,stage=stage,
+        source_ir=ir,allow_partial_gear_stats=True)
+    result=evaluate_persistent_candidate(candidate,level=30,mobs=2,pack_size=2)
+    assert result['status']=='COMPLETE', result
+    assert result['count']==2
+    # A completed pack must expose the executed source actions; otherwise
+    # independent spec-mode validation falsely rejects a legal 100-mob replay.
+    assert sum(result['source_action_counts'].values())>0
+
+
 def test_2d_four_axis_joint_search_uses_real_100mob_finalists_not_only_screens():
     ir,stage=_scenario()
     result=search_bounded_joint_frontier(class_key='druid',level=30,

@@ -162,6 +162,12 @@ def _evaluate_concurrent_source_packs(candidate, *, level, mobs, pack_size,
     from collections import Counter
     recovery_action_counts=dict(Counter(
         action for p in result.pulls for action in p['source_recovery_actions']))
+    # Preserve ACTUALLY selected source actions from every paid pack. Without
+    # this, the independent 100-mob spec-mode replay sees an empty action
+    # receipt and falsely rejects otherwise completed sourced builds.
+    source_action_counts=dict(sorted(Counter(
+        str(action['action_id']) for p in result.pulls
+        for action in p['selected_actions']).items()))
     if ((max_total_events is not None and event_count > max_total_events)
             or (max_cpu_s is not None and cpu_elapsed > max_cpu_s)
             or (max_wall_s is not None and wall_elapsed > max_wall_s)):
@@ -186,6 +192,7 @@ def _evaluate_concurrent_source_packs(candidate, *, level, mobs, pack_size,
         'maintenance_runtime_events':maintenance_events,
         'between_pull_runtime_events':between_events,
         'source_recovery_action_counts':recovery_action_counts,
+        'source_action_counts':source_action_counts,
         'events':event_count,'elapsed_wall_s':wall_elapsed,
         'elapsed_cpu_s':cpu_elapsed}
 
