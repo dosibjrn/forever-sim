@@ -56,7 +56,8 @@ def _effect_change(before, after):
     ) if hasattr(before,name) and hasattr(after,name))
 
 
-def _action_runtime_probe(ir, action, *, observe_periodic=False):
+def _action_runtime_probe(ir, action, *, observe_periodic=False,
+                          observe_controls=False, target_id='p2_fixture'):
     """Execute real action on a live actor/target; deterministic fixture.
 
     Only differences that are actually observed in runtime count. No event
@@ -73,7 +74,7 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False):
         if mode is not None and candidate.current_mode_id!=mode:
             try:candidate.transition_mode(mode)
             except (ValueError,KeyError,AttributeError):continue
-        target=TargetState.with_health('p2_fixture',100000.0,armor=0.0)
+        target=TargetState.with_health(target_id,100000.0,armor=0.0)
         if action_eligibility(action=action,actor=candidate,target=target).eligible:
             actor=candidate
             break
@@ -96,7 +97,7 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False):
     if 'health' in actor.resources:
         actor.resource_capacity['health']=max(float(actor.resource_capacity.get('health',0)),10000.)
         actor.resources['health']=actor.resource_capacity['health']-1000.
-    rt=CombatRuntime(actor=actor,target=TargetState.with_health('p2_fixture',100000.0, armor=0.0))
+    rt=CombatRuntime(actor=actor,target=TargetState.with_health(target_id,100000.0, armor=0.0))
     if not action_eligibility(action=action,actor=actor,target=rt.target).eligible:return None
     before=dict(actor.resources)
     try:
@@ -110,7 +111,19 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False):
     events=[{'kind':e.kind,'amount':float(e.payload.get('amount',0.0)),
              'periodic':bool(e.payload.get('periodic'))}
             for e in rt.trace if e.kind in ('Damage','Heal')]
-    return {'completion_s':float(end), 'gcd_ready_s':float(actor.gcd_ready_s),'spent':{
+    controls=([{'control_id':str(e.payload.get('control_id')),
+                'duration_s':float(e.payload.get('duration_s',0.)),
+                'proc_chance':float(e.payload.get('proc_chance',0.)),
+                'proc_roll':e.payload.get('proc_roll'),
+                'proc_triggered':e.payload.get('proc_triggered') is True,
+                'applied':e.payload.get('applied') is True,
+                'prevents_enemy_actions':e.payload.get('prevents_enemy_actions') is True,
+                'breaks_on_damage':e.payload.get('breaks_on_damage') is True}
+               for e in rt.trace if e.kind=='ControlApplied']
+              if observe_controls else [])
+    return {'controls':controls,
+            'active_controls':(dict(rt.target.active_controls) if observe_controls else {}),
+            'completion_s':float(end), 'gcd_ready_s':float(actor.gcd_ready_s),'spent':{
                 c.resource_id:round(before.get(c.resource_id,0)-actor.resources.get(c.resource_id,0),6)
                 for c in action.costs},
             'damage':sum(e['amount'] for e in events if e['kind']=='Damage'),
@@ -593,6 +606,120 @@ def _gcd_runtime_witness(before, after, mod):
             'after_gcd_ready_s':new_run['gcd_ready_s']}
 
 
+def _control_proc_runtime_witness(before, after, mod):
+    """Prove sourced control-proc rank deltas with actual CombatRuntime rolls.
+
+    Keep the baseline action's other effects, cast time and actor state fixed.
+    Only replace the proc chance. This avoids a simultaneous cast-time talent
+    modifier changing the event timestamp (and hence its deterministic roll).
+    A mere appended ControlEffect or lucky unrelated stun is not a witness.
+    """
+    from src.game.model.ir import ControlEffect
+
+    if mod.kind != 'action_control_proc':
+        return None
+    source=mod.provenance
+    control_id=str(source.get('control_id') or '')
+    if not control_id:
+        return None
+    try:
+        duration=float(source['duration_s'])
+        delta=float(mod.value)
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not 0. < delta <= 1. or not 0. < duration <= 60.:
+        return None
+    flags=('prevents_enemy_actions','breaks_on_damage')
+    if any(type(source.get(flag)) is not bool for flag in flags):
+        return None
+
+    previous={a.id:a for a in before.actions}
+    checked=[]
+    sample=None
+    for action in after.actions:
+        old=previous.get(action.id)
+        if old is None or not any(
+                isinstance(p,Mapping) and p.get('stage')=='talent_modifier'
+                and p.get('kind')=='action_control_proc'
+                for p in action.provenance):
+            continue
+        newer=[(i,e) for i,e in enumerate(action.effects)
+               if isinstance(e,ControlEffect) and e.control_id==control_id]
+        older=[(i,e) for i,e in enumerate(old.effects)
+               if isinstance(e,ControlEffect) and e.control_id==control_id]
+        if not newer:
+            continue
+        if len(newer)!=1 or len(older)>1:
+            return None
+        index,new_effect=newer[0]
+        old_effect=older[0][1] if older else None
+        old_chance=float(old_effect.proc_chance) if old_effect else 0.
+        if isclose(float(new_effect.proc_chance),old_chance,abs_tol=1e-10):
+            continue
+        if (not isclose(float(new_effect.proc_chance)-old_chance,delta,
+                        rel_tol=1e-6,abs_tol=1e-8)
+                or not isclose(float(new_effect.duration_s),duration,abs_tol=1e-8)
+                or any(getattr(new_effect,flag)!=source[flag] for flag in flags)
+                or (old_effect is not None and
+                    (not isclose(float(old_effect.duration_s),duration,abs_tol=1e-8)
+                     or any(getattr(old_effect,flag)!=source[flag] for flag in flags)))):
+            return None
+        isolated=list(old.effects)
+        if old_effect is None:
+            if index!=len(isolated):
+                return None
+            isolated.append(new_effect)
+        else:
+            if index!=older[0][0]:
+                return None
+            isolated[index]=new_effect
+        checked.append(action.id)
+        if sample is None:
+            sample=(old,replace(old,effects=tuple(isolated)),
+                    old_chance,float(new_effect.proc_chance))
+    if not checked or sample is None:
+        return None
+
+    baseline,with_proc,old_chance,new_chance=sample
+    # Vary only target identity, a legitimate source-independent encounter
+    # parameter used by the production event-keyed RNG. Do not force a proc
+    # chance to 100%, synthesize a ControlApplied event, or accept a non-proc.
+    for seed in range(1,257):
+        target_id=f'p2_proc_target_{seed}'
+        x=_action_runtime_probe(before,baseline,observe_controls=True,
+                                target_id=target_id)
+        y=_action_runtime_probe(before,with_proc,observe_controls=True,
+                                target_id=target_id)
+        if x is None or y is None:
+            return None
+        old_events=[e for e in x['controls'] if e['control_id']==control_id]
+        new_events=[e for e in y['controls'] if e['control_id']==control_id]
+        if len(new_events)!=1 or len(old_events)>1:
+            return None
+        event=new_events[0]
+        if (not isclose(event['proc_chance'],new_chance,abs_tol=1e-8)
+                or not isclose(event['duration_s'],duration,abs_tol=1e-8)
+                or any(event[flag]!=source[flag] for flag in flags)):
+            return None
+        if old_events:
+            old_event=old_events[0]
+            if (not isclose(old_event['proc_chance'],old_chance,abs_tol=1e-8)
+                    or old_event['proc_roll']!=event['proc_roll']):
+                return None
+        if (event['proc_triggered'] and event['applied']
+                and not any(e['applied'] for e in old_events)
+                and y['active_controls'].get(control_id,0.)>y['completion_s']
+                and x['active_controls'].get(control_id,0.)<=x['completion_s']):
+            return {'probe':'paired_production_control_proc',
+                    'action_id':baseline.id,'control_id':control_id,
+                    'checked_ir_actions':checked,
+                    'before_chance':old_chance,'after_chance':new_chance,
+                    'duration_s':duration,'target_id':target_id,
+                    'proc_roll':event['proc_roll'],
+                    'runtime_control_applied':True}
+    return None
+
+
 def _behavior_fixtures(before, after, modifiers):
     """Require an observed L2 effect for *each* rank modifier, not just one.
 
@@ -654,6 +781,8 @@ def _behavior_fixtures(before, after, modifiers):
             match=_mode_entry_resource_witness(before,after,mod)
         elif kind=='crit_chance_pct':
             match=_isolated_crit_witness(before,after,mod)
+        elif kind=='action_control_proc':
+            match=_control_proc_runtime_witness(before,after,mod)
         elif kind in ('resource_cost_flat','resource_cost_pct'):
             match=_isolated_resource_cost_witness(before,after,mod)
         elif kind in action_kinds:
