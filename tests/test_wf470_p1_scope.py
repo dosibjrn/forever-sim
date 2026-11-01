@@ -75,6 +75,8 @@ def test_real_l30_spellbook_observations_resolve_source_roles_without_fake_ir():
     _,meta=_source_legality(ROOT,ir,'druid',30,DEFAULT_DB)
     facts=_load_spellbook_observed_scope_facts(ROOT,meta['spellbook_file'],rows)
     assert facts[740]['roles']==['healing']      # Tranquility: not P1 combat scope
+    row740 = next(row for row in rows if row['spell_id'] == 740)
+    assert _effect_scope(row740, facts, {})[0] == 'EXCLUDED'
     # Actual sourced Rejuvenation observation contains only an ambiguous
     # heal-or-absorb positive domain. Its healing-looking tooltip cannot
     # establish that it is *only* healing, so P1 must fail closed.
