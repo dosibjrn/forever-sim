@@ -69,6 +69,10 @@ func run(requestRaw []byte, sourceRevision string) error {
         if err!=nil {return fmt.Errorf("tick %d parse: %w",count,err)}
         if err:=validator.validate(tick);err!=nil {return fmt.Errorf("tick %d validate: %w",count,err)}
         if tick.PreviousWorldACKID!=previousACKID {return errors.New("WORLD_EFFECT_PREVIOUS_ACK_NOT_ECHOED")}
+        if err:=validateWorldTargetTransition(previousWorldTargetID,previousWorldTargetDead,tick.SelectedTargetID);err!=nil {
+            return fmt.Errorf("tick %d target transition: %w",count,err)
+        }
+        if previousWorldTargetID=="" {previousWorldTargetID=tick.SelectedTargetID}
         if previousWorldTargetDead {
             if tick.SelectedTargetID==previousWorldTargetID {
                 return errors.New("WORLD_NEXT_TARGET_MUST_DIFFER_FROM_DEAD_TARGET")
@@ -77,6 +81,7 @@ func run(requestRaw []byte, sourceRevision string) error {
                 return fmt.Errorf("tick %d retained native next target: %w",count,err)
             }
             previousWorldTargetDead=false
+            previousWorldTargetID=tick.SelectedTargetID
         }
         if _,err:=boundary.AdvanceToWorldTick(time.Duration(tick.NativeClockNS),200000);err!=nil {return fmt.Errorf("tick %d native advance: %w",count,err)}
         receipt,err:=boundary.ApplyWorldDistance(tick.Sequence,tick.NativePlayerIndex,tick.DistanceYards)
