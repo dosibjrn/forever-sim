@@ -1,5 +1,10 @@
 name: Bounded 2nd work source shortlist RED GREEN
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tests/test_wf437_fast_search_validation_tdd.py
+      - src/v2/source_bounded_joint_frontier.py
   push:
     branches:
       - work/2nd-distinct-paid-recovery-shortlist-20261101
