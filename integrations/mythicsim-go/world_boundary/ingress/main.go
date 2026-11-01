@@ -108,6 +108,9 @@ func run(requestRaw []byte, sourceRevision string) error {
                 NativeTargetLabel:effect.NativeTargetLabel,
                 Damage:effect.Damage,Landed:effect.Landed,
                 Crit:effect.Crit,Periodic:effect.Periodic,
+                NativeCasterType:effect.NativeCasterType,
+                NativeCasterUnitIndex:effect.NativeCasterUnitIndex,
+                NativeCasterLabel:effect.NativeCasterLabel,
             })
         }
         accepted,err:=checkWorldEffectACK(scanner.Bytes(),tick,proofs,os.Getpid())
