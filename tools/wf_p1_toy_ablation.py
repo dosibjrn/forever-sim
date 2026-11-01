@@ -143,7 +143,10 @@ def _run_one(ir, action, mode, *, muted: bool):
         source_actor_id=target.id, target_actor_id=actor.id,
         school="physical", raw_damage=MOB_HIT, hit_chance=1.,
         health_resource_id="health",
-        metadata={"representative_swing_s": SWING_SECONDS},
+        metadata={"representative_swing_s": SWING_SECONDS,
+                  "melee_ap_per_dps": 14.,
+                  "melee_ap_per_dps_source": "classic_melee_attack_power_per_dps_14",
+                  "scenario_status": "user_defined_toy_attack_fixture"},
         provenance=({"source": "user_defined_P1_toy_mob_fixture", "damage": MOB_HIT},),
     )
     # A queued-swing spell (Maul) only deals damage on the real next white
@@ -243,6 +246,12 @@ def run_gsim(root=ROOT, *, ability_id=None):
                         **outcome})
     if ability_id is not None and not results:
         raise ValueError("ABILITY_NOT_IN_L20_P1_UNIVERSE:" + str(ability_id))
+    non_relevant = [
+        {"spell_id": int(r["source_spell_id"]), "name": r["name"],
+         "status": "NOT_RELEVANT_TO_SIMULATION",
+         "scenario_id": r["scenario_id"], "reason": r["reason"]}
+        for r in source_p1.get("does_not_affect_sim", ())
+    ]
     return {"class": "druid", "level": 20, "spec": "feral-cat",
             "proof_kind": PROOF_KIND,
             "p1_certified": False, "hybrid_rust_executed": False,
@@ -250,6 +259,8 @@ def run_gsim(root=ROOT, *, ability_id=None):
             "checked": len(results),
             "note": "full source-legal druid spellbook, including caster/healing, not just Cat Form",
             "observed": sum(x["status"] == "EFFECT_OBSERVED" for x in results),
+            "not_relevant_count": len(non_relevant),
+            "not_relevant": non_relevant,
             "results": results}
 
 
