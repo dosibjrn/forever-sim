@@ -1,9 +1,6 @@
 # Large assets — Git LFS storage policy and migration
 
-**Current status:** `.gitattributes` is configured, but pre-existing normal Git
-blobs are **not** converted merely by adding attributes. Do not label these
-assets as migrated until the LFS pointers have been committed **and the actual
-objects have been uploaded and fetched back successfully**.
+**Current status (2026-11-01):** Public `forever-sim/main` has all **14** audited large-asset LFS entries (11 SQLite + 3 historical JSON); original hydrated payloads were uploaded to GitHub LFS. A fresh public Actions checkout (`actions/checkout@v4` with `lfs: true`) successfully hydrated all 14, and migration guards passed **13/13 tests** in [run #41255246045](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045). Original source snapshot was pinned at `mage-level-sim/main` `3bd46df7e3b95a8a3bfdc7455de659341a905826` and published in [commit `c04d089`](https://github.com/dosibjrn/forever-sim/commit/c04d0892060165663a937b0ece6c92cdb6591b7a). In Git, LFS pointers (not raw asset blobs) are expected; checkout hydration must be checked separately.
 
 ## Assets and scope
 
@@ -15,17 +12,16 @@ objects have been uploaded and fetched back successfully**.
   `evidence/wf353/WF353_L30_DISCOVERED_STAGES.json`.
 - All other JSON (config, ordinary run evidence, manifests) **remains text in
   Git** for diffability and review. No broad `*.json` LFS rule.
-- Audit at configuration time: **14 existing tracked candidates / 85,792,142 bytes**
+- Verified historical inventory: **14 LFS assets / 85,792,142 hydrated bytes**
   (11 SQLite databases + 3 large historical JSONs).
 - Untracked historical recovery file:
   `feral_wf607_wf613_recovered_runtime.zip` (10,635,591 bytes)
   is in the project file library, **not yet in GitHub or Git LFS**.
   Its compiled CLI may alternatively be retained as a pinned CI artifact.
 
-## Convert the already-tracked files (separate worker branch)
+## Historical conversion procedure (not required again for the current 14 assets)
 
-Requires a local clone or an environment with *authenticated* `git lfs push`.
-Use a clean worktree based on the main commit containing these attributes:
+For **new or unconverted assets only**, use a local clone or an environment with *authenticated* `git lfs push`. Do **not** rerun an existing-asset conversion on public main just because old Git history contains raw blobs. Use a clean worktree based on the intended conversion commit:
 
 ```bash
 git fetch origin
@@ -44,7 +40,7 @@ git commit -m "Data: convert existing large tracked assets to Git LFS"
 git push -u origin work/lfs-migrate-existing
 ```
 
-**Verification before PR merge:**
+**Verification checklist for any future large-asset PR** (the initial 14 assets have already passed a fresh checkout/hydration test):
 
 1. On GitHub, check the new commit stores *LFS pointers*, not original binary
    contents: `git show HEAD:data/forever/catalogue/forever_abilities.sqlite`
@@ -72,14 +68,13 @@ required remote LFS object.
 
 ```bash
 git lfs install
-git clone https://github.com/dosibjrn/mage-level-sim.git
-cd mage-level-sim
+git clone https://github.com/dosibjrn/forever-sim.git
+cd forever-sim
 git lfs pull
 git lfs ls-files
 ```
 
-Gate CI uses `actions/checkout@v4` with `lfs: true` so its source
-catalogues continue to load. Keep engine binary distribution via pinned
+Any gate CI using source catalogues must set `actions/checkout@v4` with `lfs: true` and verify that SQLite files open with the expected header, not just that pointers exist. Keep engine binary distribution via pinned
 GitHub Actions artifacts whenever possible.
 
 See [repository structure](REPOSITORY_STRUCTURE.md).
