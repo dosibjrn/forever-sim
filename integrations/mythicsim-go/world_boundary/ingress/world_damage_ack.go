@@ -63,6 +63,9 @@ type sourceNativeEventProof struct {
     Landed bool `json:"landed"`
     Crit bool `json:"crit"`
     Periodic bool `json:"periodic"`
+    NativeCasterType string `json:"native_caster_type,omitempty"`
+    NativeCasterUnitIndex int32 `json:"native_caster_unit_index,omitempty"`
+    NativeCasterLabel string `json:"native_caster_label,omitempty"`
 }
 
 func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventProof, pid int) (worldAckAccepted,error) {
@@ -87,6 +90,13 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
             event.SourceActionID=="" || event.Rank<0 ||
             event.NativeTargetIndex!=0 || event.NativeTargetUnitIndex<0 ||
             event.NativeTargetLabel=="" || !event.Landed ||
+            // The Go spell-result hook identifies a pet's owner, unique unit
+            // and label. No unowned or forged caster is admitted to world ACK.
+            (event.NativeCasterType!="" && event.NativeCasterType!="pet") ||
+            (event.NativeCasterType=="pet" &&
+                (event.NativeCasterUnitIndex<0 || event.NativeCasterLabel=="")) ||
+            (event.NativeCasterType=="" &&
+                (event.NativeCasterUnitIndex!=0 || event.NativeCasterLabel!="")) ||
             math.IsNaN(event.Damage) || math.IsInf(event.Damage,0) || event.Damage<=0 {
             return worldAckAccepted{},fmt.Errorf("WORLD_EFFECT_ACK_EVENT_MISMATCH:%d",index)
         }
