@@ -95,6 +95,40 @@ jobs:
             --request ../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json \
             --ticks 60 --require-native-spell-delta \
             --out ../evidence/gsim-go-paired-spell-metrics-not-ack.json
+      - name: Run saved Druid L60 Balance source request through real native/gsim ACK (NOT P7)
+        run: |
+          cd project
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json')
+          r=json.loads(p.read_text())
+          players=[pl for party in r['raid']['parties'] for pl in party['players']]
+          assert len(players)==1, 'DRUID_REFERENCE_MULTI_PLAYER'
+          assert players[0]['class']=='ClassDruid' and 'balanceDruid' in players[0], 'NOT_BALANCE_DRUID_REFERENCE'
+          assert len(r['encounter']['targets'])==1 and r['encounter']['targets'][0]['level']==63, 'NOT_SAVED_L63_ENCOUNTER'
+          assert int(r['simOptions']['randomSeed'])>0, 'ZERO_SOURCE_RANDOM_SEED'
+          print('SAVED_DRUID_L60_BALANCE_REFERENCE_ACCEPTED',p)
+          PY
+          python tools/wf_gsim_go_paired_native_spell_probe.py \
+            --binary ../gsim-go-world-ingress \
+            --request docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json \
+            --ticks 60 --require-native-spell-delta \
+            --out ../evidence/gsim-go-druid-l60-balance-saved-p73-paired.json
+          cd ..
+          python3 - <<'PY'
+          import json
+          r=json.load(open('evidence/gsim-go-druid-l60-balance-saved-p73-paired.json'))
+          assert r['status']=='NATIVE_SPELL_DELTA_AND_WORLD_ACK_NOT_DRUID_P7'
+          assert r['native_spell_counter_delta_observed'] and r['native_spell_action_ack']
+          assert not r['checkpoint_certified'] and not r['druid_l60_balance_proven']
+          for mode in ('near','far'):
+              scenario=r['scenarios'][mode]
+              assert len(scenario['observations'])==60
+              assert scenario['native_process_reused'] and scenario['gsim_runtime_real']
+              assert all(row['native_world_ack_confirmation']['ack_id'] for row in scenario['observations'])
+          print('REAL_SAVED_DRUID_SOURCE_PAIRED_CAUSAL_ACK_PASS_NOT_P7')
+          PY
       - name: Reject forged gsim world ACK in the real native Go process
         run: |
           cd project
