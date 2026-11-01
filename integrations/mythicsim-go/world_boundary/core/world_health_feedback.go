@@ -73,3 +73,43 @@ func (session *WorldBoundarySession) BeginNextWorldTarget() error {
     session.worldHealthLast=0
     return nil
 }
+
+
+// WorldActorStateSnapshot exposes the retained *native* actor state, not a
+// gsim reconstruction. A paid recovery witness compares these across lethal
+// ACK -> out-of-range recovery -> next source action without a native Reset.
+type WorldActorStateSnapshot struct {
+    NativeClockNS int64 `json:"native_clock_ns"`
+    CurrentHealth float64 `json:"current_health"`
+    CurrentMana float64 `json:"current_mana"`
+    CurrentEnergy float64 `json:"current_energy"`
+    CurrentRage float64 `json:"current_rage"`
+    GCDReadyAtNS int64 `json:"gcd_ready_at_ns"`
+    CooldownReadyAtNS []int64 `json:"cooldown_ready_at_ns"`
+    ActiveAuras []string `json:"active_auras"`
+}
+
+func (session *WorldBoundarySession) WorldActorState(playerIndex int) (WorldActorStateSnapshot,error) {
+    if session==nil || session.native==nil || session.awaitingWorld {
+        return WorldActorStateSnapshot{},errors.New("NATIVE_WORLD_ACTOR_STATE_NOT_READY")
+    }
+    sim:=session.native
+    if sim.Raid==nil || playerIndex<0 || playerIndex>=len(sim.Raid.AllPlayerUnits) ||
+        sim.Raid.AllPlayerUnits[playerIndex]==nil {
+        return WorldActorStateSnapshot{},errors.New("NATIVE_WORLD_ACTOR_INDEX_INVALID")
+    }
+    unit:=sim.Raid.AllPlayerUnits[playerIndex]
+    state:=WorldActorStateSnapshot{
+        NativeClockNS:int64(sim.CurrentTime),
+        CurrentHealth:unit.CurrentHealth(),
+        CooldownReadyAtNS:make([]int64,0,len(unit.cdTimers)),
+        ActiveAuras:make([]string,0),
+    }
+    if unit.GCD!=nil {state.GCDReadyAtNS=int64(unit.GCD.ReadyAt())}
+    if unit.HasManaBar() {state.CurrentMana=unit.CurrentMana()}
+    if unit.HasEnergyBar() {state.CurrentEnergy=unit.CurrentEnergy()}
+    if unit.HasRageBar() {state.CurrentRage=unit.CurrentRage()}
+    for _,timer:=range unit.cdTimers {state.CooldownReadyAtNS=append(state.CooldownReadyAtNS,int64(timer.ReadyAt()))}
+    for _,aura:=range unit.auras {if aura.IsActive() {state.ActiveAuras=append(state.ActiveAuras,aura.Label)}}
+    return state,nil
+}
