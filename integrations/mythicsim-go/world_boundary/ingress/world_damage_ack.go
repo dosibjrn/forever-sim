@@ -97,11 +97,15 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
         math.Abs(applied-ack.AppliedNativeDamage)>1e-6 {
         return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_DAMAGE_MISMATCH")
     }
-    healthPresent:=ack.WorldTargetHealthBefore!=nil || ack.WorldTargetHealthAfter!=nil || ack.WorldTargetMaxHealth!=nil
-    if healthPresent {
-        if ack.WorldTargetHealthBefore==nil || ack.WorldTargetHealthAfter==nil || ack.WorldTargetMaxHealth==nil {
-            return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_FIELDS_INCOMPLETE")
-        }
+    // The native scheduler MUST consume the gsim target's real HP on every
+    // tick, including no-effect ticks. Without these fields, a valid event
+    // transcript/hash could ACK damage while leaving native execute/APL
+    // decisions on stale encounter health.
+    if ack.WorldTargetHealthBefore==nil || ack.WorldTargetHealthAfter==nil || ack.WorldTargetMaxHealth==nil {
+        return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_FIELDS_INCOMPLETE")
+    }
+    healthPresent:=true
+    {
         before,after,maxHP:=*ack.WorldTargetHealthBefore,*ack.WorldTargetHealthAfter,*ack.WorldTargetMaxHealth
         if math.IsNaN(before) || math.IsNaN(after) || math.IsNaN(maxHP) ||
             math.IsInf(before,0) || math.IsInf(after,0) || math.IsInf(maxHP,0) ||
