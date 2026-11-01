@@ -68,3 +68,20 @@ def test_blind_profile_rejects_old_seed_and_duplicate_names():
     with pytest.raises(ValueError,match='blind'):
         run_source_persistent_profile_search(class_key='druid',level=20,
             profiles=(('x',{'initial_allocation':{'ferocity':5}}),))
+
+
+def test_source_paid_recovery_frontier_is_not_starved_by_tight_screen_budget():
+    """Both sourced stage and recovery axes reach actual CombatRuntime."""
+    from src.game.recovery_between_pulls import BetweenPullPolicy
+
+    other=json.loads((ROOT/'WF298_DRUID_L20_BLIND_FACTORIAL_EVIDENCE.json').read_text())['independent_search_winner']
+    policy=BetweenPullPolicy(health_fraction=.5,mana_fraction=.1)
+    result=select_persistent_finalists(
+        class_key='druid',level=20,joint_result={'stages':[_winner(),other]},
+        screen_mobs=2,finalist_mobs=2,max_screen_candidates=2,max_finalists=2,
+        recovery_policies=(None,policy))
+    assert result['screen_evaluated']==2
+    assert result['screen_completed']==2
+    assert result['finalists_evaluated']==2
+    assert [row['recovery_policy'] is None for row in result['screening']]==[True,False]
+    assert all(row['screen']['count']==2 for row in result['screening'])
