@@ -35,7 +35,7 @@ PROOF_KIND = "GSIM_ABLATION_DIAGNOSTIC_NOT_HYBRID_RUST_OR_P1_PASS"
 def _source_actions(root: Path, *, class_key="druid", level=20,
                     spec="feral-cat", scenario=P1_DEFAULT_SCENARIO):
     """Compatibility wrapper for existing real-source Druid L20 tests."""
-    ir, selected, mapped, live_p1, _nonimpact = source_inventory(
+    ir, selected, mapped, live_p1, _nonimpact, _unresolved = source_inventory(
         root, class_key, level, spec=spec, scenario=scenario)
     return ir, selected, mapped, live_p1
 
@@ -49,7 +49,7 @@ def run_gsim(root=ROOT, *, class_key="druid", level=20, spec="feral-cat",
     allocation this uses all source-legal class-level spells, not a fabricated
     spec-specific talent allocation.
     """
-    ir, inventory, mapped, live_p1, non_relevant = source_inventory(
+    ir, inventory, mapped, live_p1, non_relevant, unresolved = source_inventory(
         root, class_key, level, spec=spec, scenario=scenario)
     results = []
     for sid, row in sorted(inventory.items()):
@@ -74,6 +74,8 @@ def run_gsim(root=ROOT, *, class_key="druid", level=20, spec="feral-cat",
             "not_observed": len(results)-observed,
             "not_relevant_count": len(non_relevant),
             "not_relevant": sorted(non_relevant, key=lambda r:r["spell_id"]),
+            "source_acquisition_unresolved_count": len(unresolved),
+            "source_acquisition_unresolved": sorted(unresolved, key=lambda r:r["spell_id"]),
             "results": results}
 
 
