@@ -137,3 +137,46 @@ def test_native_target_identity_change_rejected_before_gsim_mutation():
     with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
         applier.apply(tick1, reply1)
     assert rt.targets["m1"].health == previous_health
+
+
+def test_negative_native_event_time_rejected_before_world_mutation():
+    # Go's source journal cannot emit a negative-time combat event.  The
+    # first gsim tick is at t=0, so -1 must not pass an uninitialized clock.
+    rt, tick, reply = fixture()
+    reply["native_damage_events"][0]["native_time_ns"] = -1
+    original_health = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
+        GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert rt.targets["m1"].health == original_health
+
+
+def test_native_event_older_than_last_acked_world_tick_rejected():
+    # An empty ACK at t=100ms is a causal barrier. A subsequently reported
+    # event at 50ms must not be applied retroactively at t=200ms, even when
+    # its timestamp is >= the last event time (0ms).
+    rt, tick0, reply0 = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick0, reply0)
+    rt.advance_to(0.1)
+    tick1 = {"sequence": 1, "clock_ms": 100, "native_clock_ns": 100_000_000,
+             "selected_target_id": "m1",
+             "world_sha256": state_hash(snapshot_gsim_world(rt))}
+    reply1 = {"sequence": 1, "native_process_id": 123,
+              "observed_input_world_sha256": tick1["world_sha256"],
+              "native_damage_events": []}
+    applier.apply(tick1, reply1)
+    rt.advance_to(0.2)
+    tick2 = {"sequence": 2, "clock_ms": 200, "native_clock_ns": 200_000_000,
+             "selected_target_id": "m1",
+             "world_sha256": state_hash(snapshot_gsim_world(rt))}
+    reply2 = {"sequence": 2, "native_process_id": 123,
+              "observed_input_world_sha256": tick2["world_sha256"],
+              "native_damage_events": [{
+                  **reply0["native_damage_events"][0],
+                  "event_id": "native-effect-2",
+                  "native_time_ns": 50_000_000,
+              }]}
+    original_health = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
+        applier.apply(tick2, reply2)
+    assert rt.targets["m1"].health == original_health
