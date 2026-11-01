@@ -10,7 +10,12 @@ independent candidate discovery. This is a bounded search, not global proof.
 """
 import argparse
 import json
+import sys
 from pathlib import Path
+
+# Direct `python scripts/run_staged_joint_search.py` must resolve the canonical
+# source package without relying on a caller-supplied PYTHONPATH.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.v2.source_staged_joint_search import evaluate_staged_joint_search
 
