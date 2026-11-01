@@ -85,7 +85,9 @@ jobs:
           PY
       - name: RED old main exits before source-native second pull
         run: |
-          git -C project show 5144bd2310ae13ad99a6b704fffa340883afe01e:integrations/mythicsim-go/world_boundary/ingress/main.go > upstream/cmd/wf_gsim_go_world_ingress/main.go
+          git -C project fetch --no-tags --depth=1 origin 5144bd2310ae13ad99a6b704fffa340883afe01e
+          test "$(git -C project rev-parse FETCH_HEAD)" = "5144bd2310ae13ad99a6b704fffa340883afe01e"
+          git -C project show FETCH_HEAD:integrations/mythicsim-go/world_boundary/ingress/main.go > upstream/cmd/wf_gsim_go_world_ingress/main.go
           cd upstream
           go build -tags=with_db -trimpath -o ../gsim-go-old-ingress ./cmd/wf_gsim_go_world_ingress
           cd ../project
