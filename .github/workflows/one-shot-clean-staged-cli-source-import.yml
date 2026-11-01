@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "79fb870134f79c9d78f101afb8c012e88386745a"
+          test "$(git hash-object scripts/run_staged_joint_search.py)" = "d572fb8c58ca2354c76e3c01b976c90868dd7d70"
           git show 5144bd2310ae13ad99a6b704fffa340883afe01e:scripts/run_staged_joint_search.py > scripts/run_staged_joint_search.py
           if env -u PYTHONPATH python scripts/run_staged_joint_search.py --help > /tmp/staged-red.log 2>&1; then
             echo 'Unexpected RED success' >&2; exit 1
@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "79fb870134f79c9d78f101afb8c012e88386745a"
+          test "$(git hash-object scripts/run_staged_joint_search.py)" = "d572fb8c58ca2354c76e3c01b976c90868dd7d70"
           env -u PYTHONPATH python scripts/run_staged_joint_search.py --help > /tmp/staged-green.log
           grep -F -- '--screening-gears' /tmp/staged-green.log
           env -u PYTHONPATH python -m pytest -q tests/test_wf273_staged_source_search.py::test_data_only_source_change_flips_real_optimizer_winner
