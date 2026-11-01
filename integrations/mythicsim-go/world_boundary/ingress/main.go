@@ -36,6 +36,9 @@ type rangeReply struct {
     NativeDamageEvents []core.WorldNativeDamageEvent `json:"native_damage_events"`
     NativeSpellActionACK bool `json:"native_spell_action_ack"`
     CheckpointCertified bool `json:"checkpoint_certified"`
+    NativeWorldHealthFeedbackActive bool `json:"native_world_health_feedback_active"`
+    NativeHealthFraction float64 `json:"native_health_fraction"`
+    NativeExecutePhase int32 `json:"native_execute_phase"`
 }
 
 func run(requestRaw []byte, sourceRevision string) error {
@@ -76,12 +79,15 @@ func run(requestRaw []byte, sourceRevision string) error {
         if err!=nil {return fmt.Errorf("tick %d native spell counter read: %w",count,err)}
         nativeEffects,err:=boundary.DrainWorldDamageEvents()
         if err!=nil {return fmt.Errorf("tick %d native effect journal: %w",count,err)}
+        healthFraction,executePhase,healthActive:=boundary.WorldHealthDecisionSnapshot()
         reply:=rangeReply{Type:"native_go_range_receipt",Sequence:tick.Sequence,
             ObservedInputWorldSHA256:tick.WorldSHA256,NativeRangeReceipt:receipt,
             NativeSourceRevision:sourceRevision,NativeRequestSHA256:hex.EncodeToString(reqHash[:]),NativeProcessID:os.Getpid(),
             NativeSpellCounters:spellCounters,NativeTargetSpellCounters:targetCounters,
             NativeDamageEvents:nativeEffects,
-            NativeSpellActionACK:false,CheckpointCertified:false}
+            NativeSpellActionACK:false,CheckpointCertified:false,
+            NativeWorldHealthFeedbackActive:healthActive,NativeHealthFraction:healthFraction,
+            NativeExecutePhase:executePhase}
         output,err:=json.Marshal(reply)
         if err!=nil {return err}
         if _,err:=writer.Write(append(output,'\n'));err!=nil {return err}
@@ -106,6 +112,16 @@ func run(requestRaw []byte, sourceRevision string) error {
         }
         accepted,err:=checkWorldEffectACK(scanner.Bytes(),tick,proofs,os.Getpid())
         if err!=nil {return fmt.Errorf("tick %d world effect ACK: %w",count,err)}
+        if accepted.WorldTargetHealthBefore!=nil {
+            nativeDamage:=*accepted.WorldTargetHealthBefore-*accepted.WorldTargetHealthAfter
+            healthReceipt,err:=boundary.ApplyWorldTargetHealth(
+                *accepted.WorldTargetHealthBefore,*accepted.WorldTargetHealthAfter,
+                *accepted.WorldTargetMaxHealth,nativeDamage)
+            if err!=nil {return fmt.Errorf("tick %d native world health: %w",count,err)}
+            accepted.NativeWorldHealthApplied=true
+            accepted.NativeRemainingHealthFraction=healthReceipt.RemainingHealthFraction
+            accepted.NativeExecutePhase=healthReceipt.ExecutePhase
+        }
         confirmation,err:=json.Marshal(accepted)
         if err!=nil {return err}
         if _,err:=writer.Write(append(confirmation,'\n'));err!=nil {return err}

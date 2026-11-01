@@ -104,3 +104,24 @@ func TestNativeWorldACKHashBindsFullSourceSpellAndTarget(t *testing.T) {
         }
     }
 }
+
+func TestWorldEffectACKHealthDeltaBoundToRealNativeDamage(t *testing.T) {
+    tick:=goodTick(0,100)
+    events:=[]sourceNativeEventProof{nativeRealEventProof()}
+    var ack worldDamageAck
+    if err:=json.Unmarshal(ackFixture(tick,events,123),&ack);err!=nil {t.Fatal(err)}
+    before,after,maxHP:=700.0,677.5,700.0
+    ack.WorldTargetHealthBefore=&before
+    ack.WorldTargetHealthAfter=&after
+    ack.WorldTargetMaxHealth=&maxHP
+    raw,_:=json.Marshal(ack)
+    result,err:=checkWorldEffectACK(raw,tick,events,123)
+    if err!=nil || result.WorldTargetHealthAfter==nil || *result.WorldTargetHealthAfter!=after {
+        t.Fatalf("real source HP ACK rejected: %+v %v",result,err)
+    }
+    after=675
+    raw,_=json.Marshal(ack)
+    if _,err:=checkWorldEffectACK(raw,tick,events,123);err==nil {
+        t.Fatal("accepted health change not backed by native spell event")
+    }
+}

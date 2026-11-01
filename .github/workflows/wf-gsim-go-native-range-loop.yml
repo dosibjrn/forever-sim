@@ -6,7 +6,7 @@ on:
   # file is the sole path trigger. Other source/doc pushes cannot start it.
   push:
     branches:
-      - work/wf28-native-spell-observation-ack-20261031
+      - work/wf28-native-world-health-feedback-20261101
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
@@ -144,6 +144,31 @@ jobs:
               assert scenario['native_process_reused'] and scenario['gsim_runtime_real']
               assert all(row['native_world_ack_confirmation']['ack_id'] for row in scenario['observations'])
           print('REAL_SAVED_DRUID_SOURCE_PAIRED_CAUSAL_ACK_PASS_NOT_P7')
+          PY
+      - name: Prove gsim HP changes the next pinned Go execute decision (near/far)
+        run: |
+          cd project
+          python3 - <<'PY'
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import run
+          binary=Path("../gsim-go-world-ingress")
+          request=Path("../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json")
+          near=run(binary,request,ticks=10,target_spawn_yards=3.,target_health=5000.)
+          far=run(binary,request,ticks=10,target_spawn_yards=80.,target_health=5000.)
+          a,b=near["observations"],far["observations"]
+          near_effects=sum(len(row["native_damage_events"]) for row in a)
+          far_effects=sum(len(row["native_damage_events"]) for row in b)
+          assert near_effects>0 and far_effects==0,(near_effects,far_effects)
+          i=next(i for i,row in enumerate(a) if row["native_damage_events"])
+          assert i+1<len(a),"NO_NEXT_NATIVE_DECISION_BOUNDARY"
+          near_ack=a[i]["native_world_ack_confirmation"]
+          assert near_ack["native_world_health_applied"]
+          assert near_ack["native_remaining_health_fraction"]<1
+          assert a[i+1]["native_world_health_feedback_active_at_boundary"]
+          assert a[i+1]["native_execute_phase_at_boundary"]<b[i+1]["native_execute_phase_at_boundary"]
+          assert a[i+1]["native_health_fraction_at_boundary"]<b[i+1]["native_health_fraction_at_boundary"]
+          print("REAL_WORLD_HP_CHANGED_NEXT_NATIVE_EXECUTE_PHASE",near_effects,far_effects,
+                a[i+1]["native_execute_phase_at_boundary"],b[i+1]["native_execute_phase_at_boundary"])
           PY
       - name: Reject forged gsim world ACK in the real native Go process
         run: |

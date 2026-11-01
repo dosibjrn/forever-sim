@@ -25,6 +25,9 @@ type worldDamageAck struct {
     AppliedEventIDs []string `json:"applied_event_ids"`
     AppliedEvents []sourceNativeEventProof `json:"applied_events"`
     AppliedNativeDamage float64 `json:"applied_native_damage"`
+    WorldTargetHealthBefore *float64 `json:"world_target_health_before,omitempty"`
+    WorldTargetHealthAfter *float64 `json:"world_target_health_after,omitempty"`
+    WorldTargetMaxHealth *float64 `json:"world_target_max_health,omitempty"`
 }
 
 type worldAckAccepted struct {
@@ -35,6 +38,12 @@ type worldAckAccepted struct {
     NativeProcessID int `json:"native_process_id"`
     NativeSpellActionACK bool `json:"native_spell_action_ack"`
     CheckpointCertified bool `json:"checkpoint_certified"`
+    NativeWorldHealthApplied bool `json:"native_world_health_applied"`
+    NativeRemainingHealthFraction float64 `json:"native_remaining_health_fraction"`
+    NativeExecutePhase int32 `json:"native_execute_phase"`
+    WorldTargetHealthBefore *float64 `json:"-"`
+    WorldTargetHealthAfter *float64 `json:"-"`
+    WorldTargetMaxHealth *float64 `json:"-"`
 }
 
 func validHash(value string) bool {
@@ -88,6 +97,19 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
         math.Abs(applied-ack.AppliedNativeDamage)>1e-6 {
         return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_DAMAGE_MISMATCH")
     }
+    healthPresent:=ack.WorldTargetHealthBefore!=nil || ack.WorldTargetHealthAfter!=nil || ack.WorldTargetMaxHealth!=nil
+    if healthPresent {
+        if ack.WorldTargetHealthBefore==nil || ack.WorldTargetHealthAfter==nil || ack.WorldTargetMaxHealth==nil {
+            return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_FIELDS_INCOMPLETE")
+        }
+        before,after,maxHP:=*ack.WorldTargetHealthBefore,*ack.WorldTargetHealthAfter,*ack.WorldTargetMaxHealth
+        if math.IsNaN(before) || math.IsNaN(after) || math.IsNaN(maxHP) ||
+            math.IsInf(before,0) || math.IsInf(after,0) || math.IsInf(maxHP,0) ||
+            maxHP<=0 || before<0 || after<0 || before>maxHP || after>before ||
+            math.Abs(before-after-applied)>1e-6 {
+            return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_DELTA_MISMATCH")
+        }
+    }
     if (applied>0 && ack.WorldAfterSHA256==tick.WorldSHA256) ||
         (applied==0 && ack.WorldAfterSHA256!=tick.WorldSHA256) {
         return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_WORLD_NOT_APPLIED")
@@ -100,12 +122,19 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
     digestInput:=append([]byte(fmt.Sprintf(
         "gsim-native-ACK-v2:%d:%d:%s:%s:",pid,tick.Sequence,
         ack.WorldBeforeSHA256,ack.WorldAfterSHA256)),eventBytes...)
+    if healthPresent {
+        digestInput=append(digestInput,[]byte(fmt.Sprintf(":world-hp:%.17g:%.17g:%.17g",
+            *ack.WorldTargetHealthBefore,*ack.WorldTargetHealthAfter,*ack.WorldTargetMaxHealth))...)
+    }
     digest:=sha256.Sum256(digestInput)
     return worldAckAccepted{Type:"native_go_world_ack_accepted",
         Sequence:tick.Sequence,ACKID:hex.EncodeToString(digest[:]),
         ObservedWorldAfterSHA256:ack.WorldAfterSHA256,
         NativeProcessID:os.Getpid(),
-        NativeSpellActionACK:len(events)>0,CheckpointCertified:false},nil
+        NativeSpellActionACK:len(events)>0,CheckpointCertified:false,
+        WorldTargetHealthBefore:ack.WorldTargetHealthBefore,
+        WorldTargetHealthAfter:ack.WorldTargetHealthAfter,
+        WorldTargetMaxHealth:ack.WorldTargetMaxHealth},nil
 }
 
 func decodeStrictJSON(data []byte, out any) error {
