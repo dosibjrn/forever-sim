@@ -49,7 +49,14 @@ if args.replay_from is not None:
     print('INDEPENDENT_SAVED_SOURCE_REPLAY',args.replay_row,
           replay['status'],[(x['status'],x.get('reason'),x.get('count'))
                             for x in replay['rows']],flush=True)
-    raise SystemExit(0)
+    # A saved replay is a verification command, not a search diagnostic.
+    # An incomplete paid 100-mob run must fail the caller even when its
+    # structured result was successfully written for first-failure analysis.
+    replay_ok=(replay.get('complete_100mob_replays')==1
+               and len(replay.get('rows',()))==1
+               and replay['rows'][0].get('status')=='COMPLETE'
+               and replay['rows'][0].get('count')==100)
+    raise SystemExit(0 if replay_ok else 1)
 start=time.monotonic()
 params=dict(class_key='druid',level=30,source_ir=ir,seed_stage=stage,
     bonus_talent_points=5,max_talents=80,max_gear_moves=8,
