@@ -111,10 +111,11 @@ class GsimNativeDamageWorldApplier:
             last_event_id = ordinal
             last_native_time = timestamp
             target_identity = current_native_target
-        # Fail closed BEFORE world mutation. Truncated overkill must not be
-        # acknowledged as full native damage or attributed to another target.
-        if not isfinite(damage) or damage > target.health + 1e-8:
-            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_OVERKILL_UNSUPPORTED")
+        # Native spell damage can exceed remaining target HP on a lethal hit.
+        # Preserve the full source-native event transcript while clamping only
+        # the actual gsim world-health delta. Overkill must not block a kill.
+        if not isfinite(damage):
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_DAMAGE_INVALID")
         max_health = float(target.max_health)
         if not isfinite(max_health) or max_health <= 0 or target.health > max_health:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_MAX_HEALTH_INVALID")
@@ -122,7 +123,7 @@ class GsimNativeDamageWorldApplier:
         for event in events:
             target.apply_damage(float(event["damage"]))
         applied = old_health - float(target.health)
-        if abs(applied - damage) > 1e-6:
+        if abs(applied - min(damage, old_health)) > 1e-6:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_HEALTH_DELTA_MISMATCH")
         after_hash = state_hash(snapshot_gsim_world(self._runtime))
         if (damage > 0 and after_hash == digest) or (damage == 0 and after_hash != digest):

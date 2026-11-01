@@ -39,6 +39,21 @@ def test_actual_gsim_health_changes_and_world_ack_is_measured():
     assert ack["world_after_sha256"] != ack["world_before_sha256"]
 
 
+def test_real_native_lethal_overkill_kills_gsim_target_without_losing_source_damage():
+    rt, tick, reply = fixture()
+    target = rt.targets["m1"]
+    target.health = 10.0
+    target.max_health = 10.0
+    tick["world_sha256"] = state_hash(snapshot_gsim_world(rt))
+    reply["observed_input_world_sha256"] = tick["world_sha256"]
+    ack = GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert target.health == 0.0 and not target.alive
+    assert ack["applied_native_damage"] == 75.0  # raw, not capped to 10
+    assert ack["world_target_health_before"] == 10.0
+    assert ack["world_target_health_after"] == 0.0
+    assert ack["world_after_sha256"] == state_hash(snapshot_gsim_world(rt))
+
+
 def test_replayed_effect_does_not_double_apply_world_damage():
     rt, tick, reply = fixture()
     applier = GsimNativeDamageWorldApplier(rt)
@@ -60,7 +75,7 @@ def test_replayed_effect_does_not_double_apply_world_damage():
     lambda n: n["native_damage_events"][0].update(periodic="false"),
     lambda n: n["native_damage_events"][0].update(damage=math.nan),
     lambda n: n["native_damage_events"][0].update(damage=-1),
-    lambda n: n["native_damage_events"][0].update(damage=10**20),
+    lambda n: n["native_damage_events"][0].update(damage="100000000000000000000"),
     lambda n: n["native_damage_events"][0].update(native_time_ns=100_000_000),
     lambda n: n["native_damage_events"][0].update(event_id="fake-1"),
     lambda n: n.update(observed_input_world_sha256="forged"),

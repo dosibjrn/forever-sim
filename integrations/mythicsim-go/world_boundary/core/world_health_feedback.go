@@ -21,7 +21,10 @@ func (session *WorldBoundarySession) ApplyWorldTargetHealth(before,after,maxHP,n
         // Keep the request's time cap, but use actual world HP for execute
         // phase and remaining-health decisions in this hybrid session.
         sim.Encounter.EndFightAtHealth=maxHP
-        sim.endOfCombatDamage=maxHP
+        // The gsim world, not native pre-ACK raw spell damage, owns death.
+        // Keep health-based execute/APL decisions but never let Step() stop
+        // the native scheduler before a lethal source event reaches gsim.
+        sim.endOfCombatDamage=math.MaxFloat64
         sim.executePhase=0
         sim.nextExecutePhase()
         session.worldHealthMax=maxHP

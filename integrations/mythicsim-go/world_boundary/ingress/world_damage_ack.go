@@ -106,7 +106,9 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
         if math.IsNaN(before) || math.IsNaN(after) || math.IsNaN(maxHP) ||
             math.IsInf(before,0) || math.IsInf(after,0) || math.IsInf(maxHP,0) ||
             maxHP<=0 || before<0 || after<0 || before>maxHP || after>before ||
-            math.Abs(before-after-applied)>1e-6 {
+            // Native damage is raw source damage. Gsim clamps a lethal hit
+            // to zero HP; the world delta is min(raw damage, remaining HP).
+            math.Abs(before-after-math.Min(applied,before))>1e-6 {
             return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_DELTA_MISMATCH")
         }
     }
