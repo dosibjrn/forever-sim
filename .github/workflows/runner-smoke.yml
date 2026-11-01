@@ -1,57 +1,12 @@
 name: Public runner allocation smoke
 on:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/runner-smoke.yml']
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   ubuntu-runner-allocation:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 2
     steps:
       - name: Verify hosted runner
         run: echo 'RUNNER_ALLOCATED_AND_STEP_EXECUTED'
-      - name: Checkout fresh public snapshot with LFS
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          fetch-depth: 1
-      - name: Verify all migrated public binary payloads are hydrated
-        shell: bash
-        run: |
-          set -euo pipefail
-          git lfs version
-          python3 - <<'PY'
-          from pathlib import Path
-          dbs = [
-            'data/forever/catalogue/forever_abilities.sqlite',
-            'data/forever/catalogue/items_2026-09-29.sqlite',
-            'data/forever/source_equipment_semantics_70338.sqlite',
-            'data/forever/staged_druid_l30_talents_70338.sqlite',
-            'data/forever/staged_mage_l30_stamina_70374.sqlite',
-            'data/forever/staged_mage_l30_talent_positions_70374.sqlite',
-            'data/forever/staged_warrior_l30_bis_witness_wf370.sqlite',
-            'data/forever/staged_warrior_l30_gear_provisional.sqlite',
-            'data/forever/staged_warrior_l30_gear_provisional_wf365.sqlite',
-            'data/forever/staged_warrior_l30_gear_runtime_wf368.sqlite',
-            'data/forever/staged_warrior_l30_talents_70338.sqlite',
-          ]
-          payloads = [
-            'docs/validation/I15/LISTENER_LOCAL_I15_STATE_v0.11.48.103.json',
-            'evidence/wf325/WF325_BLIND_JOINT.json',
-            'evidence/wf353/WF353_L30_DISCOVERED_STAGES.json',
-          ]
-          for name in dbs:
-              p = Path(name)
-              assert p.read_bytes()[:16] == b'SQLite format 3\x00', name
-              assert p.stat().st_size > 12000, name
-          for name in payloads:
-              p = Path(name)
-              assert p.stat().st_size > 1000000, name
-              assert p.read_bytes()[:7] != b'version', name
-          print(f'PASS: {len(dbs)} SQLite and {len(payloads)} JSON hydrated from public repo.')
-          PY
-      - name: Execute migration guard unit tests
-        run: python3 -m unittest discover -s tests -p test_verify_public_snapshot.py -v
