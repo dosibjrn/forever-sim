@@ -95,6 +95,9 @@ class GsimNativeDamageWorldApplier:
             current_native_target = (event.get("native_target_index"),
                                      event.get("native_target_unit_index"),
                                      event.get("native_target_label"))
+            caster_type = event.get("native_caster_type", "")
+            caster_index = event.get("native_caster_unit_index", 0)
+            caster_label = event.get("native_caster_label", "")
             if (ordinal <= last_event_id or type(timestamp) is not int
                     or timestamp < 0 or timestamp < last_native_time
                     or timestamp < self._last_world_tick_ns or timestamp > clock_ns
@@ -110,6 +113,11 @@ class GsimNativeDamageWorldApplier:
                     or type(event.get("rank")) is not int or event["rank"] < 0
                     or any(type(event.get(flag)) is not bool for flag in ("landed", "crit", "periodic"))
                     or not event["landed"]
+                    or caster_type not in ("", "pet")
+                    or (caster_type == "pet" and (
+                        type(caster_index) is not int or caster_index < 0
+                        or not isinstance(caster_label, str) or not caster_label))
+                    or (caster_type == "" and (caster_index != 0 or caster_label != ""))
                     or (target_identity is not None and current_native_target != target_identity)):
                 raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_SOURCE_EVENT_INVALID")
             ids.append(event_id)
