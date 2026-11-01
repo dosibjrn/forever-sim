@@ -36,8 +36,13 @@ jobs:
             --ability-db data/forever/staged_druid_l30_talents_70338.sqlite \
             --observations evidence/WF322_DRUID_L20_WEB_TEXT_OBSERVATIONS_70338.json \
             --control-observations evidence/wf321/druid_l20_control_observations.json \
-            --build-as-of 2026-10-13 --max-wall-s 180 \
+            --build-as-of 2026-10-13 --max-wall-s 180 --mob-spacing-yards 12 \
             --out wf61-evidence/actual-gsim-1-2-100.json
+      - name: Check replay and sourced control regressions
+        if: success()
+        run: |
+          python -m pytest -q tests/test_wf61_live_persistent_replay.py
+          python -m pytest -q tests/test_wf321_druid_l20_bash_control_l2.py -k 'bash_full_source_to_l2_stun_suppresses_enemy_damage_and_rage or observation_index_and_fact_tampering_fail_closed'
       - name: Upload raw replay even on failure
         if: always()
         uses: actions/upload-artifact@v4

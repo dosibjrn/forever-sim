@@ -235,7 +235,8 @@ def validate_real_replay(result: dict, requested_mobs: int, *,
 def execute_source_replays(*, class_key: str, level: int, stage_path: Path,
                            max_wall_s: float, source_ir=None,
                            strict_l2_item_effects: bool = False,
-                           source_identity: dict | None = None) -> dict:
+                           source_identity: dict | None = None,
+                           mob_spacing_yards: float = 0.0) -> dict:
     """Run fresh 1-, 2-, 100-mob horizons on one source build, each internally persistent."""
     stage, source_sha = load_source_stage(stage_path)
     # No substitute backend or synthetic score: import production evaluator.
@@ -261,12 +262,14 @@ def execute_source_replays(*, class_key: str, level: int, stage_path: Path,
               'source_stage_path': str(stage_path),
               'source_stage_sha256': source_sha,
               'source_identity': source_identity or {},
-              'fresh_independent_horizons': list(COUNTS), 'runs': []}
+              'fresh_independent_horizons': list(COUNTS),
+              'mob_spacing_yards': mob_spacing_yards, 'runs': []}
     for count in COUNTS:
         try:
             actual = evaluate_persistent_candidate(
                 candidate, level=level, mobs=count, trace_pulls=True,
                 max_wall_s=max_wall_s, pack_size=1, settle_final_recovery=True,
+                mob_spacing_yards=mob_spacing_yards,
             )
         except Exception as exc:
             # Preserve the real 1/2-mob results and pinned input identity when
@@ -296,7 +299,8 @@ def execute_source_replays(*, class_key: str, level: int, stage_path: Path,
 def execute_staged_source_replays(*, class_key: str, level: int, stage_path: Path,
                                   max_wall_s: float, ability_db: Path,
                                   observations: Path, control_observations: Path,
-                                  build_as_of: str) -> dict:
+                                  build_as_of: str,
+                                  mob_spacing_yards: float = 0.0) -> dict:
     """Use the same observed-source SQLite overlay as existing WF357 live tests."""
     from src.game.data.forever.source_db_scope import ability_source_scope
     from src.game.data.forever.source_observed_rank_parity import ingest_observations
@@ -323,7 +327,8 @@ def execute_staged_source_replays(*, class_key: str, level: int, stage_path: Pat
                 return execute_source_replays(
                     class_key=class_key, level=level, stage_path=stage_path,
                     max_wall_s=max_wall_s, source_ir=ir,
-                    strict_l2_item_effects=True, source_identity=source_identity)
+                    strict_l2_item_effects=True, source_identity=source_identity,
+                    mob_spacing_yards=mob_spacing_yards)
     finally:
         if previous is None:
             os.environ.pop('WOW_FOREVER_BUILD_AS_OF', None)
@@ -337,6 +342,8 @@ def main(argv=None) -> int:
     parser.add_argument('--stage', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--max-wall-s', type=float, default=180.)
+    parser.add_argument('--mob-spacing-yards', type=float, default=0.0,
+                        help='Explicit scenario distance between sequential targets (0 means no travel)')
     parser.add_argument('--ability-db', type=Path)
     parser.add_argument('--observations', type=Path)
     parser.add_argument('--control-observations', type=Path)
@@ -344,6 +351,8 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if not isfinite(args.max_wall_s) or args.max_wall_s <= 0:
         parser.error('--max-wall-s must be positive and finite')
+    if not isfinite(args.mob_spacing_yards) or args.mob_spacing_yards < 0:
+        parser.error('--mob-spacing-yards must be finite and nonnegative')
     if args.ability_db is not None and (args.observations is None or args.control_observations is None):
         parser.error('--ability-db requires both source observation files')
     if args.ability_db is None and (args.observations is not None or args.control_observations is not None):
@@ -352,14 +361,16 @@ def main(argv=None) -> int:
         if args.ability_db is None:
             report = execute_source_replays(
                 class_key=args.class_key, level=args.level, stage_path=args.stage,
-                max_wall_s=args.max_wall_s)
+                max_wall_s=args.max_wall_s,
+                mob_spacing_yards=args.mob_spacing_yards)
         else:
             report = execute_staged_source_replays(
                 class_key=args.class_key, level=args.level, stage_path=args.stage,
                 max_wall_s=args.max_wall_s, ability_db=args.ability_db,
                 observations=args.observations,
                 control_observations=args.control_observations,
-                build_as_of=args.build_as_of)
+                build_as_of=args.build_as_of,
+                mob_spacing_yards=args.mob_spacing_yards)
     except Exception as exc:
         report = {'status': 'EXECUTION_ERROR', 'error_type': type(exc).__name__,
                   'reason': str(exc), 'engine': 'gsim',
