@@ -53,7 +53,7 @@ func (session *WorldBoundarySession) BeginNextWorldTarget() error {
         return errors.New("NATIVE_WORLD_NEXT_TARGET_REQUIRES_LETHAL_ACK")
     }
     sim:=session.native
-    if sim.Encounter==nil || len(sim.Encounter.AllTargets)!=1 ||
+    if len(sim.Encounter.AllTargets)!=1 ||
         sim.Raid==nil || len(sim.Raid.AllPlayerUnits)!=1 ||
         sim.Raid.AllPlayerUnits[0]==nil || sim.Raid.AllPlayerUnits[0].Moving {
         return errors.New("NATIVE_WORLD_NEXT_TARGET_REQUIRES_SINGLE_NATIVE_SLOT")
