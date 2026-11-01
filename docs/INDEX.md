@@ -6,9 +6,9 @@
 - [P1 native validation guide](gates/P1_VALIDATION.md) — selected MythicSim combat behavior without requiring duplicate Python GameIR.
 - [OVERALL PLAN](../OVERALL_PLAN.md) — **canonical approved v5**, product scope and finish line.
 - [Large assets / Git LFS](LARGE_ASSETS_LFS.md) — current 14-asset hydrated baseline, tracking rules, and verification for future additions.
-- [Repository structure](REPOSITORY_STRUCTURE.md) — src/tests/tools ownership, historical evidence vs gate outputs, safe cleanup phases.
+- [Ideal repository architecture](REPOSITORY_STRUCTURE.md) — Clean-owned maintained target structure, dependency boundaries, observed deviations and safe convergence plan.
 - [Current work allocation](planning/WORK_PRIORITY.md) — current owner/issue/next executable step; this is the live work queue.
-- [Autonomous agent roles](planning/AUTONOMOUS_AGENTS.md) — scheduling and role responsibilities, not an independent backlog.
+- [Autonomous agent roles](planning/AUTONOMOUS_AGENTS.md) — five independent agent contracts, Prio/Work1/Work2 ownership and Clean architecture responsibility.
 - [Evidence index](evidence/README.md) — gate results, saved requests, build/run hashes, raw logs and caveats.
 - [Druid Balance P7.1 Rust](evidence/druid-l60-balance/p7.1/README.md) — owner-accepted specific Rust reproduction, with owner-approved standalone Rust replay and transparent live-2D evidence gap.
 - [Wowhead ability capture](reference/wowhead/WOWHEAD_ABILITIES_CAPTURE_README.md) — operational source-capture contract; verified source observations are not executable effects.
