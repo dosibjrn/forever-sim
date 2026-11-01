@@ -1,0 +1,32 @@
+name: One-shot P1 toy probe all classes L20 + L60 (real gsim)
+on:
+  push:
+    branches: [work/druid-l20-feral-p1-toy-ablation]
+    paths:
+      - tools/p1_ability_inventory.py
+      - tools/p1_toy_scenario.py
+      - tools/wf_p1_toy_ablation.py
+      - tools/wf_p1_matrix.py
+      - tests/test_wf_p1_generic_toy.py
+      - .github/workflows/wf-p1-generic-matrix.yml
+  workflow_dispatch:
+jobs:
+  p1-toy-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Real Druid baseline and class-neutral runner contract tests
+        env:
+          WOW_FOREVER_BUILD_AS_OF: '2026-10-17'
+        run: python -m pytest -q tests/test_wf_p1_toy_ablation.py tests/test_wf_p1_generic_toy.py
+      - name: Actually execute 9 classes x L20 and L60; incomplete cases FAIL
+        env:
+          WOW_FOREVER_BUILD_AS_OF: '2026-10-17'
+        run: python tools/wf_p1_matrix.py --levels 20 60 --strict --timeout-s 80
