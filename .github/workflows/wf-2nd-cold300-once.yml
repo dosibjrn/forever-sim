@@ -1,0 +1,73 @@
+name: One-shot 2nd work source cold 30/300 paid replay
+on:
+  push:
+    branches: [work/2nd-cold300-replay-diagnose-20261101]
+permissions:
+  contents: read
+concurrency:
+  group: one-shot-2nd-cold300-20261101
+  cancel-in-progress: false
+jobs:
+  source-cold-search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Actual independent source 30 and 300 second cold searches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+          python -m tools.wf437_direct_budgeted_run --budget 30 --output /tmp/cold30.json
+          python -m tools.wf437_direct_budgeted_run --budget 300 --output /tmp/cold300.json
+          python - <<'PY'
+          import json,subprocess,sys
+          a=json.load(open('/tmp/cold30.json'))
+          b=json.load(open('/tmp/cold300.json'))
+          assert a['source_db_sha256']==b['source_db_sha256'], 'SOURCE_CONTEXT_DRIFT'
+          for tag,report in [('30',a),('300',b)]:
+              v=report['validation']
+              print('SOURCE_COLD',tag,'wall',report['wall_s'],'unique',report['unique_full_builds'],
+                    'replays',v['100mob_replays'],'complete',v['complete_100mob_replays'],
+                    'status',v['status'],flush=True)
+              for i,row in enumerate(v['rows']):
+                  print('PAID_ROW',tag,i,'status',row['status'],'count',row['count'],
+                        'reason',row.get('reason'),'full_s_per_mob',row.get('full_s_per_mob'),flush=True)
+          valid30=[x for x in a['validation']['rows'] if x.get('full_s_per_mob') is not None]
+          valid300=[x for x in b['validation']['rows'] if x.get('full_s_per_mob') is not None]
+          if valid30 and valid300:
+              t30=min(x['full_s_per_mob'] for x in valid30)
+              t300=min(x['full_s_per_mob'] for x in valid300)
+              print('PAID_P6_DIAGNOSTIC',t30,t300,'ratio',t30/t300,
+                    'within_1pct',t30<=1.01*t300,'NOT_FORMAL_ACCEPTANCE',flush=True)
+          failures=[i for i,row in enumerate(b['validation']['rows']) if row['status']!='COMPLETE']
+          if failures:
+              idx=failures[0]
+              p=subprocess.run([sys.executable,'-m','tools.wf437_direct_budgeted_run',
+                  '--replay-from','/tmp/cold300.json','--replay-row',str(idx),
+                  '--output','/tmp/failed_replay.json'],capture_output=True,text=True)
+              print('FAILED_ROW_INDEPENDENT_REPLAY',idx,'exit',p.returncode,
+                    'stdout',p.stdout[-3000:],'stderr',p.stderr[-3000:],flush=True)
+              if p.returncode==0:
+                  x=json.load(open('/tmp/failed_replay.json'))
+                  print('FAILED_ROW_REPLAY_STATUS',x['validation']['status'],
+                    x['validation']['rows'],flush=True)
+          PY
+      - name: Preserve exact source search output for first-failure investigation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-cold-30-300-20261101
+          path: |
+            /tmp/cold30.json
+            /tmp/cold300.json
+            /tmp/failed_replay.json
+          if-no-files-found: warn
+          retention-days: 7
