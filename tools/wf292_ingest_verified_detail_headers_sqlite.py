@@ -13,6 +13,11 @@ from collections import Counter
 from hashlib import sha256
 import json
 from pathlib import Path
+import sys
+
+# Direct CLI execution starts with tools/ on sys.path, not the repository root.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import re
 import sqlite3
 
