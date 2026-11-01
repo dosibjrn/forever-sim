@@ -180,3 +180,33 @@ def test_native_event_older_than_last_acked_world_tick_rejected():
     with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
         applier.apply(tick2, reply2)
     assert rt.targets["m1"].health == original_health
+
+
+@pytest.mark.parametrize("clock_ms,native_clock_ns,event_ns", [
+    (100, 100_000_000, 50_000_000),  # Forged future tick accepts a future native event.
+    (0, 100_000_000, 0),           # Go clock disagrees with actual gsim clock.
+    (100, 0, 0),                   # Claimed world tick disagrees with actual gsim clock.
+])
+def test_native_tick_clock_must_match_live_gsim_before_damage(
+        clock_ms, native_clock_ns, event_ns):
+    rt, tick, reply = fixture()
+    tick["clock_ms"] = clock_ms
+    tick["native_clock_ns"] = native_clock_ns
+    reply["native_damage_events"][0]["native_time_ns"] = event_ns
+    before = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="WORLD_DAMAGE_ACK_WORLD_CLOCK_MISMATCH"):
+        GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert rt.targets["m1"].health == before
+
+
+def test_empty_native_effect_cannot_ack_future_world_clock():
+    rt, tick, reply = fixture()
+    tick["clock_ms"] = 100
+    tick["native_clock_ns"] = 100_000_000
+    reply["native_damage_events"] = []
+    before = rt.targets["m1"].health
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="WORLD_DAMAGE_ACK_WORLD_CLOCK_MISMATCH"):
+        GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert rt.targets["m1"].health == before
