@@ -127,6 +127,18 @@ func recordWorldDamageForGsim(sim *Simulation, spell *Spell, result *SpellResult
     state.lastTime=sim.CurrentTime
 }
 
+// The upstream native spell-result path increments Encounter.DamageTaken
+// before its later APL/execute callbacks. During a coupled world session that
+// increment is speculative: the real gsim target has not yet ACKed the event.
+// Keep native spell metrics, threat and event journal intact, but let only
+// ApplyWorldTargetHealth commit enemy HP after the measured gsim world ACK.
+// Outside a world journal, the original upstream combat behavior is unchanged.
+func undoUnackedWorldDamageForGsim(sim *Simulation, damage float64) {
+    if sim == nil || sim.CurrentTime < 0 { return }
+    if _, active := nativeWorldDamageJournals.Load(sim); !active { return }
+    sim.Encounter.DamageTaken -= damage
+}
+
 // Drain only AFTER the associated world range was applied and native events
 // before the next world tick were executed. The caller MUST obtain a real
 // gsim applied-world ACK before it advances the native scheduler again.

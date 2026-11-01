@@ -107,6 +107,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     killed_target_ids = []
     native_pid = None
     recovery_offset_s = 0.
+    last_committed_world_health = None
+    last_committed_target_id = None
     try:
         for idx in range(ticks):
             runtime.advance_to(idx / 10. + recovery_offset_s)
@@ -135,6 +137,18 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                 native_pid = response['native_process_id']
             elif native_pid != response['native_process_id']:
                 raise RuntimeError('NATIVE_GO_PROCESS_RESTARTED')
+            # A native action may produce source damage between world ticks,
+            # but that damage is not world health until gsim ACKs it. The next
+            # native decision must use the last committed world HP, not the
+            # native engine's speculative unACKed damage accumulator.
+            if (last_committed_world_health is not None
+                    and tick['selected_target_id'] == last_committed_target_id):
+                native_fraction = response.get('native_health_fraction')
+                if (response.get('native_world_health_feedback_active') is not True
+                        or type(native_fraction) not in (float, int)
+                        or not math.isfinite(native_fraction)
+                        or abs(native_fraction - last_committed_world_health) > 1e-8):
+                    raise RuntimeError('NATIVE_WORLD_UNACKED_DAMAGE_CHANGED_DECISION_HEALTH')
             actor_state = response.get('native_actor_state')
             if (not isinstance(actor_state, dict)
                     or actor_state.get('native_clock_ns') != tick['native_clock_ns']
@@ -176,6 +190,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                    actual_target.health / actual_target.max_health) > 1e-8:
                 raise RuntimeError('NATIVE_GO_HEALTH_FEEDBACK_MISMATCH')
             previous_ack_id = confirmation['ack_id']
+            last_committed_world_health = confirmation['native_remaining_health_fraction']
+            last_committed_target_id = tick['selected_target_id']
             observations.append({'world_tick': tick, 'native_range_receipt': response['native_range_receipt'],
                                  'native_spell_counters': response['native_spell_counters'],
                                  'native_spell_counter_deltas': spell_deltas,

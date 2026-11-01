@@ -23,13 +23,14 @@ def test_reject_nonpinned_native_spell_result(tmp_path):
 
 
 def test_exact_blob_guard_and_one_source_damage_hook(monkeypatch, tmp_path):
-    raw = patcher.ORIGINAL + b"\tspell.DisposeResult(result)\n}\n"
+    raw = patcher.ORIGINAL + patcher.HEALTH_ORIGINAL + b"\tspell.DisposeResult(result)\n}\n"
     file = tmp_path / "spell_result.go"
     file.write_bytes(raw)
     monkeypatch.setattr(patcher, "PINNED_BLOB_SHA", patcher.git_blob_sha(raw))
     patcher.patch_native_spell_result(file)
     after = file.read_bytes()
     assert after.count(b"recordWorldDamageForGsim(sim, spell, result, isPeriodic)") == 1
+    assert after.count(b"undoUnackedWorldDamageForGsim(sim, result.Damage)") == 1
     assert b"spell.DisposeResult(result)" in after
     with pytest.raises(ValueError, match="PINNED_NATIVE_SPELL_RESULT_BLOB_MISMATCH"):
         patcher.patch_native_spell_result(file)
