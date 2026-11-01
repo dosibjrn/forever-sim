@@ -52,14 +52,22 @@ def main(argv=None):
                         raise ValueError("CHECKPOINT_IDENTITY_MISMATCH")
                     if evidence.get("p1_certified") or evidence.get("hybrid_rust_executed"):
                         raise ValueError("DIAGNOSTIC_FALSE_CERTIFICATION")
+                    unresolved = evidence["source_acquisition_unresolved"]
                     if evidence.get("checked", 0) == 0:
-                        raise ValueError("EMPTY_TEST_EXECUTION")
+                        status = "NO_PROVEN_LEGAL_ACTIONS"
+                    elif evidence["observed"] != evidence["checked"]:
+                        status = "INCOMPLETE"
+                    elif unresolved:
+                        status = "SOURCE_LEGALITY_UNRESOLVED"
+                    else:
+                        status = "ALL_EFFECTS_OBSERVED"
                     row = {
                         "class": cls, "level": level,
-                        "status": ("ALL_EFFECTS_OBSERVED" if evidence["observed"]==evidence["checked"]
-                                   else "INCOMPLETE"),
+                        "status": status,
                         "observed": evidence["observed"], "checked": evidence["checked"],
                         "not_relevant": evidence["not_relevant_count"],
+                        "source_unknown": len(unresolved),
+                        "source_issues": unresolved,
                         "failed": [
                             {"spell_id": x["spell_id"], "name": x["name"],
                              "status": x["status"], "reason": x.get("errors", [])}
@@ -73,10 +81,15 @@ def main(argv=None):
             rows.append(row)
             print(f"{cls:9} L{level:02d} {row['status']:24} "
                   f"{row.get('observed','-')}/{row.get('checked','-')} "
-                  f"not_relevant={row.get('not_relevant','-')}", flush=True)
+                  f"not_relevant={row.get('not_relevant','-')} source_unknown={row.get('source_unknown','-')}", flush=True)
             for failure in row.get("failed", []):
                 print(f"    {failure['spell_id']} {failure['name']}: {failure['status']} "
                       f"{failure['reason']}", flush=True)
+            if row.get("source_issues"):
+                for issue in row["source_issues"][:10]:
+                    print(f"    SOURCE_UNKNOWN {issue['spell_id']} {issue['name']}: {issue['reason']}", flush=True)
+                if len(row["source_issues"]) > 10:
+                    print(f"    ... and {len(row['source_issues'])-10} other source acquisition gaps", flush=True)
             if row.get("reason"):
                 print("    " + row["reason"], flush=True)
     errors = sum(x["status"] != "ALL_EFFECTS_OBSERVED" for x in rows)
