@@ -12,7 +12,9 @@ func (session *WorldBoundarySession) ApplyWorldTargetHealth(before,after,maxHP,n
     if math.IsNaN(before)||math.IsNaN(after)||math.IsNaN(maxHP)||math.IsNaN(nativeDamage)||
         math.IsInf(before,0)||math.IsInf(after,0)||math.IsInf(maxHP,0)||math.IsInf(nativeDamage,0)||
         maxHP<=0||before<0||after<0||before>maxHP||after>before||nativeDamage<0||
-        math.Abs(before-after-nativeDamage)>1e-6 {return WorldTargetHealthReceipt{},errors.New("NATIVE_WORLD_HEALTH_INVALID")}
+        // The world clamps lethal native overkill to zero HP. Validate the
+        // raw source damage, not an already-capped world-health delta.
+        math.Abs(before-after-math.Min(nativeDamage,before))>1e-6 {return WorldTargetHealthReceipt{},errors.New("NATIVE_WORLD_HEALTH_INVALID")}
     if session.worldHealthInitialized {
         if math.Abs(maxHP-session.worldHealthMax)>1e-6||math.Abs(before-session.worldHealthLast)>1e-6 {
             return WorldTargetHealthReceipt{},errors.New("NATIVE_WORLD_HEALTH_CONTINUITY_MISMATCH")

@@ -152,10 +152,11 @@ func run(requestRaw []byte, sourceRevision string) error {
         accepted,err:=checkWorldEffectACK(scanner.Bytes(),tick,proofs,os.Getpid())
         if err!=nil {return fmt.Errorf("tick %d world effect ACK: %w",count,err)}
         if accepted.WorldTargetHealthBefore!=nil {
-            nativeDamage:=*accepted.WorldTargetHealthBefore-*accepted.WorldTargetHealthAfter
+            // Preserve raw source-native overkill across the ACK boundary;
+            // the core reconciles it against gsim's clamped lethal HP.
             healthReceipt,err:=boundary.ApplyWorldTargetHealth(
                 *accepted.WorldTargetHealthBefore,*accepted.WorldTargetHealthAfter,
-                *accepted.WorldTargetMaxHealth,nativeDamage)
+                *accepted.WorldTargetMaxHealth,accepted.AppliedNativeDamage)
             if err!=nil {return fmt.Errorf("tick %d native world health: %w",count,err)}
             accepted.NativeWorldHealthApplied=true
             accepted.NativeRemainingHealthFraction=healthReceipt.RemainingHealthFraction

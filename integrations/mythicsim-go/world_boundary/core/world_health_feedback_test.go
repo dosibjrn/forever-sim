@@ -19,3 +19,22 @@ func TestWorldHealthACKDrivesNativeExecutePhaseWithoutDoubleDamage(t *testing.T)
         t.Fatalf("accepted noncausal HP jump: %v",err)
     }
 }
+
+func TestWorldHealthACKAcceptsRawLethalOverkillWithoutDoubleCounting(t *testing.T) {
+    native:=&Simulation{Environment:&Environment{Raid:&Raid{}},Duration:120*time.Second,
+        endOfCombatDuration:120*time.Second,minTrackerTime:NeverExpires}
+    session:=&WorldBoundarySession{native:native}
+    if _,err:=session.ApplyWorldTargetHealth(10,10,10,0);err!=nil {t.Fatal(err)}
+    if _,err:=session.ApplyWorldTargetHealth(10,0,10,9);err==nil {
+        t.Fatal("accepted lethal HP loss without sufficient native source damage")
+    }
+    if session.worldHealthLast!=10 || native.Encounter.DamageTaken!=0 {
+        t.Fatal("rejected source damage mutated native world health")
+    }
+    receipt,err:=session.ApplyWorldTargetHealth(10,0,10,22.5)
+    if err!=nil {t.Fatalf("raw source-native overkill rejected: %v",err)}
+    if session.worldHealthLast!=0 || native.Encounter.DamageTaken!=10 ||
+        receipt.RemainingHealthFraction!=0 {
+        t.Fatalf("lethal world ACK not applied exactly once: %+v damage=%f",receipt,native.Encounter.DamageTaken)
+    }
+}
