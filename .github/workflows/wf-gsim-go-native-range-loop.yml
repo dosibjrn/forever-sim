@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - work/wf28-native-world-health-feedback-20261101
+      - work/native-overkill-lethal-20261101
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
@@ -169,6 +170,27 @@ jobs:
           assert a[i+1]["native_health_fraction_at_boundary"]<b[i+1]["native_health_fraction_at_boundary"]
           print("REAL_WORLD_HP_CHANGED_NEXT_NATIVE_EXECUTE_PHASE",near_effects,far_effects,
                 a[i+1]["native_execute_phase_at_boundary"],b[i+1]["native_execute_phase_at_boundary"])
+          PY
+      - name: Real pinned Go native overkill kills the actual gsim target and closes session
+        run: |
+          cd project
+          python3 - <<'PY'
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import run
+          result=run(Path("../gsim-go-world-ingress"),
+              Path("../upstream/sim/paladin/retribution/testdata/lights_vigil_request.json"),
+              ticks=60,target_spawn_yards=3.,target_health=100.)
+          observations=result["observations"]
+          assert 0<len(observations)<60,len(observations)
+          last=observations[-1]
+          raw=sum(e["damage"] for e in last["native_damage_events"])
+          ack=last["gsim_applied_world_ack"]
+          assert raw>100,raw
+          assert ack["world_target_health_before"]==100
+          assert ack["world_target_health_after"]==0
+          assert ack["applied_native_damage"]==raw
+          assert last["native_world_ack_confirmation"]["native_world_health_applied"]
+          print("REAL_NATIVE_OVERKILL_GSIM_TARGET_KILLED_AND_ACKED",raw,len(observations))
           PY
       - name: Reject forged gsim world ACK in the real native Go process
         run: |
