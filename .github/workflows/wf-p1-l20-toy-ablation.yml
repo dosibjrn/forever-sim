@@ -1,0 +1,30 @@
+name: One-shot Druid L20 P1 toy ablation (gsim diagnostic only)
+on:
+  push:
+    branches: [work/druid-l20-feral-p1-toy-ablation]
+    paths:
+      - tests/test_wf_p1_toy_ablation.py
+      - .github/workflows/wf-p1-l20-toy-ablation.yml
+  workflow_dispatch:
+jobs:
+  real-gsim-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Execute genuine sourced L20 Druid action A/B against production gsim
+        env:
+          WOW_FOREVER_BUILD_AS_OF: '2026-10-17'
+        run: python -m pytest -q tests/test_wf_p1_toy_ablation.py
+      - name: Hybrid Rust cannot claim PASS without real native source-action support
+        run: |
+          if python tools/wf_p1_toy_ablation.py --backend hybrid-rust; then
+            echo "ERROR: Rust integration incorrectly claimed success" >&2
+            exit 1
+          fi
