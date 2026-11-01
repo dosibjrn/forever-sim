@@ -28,7 +28,7 @@ from src.game.data.forever.source_indexed_action_coverage import _source_spell_i
 from src.game.model.ir import IncomingAttackDefinition
 from src.game.runtime import ActorState, CombatRuntime, TargetState
 from src.game.runtime.simulator import action_eligibility
-from tools.wf_gate_p1_live import _highest_usable_ranks, _source_ids, _source_rows, run_live
+from tools.wf_gate_p1_live import (_highest_usable_ranks, _source_ids, _source_rows, _source_legality, _source_disabled_rune_ids, _load_p1_scenario_nonimpact, run_live)
 
 TOY_MOB_HP = 20_000.
 EXTRA_PLAYER_HP = 5_000.
@@ -170,17 +170,20 @@ def _source_actions(root: Path):
     ir = build_game_ir_slice(class_key="druid", level=20, ability_db_path=source)
     if ir is None:
         raise ValueError("PRODUCTION_L20_DRUID_IR_UNAVAILABLE")
-    # The authoritative P1 itself executes the current source and filters
-    # rank/nonaction/scenario exclusions. Never read a past JSON verdict.
+    # Execute the live P1 auditor to retain its gate verdict, but derive the
+    # broader spell denominator directly from source legality and GameIR.
+    # In particular, Feral Cat can ALSO cast druid heals and caster spells.
     p1 = run_live(root, "druid", 20, spec="feral-cat")
-    if not p1.get("source_id") or "checked_source_abilities" not in p1:
-        raise ValueError("LIVE_P1_SOURCE_INVENTORY_UNAVAILABLE:" + str(p1.get("reasons")))
-    excluded = {int(row["source_spell_id"]) for row in
-                p1.get("excluded_nonaction_or_inactive_rows", ())
-                if "source_spell_id" in row}
-    rows = _highest_usable_ranks(_source_rows(source, "druid", 20))
-    selected = {int(row["spell_id"]): row for row in rows
-                if int(row["spell_id"]) not in excluded}
+    legality, _meta = _source_legality(root, ir, "druid", 20, source)
+    inactive = _source_disabled_rune_ids(source, "druid", 20)
+    excluded_in_scenario = _load_p1_scenario_nonimpact(
+        root, "druid", 20, "current_solo_leveling_100mob_v1")
+    rows = [row for row in _source_rows(source, "druid", 20)
+            if legality.get(int(row["spell_id"]), ("UNRESOLVED",))[0] in ("LEGAL", "CONDITIONAL")
+            and int(row["spell_id"]) not in inactive]
+    highest = _highest_usable_ranks(rows)
+    selected = {int(row["spell_id"]): row for row in highest
+                if int(row["spell_id"]) not in excluded_in_scenario}
     matched = {}
     for action in ir.actions:
         if action.owner_actor_id != ir.actor.id:
@@ -190,10 +193,8 @@ def _source_actions(root: Path):
                 if sid in matched:
                     raise ValueError("DUPLICATE_P1_ACTION_ID:" + str(sid))
                 matched[sid] = action
-    # An unmapped legal spell remains in denominator with a named failure.
-    if len(selected) != p1["checked_source_abilities"]:
-        raise ValueError("P1_SCOPE_MISMATCH: selected=" + str(len(selected)) +
-                         " source=" + str(p1["checked_source_abilities"]))
+    if not selected:
+        raise ValueError("EMPTY_L20_SOURCE_LEGAL_ABILITY_UNIVERSE")
     return ir, selected, matched, p1
 
 
@@ -216,7 +217,7 @@ def run_gsim(root=ROOT, *, ability_id=None):
             "proof_kind": PROOF_KIND,
             "p1_certified": False, "hybrid_rust_executed": False,
             "live_p1_current_status": source_p1["status"],
-            "checked": len(results),
+            "checked": len(results),\n            "note": "full source-legal druid spellbook, including caster/healing, not just Cat Form",
             "observed": sum(x["status"] == "EFFECT_OBSERVED" for x in results),
             "results": results}
 
