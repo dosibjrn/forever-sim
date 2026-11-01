@@ -77,9 +77,17 @@ func recordWorldDamageForGsim(sim *Simulation, spell *Spell, result *SpellResult
     // player are real damage sources: dropping their spell results would make
     // the gsim target survive hits that the native engine actually dealt.
     if result.Target.Type != EnemyUnit || result.Damage == 0 || sim.CurrentTime < 0 { return }
-    if (spell.Unit.Type != PlayerUnit && spell.Unit.Type != PetUnit) ||
-        spell.Unit.Index != 0 {
+    if spell.Unit.Type != PlayerUnit && spell.Unit.Type != PetUnit {
         state.err=errors.New("NATIVE_WORLD_DAMAGE_CASTER_UNSUPPORTED")
+        return
+    }
+    // A pet's Index is a raid-wide PET ordinal (not its owner's player
+    // index). In this one-player world coupling, a real source pet belongs
+    // to the sole player; never assume pet.Index == player.Index.
+    if (spell.Unit.Type==PlayerUnit && spell.Unit.Index!=0) ||
+        (spell.Unit.Type==PetUnit &&
+            (len(sim.Raid.AllPlayerUnits)!=1 || sim.Raid.AllPlayerUnits[0]==nil)) {
+        state.err=errors.New("NATIVE_WORLD_DAMAGE_CASTER_NOT_SINGLE_PLAYER")
         return
     }
     casterType:=""
