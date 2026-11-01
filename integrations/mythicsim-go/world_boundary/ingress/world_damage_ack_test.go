@@ -15,10 +15,14 @@ func ackFixture(tick worldTick, events []sourceNativeEventProof, pid int) []byte
     }
     after:=tick.WorldSHA256
     if damage>0 {after=strings.Repeat("b",64)}
+    hpBefore,hpMax:=1000.0,1000.0
+    hpAfter:=hpBefore-damage
+    if hpAfter<0 {hpAfter=0}
     raw,_:=json.Marshal(worldDamageAck{
         Type:"gsim_native_damage_applied_ack",Sequence:tick.Sequence,
         NativeProcessID:pid,WorldBeforeSHA256:tick.WorldSHA256,
         WorldAfterSHA256:after,AppliedEventIDs:ids,AppliedEvents:events,AppliedNativeDamage:damage,
+        WorldTargetHealthBefore:&hpBefore,WorldTargetHealthAfter:&hpAfter,WorldTargetMaxHealth:&hpMax,
     })
     return raw
 }
@@ -146,5 +150,25 @@ func TestWorldEffectACKAcceptsLethalSourceOverkillAndRejectsInventedHP(t *testin
     raw,_=json.Marshal(ack)
     if _,err:=checkWorldEffectACK(raw,tick,events,123);err==nil {
         t.Fatal("accepted world target surviving a lethal source event")
+    }
+}
+
+func TestWorldEffectACKCannotSkipNativeHealthFeedback(t *testing.T) {
+    tick:=goodTick(0,100)
+    for _,events:=range [][]sourceNativeEventProof{
+        nil, {nativeRealEventProof()},
+    } {
+        var ack worldDamageAck
+        if err:=json.Unmarshal(ackFixture(tick,events,123),&ack);err!=nil {t.Fatal(err)}
+        // A world hash and exact spell transcript alone do not prove that
+        // the next native decision consumed the actual gsim target health.
+        ack.WorldTargetHealthBefore=nil
+        ack.WorldTargetHealthAfter=nil
+        ack.WorldTargetMaxHealth=nil
+        raw,_:=json.Marshal(ack)
+        if _,err:=checkWorldEffectACK(raw,tick,events,123);err==nil ||
+            !strings.Contains(err.Error(),"WORLD_EFFECT_ACK_HEALTH_FIELDS_INCOMPLETE") {
+            t.Fatalf("accepted ACK without native health feedback (events=%d): %v",len(events),err)
+        }
     }
 }

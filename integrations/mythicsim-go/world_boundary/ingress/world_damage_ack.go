@@ -97,20 +97,21 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
         math.Abs(applied-ack.AppliedNativeDamage)>1e-6 {
         return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_DAMAGE_MISMATCH")
     }
-    healthPresent:=ack.WorldTargetHealthBefore!=nil || ack.WorldTargetHealthAfter!=nil || ack.WorldTargetMaxHealth!=nil
-    if healthPresent {
-        if ack.WorldTargetHealthBefore==nil || ack.WorldTargetHealthAfter==nil || ack.WorldTargetMaxHealth==nil {
-            return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_FIELDS_INCOMPLETE")
-        }
-        before,after,maxHP:=*ack.WorldTargetHealthBefore,*ack.WorldTargetHealthAfter,*ack.WorldTargetMaxHealth
-        if math.IsNaN(before) || math.IsNaN(after) || math.IsNaN(maxHP) ||
-            math.IsInf(before,0) || math.IsInf(after,0) || math.IsInf(maxHP,0) ||
-            maxHP<=0 || before<0 || after<0 || before>maxHP || after>before ||
-            // Native damage is raw source damage. Gsim clamps a lethal hit
-            // to zero HP; the world delta is min(raw damage, remaining HP).
-            math.Abs(before-after-math.Min(applied,before))>1e-6 {
-            return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_DELTA_MISMATCH")
-        }
+    // The native scheduler MUST consume the gsim target's real HP on every
+    // tick, including no-effect ticks. Without these fields, a valid event
+    // transcript/hash could ACK damage while leaving native execute/APL
+    // decisions on stale encounter health.
+    if ack.WorldTargetHealthBefore==nil || ack.WorldTargetHealthAfter==nil || ack.WorldTargetMaxHealth==nil {
+        return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_FIELDS_INCOMPLETE")
+    }
+    before,after,maxHP:=*ack.WorldTargetHealthBefore,*ack.WorldTargetHealthAfter,*ack.WorldTargetMaxHealth
+    if math.IsNaN(before) || math.IsNaN(after) || math.IsNaN(maxHP) ||
+        math.IsInf(before,0) || math.IsInf(after,0) || math.IsInf(maxHP,0) ||
+        maxHP<=0 || before<0 || after<0 || before>maxHP || after>before ||
+        // Native damage is raw source damage. Gsim clamps a lethal hit
+        // to zero HP; the world delta is min(raw damage, remaining HP).
+        math.Abs(before-after-math.Min(applied,before))>1e-6 {
+        return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_HEALTH_DELTA_MISMATCH")
     }
     if (applied>0 && ack.WorldAfterSHA256==tick.WorldSHA256) ||
         (applied==0 && ack.WorldAfterSHA256!=tick.WorldSHA256) {
@@ -124,10 +125,8 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
     digestInput:=append([]byte(fmt.Sprintf(
         "gsim-native-ACK-v2:%d:%d:%s:%s:",pid,tick.Sequence,
         ack.WorldBeforeSHA256,ack.WorldAfterSHA256)),eventBytes...)
-    if healthPresent {
-        digestInput=append(digestInput,[]byte(fmt.Sprintf(":world-hp:%.17g:%.17g:%.17g",
-            *ack.WorldTargetHealthBefore,*ack.WorldTargetHealthAfter,*ack.WorldTargetMaxHealth))...)
-    }
+    digestInput=append(digestInput,[]byte(fmt.Sprintf(":world-hp:%.17g:%.17g:%.17g",
+        *ack.WorldTargetHealthBefore,*ack.WorldTargetHealthAfter,*ack.WorldTargetMaxHealth))...)
     digest:=sha256.Sum256(digestInput)
     return worldAckAccepted{Type:"native_go_world_ack_accepted",
         Sequence:tick.Sequence,ACKID:hex.EncodeToString(digest[:]),
