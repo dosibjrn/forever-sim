@@ -1,0 +1,30 @@
+name: P1 source-native validator contract (not effect certification)
+on:
+  pull_request:
+    paths:
+      - tools/p1_native_source_inventory.py
+      - tools/wf_p1_native_scope_matrix.py
+      - tools/wf_p1_native_effects.py
+      - tests/test_wf_p1_native_blackbox.py
+      - docs/gates/P1_VALIDATION.md
+      - gate_config/p1_scenario_applicability_v1.json
+      - PROCESS.md
+      - .github/workflows/p1-native-validator-contract.yml
+  push:
+    branches: [work/p1-native-validator-contract-main-20261101]
+jobs:
+  source-native-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Validate native source inventory and black-box request contracts (NO native spell PASS)
+        run: python -m pytest -q tests/test_wf_p1_native_blackbox.py
+      - name: Generate 18 class/level source-only native test inputs (NO GameIR)
+        run: python tools/wf_p1_native_scope_matrix.py --levels 20 60
