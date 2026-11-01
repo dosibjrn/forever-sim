@@ -51,7 +51,7 @@ jobs:
           cp project/integrations/mythicsim-go/world_boundary/ingress/*.go upstream/cmd/wf_gsim_go_world_ingress/
           cd upstream
           go build -tags=with_db -trimpath -o ../gsim-go-world-ingress ./cmd/wf_gsim_go_world_ingress
-      - name: Actual Warlock source request - pet spell result changes real gsim world HP
+      - name: Actual Warlock pet ordinal source request - spell result changes gsim HP
         run: |
           cd project
           python3 - <<'PY'
