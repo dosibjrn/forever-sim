@@ -1766,7 +1766,7 @@ def _joint_eval_child(queue, candidate, level, mobs, recovery_policy, timeout_s,
         queue.put({k:result.get(k) for k in ('status','mean_s_per_mob','events','count',
             'mob_completed','elapsed_cpu_s','elapsed_wall_s','recovery_s',
             'packs','pack_size','spatial_mode','incoming_attacks_scheduled',
-            'source_action_counts')})
+            'source_action_counts','reason','failed_pull_index')})
     except BaseException as exc:
         queue.put({'status':'BLOCKED_RUNTIME_EXCEPTION',
                    'reason':type(exc).__name__+':'+str(exc)[:320],
