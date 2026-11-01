@@ -52,11 +52,12 @@ func TestNativeWorldDamageJournalDoesNotInventRegisteredSpellEvents(t *testing.T
 
 
 func TestNativeWorldDamageJournalCapturesPetSourceSpellResult(t *testing.T) {
-    sim:=&Simulation{Environment:&Environment{Raid:&Raid{}},CurrentTime:75*time.Millisecond}
+    owner:=&Unit{Type:PlayerUnit,Index:0}
+    sim:=&Simulation{Environment:&Environment{Raid:&Raid{AllPlayerUnits:[]*Unit{owner}}},CurrentTime:75*time.Millisecond}
     session:=&WorldBoundarySession{native:sim}
     if err:=session.StartWorldDamageJournal();err!=nil {t.Fatal(err)}
     defer session.CloseWorldDamageJournal()
-    pet:=&Unit{Type:PetUnit,Index:0,UnitIndex:2,Label:"Imp"}
+    pet:=&Unit{Type:PetUnit,Index:1,UnitIndex:2,Label:"Imp"}
     enemy:=&Unit{Type:EnemyUnit,Index:0,UnitIndex:1,Label:"native-enemy"}
     spell:=&Spell{Unit:pet,ActionID:ActionID{SpellID:3110},Rank:1}
     result:=&SpellResult{Target:enemy,Damage:40,Outcome:OutcomeHit}
@@ -71,7 +72,8 @@ func TestNativeWorldDamageJournalCapturesPetSourceSpellResult(t *testing.T) {
 }
 
 func TestNativeWorldDamageJournalRejectsPetWithoutSinglePlayerOwner(t *testing.T) {
-    sim:=&Simulation{Environment:&Environment{Raid:&Raid{}},CurrentTime:75*time.Millisecond}
+    owners:=[]*Unit{{Type:PlayerUnit,Index:0},{Type:PlayerUnit,Index:1}}
+    sim:=&Simulation{Environment:&Environment{Raid:&Raid{AllPlayerUnits:owners}},CurrentTime:75*time.Millisecond}
     session:=&WorldBoundarySession{native:sim}
     if err:=session.StartWorldDamageJournal();err!=nil {t.Fatal(err)}
     defer session.CloseWorldDamageJournal()
