@@ -9,6 +9,9 @@
 # Existing public main-only governance/docs, existing PRs and the manual smoke are kept.
 name: Restore private source to public Forever Sim
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/restore-private-source.yml']
   workflow_dispatch:
     inputs:
       mode:
@@ -32,8 +35,8 @@ jobs:
     timeout-minutes: 30
     if: github.repository == 'dosibjrn/forever-sim'
     env:
-      MIGRATION_MODE: ${{ inputs.mode }}
-      APPROVED_SOURCE_SHA: ${{ inputs.approved_source_sha }}
+      MIGRATION_MODE: ${{ github.event_name == 'push' && 'publish' || inputs.mode }}
+      APPROVED_SOURCE_SHA: ${{ github.event_name == 'push' && '3bd46df7e3b95a8a3bfdc7455de659341a905826' || inputs.approved_source_sha }}
       PRIVATE_READ_TOKEN: ${{ secrets.FOREVER_SIM_PRIVATE_READ_TOKEN_2 }}
     steps:
       - name: Checkout PUBLIC destination main
