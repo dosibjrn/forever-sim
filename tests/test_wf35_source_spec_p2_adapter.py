@@ -135,3 +135,39 @@ def test_full_budget_frontier_rejects_tier_gate_violation():
     assert sum(invalid.values())==51
     with pytest.raises(ValueError,match="SOURCE_SPEC_FRONTIER_ILLEGAL_ALLOCATION"):
         _build_with(lambda ir,src,**kw:([invalid],{}))
+
+
+def test_p2_reuses_exact_legal_full_point_spec_witness_for_unlock():
+    """RED on old P2: the unrestricted greedy builder was always called.
+
+    A full-point source/profile candidate has already been validated in the
+    P2 spec frontier. Rebuilding it can spuriously fail or lose the profile.
+    """
+    witness = _allocation()
+    target = N(id="source_capstone")
+    with patch.object(p2, "available_talent_points", return_value=51), patch(
+        "src.v2.source_bounded_joint_frontier._source_unlock_full_point_allocation",
+        side_effect=AssertionError("do not rebuild an already validated full spec"),
+    ):
+        full = p2._full_point_unlock_witness(
+            _ir(), target, 1, witness, level=60, bonus=0)
+    assert full == witness
+    assert full is not witness
+    assert sum(full.values()) == 51
+    assert sum(v for k, v in full.items() if k.startswith("source_")) >= 31
+
+
+def test_p2_partial_witness_still_uses_generic_full_point_builder():
+    target = N(id="source_capstone")
+    partial = {"source_capstone": 1}
+    rebuilt = _allocation()
+    compiled = _ir()
+    with patch.object(p2, "available_talent_points", return_value=51), patch(
+        "src.v2.source_bounded_joint_frontier._source_unlock_full_point_allocation",
+        return_value=rebuilt,
+    ) as builder:
+        full = p2._full_point_unlock_witness(
+            compiled, target, 1, partial, level=60, bonus=0)
+    assert full == rebuilt
+    builder.assert_called_once_with(
+        compiled, target, level=60, bonus_talent_points=0, target_rank=1)
