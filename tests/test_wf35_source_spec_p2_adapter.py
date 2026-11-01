@@ -181,16 +181,20 @@ def test_spec_rank_probe_uses_legal_partial_effect_control_but_full_search_candi
     Never call unrestricted neighbors on an out-of-profile predecessor.
     """
     full = _allocation()
-    isolated = {"source_t0": 5, "source_capstone": 1}
+    isolated = {**{f"source_t{i}": 5 for i in range(6)},
+                "source_capstone": 1}
     modifier = N(kind="stat_pct", target_type="actor", target_id="intellect",
                  value=0.1, provenance={})
     talent = N(id="source_capstone",
                ranks=(N(rank=1, modifiers=(modifier,)),))
     compiled = _ir()
+    # Unlike a mocked legality check, this synthetic allocation satisfies
+    # the actual generic tier/prerequisite/budget validator (31/51 points).
+    p2.validate_talent_selection(compiled, isolated, level=60)
     receipt = N(applied_modifiers=[{"talent_id": "source_capstone", "rank": 1}])
     with patch.object(p2, "available_talent_points", return_value=51), patch.object(
         p2, "_witness", return_value=isolated
-    ), patch.object(p2, "validate_talent_selection"), patch.object(
+    ), patch.object(
         p2, "apply_talent_selection", return_value=(compiled, receipt)
     ), patch.object(p2, "_effect_change", return_value=True), patch.object(
         p2, "_behavior_fixtures", return_value=([{"actually_executed": True, "passed": True}], [])
