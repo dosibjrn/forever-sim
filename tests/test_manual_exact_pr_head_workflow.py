@@ -31,8 +31,16 @@ class ManualExactHeadContract(unittest.TestCase):
                       '.head.sha // ""', '"$actual_sha" != "$EXPECTED_SHA"',
                       '"$head_repo" != "$GITHUB_REPOSITORY"',
                       '"$base_repo" != "$GITHUB_REPOSITORY"',
-                      '"$base_ref" != main', '"$state" != open'):
+                      'main|work/*)', '"$state" != open'):
             self.assertIn(token, before_checkout)
+
+    def test_stacked_pr_base_is_allowlisted_before_checkout(self):
+        before_checkout = TEXT.split("- name: Checkout verified commit", 1)[0]
+        self.assertIn('case "$base_ref" in', before_checkout)
+        self.assertIn('main|work/*)', before_checkout)
+        self.assertIn('PR base is not main or an approved work/* branch', before_checkout)
+        self.assertIn('"$base_repo" != "$GITHUB_REPOSITORY"', before_checkout)
+        self.assertNotIn('"$base_ref" != main', before_checkout)
 
     def test_checkout_exact_api_verified_commit_without_credentials(self):
         self.assertIn("ref: ${{ steps.verify-pr.outputs.sha }}", TEXT)
