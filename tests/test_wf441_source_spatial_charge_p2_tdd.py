@@ -58,6 +58,37 @@ def test_bear_2d_charge_repositions_and_roots_real_target():
     assert rt.targets['m0'].active_controls.get('root',0)<4.01
 
 
+
+def test_source_bear_contact_charge_at_zero_range_preserves_position_and_effects():
+    # The sourced Bear form declares a 0-yard minimum. The production 2D
+    # executor must not normalize a zero vector or invent an arbitrary heading.
+    _,_,ir,bear,cat=chosen()
+    assert next(e for e in bear.effects if isinstance(e,SpatialChargeEffect)).minimum_range_yards==0.
+    actor=ActorState.from_ir(ir.actor,ir.resources,ir.modes)
+    actor.transition_mode('bear')
+    actor.resources['rage']=60.
+    rt=CombatRuntime(actor=actor,target=TargetState.with_health('m0',10000.),
+        other_targets=(TargetState.with_health('m1',10000.),),
+        spatial_positions_yards={'m0':(0.,0.),'m1':(30.,0.)},
+        melee_radius_yards=5.,aggro_radius_yards=10.)
+    assert rt.spatial_action_in_range(bear)
+    rt.schedule_action(bear)
+    arrivals=[event for event in rt.trace if event.kind=='SpatialChargeArrival']
+    assert len(arrivals)==1
+    assert arrivals[0].payload['distance_before_yards']==pytest.approx(0.)
+    assert rt.player_position_yards==(0.,0.)
+    assert rt.targets['m0'].active_controls['root']==pytest.approx(4.)
+    assert actor.resources['rage']==55.
+    assert actor.cooldown_ready_s[bear.id]==pytest.approx(15.)
+    # The Cat variant explicitly requires 8 yards. Overlap must NOT turn
+    # into a free behind-target teleport or consume its cooldown.
+    actor.transition_mode('cat')
+    before=dict(actor.cooldown_ready_s)
+    with pytest.raises(ValueError,match='SOURCE_SPATIAL_CHARGE_OUT_OF_RANGE_OR_UNVERIFIED'):
+        rt.schedule_action(cat)
+    assert actor.cooldown_ready_s==before
+
+
 def test_cat_2d_charge_leaps_behind_but_does_not_root():
     _,_,ir,_,cat=chosen();rt=runtime(ir,'cat')
     rt.schedule_action(cat)
