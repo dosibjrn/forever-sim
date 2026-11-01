@@ -273,12 +273,13 @@ def evaluate_repeated_pulls(
         else:
             recovery_s = 0.0
             heal_actions = []
-        # Travel is a real OOC clock transition on the SAME actor, including
-        # energy regeneration, cooldown progression and carried actor HoTs.
-        # No enemy attacks or source-free mana refill are introduced here.
-        if travel_time_s > 0:
+        # Travel is paid only when another target remains. The last pack
+        # settles recovery debt, but there is no next mob to travel toward.
+        # This matches the canonical persistent evaluator's inter-pull route.
+        travel_charged_s = float(travel_time_s) if not is_final_pack else 0.0
+        if travel_charged_s > 0:
             travel_runtime = CombatRuntime(actor=actor, target=TargetState.with_health('travel', 1.0))
-            travel_runtime.advance_to(float(actor.current_time_s) + float(travel_time_s))
+            travel_runtime.advance_to(float(actor.current_time_s) + travel_charged_s)
             travel_runtime.persist_actor_periodics()
         pending_count = sum(e.kind == 'PeriodicTick' for e in actor.pending_actor_periodic_events)
         results.append({
@@ -289,7 +290,7 @@ def evaluate_repeated_pulls(
             'prepared_first_pull_resources':dict(prepared) if index == 0 else {},
             'kill_s': float(timeline.target_death_s) - float(timeline.start_time_s),
             'recovery_s': float(recovery_s),
-            'travel_s': float(travel_time_s),
+            'travel_s': travel_charged_s,
             'recovery_performed': bool(needs_restoration),
             'mode_at_next_pull': actor.current_mode_id,
             'energy_at_next_pull': actor.resource_amount('energy'),
@@ -316,7 +317,7 @@ def evaluate_repeated_pulls(
             'mana_after_recovery': actor.resource_amount('mana'),
         })
         for pet in companions:
-            elapsed = float(recovery_s) + float(travel_time_s)
+            elapsed = float(recovery_s) + travel_charged_s
             resources = dict(pet.resources)
             for resource_id, rate in pet.resource_regeneration_per_s.items():
                 if resource_id in pet.resource_capacity and resource_id in resources:
