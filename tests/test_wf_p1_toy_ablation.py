@@ -55,6 +55,7 @@ def test_one_real_source_wrath_vs_inert_cast(monkeypatch):
     assert report["observed"] == 1 and report["checked"] == 1
     assert report["p1_certified"] is False
     assert report["hybrid_rust_executed"] is False
+    assert "NOT_HYBRID_RUST" in report["proof_kind"]
 
 
 def test_one_real_source_heal_vs_inert_cast(monkeypatch):
