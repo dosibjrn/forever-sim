@@ -44,6 +44,8 @@ jobs:
           assert row['status']=='BLOCKED_ACTOR_DIED'
           assert re.fullmatch(r'pull [0-9]+ failed: actor_died',row['reason'])
           assert row['count']==int(row['reason'].split()[1])*2
+          assert row['failed_pull_index']==int(row['reason'].split()[1])
+          assert row['events'] is None  # partial event total is unknown, not zero
           assert 0 <= row['count'] < 100
           PY
           python -m tools.wf437_direct_budgeted_run --replay-from /tmp/saved-search/cold300.json --replay-row 0 --output /tmp/passed.json
