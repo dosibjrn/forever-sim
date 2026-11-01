@@ -511,7 +511,13 @@ def action_eligibility(
             current = _resource_amount(actor, target, cost.resource_id)
             definition = actor.resource_definitions.get(str(cost.resource_id))
             scope = None if definition is None else str(definition.scope or "actor")
-            if current is not None and scope != "target" and actor.resource_is_active(cost.resource_id):
+            # Regeneration cannot make a cost payable above the sourced
+            # resource capacity. Otherwise the policy waits forever at cap.
+            capacity = actor.resource_capacity.get(str(cost.resource_id))
+            if (current is not None and scope == "actor"
+                    and actor.resource_is_active(cost.resource_id)
+                    and capacity is not None
+                    and float(cost.amount) <= float(capacity) + 1e-12):
                 rate = max(0.0, float(actor.resource_regeneration_per_s.get(str(cost.resource_id), 0.0)))
                 missing = max(0.0, float(cost.amount) - float(current))
                 if rate > 0.0 and missing > 1e-12:
