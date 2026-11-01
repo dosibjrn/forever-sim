@@ -27,6 +27,10 @@ type WorldNativeDamageEvent struct {
     Landed bool `json:"landed"`
     Crit bool `json:"crit"`
     Periodic bool `json:"periodic"`
+    // Empty for the original player-only protocol; nonempty for native pets.
+    NativeCasterType string `json:"native_caster_type,omitempty"`
+    NativeCasterUnitIndex int32 `json:"native_caster_unit_index,omitempty"`
+    NativeCasterLabel string `json:"native_caster_label,omitempty"`
 }
 
 type nativeWorldDamageJournal struct {
@@ -69,10 +73,27 @@ func recordWorldDamageForGsim(sim *Simulation, spell *Spell, result *SpellResult
         state.err=errors.New("NATIVE_WORLD_DAMAGE_MALFORMED_SPELL_RESULT")
         return
     }
-    // The current world coupling supports ONE player and ONE enemy only.
-    // Pet and enemy damage must be integrated separately, not misattributed.
-    if spell.Unit.Type != PlayerUnit || result.Target.Type != EnemyUnit ||
-        result.Damage == 0 || sim.CurrentTime < 0 { return }
+    // Only the selected enemy is coupled to gsim. Pets of the single native
+    // player are real damage sources: dropping their spell results would make
+    // the gsim target survive hits that the native engine actually dealt.
+    if result.Target.Type != EnemyUnit || result.Damage == 0 || sim.CurrentTime < 0 { return }
+    if (spell.Unit.Type != PlayerUnit && spell.Unit.Type != PetUnit) ||
+        spell.Unit.Index != 0 {
+        state.err=errors.New("NATIVE_WORLD_DAMAGE_CASTER_UNSUPPORTED")
+        return
+    }
+    casterType:=""
+    casterIndex:=int32(0)
+    casterLabel:=""
+    if spell.Unit.Type==PetUnit {
+        if spell.Unit.UnitIndex<0 || spell.Unit.Label=="" {
+            state.err=errors.New("NATIVE_WORLD_DAMAGE_PET_IDENTITY_MISSING")
+            return
+        }
+        casterType="pet"
+        casterIndex=spell.Unit.UnitIndex
+        casterLabel=spell.Unit.Label
+    }
     if math.IsNaN(result.Damage) || math.IsInf(result.Damage,0) || result.Damage < 0 {
         state.err=errors.New("NATIVE_WORLD_DAMAGE_INVALID")
         return
@@ -93,6 +114,7 @@ func recordWorldDamageForGsim(sim *Simulation, spell *Spell, result *SpellResult
         Rank:spell.Rank,NativeTargetIndex:target.Index,
         NativeTargetUnitIndex:target.UnitIndex,NativeTargetLabel:target.Label,
         Damage:result.Damage,Landed:result.Landed(),Crit:result.DidCrit(),Periodic:periodic,
+        NativeCasterType:casterType,NativeCasterUnitIndex:casterIndex,NativeCasterLabel:casterLabel,
     })
     state.lastTime=sim.CurrentTime
 }
