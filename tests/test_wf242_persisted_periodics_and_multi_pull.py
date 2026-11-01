@@ -3,8 +3,10 @@ import pytest
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.multi_pull import evaluate_repeated_pulls
+from src.game.model import PeriodicHealEffect
 from src.game.recovery import recover_actor_to_full
 from src.game.runtime import ActorState, CombatRuntime, TargetState
+from src.game.runtime.simulator import expected_periodic_tick_heal
 from src.shared.leveling.objective import representative_hp
 
 
@@ -16,39 +18,83 @@ def _druid_recovery():
     return ir, actor, result
 
 
-def test_real_rejuvenation_carries_source_events_to_next_pull_exactly_once():
+def test_real_source_hot_carries_every_remaining_tick_into_next_pull_exactly_once():
     ir, actor, rec = _druid_recovery()
-    assert rec.provenance['heal_action_sequence'] == ['rejuvenation:rank@16']
-    assert len(actor.pending_actor_periodic_events) == 3
+    # The selected source action is Regrowth (direct + HoT), not the
+    # historical Rejuvenation-only action. Derive identity and tick schedule
+    # from the current GameIR instead of pinning an obsolete rank alias.
+    source_action = next(a for a in ir.actions if a.id == rec.heal_action_id)
+    assert source_action.family_key == 'regrowth'
+    assert source_action.metadata['source_semantic_type'] == 'direct_periodic_heal'
+    assert source_action.provenance
+    assert rec.provenance['heal_action_sequence'] == [source_action.id]
+    hot = next(e for e in source_action.effects if isinstance(e, PeriodicHealEffect))
+    total_ticks = round(hot.duration_s / hot.tick_interval_s)
+    assert total_ticks * hot.tick_interval_s == pytest.approx(hot.duration_s)
+
+    pending = tuple(actor.pending_actor_periodic_events)
+    pending_ticks = [e for e in pending if e.kind == 'PeriodicTick']
+    recovered_ticks = [e for e in rec.heal_events
+                       if e['kind'] == 'Heal' and e['payload'].get('periodic')]
+    assert pending_ticks
     assert rec.provenance['pending_hot_auras_carried_into_next_pull']
+    assert all(e.action_id == source_action.id for e in pending_ticks)
+    recovered_indices = [int(e['payload']['tick_index']) for e in recovered_ticks]
+    pending_indices = [int(e.payload['tick_index']) for e in pending_ticks]
+    assert sorted(recovered_indices + pending_indices) == list(range(1, total_ticks + 1))
+
     next_pull = CombatRuntime(actor=actor, target=TargetState.with_health('next', 100.))
     assert not actor.pending_actor_periodic_events  # MOVE, not copy
     actor.deplete('health', 100.)
-    next_pull.advance_to(23.)
+    next_pull.advance_to(max(e.time_s for e in pending) + 0.01)
     heals = [e for e in next_pull.trace if e.kind == 'Heal' and e.payload.get('periodic')]
-    assert [e.time_s for e in heals] == [19., 22.]
-    assert [e.payload['amount'] for e in heals] == pytest.approx([29., 29.])
-    assert actor.resource_amount('health') == pytest.approx(458.)
+    assert [e.time_s for e in heals] == pytest.approx([e.time_s for e in pending_ticks])
+    assert [e.payload['tick_index'] for e in heals] == pending_indices
+    expected_heal = expected_periodic_tick_heal(
+        hot, healing_power=actor.effective_healing_power(0.))
+    assert expected_heal > 0
+    assert [e.payload['amount'] for e in heals] == pytest.approx(
+        [expected_heal] * len(pending_ticks))
+    assert actor.resource_amount('health') <= actor.resource_capacity['health']
     assert not actor.active_auras
     assert not next_pull.persist_actor_periodics()
 
 
 def test_recovery_with_inherited_hot_does_not_lose_or_duplicate_ticks():
     ir, actor, _ = _druid_recovery()
+    before = [e for e in actor.pending_actor_periodic_events if e.kind == 'PeriodicTick']
+    def key(payload):
+        return (str(payload['aura_id']), int(payload['generation']), int(payload['tick_index']))
+    original = [key(e.payload) for e in before]
+    assert original and len(original) == len(set(original))
+
     actor.deplete('health', 75.)
     result = recover_actor_to_full(actor=actor, level=20, actions=(),
                                    start_time_s=actor.current_time_s)
     assert result.provenance['heal_action_sequence'] == []
-    # Remaining old ticks execute once while food/water progresses.
-    ticks = [e for e in result.heal_events if e['kind'] == 'Heal' and e['payload'].get('periodic')]
-    assert len(ticks) == 1
+    # Each sourced tick is either consumed during paid recovery or moved to
+    # the next encounter. Neither a historical hardcoded count nor a count
+    # of AuraExpired events proves that no healing was lost or duplicated.
+    executed = [e for e in result.heal_events
+                if e['kind'] == 'Heal' and e['payload'].get('periodic')]
+    remaining_events = tuple(actor.pending_actor_periodic_events)
+    remaining = [e for e in remaining_events if e.kind == 'PeriodicTick']
+    executed_keys = [key(e['payload']) for e in executed]
+    remaining_keys = [key(e.payload) for e in remaining]
+    assert executed_keys
+    assert len(executed_keys) == len(set(executed_keys))
+    assert len(remaining_keys) == len(set(remaining_keys))
+    assert not set(executed_keys).intersection(remaining_keys)
+    assert sorted(executed_keys + remaining_keys) == sorted(original)
     assert actor.resource_amount('health') == pytest.approx(actor.resource_capacity['health'])
-    assert sum(e.kind == 'PeriodicTick' for e in actor.pending_actor_periodic_events) == 1
-    follow = CombatRuntime(actor=actor, target=TargetState.with_health('follow', 100.))
-    actor.deplete('health', 50.)
-    follow.advance_to(23.)
-    assert len([e for e in follow.trace if e.kind == 'Heal' and e.payload.get('periodic')]) == 1
 
+    follow = CombatRuntime(actor=actor, target=TargetState.with_health('follow', 100.))
+    assert not actor.pending_actor_periodic_events  # transferred once
+    actor.deplete('health', 50.)
+    follow.advance_to(max(e.time_s for e in remaining_events) + 0.01)
+    carried_heals = [e for e in follow.trace if e.kind == 'Heal' and e.payload.get('periodic')]
+    assert sorted(key(e.payload) for e in carried_heals) == sorted(remaining_keys)
+    assert not follow.persist_actor_periodics()
 
 def test_corrupt_or_stale_continuation_is_rejected_instead_of_free_heal():
     ir, actor, _ = _druid_recovery()
