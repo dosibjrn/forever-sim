@@ -145,7 +145,7 @@ def _evaluate_concurrent_source_packs(candidate, *, level, mobs, pack_size,
             return {'status':'BLOCKED_ACTOR_DIED',
                     'mob_completed':min(mobs,failed_pack*pack_size),
                     'failed_pull_index':failed_pack,
-                    'reason':reason,'events':0}
+                    'reason':reason,'events':None}
         if reason.startswith('BLOCKED_SOURCE_MAINTENANCE_UPKEEP:'):
             return {'status':'BLOCKED_SOURCE_MAINTENANCE_UPKEEP',
                     'mob_completed':0,'reason':reason}
