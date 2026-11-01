@@ -58,8 +58,8 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
 def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
         corrupt_ack: bool = False, target_health: float = 10_000_000.,
-        target_initial_health_fraction: float = 1.) -> dict:
-    if ticks < 2 or ticks > 100 or timeout_s <= 0:
+        target_initial_health_fraction: float = 1., pulls: int = 1) -> dict:
+    if ticks < 2 or ticks > 100 or timeout_s <= 0 or pulls not in (1, 2):
         raise ValueError('INVALID_PROBE_LIMITS')
     binary, request = binary.resolve(), request.resolve()
     raw = request.read_bytes()
@@ -102,6 +102,7 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     thread = threading.Thread(target=read_lines, daemon=True)
     thread.start()
     observations = []
+    killed_target_ids = []
     native_pid = None
     try:
         for idx in range(ticks):
@@ -178,11 +179,21 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                                  'native_health_fraction_at_boundary': response['native_health_fraction'],
                                  'native_execute_phase_at_boundary': response['native_execute_phase'],
                                  'native_world_health_feedback_active_at_boundary': response['native_world_health_feedback_active']})
-            # The native process ends cleanly after the actual gsim target
-            # dies and its lethal source event has received a world ACK.
-            # Never request another world tick for a dead selected target.
+            # A lethal ACK ends this mob, not the retained native actor.
+            # A second identical source mob may be selected without restarting
+            # Go or resetting player resources/cooldowns/auras.
             if not actual_target.alive:
-                break
+                killed_target_ids.append(actual_target.id)
+                if len(killed_target_ids) == pulls:
+                    break
+                next_id = next((target_id for target_id, target in runtime.targets.items()
+                                if target.alive), None)
+                if next_id is None:
+                    raise RuntimeError('NATIVE_GO_NEXT_WORLD_TARGET_MISSING')
+                runtime.engage_target(next_id)
+                runtime.select_target(next_id)
+                world_applier.begin_next_world_target(next_id)
+                target_spell_ledger.begin_next_world_target(actual_target.id, next_id)
         proc.stdin.close()
         if proc.wait(timeout=timeout_s) != 0:
             raise RuntimeError('NATIVE_GO_RANGE_SESSION_FAILED_ON_CLOSE: ' + native_failure_details())
@@ -206,6 +217,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
             'native_source_revision': PINNED_GO_REVISION,
             'native_request_sha256': request_sha,
             'native_process_id': native_pid,
+            'killed_target_ids': killed_target_ids,
+            'pulls_requested': pulls,
             'observations': observations,
             'native_process_reused': True,
             'native_spell_counters_observed': all('native_spell_counters' in x for x in observations),
