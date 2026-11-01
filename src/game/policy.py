@@ -94,6 +94,22 @@ def _aura_host(scope: str, runtime: CombatRuntime):
     raise ValueError(f"unsupported aura scope: {scope or 'unknown'}")
 
 
+def _resource_threshold_limit(condition: PolicyCondition, *, action: ActionDefinition) -> float:
+    resource_id = str(condition.resource_id or "")
+    if not resource_id:
+        raise ValueError("resource_threshold condition missing resource_id")
+    if condition.threshold_source == "action_cost":
+        costs = [float(x.amount) for x in action.costs if str(x.resource_id) == resource_id]
+        if not costs:
+            raise ValueError(f"action {action.id!r} has no cost for resource {resource_id!r}")
+        return sum(costs)
+    if condition.threshold_source is None:
+        if condition.value is None:
+            raise ValueError("resource_threshold condition missing value")
+        return float(condition.value)
+    raise ValueError(f"unsupported resource threshold source: {condition.threshold_source}")
+
+
 def _resource_threshold(condition: PolicyCondition, *, action: ActionDefinition, runtime: CombatRuntime) -> bool:
     resource_id = str(condition.resource_id or "")
     if not resource_id:
@@ -101,18 +117,38 @@ def _resource_threshold(condition: PolicyCondition, *, action: ActionDefinition,
     current = runtime.resource_amount(resource_id)
     if current is None:
         return False
-    if condition.threshold_source == "action_cost":
-        costs = [float(x.amount) for x in action.costs if str(x.resource_id) == resource_id]
-        if not costs:
-            raise ValueError(f"action {action.id!r} has no cost for resource {resource_id!r}")
-        threshold = sum(costs)
-    elif condition.threshold_source is None:
-        if condition.value is None:
-            raise ValueError("resource_threshold condition missing value")
-        threshold = float(condition.value)
-    else:
-        raise ValueError(f"unsupported resource threshold source: {condition.threshold_source}")
-    return _compare(float(current), condition.operator or "gte", float(threshold))
+    threshold = _resource_threshold_limit(condition, action=action)
+    return _compare(float(current), condition.operator or "gte", threshold)
+
+
+def _resource_threshold_regen_ready_at(condition: PolicyCondition, *, action: ActionDefinition,
+                                       runtime: CombatRuntime) -> float | None:
+    """Only real actor-owned, active regeneration can satisfy a failed >= guard.
+
+    A policy condition is checked before action_eligibility. Without this
+    readiness, a sourced energy-cost guard can stop a fight while the actor
+    could legally regenerate enough energy on its existing combat clock.
+    Target-bound resources, nonmonotonic guards and unreachable thresholds
+    never create a wait or a synthetic resource event.
+    """
+    if condition.kind != 'resource_threshold' or (condition.operator or 'gte') != 'gte':
+        return None
+    resource_id = str(condition.resource_id or '')
+    definition = runtime.actor.resource_definitions.get(resource_id)
+    if (definition is None or str(definition.scope or 'actor') != 'actor'
+            or not runtime.actor.resource_is_active(resource_id)):
+        return None
+    current = runtime.actor.resource_amount(resource_id)
+    capacity = runtime.actor.resource_capacity.get(resource_id)
+    rate = float(runtime.actor.resource_regeneration_per_s.get(resource_id, 0.))
+    threshold = _resource_threshold_limit(condition, action=action)
+    if (current is None or capacity is None or rate <= 0.
+            or threshold > float(capacity) + 1e-12 or float(current) >= threshold):
+        return None
+    # Advance through CombatRuntime, which charges the elapsed time and
+    # produces actual ResourceRegenerated events. A nanosecond avoids a
+    # floating-point equality loop at an exactly-on-threshold boundary.
+    return float(runtime.actor.current_time_s) + (threshold-float(current))/rate + 1e-9
 
 
 def _target_state(condition: PolicyCondition, *, runtime: CombatRuntime) -> bool:
@@ -234,7 +270,16 @@ def select_action(policy: PolicyDefinition, *, actions: Mapping[str, ActionDefin
         # Evaluate target-dependent guards AFTER choosing a reachable victim.
         if not runtime.select_reachable_target(action):
             continue
-        if not all(condition_matches(c, action=action, runtime=runtime) for c in rule.conditions):
+        unmet = tuple(c for c in rule.conditions
+                      if not condition_matches(c, action=action, runtime=runtime))
+        if unmet:
+            # Eligibility only reports resource readiness for rules that pass
+            # their guards. A sourced >= resource guard must itself contribute
+            # a future wakeup when actual actor regeneration can satisfy it.
+            guard_ready = tuple(_resource_threshold_regen_ready_at(
+                c, action=action, runtime=runtime) for c in unmet)
+            if all(t is not None for t in guard_ready):
+                readiness.append(max(guard_ready))
             continue
         # A summon is a reusable actor lifecycle, not a spammable combat
         # action. A policy must not recast it while spawn is pending or its
