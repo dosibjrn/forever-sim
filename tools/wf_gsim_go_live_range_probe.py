@@ -167,6 +167,11 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                                  'native_health_fraction_at_boundary': response['native_health_fraction'],
                                  'native_execute_phase_at_boundary': response['native_execute_phase'],
                                  'native_world_health_feedback_active_at_boundary': response['native_world_health_feedback_active']})
+            # The native process ends cleanly after the actual gsim target
+            # dies and its lethal source event has received a world ACK.
+            # Never request another world tick for a dead selected target.
+            if not actual_target.alive:
+                break
         proc.stdin.close()
         if proc.wait(timeout=timeout_s) != 0:
             raise RuntimeError('NATIVE_GO_RANGE_SESSION_FAILED_ON_CLOSE: ' + native_failure_details())
