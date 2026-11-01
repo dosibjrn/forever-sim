@@ -34,7 +34,7 @@ type worldTick struct {
     CheckpointCertified bool `json:"checkpoint_certified"`
 }
 
-type tickValidator struct { next uint64; lastClock int64; started bool }
+type tickValidator struct { next uint64; lastClock int64; playerIndex int; started bool }
 
 func decodeWorldTick(line []byte) (worldTick, error) {
     var tick worldTick
@@ -56,6 +56,9 @@ func (v *tickValidator) validate(t worldTick) error {
     if t.ClockMS > math.MaxInt64/1000000 || t.NativeClockNS != t.ClockMS*1000000 {
         return errors.New("WORLD_TICK_NATIVE_CLOCK_MISMATCH")
     }
+    if v.started && t.NativePlayerIndex != v.playerIndex {
+        return errors.New("WORLD_NATIVE_PLAYER_CHANGED_DURING_RETAINED_SESSION")
+    }
     if t.NativePlayerIndex < 0 || t.SelectedTargetID == "" || !t.RangeOnly || t.FacingApplied || t.ControlsApplied || t.NativeActionACK || t.CheckpointCertified {
         return errors.New("WORLD_TICK_UNPROVEN_SEMANTICS")
     }
@@ -75,6 +78,7 @@ func (v *tickValidator) validate(t worldTick) error {
     // Source string and digest are assertions by the gsim producer, not proof
     // that caller did not invent JSON. Never promote to combat causality.
     v.lastClock = t.ClockMS
+    v.playerIndex = t.NativePlayerIndex
     v.started = true
     v.next++
     return nil
