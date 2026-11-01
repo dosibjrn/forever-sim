@@ -20,6 +20,11 @@ import sys
 import tempfile
 import time
 
+# A direct `python tools/wf292_batch_verified_source_recovery.py` starts with
+# tools/ on sys.path. Resolve the canonical source packages without PYTHONPATH.
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from tools.run_forever_ability_repair import _verify_existing_staging_lineage
 from src.v2.source_sqlite_detail_snapshots import (
     MissingVerifiedSpellDetail, read_verified_spell_detail_snapshot)
