@@ -2451,6 +2451,28 @@ def _refinement_build_identity(row, candidate):
             row['recovery'])
 
 
+def _promote_paid_improving_descendant(selected, improved, max_top_n):
+    """Retain the fastest paid parent and one *measured improving* lineage.
+
+    A short cold search may rank a legal intermediate child below several
+    unrelated screens even though that child is improving on its own parent.
+    Preserve one such paid trajectory for the next refinement round, without
+    seeding a saved winner or replacing the best current screen. This only
+    changes candidate exploration; the independent 100-mob replay still ranks
+    final builds.
+    """
+    if max_top_n < 2 or len(selected) < 2 or not improved:
+        return selected
+    chosen = {_refinement_build_identity(row, candidate)
+              for row, candidate, _ in selected}
+    for entry in sorted(improved, key=lambda e: (
+            float(e[0]['screen_s_per_mob']), _key(e[0]['allocation']),
+            e[0]['policy_signature'], e[0]['recovery'])):
+        if _refinement_build_identity(entry[0], entry[1]) not in chosen:
+            return selected[:-1] + [entry]
+    return selected
+
+
 def _refine_screened_top_n(*, screened, class_key, level, compiled,
                            policies_by_talent, talents, bonus_talent_points,
                            max_top_n, rounds, stat_axes, probe_delta,
@@ -2479,6 +2501,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
     for turn in range(rounds):
         if evaluated >= max_evaluations: break
         any_attempt=False
+        improving_descendants=[]
         for parent,candidate,recovery in tuple(top):
             if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
             original=float(parent['screen_s_per_mob'])
@@ -2569,7 +2592,11 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                 opening_action_ids=list(fresh.opening),refinement_round=turn+1,
                                 talent_neighbor_operation=neighbor.operation)
                             rows.append(trace);attempted.append(trace)
-                            if result['status']=='COMPLETE':screened.append((trace,fresh,recovery))
+                            if result['status']=='COMPLETE':
+                                entry=(trace,fresh,recovery)
+                                screened.append(entry)
+                                if float(result['mean_s_per_mob']) < original:
+                                    improving_descendants.append(entry)
                     except (ValueError,RuntimeError,KeyError,AssertionError):continue
             gradient={}
             # Real finite-difference on the current gear + talent + APL. A
@@ -2663,9 +2690,15 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                         opening_action_ids=list(fresh.opening),
                         refinement_round=turn+1,stat_weights_measured=dict(gradient))
                     rows.append(trace);attempted.append(trace)
-                    if result['status']=='COMPLETE':screened.append((trace,fresh,recovery))
+                    if result['status']=='COMPLETE':
+                        entry=(trace,fresh,recovery)
+                        screened.append(entry)
+                        if float(result['mean_s_per_mob']) < original:
+                            improving_descendants.append(entry)
         if any_attempt:completed_rounds+=1
-        top=_select_screen_finalists(screened,max_top_n)
+        top=_promote_paid_improving_descendant(
+            _select_screen_finalists(screened,max_top_n),
+            improving_descendants,max_top_n)
     return screened,{'rounds_completed':completed_rounds,'stat_probes':stat_probes,
         'gear_probes':gear_probes,'policy_probes':policy_probes,
         'talent_probes':talent_probes,'paid_evaluations':evaluated,
