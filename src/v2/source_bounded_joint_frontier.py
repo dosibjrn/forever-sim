@@ -1617,7 +1617,13 @@ def _source_gear_witness_probes(gear_stages, *, max_probes=32):
     for depth in range(1,max((len(moves) for moves in by_slot.values()),default=0)):
         deeper.extend(moves[depth] for moves in by_slot.values()
                       if len(moves)>depth)
-    return tuple((*first,*mixed,*weapon_packages,*pure_stat_packages,*deeper)[:max_probes])
+    # Reserve one witness per source package family before allowing a large
+    # mixed-stat or atomic-weapon family to exhaust the bounded paid prefix.
+    # Otherwise a generated pure-stat package can still remain unevaluated.
+    families = (mixed, weapon_packages, pure_stat_packages)
+    package_first = [family[0] for family in families if family]
+    package_rest = [move for family in families for move in family[1:]]
+    return tuple((*first,*package_first,*package_rest,*deeper)[:max_probes])
 
 
 def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, attempted, *, gear_stages=()):
