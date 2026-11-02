@@ -16,7 +16,8 @@ import random
 import subprocess
 import tempfile
 
-from tools.wf_gate_p7_1_live import PINNED_RUST, SAVED_BALANCE_RAW_SHA
+from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
+                                      _source_native_world_parity)
 
 
 def _source_module(path: Path, name: str):
@@ -30,6 +31,23 @@ def _source_module(path: Path, name: str):
 
 def _blocked(reason: str):
     return {"status": "BLOCKED", "reasons": [reason]}
+
+
+def _run_source_coupled_candidate(production, binary: Path, request: Path,
+                                  *, distance: float, iterations: int = 3) -> dict:
+    """Only score a cold candidate if native Rust and live gsim agree.
+
+    Reuses the real pinned engine's independent native control and the same
+    world-ACK runtime already required by P7.1/P7.5; no proxy DPS evaluator.
+    Identical aggregate DPS cannot hide different first-fight durations.
+    """
+    native = production.native_source_control(binary, request, iterations)
+    live = production.run(binary, request, distance=distance,
+                          iterations=iterations)
+    mismatch = _source_native_world_parity(native, live, iterations)
+    if mismatch is not None:
+        raise ValueError("SOURCE_NATIVE_WORLD_PARITY:" + mismatch)
+    return live
 
 
 def _cold_apl(base: dict, rng: random.Random, mutation):
@@ -109,12 +127,9 @@ def run_live(root: Path, class_key: str, level: int, *,
             with tempfile.TemporaryDirectory(prefix="forever_p72_live_") as temp:
                 file = Path(temp) / "source-cold-candidate.json"
                 file.write_text(json.dumps(candidate))
-                result = production.run(
-                    binary, file, distance=player["distanceFromTarget"], iterations=3)
-            if (result.get("iterations_done") != 3
-                    or result.get("native_damage_events", 0) <= 0
-                    or result.get("native_world_ticks", 0) <= 0):
-                raise ValueError("SOURCE_NATIVE_WORLD_INCOMPLETE")
+                result = _run_source_coupled_candidate(
+                    production, binary, file,
+                    distance=player["distanceFromTarget"], iterations=3)
             executed += 1
             score = float(result["world_mean_dps"])
             if score < 0 or not score < float("inf"):
