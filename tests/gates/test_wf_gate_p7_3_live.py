@@ -51,8 +51,9 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
     base["raid"]["parties"][0]["players"][0].update({
         "class": "ClassDruid", "distanceFromTarget": 15})
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # Two attempts, same source talents; then a 300-second end boundary.
-    clock = iter([0.0, 0.0, 0.0, 300.0, 300.0])
+    # Allow cold and paid-elite attempts before the simulated 300s boundary.
+    # Both may rediscover the same legal allocation; it is paid only once.
+    clock = iter([0.0] * 10 + [300.0] * 10)
     monkeypatch.setattr(p73.time, "monotonic", lambda: next(clock))
     monkeypatch.setattr(
         p73, "_pinned_source_runtime",
@@ -60,7 +61,9 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
     monkeypatch.setattr(
         p73, "_source_native_world_parity", lambda *a, **kw: None)
     source = SimpleNamespace(
-        random_build=lambda rng: [[1], [0], [0]],
+        random_build=lambda rng, target=None: [[1], [0], [0]],
+        parse=lambda value: [[1], [0], [0]],
+        edit_neighbors=lambda ranks, rng: [[1], [0], [0]],
         validate=lambda ranks: True,
         encode=lambda ranks: "cold-source-legal")
     calls = []
@@ -103,3 +106,90 @@ def test_p73_invalid_full_search_flag_blocks_without_running(monkeypatch, tmp_pa
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report == {"status": "BLOCKED",
                       "reasons": ["P7_3_INVALID_FULL_SOURCE_SEARCH_MODE"]}
+
+
+def test_p73_paid_elite_uses_source_legal_neighbors_not_saved_reference():
+    """An elite is only an executed winner from this search, not the baseline."""
+    base = _reference()
+    original = copy.deepcopy(base)
+    elite = copy.deepcopy(base)
+    elite["raid"]["parties"][0]["players"][0]["talentsString"] = "paid-best"
+    calls = []
+    class TalentSource:
+        @staticmethod
+        def random_build(rng, target=None):
+            calls.append(("cold" if target is None else "local", target))
+            return [[1], [0], [0]]
+        @staticmethod
+        def parse(value):
+            calls.append(("parse", value))
+            return [[4], [0], [0]]
+        @staticmethod
+        def validate(ranks):
+            return True
+        @staticmethod
+        def edit_neighbors(ranks, rng):
+            calls.append(("neighbor", ranks))
+            return [[3], [1], [0]]
+        @staticmethod
+        def encode(ranks):
+            return "legal-" + str(ranks)
+
+    cold = gate._cold_talents(base, random.Random(1), TalentSource)
+    assert calls == [("cold", None)]  # no saved-reference seed
+    assert cold["raid"]["parties"][0]["players"][0]["talentsString"] != "old"
+    calls.clear()
+    improved = gate._cold_talents(
+        base, random.Random(1), TalentSource, elite=elite)
+    assert ("parse", "paid-best") in calls
+    assert ("neighbor", [[4], [0], [0]]) in calls
+    assert all(not (op == "cold") for op, _ in calls)
+    assert improved["raid"]["parties"][0]["players"][0]["talentsString"] == "legal-[[3], [1], [0]]"
+    assert base == original
+    assert elite["raid"]["parties"][0]["players"][0]["talentsString"] == "paid-best"
+
+
+def test_p73_paid_elite_rejects_fixed_gear_or_apl_change():
+    base = _reference()
+    class TalentSource:
+        @staticmethod
+        def parse(value):
+            raise AssertionError("must reject altered paid candidate first")
+
+    for axis in ("equipment", "rotation"):
+        elite = copy.deepcopy(base)
+        elite["raid"]["parties"][0]["players"][0][axis] = {"illegal": True}
+        with pytest.raises(ValueError, match="P73_PAID_ELITE_CHANGED_FIXED_DIMENSIONS"):
+            gate._cold_talents(base, random.Random(3), TalentSource, elite=elite)
+
+
+def test_p73_local_full_draw_uses_paid_target_not_saved_reference():
+    base = _reference()
+    elite = copy.deepcopy(base)
+    elite["raid"]["parties"][0]["players"][0]["talentsString"] = "paid-best"
+    calls = []
+    class TalentSource:
+        @staticmethod
+        def parse(value):
+            assert value == "paid-best"
+            return [[4], [0], [0]]
+        @staticmethod
+        def validate(ranks):
+            return True
+        @staticmethod
+        def random_build(rng, target=None):
+            calls.append(target)
+            return [[3], [0], [1]]
+        @staticmethod
+        def edit_neighbors(ranks, rng):
+            raise AssertionError("high RNG must choose local full draw")
+        @staticmethod
+        def encode(ranks):
+            return "legal-targeted"
+    class HighRandom(random.Random):
+        def random(self):
+            return 0.99
+    result = gate._cold_talents(
+        base, HighRandom(8), TalentSource, elite=elite)
+    assert calls == [[[4], [0], [0]]]
+    assert result["raid"]["parties"][0]["players"][0]["talentsString"] == "legal-targeted"

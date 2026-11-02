@@ -27,11 +27,30 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import (_source_module, _pinned_source_runtime)
 
 
-def _cold_talents(base: dict, rng: random.Random, source):
+def _cold_talents(base: dict, rng: random.Random, source, *, elite=None):
+    """Cold source draw or mutation of this run's already paid legal winner.
+
+    Never use the saved reference allocation as a search seed. A paid elite
+    is admissible only after the caller has measured it in native+2D.
+    """
     candidate = copy.deepcopy(base)
     old = base["raid"]["parties"][0]["players"][0]
     player = candidate["raid"]["parties"][0]["players"][0]
-    allocation = source.random_build(rng)  # original source-legal native generator
+    if elite is None:
+        allocation = source.random_build(rng)
+    else:
+        paid = elite["raid"]["parties"][0]["players"][0]
+        if (paid["equipment"] != old["equipment"]
+                or paid["rotation"] != old["rotation"]):
+            raise ValueError("P73_PAID_ELITE_CHANGED_FIXED_DIMENSIONS")
+        paid_ranks = source.parse(paid["talentsString"])
+        if not source.validate(paid_ranks):
+            raise ValueError("P73_PAID_ELITE_SOURCE_TALENTS_ILLEGAL")
+        # Source's own legal neighbor move or locally biased full draw.
+        # Keep a separate cold draw every fifth proposal in the caller.
+        allocation = (source.edit_neighbors(paid_ranks, rng)
+                      if rng.random() < 0.70
+                      else source.random_build(rng, paid_ranks))
     if not source.validate(allocation):
         raise ValueError("COLD_SOURCE_TALENT_ALLOCATION_ILLEGAL")
     selected = source.encode(allocation)
@@ -82,7 +101,12 @@ def run_live(root: Path, class_key: str, level: int, *,
            if full_search else proposals < 3):
         proposals += 1
         try:
-            candidate = _cold_talents(base, rng, source)
+            # Four of five full-search proposals explore our own genuinely
+            # paid best; the fifth starts independently from source grammar.
+            # Neither the saved reference nor another P7 gate seeds this run.
+            elite = (best[3] if full_search and best is not None
+                     and proposals % 5 != 0 else None)
+            candidate = _cold_talents(base, rng, source, elite=elite)
             sha = hashlib.sha256(json.dumps(
                 candidate, sort_keys=True).encode()).hexdigest()
             if sha in seen:
