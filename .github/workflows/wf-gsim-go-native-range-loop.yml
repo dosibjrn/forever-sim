@@ -14,6 +14,8 @@ on:
       - tools/wf_gsim_go_live_range_probe.py
       - src/game/runtime/simulator.py
       - tests/test_wf_gsim_go_world_range_feed.py
+      - integrations/mythicsim-go/world_boundary/core/world_boundary.go
+      - integrations/mythicsim-go/world_boundary/ingress/main.go
 
 permissions:
   contents: read
@@ -191,11 +193,15 @@ jobs:
           distance=player["distanceFromTarget"]
           # Real gsim 2D target remains stationary at the source caster range.
           # This does not yet prove source target stats, facing/CC or P7.
-          result=run(binary,request,ticks=1200,target_spawn_yards=distance,
+          result=run(binary,request,ticks=1350,target_spawn_yards=distance,
                      enemy_move_speed_yards_s=0.,timeout_s=30.)
           observations=result["observations"]
-          assert len(observations)==1200,len(observations)
-          assert observations[-1]["world_tick"]["clock_ms"]==119900
+          end_ns=result["native_encounter_end_ns"]
+          assert 105_000_000_000 <= end_ns <= 135_000_000_000,end_ns
+          assert result["native_encounter_end_reached"]
+          assert 1050 <= len(observations) <= 1350,len(observations)
+          last_ns=observations[-1]["world_tick"]["native_clock_ns"]
+          assert 0 < end_ns-last_ns <= 100_000_000,(end_ns,last_ns)
           assert all(row["world_tick"]["distance_yards"]==distance for row in observations)
           assert all(row["native_actor_state"]["native_clock_ns"]==row["world_tick"]["native_clock_ns"]
                      for row in observations)
@@ -205,8 +211,8 @@ jobs:
                      for row in observations)
           assert all(row["native_world_ack_confirmation"]["native_process_id"]==result["native_process_id"]
                      for row in observations)
-          print("REAL_SAVED_DRUID_NATIVE_WORLD_120_SECONDS_ACK_PASS_NOT_P7",
-                len(observations),observations[-1]["native_actor_state"]["native_clock_ns"])
+          print("REAL_SAVED_DRUID_NATIVE_WORLD_SAMPLED_END_ACK_PASS_NOT_P7",
+                len(observations),end_ns,last_ns)
           try:
               run(binary,request,ticks=1501)
           except ValueError as exc:
