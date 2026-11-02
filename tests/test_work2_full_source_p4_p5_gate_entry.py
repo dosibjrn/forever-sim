@@ -349,6 +349,14 @@ def test_approved_gsim_paid_gate_uses_actual_predicates_not_extra_catalogue_or_n
     assert result["source_class_gear_membership_attested"] is False
     assert result["real_100mob_complete"] is True
     assert result["selected_production_backend"] == "gsim"
+    if unlocks_complete:
+        proof = result["runtime_proof"]
+        assert proof["executed"] is True
+        assert proof["engine_revision"].startswith("gsim-")
+        assert len(proof["source_revision"]) == 64
+        assert proof["run_id"].startswith("source-paid-" + gate.lower() + "-")
+    else:
+        assert "runtime_proof" not in result
     assert not any("NATIVE_2D" in reason or "MEMBERSHIP_NOT_ATTESTED" in reason
                    or "LEGAL_SPACE_COMPLETENESS" in reason
                    for reason in result["reasons"])
