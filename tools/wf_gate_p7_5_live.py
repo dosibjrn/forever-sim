@@ -23,7 +23,7 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
-def _cold_joint(base, source, validator, pools, rng, *, elite=None):
+def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pools=None):
     """Legal source build: cold discovery or mutation of this search's paid winner.
 
     The seed for a fresh search is always independent of the reference and of
@@ -36,9 +36,11 @@ def _cold_joint(base, source, validator, pools, rng, *, elite=None):
     # candidates from the joint search space (including the true optimum).
     for _ in range(80):
         try:
-            candidate = (source.make_candidate(base, pools, rng)
+            kwargs = ({"enchant_pools": enchant_pools}
+                      if enchant_pools is not None else {})
+            candidate = (source.make_candidate(base, pools, rng, **kwargs)
                          if elite is None else source.make_candidate(
-                             base, pools, rng, elite=elite))
+                             base, pools, rng, elite=elite, **kwargs))
             p = source.player(candidate)
             items = p["equipment"]["items"]
             ids = [int(x["id"]) for x in items]
@@ -102,6 +104,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         # Enchants and effects remain subject to source verification.
         pools, _ = source.candidate_pool(
             validator, limit=None if full_search else 15)
+        enchant_pools = (source.source_enchant_pools(validator, pools)
+                         if full_search else None)
         distance = source.player(base)["distanceFromTarget"]
         while (time.monotonic() - search_start < 300.0
                if full_search else proposals < 3):
@@ -112,7 +116,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 elite = (best[3] if full_search and best is not None
                          and proposals % 5 != 0 else None)
                 candidate = _cold_joint(
-                    base, source, validator, pools, rng, elite=elite)
+                    base, source, validator, pools, rng,
+                    elite=elite, enchant_pools=enchant_pools)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
