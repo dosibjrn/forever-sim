@@ -1,0 +1,19 @@
+name: M1 scoreboard exact-head smoke (temporary)
+on:
+  push:
+    branches:
+      - work/m1-1628-live-pass-counter-20261102
+  workflow_dispatch:
+
+jobs:
+  m1-bookkeeping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pytest
+      - run: python -m pytest -q tests/test_m1_progress.py
+      - run: python tools/m1_progress.py
