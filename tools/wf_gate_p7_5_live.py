@@ -218,8 +218,18 @@ def run_live(root: Path, class_key: str, level: int, *,
         reasons.append("P7_5_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED")
     elif not final["frozen_stochastic_external_only_floor_met"]:
         reasons.append("P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR")
+    # An unestablished accepted-compatible prior is a missing *comparison*,
+    # not evidence that combat/search failed. Label a genuine full-run budget,
+    # final-holdout or external-DPS failure as FAIL; otherwise remain BLOCKED.
+    # This does not confer PASS without the required approved prior.
+    failed_execution = full_search and any(reason in {
+        "P7_5_300S_SEARCH_NOT_COMPLETED",
+        "P7_5_SEARCH_BUDGET_OVERRUN",
+        "P7_5_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED",
+        "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR",
+    } for reason in reasons)
     return {
-        "status": "FAIL",
+        "status": "FAIL" if failed_execution else "BLOCKED",
         "reasons": reasons,
         "production_engine": "pinned_mythicsim_rust_gsim_2d",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py",
