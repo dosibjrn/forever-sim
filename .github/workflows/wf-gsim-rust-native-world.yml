@@ -43,6 +43,33 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: "off"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: cargo build --release --locked
+      - name: Verify pinned Rust RNG mode changes real native and 2D world combat
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          path=Path("integrations/mythicsim-rust/live_world_probe.py")
+          spec=importlib.util.spec_from_file_location("work1_rng_world",path)
+          mod=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(mod)
+          binary=Path("../upstream/target/release/forever-engine")
+          request=Path("docs/evidence/druid-l60-balance/p7.3/saved_728_request.json")
+          outputs={}
+          for mode in ("stochastic","balanced"):
+              native=mod.native_source_control(binary,request,5,rng_mode=mode)
+              live=mod.run(binary,request,distance=15.,iterations=5,rng_mode=mode)
+              assert live["iterations_done"]==5
+              assert live["native_damage_events"]>0
+              assert live["native_world_ticks"]>0
+              assert abs(native["native_dps"]-live["world_mean_dps"])<1e-5,(mode,native,live)
+              outputs[mode]=native["native_dps"]
+              print("REAL_PINNED_RUST_RNG_MODE",mode,"native",native["native_dps"],
+                    "live",live["world_mean_dps"],"events",live["native_damage_events"],flush=True)
+          assert abs(outputs["balanced"]-outputs["stochastic"])>0.01,(
+              "BALANCED_RNG_ENV_IGNORED_BY_SELECTED_RUST",outputs)
+          print("REAL_SELECTED_RUST_NATIVE_2D_RNG_MODE_DIVERGENCE_GREEN",flush=True)
+          PY
       - name: Prove the patched engine still exactly reproduces 10k saved Rust reference
         working-directory: project
         run: python integrations/mythicsim-rust/verify_reference.py --engine ../upstream/target/release/forever-engine
