@@ -74,6 +74,7 @@ class ManualExactHeadContract(unittest.TestCase):
         self.assertIn("tests/integration/service/test_g50[c-i]_*.py", TEXT)
         self.assertIn("tests/maintenance/test_manual_exact_pr_head_workflow.py", TEXT)
         self.assertIn("-k 'not browser'", TEXT)
+        suite = TEXT.split("- name: Execute allowlisted tests without API token", 1)[1]
         self.assertIn("*) echo 'Suite not allowlisted' >&2; exit 6", suite)
 
 
