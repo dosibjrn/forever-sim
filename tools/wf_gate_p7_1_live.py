@@ -45,6 +45,20 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             or target[0]["level"] != 63):
         return _blocked("P7_1_SAVED_REFERENCE_SCENARIO_MISMATCH")
 
+    # Explicit bounded diagnostic: the same real Rust/gsim production code,
+    # but NOT a reference acceptance run. Default remains the full 10k.
+    requested = os.environ.get("FOREVER_P7_LIVE_PROBE_ITERATIONS")
+    if requested is None:
+        run_iterations = iterations
+    else:
+        try:
+            run_iterations = int(requested)
+        except ValueError:
+            return _blocked("P7_1_INVALID_LIVE_PROBE_ITERATIONS", requested=requested)
+        if not 1 <= run_iterations <= iterations:
+            return _blocked("P7_1_INVALID_LIVE_PROBE_ITERATIONS", requested=requested)
+    full_reference_run = run_iterations == iterations
+
     # Refuse an arbitrary executable: it must be the pinned original Rust
     # checkout with the real world ingress patched into its production Fight.
     binary = Path(os.environ.get("FOREVER_MYTHICSIM_RUST_BIN", str(
@@ -69,9 +83,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return _blocked("P7_1_PRODUCTION_WORLD_MODULE_MISSING")
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
-    native = module.native_source_control(binary, request, iterations)
+    native = module.native_source_control(binary, request, run_iterations)
     live = module.run(binary, request,
-                      distance=player["distanceFromTarget"], iterations=iterations)
+                      distance=player["distanceFromTarget"], iterations=run_iterations)
     reference = float(meta["reference_dps"])
     actual = {"native_dps": native["native_dps"],
               "live_native_dps": live["native_dps"],
@@ -81,15 +95,34 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
               "source_request_raw_sha256": raw_sha,
               "native_source_revision": PINNED_RUST,
               "iterations": live["iterations_done"],
-              "saved_reference_dps": reference}
-    if (live["iterations_done"] != iterations
+              "saved_reference_dps": reference,
+              "source_report_url": "https://api.mythicsim.com/api/forever/ranking-sims/d9d85974-a1f7-4700-ab22-2335d767a944/report",
+              "coverage_component": "per-fight native source damage ↔ gsim 2D applied HP/ACK parity",
+              "behavior_probes_executed": len(live["per_iteration"]),
+              # A stochastic fight sample is NOT the fraction of the entire
+              # P7.1 gate; UI configuration and scenario causality remain open.
+              "scope_provisional": True,
+              "coverage_scope_complete": False}
+    if (live["iterations_done"] != run_iterations
+            or len(live["per_iteration"]) != run_iterations
             or live["native_damage_events"] <= 0
-            or native["native_dps"] < reference
-            or live["world_mean_dps"] < reference
+            or (full_reference_run and native["native_dps"] < reference)
+            or (full_reference_run and live["world_mean_dps"] < reference)
             or abs(native["native_dps"] - live["native_dps"]) >= 1e-6
             or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
         return {"status": "FAIL", "reasons": ["P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d", **actual}
+
+    # Each counted fight was independently checked by the real production
+    # bridge for source-native damage == gsim applied HP damage and ACK IDs.
+    # This denominator is ONLY the executed comparable fight sample, not the
+    # full P7.1 gate or a certifying fractional M1 value.
+    actual.update(verified=run_iterations, applicable=run_iterations)
+    if not full_reference_run:
+        return _blocked("P7_1_PARTIAL_DIAGNOSTIC_NOT_FULL_REFERENCE",
+                        production_engine="pinned_mythicsim_rust_gsim_2d",
+                        p7_1_2_native_reproduced=False,
+                        p7_1_3_live_reproduced=False, **actual)
 
     # Owner-approved WF633 is a genuine native reference replay, but its
     # reconstructed input is not an audited field-by-field capture of the
