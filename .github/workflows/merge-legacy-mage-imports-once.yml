@@ -1,0 +1,29 @@
+name: Merge legacy Mage import integration one-shot
+on:
+  push:
+    branches: [merge/unblock-clean139-legacy-mage-imports-20261102]
+    paths: [.github/workflows/merge-legacy-mage-imports-once.yml]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Run all 3 affected Mage test modules
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+          python -m pytest -q tests/mechanics/mage/test_mage_arcane_i12_v01148100.py tests/mechanics/mage/test_mage_fire_i13_v01148101.py tests/mechanics/mage/test_mage_parity_closure_v01148102.py
+          python - <<'PY'
+          from tools.report_backend_comparison import _mage_structural_build
+          assert _mage_structural_build(40, 'arcane').arcane_blast
+          print('CANONICAL_MAGE_HELPER_OK')
+          PY
