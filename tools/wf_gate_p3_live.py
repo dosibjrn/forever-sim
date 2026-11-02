@@ -152,14 +152,14 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_catalogue_legal_items": item_check["legal_item_count"],
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
         "real_catalogue_slots_scored": item_check["slot_count"],
-        # A genuinely comparable within-P3 partial unit is one legal gear
-        # slot whose ilvl-top-five ordinary stat scoring assertions succeed.
-        # Real paid CombatRuntime evaluations establish context weights;
-        # global source/weapon prerequisites may still keep P3 FAIL.
-        "reachability_count": item_check["slot_count"],
-        "pass_count": item_check["verified_stat_scored_slot_count"],
+        # Comparable measured unit: one source-legal top-ilvl item x
+        # applicable ordinary stat requirement, checked in the real selector.
+        # Runtime-paid stat sensitivities establish causal context. Global
+        # conditions may still fail P3; this fraction is NOT a gate PASS.
+        "reachability_count": item_check["tested_stat_assertions"],
+        "pass_count": item_check["verified_stat_assertions"],
         "behavior_probes_executed": result.get("evaluated", 0),
-        "partial_scope": "CURRENT_SOURCE_TOP5_GEAR_SLOT_SCORING",
+        "partial_scope": "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS",
         "coverage_scope_complete": False,
         "real_item_score_checked": item_check["source"] == "CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS",
         "real_measured_stat_weight_axes": sorted(weights),
