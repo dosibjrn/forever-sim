@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -52,6 +53,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     previous_ack_id = ""
     event_count = 0
     applied_damage = 0.
+    applied_damage_compensation = 0.
     last_tick = -1
     iteration = -1
     samples = []
@@ -126,8 +128,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 ack = applier.apply(tick, receipt)
                 ack["iteration_index"] = iteration
                 event_count += len(ack["applied_event_ids"])
-                applied_damage += ack["applied_native_damage"]
-                iteration_damage += ack["applied_native_damage"]
+                # Millions of positive source-native events must not lose
+                # bookkeeping precision through naive global float addition.
+                # Compensated accumulation is independent of per-fight totals.
+                delta = ack["applied_native_damage"]
+                adjusted = delta - applied_damage_compensation
+                updated = applied_damage + adjusted
+                applied_damage_compensation = (updated - applied_damage) - adjusted
+                applied_damage = updated
+                iteration_damage += delta
                 previous_ack_id = ack["world_after_sha256"]
                 if forge_ack and event_count:
                     ack["applied_event_ids"] = []
@@ -156,7 +165,11 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             world_mean_dps = sum(s["world_dps"] for s in samples) / iterations
             assert abs(native_dps - world_mean_dps) < 1e-5, (
                 "NATIVE_WORLD_STOCHASTIC_DPS_MISMATCH", native_dps, world_mean_dps)
-            assert abs(sum(s["world_applied_damage"] for s in samples) - applied_damage) < 1e-4
+            assert math.isclose(
+                math.fsum(s["world_applied_damage"] for s in samples),
+                applied_damage, rel_tol=1e-12, abs_tol=1e-4,
+            ), ("LIVE_WORLD_DAMAGE_ACCOUNTING_DIVERGENCE",
+                math.fsum(s["world_applied_damage"] for s in samples), applied_damage)
             return {"native_dps": native_dps, "sampled_duration_s": duration,
                     "world_mean_dps": world_mean_dps, "iterations_done": iterations,
                     "world_applied_damage": applied_damage, "native_damage_events": event_count,
