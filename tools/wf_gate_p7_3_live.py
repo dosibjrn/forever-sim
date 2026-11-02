@@ -229,6 +229,10 @@ def run_live(root: Path, class_key: str, level: int, *,
             "P7.3", float(meta["reference_dps"])),
         "fixed_rotation_and_gear": True,
         "source_original_talents": original,
+        # Preserve the *actual* paid winner allocation, not just the hash.
+        # Distinct SHA + identical frozen DPS is otherwise impossible to
+        # triage as unchanged effective talents versus ignored runtime ranks.
+        "cold_winner_talents": frozen_winner["raid"]["parties"][0]["players"][0]["talentsString"],
         "cold_winner_request_sha256": candidate_sha,
         "winner_live_dps": score,
         "search_wall_s": search_wall_s,
