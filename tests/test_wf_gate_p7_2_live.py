@@ -37,23 +37,12 @@ def test_cold_apl_keeps_actual_gear_talents_and_saved_request_unmodified():
         base["raid"]["parties"][0]["players"][0]["talentsString"])
 
 
-def test_cold_apl_can_independently_rediscover_reference_without_seeding():
-    # Same APL can be rediscovered by a fresh, independently sampled cold
-    # search. What is prohibited is seeding the candidate generator with the
-    # saved winner/paid elite, not the independently rediscovered outcome.
+def test_independently_rediscovered_reference_apl_remains_eligible():
     base = _request()
-    original = copy.deepcopy(base)
-    observed = []
-
-    def rediscover(paid_elite, source_actions, rng, cold):
-        observed.append((paid_elite, cold))
-        return copy.deepcopy(source_actions)
-
-    result = gate._cold_apl(base, random.Random(3),
-                            SimpleNamespace(mutate_apl=rediscover))
-    assert observed == [(None, True)]
-    assert result == original
-    assert base == original
+    candidate = gate._cold_apl(base, random.Random(3),
+                               SimpleNamespace(mutate_apl=lambda a, s, r, cold: copy.deepcopy(s)))
+    assert candidate == base
+    assert candidate is not base
 
 
 def test_wrong_checkpoint_refuses_before_any_native_run(tmp_path):

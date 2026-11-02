@@ -274,6 +274,8 @@ def evaluate_repeated_pulls(
              mana < float(mana_cap) * float(recovery_mana_fraction)))
         exit_wait = 0.0
         between_pack_events = 0
+        mode_exit_events = 0
+        travel_events = 0
         source_recovery_actions = []
         if source_between_pack_policy is not None:
             step = _paid_source_pack_recovery(
@@ -309,6 +311,7 @@ def evaluate_repeated_pulls(
                         raise ValueError(f'cannot leave combat mode: {gate.reason}')
                     exit_runtime.schedule_action(action)
                     exit_runtime.persist_actor_periodics()
+                    mode_exit_events += exit_runtime.event_transitions
                     paid_events += exit_runtime.event_transitions
             exit_wait = max(0.0, float(actor.current_time_s) - float(timeline.target_death_s))
             recovery = recover_actor_to_full(
@@ -333,7 +336,8 @@ def evaluate_repeated_pulls(
             travel_runtime.event_budget_cap = remaining_events()
             travel_runtime.advance_to(float(actor.current_time_s) + travel_charged_s)
             travel_runtime.persist_actor_periodics()
-            paid_events += travel_runtime.event_transitions
+            travel_events = travel_runtime.event_transitions
+            paid_events += travel_events
         pending_count = sum(e.kind == 'PeriodicTick' for e in actor.pending_actor_periodic_events)
         results.append({
             'pull_index': index,
@@ -355,12 +359,17 @@ def evaluate_repeated_pulls(
             ),
             'selected_actions': [dict(x) for x in execution.selected_actions],
             'satisfied_mode_opening_ids': list(getattr(execution, 'satisfied_mode_opening_ids', ())),
-            'event_transitions': int(runtime.event_transitions) + upkeep_events + between_pack_events,
+            # Receipt must count every transition charged to paid_events,
+            # including sourced mode exit and actor-periodic ticks in travel.
+            'event_transitions': (int(runtime.event_transitions) + upkeep_events
+                                  + between_pack_events + mode_exit_events + travel_events),
             'combat_runtime_events': int(runtime.event_transitions),
             'maintenance_s': float(upkeep_s),
             'maintenance_casts': int(upkeep_casts),
             'maintenance_runtime_events': int(upkeep_events),
             'between_pull_runtime_events': int(between_pack_events),
+            'mode_exit_runtime_events': int(mode_exit_events),
+            'travel_runtime_events': int(travel_events),
             'source_recovery_actions': source_recovery_actions,
             'damage_by_role': dict(timeline.damage_by_role),
             'companion_resources_at_kill': {pet.id:dict(pet.resources) for pet in companions},

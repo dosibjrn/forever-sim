@@ -91,3 +91,51 @@ def test_p73_independent_new_talent_still_keeps_reference_gear_apl():
     assert _player(discovered)["talentsString"] == "new-legal-allocation"
     assert _player(discovered)["equipment"] == _player(base)["equipment"]
     assert _player(discovered)["rotation"] == _player(base)["rotation"]
+
+
+def test_p72_p75_shared_cold_apl_samples_grammar_not_saved_policy(monkeypatch):
+    """A real cold policy must be constructed, not mutate a saved-list copy.
+
+    Both P7.2 and P7.5 call this same production APL generator. This checks
+    the generator's actual object provenance, not just inequality of outputs.
+    """
+    import importlib.util
+    from pathlib import Path
+
+    path = (Path(__file__).resolve().parents[2] /
+            "integrations/mythicsim-rust/apl_mutation.py")
+    spec = importlib.util.spec_from_file_location("work1_apl_mutation", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    # Ten genuine grammar terminals; every saved action has a condition.
+    # An implementation that starts with deepcopy(saved_list) cannot pass
+    # merely by shuffling or applying at most five later mutations.
+    condition = {"cmp": {"lhs": {"remainingTime": {}}, "op": "OpGt",
+                         "rhs": {"const": {"val": "2s"}}}}
+    source = [
+        {"action": {"castSpell": {"spellId": {"spellId": 100 + i}},
+                    "condition": deepcopy(condition)}}
+        for i in range(10)
+    ]
+    original = deepcopy(source)
+    generated = []
+    original_new_cast = module._new_cast
+
+    def traced_new_cast(spells, predicates, rng):
+        action = original_new_cast(spells, predicates, rng)
+        generated.append(action)
+        return action
+
+    monkeypatch.setattr(module, "_new_cast", traced_new_cast)
+    candidate = module.mutate_apl(None, source, random.Random(33), cold=True)
+    cast_actions = [row for row in candidate
+                    if "castSpell" in row.get("action", {})]
+    generated_ids = {id(row) for row in generated}
+    # Only the independently generated unconditional fallback may bypass
+    # _new_cast. In particular, no original reference cast entry is copied.
+    assert sum(id(row) not in generated_ids for row in cast_actions) <= 1
+    assert any("condition" not in row["action"] for row in cast_actions)
+    assert all(row["action"]["castSpell"]["spellId"]["spellId"] in range(100, 110)
+               for row in cast_actions)
+    assert source == original

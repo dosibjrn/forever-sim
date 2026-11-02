@@ -67,6 +67,31 @@ def _parse_rank_tooltip(text: str, *, action_families: set[str], source: dict,
                         'range_increase_pct':float(offensive_hit.group(2)) * 0.01,
                         'range_status':'travel_and_pull_distance_not_yet_modeled'}),), (), \
             'range_secondary_effect_not_executable'
+
+    # Parse the exact sourced rank text; do not infer schools, ranks or values
+    # from a talent name. The same generic effect executor is already used by
+    # the typed staged capture path.
+    cast_pushback = re.fullmatch(
+        r'Gives you a (\d+(?:\.\d+)?)% chance to avoid interruption caused '
+        r'by damage while casting (.+?) spells\.', text.strip(), re.IGNORECASE)
+    if cast_pushback:
+        fraction = float(cast_pushback.group(1)) * .01
+        schools = tuple(part.strip().lower() for part in re.split(
+            r'\s*,\s*(?:and\s+)?|\s+and\s+', cast_pushback.group(2))
+            if part.strip())
+        if (not 0. < fraction <= 1. or not schools
+                or len(set(schools)) != len(schools)
+                or any(re.fullmatch(r'[a-z]+', school) is None
+                       for school in schools)):
+            return (), (), 'invalid_sourced_cast_pushback_scope_or_fraction'
+        return (TalentModifier(
+            kind='cast_pushback_avoidance_chance',
+            target_type='action_filter',
+            target_id='damage_schools:' + ','.join(schools),
+            value=fraction,
+            provenance={'source': dict(source), 'raw_text_summary': text,
+                        'baseline_cast_pushback_seconds':
+                        'REQUIRES_SEPARATELY_SOURCED_INCOMING_PROFILE'}),), (), None
     casting_regen = re.fullmatch(
         r'Allows (\d+(?:\.\d+)?)% of your Mana regeneration to continue while casting\.',
         text.strip(), re.IGNORECASE)

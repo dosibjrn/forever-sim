@@ -123,12 +123,33 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
     supplied frozen input. This is not full spellbook-level completeness.
     """
     spells, predicates, allowed = _corpus(source_actions)
-    result = copy.deepcopy(source_actions if cold else actions)
     if cold:
+        # A cold search may READ the saved request as a source-backed grammar,
+        # but must not initialize its policy from the saved priority list.
+        # Independently sample new casts/predicates and optional opaque native
+        # actions; an identical policy can still arise by chance and is legal.
+        opaque = [entry for entry in source_actions
+                  if "castSpell" not in entry.get("action", {})]
+        length = rng.randint(2, min(20, max(2, len(source_actions) + 3)))
+        result = []
+        for _ in range(length):
+            if opaque and rng.random() < 0.15:
+                result.append(copy.deepcopy(rng.choice(opaque)))
+            else:
+                result.append(_new_cast(spells, predicates, rng))
+        # A fallback is a freshly sampled source spell, never a copied saved
+        # reference priority entry. Keep the real native action legality check.
+        if not _has_fallback(result):
+            if len(result) >= 20:
+                result.pop()
+            result.append({"action": {"castSpell": {
+                "spellId": copy.deepcopy(rng.choice(spells))}}})
         rng.shuffle(result)
+    else:
+        result = copy.deepcopy(actions)
     if len(result) < 2:
         raise ValueError("APL requires at least two priority actions")
-    operations = rng.randint(2, 5) if cold else 1
+    operations = 0 if cold else 1
     for _ in range(operations):
         modes = ["swap", "replace_condition", "tune_condition", "insert_cast", "drop_action"]
         mode = rng.choices(modes, weights=(27, 25, 20, 20, 8))[0]
