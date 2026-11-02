@@ -196,3 +196,41 @@ def test_p6_source_space_requires_executed_proposer_not_two_matching_labels():
                        match='COLD_COMPARISON_DIFFERENT_SOURCE_SEARCH_SPACE'):
         _same_executed_source_search_space(good30,
             report(current, current, offset=1))
+
+
+def test_independent_paid_p6_replay_receipts_fail_closed_without_losing_other_leg():
+    from src.v2.source_paid_cold_comparison import _summarize_independent_paid_replay
+
+    missing = _summarize_independent_paid_replay(
+        {'rows': [], 'wall_s_outside_search_budget': 0.2}, budget=30)
+    assert missing['status'] == 'MISSING_SINGLE_PAID_REPLAY_ROW'
+    assert missing['mob_completed'] == 0 and missing['s_per_mob'] is None
+    assert missing['replay_wall_s'] == 0.2
+    duplicate = _summarize_independent_paid_replay(
+        {'rows': [{'status': 'COMPLETE', 'count': 100, 'full_s_per_mob': 10.}] * 2},
+        budget=30)
+    assert duplicate['status'] == 'MISSING_SINGLE_PAID_REPLAY_ROW'
+
+    for bad in (0., -2., float('nan'), float('inf')):
+        result = _summarize_independent_paid_replay(
+            {'rows': [{'status': 'COMPLETE', 'count': 100,
+                       'mob_completed': 100, 'full_s_per_mob': bad}]}, budget=300)
+        assert result['status'] == 'INVALID_COMPLETE_PAID_REPLAY'
+        assert result['mob_completed'] == 0 and result['s_per_mob'] is None
+
+    # Real partial paid kills from a failed pull remain observable, never
+    # silently promoted to a complete independent 100-mob leg.
+    interrupted = _summarize_independent_paid_replay(
+        {'rows': [{'status': 'BLOCKED_ACTOR_DIED', 'mob_completed': 42,
+                   'failed_pull_index': 21, 'events': 987}]}, budget=30)
+    assert interrupted['mob_completed'] == 42
+    assert interrupted['status'] == 'BLOCKED_ACTOR_DIED'
+    assert interrupted['failed_pull_index'] == 21
+
+    completed = _summarize_independent_paid_replay(
+        {'rows': [{'status': 'COMPLETE', 'count': 100,
+                   'mob_completed': 100, 'full_s_per_mob': 12.5, 'events': 5200}],
+         'wall_s_outside_search_budget': 2.}, budget=300)
+    assert completed['status'] == 'COMPLETE'
+    assert completed['mob_completed'] == completed['count'] == 100
+    assert completed['s_per_mob'] == 12.5
