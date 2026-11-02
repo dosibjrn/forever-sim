@@ -1,15 +1,12 @@
-name: Work2 one-shot real P6 Balance replay diagnosis
+name: Work2 one-shot real P4 30s source-paid cold search
 on:
   push:
     branches: [work/work2-p6-paid-replay-redgreen-20261102]
-    paths:
-      - .github/workflows/work2-p6-paid-replay-probe.yml
-      - tools/wf_gate_p6_live.py
-      - tests/test_wf_gate_p6_live.py
+    paths: [.github/workflows/work2-p6-paid-replay-probe.yml]
 jobs:
-  p6-source-paid:
+  p4-cold-source-paid:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,12 +16,12 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
-      - name: Bounded unrecorded real source-paid P6 (diagnostic only)
+      - name: P4 real 30-second independent cold search plus paid finalist, no M1
         shell: bash
         run: |
           set +e
-          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P6 --out /tmp/work2-p6.json
+          FOREVER_P4_P5_FULL_SOURCE=1 python tools/wf_gate.py --class druid --level 60 --spec balance --gate P4 --out /tmp/work2-p4.json
           rc=$?
-          echo "P6 return code: $rc (FAIL expected until hybrid acceptance)"
-          cat /tmp/work2-p6.json
+          echo "P4 return code: $rc (FAIL expected without selected native/world engine)"
+          if test -f /tmp/work2-p4.json; then cat /tmp/work2-p4.json; fi
           test "$rc" -eq 1
