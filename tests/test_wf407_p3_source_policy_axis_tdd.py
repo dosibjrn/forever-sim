@@ -55,3 +55,42 @@ def test_ordinary_extra_weight_can_be_zero_but_named_stamina_must_be_positive(mo
                            weight_evidence_kind='MEASURED_SOURCE_CONTEXT',
                            weapon_damage_dependent=False)
     assert 'NONPOSITIVE_RELEVANT_WEIGHT:stamina' in negative['blockers']
+
+
+def test_source_policy_missing_optional_requirements_keeps_caster_defensive_zero(monkeypatch):
+    # Source-action projections/fixtures may omit the optional requirements
+    # field. This must not turn the P3 smoke into an AttributeError.
+    item = ItemRecord(304, 'Caster chest', 'chest', item_level=20,
+                      required_level=10, armor=70, stamina=3)
+    monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',
+                        lambda *a, **k: (item,))
+    action = SimpleNamespace(id='bolt',
+                             effects=(SimpleNamespace(effect_type='direct_damage'),))
+    ir = SimpleNamespace(id='real_source_ir', actions=(action,), modes=(),
+                         auto_attacks=())
+    policy = SimpleNamespace(id='caster', rules=(SimpleNamespace(action_id='bolt'),))
+    report = fast_p3_smoke_for_policy(class_key='druid', level=20,
+        source_ir=ir, policy=policy, weights={'armor': 0., 'stamina': 0.},
+        weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
+    assert report['p3_pass'] is True
+    assert report['source_policy']['defensive_positive_required'] is False
+    assert report['verified_stat_assertions'] == report['tested_stat_assertions']
+
+
+def test_source_policy_missing_optional_requirements_does_not_exempt_bear(monkeypatch):
+    # The optional field is not a backdoor to remove selected Bear relevance.
+    item = ItemRecord(305, 'Bear chest', 'chest', item_level=20,
+                      required_level=10, armor=70, stamina=3)
+    monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',
+                        lambda *a, **k: (item,))
+    shift = SimpleNamespace(id='shift', effects=(
+        SimpleNamespace(effect_type='mode_change', target_mode_id='bear'),))
+    ir = SimpleNamespace(id='real_source_ir', actions=(shift,), modes=(),
+                         auto_attacks=())
+    policy = SimpleNamespace(id='bear', rules=(SimpleNamespace(action_id='shift'),))
+    report = fast_p3_smoke_for_policy(class_key='druid', level=20,
+        source_ir=ir, policy=policy, weights={'armor': 0., 'stamina': 0.},
+        weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
+    assert report['source_policy']['defensive_positive_required'] is True
+    assert report['p3_pass'] is False
+    assert 'NONPOSITIVE_RELEVANT_WEIGHT:armor' in report['blockers']
