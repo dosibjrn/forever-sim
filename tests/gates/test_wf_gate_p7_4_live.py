@@ -185,3 +185,81 @@ def test_full_cold_p74_can_free_enchant_without_changing_fixed_axes():
     assert player["rotation"] == {"priorityList": [{"action": 1}]}
     assert len(checked) == 1
     assert base == original
+
+
+def test_paid_p74_gear_neighbor_uses_only_paid_loadout_and_source_pools():
+    """Local changes preserve untouched paid slots; not seeded by saved gear."""
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 10}, {"id": 20}, {"id": 30}]},
+        "talentsString": "fixed",
+        "rotation": {"priorityList": []},
+    }]}]}}
+    original = copy.deepcopy(base)
+    elite = copy.deepcopy(base)
+    items = elite["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    for item, iid, enchant in zip(items, [11, 21, 31], [101, None, None]):
+        item["id"] = iid
+        if enchant is not None:
+            item["enchant"] = enchant
+    previous = copy.deepcopy(elite)
+    calls = []
+
+    class Deterministic:
+        def randint(self, lo, hi):
+            assert lo == 1 and hi == 3
+            return 1
+        def randrange(self, n):
+            assert n == 3
+            return 1
+        def choice(self, options):
+            return options[-1]
+
+    def validate(ids, enchants):
+        calls.append((list(ids), list(enchants)))
+        assert ids == [11, 22, 31]
+        assert enchants == [101, 202, None]
+
+    def swap(reference, ids):
+        result = copy.deepcopy(reference)
+        for item, iid in zip(
+            result["raid"]["parties"][0]["players"][0]["equipment"]["items"], ids
+        ):
+            item["id"] = iid
+        return result
+
+    source = SimpleNamespace(_swap=swap, preflight=lambda *a: True,
+                             RejectedGear=ValueError)
+    candidate = gate._cold_gear(
+        base, SimpleNamespace(validate=validate), source, Deterministic(),
+        pool={0: [11], 1: [21, 22], 2: [31]},
+        enchant_pools={0: [None, 101], 1: [None, 202], 2: [None]},
+        elite=elite)
+    actual = candidate["raid"]["parties"][0]["players"][0]
+    assert [i["id"] for i in actual["equipment"]["items"]] == [11, 22, 31]
+    assert actual["equipment"]["items"][0]["enchant"] == 101
+    assert actual["equipment"]["items"][1]["enchant"] == 202
+    assert actual["talentsString"] == "fixed"
+    assert actual["rotation"] == {"priorityList": []}
+    assert calls == [([11, 22, 31], [101, 202, None])]
+    assert base == original and elite == previous
+
+
+def test_paid_p74_gear_rejects_elite_with_changed_fixed_dimension():
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 10}]},
+        "talentsString": "saved",
+        "rotation": {"priorityList": []},
+    }]}]}}
+    source = SimpleNamespace(RejectedGear=ValueError)
+    for axis, altered in (("talentsString", "not-saved"),
+                          ("rotation", {"priorityList": [4]})):
+        elite = copy.deepcopy(base)
+        elite["raid"]["parties"][0]["players"][0][axis] = altered
+        try:
+            gate._cold_gear(
+                base, SimpleNamespace(), source, random.Random(1),
+                pool={0: [10]}, elite=elite)
+        except ValueError as exc:
+            assert str(exc) == "P74_PAID_ELITE_CHANGED_FIXED_AXES"
+        else:
+            raise AssertionError("altered fixed axis admitted as a paid elite")

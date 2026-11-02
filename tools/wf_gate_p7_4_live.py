@@ -26,17 +26,43 @@ from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
 def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
-               pool=None, enchant_pools=None):
-    """Cold source-legal gear+enchant discovery; all non-equipment fields fixed."""
+               pool=None, enchant_pools=None, elite=None):
+    """Independent cold discovery or local edits of this run's paid winner.
+
+    The saved loadout is never a search seed. An elite is only supplied after
+    its native+2D candidate has been legally executed and scored.
+    """
     if pool is None:
         pool, _ = gear_search.candidate_pool(validator, limit=15)
     original_items = base["raid"]["parties"][0]["players"][0]["equipment"]["items"]
     reference = [item["id"] for item in original_items]
     original_enchants = [item.get("enchant") for item in original_items]
+    paid_items = None
+    if elite is not None:
+        fixed = base["raid"]["parties"][0]["players"][0]
+        paid = elite["raid"]["parties"][0]["players"][0]
+        if (paid.get("talentsString") != fixed.get("talentsString")
+                or paid.get("rotation") != fixed.get("rotation")):
+            raise ValueError("P74_PAID_ELITE_CHANGED_FIXED_AXES")
+        paid_items = paid["equipment"]["items"]
+        if len(paid_items) != len(reference):
+            raise ValueError("P74_PAID_ELITE_CHANGED_GEAR_SLOTS")
     for _ in range(60):
-        ids = [rng.choice(pool[i]) for i in range(len(reference))]
-        enchants = ([rng.choice(enchant_pools[i]) for i in range(len(reference))]
-                    if enchant_pools is not None else original_enchants)
+        if paid_items is None:
+            ids = [rng.choice(pool[i]) for i in range(len(reference))]
+            enchants = ([rng.choice(enchant_pools[i]) for i in range(len(reference))]
+                        if enchant_pools is not None else list(original_enchants))
+        else:
+            # Reuse the old source-native P7.4 search's 1–5-slot neighborhood
+            # idea, but score each candidate with the actual live native+2D
+            # engine. Keep the elite immutable; sample only source pools.
+            ids = [int(item["id"]) for item in paid_items]
+            enchants = [item.get("enchant") for item in paid_items]
+            for _step in range(rng.randint(1, min(5, len(reference)))):
+                slot = rng.randrange(len(reference))
+                ids[slot] = rng.choice(pool[slot])
+                if enchant_pools is not None:
+                    enchants[slot] = rng.choice(enchant_pools[slot])
         # Reference-equivalent builds may be independently rediscovered, but
         # they are never used to initialize this cold search.
         if ids == reference and enchants == original_enchants:
@@ -117,9 +143,14 @@ def run_live(root: Path, class_key: str, level: int, *,
                if full_search else proposals < 3):
             proposals += 1
             try:
+                # Local exploitation uses only a winner already paid in THIS
+                # cold run; every fifth draw is independently cold. The saved
+                # gear and other gates' winners are never injected as elites.
+                elite = (best[3] if full_search and best is not None
+                         and proposals % 5 != 0 else None)
                 candidate = _cold_gear(
                     base, validator, gear_search, rng, pool=pool,
-                    enchant_pools=enchant_pools)
+                    enchant_pools=enchant_pools, elite=elite)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
