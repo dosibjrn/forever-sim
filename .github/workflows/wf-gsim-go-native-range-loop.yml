@@ -12,6 +12,7 @@ on:
       - work/first-native-source-target-health-20261102
       - work/first-native-source-single-target-20261102
       - work/first-native-terminal-boundary-20261102
+      - work/first-native-world-dps-parity-20261102
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
@@ -215,6 +216,37 @@ jobs:
           assert all(row["native_actor_state"]["native_clock_ns"]==row["world_tick"]["native_clock_ns"]
                      for row in observations)
           assert result["native_spell_action_ack"]
+          # RED on old production: no ACK-derived full-duration DPS existed.
+          # This is real source-native damage actually applied by gsim, not
+          # a native-only replay, mock spell counter or invented DPS number.
+          assert result["source_sampled_duration_s"]==end_ns/1e9
+          assert result["raw_native_dps"]>0
+          assert result["effective_gsim_world_dps"]>0
+          assert result["effective_gsim_world_damage"]<=result["raw_native_damage"]+1e-6
+          ack_damage=sum(row["gsim_applied_world_ack"]["applied_native_damage"] for row in observations)
+          assert abs(result["raw_native_damage"]-ack_damage)<1e-6
+          from subprocess import check_output
+          from tools.wf_gsim_go_live_range_probe import PINNED_GO_REVISION
+          baseline=json.loads(check_output([
+              str(binary.resolve()),"--native-only-single-fight",
+              "--request",str(request.resolve()),
+              "--source-revision",PINNED_GO_REVISION],text=True))
+          assert baseline["type"]=="native_go_single_fight_baseline_not_p7"
+          assert baseline["native_request_sha256"]==result["native_request_sha256"]
+          assert baseline["native_source_revision"]==result["native_source_revision"]
+          assert baseline["iterations"]==1 and not baseline["checkpoint_certified"]
+          assert baseline["native_dps"]>0 and baseline["native_duration_s"]>0
+          assert baseline["source_random_seed"]==int(source["simOptions"]["randomSeed"])
+          # Actual same-seed source Druid: native-only vs real 2D+native
+          # must agree numerically in this stationary/no-CC scenario.
+          # This is a bounded deterministic regression, NOT stochastic P7.
+          assert abs(baseline["native_duration_s"]-result["source_sampled_duration_s"])<1e-9
+          assert abs(baseline["native_dps"]-result["raw_native_dps"])<1e-6
+          assert abs(baseline["native_dps"]-result["effective_gsim_world_dps"])<1e-6
+          print("REAL_PINNED_GO_SINGLE_FIGHT_NATIVE_VS_GSIM_DPS_NOT_P7",
+                baseline["native_dps"],result["raw_native_dps"],
+                result["effective_gsim_world_dps"],baseline["native_duration_s"],
+                result["source_sampled_duration_s"])
           assert result["native_process_reused"] and result["gsim_runtime_real"]
           assert all(row["native_world_ack_confirmation"]["native_world_health_applied"]
                      for row in observations)
