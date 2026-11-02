@@ -39,6 +39,16 @@ func NewWorldBoundarySession(native *Simulation) (*WorldBoundarySession, error) 
 	return &WorldBoundarySession{native: native}, nil
 }
 
+// NativeEncounterEndNS exposes the pinned native engine's sampled source
+// encounter duration. The gsim controller must stop at this native clock
+// boundary rather than guessing a fixed 120-second endpoint.
+func (session *WorldBoundarySession) NativeEncounterEndNS() (int64, error) {
+    if session == nil || session.native == nil || session.native.endOfCombatDuration <= 0 {
+        return 0, errors.New("NATIVE_WORLD_ENCOUNTER_END_UNAVAILABLE")
+    }
+    return int64(session.native.endOfCombatDuration), nil
+}
+
 // nextWorldNativeEventAt includes all three event sources in Simulation.Step.
 // Inspecting only pendingActions would let native autos/tasks jump past a tick.
 func (sim *Simulation) nextWorldNativeEventAt() time.Duration {
