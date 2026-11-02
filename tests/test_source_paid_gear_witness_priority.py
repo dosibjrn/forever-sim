@@ -366,7 +366,8 @@ def test_rejected_source_preflight_resumes_without_repaying_it(monkeypatch, tmp_
     assert not result["eligible_for_checkpoint_acceptance"]
 
 
-def test_refinement_never_spends_a_second_real_screen_past_paid_budget():
+@pytest.mark.parametrize("max_paid_builds,expected_refinement", [(1, 0), (2, 1)])
+def test_refinement_never_spends_a_second_real_screen_past_paid_budget(max_paid_builds, expected_refinement):
     # Genuine source-backed Druid L20 cold search, no mocked scorer.
     # Before the fix the first real frontier screen exhausted the one-call
     # budget, but the Top-N refinement still paid another CombatRuntime call.
@@ -378,7 +379,7 @@ def test_refinement_never_spends_a_second_real_screen_past_paid_budget():
         gear_role="druid_feral")
     result = search_bounded_joint_frontier(
         class_key="druid", level=20, source_ir=source_ir,
-        seed_stage=stage, max_paid_builds=1, max_cpu_s=9.,
+        seed_stage=stage, max_paid_builds=max_paid_builds, max_cpu_s=9.,
         per_candidate_wall_s=3., max_talents=1,
         max_gear_moves=0, max_policies=1, max_recovery_policies=1,
         screen_mobs=1, search_only=True,
@@ -390,6 +391,6 @@ def test_refinement_never_spends_a_second_real_screen_past_paid_budget():
     assert result["screen_complete_candidates"] == 1, result["rows"]
     assert result["events"] > 0
     assert result["first_pass_screen_candidates"] == 1
-    assert result["refinement"]["paid_evaluations"] == 0
-    assert result["all_quick_evaluations_including_stat_probes"] == 1
+    assert result["refinement"]["paid_evaluations"] == expected_refinement
+    assert result["all_quick_evaluations_including_stat_probes"] == max_paid_builds
     assert result["search_budget_exhausted"] is True
