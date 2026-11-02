@@ -135,7 +135,7 @@ summary['source_search_space']={k:params[k] for k in (
     'max_gear_moves','gear_slot_offset','max_policies','max_recovery_policies',
     'screen_mobs','finalist_mobs','pack_size')}
 summary['source_search_space']['gear_role']='druid_feral'
-summary['source_search_space']['gear_slot_sampling_version']='stratified_source_slots_v1'
+summary['source_search_space']['gear_slot_sampling_version']=r['source_slot_proposal_coverage']['strategy']
 summary['search_runner_wall_s']=time.monotonic()-start
 summary['validation']=rv
 # Preserve exact source-legal gear, talent ranks, APL, opening and recovery.
