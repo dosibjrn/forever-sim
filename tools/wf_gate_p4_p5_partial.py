@@ -169,12 +169,33 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
             gate + "_FULL_SOURCE_RUNNER_CURRENTLY_SUPPORTS_DRUID_L30_UNRESTRICTED_ONLY"]}
 
     budget, timeout_s = (30, 420) if gate == "P4" else (300, 720)
+    compared = None
     with TemporaryDirectory(prefix="source-paid-" + gate.lower() + "-") as temp:
+        folder = Path(temp)
+        # P5 requires an INDEPENDENT cold 30s baseline, not an estimated
+        # N30 from one 300s run. Reuse the same WF437 production runner and
+        # its existing source-matched P6 independent replay comparator.
+        if gate == "P5":
+            baseline, error = _execute(Path(root), ["--budget", "30"],
+                                       folder / "cold-30.json", 420)
+            if error:
+                return {"status": "FAIL", "reasons": ["P5_30S_" + error],
+                        "production_engine": "gsim_CombatRuntime"}
+        output = folder / ("cold-300.json" if gate == "P5" else "cold.json")
         report, error = _execute(Path(root), ["--budget", str(budget)],
-                                 Path(temp) / "cold.json", timeout_s)
-    if error:
-        return {"status": "FAIL", "reasons": [gate + "_" + error],
-                "production_engine": "gsim_CombatRuntime"}
+                                 output, timeout_s)
+        if error:
+            return {"status": "FAIL", "reasons": [gate + "_" + error],
+                    "production_engine": "gsim_CombatRuntime"}
+        if gate == "P5":
+            compared, error = _execute(
+                Path(root),
+                ["--compare-30", str(folder / "cold-30.json"),
+                 "--compare-300", str(folder / "cold-300.json")],
+                folder / "comparison.json", 240, allowed_codes=(0, 1))
+            if error:
+                return {"status": "FAIL", "reasons": ["P5_COMPARE_" + error],
+                        "production_engine": "gsim_CombatRuntime"}
 
     # The actual cold run embeds independent 100-mob finalist replay OUTSIDE
     # the 30/300s search budget. A successful subprocess alone proves neither.
@@ -261,8 +282,29 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         reasons.append(gate + "_SOURCE_CLASS_ITEM_MEMBERSHIP_NOT_ATTESTED")
     if not complete:
         reasons.append(gate + "_INCOMPLETE_PAID_100MOB_FINALIST")
+    # The comparator independently replays both saved winners on the same
+    # source and rejects stale/mismatched candidate spaces. A paid breadth
+    # ratio alone is not P5 acceptance and does not certify native↔2D.
+    paired = compared if isinstance(compared, dict) else {}
+    p5_same_space = paired.get("same_source_legal_candidate_space_proven") is True
+    p5_breadth = paired.get("p5_10x_breadth") is True
+    p5_replays = paired.get("replays")
+    p5_replays_complete = (
+        isinstance(p5_replays, list) and len(p5_replays) == 2
+        and all(isinstance(r, dict) and r.get("status") == "COMPLETE"
+                and type(r.get("count")) is int and r["count"] == 100
+                and type(r.get("mob_completed")) is int
+                and r["mob_completed"] == 100
+                and type(r.get("s_per_mob")) in (int, float)
+                and isfinite(r["s_per_mob"]) and r["s_per_mob"] > 0
+                for r in p5_replays))
     if gate == "P5":
-        reasons.append("P5_INDEPENDENT_N300_GE_10_N30_NOT_COMPARED")
+        if not p5_same_space:
+            reasons.append("P5_INDEPENDENT_COLD_SOURCE_SPACE_NOT_MATCHED")
+        if not p5_breadth:
+            reasons.append("P5_N300_GE_TEN_TIMES_N30_NOT_PROVEN")
+        if not p5_replays_complete:
+            reasons.append("P5_INDEPENDENT_WINNERS_100MOB_REPLAY_INCOMPLETE")
     return {
         "status": "FAIL", "reasons": reasons,
         "production_engine": "gsim_CombatRuntime",
@@ -272,6 +314,12 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         "source_db_sha256": report["source_db_sha256"],
         "source_gear_catalogue_snapshot": report.get("source_gear_catalogue_snapshot"),
         "real_paid_unique_full_builds": report.get("unique_full_builds"),
+        "independent_N30_unique_paid": paired.get("N30_unique_paid") if gate == "P5" else None,
+        "independent_N300_unique_paid": paired.get("N300_unique_paid") if gate == "P5" else None,
+        "independent_p5_10x_breadth": p5_breadth if gate == "P5" else None,
+        "independent_same_source_candidate_space": p5_same_space if gate == "P5" else None,
+        "independent_100mob_winner_replays_complete": p5_replays_complete if gate == "P5" else None,
+        "independent_100mob_winner_replays": p5_replays if gate == "P5" else None,
         "real_paid_screen_complete": report.get("screen_complete_candidates"),
         "real_talent_unlocked_actions": report.get("p4_talent_unlock_coverage"),
         "saved_full_source_winner_build": full_saved_build,
