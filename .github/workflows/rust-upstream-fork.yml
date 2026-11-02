@@ -38,7 +38,7 @@ jobs:
           PY
 
   sync-fork:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'chore(rust): run fork bootstrap one-shot'))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'run fork bootstrap one-shot'))
     needs: check-script
     runs-on: ubuntu-24.04
     timeout-minutes: 120
