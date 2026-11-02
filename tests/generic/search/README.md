@@ -22,6 +22,11 @@ Run from the repository root:
 python -m pytest -q tests/generic/search
 ```
 
+The suite also holds unchanged ClassModel/path-DP, V2 path-score and
+stochastic path-validation input contracts, moved from the flat `tests/` root.
+Those test modules use `src.*` imports and do not resolve paths relative to
+their own files.
+
 The directory is included in normal `pytest` collection
 (`pytest.ini` sets `testpaths = tests`). Formal gate acceptance and M1 progress
 remain owned by their production gate runners and Merge.
