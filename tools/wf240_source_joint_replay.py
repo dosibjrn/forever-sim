@@ -15,15 +15,15 @@ from src.v2.source_mode_search import evaluate_discovered_mode_search
 from src.v2.source_staged_joint_search import _diverse_gear_indices
 
 
-def score(ir,gear,allocation):
+def score(ir,gear,allocation, *, caster_max_policies=128, mode_max_policies=256):
     geared,_=apply_gear_selection(ir,aggregate_stats=gear['selection'].aggregate_stats,
         selected_items=tuple(gear['selection'].slots.values()),source='canonical_sqlite_forever_catalogue')
     talented,_=apply_talent_selection(geared,allocation,level=20)
     rows=[]
     for branch,fn in (('caster',lambda:_evaluate_caster_already_talented(
-            talented,level=20,max_policies=128,schedule_incoming_attacks=True)),
+            talented,level=20,max_policies=caster_max_policies,schedule_incoming_attacks=True)),
             ('mode',lambda:evaluate_discovered_mode_search(class_key='druid',level=20,
-            ir_slice=talented,max_policies_per_path=256,schedule_incoming_attacks=True))):
+            ir_slice=talented,max_policies_per_path=mode_max_policies,schedule_incoming_attacks=True))):
         try:
             result=fn();win=result['winner']
             rows.append({'branch':branch,'seconds_per_mob':win['seconds_per_mob'],
@@ -42,7 +42,9 @@ def score(ir,gear,allocation):
             'branch_scores':{r['branch']:r.get('seconds_per_mob') for r in rows}}
 
 
-def run():
+def run(*, caster_max_policies=128, mode_max_policies=256,
+        version='0.11.48.240', output_path='WF240_DRUID_L20_JOINT_REPLAY.json',
+        last_limitation='regrowth compound heal not yet considered by recovery optimizer'):
     started=time.monotonic()
     ir=build_game_ir_slice(class_key='druid',level=20)
     allocations,truncated=enumerate_legal_talent_allocations(ir,level=20,max_candidates=30000)
@@ -67,7 +69,8 @@ def run():
     independent=list(selected.values())
     evaluated=[]
     for i,alloc in enumerate(independent):
-        scores=[score(ir,gear,alloc) for gear in gears]
+        scores=[score(ir,gear,alloc,caster_max_policies=caster_max_policies,
+                      mode_max_policies=mode_max_policies) for gear in gears]
         good=[s for s in scores if s]
         if good:
             evaluated.append(min(good,key=lambda s:s['seconds_per_mob']))
@@ -75,9 +78,10 @@ def run():
     winner=min(evaluated,key=lambda s:s['seconds_per_mob'])
     # Held-out old challenger evaluated AFTER independent winner, same 7 source-diverse gear
     # envelope and same source runtime, without insertion into candidate search.
-    old_rows=[score(ir,gear,old) for gear in gears]
+    old_rows=[score(ir,gear,old,caster_max_policies=caster_max_policies,
+                    mode_max_policies=mode_max_policies) for gear in gears]
     old_best=min((s for s in old_rows if s),key=lambda s:s['seconds_per_mob'])
-    evidence={'version':'0.11.48.240','class_key':'druid','level':20,
+    evidence={'version':version,'class_key':'druid','level':20,
         'scope':'stratified_bounded_joint_sample_not_global_optimum',
         'all_executable_legal_allocations':len(allocations),
         'independent_allocation_count':len(independent),
@@ -91,8 +95,8 @@ def run():
             'source action/talent completeness incomplete',
             'rear-only Shred excluded without explicit positional opportunity',
             'root break and hit/crit fidelity incomplete',
-            'regrowth compound heal not yet considered by recovery optimizer']}
-    Path('WF240_DRUID_L20_JOINT_REPLAY.json').write_text(json.dumps(evidence,indent=2))
+            last_limitation]}
+    Path(output_path).write_text(json.dumps(evidence,indent=2))
     print('RESULT',winner['seconds_per_mob'],old_best['seconds_per_mob'],len(independent),len(gears),flush=True)
 
 if __name__=='__main__':run()
