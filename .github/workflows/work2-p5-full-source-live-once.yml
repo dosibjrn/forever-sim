@@ -1,0 +1,41 @@
+name: Work2 P5 full 300s source-paid independent cold search (temporary)
+on:
+  push:
+    branches:
+      - work/work2-p5-source-paid-full-live-20261102
+permissions:
+  contents: read
+jobs:
+  live-p5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Exact source P4/P5 predicate regressions
+        run: python -m pytest -q tests/test_work2_full_source_p4_p5_gate_entry.py
+      - name: Actual source-paid P5 independent 30s + 300s cold search and 100-mob finalist replay (NO RECORD)
+        shell: bash
+        run: |
+          set +e
+          FOREVER_P4_P5_FULL_SOURCE=1 python tools/wf_gate.py --class druid --level 60 --spec balance --gate P5 --out /tmp/p5-no-record.json
+          result=$?
+          set -e
+          echo "P5_SOURCE_PAID_RUNTIME_CODE=$result"
+          if [ -f /tmp/p5-no-record.json ]; then
+            python - <<'PY'
+          import json
+          x=json.load(open('/tmp/p5-no-record.json'))
+          print('P5_SOURCE_PAID_SUMMARY=' + json.dumps({k:x.get(k) for k in ('class','level','spec','gate','status')},sort_keys=True))
+          for row in x.get('results',[]):
+              print('P5_SOURCE_PAID_RESULT=' + json.dumps(row,sort_keys=True))
+          PY
+          else
+            echo 'P5_SOURCE_PAID_JSON_MISSING'
+          fi
+          exit "$result"
