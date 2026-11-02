@@ -161,3 +161,24 @@ def test_real_source_unlock_and_incumbent_survive_one_generic_policy_slot():
         assert paid['status'] == 'COMPLETE', paid
         assert paid['count'] == 1
         assert paid['source_action_counts']['primal_bite:25'] > 0
+
+
+def test_one_generic_policy_slot_still_pays_source_unlocked_action_in_joint_search():
+    """Same real source and production scheduler, not just a helper inventory."""
+    from src.v2.source_bounded_joint_frontier import search_bounded_joint_frontier
+    with ability_source_scope(SOURCE):
+        result = search_bounded_joint_frontier(
+            class_key='druid', level=30, source_ir=_source(), seed_stage=_stage(),
+            max_talents=4, max_gear_moves=0, max_policies=1,
+            max_recovery_policies=1, max_paid_builds=3, max_cpu_s=8.,
+            per_candidate_wall_s=2., screen_mobs=1, finalist_mobs=100,
+            search_only=True, screen_evaluator_backend='direct')
+        unlocks = [r for r in result['rows']
+                   if r['policy_origin']=='talent_unlock:primal_bite:25']
+        assert unlocks, result['rows']
+        assert any(r.get('screen_status')=='COMPLETE'
+                   and r.get('source_action_counts',{}).get('primal_bite:25',0)>0
+                   and r.get('screen_events',0)>0 for r in unlocks), unlocks
+        assert result['policy_variants'] >= 2
+        assert result['all_quick_evaluations_including_stat_probes'] <= 3
+        assert not result['eligible_for_checkpoint_acceptance']
