@@ -472,7 +472,15 @@ def main(argv=None) -> int:
                     "source_report_url", "source_request_raw_sha256",
                     "native_source_revision", "iterations",
                     "sampled_source_fights", "saved_source_iterations",
-                    "native_first_duration_s", "world_first_duration_s"):
+                    "native_first_duration_s", "world_first_duration_s",
+                    "winner_live_dps", "external_only_floor_dps",
+                    "external_only_dps_proximity_percent",
+                    "external_only_not_p7_5_accepted_prior_comparison",
+                    "source_legal_cold_candidates_paid",
+                    "cold_winner_request_sha256",
+                    "world_damage_events", "world_boundaries",
+                    "selected_validation", "scope_provisional",
+                    "coverage_scope_complete"):
             if key in report:
                 record[key] = report[key]
         # One canonical calculation: no percent for BLOCKED, inventories,
