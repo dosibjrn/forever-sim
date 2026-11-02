@@ -82,8 +82,11 @@ def native_p1_progress(scope: dict, runtime_results=()) -> dict:
               if row["status"] == "NOT_RELEVANT_TO_SIMULATION"}
     unresolved = {int(row["spell_id"]) for row in scope["separate"]
                   if row["status"] == "ACQUISITION_UNRESOLVED"}
+    native_channels = {int(row["spell_id"]) for row in scope["separate"]
+                       if row["status"] in ("NATIVE_AUTO_ATTACK", "PET_ACTION")}
     if waived & unresolved:
         raise ValueError("P1_APPLICABILITY_OVERLAPS_UNKNOWN")
+    relevant = candidates | native_channels
     known = candidates | separate
     counted = set()
     diagnostic_only = set()
@@ -95,9 +98,10 @@ def native_p1_progress(scope: dict, runtime_results=()) -> dict:
         if sid in tested:
             raise ValueError("DUPLICATE_RUNTIME_TEST_FOR_SPELL:" + str(sid))
         tested.add(sid)
-        if sid not in candidates:
-            # Source noncombat/passive/auto/pet actions need their own producer;
-            # P1's cast-action scope cannot award them accidental green ticks.
+        if sid not in relevant:
+            # Only actual combat channels belong to this effect-probe
+            # population. Source utility/waivers/lower-rank entries do not
+            # acquire PASS from an unrelated test.
             diagnostic_only.add(sid)
             continue
         if (result.get("status") == VERIFIED_EFFECT
@@ -114,7 +118,7 @@ def native_p1_progress(scope: dict, runtime_results=()) -> dict:
     # ALL source-index candidates are still potential until independently
     # checked for actual learning. This is a conservative *diagnostic* scope,
     # NOT a certified legal denominator.
-    result = milestone_progress(len(counted), len(candidates), unknown=len(unresolved))
+    result = milestone_progress(len(counted), len(relevant), unknown=len(unresolved))
     result.update({
         "kind": "P1_NATIVE_REAL_BEHAVIOR_PROGRESS_ONLY",
         "class": scope["class"],
@@ -125,8 +129,13 @@ def native_p1_progress(scope: dict, runtime_results=()) -> dict:
         "not_relevant_spell_ids": sorted(waived),
         "not_relevant_count": len(waived),
         "source_candidate_count": len(candidates),
+        "source_acquisition_unverified_count": sum(
+            row.get("status") == "POTENTIALLY_AVAILABLE_AT_LEVEL_NOT_PROVEN_LEARNED"
+            for row in scope["candidates"]),
+        "native_auto_or_pet_count": len(native_channels),
         "source_legality_confirmed": False,
-        "other_channel_spell_ids": sorted(separate - waived - unresolved),
+        "other_channel_spell_ids": sorted(
+            separate - waived - unresolved - native_channels),
         "note": "Raw spell-index candidates are not confirmed acquired/learned. "
                 "Only direct measured native effect outcomes may earn diagnostic ticks.",
     })
