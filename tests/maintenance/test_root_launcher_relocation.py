@@ -1,5 +1,6 @@
 """Regression contracts for issue #14 root launcher relocation (phase 2A)."""
 from pathlib import Path
+import ast
 import os
 import subprocess
 import tempfile
@@ -81,6 +82,22 @@ class RootLauncherRelocation(unittest.TestCase):
                 text = (COMMANDS / name).read_text()
                 self.assertIn("Join-Path $PSScriptRoot '../..'", text)
                 self.assertIn("python ", text)
+
+    def test_v5_aggregate_uses_existing_relocated_stage_commands(self):
+        source = ROOT / "tools/validate_v5_acceptance.py"
+        tree = ast.parse(source.read_text())
+        stages = next(
+            ast.literal_eval(node.value)
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "STAGES" for target in node.targets)
+        )
+        self.assertEqual([name for name, _, _ in stages], ["V0", "V1", "V2", "V3", "V4"])
+        for name, path, timeout in stages:
+            with self.subTest(stage=name):
+                self.assertEqual((ROOT / path).parent, COMMANDS)
+                self.assertTrue((ROOT / path).is_file(), f"Missing {name}: {path}")
+                self.assertGreater(timeout, 0)
 
     def test_root_entrypoint_bash_kept_usable(self):
         subprocess.run(["bash", "-n", str(ROOT / "run.sh")], check=True)
