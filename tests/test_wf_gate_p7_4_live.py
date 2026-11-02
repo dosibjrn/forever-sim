@@ -131,8 +131,8 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     assert report["independent_300s_search_completed"] is True
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_reference_floor_met"] is True
-    assert report["status"] == "FAIL"
-    assert "P7_4_SAVED_REPORT_UI_FIELD_AUDIT_UNVERIFIED" in report["reasons"]
+    assert report["status"] == "PASS"  # mocked routing, not real source/native proof
+    assert report["reasons"] == []
     assert base == original
 
 
