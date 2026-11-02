@@ -50,6 +50,16 @@ jobs:
           for t in ir.talents:
               if t.tree_key == 'balance' and t.id in ('insect_swarm','moonkin_form','overgrowth','eclipse','natures_grace'):
                   print('P2_ORIGINAL_RANK',t.id,[(r.rank,[m.kind for m in r.modifiers],repr(r.provenance)[:2000]) for r in t.ranks],flush=True)
+          for a in ir.actions:
+              if 'root' in a.family_key or 'insect' in a.family_key:
+                  print('P2_ACTION',a.id,a.family_key,'control_caps',repr(a.metadata.get('source_control_target_caps')),'effects',[(e.effect_type,e.school) for e in a.effects],flush=True)
+          import sqlite3
+          with sqlite3.connect(DEFAULT_DB) as db:
+              names=[r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND (name LIKE '%control%cap%' OR name LIKE '%talent%grant%' OR name LIKE '%rank%')").fetchall()]
+              print('P2_RELEVANT_TABLES',names,flush=True)
+              for name in names:
+                  if name in ('sourced_talent_control_target_cap_facts','verified_talent_granted_action_facts','sourced_talent_charge_facts'):
+                      print('P2_RELEVANT_TABLE',name,db.execute('SELECT * FROM "'+name+'" LIMIT 3').fetchall(),flush=True)
           profile=_load_product_spec_profile(Path('.'),'druid',60,'balance',source_sha256=sha256(DEFAULT_DB.read_bytes()).hexdigest())
           print('P2_PROFILE',profile,flush=True)
           for t in compiled.talents:
