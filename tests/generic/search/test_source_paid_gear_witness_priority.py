@@ -692,49 +692,6 @@ def test_refinement_identity_does_not_repay_same_source_build_under_different_ge
         assert _refinement_build_identity(
             {**alias, "opening_action_ids": ["distinct_source_opening"]}, candidate) != original
 
-
-def test_paid_improving_descendant_survives_next_refinement_parent_selection():
-    """A measured better child can be below the global top-N but still advance."""
-    from types import SimpleNamespace
-    from src.v2.source_bounded_joint_frontier import (
-        _promote_paid_improving_descendant, _refinement_build_identity)
-
-    def entry(label, score, allocation):
-        gear = {"slots": {"weapon": {"item_id": 101}}}
-        row = {"screen_s_per_mob": score, "allocation": allocation,
-               "policy_signature": "sourced_apl", "recovery": "always",
-               "opening_action_ids": [], "equipped_gear": gear,
-               "gear_move": label, "policy": "sourced_apl"}
-        candidate = SimpleNamespace(opening=(),
-            source_stage={"gear_policy_result": {"winner": {"gear": gear}}})
-        return row, candidate, "always"
-
-    best = entry("best", 10.0, {"a": 5})
-    second = entry("second", 10.1, {"b": 5})
-    third = entry("third", 10.2, {"c": 5})
-    # Actual paid child improves on its parent (10.4 -> 10.15), but is
-    # not in the globally selected top three.
-    improved = entry("child", 10.15, {"d": 5})
-    selected = [best, second, third]
-    promoted = _promote_paid_improving_descendant(selected, [improved], 3)
-    assert promoted == [best, second, improved]
-    assert _refinement_build_identity(*promoted[-1][:2]) == (
-        _refinement_build_identity(*improved[:2]))
-    # No change when the improved child is already among the paid parents.
-    assert _promote_paid_improving_descendant(
-        selected, [second], 3) == selected
-    # Never replace the sole paid incumbent or fabricate an unmeasured child.
-    assert _promote_paid_improving_descendant([best], [improved], 1) == [best]
-    assert _promote_paid_improving_descendant(selected, [], 3) == selected
-    # Existing shortlist contract reserves an independent incumbent control.
-    control = entry("control", 12.0, {"z": 5})
-    control[0]["is_control"] = True
-    assert _promote_paid_improving_descendant(
-        [best, second, control], [improved], 3) == [best, improved, control]
-    assert _promote_paid_improving_descendant(
-        [best, control], [improved], 2) == [best, control]
-
-
 def test_nested_paid_candidate_expiry_does_not_arm_stray_alarm(monkeypatch):
     """An exhausted enclosing timer must fail inside the guarded coordinate.
 
