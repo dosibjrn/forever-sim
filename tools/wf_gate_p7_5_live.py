@@ -187,9 +187,9 @@ def run_live(root: Path, class_key: str, level: int, *,
 
     # No accepted-compatible P7.1–P7.4 stochastic prior is established.
     # The external-only final is diagnostic and MUST NOT become a P7.5 PASS.
-    reasons = ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR",
-               "P7_5_COMPLETE_SOURCE_GEAR_TALENTS_ROTATION_UNIVERSE_UNVERIFIED",
-               "P7_5_SAVED_REPORT_UI_FIELD_AUDIT_UNVERIFIED"]
+    # A compatible accepted stochastic prior is required for P7.5, not an
+    # extra audit of an already pinned original report or exhaustive universe.
+    reasons = ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"]
     if not full_search:
         reasons.append("P7_5_FULL_300S_COLD_SEARCH_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED")
     elif search_wall_s < 300.0:
