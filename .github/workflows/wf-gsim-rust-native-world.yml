@@ -2,7 +2,8 @@ name: Live pinned MythicSim Rust fight to real gsim world (NOT P7)
 on:
   workflow_dispatch:
   push:
-    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102]
+    # One controlled exact-HEAD Work1 P7.3 regression run. No generic push CI.
+    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/work1-p73-native-world-cold-final-20261102]
     paths:
       - .github/workflows/wf-gsim-rust-native-world.yml
       - integrations/mythicsim-rust/patch_world_ingress.py
@@ -30,7 +31,15 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install existing gsim source dependencies
-        run: python -m pip install --disable-pip-version-check beautifulsoup4
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Exact-HEAD P7.3 source-gate regressions (not P7 acceptance)
+        working-directory: project
+        run: |
+          echo "Focused production gate HEAD: $(git rev-parse HEAD)"
+          python -m pytest -q \
+            tests/test_wf_gate_p7_3_live.py \
+            tests/test_wf_gate_p7_2_live.py \
+            tests/test_work1_p7_balanced_native_world_rng.py
       - name: Verify patch anchors and Python source
         run: |
           python -m compileall -q project/integrations/mythicsim-rust/patch_world_ingress.py project/integrations/mythicsim-rust/live_world_probe.py
