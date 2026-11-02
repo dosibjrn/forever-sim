@@ -94,7 +94,7 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
     # The actual gsim target owns starting HP. Native must consume it via
     # the first measured world ACK, not via a synthetic native-only counter.
     runtime.targets['m1'].health = target_health * target_initial_health_fraction
-    if source_single_target:
+    if source_single_target and source_in_front_of_target is not None:
         if type(source_in_front_of_target) is not bool:
             raise ValueError('SOURCE_FACING_NOT_BOOLEAN')
         runtime.targets['m1'].metadata['facing_xy_yards'] = (
