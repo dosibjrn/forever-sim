@@ -76,3 +76,14 @@ def test_p6_full_source_mode_never_fakes_unsupported_checkpoint():
         result = run_full_source_comparison(Path('/tmp'), 'warlock', 60)
     assert result['status'] == 'BLOCKED'
     execute.assert_not_called()
+
+
+def test_p6_live_gate_dispatches_only_when_full_mode_explicitly_enabled():
+    from tools.wf_gate_p6_live import run_live
+    from unittest.mock import patch
+    with patch.dict('os.environ', {'FOREVER_P6_FULL_SOURCE_COMPARE': '1'}):
+        with patch('tools.wf_gate_p6_full_source.run_full_source_comparison',
+                   return_value={'status': 'FAIL', 'reasons': ['HYBRID_PENDING']}) as full:
+            report = run_live(Path('/tmp'), 'druid', 30, spec='unrestricted')
+    assert report['status'] == 'FAIL'
+    full.assert_called_once_with(Path('/tmp'), 'druid', 30, spec='unrestricted')
