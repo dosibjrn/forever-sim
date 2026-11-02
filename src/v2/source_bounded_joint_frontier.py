@@ -2073,6 +2073,35 @@ def _joint_row_identity(row):
             row['policy_signature'],row['recovery'])
 
 
+def _paid_joint_build_identity(row):
+    """One legally prepared full build actually exercised by the paid runtime.
+
+    Coordinate labels are not build identities: two gear proposal paths can
+    equip the same items. A preparation error or a screen that never produced
+    a combat event cannot contribute to the P5 tenfold paid breadth count.
+    A real survival failure *does* count as a paid evaluation, provided the
+    build is legal and the runtime actually advanced.
+    """
+    if (int(row.get('screen_events') or 0) <= 0
+            or row.get('screen_status') == 'SPEC_COMBAT_MODE_ACTION_NOT_EXECUTED'
+            or not row.get('equipped_gear')
+            or not row.get('policy_signature')
+            or 'allocation' not in row
+            or 'opening_action_ids' not in row
+            or 'recovery' not in row):
+        return None
+    return (_key(row['allocation']),
+            json.dumps(row['equipped_gear'], sort_keys=True, default=str),
+            row['policy_signature'], tuple(row['opening_action_ids']),
+            row['recovery'])
+
+
+def _unique_paid_full_builds(rows):
+    """P5 N: distinct source-legal builds with real paid combat events."""
+    return len({identity for row in rows
+                if (identity := _paid_joint_build_identity(row)) is not None})
+
+
 def _joint_gear_move_quotas(max_gear_moves):
     """Share one legal gear-move budget across pure/mixed stats and slots."""
     if type(max_gear_moves) is not int or max_gear_moves < 0:
@@ -2816,7 +2845,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                     backend=screen_evaluator_backend,
                     mobs=screen_mobs,timeout_s=min(per_candidate_wall_s,remaining),
                     recovery_policy=recovery,pack_size=pack_size)
-                events+=int(screen.get('events') or 0)
+                row['screen_events']=int(screen.get('events') or 0)
+                events+=row['screen_events']
                 row['screen_status']=screen['status']
                 row['screen_s_per_mob']=screen.get('mean_s_per_mob')
                 row['source_action_counts']=dict(screen.get('source_action_counts') or {})
@@ -2990,7 +3020,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             'eligible_slots':sorted(k for k,v in slot_source_counts.items() if v),
             'proposed_slots':sorted({slot for slot,_ in slot_moves}),
             'paid_slots':sorted({slot_move_labels[row['gear_move']]
-                for row in attempted if row.get('screen_status')
+                for row in attempted if _paid_joint_build_identity(row) is not None
                 and row.get('gear_move') in slot_move_labels}),
             'unproposed_slots':sorted(set(k for k,v in slot_source_counts.items() if v)
                 -{slot for slot,_ in slot_moves}),
@@ -3021,16 +3051,16 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         # alternatives do not count as joint search coverage.
         'joint_axis_paid_coverage':{
             'distinct_talent_allocations':len({_key(row['allocation']) for row in attempted
-                if row.get('screen_status')}),
+                if _paid_joint_build_identity(row) is not None}),
             'distinct_gear_configs':len({json.dumps(row['equipped_gear'],sort_keys=True,default=str)
-                for row in attempted if row.get('screen_status') and 'equipped_gear' in row}),
+                for row in attempted if _paid_joint_build_identity(row) is not None}),
             'distinct_policy_signatures':len({row['policy_signature'] for row in attempted
-                if row.get('screen_status') and row.get('policy_signature')}),
+                if _paid_joint_build_identity(row) is not None}),
             'distinct_recovery_policies':len({row['recovery'] for row in attempted
-                if row.get('screen_status') and 'recovery' in row}),
-            'paid_screens':sum(bool(row.get('screen_status')) for row in attempted),
+                if _paid_joint_build_identity(row) is not None}),
+            'paid_screens':sum(_paid_joint_build_identity(row) is not None for row in attempted),
         },
-        'unique_full_builds':len({_joint_row_identity(r) for r in attempted}),
+        'unique_full_builds':_unique_paid_full_builds(attempted),
         'search_strategy':('quick_screen_top_n_refinement' if search_only else
             'screen_qualify_full' if qualification_mobs is not None
             else 'screen_then_full' if screen_then_finalists else 'immediate_full'),
