@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from scripts import audit_product_coverage as coverage_cli
+
 from scripts.audit_product_coverage import (
     CLASSES, STATUSES, audit, classify_level, full_optimization_blockers,
     inspect_snapshot,
@@ -111,3 +113,22 @@ def test_stale_snapshot_removes_scored_druid_levels(tmp_path):
     assert snapshots["druid"]["valid"] is False
     assert "version" in snapshots["druid"]["failures"]
     assert "druid" not in steps
+
+
+def test_coverage_cli_writes_generated_reports_to_ignored_runtime(tmp_path, monkeypatch):
+    # No simulator/source run: isolate the report writer's output-path contract.
+    monkeypatch.setattr(coverage_cli, "ROOT", tmp_path)
+    monkeypatch.setattr(coverage_cli, "audit", lambda: {
+        "summary": {"druid": {
+            "source_ir_executed": 1, "queue_source_only_declared": 0,
+            "evaluated": 0, "fully_optimized": 0,
+            "route_complete": 0, "validated": 0,
+        }},
+        "contradictory_default_declarations": [],
+    })
+    assert coverage_cli.main([]) == 0
+    output_dir = tmp_path / ".runtime" / "coverage"
+    assert json.loads((output_dir / "coverage_forever_1_60_v2.json").read_text())["summary"]["druid"]["source_ir_executed"] == 1
+    assert "druid" in (output_dir / "coverage_forever_1_60_v2.txt").read_text()
+    assert not (tmp_path / "coverage_forever_1_60_v2.json").exists()
+    assert not (tmp_path / "coverage_forever_1_60_v2.txt").exists()

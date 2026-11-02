@@ -3,12 +3,20 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+
+# Direct `python scripts/...` also works outside the repository cwd.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_search import enumerate_legal_talent_allocations, talent_candidate_id
 import src.v2.source_staged_joint_search as staged
 
 
-def run(output:Path, *,sample_count:int=160, policy_cap:int=24):
+def run(output:Path, *,sample_count:int=160, policy_cap:int=24,
+        finalist_talent_count:int=16, version:str='0.11.48.238'):
     ir=build_game_ir_slice(class_key='druid',level=20)
     legal,truncated=enumerate_legal_talent_allocations(ir,level=20,max_candidates=100000)
     if truncated:raise ValueError('executable allocation enumeration truncated')
@@ -33,12 +41,13 @@ def run(output:Path, *,sample_count:int=160, policy_cap:int=24):
     try:
         result=staged.evaluate_staged_joint_search(
             class_key='druid',level=20,ir_slice=ir,
-            screening_gear_count=2,finalist_talent_count=16,
+            screening_gear_count=2,finalist_talent_count=finalist_talent_count,
             max_policies_per_path=policy_cap,max_caster_policies=policy_cap,
             held_out_allocation=held)
     finally:staged.enumerate_legal_talent_allocations=original
-    out={'version':'0.11.48.238','source_executable_legal_count':len(legal),
+    out={'version':version,'source_executable_legal_count':len(legal),
          'independent_sample_count':len(sample),
+         **({'finalist_talent_count':finalist_talent_count} if finalist_talent_count != 16 else {}),
          'source_family_representatives':families,
          'unscored_legal_count':len(legal)-len(sample),
          'held_out_separate':True,
