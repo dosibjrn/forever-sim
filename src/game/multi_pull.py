@@ -363,6 +363,9 @@ def evaluate_repeated_pulls(
                 actor.remove_aura(aura_id)
             actor.pending_actor_periodic_events = ()
             actor.pending_actor_periodic_actions.clear()
+    # A candidate is complete only if its entire paid evaluation, including
+    # final state carry/accounting, finishes within the compute deadline.
+    check_compute_budget()
     return RepeatedPullResult(
         seconds_per_mob=(float(actor.current_time_s) - start) / count,
         pulls=tuple(results), start_time_s=start,
