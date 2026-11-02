@@ -87,6 +87,10 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
     assert json.loads(calls[0][3]) == json.loads(calls[3][3])
     assert report["cold_unique_source_requests"] == 1
+    # Real gate receipt exposes which talent build was frozen; a request
+    # hash alone cannot distinguish unchanged-effective-rank hypotheses.
+    assert report["source_original_talents"] == "old"
+    assert report["cold_winner_talents"] == "cold-source-legal"
     assert report["source_legal_cold_candidates_paid"] == 1
     assert report["independent_300s_search_completed"] is True
     assert report["frozen_stochastic_iterations"] == 1000
