@@ -2078,41 +2078,6 @@ def _select_screen_finalists(screened, max_finalists, *, score_key="screen_s_per
     return finalists
 
 
-
-def _select_refinement_parents(screened, max_parents):
-    """Paid parent beam: retain the fastest distinct legal talent allocations.
-
-    A short-horizon screen can overfill its top slots with multiple gear/APL
-    variations of the *same* talent allocation. Those are useful finalists,
-    but yield the same talent neighborhood in a short cold refinement budget.
-    Pay one source-legal allocation's top screen before duplicating an
-    already-covered talent neighborhood; backfill remaining slots by score.
-    This changes exploration order, not the source universe or paid scorer.
-    """
-    if max_parents <= 0 or not screened:
-        return []
-    ranked = _select_screen_finalists(screened, len(screened))
-    result = []
-    selected_ids = set()
-    seen_allocations = set()
-    for entry in ranked:
-        allocation = _key(entry[0]['allocation'])
-        if allocation in seen_allocations:
-            continue
-        seen_allocations.add(allocation)
-        result.append(entry)
-        selected_ids.add(id(entry[0]))
-        if len(result) >= max_parents:
-            return result
-    for entry in ranked:
-        if id(entry[0]) in selected_ids:
-            continue
-        result.append(entry)
-        if len(result) >= max_parents:
-            break
-    return result
-
-
 def _qualify_screened_candidates(screened, *, max_qualifiers, level, mobs,
                                  deadline, per_candidate_wall_s, pack_size,
                                  on_evaluated=None,skip_evaluated=False):
@@ -2490,7 +2455,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
         return screened,{'rounds_completed':0,'stat_probes':0,'gear_probes':0,
                           'policy_probes':0,'talent_probes':0,
                           'paid_evaluations':0,'events':0,'worker_cpu_s':0.,'rows':[]}
-    top=_select_refinement_parents(screened,max_top_n)
+    top=_select_screen_finalists(screened,max_top_n)
     seen={(_joint_row_identity(r),tuple(sorted(int(x['item_id']) for x in c.source_stage['gear_policy_result']['winner']['gear']['slots'].values()))) for r,c,_ in screened}
     completed_rounds=0
     for turn in range(rounds):
@@ -2683,7 +2648,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                     rows.append(trace);attempted.append(trace)
                     if result['status']=='COMPLETE':screened.append((trace,fresh,recovery))
         if any_attempt:completed_rounds+=1
-        top=_select_refinement_parents(screened,max_top_n)
+        top=_select_screen_finalists(screened,max_top_n)
     return screened,{'rounds_completed':completed_rounds,'stat_probes':stat_probes,
         'gear_probes':gear_probes,'policy_probes':policy_probes,
         'talent_probes':talent_probes,'paid_evaluations':evaluated,
