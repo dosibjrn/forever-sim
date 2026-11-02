@@ -12,5 +12,5 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check pytest==8.4.2
-      - run: python -m pytest -q tests/gates/test_wf_gate_p7_4_live.py tests/gates/test_wf_gate_class_cli.py
+      - run: python -m pytest -q tests/gates/test_wf_gate_p7_4_live.py tests/gates/test_wf_gate_class_cli.py::test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail
       - run: python -m compileall -q tools/wf_gate_p7_4_live.py tools/wf_gate.py tests/gates/test_wf_gate_p7_4_live.py tests/gates/test_wf_gate_class_cli.py
