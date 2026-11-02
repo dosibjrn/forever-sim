@@ -27,6 +27,7 @@ func TestWorldRangeFeedRejectReplayAndBadSource(t *testing.T) {
         func(x *worldTick){x.WorldSHA256="zz"},
         func(x *worldTick){x.DistanceYards=math.NaN()},
         func(x *worldTick){x.FacingApplied=true},
+        func(x *worldTick){v:=true;x.InFrontOfTarget=&v},
         func(x *worldTick){x.RangeOnly=false},
         func(x *worldTick){x.NativeActionACK=true},
         func(x *worldTick){x.WorldTargetHealthBefore=0},
@@ -107,4 +108,16 @@ func TestRetainedNativePlayerCannotSwitchAcrossWorldTicks(t *testing.T) {
     if err:=other.validate(next);err!=nil {
         t.Fatalf("rejected stable alternate actor: %v",err)
     }
+}
+
+func TestNativeWorldTickFacingFrontAndBack(t *testing.T) {
+    v:=&tickValidator{}
+    back:=false
+    first:=goodTick(0,0);first.FacingApplied=true;first.InFrontOfTarget=&back
+    if err:=v.validate(first);err!=nil {t.Fatal(err)}
+    front:=true
+    next:=goodTick(1,100);next.FacingApplied=true;next.InFrontOfTarget=&front
+    if err:=v.validate(next);err!=nil {t.Fatal(err)}
+    invalid:=goodTick(2,200);invalid.FacingApplied=true
+    if err:=v.validate(invalid);err==nil {t.Fatal("accepted facing without direction")}
 }

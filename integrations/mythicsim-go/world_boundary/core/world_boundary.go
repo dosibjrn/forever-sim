@@ -17,6 +17,8 @@ type WorldRangeReceipt struct {
 	PlayerIndex           int     `json:"player_index"`
 	AppliedYards          float64 `json:"applied_yards"`
 	NativeEncounterDamage float64 `json:"native_encounter_damage"`
+	FacingApplied bool `json:"facing_applied"`
+	InFrontOfTarget bool `json:"in_front_of_target"`
 }
 
 // WorldBoundarySession holds one genuine Simulation across ordered world ticks.
@@ -147,6 +149,11 @@ func applyWorldDistanceToPlayer(sim *Simulation, unit *Unit, yards float64) {
 // The next native event at this timestamp can now run with the new range.
 // Full gsim 2D position/facing/CC and native spell action ACK are separate work.
 func (session *WorldBoundarySession) ApplyWorldDistance(sequence uint64, playerIndex int, yards float64) (WorldRangeReceipt, error) {
+    return session.ApplyWorldGeometry(sequence, playerIndex, yards, nil)
+}
+
+// Apply real 2D target-facing before same-timestamp native spell/attack logic.
+func (session *WorldBoundarySession) ApplyWorldGeometry(sequence uint64, playerIndex int, yards float64, inFront *bool) (WorldRangeReceipt, error) {
 	if session == nil || session.native == nil || !session.awaitingWorld {
 		return WorldRangeReceipt{}, errors.New("WORLD_DISTANCE_WITHOUT_PENDING_TICK")
 	}
@@ -168,13 +175,16 @@ func (session *WorldBoundarySession) ApplyWorldDistance(sequence uint64, playerI
 		return WorldRangeReceipt{}, errors.New("NATIVE_MOVEMENT_CONFLICT_OR_MISSING_PLAYER")
 	}
 	applyWorldDistanceToPlayer(sim, unit, yards)
+    if inFront != nil {
+        unit.PseudoStats.InFrontOfTarget = *inFront
+    }
 	if unit.DistanceNow(sim) != yards {
 		return WorldRangeReceipt{}, errors.New("NATIVE_WORLD_DISTANCE_NOT_APPLIED")
 	}
 	// Run native tracker/execute-phase callbacks at this clock only AFTER
 	// applying the external world range, never before the world boundary.
 	sim.advance(session.lastTick)
-	receipt := WorldRangeReceipt{Sequence: sequence, NativeClockNS: int64(sim.CurrentTime), PlayerIndex: playerIndex, AppliedYards: unit.DistanceNow(sim), NativeEncounterDamage: sim.Encounter.DamageTaken}
+	receipt := WorldRangeReceipt{Sequence: sequence, NativeClockNS: int64(sim.CurrentTime), PlayerIndex: playerIndex, AppliedYards: unit.DistanceNow(sim), NativeEncounterDamage: sim.Encounter.DamageTaken, FacingApplied: inFront != nil, InFrontOfTarget: unit.PseudoStats.InFrontOfTarget}
 	session.sequence++
 	session.awaitingWorld = false
 	return receipt, nil
