@@ -361,6 +361,7 @@ def _sourced_hit_runtime_witness(before, after, mod):
 
     new = {action.id: action for action in after.actions}
     applicable = [action for action in before.actions if scoped(action)]
+    print('PRIO_DEBUG applicable', len(applicable), 'rank_delta', mod.value)
     if not applicable:
         return None
     for action in applicable:
@@ -369,16 +370,19 @@ def _sourced_hit_runtime_witness(before, after, mod):
                 isinstance(p, Mapping) and p.get('stage') == 'talent_modifier'
                 and p.get('kind') == mod.kind
                 for p in updated.provenance):
+            print('PRIO_DEBUG missing provenance', action.id)
             return None
         delta = (float(updated.metadata.get('outgoing_hit_bonus', 0.))
                  - float(action.metadata.get('outgoing_hit_bonus', 0.)))
         if not isclose(delta, float(mod.value), abs_tol=1e-8, rel_tol=1e-6):
+            print('PRIO_DEBUG wrong delta', action.id, delta, mod.value)
             return None
     # The modifier must not leak to other, source-ineligible actions.
     if any(not scoped(action) and action.id in new and not isclose(
             float(new[action.id].metadata.get('outgoing_hit_bonus', 0.)),
             float(action.metadata.get('outgoing_hit_bonus', 0.)),
             abs_tol=1e-8) for action in before.actions):
+        print('PRIO_DEBUG bonus leaked')
         return None
 
     for action in applicable:
@@ -403,6 +407,7 @@ def _sourced_hit_runtime_witness(before, after, mod):
             before, action, observe_periodic=periodic, target_spell_hit=1.)
         saturated_y = _action_runtime_probe(
             before, isolated, observe_periodic=periodic, target_spell_hit=1.)
+        print('PRIO_DEBUG runtime',action.id, 'x',None if x is None else x['damage'],'y',None if y is None else y['damage'],'satx',None if saturated_x is None else saturated_x['damage'],'saty',None if saturated_y is None else saturated_y['damage'])
         if any(z is None for z in (x, y, saturated_x, saturated_y)):
             continue
         if (x['damage'] > 0 and y['damage'] > x['damage'] + 1e-7
