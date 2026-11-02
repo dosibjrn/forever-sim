@@ -112,23 +112,28 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Any executable P7 gate needs the identical pinned production engine.
-      # This is the same upstream + world ingress build as the established
-      # Rust/gsim production integration workflow, not a gate-only simulator.
-      - name: Checkout pinned production Rust engine for selected P7 gate
+      # Any P7 gate uses the exact SAME checked-in production gitlink as
+      # the native-world workflow. No runner-side Rust patch or floating branch.
+      - name: Hydrate and verify production Rust fork gitlink for selected P7 gate
         if: steps.targets.outputs.p7_needed == 'true'
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          repository: sage3648/mythicsim-forever-engine
-          ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
-          path: upstream
-          persist-credentials: false
+        shell: bash
+        run: |
+          set -euo pipefail
+          git submodule update --init --depth 1 integrations/mythicsim-rust/engine
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          [[ -n "$recorded" && "$actual" == "$recorded" ]] || {
+            echo "RUST_FORK_SUBMODULE_PIN_MISMATCH recorded=$recorded actual=$actual"; exit 1;
+          }
+          [[ "$(git -C "$engine" remote get-url origin)" == *"dosibjrn/mythicsim-forever-engine"* ]] ||
+            { echo 'WRONG_RUST_FORK_REMOTE'; exit 1; }
+          ln -s "$engine" upstream
+          python integrations/mythicsim-rust/wf659_rng_boolean_audit.py upstream/src
+          test -f upstream/src/core/fight/world_bridge.rs
+          echo "M1 selected exact checked-in Rust fork revision $actual"
 
-      - name: Patch production world ingress for selected P7 gate
-        if: steps.targets.outputs.p7_needed == 'true'
-        run: python integrations/mythicsim-rust/patch_world_ingress.py upstream
-
-      - name: Build pinned production Rust engine for selected P7 gate
+      - name: Build exact fork-submodule production Rust engine for selected P7 gate
         if: steps.targets.outputs.p7_needed == 'true'
         working-directory: upstream
         env:
