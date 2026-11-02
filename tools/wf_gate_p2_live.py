@@ -1195,7 +1195,7 @@ def _critical_resource_gain_runtime_witness(before, after, mod):
             # class-specific Claw name or a synthetic trigger event.
             actions = [a for a in ir.actions
                 if any(isinstance(e, ResourceChangeEffect)
-                       and e.resource_id == resource_id and e.target == 'target'
+                       and e.resource_id == resource_id and e.target in ('target', 'enemy')
                        and e.operation == 'add' and e.amount > 0
                        for e in a.effects)]
             for action in actions:
