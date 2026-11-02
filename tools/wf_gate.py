@@ -461,7 +461,10 @@ def main(argv=None) -> int:
         record = {"gate": gate, "status": report["status"],
                   "reasons": report.get("reasons", [])}
         for key in ("reachability_count", "pass_count", "unresolved_count",
-                    "behavior_probes_executed", "runtime_proof"):
+                    "behavior_probes_executed", "runtime_proof",
+                    "production_engine", "engine_id", "source_id",
+                    "source_context_sha256", "real_source_search_evaluated",
+                    "real_catalogue_top5_items_scored"):
             if key in report:
                 record[key] = report[key]
         # Derived directly from real gate probes; not an acceptance score.
