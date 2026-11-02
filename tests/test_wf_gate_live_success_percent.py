@@ -73,7 +73,7 @@ def test_source_inventory_and_unexecuted_effects_are_not_success():
 def test_functionality_and_modeled_effort_are_different():
     assert pareto_effort_fraction(0.8) == 0.2
     assert pareto_effort_fraction(0.9) == pytest.approx(0.6)
-    assert pareto_effort_fraction(1.0) == 1.0
+    assert pareto_effort_fraction(1.0) == pytest.approx(1.0)
 
 
 def _real_coupled_p7_dps_report(*, gate: str, score: float, reference: float,
