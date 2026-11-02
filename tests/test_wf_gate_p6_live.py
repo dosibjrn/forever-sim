@@ -56,10 +56,13 @@ def test_p6_bounded_replay_rejects_ambiguous_or_invalid_paid_receipts(monkeypatc
             assert result["events"] == 5000
 
 
-def test_p6_partial_counts_are_not_invented_from_invalid_complete_row():
-    # Even an apparent 100 kills cannot justify a numeric P6 replay when its
-    # paid elapsed time is non-finite or zero.
-    for bad in (float("nan"), float("inf"), 0.0, -1.0):
-        valid = (isinstance(bad, (int, float))
-                 and __import__("math").isfinite(bad) and bad > 0)
-        assert not valid
+def test_p6_bounded_ratio_requires_a_finite_paid_100mob_replay():
+    valid = {"status": "COMPLETE", "count": 100, "mob_completed": 100,
+             "mean_s_per_mob": 12.5}
+    assert p6._complete_finite_paid_replay(valid)
+    for bad in (float("nan"), float("inf"), 0.0, -1.0, None, True):
+        assert not p6._complete_finite_paid_replay(
+            {**valid, "mean_s_per_mob": bad})
+    for invalid in ({"count": 99}, {"mob_completed": 99},
+                    {"status": "BLOCKED_ACTOR_DIED"}, {"count": True}):
+        assert not p6._complete_finite_paid_replay({**valid, **invalid})
