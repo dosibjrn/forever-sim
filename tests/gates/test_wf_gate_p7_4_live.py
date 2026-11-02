@@ -31,6 +31,38 @@ def test_cold_gear_requires_nonreference_legal_native_candidate():
     assert base == original
 
 
+
+def test_independently_rediscovered_saved_gear_is_legal_cold_candidate():
+    """The gate forbids seeding from the reference, not cold rediscovery.
+
+    A one-build legal source pool must reach the selected engine even when
+    its item IDs happen to equal the saved request; otherwise the old
+    unconditional reference-equality filter rejects all 60 proposals.
+    """
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 10}, {"id": 20}]},
+        "talentsString": "fixed",
+        "rotation": {"priorityList": []},
+    }]}]}}
+    original = copy.deepcopy(base)
+    paid_legality_checks = []
+    validator = SimpleNamespace(
+        validate=lambda ids: paid_legality_checks.append(list(ids)))
+    def swap(request, ids):
+        result = copy.deepcopy(request)
+        items = result["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        for item, iid in zip(items, ids):
+            item["id"] = iid
+        return result
+    source = SimpleNamespace(_swap=swap, RejectedGear=ValueError)
+    candidate = gate._cold_gear(
+        base, validator, source, random.Random(7),
+        pool={0: [10], 1: [20]}, elite=None)
+    assert paid_legality_checks == [[10, 20]]
+    assert candidate == base
+    assert base == original
+
+
 def test_wrong_reference_never_reaches_native(tmp_path):
     report = gate.run_live(tmp_path, "priest", 60, spec="holy")
     assert report["status"] == "BLOCKED"

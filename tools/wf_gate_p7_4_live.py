@@ -137,10 +137,9 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
             if (ids == [int(item["id"]) for item in paid_items]
                     and enchants == [item.get("enchant") for item in paid_items]):
                 continue  # unchanged paid elite is not a new discovery
-        # Reference-equivalent builds may be independently rediscovered, but
-        # they are never used to initialize this cold search.
-        if ids == reference and enchants == original_enchants:
-            continue
+        # This candidate was drawn independently from source-admitted pools.
+        # Matching the saved reference by chance is legal discovery, never
+        # evidence that the reference was used to seed the search.
         try:
             if enchant_pools is None:
                 validator.validate(ids)
