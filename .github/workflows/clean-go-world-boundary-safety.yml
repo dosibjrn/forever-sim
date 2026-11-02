@@ -1,0 +1,37 @@
+name: Clean Go world-boundary test relocation safety (temporary)
+on:
+  push:
+    branches:
+      - clean/group-go-world-boundary-tests-20261102-2325
+    paths:
+      - 'tests/integration/backend/**'
+      - '.github/workflows/clean-go-world-boundary-safety.yml'
+      - '.github/workflows/manual-exact-pr-head.yml'
+      - '.github/workflows/wf-gsim-go-native-range-loop.yml'
+      - '.github/workflows/wf-gsim-go-world-range-feed.yml'
+permissions:
+  contents: read
+jobs:
+  relocated-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pytest beautifulsoup4
+      - name: Check moved source and exact path users
+        run: |
+          python -m compileall -q tests/integration/backend
+          python -m pytest -q \
+            tests/integration/backend/test_wf_gsim_go_world_range_feed.py \
+            tests/integration/backend/test_wf28_pinned_native_damage_hook.py \
+            tests/integration/backend/test_wf_go_native_world_damage_ack.py \
+            tests/integration/backend/test_wf_go_paired_native_spell_probe.py \
+            tests/integration/backend/test_wf_native_spell_observations.py \
+            tests/integration/backend/test_wf_native_target_spell_observations.py \
+            tests/integration/backend/test_wf_druid_l60_native_step_protocol.py \
+            tests/maintenance/test_manual_exact_pr_head_workflow.py
