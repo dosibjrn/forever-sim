@@ -35,7 +35,7 @@ def test_direct_scoreboard_script_still_runs_without_pythonpath():
         [sys.executable, str(ROOT / "tools" / "m1_progress.py")],
         cwd=ROOT, text=True, capture_output=True, timeout=15)
     assert result.returncode == 0, result.stderr
-    assert "Observed fractional gate coverage" in result.stdout
+    assert "Best-observed fractional gate coverage" in result.stdout
     assert "Pareto-modeled work" in result.stdout
 
 
