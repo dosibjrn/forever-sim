@@ -5,6 +5,7 @@ on:
       - work/work1-p7-selected-fork-gitlink-20261103
     paths:
       - .github/workflows/work1-selected-fork-gitlink-one-shot.yml
+      - tests/test_work1_p7_1_live_entry.py
 permissions:
   contents: read
 jobs:
