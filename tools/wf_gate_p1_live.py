@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+from math import isfinite
 from pathlib import Path
 import re
 import sqlite3
@@ -169,17 +170,17 @@ def _p1_effect_observed(event) -> bool:
         payload = getattr(event, 'payload', {})
         before, after = payload.get('before'), payload.get('after')
         return (type(before) in (int, float) and type(after) in (int, float)
-                and __import__('math').isfinite(before)
-                and __import__('math').isfinite(after)
+                and isfinite(before)
+                and isfinite(after)
                 and abs(after - before) > 1e-9)
     if event.kind == 'ResourceEventGain':
         gained = getattr(event, 'payload', {}).get('gained')
         return (type(gained) in (int, float)
-                and __import__('math').isfinite(gained) and gained > 1e-9)
+                and isfinite(gained) and gained > 1e-9)
     if event.kind in ('Damage', 'Heal'):
         amount = getattr(event, 'payload', {}).get('amount')
         return (type(amount) in (int, float)
-                and __import__('math').isfinite(amount) and amount > 1e-9)
+                and isfinite(amount) and amount > 1e-9)
     return True
 
 
