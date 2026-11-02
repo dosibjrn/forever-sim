@@ -233,3 +233,58 @@ def test_concurrent_action_never_republishes_implicit_invalidation(tmp_path):
     copyfile(base, measured)
     copyfile(base, latest)
     assert m1.merge_concurrent_gate_results(base, measured, latest, out) == {}
+
+
+
+def test_p7_discovery_partial_uses_only_frozen_stochastic_mean():
+    from tools.wf_gate_coverage import measured_p7_dps_proximity
+
+    report = {
+        "status": "FAIL", "production_engine": "pinned_mythicsim_rust_gsim_2d",
+        "native_source_revision": "pinned", "source_request_raw_sha256": "source",
+        "world_damage_events": 20, "world_boundaries": 400,
+        "saved_reference_dps": 800.0,
+        # An excellent three-fight balanced search screen is NOT the final.
+        "winner_live_dps": 900.0,
+    }
+    assert measured_p7_dps_proximity("P7.2", report) is None
+    assert measured_p7_dps_proximity("P7.3", report) is None
+    assert measured_p7_dps_proximity("P7.4", report) is None
+
+    report.update(
+        frozen_stochastic_iterations=1000,
+        frozen_request_raw_sha256="frozen-source",
+        frozen_stochastic_world_damage_events=2000,
+        frozen_stochastic_world_boundaries=4000,
+        frozen_stochastic_world_dps=760.0,
+    )
+    for gate in ("P7.2", "P7.3", "P7.4"):
+        observed = measured_p7_dps_proximity(gate, report)
+        assert observed["dps_objective_actual"] == pytest.approx(760.0)
+        assert observed["dps_objective_required"] == pytest.approx(792.0)
+        assert observed["dps_objective_proximity_percent"] == pytest.approx(95.96)
+        assert not observed["dps_objective_gate_pass"]
+
+
+def test_p75_partial_requires_accepted_prior_and_frozen_holdout():
+    from tools.wf_gate_coverage import measured_p7_dps_proximity
+
+    report = {
+        "status": "BLOCKED", "production_engine": "pinned_mythicsim_rust_gsim_2d",
+        "native_source_revision": "pinned", "source_request_raw_sha256": "source",
+        "world_damage_events": 20, "world_boundaries": 400,
+        "saved_reference_dps": 800.0,
+        "joint_cold_world_dps": 1000.0,
+        "frozen_stochastic_iterations": 1000,
+        "frozen_request_raw_sha256": "winner",
+        "frozen_stochastic_world_damage_events": 2000,
+        "frozen_stochastic_world_boundaries": 4000,
+        "frozen_stochastic_world_dps": 820.0,
+    }
+    # A strong native/world winner is not enough to invent the accepted prior.
+    assert measured_p7_dps_proximity("P7.5", report) is None
+    report["strongest_accepted_compatible_prior_dps"] = 850.0
+    proximity = measured_p7_dps_proximity("P7.5", report)
+    assert proximity["dps_objective_actual"] == pytest.approx(820.0)
+    assert proximity["dps_objective_required"] == pytest.approx(841.5)
+    assert not proximity["dps_objective_gate_pass"]
