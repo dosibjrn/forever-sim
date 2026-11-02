@@ -2357,7 +2357,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                            min_spec_points=21, required_combat_mode=None,
                            per_candidate_wall_s, deadline,
                            screen_mobs, pack_size, allow_partial_gear_stats,
-                           attempted,quick_backend):
+                           attempted,quick_backend,max_evaluations):
     """Live local stat gradient -> sourced equipment -> APL within one search budget.
 
     The quick score comes from the SAME real CombatRuntime as the global screen,
@@ -2367,7 +2367,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
     from src.game.data.forever.gear import select_named_gear
     from src.rulesets.forever.items.source_equipment_semantics import validate_equipped_item_ids
     evaluated=0;events=0;cpu=0.;rows=[];stat_probes=0;gear_probes=0;policy_probes=0;talent_probes=0
-    if not rounds or not screened:
+    if not rounds or not screened or max_evaluations <= 0:
         return screened,{'rounds_completed':0,'stat_probes':0,'gear_probes':0,
                           'policy_probes':0,'talent_probes':0,
                           'paid_evaluations':0,'events':0,'worker_cpu_s':0.,'rows':[]}
@@ -2375,9 +2375,10 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
     seen={(_joint_row_identity(r),tuple(sorted(int(x['item_id']) for x in c.source_stage['gear_policy_result']['winner']['gear']['slots'].values()))) for r,c,_ in screened}
     completed_rounds=0
     for turn in range(rounds):
+        if evaluated >= max_evaluations: break
         any_attempt=False
         for parent,candidate,recovery in tuple(top):
-            if deadline-monotonic()<=.05:break
+            if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
             original=float(parent['screen_s_per_mob'])
             # Talent neighborhoods must be paid independently of the stat
             # gradient. A different talent can improve the same equipment/APL,
@@ -2388,7 +2389,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                     bonus_talent_points=bonus_talent_points,
                     count=max_talent_neighbors,offset=turn+len(rows))
                 for neighbor in chosen:
-                    if deadline-monotonic()<=.05:break
+                    if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
                     allocation=dict(neighbor.allocation)
                     if spec_tree is not None:
                         by_tree={t.id:t.tree_key for t in compiled.talents}
@@ -2417,7 +2418,9 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                         # the same paid 2D CombatRuntime, never a proxy scorer.
                         admitted=set()
                         for label,policy in options:
-                            if len(admitted)>=max(1,max_policy_candidates) or deadline-monotonic()<=.05:
+                            if (len(admitted)>=max(1,max_policy_candidates)
+                                    or deadline-monotonic()<=.05
+                                    or evaluated>=max_evaluations):
                                 break
                             try:
                                 validate_policy(policy,contender.ir.actions)
@@ -2438,12 +2441,15 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                     int(v['item_id']) for v in gear['slots'].values())))
                                 if key in seen:continue
                                 seen.add(key)
+                                # Charge the call before invocation: a runtime
+                                # exception or timeout is still paid work.
+                                evaluated+=1;any_attempt=True
+                                talent_probes+=1;policy_probes+=1
                                 result=_quick_joint_evaluation(fresh,level=level,mobs=screen_mobs,
                                     backend=quick_backend,
                                     timeout_s=min(per_candidate_wall_s,max(.01,deadline-monotonic())),
                                     recovery_policy=recovery,pack_size=pack_size)
                             except (ValueError,RuntimeError,KeyError,AssertionError):continue
-                            any_attempt=True;talent_probes+=1;policy_probes+=1;evaluated+=1
                             events+=int(result.get('events') or 0)
                             cpu+=float(result.get('elapsed_cpu_s') or 0.)
                             if (required_combat_mode and result['status']=='COMPLETE'
@@ -2454,6 +2460,8 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                             trace.update(screen_status=result['status'],
                                 screen_s_per_mob=result.get('mean_s_per_mob'),
                                 status='SCREEN_COMPLETE_NOT_PROMOTED' if result['status']=='COMPLETE' else 'SCREEN_BLOCKED',
+                        screen_invoked=True,
+                                screen_invoked=True,
                                 worker_cpu_s=float(result.get('elapsed_cpu_s') or 0.),
                                 screen_events=int(result.get('events') or 0),is_control=False,
                                 source_action_counts=dict(result.get('source_action_counts') or {}),
@@ -2467,15 +2475,15 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
             # Real finite-difference on the current gear + talent + APL. A
             # discrete zero is honestly zero, not an invented positive weight.
             for axis in stat_axes:
-                if deadline-monotonic()<=.05:break
+                if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
                 try:
                     modified=replace(candidate,ir=apply_stat_delta(candidate.ir,axis,probe_delta))
+                    evaluated+=1;any_attempt=True;stat_probes+=1
                     result=_quick_joint_evaluation(modified,level=level,mobs=screen_mobs,
                         backend=quick_backend,
                         timeout_s=min(per_candidate_wall_s,max(.01,deadline-monotonic())),
                         recovery_policy=recovery,pack_size=pack_size)
                 except (ValueError,RuntimeError,KeyError,AssertionError):continue
-                any_attempt=True;stat_probes+=1;evaluated+=1
                 events+=int(result.get('events') or 0)
                 cpu+=float(result.get('elapsed_cpu_s') or 0.)
                 if result['status']=='COMPLETE':
@@ -2491,7 +2499,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
             variants=[gradient]
             variants.extend({axis:1.} for axis,v in sorted(gradient.items(),key=lambda x:-x[1]) if v>0)
             for weights in variants[:max_gear_candidates]:
-                if deadline-monotonic()<=.05:break
+                if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
                 try:
                     selection=select_named_gear(class_key=class_key,level=level,
                         role=base['role'],stat_weights=weights,
@@ -2512,7 +2520,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                 talent_i=next((i for i,t in enumerate(talents) if _key(t)==_key(candidate.allocation)),None)
                 options=policies_by_talent[talent_i] if talent_i is not None else ()
                 for label,policy in list(options)[:max_policy_candidates]:
-                    if deadline-monotonic()<=.05:break
+                    if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
                     try:
                         if label!='incumbent':
                             validate_policy(policy,contender.ir.actions)
@@ -2530,12 +2538,13 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                         key=(_joint_row_identity(trace),tuple(sorted(int(v['item_id']) for v in gear['slots'].values())))
                         if key in seen:continue
                         seen.add(key)
+                        evaluated+=1;any_attempt=True
+                        gear_probes+=1;policy_probes+=1
                         result=_quick_joint_evaluation(fresh,level=level,mobs=screen_mobs,
                             backend=quick_backend,
                             timeout_s=min(per_candidate_wall_s,max(.01,deadline-monotonic())),
                             recovery_policy=recovery,pack_size=pack_size)
                     except (ValueError,RuntimeError,KeyError,AssertionError):continue
-                    any_attempt=True;gear_probes+=1;policy_probes+=1;evaluated+=1
                     events+=int(result.get('events') or 0)
                     cpu+=float(result.get('elapsed_cpu_s') or 0.)
                     if (required_combat_mode and result['status']=='COMPLETE'
@@ -2773,6 +2782,11 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         # Search-only can reclaim the unused Top-N refinement reserve after
         # the first pass. The fraction controls exploration vs exploitation.
         screen_deadline=t0+max_cpu_s*search_screen_fraction
+    # The same exploration/refinement split must bound *paid calls*, not
+    # just elapsed time: fast screens could otherwise consume every call
+    # before the local optimizer receives a single real evaluation.
+    first_pass_paid_limit=(max(1,int(max_paid_builds*search_screen_fraction))
+        if search_only and refinement_rounds else max_paid_builds)
     # Diagonal visitation gives EVERY axis a chance under tight budgets.
     # Lexical Cartesian loops previously exhausted budget on the first talent.
     dimensions=(len(talents),len(gear_stages),len(policies),len(recoveries))
@@ -2899,7 +2913,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     coordinate_iter=enumerate(coordinates)
     pending=None
     for index,coords in coordinate_iter:
-        if index>=recovered_rows and (paid>=max_paid_builds or monotonic()>=screen_deadline):
+        if index>=recovered_rows and (paid>=first_pass_paid_limit or monotonic()>=screen_deadline):
             pending=(index,coords)
             break
         evaluate_coordinate(index,coords,screen_deadline)
@@ -2927,7 +2941,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             deadline=t0+max_cpu_s,
             per_candidate_wall_s=per_candidate_wall_s,screen_mobs=screen_mobs,
             pack_size=pack_size,allow_partial_gear_stats=allow_partial_gear_stats,
-            attempted=attempted,quick_backend=screen_evaluator_backend)
+            attempted=attempted,quick_backend=screen_evaluator_backend,
+            max_evaluations=max(0,max_paid_builds-paid))
         events+=refinement['events']
         paid+=refinement['paid_evaluations']
     refinement_phase_wall_s=max(0.,monotonic()-t0-screen_phase_wall_s)
@@ -3050,8 +3065,10 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'refinement_phase_wall_s':refinement_phase_wall_s,
         'screen_budget_fraction_effective':search_screen_fraction if search_only else screen_fraction,
         'stat_probe_evaluations':refinement['stat_probes'],
-        'all_quick_evaluations_including_stat_probes':sum(bool(r.get('screen_invoked'))
-            for r in attempted)+refinement['stat_probes'],
+        # Count every actual runtime invocation, including refinement
+        # failures that did not produce a serializable candidate row.
+        'all_quick_evaluations_including_stat_probes':frontier_paid_candidates+
+            refinement['paid_evaluations'],
         'search_only':bool(search_only),
         'screen_evaluator_backend':screen_evaluator_backend,
         'search_winner':search_winner,
