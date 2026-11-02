@@ -240,3 +240,14 @@ def test_source_single_target_rejects_unmatched_spatial_positions():
     with pytest.raises(ValueError, match="2D pack requires positions"):
         CombatRuntime(actor=actor, target=TargetState.with_health('m1', 500),
             spatial_positions_yards={'m0': (0., 0.)})
+
+
+def test_native_sampled_encounter_end_schedules_last_real_world_boundary():
+    """A 120 +/- 15s source encounter must not drop its last ~56ms of combat."""
+    from tools.wf_gsim_go_live_range_probe import _terminal_world_tick_ms
+    # Pinned source Druid request's observed sampled end (real native Go CI).
+    end_ns = 111_956_100_244
+    assert _terminal_world_tick_ms(end_ns, 111_900) == 111_956
+    assert _terminal_world_tick_ms(end_ns, 111_956) is None
+    # Exact-millisecond encounter ends still require the last valid <end tick.
+    assert _terminal_world_tick_ms(120_000_000_000, 119_900) == 119_999
