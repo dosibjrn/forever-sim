@@ -2,6 +2,7 @@ name: Prio P2 sourced hit runtime (temporary)
 on:
   push:
     branches: [prio/p2-natures-reach-runtime-hit-and-range-guard]
+  pull_request:
 jobs:
   source-p2:
     runs-on: ubuntu-latest
