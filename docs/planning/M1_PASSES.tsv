@@ -9,6 +9,6 @@ druid	40	unrestricted	P2		1b1fc2f963528aeab1ab08198ce19a84e3e6ad66	https://githu
 druid	60	balance	P2		42abc08f7d1a395f2745b0386d3eca6bd5f77c66	https://github.com/dosibjrn/forever-sim/actions/runs/41415051542		PARTIAL	84	103	1	2026-11-02T08:43:02.288403+00:00
 druid	60	balance	P3		97d7a51d6dc26620e948457e50bbfd0d110fbdec	https://github.com/dosibjrn/forever-sim/actions/runs/41461328375		PARTIAL	111	230	1	2026-11-02T14:23:00.300858+00:00
 druid	60	balance	P7.1		d4ef7e133d0b1a84f4b66cc8525fe85317840c18	https://github.com/dosibjrn/forever-sim/actions/runs/41462487966		PARTIAL	692.103	720.9117	1	2026-11-02T14:32:36.285421+00:00
-druid	60	balance	P7.2		b7c31a169d18773ea289f14bef0b213dc0ffc0f7	https://github.com/dosibjrn/forever-sim/actions/runs/41464931145		PARTIAL	478.3859	720.9117	1	2026-11-02T14:49:19.721384+00:00
-druid	60	balance	P7.3		c63ffd28a3dc4ef4b0d92837811586ad68ac63d2	https://github.com/dosibjrn/forever-sim/actions/runs/41465661950		PARTIAL	659.1458	720.9117	1	2026-11-02T14:52:22.991300+00:00
-druid	60	balance	P7.4		73e1cdadac767adaf8ccb7680338e23e103ae107	https://github.com/dosibjrn/forever-sim/actions/runs/41466151288		PARTIAL	586.9654	720.9117	1	2026-11-02T14:55:22.665097+00:00
+druid	60	balance	P7.2		a4f7b9c7b4f6c95e003aa3a164cd8607fdf0a49a	https://github.com/dosibjrn/forever-sim/actions/runs/41473813636		PARTIAL	525.3192	720.9117	1	2026-11-02T15:42:39.836159+00:00
+druid	60	balance	P7.3		a4f7b9c7b4f6c95e003aa3a164cd8607fdf0a49a	https://github.com/dosibjrn/forever-sim/actions/runs/41473813636		PARTIAL	684.6838	720.9117	1	2026-11-02T15:42:40.871874+00:00
+druid	60	balance	P7.4		a4f7b9c7b4f6c95e003aa3a164cd8607fdf0a49a	https://github.com/dosibjrn/forever-sim/actions/runs/41473813636		PARTIAL	602.6217	720.9117	1	2026-11-02T15:42:42.540881+00:00
