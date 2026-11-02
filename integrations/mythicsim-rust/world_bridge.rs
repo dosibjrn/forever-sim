@@ -86,8 +86,22 @@ pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64> {
     BRIDGE.with(|state| {
         let state = state.borrow();
         let bridge = state.as_ref().expect("RUST_WORLD_NOT_STARTED");
-        (bridge.next_tick_ns <= next_native_ns && bridge.next_tick_ns <= end_ns)
-            .then_some(bridge.next_tick_ns)
+        // gsim is the sole authority for independent world deadlines.
+        // When the real world has no queued events or moving actors, poll
+        // immediately BEFORE the next native scheduler action instead of
+        // manufacturing twelve hundred 100ms handshakes per static fight.
+        // The millisecond floor never advances world beyond that action.
+        let boundary = if bridge.next_tick_ns == i64::MAX {
+            if next_native_ns < 0 || next_native_ns > end_ns {
+                return None;
+            }
+            (next_native_ns / 1_000_000) * 1_000_000
+        } else {
+            bridge.next_tick_ns
+        };
+        (boundary >= 0 && boundary > bridge.last_tick_ns
+            && boundary <= next_native_ns && boundary <= end_ns)
+            .then_some(boundary)
     })
 }
 
@@ -170,6 +184,15 @@ pub(crate) fn exchange(clock_ns: i64, duration_ns: i64, cumulative_damage: f64) 
         assert!((last - before_health).abs() < 1e-6, "RUST_WORLD_HEALTH_ACK_NOT_CONTINUOUS");
     }
     let before_hash = string(&tick, "world_sha256").to_owned();
+    let next_world_boundary_ns = match tick.get("next_world_boundary_ns") {
+        Some(Value::Null) => i64::MAX,
+        Some(value) => value.as_i64().expect("RUST_WORLD_DEADLINE_NOT_INTEGER"),
+        None => panic!("RUST_WORLD_DEADLINE_MISSING"),
+    };
+    assert!(next_world_boundary_ns == i64::MAX
+        || (next_world_boundary_ns > clock_ns
+            && next_world_boundary_ns <= clock_ns.saturating_add(TICK_NS)),
+        "RUST_WORLD_DEADLINE_INVALID");
     send(&json!({
         "type": "native_rust_world_receipt",
         "iteration_index": bridge.iteration,
@@ -208,7 +231,7 @@ pub(crate) fn exchange(clock_ns: i64, duration_ns: i64, cumulative_damage: f64) 
     bridge.last_health = Some(ack_after);
     bridge.last_tick_ns = clock_ns;
     bridge.sequence += 1;
-    bridge.next_tick_ns = clock_ns.saturating_add(TICK_NS);
+    bridge.next_tick_ns = next_world_boundary_ns;
     BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));
     (distance, front)
 }
