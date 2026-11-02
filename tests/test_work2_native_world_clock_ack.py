@@ -94,3 +94,32 @@ def test_missing_or_duplicate_ack_fails_closed_before_next_pull():
             action_id="action-1", world_after={"clock_ms": 102, "selected_target_id": "mob-1"}
         )
     assert len(sent) == 1
+
+
+def test_next_boundary_must_be_after_last_applied_world_ack_clock():
+    """A native boundary cannot rewind into time already paid for by gsim."""
+    session, sent = session_stub()
+    first = {"clock_ms": 100, "selected_target_id": "mob-1"}
+    respond_to_boundary(session, first, 1)
+    session.boundary(clock_ms=100, world=first)
+    applied = {"clock_ms": 125, "selected_target_id": "mob-1", "alive": False}
+    ack = session.ack_world_applied(action_id="action-1", world_after=applied)
+    assert ack["clock_ms"] == 125
+
+    # This was previously accepted because the internal monotonic floor was 100.
+    for bad_clock in (110, 125):
+        with pytest.raises(NativeProtocolError, match="WORLD_CLOCK_NOT_MONOTONIC"):
+            session.boundary(
+                clock_ms=bad_clock,
+                world={"clock_ms": bad_clock, "selected_target_id": "mob-2"},
+            )
+    assert len(sent) == 1
+    assert session._seq == 1
+    assert session._pending is None
+    assert session._last_ack == ack
+
+    second = {"clock_ms": 126, "selected_target_id": "mob-2"}
+    respond_to_boundary(session, second, 2, ack_id=ack["ack_id"])
+    session.boundary(clock_ms=126, world=second)
+    assert len(sent) == 2
+    assert sent[-1]["previous_ack"] == ack
