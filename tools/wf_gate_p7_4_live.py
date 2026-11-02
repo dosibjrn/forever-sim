@@ -15,7 +15,8 @@ import sys
 import tempfile
 
 from tools.wf_gate_p7_1_live import PINNED_RUST, SAVED_BALANCE_RAW_SHA
-from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
+from tools.wf_gate_p7_2_live import (_source_module, _pinned_source_runtime,
+                                     _run_source_coupled_candidate)
 
 
 def _cold_gear(base: dict, validator, gear_search, rng: random.Random):
@@ -72,12 +73,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 with tempfile.TemporaryDirectory(prefix="forever_p74_live_") as tmp:
                     path = Path(tmp) / "cold-source-gear.json"
                     path.write_text(json.dumps(candidate))
-                    live = production.run(
-                        binary, path, distance=player["distanceFromTarget"], iterations=3)
-                if (live.get("iterations_done") != 3
-                        or live.get("native_damage_events", 0) <= 0
-                        or live.get("native_world_ticks", 0) <= 0):
-                    raise ValueError("SOURCE_GEAR_NATIVE_WORLD_INCOMPLETE")
+                    live = _run_source_coupled_candidate(
+                        production, binary, path,
+                        distance=player["distanceFromTarget"], iterations=3)
                 score = float(live["world_mean_dps"])
                 if not 0 <= score < float("inf"):
                     raise ValueError("SOURCE_GEAR_INVALID_WORLD_DPS")
