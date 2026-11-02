@@ -65,6 +65,16 @@ class ManualExactHeadContract(unittest.TestCase):
                            "p1p2-unit", "source-periodic-unit"):
             self.assertIn(suite_name, suite)
         self.assertIn("Suite not allowlisted", TEXT)
+
+    def test_relocated_service_queue_tests_have_a_bounded_manual_suite(self):
+        # Same PR identity, SHA and read-only token constraints as other suites.
+        self.assertIn("          - service-queue-unit", TEXT)
+        self.assertIn("source-periodic-unit|service-queue-unit) ;;", TEXT)
+        self.assertIn("source-periodic-unit|service-queue-unit)", TEXT)
+        self.assertIn("tests/integration/service/test_g50[c-i]_*.py", TEXT)
+        self.assertIn("tests/maintenance/test_manual_exact_pr_head_workflow.py", TEXT)
+        self.assertIn("-k 'not browser'", TEXT)
+        suite = TEXT.split("- name: Execute allowlisted tests without API token", 1)[1]
         self.assertIn("*) echo 'Suite not allowlisted' >&2; exit 6", suite)
 
 

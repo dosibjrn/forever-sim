@@ -17,7 +17,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 
 def _guard_environment(tmp_path: Path, audit_name: str) -> tuple[dict[str, str], Path]:
     guard_dir = tmp_path / "guard"

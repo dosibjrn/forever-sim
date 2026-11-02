@@ -14,7 +14,7 @@ import time
 from urllib.error import URLError
 from urllib.request import urlopen
 
-from tests.test_g50c_cold_service_http_isolation import _guard_environment, _http_json, _unused_local_port, ROOT
+from tests.integration.service.test_g50c_cold_service_http_isolation import _guard_environment, _http_json, _unused_local_port, ROOT
 
 
 def _spawn_guarded(module: str, args: list[str], env: dict):

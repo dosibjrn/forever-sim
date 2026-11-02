@@ -24,9 +24,9 @@ from src.service.http_api import OptimizerHTTPServer
 from src.service.client import ServiceClient
 from src.v2.decision_dashboard import _generic_ui_metadata
 from src.version import SOFTWARE_VERSION
-from tests.test_g50c_cold_service_http_isolation import _guard_environment
-from tests.test_g50e_worker_child_legacy_boundary import _interpreter_guard_shim
-from tests.test_g50g_explicit_queued_decision_read import http_json
+from tests.integration.service.test_g50c_cold_service_http_isolation import _guard_environment
+from tests.integration.service.test_g50e_worker_child_legacy_boundary import _interpreter_guard_shim
+from tests.integration.service.test_g50g_explicit_queued_decision_read import http_json
 
 
 def request(cls='druid', level=10):
@@ -38,7 +38,14 @@ def request(cls='druid', level=10):
 def test_registry_declares_exact_source_only_queue_capabilities(monkeypatch):
     expected={'druid':(10,11),'warrior':(10,),'rogue':(10,),
               'priest':(10,),'shaman':(10,),'warlock':(10,),'mage':(10,)}
-    assert set(registered_class_keys()) == set(expected)
+    registered = set(registered_class_keys())
+    assert set(expected).issubset(registered)
+    # Registry membership is not queue admission. Newly sourced classes
+    # remain fail-closed until a specific queue capability is declared.
+    for cls in registered - set(expected):
+        assert native_generic_queue_levels(cls) == ()
+        with pytest.raises(ValueError):
+            require_native_generic_queue(cls, 10)
     for cls, levels in expected.items():
         assert native_generic_queue_levels(cls) == levels
         bounds = generic_source_level_bounds(cls)
@@ -54,7 +61,8 @@ def test_registry_declares_exact_source_only_queue_capabilities(monkeypatch):
     for cls,n in [('druid',9),('druid',12),('warrior',11),('mage',11),('unknown',10),('../mage',10)]:
         with pytest.raises(ValueError): require_native_generic_queue(cls,n)
     from src.game.data.forever import queue_capabilities as qc
-    monkeypatch.setitem(qc._DECLARED_QUEUE_LEVELS, 'mage', (10,21))
+    invalid_level = generic_source_level_bounds('mage')[1] + 1
+    monkeypatch.setitem(qc._DECLARED_QUEUE_LEVELS, 'mage', (10, invalid_level))
     assert native_generic_queue_levels('mage') == () # entire invalid declaration refused
     assert _generic_ui_metadata(selected_level=10)['mage']['queued_native_decision_levels'] == []
 
@@ -98,7 +106,7 @@ def test_real_guarded_native_child_and_hashed_read_for_several_classes(tmp_path,
 
 def test_http_admission_and_queued_read_across_service_listener_for_mage(tmp_path,monkeypatch):
     import src.listener as listener
-    monkeypatch.setenv('PYTHONPATH',str(Path(__file__).resolve().parents[1]))
+    monkeypatch.setenv('PYTHONPATH',str(Path(__file__).resolve().parents[3]))
     store=QueueStore(tmp_path/'queue.sqlite3')
     job,_=store.enqueue(request('mage',10))
     result=Scheduler(store,runs_root=tmp_path/'runs').run_once(project_root=tmp_path)

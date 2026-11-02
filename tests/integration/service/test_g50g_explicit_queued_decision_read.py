@@ -39,7 +39,7 @@ def real_publication(tmp_path):
 
 def test_live_queue_publication_service_and_listener_explicit_read(tmp_path,monkeypatch):
     import src.listener as listener
-    monkeypatch.setenv("PYTHONPATH", str(Path(__file__).resolve().parents[1]))
+    monkeypatch.setenv("PYTHONPATH", str(Path(__file__).resolve().parents[3]))
     store,job,pub=real_publication(tmp_path)
     service=OptimizerHTTPServer(('127.0.0.1',0),store,project_root=tmp_path)
     service_thread=Thread(target=service.serve_forever,daemon=True);service_thread.start()
@@ -104,7 +104,7 @@ def http_json_maybe_html(url):
 
 
 def test_queued_read_rejects_unpublished_stale_and_tampered(tmp_path,monkeypatch):
-    monkeypatch.setenv("PYTHONPATH", str(Path(__file__).resolve().parents[1]))
+    monkeypatch.setenv("PYTHONPATH", str(Path(__file__).resolve().parents[3]))
     with pytest.raises(QueuedGenericDecisionUnavailable):
         read_current_queued_generic_decision(tmp_path,class_name='druid',level=10,backend='generic')
     _,job,pub=real_publication(tmp_path)
