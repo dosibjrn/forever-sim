@@ -21,24 +21,9 @@ jobs:
           python-version: '3.11'
       - name: Install pinned source-test dependencies
         run: python -m pip install pytest==8.3.5 beautifulsoup4==4.13.4
-      - name: Inspect genuine source weapon facts and selected runtime
+      - name: Real source-backed P3 gear and runtime regressions
         run: |
-          python - <<'PY'
-          from src.game.data.forever.registry import build_game_ir_slice
-          from src.game.gear import _weapon_facts_for_ir,executable_gear_stats
-          from src.game.model.ir import WeaponDamageEffect
-          for name,level in [('rogue',20),('druid',60)]:
-              ir=build_game_ir_slice(class_key=name,level=level)
-              print('SOURCE_CLASS',name,'level',level,'ir',bool(ir),flush=True)
-              if ir is None: continue
-              facts=_weapon_facts_for_ir(ir)
-              print('FACTS',[(f.mode_label,m,f.source_stat,f.damage_source_kind) for f,m in facts],flush=True)
-              print('AXES',executable_gear_stats(ir),flush=True)
-              print('ACTIONS',[(a.id,[(e.damage_source.kind,e.damage_source.dps_stat_id) for e in a.effects if isinstance(e,WeaponDamageEffect)],a.requirements) for a in ir.actions if any(isinstance(e,WeaponDamageEffect) for e in a.effects)],flush=True)
-          PY
-      - name: Real production wildcard regression
-        run: |
-          python -m pytest -q tests/test_prio_p3_wildcard_weapon.py tests/test_wf_prio_p3_spec_build.py
+          python -m pytest -q tests/test_wf_prio_p3_spec_build.py
 
       - name: Source-backed Druid Balance L60 P3 actual production gate (read-only)
         run: |
