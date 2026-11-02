@@ -88,10 +88,12 @@ def run_live(root: Path, class_key: str, level: int, *,
     failures = []
     search_start = time.monotonic()
     try:
-        # Enumerate the same original source/Rust-legal catalogue once.
-        # The widened full-search pool is NOT proof of exhaustive legality.
+        # Full search uses every source/Rust-admitted catalogue item per slot,
+        # not just the 80 highest heuristic scores. Cold generator explores
+        # this pool without seeding the saved build; unrecorded restrictions,
+        # enchants and effects still require separate source verification.
         pools, _ = source.candidate_pool(
-            validator, limit=80 if full_search else 15)
+            validator, limit=None if full_search else 15)
         distance = source.player(base)["distanceFromTarget"]
         while (time.monotonic() - search_start < 300.0
                if full_search else proposals < 3):
