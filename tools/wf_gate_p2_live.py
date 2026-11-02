@@ -782,6 +782,59 @@ def _sourced_granted_action_behavior(before, after, mod):
             'observed': observed}
 
 
+def _excess_defense_runtime_witness(before, after, mod):
+    """Exercise sourced above-threshold armor in real ActorState form changes.
+
+    At ordinary base defense the conditional term can legitimately be zero.
+    Compare the *change in rank effect* between defense at the sourced floor
+    and defense above it. This removes any unrelated per-level armor bonus
+    from the same talent, without inventing a defense/armor game coefficient.
+    """
+    from src.game.runtime import ActorState
+    if mod.target_type != 'mode':
+        return None
+    mode_id=str(mod.target_id)
+    if mode_id not in {m.id for m in before.modes} & {m.id for m in after.modes}:
+        return None
+    try:
+        multiplier=float(mod.provenance['reference_level_multiplier'])
+        amount=float(mod.value)
+        initial=ActorState.from_ir(before.actor,before.resources,before.modes)
+        level=float(initial.metadata['level'])
+        if not all(isfinite(x) for x in (multiplier,amount,level)):
+            return None
+        if multiplier < 0 or level <= 0 or amount == 0:
+            return None
+        floor=level*multiplier
+        # Controlled test input only: the *rule* and threshold are sourced.
+        excess=max(10.0,level/3.0)
+
+        def armor(ir, defense):
+            actor=ActorState.from_ir(ir.actor,ir.resources,ir.modes)
+            actor.stats['defense']=defense
+            actor.transition_mode(mode_id)
+            return float(actor.stats.get('armor',0.0))
+
+        low_before=armor(before,floor)
+        low_after=armor(after,floor)
+        high_before=armor(before,floor+excess)
+        high_after=armor(after,floor+excess)
+    except (ValueError,TypeError,KeyError,AttributeError):
+        return None
+    observed=(high_after-high_before)-(low_after-low_before)
+    expected=excess*amount
+    if (not isfinite(observed) or not isclose(observed,expected,
+            rel_tol=1e-6,abs_tol=1e-6) or observed*expected<=0):
+        return None
+    return {'probe':'paired_production_mode_defense_threshold',
+            'mode_id':mode_id,'source_defense_floor':floor,
+            'test_defense_above_floor':floor+excess,
+            'at_floor_rank_armor_delta':low_after-low_before,
+            'above_floor_rank_armor_delta':high_after-high_before,
+            'observed_excess_rank_armor_delta':observed,
+            'expected_excess_rank_armor_delta':expected}
+
+
 def _behavior_fixtures(before, after, modifiers):
     """Require an observed L2 effect for *each* rank modifier, not just one.
 
@@ -833,6 +886,8 @@ def _behavior_fixtures(before, after, modifiers):
             if verified:
                 match={'probe':'production_actor_state_from_ir',
                     'observable_changes':verified[:6]}
+        elif kind == 'mode_armor_excess_defense':
+            match=_excess_defense_runtime_witness(before,after,mod)
         elif kind in ('effect_damage_pct','effect_healing_pct','effect_periodic_pct'):
             match=_runtime_effect_witness(before,after,mod)
         elif kind == 'periodic_duration_delta_s':
