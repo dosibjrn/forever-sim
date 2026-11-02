@@ -336,6 +336,7 @@ def _sync_catalogue_path(path: Path) -> None:
         _AVAILABLE_ITEMS_CACHE.clear()
         _EFFECTIVE_LEVEL_CACHE.clear()
         _ITEM_VECTOR_CACHE.clear()
+        _ITEM_SCORING_VECTOR_CACHE.clear()
         _ACTIVE_CATALOGUE_PATH_KEY=key
 
 def item_vector(item: ItemRecord) -> dict[str, float]:
@@ -651,5 +652,6 @@ def clear_runtime_item_cache() -> None:
     _AVAILABLE_ITEMS_CACHE.clear()
     _EFFECTIVE_LEVEL_CACHE.clear()
     _ITEM_VECTOR_CACHE.clear()
+    _ITEM_SCORING_VECTOR_CACHE.clear()
     _strict_source_effect_eligible_ids.cache_clear()
     _ACTIVE_CATALOGUE_PATH_KEY=None
