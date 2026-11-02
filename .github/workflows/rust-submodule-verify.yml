@@ -1,0 +1,37 @@
+name: Compile exact pinned patched Rust fork source (not M1 gate)
+on:
+  pull_request:
+    paths:
+      - .gitmodules
+      - integrations/mythicsim-rust/engine
+      - .github/workflows/rust-submodule-verify.yml
+      - .github/workflows/wf-gsim-rust-native-world.yml
+      - .github/workflows/m1-on-demand-record.yml
+
+permissions:
+  contents: read
+
+jobs:
+  source-compiles:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Require exact Git submodule commit and our actual Rust source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          expected="$(git ls-tree HEAD "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$expected" && test "$expected" = "$actual"
+          grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
+          test -f "$engine/src/core/fight/world_bridge.rs"
+          grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
+          grep -Fq 'RandomRequest::Bernoulli' "$engine/src/core/rng.rs"
+          echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify packaged Rust source compiles (not simulation validation)
+        working-directory: integrations/mythicsim-rust/engine
+        run: cargo check --locked
