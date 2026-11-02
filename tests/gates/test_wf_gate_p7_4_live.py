@@ -161,6 +161,111 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     assert base == original
 
 
+
+def test_late_paid_p74_gear_candidate_gets_stochastic_finalist_comparison(
+        monkeypatch, tmp_path):
+    """A newly paid 297-300s candidate must not be excluded from freeze.
+
+    Fake runtime probes exercise the actual 300s search/selection routing;
+    this is not native-world P7.4 acceptance evidence.
+    """
+    import hashlib
+    import json
+
+    base = {"simOptions": {"randomSeed": "667"}, "raid": {"parties": [
+        {"players": [{
+            "class": "ClassDruid",
+            "distanceFromTarget": 15,
+            "talentsString": "fixed",
+            "rotation": {"priorityList": []},
+            "equipment": {"items": [{"id": 10}, {"id": 20}]},
+        }]}]}}
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("fake; never executed")
+    (binary.parents[2] / "data").mkdir()
+    (binary.parents[2] / "data/items.jsonl").write_text("")
+    (binary.parents[2] / "data/enchants.jsonl").write_text("")
+    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
+    catalogue.parent.mkdir(parents=True)
+    catalogue.write_text("fake source database")
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    # First real paid candidate at 0s. At 297s rerank it. At 298s
+    # another genuine source candidate is paid; at 299s rerank that one.
+    # The formerly hard-coded <295s cutoff skipped BOTH rerankings.
+    times = iter([0.0, 0.0, 0.0, 297.0, 297.0, 298.0, 298.0,
+                  299.0, 299.0, 300.0, 300.0])
+    monkeypatch.setattr(gate.time, "monotonic",
+                        lambda: next(times, 300.0))
+    monkeypatch.setattr(gate, "_pinned_source_runtime",
+                        lambda *args: (base, {"reference_dps": 728.19}, binary))
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *args, **kwargs: None)
+
+    def swap(request, ids):
+        candidate = copy.deepcopy(request)
+        items = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        for item, item_id in zip(items, ids):
+            item["id"] = item_id
+        return candidate
+
+    class Validator:
+        @staticmethod
+        def require_sqlite_catalogue(path):
+            assert path == catalogue
+
+        def __init__(self, *args):
+            pass
+
+        def close(self):
+            pass
+
+    gear = SimpleNamespace(
+        GearValidator=Validator,
+        candidate_pool=lambda v, limit: ({0: [11, 12, 13], 1: [20]}, {}),
+        source_enchant_pools=lambda v, p: {0: [None], 1: [None]},
+        _swap=swap,
+        RejectedGear=ValueError)
+    source_ids = iter([11, 12, 13, 13])
+    monkeypatch.setattr(gate, "_cold_gear",
+                        lambda *args, **kwargs: swap(base, [next(source_ids), 20]))
+    calls = []
+
+    def score(path, n, mode):
+        item_id = json.loads(path.read_text())["raid"]["parties"][0][
+            "players"][0]["equipment"]["items"][0]["id"]
+        calls.append((item_id, n, mode))
+        # Three balanced fights mis-rank the actual 24-fight finalist:
+        # candidate 11 looks best on screen but loses to candidate 12
+        # in the paid stochastic comparison and frozen 1,000 holdout.
+        return ({11: 900.0, 12: 800.0, 13: 100.0}
+                if mode == "balanced" else
+                {11: 600.0, 12: 730.0, 13: 500.0})[item_id]
+
+    def native(binary, path, n, *, rng_mode):
+        return {"native_dps": score(path, n, rng_mode)}
+
+    def world(binary, path, distance, iterations, *, rng_mode):
+        assert distance == 15
+        return {"world_mean_dps": score(path, iterations, rng_mode),
+                "iterations_done": iterations, "native_damage_events": 10,
+                "native_world_ticks": 20}
+
+    producer = SimpleNamespace(native_source_control=native, run=world)
+    monkeypatch.setattr(gate, "_source_module",
+                        lambda path, name: gear if "p74_gear_search" in str(path)
+                        else producer)
+    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert report["status"] == "PASS"  # Mocked routing only, NOT a true P7 PASS
+    assert report["paid_stochastic_finalists"] == 2
+    assert report["source_legal_cold_candidates_paid"] == 2
+    assert report["cold_winner_gear"][0]["item_id"] == 12
+    assert report["winner_selection"] == "paid_2x24_stochastic_live_native_finalist"
+    assert report["frozen_stochastic_world_dps"] == 730.0
+    assert (12, 24, "stochastic") in calls
+    assert (12, 1000, "stochastic") in calls
+
+
 def test_p74_invalid_full_search_flag_blocks_before_source_work(
         monkeypatch, tmp_path):
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "invalid")
