@@ -74,3 +74,16 @@ def test_engine_registry_points_at_ruleset_owned_packages_except_frozen_classic_
         for key,module in registry._ENGINE_MODULES.items()
         if key != ('classic','mage')
     )
+
+def test_fast_validator_targets_exist():
+    """Fast-suite entries must survive responsibility-based test moves."""
+    from tools.validate_fast import TESTS
+
+    root = Path(__file__).resolve().parents[2]
+    missing = [
+        target for target in TESTS
+        if not (root / target.split("::", 1)[0]).is_file()
+    ]
+    assert missing == [], f"Stale tools/validate_fast.py test paths: {missing}"
+    assert len(TESTS) == len(set(TESTS)), "Duplicate fast-suite targets"
+
