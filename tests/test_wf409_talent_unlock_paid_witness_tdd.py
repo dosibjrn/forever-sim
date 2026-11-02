@@ -125,3 +125,65 @@ def test_complete_unlock_screen_can_claim_paid_p4_coverage():
         assert record['complete_paid_screens'] >= 1
         assert record['status'] == 'EXECUTED_IN_COMPLETE_PAID_SCREEN'
         assert result['p4_talent_unlock_coverage_pass'] is True
+
+
+def test_real_source_unlock_and_incumbent_survive_one_generic_policy_slot():
+    """P4 must not silently truncate a source-unlocked action to fit APL budget.
+
+    One optional generic policy slot is not a license to delete the actual
+    source talent unlock or its legal incumbent comparator.
+    """
+    from src.v2.source_bounded_joint_frontier import (
+        _source_talent_policy_variants, source_joint_policy_frontier,
+        _prepare_joint_policy_candidate,
+    )
+    with ability_source_scope(SOURCE):
+        root = _source()
+        stage = _stage()
+        base_policies = source_joint_policy_frontier(
+            root, stage, max_policies=1, include_mode_cycles=True)
+        variants, expected, blockers = _source_talent_policy_variants(
+            root, [ALLOCATION], stage, base_policies, level=30)
+        assert not blockers, blockers
+        assert 'primal_bite:25' in expected
+        labels = [label for label, _ in variants[0]]
+        assert 'talent_unlock:primal_bite:25' in labels, labels
+        assert 'incumbent' in labels, labels
+        unlock_label, unlock_policy = next(
+            (label, policy) for label, policy in variants[0]
+            if label == 'talent_unlock:primal_bite:25')
+        candidate = _prepare_joint_policy_candidate(
+            class_key='druid', level=30, stage=stage, allocation=ALLOCATION,
+            source_ir=root, allow_partial_gear_stats=True,
+            policy_label=unlock_label, policy=unlock_policy)
+        paid = evaluate_persistent_candidate(
+            candidate, level=30, mobs=1, max_total_events=200000)
+        assert paid['status'] == 'COMPLETE', paid
+        assert paid['count'] == 1
+        assert paid['source_action_counts']['primal_bite:25'] > 0
+
+
+def test_one_generic_policy_slot_still_pays_source_unlocked_action_in_joint_search():
+    """Same real source and production scheduler, not just a helper inventory."""
+    from src.v2.source_bounded_joint_frontier import (
+        search_bounded_joint_frontier, source_cold_start_stage)
+    with ability_source_scope(SOURCE):
+        root = _source()
+        cold = source_cold_start_stage(
+            class_key='druid', level=30, source_ir=root, gear_role='druid_feral')
+        assert cold['paid_candidate_origin'] == 'COLD_SQLITE_SOURCE_NO_PREVIOUS_WINNER'
+        result = search_bounded_joint_frontier(
+            class_key='druid', level=30, source_ir=root, seed_stage=cold,
+            max_talents=4, max_gear_moves=0, max_policies=1,
+            max_recovery_policies=1, max_paid_builds=3, max_cpu_s=8.,
+            per_candidate_wall_s=2., screen_mobs=1, finalist_mobs=100,
+            search_only=True, screen_evaluator_backend='direct')
+        unlocks = [r for r in result['rows']
+                   if r['policy_origin']=='talent_unlock:primal_bite:25']
+        assert unlocks, result['rows']
+        assert any(r.get('screen_status')=='COMPLETE'
+                   and r.get('source_action_counts',{}).get('primal_bite:25',0)>0
+                   and r.get('screen_events',0)>0 for r in unlocks), unlocks
+        assert result['policy_variants'] >= 2
+        assert result['all_quick_evaluations_including_stat_probes'] <= 3
+        assert not result['eligible_for_checkpoint_acceptance']
