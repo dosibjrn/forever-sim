@@ -26,7 +26,10 @@ from tools.wf_gsim_go_live_range_probe import (
 
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
-        facing_switch_at_s: float | None = None) -> dict:
+        facing_switch_at_s: float | None = None,
+        rng_mode: str = "stochastic") -> dict:
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_WORLD_RNG_MODE_INVALID")
     raw = request.read_bytes()
     source = json.loads(raw)
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
@@ -72,7 +75,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     with tempfile.TemporaryDirectory() as folder:
         output = Path(folder) / "result.json"
         env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1",
-                   FOREVER_GSIM_WORLD_ITERATIONS=str(iterations))
+                   FOREVER_GSIM_WORLD_ITERATIONS=str(iterations),
+                   WOWSIM_RNG_MODE=rng_mode)
         proc = subprocess.Popen(
             [str(binary.resolve()), "sim", "--request", str(request.resolve()),
              "--outfile", str(output), "--gate"],
@@ -223,12 +227,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 proc.kill()
                 proc.wait(timeout=5)
 
-def native_source_control(binary: Path, request: Path, iterations: int) -> dict:
+def native_source_control(binary: Path, request: Path, iterations: int, *,
+                          rng_mode: str = "stochastic") -> dict:
     """Independent real Rust source engine with only iteration count reduced.
 
     Keeps saved gear, talents, rotation, encounter and RNG seed unchanged.
     The world path receives the ORIGINAL request and same first N fights.
     """
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_NATIVE_CONTROL_RNG_MODE_INVALID")
     source = json.loads(request.read_text())
     assert 1 <= iterations <= source["simOptions"]["iterations"]
     source["simOptions"]["iterations"] = iterations
@@ -241,7 +248,8 @@ def native_source_control(binary: Path, request: Path, iterations: int) -> dict:
              "--outfile", str(output), "--gate"],
             capture_output=True, text=True, timeout=120,
             env={k: v for k, v in os.environ.items()
-                 if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS")},
+                 if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS")}
+                 | {"WOWSIM_RNG_MODE": rng_mode},
         )
         assert completed.returncode == 0, (
             "NATIVE_SOURCE_CONTROL_FAILED", completed.stderr[-2000:])
