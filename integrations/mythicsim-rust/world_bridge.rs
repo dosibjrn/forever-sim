@@ -57,9 +57,9 @@ pub(crate) fn start(source_hash: &str) {
 
 /// Preserve original source request and seed; only first N source fights
 /// run during a cheap diagnostic, never silently award 10k-fight acceptance.
-pub(crate) fn requested_iterations(source_count: i32) -> i32 {
+pub(crate) fn requested_iterations(source_count: u32) -> u32 {
     let count = std::env::var("FOREVER_GSIM_WORLD_ITERATIONS")
-        .ok().map(|s| s.parse::<i32>().expect("RUST_WORLD_ITERATIONS_NOT_INTEGER"))
+        .ok().map(|s| s.parse::<u32>().expect("RUST_WORLD_ITERATIONS_NOT_INTEGER"))
         .unwrap_or(1);
     assert!(count > 0 && count <= source_count, "RUST_WORLD_ITERATIONS_OUT_OF_SOURCE_RANGE");
     count
