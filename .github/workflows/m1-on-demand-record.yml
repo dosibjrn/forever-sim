@@ -160,6 +160,16 @@ jobs:
             # opt-in merely to obtain its first genuine functional PARTIAL.
             # If P5 later evolves into full acceptance, keep this light cap.
             if [[ "$gate" == P5 && "$ALLOW_HEAVY" != true ]]; then timeout_s=20; fi
+            # Explicit heavy mode on P4/P5 runs the existing genuine 30/300 s
+            # source-paid cold search and selected 2D 100-mob acceptance,
+            # rather than the default bounded PARTIAL-only diagnostic.
+            # This opt-in is strictly per target, so ordinary M1 is cheap.
+            if [[ ( "$gate" == P4 || "$gate" == P5 ) && "$ALLOW_HEAVY" == true ]]; then
+              export FOREVER_P4_P5_FULL_SOURCE=1
+              timeout_s=900
+            else
+              unset FOREVER_P4_P5_FULL_SOURCE || true
+            fi
             # The bounded P6 probe is the default. --heavy explicitly runs
             # Work2's real independent 30s/300s cold searches and two fresh
             # paid 100-mob replays; even numerical GREEN is gsim-only FAIL
