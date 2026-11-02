@@ -336,6 +336,85 @@ def _isolated_crit_witness(before, after, mod):
     return None
 
 
+
+def _critical_damage_runtime_witness(before, after, mod):
+    """Observe the sourced critical *bonus* through real combat resolution.
+
+    Rank-N modifiers contain cumulative percentages. Compare their ratio to
+    rank N-1, isolate only crit_multiplier, and keep both runs' controlled
+    crit probability identical. A compiled field change alone is not PASS.
+    """
+    from src.game.model.ir import (DamageEffect, PeriodicEffect,
+        WeaponDamageEffect, ResourceScaledDirectDamageEffect)
+
+    ratio=mod.provenance.get('_gate_crit_bonus_ratio')
+    if (mod.kind!='critical_damage_bonus_pct' or type(ratio) not in (int,float)
+            or not isfinite(ratio) or ratio<=1.):
+        return None
+    old_actions={a.id:a for a in before.actions}
+    supported=(DamageEffect,PeriodicEffect,WeaponDamageEffect,
+               ResourceScaledDirectDamageEffect)
+    checked=[];observed=None
+    for action in after.actions:
+        prior=old_actions.get(action.id)
+        if (prior is None or len(prior.effects)!=len(action.effects)
+                or (mod.target_type=='action_family' and
+                    action.family_key!=mod.target_id)):
+            continue
+        if not any(isinstance(p,Mapping) and p.get('stage')=='talent_modifier'
+                   and p.get('kind')=='critical_damage_bonus_pct'
+                   for p in action.provenance):
+            continue
+        changed=[]
+        for index,(old_effect,new_effect) in enumerate(zip(prior.effects,action.effects)):
+            if type(old_effect) is not type(new_effect):
+                return None
+            if not isinstance(old_effect,supported):
+                continue
+            earlier=float(old_effect.crit_multiplier)
+            later=float(new_effect.crit_multiplier)
+            if isclose(earlier,later,abs_tol=1e-9):
+                continue
+            if (earlier<=1. or not isclose(
+                    later-1.,(earlier-1.)*ratio,rel_tol=1e-6,abs_tol=1e-7)):
+                return None
+            changed.append((index,old_effect,new_effect))
+        if not changed:
+            continue
+        checked.append(action.id)
+        if observed is not None:
+            continue
+        for index,old_effect,new_effect in changed:
+            # A controlled nonzero crit chance is a *fixture*, not an invented
+            # source stat. It is identical in both real CombatRuntime runs.
+            crit_field=('crit_chance_on_landed_hit' if
+                isinstance(old_effect,WeaponDamageEffect) else 'crit_chance_bonus')
+            controlled=replace(old_effect,**{crit_field:max(
+                0.5,float(getattr(old_effect,crit_field)))})
+            altered=replace(controlled,crit_multiplier=new_effect.crit_multiplier)
+            base_effects=list(prior.effects)
+            base_effects[index]=controlled
+            base=replace(prior,effects=tuple(base_effects))
+            base_effects[index]=altered
+            challenger=replace(prior,effects=tuple(base_effects))
+            periodic=isinstance(old_effect,PeriodicEffect)
+            x=_action_runtime_probe(before,base,observe_periodic=periodic)
+            y=_action_runtime_probe(before,challenger,observe_periodic=periodic)
+            metric='periodic_damage' if periodic else 'direct_damage'
+            if (x is not None and y is not None and x[metric]>0
+                    and y[metric]>x[metric]+1e-7):
+                observed={'action_id':action.id,'metric':metric,
+                          'before_amount':x[metric],'after_amount':y[metric],
+                          'before_crit_multiplier':float(old_effect.crit_multiplier),
+                          'after_crit_multiplier':float(new_effect.crit_multiplier)}
+                break
+    if not checked or observed is None:
+        return None
+    return {'probe':'paired_production_critical_bonus',
+            'checked_ir_actions':checked,'source_bonus_ratio':float(ratio),
+            **observed}
+
+
 def _isolated_resource_cost_witness(before,after,mod):
     """Check *all* compiled cost targets; one successful runtime cost witness.
 
@@ -922,6 +1001,8 @@ def _behavior_fixtures(before, after, modifiers):
             match=_mode_entry_resource_witness(before,after,mod)
         elif kind=='crit_chance_pct':
             match=_isolated_crit_witness(before,after,mod)
+        elif kind=='critical_damage_bonus_pct':
+            match=_critical_damage_runtime_witness(before,after,mod)
         elif kind=='action_control_proc':
             match=_control_proc_runtime_witness(before,after,mod)
         elif kind=='grant_source_action':
@@ -1076,6 +1157,8 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
             meta['_gate_relative_factor']=(1+float(mod.value))/(1+prior_value)
         if mod.kind=='resource_cost_pct' and (1+prior_value)>0:
             meta['_gate_cost_ratio']=(1+float(mod.value))/(1+prior_value)
+        if mod.kind=='critical_damage_bonus_pct' and (1+prior_value)>0:
+            meta['_gate_crit_bonus_ratio']=(1+float(mod.value))/(1+prior_value)
         increments.append(replace(mod,value=float(mod.value)-prior_value,provenance=meta))
     tests,missing=_behavior_fixtures(before,selected,increments)
     result['behavior_tests'].extend(tests)
