@@ -2223,7 +2223,7 @@ def independently_compare_shortlist(rows, replay, *, max_mobs=100):
 
 
 def replay_joint_shortlist_100mob(search_report, *, source_ir, seed_stage,
-                                 class_key, level, bonus_talent_points=0,
+                                 class_key, level, bonus_talent_points=None,
                                  max_per_candidate_wall_s=30., pack_size=1):
     """Independently rebuild Top N from pinned FULL config, then pay for 100 mobs.
 
@@ -2236,6 +2236,20 @@ def replay_joint_shortlist_100mob(search_report, *, source_ir, seed_stage,
         raise ValueError('INDEPENDENT_100MOB_REQUIRES_SEARCH_ONLY_SHORTLIST')
     if search_report.get('complete_100mob_candidates'):
         raise ValueError('SEARCH_ALREADY_CONTAINS_100MOB_EVALUATIONS')
+    # The independent 100-mob replay must run the talent point budget of the
+    # actual cold search, not silently its own historical 0-point default.
+    # The source search report is authoritative when available; explicitly
+    # supplied budgets remain supported for old diagnostic reports.
+    recorded_bonus = search_report.get('bonus_talent_points')
+    if recorded_bonus is not None:
+        if type(recorded_bonus) is not int or not 0 <= recorded_bonus <= 5:
+            raise ValueError('INDEPENDENT_100MOB_INVALID_RECORDED_TALENT_BUDGET')
+        if bonus_talent_points is None:
+            bonus_talent_points = recorded_bonus
+        elif bonus_talent_points != recorded_bonus:
+            raise ValueError('INDEPENDENT_100MOB_TALENT_BUDGET_MISMATCH')
+    if type(bonus_talent_points) is not int or not 0 <= bonus_talent_points <= 5:
+        raise ValueError('INDEPENDENT_100MOB_TALENT_BUDGET_NOT_PINNED')
     t0=monotonic();events=0
     source_compiled,_=compile_talent_runtime(source_ir)
     policies_by_recovery=dict(_recovery_variants(source_compiled,seed_stage,4))
