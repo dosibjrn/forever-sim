@@ -81,13 +81,14 @@ def test_real_pack_rejects_deadline_exhausted_after_last_pack(monkeypatch):
     from src.game import multi_pull, recovery
     from src.game.data.forever import build_game_ir_slice
     from src.game.model import PolicyDefinition, PolicyRuleDefinition
-    from src.game.runtime import simulator
+    import time
 
     # The first three boundary checks are within budget: deadline creation,
     # pack start, and pack completion. Only the final result check expires.
     clock = iter((0, 0, 0, 2_000_000_000))
     monkeypatch.setattr(multi_pull, "monotonic_ns", lambda: next(clock))
-    monkeypatch.setattr(simulator, "monotonic_ns", lambda: 0)
+    # CombatRuntime imports the clock inside its budget guard, not as a module attribute.
+    monkeypatch.setattr(time, "monotonic_ns", lambda: 0)
     monkeypatch.setattr(recovery, "monotonic_ns", lambda: 0)
 
     ir = build_game_ir_slice(class_key="druid", level=30)
