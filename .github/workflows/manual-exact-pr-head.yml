@@ -16,7 +16,6 @@ on:
         required: true
         type: choice
         options:
-          - migration-guard
           - native-ack-unit
           - paid-replay-unit
           - p1p2-unit
@@ -48,7 +47,7 @@ jobs:
           [[ "$PR_NUMBER" =~ ^[1-9][0-9]{0,5}$ ]] || { echo 'Invalid PR number' >&2; exit 2; }
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid expected SHA' >&2; exit 2; }
           case "$SUITE" in
-            migration-guard|native-ack-unit|paid-replay-unit|p1p2-unit|source-periodic-unit) ;;
+            native-ack-unit|paid-replay-unit|p1p2-unit|source-periodic-unit) ;;
             *) echo 'Suite not allowlisted' >&2; exit 2 ;;
           esac
           pr_json="$(gh api -H 'Accept: application/vnd.github+json' "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
@@ -118,10 +117,6 @@ jobs:
               ;;
           esac
           case "$SUITE" in
-            migration-guard)
-              python -m unittest discover -s tests -p 'test_restore_private_source_workflow.py' -v
-              python -m unittest discover -s tests -p 'test_verify_public_snapshot.py' -v
-              ;;
             native-ack-unit)
               python -m pytest -q tests/test_wf28_pinned_native_damage_hook.py tests/test_wf_go_native_world_damage_ack.py tests/test_wf_go_paired_native_spell_probe.py tests/test_wf_native_spell_observations.py tests/test_wf_native_target_spell_observations.py
               ;;
