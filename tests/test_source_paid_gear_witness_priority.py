@@ -175,13 +175,19 @@ def test_compound_apl_gets_a_paid_coordinate_before_second_item_in_same_slot():
                 dims, variants, "diagonal", [], gear_stages=gear_stages), 80))
         compound = (0, 0, 1, 0)
         assert compound in scheduled
-        label_slots = [gear_stages[c[1]][0].split(":", 1)[0]
-                       for c in scheduled if c[1] != 0 and c[2] == 0]
-        assert len(label_slots) > len(set(label_slots)), (class_key, label_slots)
-        first_repeat = next(i for i, c in enumerate(scheduled)
-                            if c[1] != 0 and gear_stages[c[1]][0].split(":", 1)[0]
-                            in {gear_stages[a[1]][0].split(":", 1)[0]
-                                for a in scheduled[:i] if a[1] != 0})
+        def pure_slot(c):
+            label = gear_stages[c[1]][0]
+            return (c[1] != 0 and c[2] == 0
+                    and not label.startswith(("source_stat_package:", "package:")))
+        pure_slots = [gear_stages[c[1]][0].split(":", 1)[0]
+                      for c in scheduled if pure_slot(c)]
+        assert len(pure_slots) > len(set(pure_slots)), (class_key, pure_slots)
+        first_repeat = next(
+            i for i, c in enumerate(scheduled)
+            if pure_slot(c)
+            and gear_stages[c[1]][0].split(":", 1)[0] in {
+                gear_stages[a[1]][0].split(":", 1)[0]
+                for a in scheduled[:i] if pure_slot(a)})
         assert scheduled.index(compound) < first_repeat, (class_key, scheduled[:first_repeat+1])
 
 
