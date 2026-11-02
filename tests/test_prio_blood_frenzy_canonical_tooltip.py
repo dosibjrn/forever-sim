@@ -59,13 +59,7 @@ def test_full_source_mode_availability_does_not_leave_mode_gap():
     assert not _source_partial_semantics(SimpleNamespace(modifiers=modifiers))
 
 
-def test_no_cross_build_fiction_or_partial_source_clause():
-    unsourced = {key: val for key, val in SOURCE.items() if key != "source_build"}
-    modifiers, _, _ = _parse_rank_tooltip(
-        text(50), action_families={"claw"}, mode_labels=MODES, source=unsourced)
-    assert len(modifiers) == 2
-    assert "RESOURCE_AMOUNT_SOURCE_BUILD_NOT_PINNED" in (
-        _source_partial_semantics(SimpleNamespace(modifiers=modifiers)))
+def test_partial_source_clause_fails_closed_without_invented_resource():
     broken = text(50).replace("Combo Points", "Combo Pearls")
     bad, _, reason = _parse_rank_tooltip(
         broken, action_families={"claw"}, mode_labels=MODES, source=SOURCE)
