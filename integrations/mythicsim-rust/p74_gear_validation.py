@@ -63,7 +63,7 @@ class GearValidator:
             header = stream.read(96)
         if header.startswith(b"version https://git-lfs.github.com/spec/v1"):
             raise ValueError("SOURCE_CATALOGUE_GIT_LFS_POINTER_NOT_HYDRATED")
-        if not header.startswith(b"SQLite format 3\\x00"):
+        if not header.startswith(b"SQLite format 3\x00"):
             raise ValueError("SOURCE_CATALOGUE_NOT_SQLITE")
 
     def __init__(self, catalogue, rust_items, rust_enchants, reference):
