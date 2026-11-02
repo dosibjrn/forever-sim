@@ -186,7 +186,7 @@ jobs:
           def casts(result, spell_id):
               return sum(delta["casts"] for row in result["observations"]
                   for delta in row["native_spell_counter_deltas"]
-                  if delta["action_id"] == f"{{SpellID: {spell_id}}}"
+                  if delta["action_id"] == f"{{SpellID: {spell_id}}}")
           for result, expected in ((back,False),(front,True)):
               assert result["native_process_reused"] and result["gsim_runtime_real"]
               assert result["native_spell_action_ack"] and not result["checkpoint_certified"]
