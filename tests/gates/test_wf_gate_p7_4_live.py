@@ -65,7 +65,7 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     catalogue.write_text("fake catalogue; validator injected")
 
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    clock = iter([0.0, 0.0, 300.0, 300.0])
+    clock = iter([0.0, 0.0, 0.0, 0.0, 0.0, 300.0, 300.0])
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
     monkeypatch.setattr(gate, "_pinned_source_runtime",
                         lambda *a: (base, {"reference_dps": 728.19}, binary))
@@ -106,6 +106,11 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         preflight=lambda reference, candidate: True,
         source_enchant_pools=lambda validator, pools: {0: [None, 201], 1: [None]},
         RejectedGear=ValueError)
+    # Force two actually paid mock candidates. The first wins, the last
+    # candidate loses: reporting the final loop SHA would misidentify it.
+    candidates = iter([[11, 21], [12, 21]])
+    monkeypatch.setattr(gate, "_cold_gear",
+                        lambda request, *args, **kwargs: swap(request, next(candidates)))
     calls = []
     def native(binary, path, n, *, rng_mode):
         calls.append(("native", n, rng_mode, path.read_text()))
@@ -114,8 +119,10 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     def world(binary, path, distance, iterations, *, rng_mode):
         assert distance == 15
         calls.append(("world", iterations, rng_mode, path.read_text()))
-        return {"world_mean_dps": 729.0, "iterations_done": iterations,
-                "native_damage_events": 12, "native_world_ticks": 25}
+        item_id = json.loads(path.read_text())["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
+        return {"world_mean_dps": 729.0 if item_id == 11 else 700.0,
+                "iterations_done": iterations, "native_damage_events": 12,
+                "native_world_ticks": 25}
 
     producer = SimpleNamespace(native_source_control=native, run=world)
     monkeypatch.setattr(gate, "_source_module",
@@ -127,18 +134,23 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     assert pool_calls == [None], "Full search must keep all admitted source items"
     assert [(kind, n, mode) for kind, n, mode, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
+        ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
-    assert json.loads(calls[0][3]) == json.loads(calls[3][3])
+    assert json.loads(calls[0][3]) == json.loads(calls[5][3])
+    assert json.loads(calls[0][3]) != json.loads(calls[2][3])
     assert report["frozen_request_raw_sha256"] == hashlib.sha256(
-        calls[3][3].encode()).hexdigest()
+        calls[5][3].encode()).hexdigest()
     assert report["cold_winner_request_sha256"] == hashlib.sha256(
-        json.dumps(json.loads(calls[3][3]), sort_keys=True).encode()).hexdigest()
-    assert report["cold_unique_source_requests"] == 1
-    frozen_items = json.loads(calls[3][3])["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        json.dumps(json.loads(calls[5][3]), sort_keys=True).encode()).hexdigest()
+    assert report["cold_unique_source_requests"] == 2
+    frozen_items = json.loads(calls[5][3])["raid"]["parties"][0]["players"][0]["equipment"]["items"]
     assert report["cold_winner_gear"] == [
         {"slot": slot, "item_id": item["id"], "enchant_id": item.get("enchant")}
         for slot, item in enumerate(frozen_items)]
-    assert report["source_legal_cold_candidates_paid"] == 1
+    assert report["source_legal_cold_candidates_paid"] == 2
+    # The real chosen winner is NOT the last attempted candidate.
+    assert report["cold_winner_request_sha256"] != hashlib.sha256(
+        json.dumps(json.loads(calls[2][3]), sort_keys=True).encode()).hexdigest()
     assert report["independent_300s_search_completed"] is True
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_reference_floor_met"] is True

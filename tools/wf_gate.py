@@ -549,6 +549,14 @@ def main(argv=None) -> int:
                                  or type(row.get("enchant_id")) is int)
                             for row in gear)):
                 record["cold_winner_gear"] = gear
+            # Actual rejected paid proposals and finalist reevaluations are
+            # necessary to distinguish a quality regression from a failed
+            # search invocation. Bound the receipt; it is not M1 evidence.
+            for key in ("source_candidate_failures", "paid_stochastic_finalist_failures"):
+                errors = report.get(key)
+                if isinstance(errors, list):
+                    record[key] = [error[:180] for error in errors[:4]
+                                   if isinstance(error, str)]
         if gate in ("P4", "P5"):
             # Real 30/300s search and 100-mob finalist measurements are already
             # present in the live provider. Keep them visible when the gate is
