@@ -1,7 +1,7 @@
 from src import game_context
 from src.rulesets.forever.classes.mage import engine as mage
 from src.v2 import expected_engine
-from tools.report_backend_reconciliation import build_report, _mage_structural_build
+from tools.report_backend_comparison import build_report, _mage_structural_build
 
 
 def test_expected_backend_executes_structural_arcane_blast_cycle():
