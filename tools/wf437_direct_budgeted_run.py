@@ -152,6 +152,9 @@ params=dict(class_key=class_key,level=level,source_ir=ir,seed_stage=stage,
     # independently replay every frozen finalist for 100 real mobs afterward.
     refinement_top_n=(4 if args.budget==30 else 12),
     refinement_rounds=(2 if args.budget==30 else 3),
+    # More source-legal local + distant talent transfers per paid parent
+    # in the short cold budget; never inject a known winning allocation.
+    refinement_talent_neighbors=(6 if args.budget==30 else 2),
     refinement_stat_axes=('spell_power','strength','agility','intellect','spirit','stamina'),
     refinement_probe_delta=20.,refinement_gear_candidates=(3 if args.budget==30 else 5),
     refinement_policy_candidates=(3 if args.budget==30 else 5),pack_size=2,
