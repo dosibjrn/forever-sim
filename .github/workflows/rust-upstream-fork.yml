@@ -2,9 +2,6 @@ name: Bootstrap and sync MythicSim Rust public fork
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: [docs/RUST_UPSTREAM_FORK.md]
   pull_request:
     paths:
       - .github/workflows/rust-upstream-fork.yml
@@ -38,7 +35,7 @@ jobs:
           PY
 
   sync-fork:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.actor == 'dosibjrn' && contains(github.event.head_commit.message, 'run patched rust source sync'))
+    if: github.event_name == 'workflow_dispatch'
     needs: check-script
     runs-on: ubuntu-24.04
     timeout-minutes: 120
