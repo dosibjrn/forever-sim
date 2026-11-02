@@ -106,3 +106,88 @@ def test_opt_in_routes_and_default_not_eager(monkeypatch):
         Path("/project"), "druid", 30, spec="unrestricted", gate="P4")
     assert result["status"] == "FAIL"
     assert calls == [("druid", 30, "unrestricted", "P4")]
+
+
+@pytest.mark.parametrize("mode", [
+    "source_legal", "illegal_gear", "untyped_effects", "changed_catalogue",
+    "membership_attested",
+])
+def test_source_winner_catalogue_and_equipment_audit(monkeypatch, mode):
+    """Boundary regression using the SAME source audit as real P6 replay."""
+    from src.v2 import source_paid_cold_comparison as comparison
+
+    report = _production_receipt(30)
+    report["validation_shortlist"] = [{
+        "allocation": {}, "equipped_gear": {"slots": {}},
+        "opening_action_ids": [], "policy_ir": {},
+        "policy_signature": "sourced-policy", "recovery": "normal",
+    }]
+    report["source_gear_catalogue_snapshot"] = {
+        "schema": "source_gear_snapshot_v1",
+        "class_membership_verified": mode == "membership_attested",
+    }
+    calls = []
+
+    def snapshot(class_key, level):
+        assert (class_key, level) == ("druid", 30)
+        if mode == "changed_catalogue":
+            return {"schema": "new-catalogue"}
+        return report["source_gear_catalogue_snapshot"]
+
+    def gear_audit(winner, *, class_key, level):
+        calls.append(("gear", class_key, level))
+        if mode == "illegal_gear":
+            raise ValueError("COLD_COMPARISON_WINNER_GEAR_NOT_SOURCE_LEGAL")
+        return {"equipment_legality_complete": True}
+
+    def effects(winner, *, class_key, level):
+        calls.append(("effects", class_key, level))
+        return {"ring1": {"unresolved_effects": ["source-extra"]}} if (
+            mode == "untyped_effects") else {}
+
+    monkeypatch.setattr(comparison, "source_gear_catalogue_snapshot", snapshot)
+    monkeypatch.setattr(comparison, "_verify_winner_gear_legality", gear_audit)
+    monkeypatch.setattr(comparison, "_winner_gear_effect_gaps", effects)
+    monkeypatch.setattr(executor, "_execute", lambda *a, **kw: (report, None))
+    result = gates.run_full_paid_source_search(
+        Path("/project"), "druid", 30, spec="unrestricted", gate="P4")
+
+    assert result["status"] == "FAIL"  # no fake native-2D promotion
+    assert result["real_100mob_complete"] is True  # real kills separate from legality
+    assert result["saved_full_source_winner_build"] is True
+    assert result["gear_source_snapshot_matches_current"] is (
+        mode != "changed_catalogue")
+    assert result["winning_gear_source_legality_verified"] is (
+        mode not in ("illegal_gear", "changed_catalogue"))
+    assert result["source_class_gear_membership_attested"] is (
+        mode == "membership_attested")
+    if mode == "changed_catalogue":
+        assert calls == []
+        assert "P4_GEAR_CATALOGUE_SNAPSHOT_NOT_VERIFIED" in result["reasons"]
+    elif mode == "illegal_gear":
+        assert calls == [("gear", "druid", 30)]
+        assert "ValueError" in result["winning_gear_audit_error"]
+        assert "P4_WINNING_GEAR_SOURCE_LEGALITY_NOT_VERIFIED" in result["reasons"]
+    else:
+        assert calls == [("gear", "druid", 30), ("effects", "druid", 30)]
+    if mode == "untyped_effects":
+        assert result["winning_gear_unresolved_effects"]
+        assert "P4_WINNER_ITEM_EFFECTS_UNRESOLVED" in result["reasons"]
+    if mode == "membership_attested":
+        assert "P4_SOURCE_CLASS_ITEM_MEMBERSHIP_NOT_ATTESTED" not in result["reasons"]
+    else:
+        assert "P4_SOURCE_CLASS_ITEM_MEMBERSHIP_NOT_ATTESTED" in result["reasons"]
+
+
+def test_paid_shortlist_without_full_source_build_never_calls_gear_audit(monkeypatch):
+    from src.v2 import source_paid_cold_comparison as comparison
+    monkeypatch.setattr(comparison, "source_gear_catalogue_snapshot",
+                        lambda *args: pytest.fail("incomplete saved build"))
+    monkeypatch.setattr(executor, "_execute",
+                        lambda *args, **kw: (_production_receipt(30), None))
+    result = gates.run_full_paid_source_search(
+        Path("/project"), "druid", 30, spec="unrestricted", gate="P4")
+    assert result["real_100mob_complete"] is True
+    assert result["saved_full_source_winner_build"] is False
+    assert result["winning_gear_source_legality_verified"] is False
+    assert result["winning_gear_audit_error"] == "SAVED_SOURCE_WINNER_INCOMPLETE"
