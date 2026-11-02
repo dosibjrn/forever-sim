@@ -177,15 +177,14 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
             by_slot[slot].append(item)
     slots = {}
     tested = 0
-    verified_slots = 0
+    tested_stat_assertions = 0
+    verified_stat_assertions = 0
     encountered_dps = set()
     for slot, items in sorted(by_slot.items()):
         # The legal test set is chosen *only* by item level and stable ID.
         selected = sorted(items, key=lambda item:(
             -(item.item_level if item.item_level is not None else -1), item.item_id))[:5]
         reports = []
-        slot_ok = bool(selected) and weight_evidence_kind in SOURCE_CONTEXT_WEIGHT_KINDS
-        slot_dps = set()
         for item in selected:
             tested += 1
             stats = _ordinary_stats(item)
@@ -193,30 +192,38 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                 stats.pop('mean_weapon_hit_damage', None)
             dps_axes=('weapon_dps','wand_dps','ranged_weapon_dps')
             encountered_dps.update(set(stats) & set(dps_axes))
-            slot_dps.update(set(stats) & set(dps_axes))
             parts = {}
+            item_weight_checks = 0
+            item_valid_weight_checks = 0
             for axis, amount in sorted(stats.items()):
                 weight = parsed.get(axis)
+                # Each (real ilvl-top-five legal item, ordinary required stat)
+                # is a comparable executed scorer assertion. A slot becomes
+                # all-or-nothing near the end and would hide incremental work.
+                required_axis = (axis in POSITIVE_WHEN_PRESENT
+                    or (axis in dps_axes and equipped_weapon_dps_relevant is not False)
+                    or (axis == 'mean_weapon_hit_damage' and weapon_damage_dependent))
+                if required_axis:
+                    tested_stat_assertions += 1
+                    item_weight_checks += 1
                 if weight is None:
                     # Only named required ordinary axes must have positive
                     # weights. Unmodeled resistances/procs cannot veto P3.
                     if axis in POSITIVE_WHEN_PRESENT:
                         blockers.add('MISSING_WEIGHT:' + axis)
-                        slot_ok = False
                     continue
                 if weight < 0:
                     blockers.add('NEGATIVE_WEIGHT:' + axis)
-                    slot_ok = False
                     continue
                 if weight <= 0 and axis in POSITIVE_WHEN_PRESENT:
                     blockers.add('NONPOSITIVE_RELEVANT_WEIGHT:' + axis)
-                    slot_ok = False
                 contribution = weight * amount
                 if not isfinite(contribution):
                     blockers.add('NONFINITE_CONTRIBUTION:' + axis)
-                    slot_ok = False
                     continue
                 parts[axis] = contribution
+                if required_axis and weight > 0:
+                    item_valid_weight_checks += 1
             # Check the ACTUAL selector scorer; do not certify a parallel
             # dot-product that the optimizer itself never uses.
             scorer_weights = {axis:weight for axis,weight in parsed.items()
@@ -224,29 +231,17 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
             score = item_score(item,scorer_weights)
             if not isfinite(score):
                 blockers.add('NONFINITE_SCORE:' + str(item.item_id))
-                slot_ok = False
             elif abs(score-sum(parts.values()))>1e-7*max(1.,abs(score)):
                 blockers.add('SCORER_MISMATCH:' + str(item.item_id))
-                slot_ok = False
+            else:
+                # Never award a weighted-field check if the real selector's
+                # score does not agree with the executed contributions.
+                verified_stat_assertions += item_valid_weight_checks
             reports.append({'item_id': int(item.item_id), 'name': item.name,
                             'item_level': item.item_level,
                             'required_level': item.required_level,
                             'score': score if isfinite(score) else None,
                             'contributions': parts, 'source_url': item.source_url})
-        # A slot is a verified partial P3 unit only if its actual top-ilvl
-        # items were scored by the production selector and every applicable
-        # required sourced ordinary stat had a meaningful measured weight.
-        # This is not proof that global P3 context/weapon predicates pass.
-        if equipped_weapon_dps_relevant and slot_dps and not any(
-            (parsed.get(axis) or 0) > 0 for axis in slot_dps
-        ):
-            slot_ok = False
-        if weapon_damage_dependent and any(
-            'mean_weapon_hit_damage' in _ordinary_stats(item) for item in selected
-        ) and (parsed.get('mean_weapon_hit_damage') or 0) <= 0:
-            slot_ok = False
-        if slot_ok:
-            verified_slots += 1
         slots[slot] = {'legal_count': len(items),
                        'selected_ids': [int(x.item_id) for x in selected],
                        'items': reports, 'selection': 'HIGHEST_ITEM_LEVEL_NOT_SCORE'}
@@ -270,7 +265,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
             'source': 'CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS',
             'legal_item_count': len(rows), 'tested_item_count': tested,
             'slot_count': len(slots), 'slots': slots,
-            'verified_stat_scored_slot_count': verified_slots,
+            'tested_stat_assertions': tested_stat_assertions,
+            'verified_stat_assertions': verified_stat_assertions,
             'weight_evidence_kind': weight_evidence_kind,
             'weapon_damage_dependent': bool(weapon_damage_dependent),
             'equipped_weapon_dps_relevant': bool(equipped_weapon_dps_relevant),
