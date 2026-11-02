@@ -140,7 +140,9 @@ def between_pull_recovery(*, ir, actor, level:int, mob_index:int, mob_count:int,
         recovery=recover_actor_to_full(actor=actor,level=level,actions=ir.actions,
             start_time_s=float(actor.current_time_s),
             healing_power=float(actor.stats.get('spell_power',0.0)),
-            cpu_deadline_ns=cpu_deadline_ns,wall_deadline_ns=wall_deadline_ns)
+            cpu_deadline_ns=cpu_deadline_ns,wall_deadline_ns=wall_deadline_ns,
+            max_new_events=None if max_new_events is None else max_new_events-events)
+        events += recovery.runtime_events
         if mob_index<mob_count-1:
             reenter_for_next_pull()
     elif should_hot:
