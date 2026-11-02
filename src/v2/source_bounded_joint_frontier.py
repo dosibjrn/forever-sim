@@ -108,14 +108,20 @@ def _source_unlock_full_point_allocation(ir, target, *, level, bonus_talent_poin
     allocation = {}
     active = set()
     preferred_tree = target.tree_key if preferred_tree is None else preferred_tree
-    if (type(minimum_tree_points) is not int or minimum_tree_points < 0
+    if (type(target_rank) is not int or not 1 <= target_rank <= rank_caps.get(target.id, 0)
+            or type(minimum_tree_points) is not int or minimum_tree_points < 0
             or minimum_tree_points > cap
             or preferred_tree not in {t.tree_key for t in ir.talents}):
         return None
 
     def add_one(talent):
         rank = allocation.get(talent.id, 0) + 1
-        if rank > rank_caps[talent.id] or sum(allocation.values()) >= cap:
+        # This builder is also P2's *exact-rank* witness generator. Filling
+        # remaining budget must not silently upgrade rank N to N+1..max_rank.
+        # The target stays fixed while other legal talents fund the full build.
+        if (rank > rank_caps[talent.id]
+                or (talent.id == target.id and rank > target_rank)
+                or sum(allocation.values()) >= cap):
             return False
         trial = {**allocation, talent.id: rank}
         try:
