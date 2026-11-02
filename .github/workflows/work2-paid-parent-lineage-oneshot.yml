@@ -1,0 +1,64 @@
+name: Work2 P6 actual paid parent lineages one-shot
+# Disposable verification; remove from PR before handoff.
+on:
+  push:
+    branches: [work/work2-paid-parent-lineage-20261102-2351]
+    paths: [.github/workflows/work2-paid-parent-lineage-oneshot.yml]
+permissions:
+  contents: read
+jobs:
+  real-source-paid-30s:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run real cold search, verify paid ancestry and full 100-mob finalist replays
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          git rev-parse HEAD
+          mkdir -p work2-real
+          python -m tools.wf437_direct_budgeted_run --budget 30 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output work2-real/t30.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('work2-real/t30.json').read_text())
+          v=x.get('validation') or {}
+          rows=[r for r in v.get('rows',[]) if r.get('status')=='COMPLETE' and r.get('count')==100]
+          shortlist=x.get('validation_shortlist') or []
+          lineage=x.get('paid_refinement_lineages') or []
+          assert len(shortlist)==len(lineage)>0
+          for selected,path in zip(shortlist,lineage):
+              assert selected['paid_candidate_index']==path['shortlist_paid_candidate_index']
+              chain=path['paid_parent_path']
+              assert 1<=len(chain)<=4
+              assert chain[-1]['paid_candidate_index']==selected['paid_candidate_index']
+              assert chain[-1]['screen_s_per_mob']==selected['screen_s_per_mob']
+              assert chain[0]['parent_paid_candidate_index'] is None
+              assert all(child['parent_paid_candidate_index']==parent['paid_candidate_index']
+                         for parent,child in zip(chain,chain[1:]))
+          winner=min(rows,key=lambda r:r['full_s_per_mob']) if rows else None
+          receipt={'source_sha':x.get('source_db_sha256'),
+              'backend':x.get('screen_evaluator_backend'),
+              'wall_s':x.get('wall_s'),'budget_s':x.get('requested_wall_budget_s'),
+              'unique_paid':x.get('unique_full_builds'),
+              'complete_100mob_replays':len(rows),'shortlist_size':len(shortlist),
+              'lineage_lengths':[len(path['paid_parent_path']) for path in lineage],
+              'T30':winner.get('full_s_per_mob') if winner else None}
+          print('WORK2_PAID_PARENT_LINEAGE_REAL='+json.dumps(receipt,sort_keys=True),flush=True)
+          assert receipt['source_sha']=='047204bab4b477420437c2680480312fbe2a1cd9f48085ef3ce70d00c955f2f9'
+          assert receipt['budget_s']==30 and 0<receipt['wall_s']<=30
+          assert winner and len(rows)==len(shortlist)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: work2-paid-parent-lineage-30s
+          path: work2-real/t30.json
+          retention-days: 3
