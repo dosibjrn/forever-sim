@@ -22,5 +22,17 @@ jobs:
           set -euo pipefail
           git rev-parse HEAD
           python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+          # Same real source catalogue and test against the old production
+          # implementation: fail specifically because illegal 2H+offhand was
+          # accepted. Restore the PR implementation for GREEN.
+          git fetch --no-tags --depth=1 origin main
+          cp src/v2/source_persistent_slot_search.py /tmp/work2-fixed-slot.py
+          git show FETCH_HEAD:src/v2/source_persistent_slot_search.py > src/v2/source_persistent_slot_search.py
+          if python -m pytest -q tests/test_source_paid_gear_witness_priority.py -k test_p3_source_weapon_proposals_preserve_complete_equipment_legality > /tmp/work2-red.log 2>&1; then
+            echo "Expected RED baseline unexpectedly passed"; exit 1
+          fi
+          cat /tmp/work2-red.log
+          grep -q 'DID NOT RAISE' /tmp/work2-red.log || { echo "Baseline failed for wrong reason"; exit 1; }
+          cp /tmp/work2-fixed-slot.py src/v2/source_persistent_slot_search.py
           python -m pytest -q tests/test_source_paid_gear_witness_priority.py -k test_p3_source_weapon_proposals_preserve_complete_equipment_legality
           python -m pytest -q tests/test_wf326_druid20_source_slot_search.py -k test_druid_l20_slot_proposals_are_real_legal_distinct_items
