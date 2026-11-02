@@ -270,7 +270,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     elites = []  # top 24 source-legal loadouts actually scored by native+2D
     reranked = []  # separate paid 24-fight stochastic native+2D finalists
     rerank_seen = set()
-    confirmed = set()  # independently paid second 24+24 seed pair for leaders
+    confirmed = set()  # successful independent 24+24 confirmations
+    confirmation_attempted = set()  # avoid retrying a failed paid candidate
     rerank_failures = []
     failures = []
     seen = set()
@@ -312,17 +313,17 @@ def run_live(root: Path, class_key: str, level: int, *,
             # Keep 295-300s open for genuinely new candidates/reranks.
             elapsed = time.monotonic() - search_start
             if (full_search and 280.0 <= elapsed < 295.0
-                    and len(reranked) >= 3 and len(confirmed) < 3):
+                    and len(reranked) >= 3 and len(confirmation_attempted) < 3):
                 next_confirmation = next((
                     (index, row) for index, row in
                     sorted(enumerate(reranked), key=lambda item: item[1][0],
                            reverse=True)
-                    if row[2] not in confirmed), None)
+                    if row[2] not in confirmation_attempted), None)
                 if (next_confirmation is not None and _paid_step_has_budget(
                         search_start, max(worst_finalist_s,
                                           worst_confirmation_s))):
                     index, row = next_confirmation
-                    confirmed.add(row[2])  # do not retry failed candidates
+                    confirmation_attempted.add(row[2])
                     paid_start = time.perf_counter()
                     try:
                         second_score, second_live = _paid_gear_stochastic_finalist(
@@ -334,12 +335,12 @@ def run_live(root: Path, class_key: str, level: int, *,
                         # genuinely paid non-holdout stochastic fights.
                         reranked[index] = ((row[0] + second_score) / 2,
                                            second_live, *row[2:])
+                        confirmed.add(row[2])
                     except (ValueError, RuntimeError, OSError, KeyError,
                             TimeoutError, TypeError, AssertionError,
                             subprocess.SubprocessError) as exc:
                         rerank_failures.append(
                             "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:170])
-                        confirmed.discard(row[2])
                     finally:
                         worst_confirmation_s = max(
                             worst_confirmation_s, time.perf_counter() - paid_start)
