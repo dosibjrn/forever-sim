@@ -132,3 +132,58 @@ def test_real_source_pack_event_budget_interrupts_combat_not_only_posthoc():
         schedule_incoming_attacks=False, max_total_events=100000)
     assert sum(p["mob_count"] for p in result.pulls) == 2
     assert all(p["pack_all_defeated"] for p in result.pulls)
+
+
+def test_spaced_travel_carries_sequential_paid_compute_and_event_limits(monkeypatch):
+    """Contract-only RED/GREEN for the real source-backed travel runtime.
+
+    The first kill is deliberately stubbed: this is NOT actual combat evidence
+    and cannot certify a 1/2/100-mob or native/world acceptance gate.
+    """
+    from src.game.data.forever import build_game_ir_slice
+    from src.game.model import PolicyDefinition, PolicyRuleDefinition
+    from src.game.runtime import CombatRuntime
+    from src.v2 import source_persistent_joint_finalists as joint
+
+    ir = build_game_ir_slice(class_key="druid", level=30)
+    wrath = next(a for a in ir.actions if a.family_key == "wrath")
+    policy = PolicyDefinition(
+        id="work2:travel:policy", label="Source Wrath",
+        rules=(PolicyRuleDefinition(id="work2:travel:rule", action_id=wrath.id),))
+    candidate = joint.PreparedCandidate(ir, policy, (), {}, {})
+    observed = []
+
+    # Isolate the travel boundary while keeping the actual sourced GameIR,
+    # retained ActorState, and real CombatRuntime construction under test.
+    monkeypatch.setattr(joint, "_execute_source_maintenance_upkeep",
+                        lambda *a, **kw: (0., 0, 0))
+
+    def controlled_kill(*, runtime, **kwargs):
+        now = float(runtime.actor.current_time_s)
+        runtime.actor.current_time_s = now + 1.
+        return SimpleNamespace(
+            stopped_reason=None, selected_actions=[{"action_id": wrath.id}],
+            timeline=SimpleNamespace(
+                target_death_s=now + 1., target_defeated=True, events=()))
+
+    monkeypatch.setattr(joint, "execute_priority_policy", controlled_kill)
+    monkeypatch.setattr(joint, "recover_actor_to_full", lambda **kw:
+                        SimpleNamespace(total_s=0., periodic_recovery_events=0))
+
+    def bounded_advance(self, next_time_s):
+        assert self.target.id == "spaced_travel"
+        observed.append((self.cpu_deadline_ns, self.wall_deadline_ns,
+                         self.event_budget_cap, self.event_budget_start))
+        assert self.cpu_deadline_ns is not None
+        assert self.wall_deadline_ns is not None
+        assert self.event_budget_cap == 42
+        assert self.event_budget_start == 0
+        raise ComputeDeadlineExceeded(0, "WALL")
+
+    monkeypatch.setattr(CombatRuntime, "advance_to", bounded_advance)
+    result = joint.evaluate_persistent_candidate(
+        candidate, level=30, mobs=2, mob_spacing_yards=12.,
+        max_cpu_s=60., max_wall_s=60., max_total_events=42)
+    assert len(observed) == 1
+    assert result["status"] == "BLOCKED_SPACED_TRAVEL_BUDGET"
+    assert result["mob_completed"] == 1
