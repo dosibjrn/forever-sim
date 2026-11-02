@@ -95,9 +95,27 @@ def run_live(root: Path, class_key: str, level: int, *,
     from src.v2.source_bounded_joint_frontier import (
         source_cold_start_stage, search_bounded_joint_frontier)
 
+    # The full 30/300s source runner already applies this approved product
+    # profile. Reuse its source-bound rule in the cheap production diagnostic
+    # too; never silently search unrestricted talents under a named spec.
+    spec_params = {}
     if spec != "unrestricted":
-        return {"status": "BLOCKED",
-                "reasons": ["P6_SOURCE_SPEC_TREE_SEARCH_CONSTRAINT_NOT_YET_CONNECTED"]}
+        from hashlib import sha256
+        from src.game.data.forever.sqlite_talents import DEFAULT_DB
+        from tools.wf_gate_p2_live import _load_product_spec_profile
+
+        db = Path(DEFAULT_DB)
+        if not db.is_file():
+            return {"status": "BLOCKED",
+                    "reasons": ["P6_SOURCE_ABILITY_DB_MISSING"]}
+        profile = _load_product_spec_profile(
+            root, class_key, level, spec,
+            source_sha256=sha256(db.read_bytes()).hexdigest())
+        if profile is None:
+            return {"status": "BLOCKED",
+                    "reasons": ["P6_SOURCE_SPEC_PRODUCT_PROFILE_NOT_CONFIGURED"]}
+        spec_params = {"spec_tree": profile["tree_key"],
+                       "min_spec_points": profile["minimum_points"]}
     ir = build_game_ir_slice(class_key=class_key, level=level)
     roles = available_gear_roles(class_key)
     if ir is None or not roles:
@@ -116,7 +134,7 @@ def run_live(root: Path, class_key: str, level: int, *,
             max_cpu_s=budget, per_candidate_wall_s=.75,
             screen_mobs=2, finalist_mobs=100, pack_size=2,
             search_only=True, screen_evaluator_backend="direct",
-            refinement_rounds=0)
+            refinement_rounds=0, **spec_params)
         paid = int(search.get("screen_complete_candidates") or 0)
         if paid:
             try:
