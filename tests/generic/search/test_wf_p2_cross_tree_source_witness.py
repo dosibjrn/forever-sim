@@ -13,7 +13,7 @@ from src.v2.source_bounded_joint_frontier import (
     source_spec_talent_frontier,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 SOURCE = ROOT / "data/forever/staged_druid_l30_talents_70338.sqlite"
 
 

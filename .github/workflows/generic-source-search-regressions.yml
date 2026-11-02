@@ -1,0 +1,45 @@
+name: Generic source-paid search regressions
+on:
+  pull_request:
+    paths:
+      - 'tests/generic/search/**'
+      - 'src/v2/source_bounded_joint_frontier.py'
+      - 'src/v2/source_persistent_slot_search.py'
+      - 'src/v2/source_persistent_joint_finalists.py'
+      - 'src/game/data/forever/**'
+      - 'src/game/talent_execution_coverage.py'
+      - 'src/game/talents.py'
+      - '.github/workflows/generic-source-search-regressions.yml'
+  push:
+    branches:
+      - 'clean/source-paid-witness-search-tests-nov02'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generic-source-paid-search-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout pinned source data
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install focused regression dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Verify source-backed talent and paid equipment search
+        run: >-
+          python -m pytest -q
+          tests/generic/search/test_wf_p2_cross_tree_source_witness.py
+          tests/generic/search/test_wf_p2_source_witness_priority.py
+          tests/generic/search/test_source_wand_paid_slot_proposals.py
+          tests/generic/search/test_source_paid_gear_witness_priority.py
