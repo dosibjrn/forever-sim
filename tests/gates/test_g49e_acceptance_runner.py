@@ -68,7 +68,7 @@ def test_g49e_stage_timeout_is_not_pass(monkeypatch):
 
 def test_g49e_browser_executable_can_be_overridden_for_local_runner():
     native = Path('tests/integration/service/test_g49d_native_browser_e2e.py').read_text()
-    slow = Path('tests/test_generic_all_class_product_gate_g48d.py').read_text()
+    slow = Path('tests/generic/publication/test_generic_all_class_product_gate_g48d.py').read_text()
     assert 'WOW_CHROMIUM_EXECUTABLE' in native
     assert 'WOW_CHROMIUM_EXECUTABLE' in slow
 
