@@ -2,8 +2,8 @@
 <rect width="1120" height="485" rx="16" fill="#111827"/>
 <text x="38" y="42" fill="#f9fafb" font-family="Arial,sans-serif" font-size="25" font-weight="bold">Forever Sim — M1 progress</text>
 <text x="38" y="70" fill="#9ca3af" font-family="Arial,sans-serif" font-size="15">Git-verified gate results · 1,628 gate targets · 148 checkpoints</text>
-<text x="38" y="103" fill="#34d399" font-family="Arial,sans-serif" font-size="19" font-weight="bold">PASS 6/1628 (0.3686%)</text>
-<text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Measured 1.0414%</text>
+<text x="38" y="103" fill="#34d399" font-family="Arial,sans-serif" font-size="19" font-weight="bold">PASS 7/1628 (0.4300%)</text>
+<text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Measured 1.0572%</text>
 <text x="785" y="103" fill="#f9fafb" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Certified 0/148</text>
 <line x1="39" y1="130" x2="67" y2="130" stroke="#34d399" stroke-width="3"/>
 <text x="75" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">Full gate PASS (% of 1628)</text>
@@ -22,12 +22,12 @@
 <line x1="90.0" y1="400" x2="90.0" y2="406" stroke="#6b7280"/>
 <text x="90.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 07:17</text>
 <line x1="570.0" y1="400" x2="570.0" y2="406" stroke="#6b7280"/>
-<text x="570.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 13:09</text>
+<text x="570.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 13:11</text>
 <line x1="1050.0" y1="400" x2="1050.0" y2="406" stroke="#6b7280"/>
-<text x="1050.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 19:00</text>
-<path d="M 90.0 400.0 H 157.6 V 400.0 H 207.0 V 400.0 H 616.7 V 400.0 H 640.7 V 390.2 H 662.2 V 390.2 H 666.3 V 390.2 H 670.7 V 390.2 H 683.8 V 390.2 H 695.9 V 390.2 H 706.7 V 390.2 H 710.8 V 390.2 H 714.9 V 390.2 H 751.2 V 390.2 H 751.4 V 390.2 H 779.6 V 390.2 H 814.9 V 390.2 H 846.5 V 390.2 H 874.6 V 380.3 H 940.6 V 380.3 H 1008.7 V 380.3 H 1033.1 V 360.7 H 1041.7 V 350.9 H 1046.1 V 350.9 H 1050.0 V 341.0" fill="none" stroke="#34d399" stroke-width="3" stroke-linejoin="round"/>
-<circle cx="1050.0" cy="341.0" r="4" fill="#34d399"/>
-<path d="M 90.0 400.0 H 157.6 V 400.0 H 207.0 V 384.2 H 616.7 V 380.4 H 640.7 V 370.6 H 662.2 V 369.7 H 666.3 V 368.9 H 670.7 V 367.9 H 683.8 V 358.5 H 695.9 V 348.6 H 706.7 V 342.1 H 710.8 V 333.1 H 714.9 V 325.1 H 751.2 V 317.1 H 751.4 V 309.1 H 779.6 V 307.9 H 814.9 V 305.5 H 846.5 V 301.4 H 874.6 V 300.5 H 940.6 V 299.8 H 1008.7 V 288.9 H 1033.1 V 269.2 H 1041.7 V 268.8 H 1046.1 V 242.9 H 1050.0 V 233.4" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linejoin="round"/>
-<circle cx="1050.0" cy="233.4" r="4" fill="#fbbf24"/>
+<text x="1050.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 19:05</text>
+<path d="M 90.0 400.0 H 157.1 V 400.0 H 206.2 V 400.0 H 613.1 V 400.0 H 636.9 V 390.2 H 658.2 V 390.2 H 662.3 V 390.2 H 666.7 V 390.2 H 679.7 V 390.2 H 691.7 V 390.2 H 702.4 V 390.2 H 706.5 V 390.2 H 710.6 V 390.2 H 746.6 V 390.2 H 746.8 V 390.2 H 774.8 V 390.2 H 809.9 V 390.2 H 841.3 V 390.2 H 869.2 V 380.3 H 934.7 V 380.3 H 1002.4 V 380.3 H 1026.6 V 360.7 H 1035.1 V 350.9 H 1050.0 V 331.2" fill="none" stroke="#34d399" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="1050.0" cy="331.2" r="4" fill="#34d399"/>
+<path d="M 90.0 400.0 H 157.1 V 400.0 H 206.2 V 384.2 H 613.1 V 380.4 H 636.9 V 370.6 H 658.2 V 369.7 H 662.3 V 368.9 H 666.7 V 367.9 H 679.7 V 358.5 H 691.7 V 348.6 H 702.4 V 342.1 H 706.5 V 333.1 H 710.6 V 325.1 H 746.6 V 317.1 H 746.8 V 309.1 H 774.8 V 307.9 H 809.9 V 305.5 H 841.3 V 301.4 H 869.2 V 300.5 H 934.7 V 299.8 H 1002.4 V 288.9 H 1026.6 V 269.2 H 1035.1 V 268.8 H 1050.0 V 230.8" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="1050.0" cy="230.8" r="4" fill="#fbbf24"/>
 <text x="40" y="472" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">UTC timeline from TSV Git commits · Y-axis zoomed to observed progress (starts at zero) · Historical measured best, not current regression status</text>
 </svg>
