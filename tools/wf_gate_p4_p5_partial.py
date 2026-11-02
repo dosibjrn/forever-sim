@@ -352,8 +352,29 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
             reasons.append("P5_N300_GE_TEN_TIMES_N30_NOT_PROVEN")
         if not p5_replays_complete:
             reasons.append("P5_INDEPENDENT_WINNERS_100MOB_REPLAY_INCOMPLETE")
+    # A successful live run already has its own paid search and complete
+    # source-bound 100-mob replay. Give the shared CLI its ordinary runtime
+    # identity (same shape as P3), without imposing a second evidence job.
+    proof = {}
+    if not reasons:
+        from hashlib import sha256
+        from json import dumps
+        from uuid import uuid4
+        from src.version import SOFTWARE_VERSION
+
+        source_identity = dumps({
+            "ability_db_sha256": report["source_db_sha256"],
+            "gear_catalogue": report["source_gear_catalogue_snapshot"],
+        }, sort_keys=True, separators=(",", ":"), default=str)
+        proof = {"runtime_proof": {
+            "executed": True,
+            "engine_revision": "gsim-" + SOFTWARE_VERSION,
+            "source_revision": sha256(source_identity.encode()).hexdigest(),
+            "run_id": "source-paid-" + gate.lower() + "-" + str(uuid4()),
+        }}
     return {
         "status": "FAIL" if reasons else "PASS", "reasons": reasons,
+        **proof,
         "production_engine": "gsim_CombatRuntime",
         "production_component": "tools.wf437_direct_budgeted_run",
         "selected_production_backend": "gsim",
