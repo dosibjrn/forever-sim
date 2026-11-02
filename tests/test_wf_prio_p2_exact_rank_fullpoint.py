@@ -2,7 +2,7 @@
 
 The synthetic roster exercises the real canonical talent validator; the real
 Druid SQLite check below guards against class-specific fixture assumptions.
-Neither is a formal P2 PASS claim.
+Neither is a formal P2 PASS claim. This regression is branch-scoped.
 """
 from pathlib import Path
 from types import SimpleNamespace
