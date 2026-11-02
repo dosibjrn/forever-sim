@@ -165,10 +165,15 @@ def test_real_source_unlock_and_incumbent_survive_one_generic_policy_slot():
 
 def test_one_generic_policy_slot_still_pays_source_unlocked_action_in_joint_search():
     """Same real source and production scheduler, not just a helper inventory."""
-    from src.v2.source_bounded_joint_frontier import search_bounded_joint_frontier
+    from src.v2.source_bounded_joint_frontier import (
+        search_bounded_joint_frontier, source_cold_start_stage)
     with ability_source_scope(SOURCE):
+        root = _source()
+        cold = source_cold_start_stage(
+            class_key='druid', level=30, source_ir=root, gear_role='druid_feral')
+        assert cold['paid_candidate_origin'] == 'COLD_SQLITE_SOURCE_NO_PREVIOUS_WINNER'
         result = search_bounded_joint_frontier(
-            class_key='druid', level=30, source_ir=_source(), seed_stage=_stage(),
+            class_key='druid', level=30, source_ir=root, seed_stage=cold,
             max_talents=4, max_gear_moves=0, max_policies=1,
             max_recovery_policies=1, max_paid_builds=3, max_cpu_s=8.,
             per_candidate_wall_s=2., screen_mobs=1, finalist_mobs=100,
