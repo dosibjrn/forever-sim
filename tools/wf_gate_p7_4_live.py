@@ -86,10 +86,13 @@ def run_live(root: Path, class_key: str, level: int, *,
     try:
         # The existing source+Rust item validator enumerates the pool once;
         # re-querying SQLite for every candidate would waste the 300s budget.
-        # A full run widens the legal per-slot pool; the exact complete
-        # source/enchant universe is still an independently required predicate.
+        # Full cold search must not discard source/Rust-admitted items merely
+        # because their heuristic static score falls below a top-80 cutoff.
+        # candidate_pool already validates all catalogue item IDs, and
+        # list[:None] preserves the entire per-slot admitted pool. Enchant
+        # and unrecorded source-effect parity remain independent blockers.
         pool, _ = gear_search.candidate_pool(
-            validator, limit=80 if full_search else 15)
+            validator, limit=None if full_search else 15)
         while (time.monotonic() - search_start < 300.0
                if full_search else proposals < 3):
             proposals += 1
