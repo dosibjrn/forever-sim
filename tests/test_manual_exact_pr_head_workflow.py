@@ -58,8 +58,11 @@ class ManualExactHeadContract(unittest.TestCase):
         self.assertNotIn("bash -c", suite)
         self.assertNotIn("curl ", suite)
         self.assertNotIn("gh api", suite)
-        for suite_name in ("migration-guard", "native-ack-unit",
-                           "paid-replay-unit", "p1p2-unit"):
+        # Keep the live, source-backed suites mandatory. The one-off private
+        # migration guard may be retired after public source migration without
+        # weakening exact-HEAD validation or allowing arbitrary commands.
+        for suite_name in ("native-ack-unit", "paid-replay-unit",
+                           "p1p2-unit", "source-periodic-unit"):
             self.assertIn(suite_name, suite)
         self.assertIn("Suite not allowlisted", TEXT)
         self.assertIn("*) echo 'Suite not allowlisted' >&2; exit 6", suite)
