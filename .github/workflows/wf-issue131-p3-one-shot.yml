@@ -37,4 +37,4 @@ jobs:
           assert any("BLOCKED_NO_NAKED_SUCCESS" in x for x in r["reasons"]), r
           PY
       - name: Fast original source gear production scorer regressions
-        run: python -m pytest -q tests/test_wf408_unified_production_item_score_p3_tdd.py tests/test_wf_gate_p3_approved.py
+        run: python -m pytest -q tests/test_wf408_unified_production_item_score_p3_tdd.py tests/test_wf_gate_p3_approved.py tests/test_wf259_real_budgeted_gear.py -k 'not real_gear_stat_feedback and not partial_final_named_gear and not mage_l20_real_gear'
