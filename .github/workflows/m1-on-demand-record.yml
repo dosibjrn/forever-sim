@@ -164,8 +164,8 @@ jobs:
             # Work2's real independent 30s/300s cold searches and two fresh
             # paid 100-mob replays; even numerical GREEN is gsim-only FAIL
             # until selected native↔world execution is proven.
-            if [[ "$gate" == P7.2 && "$ALLOW_HEAVY" == true ]]; then
-              # Work1 real 300s balanced Rust↔2D cold APL search followed
+            if [[ ( "$gate" == P7.2 || "$gate" == P7.3 ) && "$ALLOW_HEAVY" == true ]]; then
+              # Work1 real 300s balanced Rust↔2D cold APL/talent search followed
               # once by 1000 stochastic frozen native/live fights. Only
               # an explicit Merge --heavy run can pay this production cost.
               export FOREVER_P7_FULL_SOURCE_SEARCH=1
