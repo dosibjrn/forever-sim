@@ -64,6 +64,13 @@ def _cold_talents(base: dict, rng: random.Random, source, *, elite=None):
     return candidate
 
 
+def _paid_elite_choice(elites, rng, proposal_index):
+    """Explore one of this run's source-legal paid elites, never the reference."""
+    if proposal_index % 5 == 0 or not elites:
+        return None  # independent source-cold restart
+    return rng.choice(elites[:min(18, len(elites))])[1]
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.3")
@@ -90,6 +97,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     original = player.get("talentsString")
     rng = random.Random(647003)
     best = None
+    elites = []  # top source-legal requests already paid in native+2D
     executed = 0
     proposals = 0
     seen = set()
@@ -101,11 +109,13 @@ def run_live(root: Path, class_key: str, level: int, *,
            if full_search else proposals < 3):
         proposals += 1
         try:
-            # Four of five full-search proposals explore our own genuinely
-            # paid best; the fifth starts independently from source grammar.
-            # Neither the saved reference nor another P7 gate seeds this run.
-            elite = (best[3] if full_search and best is not None
-                     and proposals % 5 != 0 else None)
+            # Four of five proposals exploit one of this run's top paid
+            # legal candidates, not exclusively its current global best.
+            # This restores the existing native source P7.3 optimizer's
+            # diverse paid-elite population (top 18 of 22); every fifth
+            # proposal remains independent from the reference/source grammar.
+            elite = (_paid_elite_choice(elites, rng, proposals)
+                     if full_search else None)
             candidate = _cold_talents(base, rng, source, elite=elite)
             sha = hashlib.sha256(json.dumps(
                 candidate, sort_keys=True).encode()).hexdigest()
@@ -131,6 +141,9 @@ def run_live(root: Path, class_key: str, level: int, *,
             if not 0 <= score < float("inf"):
                 raise ValueError("SOURCE_TALENT_LIVE_DPS_INVALID")
             executed += 1
+            elites.append((score, candidate))
+            elites.sort(key=lambda item: item[0], reverse=True)
+            del elites[22:]
             if best is None or score > best[0]:
                 best = (score, live, sha, candidate)
         except (ValueError, RuntimeError, OSError, TypeError,
