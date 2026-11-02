@@ -311,41 +311,40 @@ def run_live(root: Path, class_key: str, level: int, *,
             # leading already-paid finalists with an independent seed pair,
             # rather than selecting the highest noisy 48-fight estimate.
             # Keep 295-300s open for genuinely new candidates/reranks.
-            elapsed = time.monotonic() - search_start
-            if (full_search and 280.0 <= elapsed < 295.0
-                    and len(reranked) >= 3 and len(confirmation_attempted) < 3):
-                next_confirmation = next((
-                    (index, row) for index, row in
-                    sorted(enumerate(reranked), key=lambda item: item[1][0],
-                           reverse=True)
-                    if row[2] not in confirmation_attempted), None)
-                if (next_confirmation is not None and _paid_step_has_budget(
-                        search_start, max(worst_finalist_s,
-                                          worst_confirmation_s))):
-                    index, row = next_confirmation
-                    confirmation_attempted.add(row[2])
-                    paid_start = time.perf_counter()
-                    try:
-                        second_score, second_live = _paid_gear_stochastic_finalist(
-                            production, binary, row[3],
-                            player["distanceFromTarget"],
-                            seeds=("1947113", "1947139"))
-                        # Each seed pair ran the same 24+24 independent
-                        # native/world fights: equal-weight average of 96
-                        # genuinely paid non-holdout stochastic fights.
-                        reranked[index] = ((row[0] + second_score) / 2,
-                                           second_live, *row[2:])
-                        confirmed.add(row[2])
-                    except (ValueError, RuntimeError, OSError, KeyError,
-                            TimeoutError, TypeError, AssertionError,
-                            subprocess.SubprocessError) as exc:
-                        rerank_failures.append(
-                            "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:170])
-                    finally:
-                        worst_confirmation_s = max(
-                            worst_confirmation_s, time.perf_counter() - paid_start)
-                    continue
             if full_search and time.monotonic() - search_start >= 240.0:
+                if (len(reranked) >= 3 and len(confirmation_attempted) < 3
+                        and 280.0 <= time.monotonic() - search_start < 295.0):
+                    next_confirmation = next((
+                        (index, row) for index, row in
+                        sorted(enumerate(reranked), key=lambda item: item[1][0],
+                               reverse=True)
+                        if row[2] not in confirmation_attempted), None)
+                    if (next_confirmation is not None and _paid_step_has_budget(
+                            search_start, max(worst_finalist_s,
+                                              worst_confirmation_s))):
+                        index, row = next_confirmation
+                        confirmation_attempted.add(row[2])
+                        paid_start = time.perf_counter()
+                        try:
+                            second_score, second_live = _paid_gear_stochastic_finalist(
+                                production, binary, row[3],
+                                player["distanceFromTarget"],
+                                seeds=("1947113", "1947139"))
+                            # Each seed pair ran the same 24+24 independent
+                            # native/world fights: equal-weight average of 96
+                            # genuinely paid non-holdout stochastic fights.
+                            reranked[index] = ((row[0] + second_score) / 2,
+                                               second_live, *row[2:])
+                            confirmed.add(row[2])
+                        except (ValueError, RuntimeError, OSError, KeyError,
+                                TimeoutError, TypeError, AssertionError,
+                                subprocess.SubprocessError) as exc:
+                            rerank_failures.append(
+                                "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:170])
+                        finally:
+                            worst_confirmation_s = max(
+                                worst_confirmation_s, time.perf_counter() - paid_start)
+                        continue
                 pending = next((
                     (screen_score, candidate,
                      hashlib.sha256(json.dumps(candidate, sort_keys=True).encode()).hexdigest())
