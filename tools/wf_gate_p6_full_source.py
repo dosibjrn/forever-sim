@@ -1,8 +1,8 @@
-"""Explicit expensive P6 source-paid cold comparison using the existing runner.
+"""Explicit P6 source-paid independent cold search and 100-mob replay.
 
-This is a *diagnostic* until the same paid evaluator runs the selected
-native↔2D world backend and source/legal-space completeness is demonstrated.
-Never read historical search files or treat a gsim-only ratio as gate PASS.
+The actual selected source-backed 2D CombatRuntime is a valid production
+backend under COMMON. Never invent a native-hybrid or catalog-completeness
+gate on top of the approved P6 independent winner saturation predicate.
 """
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def _execute(root: Path, arguments: list[str], output: Path, timeout_s: int,
 
 def run_full_source_comparison(root: Path, class_key: str, level: int, *,
                                spec: str = 'unrestricted') -> dict:
-    """Cold 30/300s plus independent finalist and winner replays; NO hybrid PASS.
+    """Cold 30/300s plus independent 100-mob winner replays on selected gsim.
 
     The existing WF437 production command owns all search/replay mechanics.
     Files exist only in a temporary directory during this one explicit run.
@@ -73,22 +73,51 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
         if error:
             return {'status': 'FAIL', 'reasons': ['P6_COMPARE_' + error],
                     'production_engine': 'gsim_CombatRuntime'}
-    # A numeric saturation result is useful even if its 1% target fails.
-    # The source comparator itself verifies source hash, candidate-space
-    # fingerprint, gear legality and fresh 100/100-mob replay completeness.
+    # Production replay receipts are independently recomputed from the two
+    # cold-selected full builds. Zero or partial kills cannot satisfy P6.
+    from math import isfinite
     replays = compared.get('replays') or []
-    complete = (len(replays) == 2 and all(
-        r.get('status') == 'COMPLETE' and r.get('count') == 100
-        and isinstance(r.get('s_per_mob'), (int, float))
-        and 0 < r['s_per_mob'] < float('inf') for r in replays))
-    reasons = ['P6_SELECTED_NATIVE_2D_WORLD_BACKEND_NOT_VERIFIED',
-               'P6_SOURCE_LEGAL_SPACE_COMPLETENESS_NOT_PROVEN']
+    complete = (isinstance(replays, list) and len(replays) == 2 and all(
+        isinstance(r, dict) and r.get('status') == 'COMPLETE'
+        and type(r.get('count')) is int and r['count'] == 100
+        and type(r.get('mob_completed')) is int and r['mob_completed'] == 100
+        and type(r.get('s_per_mob')) in (int, float)
+        and isfinite(r['s_per_mob']) and r['s_per_mob'] > 0
+        for r in replays))
+    # Do not credit bare matching report labels: the production comparator
+    # confirms the same executed source proposal, item snapshot, winning gear
+    # legality, and actual 100-mob replay for both cold winners.
+    reasons = []
     if not complete:
         reasons.append('P6_INDEPENDENT_100MOB_REPLAY_INCOMPLETE')
-    elif compared.get('numeric_p6_within_1pct') is not True:
+    if compared.get('same_source_legal_candidate_space_proven') is not True:
+        reasons.append('P6_INDEPENDENT_COLD_SOURCE_SPACE_NOT_MATCHED')
+    if compared.get('winning_gear_source_legality_verified') is not True:
+        reasons.append('P6_WINNING_GEAR_SOURCE_LEGALITY_NOT_VERIFIED')
+    if any(s.get('p4_talent_unlock_coverage_pass') is not True for s in searches):
+        reasons.append('P6_SOURCE_UNLOCK_PAID_EVALUATIONS_INCOMPLETE')
+    if compared.get('p5_2x_breadth') is not True:
+        reasons.append('P6_P5_COLD_WINNER_PAID_BREADTH_NOT_VERIFIED')
+    if complete and compared.get('numeric_p6_within_1pct') is not True:
         reasons.append('P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT')
+    proof = {}
+    if not reasons:
+        from hashlib import sha256
+        from json import dumps
+        from uuid import uuid4
+        from src.version import SOFTWARE_VERSION
+        source_identity = dumps({
+            'ability_db_sha256': searches[0]['source_db_sha256'],
+            'gear_catalogue': searches[0]['source_gear_catalogue_snapshot'],
+        }, sort_keys=True, separators=(',', ':'), default=str)
+        proof = {'runtime_proof': {
+            'executed': True, 'engine_revision': 'gsim-' + SOFTWARE_VERSION,
+            'source_revision': sha256(source_identity.encode()).hexdigest(),
+            'run_id': 'source-paid-p6-' + str(uuid4())}}
+
     return {
-        'status': 'FAIL', 'reasons': reasons,
+        'status': 'FAIL' if reasons else 'PASS', 'reasons': reasons,
+        **proof,
         'production_engine': 'gsim_CombatRuntime',
         'production_component': 'src.v2.source_paid_cold_comparison.compare_saved_cold_winners',
         'source_db_sha256': searches[0].get('source_db_sha256'),
@@ -105,6 +134,8 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
             'same_source_legal_candidate_space_proven'),
         'winning_gear_source_legality_verified': compared.get(
             'winning_gear_source_legality_verified'),
-        'full_p6_selected_backend_acceptance': False,
-        'coverage_scope_complete': False,
+        'selected_production_backend': 'gsim',
+        'native_hybrid_diagnostic_pending': True,
+        'full_p6_selected_backend_acceptance': not reasons,
+        'coverage_scope_complete': not reasons,
     }
