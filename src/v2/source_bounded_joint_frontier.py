@@ -1747,10 +1747,11 @@ def _source_talent_policy_variants(compiled, talents, seed_stage, policies, *, l
                 'allocation':dict(allocation)})
             unlocks.append(('talent_unlock:'+action_id,witness['policy']))
         mandatory_width=max(mandatory_width,len(unlocks)+1)
-        # Mandatory unlocked spells first, then the sourced incumbent
-        # comparator. The remaining optional slots still explore talent
-        # modifications, conditionals, compositions and generic APLs.
-        ordered=[*unlocks,policies[0],*modified,*conditional,*compositions,*policies[1:]]
+        # Preserve the previous modified-action/composition order when no
+        # source spell is unlocked. Only allocations with a mandatory unlock
+        # reserve a separate incumbent comparator before optional APLs.
+        ordered=([*unlocks,policies[0],*modified,*conditional,*compositions,*policies[1:]]
+                 if unlocks else [*modified,*conditional,*compositions,*policies])
         variants=[]
         seen_signatures=set()
         for label,policy in ordered:
