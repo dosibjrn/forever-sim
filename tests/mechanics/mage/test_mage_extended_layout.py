@@ -41,9 +41,9 @@ class MageExtendedLayout(unittest.TestCase):
                 self.assertNotIn("from tests.", source)
                 self.assertNotIn("Path(__file__).resolve()", source)
 
-    def test_existing_ci_collects_entire_mage_folder(self):
-        workflow = (ROOT / ".github/workflows/mage-mechanics-test-layout.yml").read_text()
-        self.assertIn("pytest --collect-only -q tests/mechanics/mage", workflow)
+    def test_current_ci_checks_mage_layout_and_pytest_discovery(self):
+        workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text()
+        self.assertIn("tests/mechanics/mage/test_mage_extended_layout.py", workflow)
         ini = (ROOT / "pytest.ini").read_text()
         self.assertIn("testpaths = tests", ini)
         self.assertNotIn("norecursedirs = mechanics", ini)

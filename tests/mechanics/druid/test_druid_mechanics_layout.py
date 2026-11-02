@@ -58,10 +58,11 @@ class DruidMechanicsLayout(unittest.TestCase):
         self.assertIn("norecursedirs = release", ini)
         self.assertNotIn("norecursedirs = mechanics", ini)
 
-    def test_ci_collects_moved_group(self):
-        workflow = (ROOT / ".github/workflows/druid-mechanics-test-layout.yml").read_text()
-        self.assertIn("tests/mechanics/druid", workflow)
-        self.assertIn("--collect-only", workflow)
+    def test_current_ci_checks_druid_layout(self):
+        # The private layout-only workflow was retired; use the maintained CI.
+        workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text()
+        self.assertIn("tests/mechanics/druid/test_druid_mechanics_layout.py", workflow)
+        self.assertIn("python -m pytest -q", workflow)
 
 
 if __name__ == "__main__":
