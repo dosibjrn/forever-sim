@@ -470,10 +470,17 @@ def main(argv=None) -> int:
         # One canonical calculation: no percent for BLOCKED, inventories,
         # or FAIL without an executed production behavior. A bounded component
         # is explicitly provisional and never substitutes for gate acceptance.
-        from tools.wf_gate_coverage import measured_live_coverage
+        from tools.wf_gate_coverage import (measured_live_coverage,
+                                            measured_p7_dps_proximity)
         measured = measured_live_coverage(report)
         if measured is not None:
             record.update(measured)
+        # P7 is a score target: show how close actual coupled DPS comes
+        # to the correct threshold, not what fraction of fights was sampled.
+        # This is separately named because DPS proximity is not gate success.
+        dps = measured_p7_dps_proximity(gate, report)
+        if dps is not None:
+            record.update(dps)
         results.append(record)
     statuses = [x["status"] for x in results]
     verdict = ("PASS" if all(x == "PASS" for x in statuses)
