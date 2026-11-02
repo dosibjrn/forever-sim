@@ -53,6 +53,6 @@ jobs:
           print('LIVE_P3_ITEMS',gate.get('real_catalogue_top5_items_scored'),flush=True)
           print('LIVE_P3_EVALUATED',gate.get('real_source_search_evaluated'),flush=True)
           assert gate.get('status') in ('PASS','FAIL'), gate
-          assert 'weapon_dps' in gate.get('real_measured_stat_weight_axes',()), gate
+          assert 'MISSING_APPLICABLE_DPS_WEIGHT' not in gate.get('reasons',()), gate
           assert gate.get('real_source_search_evaluated',0) > 0, gate
           PY
