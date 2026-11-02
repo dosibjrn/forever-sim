@@ -304,11 +304,12 @@ def audit(root: Path = ROOT) -> dict:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default="coverage_forever_1_60_v2.json")
-    parser.add_argument("--text", default="coverage_forever_1_60_v2.txt")
+    parser.add_argument("--output", default=".runtime/coverage/coverage_forever_1_60_v2.json")
+    parser.add_argument("--text", default=".runtime/coverage/coverage_forever_1_60_v2.txt")
     args = parser.parse_args(argv)
     report = audit()
     out = ROOT / args.output
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     header = "class       source  queue  evaluated  optimized  route  validated"
     lines = [f"WF-P00a native Forever 1–60 coverage • {SOFTWARE_VERSION}", header]
@@ -319,7 +320,9 @@ def main(argv=None) -> int:
     lines.append(f"Contradictory default declarations: {report['contradictory_default_declarations']}")
     lines.append("Evaluated means a bounded scored native route, NOT full leveling optimization.")
     text = "\n".join(lines) + "\n"
-    (ROOT / args.text).write_text(text, encoding="utf-8")
+    text_out = ROOT / args.text
+    text_out.parent.mkdir(parents=True, exist_ok=True)
+    text_out.write_text(text, encoding="utf-8")
     print(text, end="")
     return 1 if report["contradictory_default_declarations"] else 0
 

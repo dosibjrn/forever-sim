@@ -6,13 +6,17 @@ catalogue and valid full-equipment substitutions. It does not claim a P4 gate.
 from collections import Counter
 from itertools import islice
 
+import pytest
+
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.source_checkpoint_p3_swaps import substituted_multi_stage
 from src.v2.source_bounded_joint_frontier import (
-    _source_gear_witness_probes, _source_witness_first_coordinates,
+    _SOURCE_GEAR_SAMPLING_VERSION, _source_gear_witness_probes,
+    _source_witness_first_coordinates,
     source_cold_start_stage,
 )
 from src.v2.source_persistent_slot_search import _source_slot_proposals
+from src.v2.source_joint_progress import PaidJointProgressJournal, search_context_sha256
 
 
 def test_source_legal_slots_get_early_paid_witnesses_before_generic_cross_product():
@@ -112,3 +116,30 @@ def test_real_source_depth_three_enters_joint_paid_witness_prefix():
             dimensions, variants, "diagonal", [],
             gear_stages=gear_stages), len(witnesses)))
         assert scheduled == list(witnesses), (class_key, scheduled, witnesses)
+
+
+def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
+    """A v1 top-two journal must not be reused with v2 top-ten coordinates."""
+    class_key, level = "mage", 30
+    source_ir = build_game_ir_slice(class_key=class_key, level=level)
+    seed = source_cold_start_stage(
+        class_key=class_key, level=level, source_ir=source_ir, gear_role=class_key)
+    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v2_depth10"
+    old_options = {"gear_slot_sampling_version": "stratified_source_slots_v1"}
+    new_options = {"gear_slot_sampling_version": _SOURCE_GEAR_SAMPLING_VERSION}
+    old_hash = search_context_sha256(
+        class_key=class_key, level=level, source_ir=source_ir,
+        seed_stage=seed, options=old_options)
+    new_hash = search_context_sha256(
+        class_key=class_key, level=level, source_ir=source_ir,
+        seed_stage=seed, options=new_options)
+    assert old_hash != new_hash
+
+    path = tmp_path / "paid-joint-progress.json"
+    old_journal = PaidJointProgressJournal(path, context_sha256=old_hash)
+    old_journal.write(
+        status="IN_PROGRESS_NOT_CERTIFIED", phase="PREPARED",
+        attempted=[], completed=[], events=0, full_evaluated_candidates=0,
+        elapsed_wall_s=0.)
+    with pytest.raises(ValueError, match="mismatched input context"):
+        PaidJointProgressJournal(path, context_sha256=new_hash, resume=True)
