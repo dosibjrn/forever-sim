@@ -85,7 +85,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     assert native["native_process_id"] == proc.pid
                     assert native["native_request_sha256"] == request_sha
                     assert native["native_duration_ns"] > 0
-                    assert abs(native["native_total_damage"] - iteration_damage) < 1e-4
+                    assert abs(native["native_total_damage"] - iteration_damage) < 1e-4, ("NATIVE_WORLD_DAMAGE_EVENTS_UNACCOUNTED", native["native_total_damage"], iteration_damage, event_count, pet_damage_events)
                     samples.append({
                         "iteration_index": iteration,
                         "duration_s": native["native_duration_ns"] / 1e9,
