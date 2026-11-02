@@ -480,7 +480,11 @@ def test_p1_zero_delta_events_cannot_certify_effect_execution():
     assert not _p1_effect_observed(N(kind='ResourceEventGain',
         payload={'requested_gain':25.,'gained':0.,'capped':True}))
     assert not _p1_effect_observed(N(kind='Damage',payload={'amount':0.}))
-    assert not _p1_effect_observed(N(kind='Heal',payload={'amount':0.}))
+    assert not _p1_effect_observed(N(kind='Heal',payload={'amount':0.,'restored':0.}))
+    assert not _p1_effect_observed(N(kind='Heal',payload={'amount':10.,'restored':0.}))
+    assert not _p1_effect_observed(N(kind='Damage',payload={'amount':10.,'applied':False}))
+    assert not _p1_effect_observed(N(kind='PeriodicTick',payload={'gained':0.}))
+    assert _p1_effect_observed(N(kind='PeriodicTick',payload={'gained':10.}))
     assert _p1_effect_observed(N(kind='ResourceChange',
         payload={'before':100.,'after':110.}))
     assert _p1_effect_observed(N(kind='ResourceChanged',
@@ -488,7 +492,7 @@ def test_p1_zero_delta_events_cannot_certify_effect_execution():
     assert _p1_effect_observed(N(kind='ResourceEventGain',
         payload={'requested_gain':25.,'gained':10.,'capped':True}))
     assert _p1_effect_observed(N(kind='Damage',payload={'amount':10.}))
-    assert _p1_effect_observed(N(kind='Heal',payload={'amount':10.}))
+    assert _p1_effect_observed(N(kind='Heal',payload={'amount':10.,'restored':10.}))
     assert not _p1_effect_observed(N(kind='AuraApply',payload={}))
     assert _p1_effect_observed(N(kind='AuraApplied',payload={}))
     assert not _p1_effect_observed(N(kind='ModeChange',payload={}))
@@ -506,3 +510,39 @@ def test_p1_missing_or_nonfinite_effect_payload_fails_closed():
     assert not _p1_effect_observed(N(kind='Damage',payload={'amount':float('nan')}))
     assert not _p1_effect_observed(N(kind='ResourceChange',
         payload={'before':0.,'after':float('inf')}))
+
+
+def test_p1_real_production_heal_requires_restored_health_not_overheal():
+    """The actual CombatRuntime emits positive requested heals at full HP;
+    P1 must count only a real health delta and prepare a wounded actor."""
+    from wf_gate_p1_live import _p1_effect_observed, _runtime_exercise
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.game.data.forever.sqlite_talents import DEFAULT_DB
+    from src.game.runtime import ActorState, CombatRuntime, TargetState
+
+    ir = build_game_ir_slice(class_key='druid', level=20,
+                             ability_db_path=DEFAULT_DB)
+    action = next(a for a in ir.actions if a.id == 'source_spell:5188')
+
+    def real_cast(health_fraction):
+        actor = ActorState.from_ir(ir.actor, ir.resources, ir.modes)
+        for rid, capacity in actor.resource_capacity.items():
+            if rid in actor.resources and actor.resource_is_active(rid):
+                actor.resources[rid] = float(capacity)
+        actor.resources['health'] *= health_fraction
+        rt = CombatRuntime(actor=actor,
+                           target=TargetState.with_health('heal_target', 100000.))
+        rt.schedule_action(action)
+        rt.run_until_idle()
+        heals = [e for e in rt.result().events
+                 if e.kind == 'Heal' and e.action_id == action.id]
+        assert heals, 'Production healing action did not execute'
+        return heals[0]
+
+    full = real_cast(1.0)
+    wounded = real_cast(0.5)
+    assert full.payload['amount'] > 0 and full.payload['restored'] == 0
+    assert not _p1_effect_observed(full)
+    assert wounded.payload['restored'] > 0
+    assert _p1_effect_observed(wounded)
+    assert _runtime_exercise(ir, action, 20)['status'] == 'executed'
