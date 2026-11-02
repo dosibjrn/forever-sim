@@ -41,12 +41,62 @@ def test_p4_unrestricted_druid_l30_executes_real_source_paid_backend():
     assert report["reasons"], report
 
 
-def test_p5_is_not_300s_or_10x_acceptance():
-    # Bounded production partial is no substitute for full independent 300s
-    # acceptance: spec-gated checkpoint rejects early rather than fake PASS.
-    report = _run_live_gate(ROOT, "druid", 60, "balance", "P5", "")
+def test_p5_profile_uses_existing_source_legal_paid_frontier_not_300s(monkeypatch, tmp_path):
+    # The approved product profile requires 31 Balance points. The production
+    # search already supports this spec frontier; a named P5 partial must not
+    # be discarded before an actual paid candidate can be attempted.
+    from tools import wf_gate_p4_p5_partial as gate
+    from src.game.data.forever import registry, gear, sqlite_talents
+    from src.v2 import source_bounded_joint_frontier as frontier
+
+    monkeypatch.delenv("FOREVER_P4_P5_FULL_SOURCE", raising=False)
+    db = tmp_path / "source.sqlite"
+    db.write_bytes(b"test-source-identity-only")
+    monkeypatch.setattr(sqlite_talents, "DEFAULT_DB", db)
+    ir = SimpleNamespace(actions=[SimpleNamespace(id="source:wrath")])
+    monkeypatch.setattr(registry, "build_game_ir_slice", lambda **kw: ir)
+    monkeypatch.setattr(gear, "available_gear_roles", lambda cls: ["druid_feral"])
+    monkeypatch.setattr(frontier, "source_cold_start_stage", lambda **kw: {"source": True})
+    observed = []
+
+    def sourced_search(**kw):
+        observed.append(kw)
+        return {
+            "source_slot_proposal_coverage": {"eligible_slots": ["head"],
+                                               "paid_slots": ["head"]},
+            "rows": [{"screen_invoked": True, "screen_status": "COMPLETE",
+                      "gear_move": "head:17",
+                      "source_action_counts": {"source:wrath": 2}}],
+            "p4_talent_unlock_coverage": {}, "unique_full_builds": 1,
+            "screen_complete_candidates": 1, "wall_s": 0.2,
+        }
+    monkeypatch.setattr(frontier, "search_bounded_joint_frontier", sourced_search)
+    report = gate.run_paid_partial(ROOT, "druid", 60, spec="balance", gate="P5")
+    assert report["status"] == "FAIL"  # no native-world/300s gate PASS
+    assert report["required_full_search_s"] == 300
+    assert report["real_paid_screen_complete"] == 1
+    assert len(observed) == 1
+    assert observed[0]["spec_tree"] == "balance"
+    assert observed[0]["min_spec_points"] == 31
+    assert observed[0]["search_only"] is True
+    assert observed[0]["max_cpu_s"] == 6.0
+
+
+def test_unconfigured_spec_does_not_silently_select_source_tree(monkeypatch):
+    from tools import wf_gate_p4_p5_partial as gate
+    from src.game.data.forever import registry, gear
+    from src.v2 import source_bounded_joint_frontier as frontier
+    from tools import wf_gate_p2_live as p2
+    monkeypatch.delenv("FOREVER_P4_P5_FULL_SOURCE", raising=False)
+    monkeypatch.setattr(registry, "build_game_ir_slice",
+                        lambda **kw: SimpleNamespace(actions=[]))
+    monkeypatch.setattr(gear, "available_gear_roles", lambda cls: ["role"])
+    monkeypatch.setattr(p2, "_load_product_spec_profile", lambda *a, **kw: None)
+    monkeypatch.setattr(frontier, "search_bounded_joint_frontier",
+                        lambda **kw: (_ for _ in ()).throw(AssertionError("must not search")))
+    report = gate.run_paid_partial(ROOT, "druid", 60, spec="feral", gate="P4")
     assert report["status"] == "BLOCKED"
-    assert "SOURCE_SPEC_TREE_SEARCH_CONSTRAINT_NOT_YET_CONNECTED" in report["reasons"]
+    assert report["reasons"] == ["SOURCE_SPEC_PRODUCT_PROFILE_NOT_CONFIGURED"]
 
 
 def test_source_action_partial_counts_actual_complete_source_casts_only():
