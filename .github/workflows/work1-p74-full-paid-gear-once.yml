@@ -3,7 +3,7 @@ name: Work1 one-shot P7.4 paid gear neighbors live source-native 2D
 # One-off real production acceptance diagnostic after a source-legal gear search change.
 on:
   push:
-    branches: [work/work1-p74-paid-gear-native-world-20261102]
+    branches: [work/work1-p74-paid-source-gear-neighbors-20261102]
     paths: [.github/workflows/work1-p74-full-paid-gear-once.yml]
 
 permissions:
