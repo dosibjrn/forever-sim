@@ -63,6 +63,25 @@ def _winner_gear_effect_gaps(winner, *, class_key, level):
     return gaps
 
 
+def _verify_winner_gear_legality(winner, *, class_key, level):
+    """Recheck the entire paid finalist against the pinned item catalogue.
+
+    Item membership alone does not validate slot compatibility, the canonical
+    simulator stat payload, unique-equipped groups, or a 2H/offhand package.
+    This is the same source audit used by the production P3 swap evaluator,
+    before either independent 100-mob replay can consume a saved build.
+    """
+    from src.game.data.forever.source_named_gear_proof import audit_named_gear_source
+
+    gear = winner.get('equipped_gear')
+    if not isinstance(gear, dict):
+        raise ValueError('COLD_COMPARISON_MISSING_SOURCE_GEAR')
+    audit = audit_named_gear_source(class_key=class_key, level=level, gear=gear)
+    if not audit['equipment_legality_complete']:
+        raise ValueError('COLD_COMPARISON_WINNER_GEAR_NOT_SOURCE_LEGAL')
+    return audit
+
+
 def _saved_winner(report, *, expected_budget, source_hash, class_key, level):
     """Fail closed on a missing or unverified 100-mob search finalist."""
     if (report.get('source_db_sha256') != source_hash
@@ -123,6 +142,11 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
         if (not gear_pinned or gear30 != gear300
                 or gear30 != source_gear_catalogue_snapshot(class_key, level)):
             raise ValueError('COLD_COMPARISON_DIFFERENT_GEAR_SOURCE_SNAPSHOT')
+    # The winner may have valid item IDs but illegal slots, duplicate or
+    # unique-equipped items, forged stats, or a 2H+offhand combination.
+    # Fail before expensive replay, not after a plausible numeric P6 score.
+    legal30 = _verify_winner_gear_legality(winner30, class_key=class_key, level=level)
+    legal300 = _verify_winner_gear_legality(winner300, class_key=class_key, level=level)
     gaps30 = _winner_gear_effect_gaps(winner30, class_key=class_key, level=level)
     gaps300 = _winner_gear_effect_gaps(winner300, class_key=class_key, level=level)
     space30, space300 = search30.get('source_search_space'), search300.get('source_search_space')
@@ -172,6 +196,10 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
         'same_gear_catalogue_and_semantics_proven': gear_pinned,
         'source_class_gear_membership_attested': bool(gear_pinned
             and gear30['class_membership_verified']),
+        'winning_gear_source_legality_verified': True,
+        'winning_gear_sourced_acquisition_methods': {
+            '30s': legal30['sourced_acquisition_methods'],
+            '300s': legal300['sourced_acquisition_methods']},
         'winning_gear_unresolved_effects': {'30s': gaps30, '300s': gaps300},
         'winning_gear_l2_effects_supported': not gaps30 and not gaps300,
         'eligible_for_checkpoint_acceptance': False}

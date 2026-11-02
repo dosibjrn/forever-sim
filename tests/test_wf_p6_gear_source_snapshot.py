@@ -5,6 +5,7 @@ import pytest
 
 from src.v2.source_paid_cold_comparison import (
     _winner_gear_effect_gaps,
+    _verify_winner_gear_legality,
     compare_saved_cold_winners,
     source_gear_catalogue_snapshot,
 )
@@ -77,3 +78,53 @@ def test_equipped_source_item_unresolved_effects_are_not_silent():
         _winner_gear_effect_gaps(
             {'equipped_gear': {'slots': {'head': {'item_id': -987654321}}}},
             class_key='druid', level=30)
+
+
+def _actual_source_winner():
+    """Use the real pinned item catalogue, not fabricated item payloads."""
+    from src.rulesets.forever.items.runtime_selection import select_gear
+    from src.v2.source_bounded_joint_frontier import _cold_source_equipment_payload
+
+    selected = select_gear('druid', 30, 'druid_feral', weights={},
+        required_level_policy='observed', exclude_unknown_item_effects=True)
+    assert len(selected) >= 2
+    gear = _cold_source_equipment_payload(class_key='druid', level=30,
+        gear_role='druid_feral', selected=selected)
+    return {'equipped_gear': gear}
+
+
+def test_real_sourced_cold_finalist_has_full_equipment_legality():
+    winner = _actual_source_winner()
+    audit = _verify_winner_gear_legality(winner, class_key='druid', level=30)
+    assert audit['equipment_legality_complete']
+    assert audit['selected_slots'] == len(winner['equipped_gear']['slots'])
+
+
+def test_saved_winner_forged_stats_rejected_before_paid_100mob_replay():
+    snapshot = source_gear_catalogue_snapshot('druid', 30)
+    original = _actual_source_winner()
+    thirty, three_hundred = _saved_report(30, snapshot), _saved_report(300, snapshot)
+    thirty['validation_shortlist'][0]['equipped_gear'] = deepcopy(original['equipped_gear'])
+    three_hundred['validation_shortlist'][0]['equipped_gear'] = deepcopy(original['equipped_gear'])
+    slot = next(iter(three_hundred['validation_shortlist'][0]['equipped_gear']['slots']))
+    three_hundred['validation_shortlist'][0]['equipped_gear']['slots'][slot]['spell_power'] += 100
+    with pytest.raises(ValueError, match='COLD_COMPARISON_WINNER_GEAR_NOT_SOURCE_LEGAL'):
+        compare_saved_cold_winners(thirty, three_hundred, source_ir=None, seed_stage=None,
+            class_key='druid', level=30, source_hash='pinned-ability-source',
+            bonus_talent_points=0)
+
+
+def test_real_source_slot_swap_and_duplicate_rejected():
+    actual = _actual_source_winner()
+    slots = list(actual['equipped_gear']['slots'])
+    a, b = slots[:2]
+    forged_slot = deepcopy(actual)
+    forged_slot['equipped_gear']['slots'][a] = deepcopy(
+        forged_slot['equipped_gear']['slots'][b])
+    with pytest.raises(ValueError, match='COLD_COMPARISON_WINNER_GEAR_NOT_SOURCE_LEGAL'):
+        _verify_winner_gear_legality(forged_slot, class_key='druid', level=30)
+    duplicated = deepcopy(actual)
+    duplicated['equipped_gear']['slots'][a]['item_id'] = (
+        duplicated['equipped_gear']['slots'][b]['item_id'])
+    with pytest.raises(ValueError, match='COLD_COMPARISON_WINNER_GEAR_NOT_SOURCE_LEGAL'):
+        _verify_winner_gear_legality(duplicated, class_key='druid', level=30)
