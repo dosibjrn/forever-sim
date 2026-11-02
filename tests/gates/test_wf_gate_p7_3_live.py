@@ -228,3 +228,54 @@ def test_p73_paid_elite_archive_caps_source_pool_to_top_18():
 
     elites = [(float(100-i), {"rank": i}) for i in range(22)]
     assert _paid_elite_choice(elites, PickLast(), 1)["rank"] == 17
+
+
+def test_p73_paid_stochastic_finalist_uses_real_paired_score_and_separate_seed(
+        monkeypatch, tmp_path):
+    """The independent paid re-rank must use native+2D, not screen-only DPS."""
+    source = _reference()
+    source["simOptions"] = {"randomSeed": "42"}
+    original = copy.deepcopy(source)
+    calls = []
+
+    def native(binary, path, n, *, rng_mode):
+        req = __import__("json").loads(path.read_text())
+        calls.append(("native", req, n, rng_mode))
+        return {"native_dps": 735.0}
+
+    def world(binary, path, distance, iterations, *, rng_mode):
+        req = __import__("json").loads(path.read_text())
+        calls.append(("world", req, iterations, rng_mode))
+        return {"world_mean_dps": 734.0,
+                "iterations_done": 24, "native_damage_events": 10,
+                "native_world_ticks": 12}
+
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda native, live, count: None)
+    producer = SimpleNamespace(native_source_control=native, run=world)
+    score, receipt = gate._paid_stochastic_finalist(
+        producer, tmp_path / "engine", source, 15)
+    assert score == 734.0
+    assert receipt["world_mean_dps"] == 734.0
+    assert [k for k, *_ in calls] == ["native", "world"]
+    assert all(n == 24 and mode == "stochastic" for _, _, n, mode in calls)
+    assert all(req["simOptions"]["randomSeed"] == "1947003"
+               for _, req, _, _ in calls)
+    assert all(req["raid"] == original["raid"] for _, req, _, _ in calls)
+    assert source == original  # finalist comparison never mutates original
+
+
+def test_p73_paid_stochastic_finalist_rejects_unpaired_native_world(
+        monkeypatch, tmp_path):
+    source = _reference()
+    source["simOptions"] = {"randomSeed": "42"}
+    producer = SimpleNamespace(
+        native_source_control=lambda *args, **kw: {"native_dps": 1.0},
+        run=lambda *args, **kw: {"world_mean_dps": 2.0,
+                                "iterations_done": 24,
+                                "native_damage_events": 1,
+                                "native_world_ticks": 1})
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *args: "real native/world mismatch")
+    with pytest.raises(ValueError, match="P73_FINALIST_NATIVE_WORLD_PARITY"):
+        gate._paid_stochastic_finalist(producer, tmp_path / "engine", source, 15)
