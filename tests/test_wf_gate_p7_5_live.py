@@ -37,6 +37,38 @@ def test_cold_joint_changes_all_three_dimensions_and_does_not_seed_winner():
     assert original == prior
 
 
+def test_source_joint_keeps_same_name_distinct_ids_for_real_legality_check(
+        monkeypatch):
+    """RED before fix: name equality alone rejected source-admissible pairs.
+
+    The actual joint generator must leave recorded uniqueness/limit-category
+    legality to GearValidator.validate, not invent a display-name rule.
+    """
+    import importlib
+    from pathlib import Path
+
+    monkeypatch.syspath_prepend(str(
+        Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"))
+    source = importlib.import_module("p75_joint_search")
+    base = _base()
+    player = source.player(base)
+    player["equipment"]["items"] = [{"id": 100 + i} for i in range(16)]
+    pools = {i: [100 + i] for i in range(16)}
+    names = {100 + i: f"distinct-{i}" for i in range(16)}
+    names[110] = names[111] = "same-display-name-not-same-id"
+    monkeypatch.setattr(source, "random_build", lambda rng: "legal-ranks")
+    monkeypatch.setattr(source, "validate", lambda ranks: True)
+    monkeypatch.setattr(source, "encode", lambda ranks: "legal")
+    monkeypatch.setattr(source, "mutate_apl", lambda *args, **kwargs: [1, 2, 3])
+
+    candidate = source.make_candidate(
+        base, pools, random.Random(3), item_names=names)
+    items = source.player(candidate)["equipment"]["items"]
+    assert [items[10]["id"], items[11]["id"]] == [110, 111]
+    assert [items[12]["id"], items[13]["id"]] == [112, 113]
+    assert source.player(base)["talentsString"] == "reference"
+
+
 def test_unrelated_checkpoint_does_not_use_balance_ref(tmp_path):
     report = gate.run_live(tmp_path, "warrior", 40, spec="arms")
     assert report["status"] == "BLOCKED"
@@ -172,7 +204,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     def player(q):
         return q["raid"]["parties"][0]["players"][0]
 
-    def make_candidate(base, pools, rng, item_names=None):
+    def make_candidate(base, pools, rng, item_names=None, enchant_pools=None):
         q = copy.deepcopy(base)
         p = player(q)
         p["equipment"]["items"] = [{"id": 11}, {"id": 21}]
@@ -181,7 +213,9 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
         return q
 
     source = SimpleNamespace(
-        GearValidator=Validator, candidate_pool=pool, make_candidate=make_candidate,
+        GearValidator=Validator, candidate_pool=pool,
+        source_enchant_pools=lambda validator, pools: {0: [None, 123], 1: [None]},
+        make_candidate=make_candidate,
         player=player, RejectedGear=ValueError)
     calls = []
     def native(binary, path, n, *, rng_mode):
@@ -259,3 +293,123 @@ def test_joint_cold_admits_independently_rediscovered_reference_axes():
         assert selected == candidate, unchanged_axis
     assert len(tried) == 4
     assert original == _base()
+
+
+def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
+        monkeypatch, tmp_path):
+    """Routing RED on old production: every proposal used elite=None.
+
+    This tests the real provider/candidate routing with injected Rust/world
+    interfaces; it is not a native execution or a 300-second gate result.
+    """
+    import json
+
+    base = _base()
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    player(base)["distanceFromTarget"] = 15
+    original = copy.deepcopy(base)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("mock producer: never executed")
+    upstream = binary.parents[2]
+    (upstream / "data").mkdir()
+    (upstream / "data/items.jsonl").write_text("")
+    (upstream / "data/enchants.jsonl").write_text("")
+    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
+    catalogue.parent.mkdir(parents=True)
+    catalogue.write_text("injected validator")
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    # Start, two paid proposals, expired boundary, elapsed search time.
+    clock = iter([0., 0., 0., 300., 300.])
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(
+        gate, "_pinned_source_runtime",
+        lambda *a: (base, {"reference_dps": 728.19}, binary))
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *a, **kw: None)
+
+    class Validator:
+        engine = {10: {"name": "head"}, 20: {"name": "neck"}}
+        @staticmethod
+        def require_sqlite_catalogue(path):
+            assert path == catalogue
+        def __init__(self, *args): pass
+        def validate(self, ids, enchants):
+            assert ids == [10, 20]
+        def close(self): pass
+
+    seen_elites = []
+    def source_candidate(reference, pools, rng, elite=None, item_names=None, enchant_pools=None):
+        assert reference is base
+        seen_elites.append(None if elite is None else
+                           player(elite)["talentsString"])
+        q = copy.deepcopy(reference if elite is None else elite)
+        player(q)["talentsString"] = (
+            "independently-found" if elite is None else "paid-elite-improved")
+        return q
+
+    def score(path):
+        talents = player(json.loads(path.read_text()))["talentsString"]
+        return 735.0 if talents == "paid-elite-improved" else 700.0
+
+    source = SimpleNamespace(
+        GearValidator=Validator,
+        candidate_pool=lambda validator, limit: ({0: [10], 1: [20]}, {}),
+        source_enchant_pools=lambda validator, pools: {0: [None, 123], 1: [None]},
+        make_candidate=source_candidate, player=player,
+        RejectedGear=ValueError)
+    producer = SimpleNamespace(
+        native_source_control=lambda binary, path, n, *, rng_mode: {
+            "native_dps": score(path)},
+        run=lambda binary, path, distance, iterations, *, rng_mode: {
+            "world_mean_dps": score(path), "iterations_done": iterations,
+            "native_damage_events": 10, "native_world_ticks": 20})
+    monkeypatch.setattr(
+        gate, "_source_module",
+        lambda path, name: source if "joint_search" in str(path) else producer)
+
+    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert seen_elites == [None, "independently-found"]
+    assert report["source_legal_joint_candidates_paid"] == 2
+    assert report["joint_cold_world_dps"] == 735.0
+    assert report["frozen_stochastic_world_dps"] == 735.0
+    assert report["frozen_stochastic_iterations"] == 1000
+    assert report["status"] == "FAIL"  # saved UI and accepted prior not proved
+    assert base == original
+
+
+
+def test_full_search_sources_enchants_outside_reference_without_invented_rules(monkeypatch):
+    """Only existing Rust/source item validation admits enchant alternatives."""
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"
+    sys.path.insert(0, str(path))
+    try:
+        spec = importlib.util.spec_from_file_location("source_p75_enchants", path / "p75_joint_search.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.remove(str(path))
+
+    class Validator:
+        enchants = {101: {}, 102: {}, 103: {}}
+        def __init__(self):
+            self.calls = []
+        def item(self, slot, anchor, effect_id):
+            self.calls.append((slot, anchor, effect_id))
+            if slot == 0 and effect_id in (101, 103):
+                return {}
+            if slot != 0 and effect_id == 102:
+                return {}
+            raise module.RejectedGear("enchant_slot", "excluded by source")
+
+    v = Validator()
+    gear_pools = {i: [i + 1000] for i in range(16)}
+    selected = module.source_enchant_pools(v, gear_pools)
+    assert selected[0] == [None, 101, 103]
+    assert all(selected[i] == [None, 102] for i in range(1, 16))
+    assert (0, 1000, 103) in v.calls
+    assert (1, 1001, 101) in v.calls

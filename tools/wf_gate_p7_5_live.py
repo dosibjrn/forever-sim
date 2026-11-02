@@ -23,24 +23,32 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
-def _cold_joint(base, source, validator, pools, rng):
-    """Cold source-generated whole build, never seeded with saved or prior winner."""
+def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pools=None):
+    """Legal source build: cold discovery or mutation of this search's paid winner.
+
+    The seed for a fresh search is always independent of the reference and of
+    P7.1-P7.4 winners. Later elite mutations derive only from candidates that
+    this same P7.5 native/world run has actually executed and scored.
+    """
     # A cold generator must not be SEEDED with the saved reference or a prior
     # winner. Independently rediscovering any reference gear, talent or APL
     # dimension is legal: excluding matching axes silently removes valid
     # candidates from the joint search space (including the true optimum).
-    names = {int(iid): str(row.get("name") or "").casefold()
-             for iid, row in validator.engine.items()}
     for _ in range(80):
         try:
-            candidate = source.make_candidate(base, pools, rng, item_names=names)
+            kwargs = ({"enchant_pools": enchant_pools}
+                      if enchant_pools is not None else {})
+            candidate = (source.make_candidate(base, pools, rng, **kwargs)
+                         if elite is None else source.make_candidate(
+                             base, pools, rng, elite=elite, **kwargs))
             p = source.player(candidate)
             items = p["equipment"]["items"]
             ids = [int(x["id"]) for x in items]
             enchants = [int(x.get("enchant") or 0) for x in items]
             validator.validate(ids, enchants)  # real source+Rust item legality
-            # source.make_candidate(..., elite=None) independently sampled the
-            # whole build. Equality with a reference axis is not seeding.
+            # In cold mode this was independently sampled. With elite it is
+            # descended only from this search's genuinely paid candidate.
+            # Equality with a reference axis is never evidence of seeding.
             return candidate
         except (source.RejectedGear, ValueError, KeyError, TypeError):
             continue
@@ -90,16 +98,26 @@ def run_live(root: Path, class_key: str, level: int, *,
     try:
         # Full search uses every source/Rust-admitted catalogue item per slot,
         # not just the 80 highest heuristic scores. Cold generator explores
-        # this pool without seeding the saved build; unrecorded restrictions,
-        # enchants and effects still require separate source verification.
+        # this pool without seeding the saved build. After the first actually
+        # paid winner, use its existing source mutation operator for 4/5 of
+        # later proposals and fresh independent cold discovery for 1/5.
+        # Enchants and effects remain subject to source verification.
         pools, _ = source.candidate_pool(
             validator, limit=None if full_search else 15)
+        enchant_pools = (source.source_enchant_pools(validator, pools)
+                         if full_search else None)
         distance = source.player(base)["distanceFromTarget"]
         while (time.monotonic() - search_start < 300.0
                if full_search else proposals < 3):
             proposals += 1
             try:
-                candidate = _cold_joint(base, source, validator, pools, rng)
+                # Only a winner already evaluated in THIS live 2D cold search
+                # can be an elite. Never seed the saved report or P7.1-P7.4.
+                elite = (best[3] if full_search and best is not None
+                         and proposals % 5 != 0 else None)
+                candidate = _cold_joint(
+                    base, source, validator, pools, rng,
+                    elite=elite, enchant_pools=enchant_pools)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
