@@ -726,6 +726,13 @@ def test_paid_improving_descendant_survives_next_refinement_parent_selection():
     # Never replace the sole paid incumbent or fabricate an unmeasured child.
     assert _promote_paid_improving_descendant([best], [improved], 1) == [best]
     assert _promote_paid_improving_descendant(selected, [], 3) == selected
+    # Existing shortlist contract reserves an independent incumbent control.
+    control = entry("control", 12.0, {"z": 5})
+    control[0]["is_control"] = True
+    assert _promote_paid_improving_descendant(
+        [best, second, control], [improved], 3) == [best, improved, control]
+    assert _promote_paid_improving_descendant(
+        [best, control], [improved], 2) == [best, control]
 
 
 def test_nested_paid_candidate_expiry_does_not_arm_stray_alarm(monkeypatch):
