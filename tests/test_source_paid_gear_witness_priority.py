@@ -15,7 +15,9 @@ from src.v2.source_bounded_joint_frontier import (
     _source_witness_first_coordinates,
     source_cold_start_stage,
 )
-from src.v2.source_persistent_slot_search import _source_slot_proposals
+from src.v2.source_persistent_slot_search import (
+    _source_slot_proposals, _source_stat_package_proposals,
+)
 from src.v2.source_joint_progress import PaidJointProgressJournal, search_context_sha256
 from src.v2.source_persistent_joint_finalists import prepare_candidate
 from src.v2.source_bounded_joint_frontier import _quick_joint_evaluation
@@ -120,13 +122,76 @@ def test_real_source_depth_three_enters_joint_paid_witness_prefix():
         assert scheduled == list(witnesses), (class_key, scheduled, witnesses)
 
 
+
+def test_pure_source_stat_package_reaches_real_paid_frontier_before_repeated_slot():
+    # Production previously generated legal pure-axis full gear packages, but
+    # silently omitted them from the witness prefix (only '+' mixed labels
+    # survived). Check the actual canonical source catalogue and pay the
+    # same real CombatRuntime as ordinary gear coordinates.
+    class_key, level = "mage", 30
+    ir = build_game_ir_slice(class_key=class_key, level=level)
+    seed = source_cold_start_stage(
+        class_key=class_key, level=level, source_ir=ir, gear_role=class_key)
+    base = seed["gear_policy_result"]["winner"]["gear"]
+    moves, _ = _source_slot_proposals(
+        class_key=class_key, level=level, base=base,
+        per_slot=3, max_proposals=18)
+    stat_packages, _ = _source_stat_package_proposals(
+        class_key=class_key, level=level, base=base, max_packages=8)
+
+    stages = [("incumbent", seed)]
+    for slot, item in moves:
+        try:
+            variant = substituted_multi_stage(
+                stage=seed, class_key=class_key, level=level,
+                swaps={slot: int(item.item_id)})
+        except (ValueError, KeyError):
+            continue
+        stages.append((f"{slot}:{item.item_id}", variant))
+    for axis, swaps in stat_packages:
+        variant = substituted_multi_stage(
+            stage=seed, class_key=class_key, level=level, swaps=swaps)
+        stages.append(("source_stat_package:" + axis, variant))
+
+    pure = [i for i, (label, _) in enumerate(stages)
+            if label.startswith("source_stat_package:") and "+" not in label]
+    assert pure, stat_packages
+    witnesses = _source_gear_witness_probes(stages, max_probes=64)
+    scheduled_indices = [c[1] for c in witnesses]
+    assert set(pure).issubset(scheduled_indices)
+    first_pure = min(scheduled_indices.index(i) for i in pure)
+    def slot_key(index):
+        label = stages[index][0]
+        return label.split(":", 1)[0] if ":" in label and not label.startswith(
+            ("source_stat_package:", "package:")) else None
+    first_repeat = next((
+        j for j, index in enumerate(scheduled_indices)
+        if slot_key(index) is not None
+        and slot_key(index) in {slot_key(prev) for prev in scheduled_indices[:j]}
+        ), len(scheduled_indices))
+    assert first_pure < first_repeat, [stages[i][0] for i in scheduled_indices]
+
+    variants = ((("incumbent", None),),)
+    scheduled = list(islice(_source_witness_first_coordinates(
+        (1, len(stages), 1, 1), variants, "diagonal", [],
+        gear_stages=stages), len(witnesses)))
+    assert (0, pure[0], 0, 0) in scheduled
+    candidate = prepare_candidate(
+        class_key=class_key, level=level, stage=stages[pure[0]][1],
+        source_ir=ir, allow_partial_gear_stats=True)
+    real_paid = _quick_joint_evaluation(
+        candidate, level=level, mobs=1, recovery_policy=None,
+        timeout_s=8., pack_size=1, backend="direct")
+    assert real_paid["status"] == "COMPLETE", real_paid
+    assert real_paid["count"] == 1 and real_paid["events"] > 0
+
 def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
     """Older paid journals cannot resume after candidate-order or event schema changes."""
     class_key, level = "mage", 30
     source_ir = build_game_ir_slice(class_key=class_key, level=level)
     seed = source_cold_start_stage(
         class_key=class_key, level=level, source_ir=source_ir, gear_role=class_key)
-    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v9_atomic_weapon_paid_witness"
+    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v10_pure_stat_paid_witness"
     new_options = {"gear_slot_sampling_version": _SOURCE_GEAR_SAMPLING_VERSION}
     new_hash = search_context_sha256(
         class_key=class_key, level=level, source_ir=source_ir,
@@ -137,7 +202,8 @@ def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
                         "stratified_source_slots_v5_real_paid_budget",
                         "stratified_source_slots_v6_mandatory_unlock_axis",
                         "stratified_source_slots_v7_all_required_unlocks",
-                        "stratified_source_slots_v8_skip_absent_source_apl"):
+                        "stratified_source_slots_v8_skip_absent_source_apl",
+                        "stratified_source_slots_v9_atomic_weapon_paid_witness"):
         old_hash = search_context_sha256(
             class_key=class_key, level=level, source_ir=source_ir,
             seed_stage=seed, options={"gear_slot_sampling_version": old_version})
