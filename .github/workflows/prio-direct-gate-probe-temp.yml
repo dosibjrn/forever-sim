@@ -1,0 +1,18 @@
+name: Prio direct gate probe source test (temporary)
+on:
+  push:
+    branches: [prio/direct-live-gate-probe-20261102]
+jobs:
+  live-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pytest==8.3.5 beautifulsoup4==4.13.4
+      - run: python -m pytest -q tests/test_wf_gate_probe.py
+      - run: python tools/wf_gate_probe.py --class druid --level 60 --spec balance --gate-seconds 45 --total-seconds 120
