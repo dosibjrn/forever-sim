@@ -1,29 +1,29 @@
-name: Work2 one-shot P4/P5 CLI receipt and real 30s P4 verification
+name: One-shot no-record M1 P1 P3 candidate probe
 on:
   push:
     branches: [work/work2-p6-paid-replay-redgreen-20261102]
-    paths: [tests/generic/search/test_work2_p4_p5_cli_receipts.py]
+    paths: [.github/workflows/work2-p6-paid-replay-probe.yml]
 jobs:
-  paid-full-source:
+  real-gate-probes:
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
-          fetch-depth: 1
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
-      - name: Focused source-paid no-record CLI reporting regressions
-        run: python -m pytest -q tests/generic/search/test_work2_p4_p5_cli_receipts.py tests/test_work2_p6_replay_receipts.py
-      - name: Actual full-source cold P4 and 100-mob finalist, no M1
+      - name: Cheap genuine live P1/P3 gate candidates; NO record
         shell: bash
         run: |
           set +e
-          FOREVER_P4_P5_FULL_SOURCE=1 python tools/wf_gate.py --class druid --level 60 --spec balance --gate P4 --out /tmp/work2-p4.json
-          rc=$?
-          echo "P4 return code: $rc (expected FAIL while native/world acceptance pending)"
-          if test -f /tmp/work2-p4.json; then cat /tmp/work2-p4.json; fi
-          test "$rc" -eq 1
+          for gate_and_level in P3:20 P3:30 P3:40 P1:30 P1:40 P1:60; do
+            gate="${gate_and_level%%:*}"
+            level="${gate_and_level#*:}"
+            echo "=== CANDIDATE druid:L${level}:unrestricted:${gate} no-record ==="
+            timeout 75s python tools/wf_gate.py --class druid --level "$level" --spec unrestricted --gate "$gate"
+            echo "=== RC=$? ==="
+          done
+          exit 0
