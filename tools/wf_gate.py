@@ -464,7 +464,10 @@ def main(argv=None) -> int:
                     "behavior_probes_executed", "runtime_proof",
                     "production_engine", "engine_id", "source_id",
                     "source_context_sha256", "real_source_search_evaluated",
-                    "real_catalogue_top5_items_scored"):
+                    "real_catalogue_top5_items_scored", "verified", "applicable",
+                    "coverage_component", "coverage_scope_complete",
+                    "source_report_url", "source_request_raw_sha256",
+                    "native_source_revision", "iterations"):
             if key in report:
                 record[key] = report[key]
         # Derived directly from real gate probes; not an acceptance score.
@@ -476,7 +479,12 @@ def main(argv=None) -> int:
                       else 0.20 + 4 * (coverage - 0.8))
             record["partial_coverage_percent"] = round(100 * coverage, 2)
             record["pareto_effort_estimate_percent"] = round(100 * effort, 2)
-            record["scope_provisional"] = bool(report.get("unresolved_count"))
+            record["scope_provisional"] = bool(
+                report.get("scope_provisional")
+                if "scope_provisional" in report
+                else report.get("unresolved_count") or
+                     ("coverage_scope_complete" in report and
+                      report["coverage_scope_complete"] is not True))
         results.append(record)
     statuses = [x["status"] for x in results]
     verdict = ("PASS" if all(x == "PASS" for x in statuses)
