@@ -376,3 +376,85 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                            'named catalogue selector proposals are not exhaustive',
                            'source offensive action subset and ordered-prefix fallback only',
                            'bounded real combat/recovery search, no global optimum']}
+
+
+def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
+                                   probe_deltas: tuple[float, ...] = (5., 20.),
+                                   max_evaluations: int = 4,
+                                   schedule_incoming_attacks: bool = True) -> dict:
+    """Find a *measured* beneficial stat delta on an existing legal policy.
+
+    A bounded cold gear search may select a policy that does not use a stat at
+    all (e.g. Cat Form on a Balance talent build). That measured zero proves
+    only non-use by THAT policy. The generic gear scorer can also consume
+    source-authored, executable alternative policies for the *same* talent IR.
+    This is not an optimality claim, epsilon, class exception or synthetic
+    simulator: every admitted slope comes from two paid CombatRuntime
+    combat+recovery evaluations of the SAME policy before/after the stat.
+    A negative first-policy weight remains negative; callers must not use this
+    function to hide it.
+    """
+    from src.game.gear import apply_stat_delta
+
+    if not stat or max_evaluations < 0 or any(
+        not isfinite(float(delta)) or float(delta) <= 0. for delta in probe_deltas
+    ):
+        raise ValueError('INVALID_SOURCE_POLICY_STAT_WITNESS_REQUEST')
+    used = 0
+    attempted_policies = []
+    for policy in ir.policies:
+        if used >= max_evaluations:
+            break
+        if not policy.provenance:
+            continue
+        used += 1
+        try:
+            before, execution, details = _policy_combat_evaluation(
+                ir, level=level, policy_override=policy,
+                schedule_incoming_attacks=schedule_incoming_attacks)
+        except (ValueError, RuntimeError, EventTransitionBudgetExceeded,
+                ComputeDeadlineExceeded):
+            continue
+        if (before is None or execution is None or
+                not execution.timeline.target_defeated or
+                not isfinite(float(before.seconds_per_mob)) or
+                before.seconds_per_mob <= 0):
+            continue
+        baseline = float(before.seconds_per_mob)
+        attempted_policies.append(str(policy.id))
+        for delta in probe_deltas:
+            if used >= max_evaluations:
+                break
+            used += 1
+            try:
+                changed = apply_stat_delta(ir, stat, float(delta))
+                after, execution, details = _policy_combat_evaluation(
+                    changed, level=level, policy_override=policy,
+                    schedule_incoming_attacks=schedule_incoming_attacks)
+            except (ValueError, RuntimeError, EventTransitionBudgetExceeded,
+                    ComputeDeadlineExceeded):
+                continue
+            if (after is None or execution is None or
+                    not execution.timeline.target_defeated or
+                    not isfinite(float(after.seconds_per_mob)) or
+                    after.seconds_per_mob <= 0):
+                continue
+            improvement = baseline - float(after.seconds_per_mob)
+            if improvement > 1e-12:
+                return {
+                    'status': 'MEASURED_POSITIVE_SOURCE_POLICY_WITNESS',
+                    'stat': stat, 'policy_id': str(policy.id),
+                    'weight_s_saved_per_mob_per_unit': improvement / float(delta),
+                    'baseline_seconds_per_mob': baseline,
+                    'perturbed_seconds_per_mob': float(after.seconds_per_mob),
+                    'delta': float(delta), 'paid_evaluations': used,
+                    'attempted_policies': attempted_policies,
+                    'source_ir_id': str(ir.id),
+                    'engine': 'gsim_CombatRuntime',
+                    'method': 'same_source_policy_real_combat_and_recovery_before_after',
+                }
+    return {
+        'status': 'NO_POSITIVE_SOURCE_POLICY_WITNESS',
+        'stat': stat, 'paid_evaluations': used,
+        'attempted_policies': attempted_policies,
+    }
