@@ -51,8 +51,9 @@ def source_target_health_from_request(raw: bytes) -> float:
 
 def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
                           target_health: float = 10_000_000.,
-                          target_initial_health_fraction: float = 1.):
-    """Real gsim moving pack, but NOT a source-verified L60 Druid build."""
+                          target_initial_health_fraction: float = 1.,
+                          source_single_target: bool = False):
+    """Real gsim 2D world; source DPS mode has one enemy, not a dummy pack."""
     if (not math.isfinite(target_health) or target_health <= 0
             or not math.isfinite(target_initial_health_fraction)
             or not 0 < target_initial_health_fraction <= 1):
@@ -60,10 +61,20 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
     actor = ActorState.from_ir(
         ActorDefinition('hero', 'player', base_stats={}),
         (ResourceDefinition('health', 'Health', 'hero', initial_amount=500, capacity=500),), ())
+    # Legacy moving-pack / serial-pull diagnostics retain two real enemies.
+    # The saved P7 source request has exactly ONE target. The gsim controller
+    # must not manufacture a second enemy to enable its 2D spatial mode.
+    if source_single_target:
+        first_target = TargetState.with_health('m1', target_health)
+        other_targets = ()
+        positions = {'m1': (target_spawn_yards, 0.)}
+    else:
+        first_target = TargetState.with_health('m0', target_health)
+        other_targets = (TargetState.with_health('m1', target_health),)
+        positions = {'m0': (0., 0.), 'm1': (target_spawn_yards, 0.)}
     runtime = CombatRuntime(
-        actor=actor, target=TargetState.with_health('m0', target_health),
-        other_targets=(TargetState.with_health('m1', target_health),),
-        spatial_positions_yards={'m0': (0., 0.), 'm1': (target_spawn_yards, 0.)},
+        actor=actor, target=first_target, other_targets=other_targets,
+        spatial_positions_yards=positions,
         enemy_move_speed_yards_s=enemy_move_speed_yards_s, melee_radius_yards=5.)
     # The actual gsim target owns starting HP. Native must consume it via
     # the first measured world ACK, not via a synthetic native-only counter.
@@ -88,12 +99,15 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     request_sha = hashlib.sha256(raw).hexdigest()
     binary_sha = hashlib.sha256(binary.read_bytes()).hexdigest()
     if source_target_health:
+        if pulls != 1:
+            raise ValueError('SOURCE_DPS_SINGLE_TARGET_REQUIRES_ONE_PULL')
         if target_health != 10_000_000.:
             raise ValueError('SOURCE_TARGET_HEALTH_OVERRIDE_CONFLICT')
         target_health = source_target_health_from_request(raw)
     runtime = diagnostic_gsim_world(target_spawn_yards=target_spawn_yards,
         enemy_move_speed_yards_s=enemy_move_speed_yards_s, target_health=target_health,
-        target_initial_health_fraction=target_initial_health_fraction)
+        target_initial_health_fraction=target_initial_health_fraction,
+        source_single_target=source_target_health)
     feed = GsimGoRangeFeed(runtime, native_player_index=0)
     spell_ledger = NativeSpellObservationLedger()
     target_spell_ledger = NativeTargetSpellObservationLedger()
@@ -278,6 +292,7 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         stderr_thread.join(timeout=1)
         proc.stderr.close()
     return {'kind': 'real_gsim_2d_pinned_go_live_range_only_v1',
+            'world_target_count': len(runtime.targets),
             'target_spawn_yards': target_spawn_yards,
             'enemy_move_speed_yards_s': enemy_move_speed_yards_s,
             'target_initial_health_fraction': target_initial_health_fraction,

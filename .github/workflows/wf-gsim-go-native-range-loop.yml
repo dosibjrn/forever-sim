@@ -99,6 +99,7 @@ jobs:
           assert r['status']=='NATIVE_GO_WORLD_DAMAGE_ACK_NOT_P7'
           assert r['native_process_reused'] and r['gsim_runtime_real']
           assert len(r['observations'])==20
+          assert r['world_target_count']==2  # Legacy two-enemy moving diagnostic
           assert r['observations'][0]['world_tick']['distance_yards']==20
           assert 14 < r['observations'][10]['world_tick']['distance_yards'] < 16
           assert all(x['world_tick']['distance_yards']==x['native_range_receipt']['applied_yards'] for x in r['observations'])
@@ -203,6 +204,7 @@ jobs:
           end_ns=result["native_encounter_end_ns"]
           assert 105_000_000_000 <= end_ns <= 135_000_000_000,end_ns
           assert result["native_encounter_end_reached"]
+          assert result["world_target_count"]==len(source["encounter"]["targets"])==1
           assert 1050 <= len(observations) <= 1350,len(observations)
           last_ns=observations[-1]["world_tick"]["native_clock_ns"]
           assert 0 < end_ns-last_ns <= 100_000_000,(end_ns,last_ns)
