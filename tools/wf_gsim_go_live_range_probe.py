@@ -66,7 +66,8 @@ def _terminal_world_tick_ms(native_end_ns: int, last_clock_ms: int) -> int | Non
 def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
                           target_health: float = 10_000_000.,
                           target_initial_health_fraction: float = 1.,
-                          source_single_target: bool = False):
+                          source_single_target: bool = False,
+                          source_in_front_of_target: bool | None = None):
     """Real gsim 2D world; source DPS mode has one enemy, not a dummy pack."""
     if (not math.isfinite(target_health) or target_health <= 0
             or not math.isfinite(target_initial_health_fraction)
@@ -93,6 +94,11 @@ def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_y
     # The actual gsim target owns starting HP. Native must consume it via
     # the first measured world ACK, not via a synthetic native-only counter.
     runtime.targets['m1'].health = target_health * target_initial_health_fraction
+    if source_single_target:
+        if type(source_in_front_of_target) is not bool:
+            raise ValueError('SOURCE_FACING_NOT_BOOLEAN')
+        runtime.targets['m1'].metadata['facing_xy_yards'] = (
+            (-1., 0.) if source_in_front_of_target else (1., 0.))
     runtime.engage_target('m1')
     runtime.select_target('m1')
     return runtime
@@ -112,16 +118,25 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     raw = request.read_bytes()
     request_sha = hashlib.sha256(raw).hexdigest()
     binary_sha = hashlib.sha256(binary.read_bytes()).hexdigest()
+    source_facing = None
     if source_target_health:
         if pulls != 1:
             raise ValueError('SOURCE_DPS_SINGLE_TARGET_REQUIRES_ONE_PULL')
         if target_health != 10_000_000.:
             raise ValueError('SOURCE_TARGET_HEALTH_OVERRIDE_CONFLICT')
         target_health = source_target_health_from_request(raw)
+        source = json.loads(raw)
+        players = source['raid']['parties'][0]['players']
+        if len(players) != 1:
+            raise ValueError('SOURCE_FACING_REQUIRES_ONE_PLAYER')
+        source_facing = players[0].get('inFrontOfTarget', False)
+        if type(source_facing) is not bool:
+            raise ValueError('SOURCE_FACING_NOT_BOOLEAN')
     runtime = diagnostic_gsim_world(target_spawn_yards=target_spawn_yards,
         enemy_move_speed_yards_s=enemy_move_speed_yards_s, target_health=target_health,
         target_initial_health_fraction=target_initial_health_fraction,
-        source_single_target=source_target_health)
+        source_single_target=source_target_health,
+        source_in_front_of_target=source_facing)
     feed = GsimGoRangeFeed(runtime, native_player_index=0)
     spell_ledger = NativeSpellObservationLedger()
     target_spell_ledger = NativeTargetSpellObservationLedger()
