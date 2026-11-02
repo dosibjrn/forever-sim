@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from src.game.checkpoint_acceptance_status import accepted_checkpoint_status
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 
 
 def test_fresh_same_source_empirical_acceptance_supersedes_extra_gate():
