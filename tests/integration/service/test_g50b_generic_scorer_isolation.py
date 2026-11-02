@@ -12,7 +12,7 @@ import sys
 import textwrap
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _isolated_python(script: str, *, timeout: int = 65) -> subprocess.CompletedProcess:
