@@ -30,8 +30,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     raw = request.read_bytes()
     source = json.loads(raw)
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
-    assert len(players) == 1 and source["encounter"]["targets"][0]["level"] == 63
-    assert players[0]["class"] == "ClassDruid"
+    assert len(players) == 1 and len(source["encounter"]["targets"]) == 1
+    assert source["encounter"]["targets"][0]["level"] == 63
     if not 1 <= iterations <= source["simOptions"]["iterations"]:
         raise ValueError("RUST_WORLD_ITERATIONS_OUT_OF_SOURCE_RANGE")
     if facing_switch_at_s is not None and (

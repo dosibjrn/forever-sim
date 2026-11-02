@@ -70,6 +70,24 @@ jobs:
           assert count(after,"9850")>0,(before,after)
           print("REAL_RUST_FERAL_WORLD_FACING_CAUSAL_ACTION_CHANGE_NOT_P7",flush=True)
           PY
+      - name: Real source Mage L60 fire combat through the same Rust and gsim 2D bridge
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          spec=importlib.util.spec_from_file_location("rust_live_world",Path("integrations/mythicsim-rust/live_world_probe.py"))
+          probe=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(probe)
+          binary=Path("../upstream/target/release/forever-engine")
+          request=Path("../upstream/fixtures/mage/prepared-v2/fire-reference.request.json")
+          result=probe.run(binary,request,distance=20.)
+          print("REAL_RUST_MAGE_L60_SOURCE_WORLD",result,flush=True)
+          assert result["iterations_done"]==1
+          assert result["native_damage_events"]>0
+          assert abs(result["native_dps"]-result["world_mean_dps"])<1e-5
+          assert result["checkpoint_certified"] is False
+          PY
       - name: Paired real gsim 2D near/far Rust damage ACK and forged ACK rejection
         working-directory: project
         run: |
