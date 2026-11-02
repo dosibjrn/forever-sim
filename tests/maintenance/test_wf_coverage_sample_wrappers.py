@@ -7,6 +7,8 @@ from pathlib import Path
 from scripts import run_wf_coverage238_sample as wf238
 from scripts import run_wf_coverage239_sample as wf239
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 def test_wf238_and_wf239_share_samples_but_keep_evidence_contracts(tmp_path, monkeypatch):
     legal = [{}, {'ferocity': 1}, {'ferocity': 2}, {'moonglow': 1}]
@@ -50,10 +52,9 @@ def test_wf238_and_wf239_share_samples_but_keep_evidence_contracts(tmp_path, mon
 
 
 def test_replay_entrypoints_support_direct_script_cli_outside_repo(tmp_path):
-    root = Path(__file__).resolve().parents[1]
     for name in ('run_wf_coverage238_sample.py', 'run_wf_coverage239_sample.py'):
         completed = subprocess.run(
-            [sys.executable, str(root / 'scripts' / name), '--help'],
+            [sys.executable, str(ROOT / 'scripts' / name), '--help'],
             cwd=tmp_path, capture_output=True, text=True, check=False,
         )
         assert completed.returncode == 0, (name, completed.stderr)
