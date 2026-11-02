@@ -1,0 +1,41 @@
+name: One-shot Prio P2 source-spec exact-head check
+on:
+  push:
+    branches: [fix/p2-reuse-source-legal-profile-unlock-witness]
+    paths:
+      - .github/workflows/prio-p2-profile-once.yml
+  workflow_dispatch:
+jobs:
+  p2-source-spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Exact-head source-spec P2 regressions
+        run: python -m pytest -q tests/test_wf35_source_spec_p2_adapter.py
+      - name: Live Druid L60 Balance P2 (diagnostic, not auto-PASS)
+        if: always()
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P2 > p2-live.json || true
+          python - <<'PY'
+          import json
+          with open('p2-live.json', encoding='utf-8') as f:
+              report=json.load(f)
+          print('Live P2 status:', report.get('status'))
+          for entry in report.get('results', []):
+              print('Live P2 gate:', entry.get('gate'), 'status:', entry.get('status'))
+              for reason in entry.get('reasons', [])[:15]:
+                  print('  ', reason)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prio-p2-source-spec-live
+          path: p2-live.json
+          if-no-files-found: ignore
