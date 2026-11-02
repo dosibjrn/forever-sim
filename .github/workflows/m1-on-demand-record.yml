@@ -79,7 +79,7 @@ jobs:
             gate="${entry##*:}"
             # P7.1 supports a genuine short coupled-native diagnostic.
             # The full 1000-fight acceptance still requires --heavy.
-            if [[ "$heavy" != true && ( "$gate" == P7.* && "$gate" != P7.1 ) ]]; then
+            if [[ "$heavy" != true && ( "$gate" == P7.* && "$gate" != P7.1 && "$gate" != P7.2 ) ]]; then
               echo "Gate $gate needs explicit --heavy / allow_heavy opt-in" >&2; exit 2
             fi
             if [[ -z "${seen[$entry]:-}" ]]; then
@@ -160,7 +160,7 @@ jobs:
             # P6's current provider is a bounded production 100-mob probe,
             # NEVER a substitute for accepted 30/300s winners.
             if [[ "$gate" == P6 && "$ALLOW_HEAVY" != true ]]; then timeout_s=120; fi
-            if [[ "$gate" == P7.1 && "$ALLOW_HEAVY" != true ]]; then
+            if [[ ( "$gate" == P7.1 || "$gate" == P7.2 ) && "$ALLOW_HEAVY" != true ]]; then
               # Only the approved producer can decide whether its actual
               # coupled DPS supports a provisional objective PARTIAL.
               # No 3/1000 "sample coverage" is recorded.
