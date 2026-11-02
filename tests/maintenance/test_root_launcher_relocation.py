@@ -23,10 +23,10 @@ POWERSHELL_SCRIPTS = (
 )
 TARGETS = {
     "run-validation-fast.sh": "tools/validate_fast.py",
-    "run-validation-v1.sh": "tools/validate_v1_browser.py",
-    "run-validation-v2.sh": "tools/validate_v2_restart.py",
-    "run-validation-v3.sh": "tools/validate_v3_checkpoint_failure.py",
-    "run-validation-v4.sh": "tools/validate_v4_concurrency.py",
+    "run-validation-v1.sh": "-m pytest -q -r s tests/test_v1_browser_workflow_v0114819.py",
+    "run-validation-v2.sh": "-m pytest -q -r s tests/test_v2_restart_persistence_v0114820.py",
+    "run-validation-v3.sh": "-m pytest -q -r s tests/test_v3_checkpoint_failure_semantics_v0114821.py",
+    "run-validation-v4.sh": "-m pytest -q tests/test_v4_concurrency_writer_isolation_v0114823.py",
     "run-validation-v5.sh": "tools/validate_v5_acceptance.py",
     "run-release-smoke.sh": "-m pytest",
     "run-listener-smoke.sh": "-m pytest",
@@ -75,6 +75,24 @@ class RootLauncherRelocation(unittest.TestCase):
                                    env=env, check=True, timeout=15)
                     self.assertEqual(str(ROOT), cwdlog.read_text().strip())
                     self.assertIn(TARGETS[name], argslog.read_text().strip())
+
+    def test_v4_direct_pytest_preserves_nonzero_exit_code(self):
+        with tempfile.TemporaryDirectory() as d:
+            temp = Path(d)
+            python_stub = temp / "python"
+            python_stub.write_text(
+                '#!/bin/sh\n'
+                'printf "%s\\n" "$*" > "$CAPTURE_ARGS"\n'
+                'exit 7\n'
+            )
+            python_stub.chmod(0o755)
+            argslog = temp / "args.txt"
+            env = dict(os.environ, PATH=str(temp) + os.pathsep + os.environ.get("PATH", ""),
+                       CAPTURE_ARGS=str(argslog))
+            run = subprocess.run(["bash", str(COMMANDS / "run-validation-v4.sh")],
+                                 cwd=temp, env=env, capture_output=True, text=True, timeout=15)
+            self.assertEqual(run.returncode, 7)
+            self.assertEqual(argslog.read_text().strip(), TARGETS["run-validation-v4.sh"])
 
     def test_powershell_path_resolution_and_python_target(self):
         for name in POWERSHELL_SCRIPTS:
