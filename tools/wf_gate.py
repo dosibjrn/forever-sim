@@ -515,6 +515,8 @@ def main(argv=None) -> int:
             # receipt available for diagnosing a failed paid search. These
             # values never modify the provider verdict or create M1 credit.
             for key in ("search_wall_s", "cold_unique_source_requests",
+                        "winner_live_dps", "winner_screen_dps",
+                        "paid_stochastic_finalists",
                         "source_legal_cold_candidates_paid",
                         "frozen_stochastic_iterations",
                         "frozen_stochastic_native_dps",
@@ -529,12 +531,24 @@ def main(argv=None) -> int:
                         "frozen_stochastic_external_only_floor_met"):
                 if type(report.get(key)) is bool:
                     record[key] = report[key]
-            for key in ("frozen_request_raw_sha256",
+            for key in ("winner_selection", "frozen_request_raw_sha256",
                         "frozen_stochastic_failure", "search_strategy",
                         "source_original_talents", "cold_winner_talents"):
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 256:
                     record[key] = value
+        if gate == "P7.4":
+            # Forward only bounded, source-executed winner identity. This is
+            # diagnostic provenance, never an additional gate predicate.
+            gear = report.get("cold_winner_gear")
+            if (isinstance(gear, list) and 0 < len(gear) <= 24
+                    and all(isinstance(row, dict)
+                            and type(row.get("slot")) is int
+                            and type(row.get("item_id")) is int
+                            and (row.get("enchant_id") is None
+                                 or type(row.get("enchant_id")) is int)
+                            for row in gear)):
+                record["cold_winner_gear"] = gear
         if gate in ("P4", "P5"):
             # Real 30/300s search and 100-mob finalist measurements are already
             # present in the live provider. Keep them visible when the gate is
