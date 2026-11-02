@@ -24,7 +24,7 @@ from tools.wf_gsim_go_live_range_probe import (
 )
 
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
-        iterations: int = 1) -> dict:
+        iterations: int = 1, periodic_world_poll: bool = False) -> dict:
     raw = request.read_bytes()
     source = json.loads(raw)
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
@@ -106,6 +106,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 assert tick["native_clock_ns"] == clock_ns
                 tick["previous_world_ack_id"] = previous_ack_id
                 tick["iteration_index"] = iteration
+                # Only the actual gsim world may schedule independent world
+                # updates. If no world event/motion is pending, the next native
+                # scheduler action is the earliest causally relevant boundary.
+                # Periodic mode is the unchanged 100ms comparison control.
+                tick["next_world_boundary_ns"] = (
+                    clock_ns + 100_000_000
+                    if periodic_world_poll or world.queue or world._enemy_motion
+                    else None
+                )
                 proc.stdin.write(json.dumps(tick, sort_keys=True, allow_nan=False) + "\n")
                 proc.stdin.flush()
                 receipt = json.loads(proc.stdout.readline())
@@ -178,6 +187,23 @@ def main() -> None:
     assert multi["iterations_done"] == len(multi["per_iteration"]) == 3
     assert multi["native_world_ticks"] > near["native_world_ticks"]
     assert multi["native_damage_events"] > near["native_damage_events"]
+    # RED against the old bridge: ignoring the real gsim next-world deadline
+    # forces 100ms polling even for the static, event-free reference encounter.
+    periodic = run(args.binary, args.request, distance=15., iterations=3,
+                   periodic_world_poll=True)
+    assert abs(multi["native_dps"] - periodic["native_dps"]) < 1e-6, (
+        "EVENT_DRIVEN_NATIVE_DPS_CHANGED", multi["native_dps"], periodic["native_dps"])
+    assert abs(multi["world_applied_damage"] - periodic["world_applied_damage"]) < 1e-4
+    assert multi["native_damage_events"] == periodic["native_damage_events"]
+    assert multi["native_world_ticks"] < periodic["native_world_ticks"], (
+        "STATIC_WORLD_STILL_POLLED_EVERY_100MS",
+        multi["native_world_ticks"], periodic["native_world_ticks"])
+    print("REAL_RUST_EVENT_BOUNDARY_VS_PERIODIC", json.dumps({
+        "event_ticks": multi["native_world_ticks"],
+        "periodic_ticks": periodic["native_world_ticks"],
+        "event_dps": multi["native_dps"],
+        "periodic_dps": periodic["native_dps"],
+    }, sort_keys=True), flush=True)
     print("REAL_RUST_THREE_INDEPENDENT_SOURCE_FIGHTS", json.dumps(multi, sort_keys=True), flush=True)
     print(json.dumps({"near": near, "far": far, "forged": forged, "multi": multi,
                       "verdict": "REAL_RUST_GSIM_RANGE_DAMAGE_ACK_CAUSAL_DIAGNOSTIC_NOT_P7"},
