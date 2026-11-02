@@ -53,6 +53,13 @@ def _replay_first_paid_winner(search, *, source_ir, seed_stage, class_key, level
 
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
+    # Full 30/300s paid searches are deliberately explicit, never hourly.
+    # This is the SAME source-paid production runner, not a gate-only scorer.
+    import os
+    if os.environ.get("FOREVER_P6_FULL_SOURCE_COMPARE") == "1":
+        from tools.wf_gate_p6_full_source import run_full_source_comparison
+        return run_full_source_comparison(root, class_key, level, spec=spec)
+
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.data.forever.gear import available_gear_roles
     from src.v2.source_bounded_joint_frontier import (
