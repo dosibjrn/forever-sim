@@ -40,6 +40,7 @@ type rangeReply struct {
     NativeWorldHealthFeedbackActive bool `json:"native_world_health_feedback_active"`
     NativeHealthFraction float64 `json:"native_health_fraction"`
     NativeExecutePhase int32 `json:"native_execute_phase"`
+    NativeEncounterEndNS int64 `json:"native_encounter_end_ns"`
 }
 
 func run(requestRaw []byte, sourceRevision string) error {
@@ -116,6 +117,8 @@ func run(requestRaw []byte, sourceRevision string) error {
         actorState,err:=boundary.WorldActorState(tick.NativePlayerIndex)
         if err!=nil {return fmt.Errorf("tick %d native actor state: %w",count,err)}
         healthFraction,executePhase,healthActive:=boundary.WorldHealthDecisionSnapshot()
+        nativeEndNS,err:=boundary.NativeEncounterEndNS()
+        if err!=nil {return fmt.Errorf("tick %d native encounter end: %w",count,err)}
         reply:=rangeReply{Type:"native_go_range_receipt",Sequence:tick.Sequence,
             ObservedInputWorldSHA256:tick.WorldSHA256,NativeRangeReceipt:receipt,
             NativeSourceRevision:sourceRevision,NativeRequestSHA256:hex.EncodeToString(reqHash[:]),NativeProcessID:os.Getpid(),
@@ -123,7 +126,7 @@ func run(requestRaw []byte, sourceRevision string) error {
             NativeDamageEvents:nativeEffects,
             NativeSpellActionACK:false,CheckpointCertified:false,
             NativeWorldHealthFeedbackActive:healthActive,NativeHealthFraction:healthFraction,
-            NativeExecutePhase:executePhase}
+            NativeExecutePhase:executePhase,NativeEncounterEndNS:nativeEndNS}
         output,err:=json.Marshal(reply)
         if err!=nil {return err}
         if _,err:=writer.Write(append(output,'\n'));err!=nil {return err}

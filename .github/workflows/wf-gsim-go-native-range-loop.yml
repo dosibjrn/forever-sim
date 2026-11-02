@@ -8,9 +8,14 @@ on:
     branches:
       - work/wf28-native-world-health-feedback-20261101
       - work/first-native-source-long-horizon-20261102
+      - work/first-native-druid-full-duration-20261102
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
+      - src/game/runtime/simulator.py
+      - tests/test_wf_gsim_go_world_range_feed.py
+      - integrations/mythicsim-go/world_boundary/core/world_boundary.go
+      - integrations/mythicsim-go/world_boundary/ingress/main.go
 
 permissions:
   contents: read
@@ -171,26 +176,43 @@ jobs:
           print("REAL_WORLD_HP_CHANGED_NEXT_NATIVE_EXECUTE_PHASE",near_effects,far_effects,
                 a[i+1]["native_execute_phase_at_boundary"],b[i+1]["native_execute_phase_at_boundary"])
           PY
-      - name: Real saved Druid source request beyond old 100-tick bridge cap (NOT P7)
+      - name: Real saved Druid source 120-second continuous native-world encounter (NOT P7)
         run: |
           cd project
           python3 - <<'PY'
+          import json
           from pathlib import Path
           from tools.wf_gsim_go_live_range_probe import run
           binary=Path("../gsim-go-world-ingress")
           request=Path("docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json")
-          # RED on previous production bridge: INVALID_PROBE_LIMITS at 101 ticks.
-          result=run(binary,request,ticks=101,target_spawn_yards=3.)
+          source=json.loads(request.read_text())
+          player=source["raid"]["parties"][0]["players"][0]
+          assert player["class"]=="ClassDruid" and "balanceDruid" in player
+          assert source["encounter"]["duration"]==120
+          assert source["encounter"]["targets"][0]["level"]==63
+          distance=player["distanceFromTarget"]
+          # Real gsim 2D target remains stationary at the source caster range.
+          # This does not yet prove source target stats, facing/CC or P7.
+          result=run(binary,request,ticks=1350,target_spawn_yards=distance,
+                     enemy_move_speed_yards_s=0.,timeout_s=30.)
           observations=result["observations"]
-          assert len(observations)==101,len(observations)
-          assert observations[-1]["world_tick"]["clock_ms"]==10000
+          end_ns=result["native_encounter_end_ns"]
+          assert 105_000_000_000 <= end_ns <= 135_000_000_000,end_ns
+          assert result["native_encounter_end_reached"]
+          assert 1050 <= len(observations) <= 1350,len(observations)
+          last_ns=observations[-1]["world_tick"]["native_clock_ns"]
+          assert 0 < end_ns-last_ns <= 100_000_000,(end_ns,last_ns)
+          assert all(row["world_tick"]["distance_yards"]==distance for row in observations)
+          assert all(row["native_actor_state"]["native_clock_ns"]==row["world_tick"]["native_clock_ns"]
+                     for row in observations)
           assert result["native_spell_action_ack"]
           assert result["native_process_reused"] and result["gsim_runtime_real"]
           assert all(row["native_world_ack_confirmation"]["native_world_health_applied"]
                      for row in observations)
           assert all(row["native_world_ack_confirmation"]["native_process_id"]==result["native_process_id"]
                      for row in observations)
-          print("REAL_SAVED_DRUID_NATIVE_WORLD_101_TICKS_ACK_PASS_NOT_P7")
+          print("REAL_SAVED_DRUID_NATIVE_WORLD_SAMPLED_END_ACK_PASS_NOT_P7",
+                len(observations),end_ns,last_ns)
           try:
               run(binary,request,ticks=1501)
           except ValueError as exc:

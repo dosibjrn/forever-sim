@@ -629,7 +629,7 @@ class CombatRuntime:
         if self.multi_target:
             if set(self._pack_positions) != set(self.targets):
                 raise ValueError('2D pack requires positions for every registered target')
-            if not isfinite(float(enemy_move_speed_yards_s)) or float(enemy_move_speed_yards_s) <= 0:
+            if not isfinite(float(enemy_move_speed_yards_s)) or float(enemy_move_speed_yards_s) < 0:
                 raise ValueError('invalid enemy movement speed')
             if not isfinite(float(melee_radius_yards)) or float(melee_radius_yards) <= 0:
                 raise ValueError('invalid 2D melee radius')
@@ -960,6 +960,12 @@ class CombatRuntime:
         pos = self._enemy_position_at(target_id, now)
         self.enemy_positions_yards[target_id] = pos
         distance = hypot(pos[0]-self.player_position_yards[0],pos[1]-self.player_position_yards[1])
+        # A stationary source encounter target never closes distance. Still
+        # register a target already in melee range without moving its position.
+        if self.enemy_move_speed_yards_s == 0:
+            if distance <= self.melee_radius_yards:
+                self._enemy_arrived(target_id)
+            return
         travel = max(0.0, distance-self.melee_radius_yards)/self.enemy_move_speed_yards_s
         self._enemy_motion.pop(target_id, None)
         generation = self._enemy_motion_generation.get(target_id, 0)+1
