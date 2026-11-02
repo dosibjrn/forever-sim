@@ -167,3 +167,16 @@ def test_p7_actual_coupled_dps_is_partial_even_when_ui_gate_blocked(
     assert not m1.record_partial(class_key="druid", level=60, spec="balance",
                                  gate="P7.1", report={**report, "world_damage_events": 0},
                                  path=path)
+
+
+def test_denominator_shrink_cannot_fake_increased_completion(monkeypatch, tmp_path):
+    monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
+    path = tmp_path / "m1.tsv"
+    assert m1.record_partial(
+        class_key="druid", level=60, spec="balance", gate="P2",
+        report=_p2_partial(70, 100), path=path)
+    assert not m1.record_partial(
+        class_key="druid", level=60, spec="balance", gate="P2",
+        report=_p2_partial(20, 20), path=path)
+    saved = m1.scoreboard(path)["partial_gates"][0]
+    assert (saved["verified"], saved["applicable"]) == (70, 100)
