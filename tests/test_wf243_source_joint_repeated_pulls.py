@@ -14,7 +14,7 @@ from src.v2 import source_multi_pull_joint as joint
 from tools.wf243_joint_multi_pull_replay import frozen_policy
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURE = json.loads((ROOT / 'fixtures/wf243_heldout_feral_l20.json').read_text())
+FIXTURE = json.loads((ROOT / 'tests/fixtures/wf243_heldout_feral_l20.json').read_text())
 
 
 def test_stratified_independent_sample_never_seeds_heldout_and_covers_trees():

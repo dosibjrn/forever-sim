@@ -26,6 +26,19 @@ class MaintenanceTestLayout(unittest.TestCase):
                 self.assertIn("ROOT = Path(__file__).resolve().parents[2]", source)
                 ast.parse(source, filename=str(new))
 
+    def test_wf243_heldout_fixture_lives_in_test_fixtures(self):
+        old = ROOT / "fixtures" / "wf243_heldout_feral_l20.json"
+        new = ROOT / "tests" / "fixtures" / "wf243_heldout_feral_l20.json"
+        self.assertFalse(old.exists(), f"stale root-level fixture: {old}")
+        self.assertTrue(new.is_file(), f"missing immutable test fixture: {new}")
+        for consumer in (
+            ROOT / "tools" / "wf243_joint_multi_pull_replay.py",
+            ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
+        ):
+            source = consumer.read_text()
+            self.assertIn("tests/fixtures/wf243_heldout_feral_l20.json", source)
+            self.assertNotIn("ROOT / 'fixtures/wf243_heldout_feral_l20.json'", source)
+
     def test_current_ci_does_not_reference_old_test_locations(self):
         workflows = ROOT / ".github" / "workflows"
         for workflow in workflows.glob("*.yml"):
