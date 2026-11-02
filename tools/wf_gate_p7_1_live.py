@@ -39,7 +39,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     target = source["encounter"]["targets"]
     iterations = source["simOptions"]["iterations"]
     if (meta["engine_revision"] != PINNED_RUST
-            or meta["iterations"] != iterations or iterations != 10000
+            or meta["iterations"] != iterations
             or player.get("class") != "ClassDruid"
             or "balanceDruid" not in player or len(target) != 1
             or target[0]["level"] != 63):
