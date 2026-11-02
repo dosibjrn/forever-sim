@@ -157,7 +157,13 @@ def test_p7_actual_coupled_dps_is_partial_even_when_ui_gate_blocked(
                   production_engine="pinned_mythicsim_rust_gsim_2d",
                   native_source_revision="pinned", source_request_raw_sha256="source",
                   world_damage_events=20, world_boundaries=400,
-                  saved_reference_dps=800., world_dps=720.)
+                  saved_reference_dps=800., world_dps=720.,
+                  iterations=1000, stochastic_rng=True,
+                  selected_validation="1000_native_and_live_stochastic_fights")
+    assert not m1.record_partial(class_key="druid", level=60, spec="balance",
+                                 gate="P7.1", report={**report, "iterations": 3,
+                                    "selected_validation": "bounded_native_live_source_diagnostic"},
+                                 path=path)
     assert m1.record_partial(class_key="druid", level=60, spec="balance",
                              gate="P7.1", report=report, path=path)
     row = m1.scoreboard(path)["partial_gates"][0]
