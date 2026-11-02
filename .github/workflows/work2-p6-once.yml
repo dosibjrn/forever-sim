@@ -25,4 +25,23 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check pytest==8.3.5 beautifulsoup4==4.13.4
+          python - <<'PY'
+          from src.game.data.forever.registry import build_game_ir_slice
+          from src.v2.source_bounded_joint_frontier import source_cold_start_stage
+          from src.rulesets.forever.items.runtime_selection import available_items
+          from src.game.data.forever.source_named_gear_proof import audit_named_gear_source
+          for level in (20,30):
+              selected=available_items("druid",level,required_level_policy="observed")
+              origins={}
+              for x in selected: origins[x.required_level_origin]=origins.get(x.required_level_origin,0)+1
+              print("source eligible origins",level,origins,flush=True)
+              ir=build_game_ir_slice(class_key="druid",level=level)
+              stage=source_cold_start_stage(class_key="druid",level=level,source_ir=ir,gear_role="druid_feral")
+              gear=stage["gear_policy_result"]["winner"]["gear"]
+              a=audit_named_gear_source(class_key="druid",level=level,gear=gear)
+              print("audit",level,a["equipment_legality_complete"],a["aggregate_stats_match_catalogue"],
+                    [(row["slot"],row["item_id"],row["source_status"]) for row in a["items"] if row["source_status"]!="VERIFIED_PINNED_EQUIPMENT_LEGALITY"],flush=True)
+              eligible={x.item_id:x for x in selected}
+              print("blocked origins",level,[(row["item_id"],eligible.get(row["item_id"]).required_level_origin if eligible.get(row["item_id"]) else "?") for row in a["items"] if row["source_status"]!="VERIFIED_PINNED_EQUIPMENT_LEGALITY"],flush=True)
+          PY
           python -m pytest -q tests/test_wf_gate_p6_live.py tests/test_wf_p6_gear_source_snapshot.py tests/test_source_paid_gear_witness_priority.py
