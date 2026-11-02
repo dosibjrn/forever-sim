@@ -1574,7 +1574,7 @@ def _source_priority_witness_probes(variants):
 
 
 # Journal identity changes with source gear ordering or paid-row evidence schema.
-_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v9_atomic_weapon_paid_witness'
+_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v10_pure_stat_paid_witness'
 
 
 def _source_gear_witness_probes(gear_stages, *, max_probes=32):
@@ -1582,18 +1582,25 @@ def _source_gear_witness_probes(gear_stages, *, max_probes=32):
 
     The common source slot frontier may propose more than two legal items per
     slot when the global gear budget permits it. Reserve the first witness
-    for every slot before a second or third from any slot. Mixed-stat packages
-    retain a witness before repeated single-slot moves. Every coordinate
+    for every slot before a second or third from any slot. Mixed-stat,
+    atomic weapon, and pure source-stat packages retain paid witnesses before
+    repeated single-slot moves. Every coordinate
     still goes through the ordinary paid evaluator and shared wall budget;
     a proposed witness is not a completed screen or a gate PASS.
     """
     by_slot={}
     mixed=[]
+    pure_stat_packages=[]
     weapon_packages=[]
     for i,(label,_) in enumerate(gear_stages):
         if label.startswith('source_stat_package:'):
+            # Pure source-stat packages are legal multi-slot changes too.
+            # Previously they were generated but dropped from this priority
+            # prefix, so short paid searches often never evaluated them.
             if '+' in label:
                 mixed.append((0,i,0,0))
+            else:
+                pure_stat_packages.append((0,i,0,0))
             continue
         if label.startswith('package:'):
             # Atomic 1H+offhand <-> 2H transitions cannot be represented by
@@ -1610,7 +1617,7 @@ def _source_gear_witness_probes(gear_stages, *, max_probes=32):
     for depth in range(1,max((len(moves) for moves in by_slot.values()),default=0)):
         deeper.extend(moves[depth] for moves in by_slot.values()
                       if len(moves)>depth)
-    return tuple((*first,*mixed,*weapon_packages,*deeper)[:max_probes])
+    return tuple((*first,*mixed,*weapon_packages,*pure_stat_packages,*deeper)[:max_probes])
 
 
 def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, attempted, *, gear_stages=()):
