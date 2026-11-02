@@ -83,13 +83,28 @@ def test_architecture_scans_use_the_repository_not_process_cwd(monkeypatch, tmp_
 
 def test_engine_registry_points_at_ruleset_owned_packages_except_frozen_classic_legacy():
     import src.engine_registry as registry
-    assert registry._ENGINE_MODULES
-    assert registry._ENGINE_MODULES[('classic','mage')] == 'src.classic_mage_leveling_optimizer_v10'
-    assert all(
-        module.startswith('src.rulesets.')
-        for key,module in registry._ENGINE_MODULES.items()
-        if key != ('classic','mage')
-    )
+    from src.class_registry import definitions
+
+    # Registry entries are derived from the class definitions, not a second list.
+    defined = {(d.ruleset, d.class_name): d.engine_module for d in definitions()}
+    assert registry._ENGINE_MODULES == defined
+    assert defined[('classic', 'mage')] == 'src.classic_mage_leveling_optimizer_v10'
+
+    for definition in definitions():
+        key = (definition.ruleset, definition.class_name)
+        if key == ('classic', 'mage'):
+            continue
+        if definition.engine_module.startswith('src.rulesets.'):
+            continue
+
+        # Non-UI generic source proofs have no legacy ruleset facade. These
+        # are intentional source-backed proof modules, not hidden class engines.
+        assert (
+            definition.ruleset == 'forever'
+            and definition.proof_only
+            and not definition.ui_visible
+            and definition.engine_module == f'src.game.data.forever.{definition.class_name}'
+        ), f"Unexpected engine location for {definition.key}: {definition.engine_module}"
 
 def test_fast_validator_targets_exist():
     """Fast-suite entries must survive responsibility-based test moves."""
