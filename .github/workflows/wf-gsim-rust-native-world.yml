@@ -2,12 +2,16 @@ name: Live pinned MythicSim Rust fight to real gsim world (NOT P7)
 on:
   workflow_dispatch:
   push:
-    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102]
+    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/work1-p72-p74-native-world-parity-20261102]
     paths:
       - .github/workflows/wf-gsim-rust-native-world.yml
       - integrations/mythicsim-rust/patch_world_ingress.py
       - integrations/mythicsim-rust/world_bridge.rs
       - integrations/mythicsim-rust/live_world_probe.py
+      - tools/wf_gate_p7_2_live.py
+      - tools/wf_gate_p7_3_live.py
+      - tools/wf_gate_p7_4_live.py
+      - tests/test_work1_p7_cold_candidate_parity.py
 permissions:
   contents: read
 jobs:
@@ -40,6 +44,27 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: "off"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: cargo build --release --locked
+      - name: Work1 one-time exact-source parity regression for P7.2-P7.4
+        working-directory: project
+        env:
+          FOREVER_MYTHICSIM_RUST_BIN: ../upstream/target/release/forever-engine
+        run: |
+          python -m pip install 'pytest==8.3.5'
+          python -m pytest -q tests/test_work1_p7_cold_candidate_parity.py tests/test_wf_gate_p7_2_live.py tests/test_wf_gate_p7_3_live.py tests/test_wf_gate_p7_4_live.py
+          python - <<'PY'
+          from pathlib import Path
+          from tools import wf_gate_p7_2_live, wf_gate_p7_3_live, wf_gate_p7_4_live
+          root = Path.cwd()
+          for name, module, key in (
+              ('P7.2', wf_gate_p7_2_live, 'source_legal_cold_candidates_paid'),
+              ('P7.3', wf_gate_p7_3_live, 'source_legal_cold_candidates_paid'),
+              ('P7.4', wf_gate_p7_4_live, 'source_legal_cold_candidates_paid'),
+          ):
+              result = module.run_live(root, 'druid', 60, spec='balance')
+              print('REAL_SOURCE_NATIVE_2D_CANDIDATE', name, result, flush=True)
+              assert result['status'] == 'FAIL', (name, result)
+              assert result.get(key, 0) >= 1, (name, result)
+          PY
       - name: Prove the patched engine still exactly reproduces 10k saved Rust reference
         working-directory: project
         run: python integrations/mythicsim-rust/verify_reference.py --engine ../upstream/target/release/forever-engine
