@@ -1,0 +1,112 @@
+name: Work1 one-shot P7 native Rust gsim 2D acceptance evidence
+
+# Intentional one-shot on exact Work1 branch. Only changes to this workflow
+# launch it; production-code pushes and hourly agents do not repeat heavy runs.
+on:
+  push:
+    branches: [work/work1-p75-cold-local-search-20261102]
+    paths: [.github/workflows/work1-p7-full-source-once.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  source-native-world:
+    name: ${{ matrix.gate }} source-native/2D full attempt (no M1 write)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [P7.1, P7.2, P7.3, P7.4, P7.5]
+    steps:
+      - name: Checkout exact Work1 producer HEAD
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Checkout genuinely selected pinned native Rust engine
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: sage3648/mythicsim-forever-engine
+          ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
+          path: upstream
+          persist-credentials: false
+      - name: Hydrate selected source catalogue
+        run: git lfs pull --include="data/forever/catalogue/items_2026-09-29.sqlite" --exclude=""
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - name: Install source parser
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Patch REAL world-ingress seam into pinned Rust source
+        run: python integrations/mythicsim-rust/patch_world_ingress.py upstream
+      - name: Build actual selected native Rust engine
+        working-directory: upstream
+        env:
+          CARGO_PROFILE_RELEASE_LTO: "off"
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+        run: cargo build --release --locked
+      - name: Execute full selected-source production gate ONCE without M1 recording
+        env:
+          GATE: ${{ matrix.gate }}
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
+          FOREVER_P7_FULL_SOURCE_SEARCH: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run-output
+          echo "producer_head=$(git rev-parse HEAD)" | tee "run-output/provenance.txt"
+          echo "pinned_rust=$(git -C upstream rev-parse HEAD)" | tee -a "run-output/provenance.txt"
+          echo "gate=$GATE engine=pinned_mythicsim_rust_gsim_2d class=druid level=60 spec=balance" | tee -a "run-output/provenance.txt"
+          echo "full_cold_search=300s_for_P7.2-P7.5; final=1000_original_stochastic_fights; record_progress=false" | tee -a "run-output/provenance.txt"
+          # The existing production gate dispatcher supplies original full
+          # reports, including frozen mean DPS. Never use --record-progress.
+          # FAIL/BLOCKED is an evidence result, not a CI infrastructure failure.
+          set +e
+          timeout 4800s python -u - "$GATE" > "run-output/$GATE.log" 2>&1 <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          from tools.wf_gate import _run_live_gate, ROOT
+          gate = sys.argv[1]
+          result = _run_live_gate(ROOT, "druid", 60, "balance", gate,
+                                  "current_solo_leveling_100mob_v1")
+          path = Path("run-output") / (gate + ".json")
+          path.write_text(json.dumps({"class":"druid","level":60,"spec":"balance",
+                                      "gate":gate,"result":result}, indent=2, default=str) + "\n")
+          print(json.dumps({"gate":gate,"status":result.get("status"),
+                            "reasons":result.get("reasons"),
+                            "joint_cold_world_dps":result.get("joint_cold_world_dps"),
+                            "frozen_stochastic_native_dps":result.get("frozen_stochastic_native_dps"),
+                            "frozen_stochastic_world_dps":result.get("frozen_stochastic_world_dps"),
+                            "source_legal_joint_candidates_paid":result.get("source_legal_joint_candidates_paid"),
+                            "search_wall_s":result.get("search_wall_s"),
+                            "native_dps":result.get("native_dps"),
+                            "world_dps":result.get("world_dps")}, default=str), flush=True)
+          if result.get("status") not in ("PASS", "FAIL", "BLOCKED"):
+              sys.exit(2)
+          PY
+          rc=$?
+          set -e
+          echo "runner_exit=$rc" | tee -a "run-output/provenance.txt"
+          cat "run-output/$GATE.log"
+          if [[ $rc -ne 0 ]]; then
+            echo "Full producer invocation failed or timed out (infrastructure/runtime), see log." >&2
+            exit "$rc"
+          fi
+          test -s "run-output/$GATE.json"
+          echo "### $GATE (actual production attempt; no M1 write)" >> "$GITHUB_STEP_SUMMARY"
+          echo '~~~json' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 1 "run-output/$GATE.log" >> "$GITHUB_STEP_SUMMARY"
+          echo '~~~' >> "$GITHUB_STEP_SUMMARY"
+          echo "Source HEAD $(git rev-parse HEAD); Rust $(git -C upstream rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload exact-provenance full result (diagnostic, NOT gate PASS)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: work1-${{ matrix.gate }}-native-world-once-${{ github.sha }}
+          path: run-output/
+          if-no-files-found: warn
+          retention-days: 14
