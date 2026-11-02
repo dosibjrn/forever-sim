@@ -222,6 +222,33 @@ def _summarize_independent_paid_replay(replay, *, budget):
             'replay_wall_s': wall_s}
 
 
+def p5_paid_breadth_evidence(search30, search300):
+    """Twofold paid P5 breadth, capped only by a genuinely finite universe.
+
+    Sampling a bounded beam or reaching a wall-time cap cannot establish
+    exhaustion. Both independent runs must attest the same exact exhaustive
+    source-legal candidate count before it may cap the requirement.
+    """
+    n30, n300 = (int(s.get('unique_full_builds') or 0)
+                 for s in (search30, search300))
+    reported = (search30.get('source_candidate_universe_exact_size'),
+                search300.get('source_candidate_universe_exact_size'))
+    exact_legal = None
+    if (all(s.get('source_candidate_universe_exhaustive') is True
+            for s in (search30, search300))
+            and all(type(n) is int and n > 0 for n in reported)
+            and reported[0] == reported[1]
+            and 0 <= n30 <= reported[0] and 0 <= n300 <= reported[0]):
+        exact_legal = reported[0]
+    required = min(2 * n30, exact_legal) if exact_legal is not None else 2 * n30
+    return {
+        'N30_unique_paid': n30, 'N300_unique_paid': n300,
+        'p5_breadth_required_unique': required,
+        'p5_verified_legal_universe_size': exact_legal,
+        'p5_2x_or_exhaustion_breadth': n30 > 0 and n300 >= required,
+    }
+
+
 def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
                                class_key, level, source_hash,
                                bonus_talent_points=0, max_per_candidate_wall_s=60.):
@@ -297,9 +324,7 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
                    and isfinite(r['s_per_mob']) and r['s_per_mob'] > 0
                    for r in results)
     ratio = results[0]['s_per_mob'] / results[1]['s_per_mob'] if complete else None
-    n30, n300 = (int(s.get('unique_full_builds') or 0)
-                 for s in (search30, search300))
-    breadth = n30 > 0 and n300 >= 10*n30
+    breadth_evidence = p5_paid_breadth_evidence(search30, search300)
     source_coverage = all(s.get('p4_talent_unlock_coverage_pass') is True
                           and s.get('source_legal_gear_universe_verified') is True
                           for s in (search30, search300))
@@ -311,8 +336,8 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
         'replays': results, 'T30_s_per_mob': results[0]['s_per_mob'],
         'T300_s_per_mob': results[1]['s_per_mob'],
         'ratio_T30_T300': ratio, 'numeric_p6_within_1pct': bool(complete and ratio <= 1.01),
-        'N30_unique_paid': n30, 'N300_unique_paid': n300,
-        'p5_10x_breadth': breadth, 'same_source_legal_candidate_space_proven': same_space,
+        **breadth_evidence,
+        'same_source_legal_candidate_space_proven': same_space,
         'p4_p5_source_coverage_proven': source_coverage and gear_pinned
             and not gaps30 and not gaps300,
         'same_gear_catalogue_and_semantics_proven': gear_pinned,
