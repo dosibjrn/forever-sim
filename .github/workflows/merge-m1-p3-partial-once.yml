@@ -11,6 +11,16 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Ensure canonical LFS SQLite is materialized
+        run: |
+          git lfs pull
+          python - <<'PY'
+          from pathlib import Path
+          for path in Path('data').rglob('*.sqlite'):
+              assert not path.read_bytes()[:50].startswith(b'version https://git-lfs.github.com/spec/v1'), path
+          PY
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
