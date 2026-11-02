@@ -280,3 +280,50 @@ def test_p74_source_paid_elite_archive_preserves_native_diversity_and_cold_resta
     assert gate._paid_gear_elite_choice(paid, chooser, 5) is None
     assert gate._paid_gear_elite_choice([], chooser, 1) is None
     assert len(paid) == 24  # sampling never mutates the measured archive
+
+
+def test_source_ranked_p74_samples_high_stat_sources_without_truncating_pool():
+    """Actual complete sorted candidate pool stays reachable, unlike top-N."""
+    source_items = list(range(1000))  # ascending ids stand for source rank
+    rng = random.Random(20261102)
+    ranked = [gate._source_ranked_item_choice(
+        source_items, rng, ranked=True) for _ in range(6000)]
+    assert sum(item < 32 for item in ranked) > 5300
+    assert any(item >= 900 for item in ranked), "Tail items remain reachable"
+    assert len(source_items) == 1000
+
+
+def test_source_ranked_p74_uniform_cold_path_still_reaches_non_elite_items():
+    source_items = list(range(1000))
+    rng = random.Random(20261102)
+    uniform = [gate._source_ranked_item_choice(
+        source_items, rng, ranked=False) for _ in range(1500)]
+    assert any(item >= 900 for item in uniform)
+    assert sum(item < 32 for item in uniform) < 120
+    assert len(source_items) == 1000
+
+
+def test_source_ranked_p74_gear_proposal_is_independent_of_saved_loadout():
+    """Rank bias is source-driven, not reference-seeded or a forced config."""
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 999}]},
+        "talentsString": "fixed",
+        "rotation": {"priorityList": []},
+    }]}]}}
+    original = copy.deepcopy(base)
+    checked = []
+    validator = SimpleNamespace(validate=lambda ids, enchants=None:
+                                checked.append(list(ids)))
+    source = SimpleNamespace(
+        _swap=lambda req, ids: {"raid": {"parties": [{"players": [{
+            **copy.deepcopy(req["raid"]["parties"][0]["players"][0]),
+            "equipment": {"items": [{"id": ids[0]}]},
+        }]}]}},
+        RejectedGear=ValueError,
+    )
+    candidate = gate._cold_gear(
+        base, validator, source, random.Random(17),
+        pool={0: list(range(1, 501))}, source_ranked=True)
+    assert checked and checked[0][0] in range(1, 501)
+    assert candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] != 999
+    assert base == original
