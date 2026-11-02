@@ -26,3 +26,7 @@ The bootstrap uses the token only in the trusted manual-dispatch job; PR jobs on
 Historical results may legitimately change with upstream mechanics. Do not erase the old witness or mislabel a changed score as a pass: record old/new engine SHAs, source and score; review the change, retain the historical reference, and run unchanged Forever gate predicates against a deliberately selected new pinned engine. Never automatically edit `docs/planning/M1_PASSES.tsv`.
 
 The existing production path is unchanged until the submodule transition is fully validated and merged. The fork sync is a packaging and engine-upgrade task, not a new PROCESS gate.
+
+## One-time Actions bootstrap dispatch (2026-11-02)
+
+The user confirmed that `FOREVER_RUST_FORK_TOKEN` is configured. The fork bootstrap runs once from a reviewed trusted-main push with squash title `chore(rust): run fork bootstrap one-shot`, after the preflight test. No secret is passed to pull requests, no automatic production submodule promotion happens, and future pushes cannot access the token unless their *reviewed main commit message* contains the explicit one-shot title. The workflow can also be launched manually at any time; after the initial run remove the temporary push trigger and retain `workflow_dispatch`.
