@@ -7,6 +7,8 @@ on:
       - .github/workflows/work2-p6-once.yml
       - tools/wf_gate_p6_live.py
       - tests/test_wf_gate_p6_live.py
+      - src/v2/source_bounded_joint_frontier.py
+      - tests/test_wf_p6_gear_source_snapshot.py
 permissions:
   contents: read
 jobs:
