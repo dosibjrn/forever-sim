@@ -60,6 +60,7 @@ class GearValidator:
         self.catalogue=Path(catalogue)
         self.rust_items=Path(rust_items)
         self.rust_enchants=Path(rust_enchants)
+        self.require_sqlite_catalogue(self.catalogue)
         self.connection=sqlite3.connect(f"file:{self.catalogue.resolve()}?mode=ro",uri=True)
         self.connection.row_factory=sqlite3.Row
         if self.connection.execute("PRAGMA quick_check").fetchone()[0]!="ok":
