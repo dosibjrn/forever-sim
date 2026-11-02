@@ -149,3 +149,22 @@ def test_real_source_slot_swap_and_duplicate_rejected():
         duplicated['equipped_gear']['slots'][b]['item_id'])
     with pytest.raises(ValueError, match='COLD_COMPARISON_WINNER_GEAR_NOT_SOURCE_LEGAL'):
         _verify_winner_gear_legality(duplicated, class_key='druid', level=30)
+
+
+def test_saved_source_space_version_must_match_executed_proposer_before_replay():
+    # A 30s and 300s pair can agree with one another while BOTH reports
+    # lie about the actual source gear candidate ordering (v1 vs v9).
+    # Such a pair must never be accepted as same-space P6 evidence.
+    snapshot = source_gear_catalogue_snapshot('druid', 30)
+    thirty, three_hundred = _saved_report(30, snapshot), _saved_report(300, snapshot)
+    for report in (thirty, three_hundred):
+        report['source_search_space'] = {
+            'gear_slot_sampling_version': 'stratified_source_slots_v1',
+            'gear_slot_offset': 0}
+        report['source_slot_proposal_coverage'] = {
+            'strategy': 'stratified_source_slots_v9_atomic_weapon_paid_witness'}
+    with pytest.raises(ValueError,
+            match='COLD_COMPARISON_SEARCH_SPACE_STRATEGY_ATTESTATION_MISMATCH'):
+        compare_saved_cold_winners(thirty, three_hundred, source_ir=None,
+            seed_stage=None, class_key='druid', level=30,
+            source_hash='pinned-ability-source', bonus_talent_points=0)
