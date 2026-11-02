@@ -1,4 +1,4 @@
-name: Work2 P6 short talent breadth experiment
+name: Work2 P6 independent 300s paid comparison
 on:
   push:
     branches:
@@ -14,7 +14,7 @@ permissions:
 jobs:
   real-source-paid-30s:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 13
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,20 +23,20 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Independent real 30s paid search and 100-mob replay
+      - name: Independent real 300s paid search and 100-mob replay
         run: |
           set -euo pipefail
           git rev-parse HEAD
           mkdir -p work2-real
-          python -m tools.wf437_direct_budgeted_run --budget 30 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output work2-real/t30.json
+          python -m tools.wf437_direct_budgeted_run --budget 300 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output work2-real/t300.json
           python - <<'PY'
           import json
           from pathlib import Path
-          x=json.loads(Path('work2-real/t30.json').read_text())
+          x=json.loads(Path('work2-real/t300.json').read_text())
           rows=[r for r in x['validation']['rows'] if r['status']=='COMPLETE' and r['count']==100]
           assert len(rows)==len(x['validation_shortlist'])>0
           best=min(rows,key=lambda r:r['full_s_per_mob'])
-          print('WORK2_30S_MACRO_BREADTH='+json.dumps({
+          print('WORK2_300S_COLD_PAID='+json.dumps({
               'source':x['source_db_sha256'], 'wall_s':x['wall_s'],
               'unique_paid':x['unique_full_builds'],
               'talent_probes':x['refinement']['talent_probes'],
@@ -48,12 +48,12 @@ jobs:
                   'operation':s.get('talent_neighbor_operation')}
                   for s in x['validation_shortlist']]
           },sort_keys=True),flush=True)
-          assert x['wall_s']<=30
+          assert x['wall_s']<=300
           assert x['source_db_sha256']=='047204bab4b477420437c2680480312fbe2a1cd9f48085ef3ce70d00c955f2f9'
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: work2-30s-macro-breadth
-          path: work2-real/t30.json
+          name: work2-300s-cold-comparison
+          path: work2-real/t300.json
           retention-days: 3
