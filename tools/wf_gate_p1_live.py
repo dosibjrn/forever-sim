@@ -622,7 +622,27 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                       f"{action.id}:{outcome['reason']}")
             else:
                 issue('COMBAT_ACTION_NOT_EXECUTED',row,f'{action.id}:{outcome}')
+    # PARTIAL diagnostic: numerator and denominator are the same real
+    # source-eligible highest-rank ability units. Only a source action whose
+    # observable effect executed in CombatRuntime contributes to the numerator.
+    # Source acquisition gaps remain explicit and the scope is provisional.
+    observed_source_abilities = sum(
+        bool({action.id for action in indexed.get(int(row['spell_id']), ())}
+             & set(exercised))
+        for row in eligible
+    )
     return {'status':'PASS' if not problems and eligible else 'FAIL',
+            'reachability_count':len(eligible),
+            'pass_count':observed_source_abilities,
+            'behavior_probes_executed':len(exercised),
+            'partial_scope':'OBSERVED_SOURCE_ELIGIBLE_ABILITY_EFFECTS',
+            'coverage_basis':'executed_behavior_assertions',
+            'coverage_scope_complete':not any(
+                p['code'] in ('SOURCE_ACTION_LEGALITY_UNRESOLVED',
+                              'UNRESOLVED_SOURCE_REQUIRED_LEVEL',
+                              'P1_EFFECT_SCOPE_UNRESOLVED',
+                              'SOURCE_SPELLBOOK_LEARNED_ROW_NOT_IN_INDEX')
+                for p in problems),
             'total_source_rows_at_or_below_level_or_unknown':len(source_rows),
             'excluded_nonaction_or_inactive_rows':ignored,
             'excluded_setup_rows':[r for r in ignored if r['role']=='SOURCE_NAMED_EQUIPMENT_ENGRAVING_SETUP'],
