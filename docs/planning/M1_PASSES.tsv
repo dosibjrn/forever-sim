@@ -2,5 +2,6 @@ class	level	spec	gate	passed_at_utc	commit	run_url	compatibility_id	status	verif
 druid	20	unrestricted	P1	2026-11-02T14:01:03.925787+00:00	e077799a1b5859afc3e8e264078ef2bba4163cad	https://github.com/dosibjrn/forever-sim/actions/runs/41457960489		PASS				2026-11-02T14:01:03.925787+00:00
 druid	20	unrestricted	P2		42abc08f7d1a395f2745b0386d3eca6bd5f77c66	https://github.com/dosibjrn/forever-sim/actions/runs/41415051542		PARTIAL	70	88	1	2026-11-02T08:43:03.272300+00:00
 druid	30	unrestricted	P4		41a8b8260732990e5aac0cf8f6132b1e179ca156	https://github.com/dosibjrn/forever-sim/actions/runs/41460353196		PARTIAL	3	35	1	2026-11-02T14:16:39.959087+00:00
+druid	30	unrestricted	P5		d3adeab4de4357d78fcf314adf211d9ec2af23ef	https://github.com/dosibjrn/forever-sim/actions/runs/41460804275		PARTIAL	3	35	1	2026-11-02T14:19:47.472095+00:00
 druid	60	balance	P2		42abc08f7d1a395f2745b0386d3eca6bd5f77c66	https://github.com/dosibjrn/forever-sim/actions/runs/41415051542		PARTIAL	84	103	1	2026-11-02T08:43:02.288403+00:00
 druid	60	balance	P3		4f5319356a2304a5da4d0c5f54e4db06be381d3f	https://github.com/dosibjrn/forever-sim/actions/runs/41455320161		PARTIAL	88	230	1	2026-11-02T13:43:04.993833+00:00
