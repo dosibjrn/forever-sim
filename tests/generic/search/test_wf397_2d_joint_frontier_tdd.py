@@ -7,7 +7,7 @@ from src.v2.source_persistent_joint_finalists import prepare_candidate
 from src.v2.source_bounded_joint_frontier import (
     isolated_joint_evaluation, search_bounded_joint_frontier)
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[3]
 
 
 def _scenario():
