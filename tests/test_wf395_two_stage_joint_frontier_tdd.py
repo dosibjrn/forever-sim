@@ -81,3 +81,68 @@ def test_two_stage_finalist_budget_must_be_positive():
         assert 'INVALID_JOINT_SEARCH_BUDGET' in str(e)
     else:
         raise AssertionError('zero finalist budget must not silently run a screen-only search')
+
+
+
+def test_single_finalist_retains_fastest_real_paid_build_over_slower_control():
+    """A one-slot 100-mob budget must not silently discard the paid winner.
+
+    Compare genuine source-legal Mage L30 equipment variants using the
+    production persistent CombatRuntime, then hand those measured screens to
+    the production finalist selector. The slower legal build is the control.
+    This is not a full P4 acceptance or a synthetic score.
+    """
+    from src.game.data.forever.source_checkpoint_p3_swaps import substituted_multi_stage
+    from src.v2.source_persistent_slot_search import _source_slot_proposals
+    from src.v2.source_persistent_joint_finalists import (
+        prepare_candidate, evaluate_persistent_candidate)
+    from src.v2.source_bounded_joint_frontier import _select_screen_finalists
+    from src.game.policy_evolution import _identity as policy_identity
+
+    ir, seed = _scenario('mage')
+    gear = seed['gear_policy_result']['winner']['gear']
+    moves, _ = _source_slot_proposals(
+        class_key='mage', level=30, base=gear, per_slot=3,
+        max_proposals=24)
+    stages = [('source_seed', seed)]
+    for slot, item in moves:
+        try:
+            variant = substituted_multi_stage(
+                stage=seed, class_key='mage', level=30,
+                swaps={slot: int(item.item_id)})
+        except (ValueError, KeyError):
+            continue
+        stages.append((f'{slot}:{item.item_id}', variant))
+    paid = []
+    for label, stage in stages[:16]:
+        candidate = prepare_candidate(
+            class_key='mage', level=30, stage=stage, source_ir=ir,
+            allow_partial_gear_stats=True)
+        result = evaluate_persistent_candidate(
+            candidate, level=30, mobs=2, max_total_events=200000)
+        if result['status'] == 'COMPLETE':
+            paid.append((float(result['mean_s_per_mob']), label, candidate, result))
+    assert len(paid) >= 2, paid
+    paid.sort(key=lambda entry: entry[0])
+    fastest, slowest = paid[0], paid[-1]
+    assert slowest[0] > fastest[0], [(x[0], x[1]) for x in paid]
+
+    def screened(entry, *, control):
+        score, label, candidate, result = entry
+        row = {
+            'screen_s_per_mob': score, 'allocation': candidate.allocation,
+            'gear_move': 'incumbent' if control else label,
+            'policy': 'incumbent', 'policy_signature': policy_identity(candidate.policy),
+            'policy_ir': candidate.policy.as_dict(), 'recovery': 'always',
+            'equipped_gear': candidate.source_stage['gear_policy_result']['winner']['gear'],
+            'is_control': control, 'screen_events': result['events'],
+            'screen_status': result['status'],
+        }
+        return row, candidate, None
+
+    finalists = _select_screen_finalists(
+        [screened(slowest, control=True), screened(fastest, control=False)],
+        max_finalists=1)
+    assert len(finalists) == 1
+    assert finalists[0][0]['screen_s_per_mob'] == fastest[0]
+    assert not finalists[0][0]['is_control']
