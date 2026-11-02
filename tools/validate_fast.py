@@ -46,7 +46,7 @@ TESTS = [
     "tests/integration/service/test_optimizer_service_client_v011487.py",
     "tests/integration/service/test_listener_service_controls_v011488.py",
     "tests/integration/service/test_optimizer_service_progress_v0114814.py",
-    "tests/test_listener_progress_contract_v0114814.py",
+    "tests/integration/service/test_listener_progress_contract_v0114814.py",
     "tests/integration/service/test_optimizer_service_operator_controls_v0114815.py",
     "tests/integration/service/test_optimizer_service_saved_state_ux_v0114816.py",
     "tests/integration/service/test_optimizer_service_workbench_v0114817.py",
@@ -59,7 +59,7 @@ TESTS = [
     "tests/test_wowhead_capture_i5prep_v0114830.py",
     "tests/test_master_optimizer_external_state_v011484.py",
     "tests/maintenance/test_architecture_boundaries.py",
-    "tests/test_listener_semantics.py",
+    "tests/integration/service/test_listener_semantics.py",
 ]
 
 
