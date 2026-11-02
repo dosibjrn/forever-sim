@@ -146,3 +146,40 @@ def test_negative_enemy_speed_still_rejected():
             other_targets=(TargetState.with_health('m1', 500),),
             spatial_positions_yards={'m0': (0., 0.), 'm1': (15., 0.)},
             enemy_move_speed_yards_s=-1., melee_radius_yards=5.)
+
+
+def test_saved_druid_source_target_health_drives_real_gsim_target():
+    """Source Go stats.Health is index 32, not the old 10m-HP probe default."""
+    import json
+    from pathlib import Path
+    from tools.wf_gsim_go_live_range_probe import (
+        diagnostic_gsim_world, source_target_health_from_request,
+    )
+    request = Path("docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json")
+    source = json.loads(request.read_text())
+    health = source_target_health_from_request(request.read_bytes())
+    assert health == source["encounter"]["targets"][0]["stats"][32] == 127393
+    runtime = diagnostic_gsim_world(
+        target_spawn_yards=15., enemy_move_speed_yards_s=0., target_health=health)
+    tick = GsimGoRangeFeed(runtime, native_player_index=0).next_tick()
+    assert tick["world_target_max_health"] == health
+    assert tick["world_target_health_before"] == health
+    assert tick["distance_yards"] == 15.
+
+
+@pytest.mark.parametrize("mutation", [
+    lambda x: x["encounter"]["targets"][0]["stats"].__setitem__(32, 0),
+    lambda x: x["encounter"]["targets"][0]["stats"].__setitem__(32, float("nan")),
+    lambda x: x["encounter"]["targets"][0].update(level=62),
+    lambda x: x["encounter"].update(targets=[]),
+    lambda x: x["encounter"]["targets"][0].update(stats=[]),
+])
+def test_source_target_health_fails_closed_on_invalid_reference(mutation):
+    import json
+    from pathlib import Path
+    from tools.wf_gsim_go_live_range_probe import source_target_health_from_request
+    request = Path("docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json")
+    source = json.loads(request.read_text())
+    mutation(source)
+    with pytest.raises(ValueError, match="SOURCE_"):
+        source_target_health_from_request(json.dumps(source).encode())
