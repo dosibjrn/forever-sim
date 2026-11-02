@@ -132,7 +132,7 @@ def test_action_started_only_is_not_proof_of_effect():
     assert r['status']=='FAIL' and 'COMBAT_ACTION_NOT_EXECUTED' in codes(r)
 
 
-def test_conditional_action_with_recognised_requirement_and_effect_dispatch_is_p1_pass():
+def test_conditional_action_with_recognised_requirement_is_not_p1_pass_without_effect():
     a=action(req=({'kind':'relative_position_is','value':'rear'},))
     r=audit_inventory([row()],ir_with(a),parser=lambda a:set(),
         source_classifier=lambda r,raw:{'role':'ABILITY'},
@@ -140,8 +140,27 @@ def test_conditional_action_with_recognised_requirement_and_effect_dispatch_is_p
         scratch_builder=lambda ir,max_candidates:[policy(a.id)],
         executor=lambda ir,a:{'status':'conditional','reason':"requires relative position 'rear'; have None"},
         effect_checker=lambda e:'direct_damage')
-    assert r['status']=='PASS' and len(r['conditional_actions'])==1
+    assert r['status']=='FAIL' and len(r['conditional_actions'])==1
     assert r['production_runtime_exercises']==0
+    assert 'CONDITIONAL_EFFECT_NOT_EXECUTED' in codes(r)
+    assert any('requires relative position' in (p['detail'] or '')
+               for p in r['problems'] if p['code']=='CONDITIONAL_EFFECT_NOT_EXECUTED')
+
+
+def test_source_legal_conditional_with_observed_effect_can_pass():
+    # The prerequisite does not waive effect execution, but a genuine
+    # observed effect still passes the existing production probe contract.
+    for sid in (100, 200):
+        a=action(sid,req=({'kind':'relative_position_is','value':'rear'},))
+        r=audit_inventory([row(sid=sid)],ir_with(a),parser=lambda a:set(),
+            source_classifier=lambda r,raw:{'role':'ABILITY'},
+            policy_builder=lambda ir,rules:policy(rules[0][0]),
+            scratch_builder=lambda ir,max_candidates:[policy(a.id)],
+            executor=lambda ir,a:{'status':'executed','effect_observed':True},
+            effect_checker=lambda e:'direct_damage')
+        assert r['status']=='PASS',r['problems']
+        assert r['production_runtime_exercises']==1
+        assert not r['conditional_actions']
 
 
 def test_conditional_status_cannot_hide_missing_source_prerequisite():
@@ -396,7 +415,10 @@ def test_matching_conditional_requirement_only():
            effect_checker=lambda e:'direct_damage')
     assert run('requires mode cat')['status']=='FAIL'
     assert run('requires 35 rage; have 0')['status']=='FAIL'
-    assert run('requires 35 energy; have 0')['status']=='PASS'
+    recognized=run('requires 35 energy; have 0')
+    assert recognized['status']=='FAIL'
+    assert 'CONDITIONAL_EFFECT_NOT_EXECUTED' in codes(recognized)
+    assert recognized['conditional_actions'][0]['reason']=='requires 35 energy; have 0'
 
 
 def test_source_rank_cannot_be_cast_before_own_minimum_level():
