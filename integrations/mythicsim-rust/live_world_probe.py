@@ -101,7 +101,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 return {"forged_ack_rejected": True, "native_damage_events": event_count}
             assert status == 0, f"RUST_NATIVE_WORLD_EXIT_{status}: {stderr[-4000:]}"
             result = json.loads(output.read_text())
-            native_dps = result["result"]["raidMetrics"]["dps"]["avg"]
+            # The genuine Rust protobuf-JSON report omits avg entirely for a
+            # zero-damage fight (80yd out of range); that is 0 DPS, not an error.
+            native_dps = result["result"]["raidMetrics"]["dps"].get("avg", 0.0)
             duration = result["result"]["firstIterationDuration"]
             assert result["result"]["iterationsDone"] == 1
             assert event_count > 0 or distance > 60
@@ -126,7 +128,9 @@ def main() -> None:
     p.add_argument("--request", type=Path, required=True)
     args = p.parse_args()
     near = run(args.binary, args.request, distance=15.)
+    print("REAL_RUST_NEAR_WORLD", json.dumps(near, sort_keys=True), flush=True)
     far = run(args.binary, args.request, distance=80.)
+    print("REAL_RUST_FAR_WORLD", json.dumps(far, sort_keys=True), flush=True)
     assert near["native_dps"] > far["native_dps"], (near, far)
     assert near["native_damage_events"] > far["native_damage_events"]
     forged = run(args.binary, args.request, distance=15., forge_ack=True)
