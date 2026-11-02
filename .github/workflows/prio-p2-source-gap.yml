@@ -42,6 +42,14 @@ jobs:
                   if cap<int(t.max_rank):
                       missing=[{'rank':r.rank,'kinds':[m.kind for m in r.modifiers]} for r in t.ranks if r.rank>cap]
                       print('P2_RANK_GAP',tree,t.id,'row',t.metadata.get('row'),'max',t.max_rank,'prefix',cap,'missing',missing,flush=True)
+          for t in compiled.talents:
+              if t.tree_key == 'balance' and _executable_rank_prefix(t) < int(t.max_rank):
+                  print('P2_SOURCE_META',t.id,'metadata',repr(t.metadata)[:3500],flush=True)
+                  for rank in t.ranks:
+                      print('P2_SOURCE_RANK',t.id,rank.rank,'provenance',repr(rank.provenance)[:3500],flush=True)
+          for t in ir.talents:
+              if t.tree_key == 'balance' and t.id in ('insect_swarm','moonkin_form','overgrowth','eclipse','natures_grace'):
+                  print('P2_ORIGINAL_RANK',t.id,[(r.rank,[m.kind for m in r.modifiers],repr(r.provenance)[:2000]) for r in t.ranks],flush=True)
           profile=_load_product_spec_profile(Path('.'),'druid',60,'balance',source_sha256=sha256(DEFAULT_DB.read_bytes()).hexdigest())
           print('P2_PROFILE',profile,flush=True)
           for t in compiled.talents:
