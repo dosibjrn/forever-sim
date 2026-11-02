@@ -26,6 +26,14 @@ def measured_live_coverage(report: dict) -> dict | None:
     """
     if not isinstance(report, dict) or report.get("status") not in ("FAIL", "PASS"):
         return None
+    # A completed paid *screen*, a visited gear slot, and a stochastic
+    # sample size are NOT successes of a gate's real behavioral predicates.
+    # The provider must count individually asserted, functioning behaviors.
+    # This marker alone is never enough: the executed-probe check below,
+    # source-backed positive/negative regression tests and Merge review
+    # must all hold. No arbitrary metadata-only progress is allowed.
+    if report.get("coverage_basis") != "executed_behavior_assertions":
+        return None
     n, d = report.get("pass_count"), report.get("reachability_count")
     if not (type(n) is int and type(d) is int and 0 <= n <= d and d > 0):
         return None
