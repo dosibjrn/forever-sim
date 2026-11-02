@@ -61,7 +61,8 @@ def test_registry_declares_exact_source_only_queue_capabilities(monkeypatch):
     for cls,n in [('druid',9),('druid',12),('warrior',11),('mage',11),('unknown',10),('../mage',10)]:
         with pytest.raises(ValueError): require_native_generic_queue(cls,n)
     from src.game.data.forever import queue_capabilities as qc
-    monkeypatch.setitem(qc._DECLARED_QUEUE_LEVELS, 'mage', (10,21))
+    invalid_level = generic_source_level_bounds('mage')[1] + 1
+    monkeypatch.setitem(qc._DECLARED_QUEUE_LEVELS, 'mage', (10, invalid_level))
     assert native_generic_queue_levels('mage') == () # entire invalid declaration refused
     assert _generic_ui_metadata(selected_level=10)['mage']['queued_native_decision_levels'] == []
 
