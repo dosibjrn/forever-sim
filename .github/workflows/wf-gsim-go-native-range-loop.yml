@@ -9,6 +9,7 @@ on:
       - work/wf28-native-world-health-feedback-20261101
       - work/first-native-source-long-horizon-20261102
       - work/first-native-druid-full-duration-20261102
+      - work/first-native-source-target-health-20261102
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
@@ -191,10 +192,12 @@ jobs:
           assert source["encounter"]["duration"]==120
           assert source["encounter"]["targets"][0]["level"]==63
           distance=player["distanceFromTarget"]
+          source_health=source["encounter"]["targets"][0]["stats"][32]
+          assert source_health==127393,source_health
           # Real gsim 2D target remains stationary at the source caster range.
           # This does not yet prove source target stats, facing/CC or P7.
           result=run(binary,request,ticks=1350,target_spawn_yards=distance,
-                     enemy_move_speed_yards_s=0.,timeout_s=30.)
+                     enemy_move_speed_yards_s=0.,timeout_s=30.,source_target_health=True)
           observations=result["observations"]
           end_ns=result["native_encounter_end_ns"]
           assert 105_000_000_000 <= end_ns <= 135_000_000_000,end_ns
@@ -203,6 +206,8 @@ jobs:
           last_ns=observations[-1]["world_tick"]["native_clock_ns"]
           assert 0 < end_ns-last_ns <= 100_000_000,(end_ns,last_ns)
           assert all(row["world_tick"]["distance_yards"]==distance for row in observations)
+          assert all(row["world_tick"]["world_target_max_health"]==source_health for row in observations)
+          assert observations[0]["world_tick"]["world_target_health_before"]==source_health
           assert all(row["native_actor_state"]["native_clock_ns"]==row["world_tick"]["native_clock_ns"]
                      for row in observations)
           assert result["native_spell_action_ack"]
@@ -211,8 +216,8 @@ jobs:
                      for row in observations)
           assert all(row["native_world_ack_confirmation"]["native_process_id"]==result["native_process_id"]
                      for row in observations)
-          print("REAL_SAVED_DRUID_NATIVE_WORLD_SAMPLED_END_ACK_PASS_NOT_P7",
-                len(observations),end_ns,last_ns)
+          print("REAL_SAVED_DRUID_SOURCE_HEALTH_AND_SAMPLED_END_ACK_PASS_NOT_P7",
+                len(observations),end_ns,last_ns,source_health)
           try:
               run(binary,request,ticks=1501)
           except ValueError as exc:
