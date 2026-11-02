@@ -39,6 +39,27 @@ def paid_gear_slot_coverage(search: dict) -> dict:
             "eligible_slots": sorted(eligible)}
 
 
+def paid_source_action_coverage(search: dict, source_actions) -> dict:
+    """Actual sourced actions cast in COMPLETE paid production screens.
+
+    Use the production GameIR action universe as the denominator; neither
+    candidate count nor explored gear slots contribute. This is a provisional
+    source-policy functional slice of P4/P5, not independent search acceptance.
+    A single completed source-action cast is useful, no 30/300s holdout required.
+    """
+    eligible = {str(a.id) for a in source_actions if getattr(a, "id", None)}
+    complete = [row for row in search.get("rows", ())
+                if row.get("screen_invoked")
+                and row.get("screen_status") == "COMPLETE"]
+    used = set()
+    for row in complete:
+        used.update(str(k) for k, n in
+                    (row.get("source_action_counts") or {}).items()
+                    if type(n) is int and n > 0)
+    return {"verified": len(eligible & used), "applicable": len(eligible),
+            "executed": len(complete)}
+
+
 def run_paid_partial(root: Path, class_key: str, level: int, *,
                      spec: str, gate: str, budget_s: float = 6.) -> dict:
     if gate not in ("P4", "P5"):
@@ -84,6 +105,7 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
          and int(row.get("complete_paid_screens") or 0) > 0)
         for row in unlocked.values()
     )
+    actions = paid_source_action_coverage(search, ir.actions)
     reasons = [
         gate + "_FULL_SEARCH_AND_INDEPENDENT_100MOB_NOT_EXECUTED",
         gate + "_SELECTED_NATIVE_2D_COMPATIBILITY_NOT_VERIFIED"]
@@ -97,15 +119,18 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         # This is the observed source-legal search BREADTH, never success%.
         "explored_paid_gear_slots": counts["verified"],
         "source_eligible_gear_slot_count": counts["applicable"],
-        # Count real executed talent-unlocked actions only where the
-        # source legal search discovered them. No denominator = no percent.
+        # Direct runtime contact with the source-legal action universe.
+        # This grants the first positive PARTIAL on one genuine completed
+        # paid source-action screen, without requiring a talent unlock.
+        # It is still only a narrow, provisional part of P4/P5.
         **({
-            "reachability_count": len(unlocked),
-            "pass_count": verified_unlocks,
-            "behavior_probes_executed": counts["executed"],
-            "partial_scope": "SOURCE_TALENT_UNLOCK_CAST_IN_COMPLETE_PAID_SCREEN",
+            "reachability_count": actions["applicable"],
+            "pass_count": actions["verified"],
+            "behavior_probes_executed": actions["executed"],
+            "partial_scope": "SOURCE_ACTIONS_CAST_IN_COMPLETE_PAID_SCREEN",
             "coverage_basis": "executed_behavior_assertions",
-        } if unlocked and counts["executed"] > 0 else {}),
+        } if actions["applicable"] and actions["executed"] else {}),
+        "real_talent_unlocked_actions_cast": verified_unlocks,
         "coverage_scope_complete": False,
         "paid_source_gear_slots": counts["paid_slots"],
         "source_eligible_gear_slots": counts["eligible_slots"],

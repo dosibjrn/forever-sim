@@ -1,6 +1,8 @@
 """P4/P5 actual on-demand source-paid 2D production probe checks."""
 from tools.wf_gate import ROOT, _run_live_gate
-from tools.wf_gate_p4_p5_partial import paid_gear_slot_coverage
+from types import SimpleNamespace
+from tools.wf_gate_p4_p5_partial import (paid_gear_slot_coverage,
+                                          paid_source_action_coverage)
 
 
 def test_paid_slot_partial_only_counts_complete_action_executions():
@@ -32,7 +34,7 @@ def test_p4_unrestricted_druid_l30_executes_real_source_paid_backend():
     assert report["real_paid_unique_full_builds"] >= 0
     if "pass_count" in report:
         assert report["coverage_basis"] == "executed_behavior_assertions"
-        assert report["partial_scope"] == "SOURCE_TALENT_UNLOCK_CAST_IN_COMPLETE_PAID_SCREEN"
+        assert report["partial_scope"] == "SOURCE_ACTIONS_CAST_IN_COMPLETE_PAID_SCREEN"
         assert 0 <= report["pass_count"] <= report["reachability_count"]
         assert report["reachability_count"] > 0
     assert report["selected_backend_integration_pending"]
@@ -45,3 +47,19 @@ def test_p5_is_not_300s_or_10x_acceptance():
     report = _run_live_gate(ROOT, "druid", 60, "balance", "P5", "")
     assert report["status"] == "BLOCKED"
     assert "SOURCE_SPEC_TREE_SEARCH_CONSTRAINT_NOT_YET_CONNECTED" in report["reasons"]
+
+
+def test_source_action_partial_counts_actual_complete_source_casts_only():
+    ir_actions = [SimpleNamespace(id="source:smite"),
+                  SimpleNamespace(id="source:renew"),
+                  SimpleNamespace(id="source:heal")]
+    search = {"rows": [
+        {"screen_invoked": True, "screen_status": "COMPLETE",
+         "source_action_counts": {"source:smite": 3, "unknown": 10}},
+        {"screen_invoked": True, "screen_status": "BLOCKED",
+         "source_action_counts": {"source:renew": 2}},
+    ]}
+    assert paid_source_action_coverage(search, ir_actions) == {
+        "verified": 1, "applicable": 3, "executed": 1}
+    search["rows"][1]["screen_status"] = "COMPLETE"
+    assert paid_source_action_coverage(search, ir_actions)["verified"] == 2

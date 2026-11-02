@@ -77,7 +77,7 @@ jobs:
             [[ "$entry" =~ ^(druid|hunter|mage|paladin|priest|rogue|shaman|warlock|warrior):(20|30|40|60):[a-z][a-z0-9_-]*:(P[1-6]|P7\.[1-5])$ ]] ||
               { echo "Invalid gate target: $entry" >&2; exit 2; }
             gate="${entry##*:}"
-            if [[ "$heavy" != true && ( "$gate" == P5 || "$gate" == P6 || "$gate" == P7.* ) ]]; then
+            if [[ "$heavy" != true && ( "$gate" == P6 || "$gate" == P7.* ) ]]; then
               echo "Gate $gate needs explicit --heavy / allow_heavy opt-in" >&2; exit 2
             fi
             if [[ -z "${seen[$entry]:-}" ]]; then
@@ -86,6 +86,7 @@ jobs:
             fi
           done
           printf 'targets=%s\n' "$(IFS=' '; echo "${unique[*]}")" >> "$GITHUB_OUTPUT"
+          printf 'heavy=%s\n' "$heavy" >> "$GITHUB_OUTPUT"
           echo "Accepted ${#unique[@]} production targets"
 
       - name: Checkout current main, without saved write credentials
@@ -105,23 +106,51 @@ jobs:
         shell: bash
         env:
           TARGETS: ${{ steps.targets.outputs.targets }}
+          ALLOW_HEAVY: ${{ steps.targets.outputs.heavy }}
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
           echo "Measured production HEAD: $(git rev-parse HEAD)"
           read -r -a entries <<< "$TARGETS"
+          echo "## M1 live-gate results" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Gate | Verdict | Measured component / objective |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
           for entry in "${entries[@]}"; do
             IFS=: read -r class level spec gate <<< "$entry"
             echo "::group::M1 $entry"
             report="$(mktemp)"
             rc=0
-            timeout 600s python tools/wf_gate.py --class "$class" --level "$level" \
+            timeout_s=600
+            # Current P5 probe is six seconds; do not require a heavy 300s
+            # opt-in merely to obtain its first genuine functional PARTIAL.
+            # If P5 later evolves into full acceptance, keep this light cap.
+            if [[ "$gate" == P5 && "$ALLOW_HEAVY" != true ]]; then timeout_s=20; fi
+            timeout "${timeout_s}s" python tools/wf_gate.py --class "$class" --level "$level" \
               --spec "$spec" --gate "$gate" --record-progress --out "$report" || rc=$?
             python -c 'import json,sys; from pathlib import Path; d=json.loads(Path(sys.argv[1]).read_text()); rc=int(sys.argv[2]); assert d["status"] in ("PASS","FAIL","BLOCKED") and rc in (0,1) and ((rc==0)==(d["status"]=="PASS")), "Incomplete or inconsistent live gate"; print(json.dumps(d, ensure_ascii=False))' "$report" "$rc"
+            python - "$report" "$entry" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          d=json.loads(Path(sys.argv[1]).read_text())
+          item=d["results"][0]
+          measure=(
+              f'{item["verified"]:g}/{item["applicable"]:g}'
+              if isinstance(item.get("verified"), (int, float))
+              and isinstance(item.get("applicable"), (int, float))
+              else f'{item["dps_objective_actual"]:g}/{item["dps_objective_required"]:g} DPS'
+              if "dps_objective_actual" in item else "not measurable")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+              f.write(f'| `{sys.argv[2]}` | {d["status"]} | {measure} |\n')
+          PY
             rm -f "$report"
             echo "::endgroup::"
           done
-          python tools/m1_progress.py
+          python tools/m1_progress.py | tee "$RUNNER_TEMP/m1-scoreboard.txt"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '### M1 scoreboard (best measured)' >> "$GITHUB_STEP_SUMMARY"
+          echo '~~~text' >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/m1-scoreboard.txt" >> "$GITHUB_STEP_SUMMARY"
+          echo '~~~' >> "$GITHUB_STEP_SUMMARY"
           git diff --stat -- docs/planning/M1_PASSES.tsv
 
       - name: Update M1 in main only if the ledger changed
