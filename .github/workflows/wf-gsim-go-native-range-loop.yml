@@ -200,6 +200,10 @@ jobs:
           assert front["native_request_sha256"] == back["native_request_sha256"]
           assert front["native_binary_sha256"] == back["native_binary_sha256"]
           assert front["native_encounter_end_ns"] == back["native_encounter_end_ns"]
+          print("FERAL_NATIVE_BACK_ACTIONS",
+                [(row["action_id"],row["casts"]) for row in back["observations"][-1]["native_spell_counters"]],flush=True)
+          print("FERAL_NATIVE_FRONT_ACTIONS",
+                [(row["action_id"],row["casts"]) for row in front["observations"][-1]["native_spell_counters"]],flush=True)
           back_shred,front_shred=casts(back,9830),casts(front,9830)
           front_claw=casts(front,9850)
           assert back_shred>0 and front_shred==0 and front_claw>0, (back_shred,front_shred,front_claw)
