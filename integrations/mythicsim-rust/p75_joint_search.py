@@ -50,7 +50,10 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
         axes=(repair_axes if repair_axes is not None else
               (rng.choices(("gear","talents","rotation","enchant"),
                            weights=(50,27,18,5))[0],))
-        if not axes or any(a not in ("gear","talents","rotation","enchant") for a in axes):
+        allowed=("gear","talents","rotation","enchant",
+                 "gear_rebuild","talents_rebuild","rotation_rebuild")
+        if (not isinstance(axes, tuple) or not axes or
+                any(a not in allowed for a in axes)):
             raise ValueError("INVALID_REPAIR_AXES")
         for axis in axes:
             if axis=="gear":
@@ -61,6 +64,13 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
                 ranks=edit_neighbors(ranks,rng)
             elif axis=="rotation":
                 actions=mutate_apl(actions,player(reference)["rotation"]["priorityList"],rng)
+            elif axis=="gear_rebuild":
+                ids=[pick_gear(pools[j],rng) for j in range(16)]
+                enchants=[rng.choice(enchant_choices[i]) for i in range(16)]
+            elif axis=="talents_rebuild":
+                ranks=random_build(rng)
+            elif axis=="rotation_rebuild":
+                actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
             else:
                 candidates=[i for i,options in enchant_choices.items()
                             if any(e != enchants[i] for e in options)]
