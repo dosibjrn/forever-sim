@@ -1,0 +1,21 @@
+name: Work1 P7 frozen final receipt focused regression (temporary)
+on:
+  push:
+    branches:
+      - work/work1-p7-frozen-score-receipt-20261102
+  workflow_dispatch:
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install minimal test dependency
+        run: python -m pip install pytest
+      - name: Check source compiles
+        run: python -m compileall -q tools/wf_gate.py tests/gates/test_wf_gate_live_success_percent.py
+      - name: Run P7.5 final diagnostic no-pass regression
+        run: python -m pytest -q tests/gates/test_wf_gate_live_success_percent.py -k p7_5_cli_receipt_exposes_real_stochastic_final
