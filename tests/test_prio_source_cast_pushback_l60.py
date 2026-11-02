@@ -82,3 +82,32 @@ def test_current_canonical_l60_rank1_has_real_paired_pushback_execution():
     witness = _cast_pushback_runtime_witness(before, after, mod)
     assert witness is not None
     assert witness['before_delay_s'] > witness['after_delay_s']
+
+
+@pytest.mark.parametrize('rank_number', [2, 3, 4, 5])
+def test_canonical_l60_pushback_rank_up_executes_incremental_delta(rank_number):
+    """Every L60 rank N must work against rank N-1, not only rank one.
+
+    The captured tooltip is cumulative (14/28/42/56/70%). P2's paired
+    behavior fixture measures the *increment* for a single legal rank-up.
+    """
+    compiled, _ = compile_talent_runtime(
+        build_game_ir_slice(class_key='druid', level=60))
+    talent = next(t for t in compiled.talents if t.id == 'natures_focus')
+    current = next(r for r in talent.ranks if r.rank == rank_number)
+    previous = next(r for r in talent.ranks if r.rank == rank_number - 1)
+    assert len(current.modifiers) == len(previous.modifiers) == 1
+    curr_mod, prev_mod = current.modifiers[0], previous.modifiers[0]
+    assert curr_mod.kind == prev_mod.kind == 'cast_pushback_avoidance_chance'
+    assert curr_mod.target_id == prev_mod.target_id == 'damage_schools:arcane,nature'
+    assert curr_mod.value - prev_mod.value == pytest.approx(.14)
+
+    before, _ = apply_talent_selection(
+        compiled, {'natures_focus': rank_number - 1}, level=60)
+    after, _ = apply_talent_selection(
+        compiled, {'natures_focus': rank_number}, level=60)
+    incremental = replace(curr_mod, value=curr_mod.value - prev_mod.value)
+    witness = _cast_pushback_runtime_witness(before, after, incremental)
+    assert witness is not None
+    assert witness['probe'] == 'paired_production_cast_pushback'
+    assert witness['before_delay_s'] - witness['after_delay_s'] == pytest.approx(.5 * .14)
