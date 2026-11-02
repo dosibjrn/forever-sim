@@ -1,4 +1,5 @@
 name: Work1 P7 world damage receipt focused exact-HEAD validation (one-shot)
+# Revalidate receipt diagnostics after the first source-backed RED run.
 on:
   push:
     branches: [work/work1-p7-world-damage-conservation-20261102]
