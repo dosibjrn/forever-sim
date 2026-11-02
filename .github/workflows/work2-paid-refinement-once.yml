@@ -25,4 +25,4 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check pytest==8.3.5 beautifulsoup4==4.13.4
-          python -m pytest -q tests/test_source_paid_gear_witness_priority.py -k test_refinement_never_spends_a_second_real_screen_past_paid_budget
+          python -m pytest -q tests/test_source_paid_gear_witness_priority.py tests/test_source_wand_paid_slot_proposals.py
