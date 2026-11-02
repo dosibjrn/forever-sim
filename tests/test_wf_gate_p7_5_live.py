@@ -66,6 +66,11 @@ def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypat
 
     class Validator:
         engine = {11: {"name": "one"}, 21: {"name": "two"}}
+        # This parity-negative-control fixture supplies a source validator
+        # seam; the real LFS/SQLite check is independently tested above.
+        @staticmethod
+        def require_sqlite_catalogue(path):
+            assert path == catalogue
         def __init__(self, *args): pass
         def validate(self, ids, enchants): assert ids == [11, 21]
         def close(self): pass

@@ -56,10 +56,21 @@ def _norm(s):
     return " ".join(str(s or "").casefold().split())
 
 class GearValidator:
+    @staticmethod
+    def require_sqlite_catalogue(catalogue):
+        """Never mistake an unhydrated LFS pointer for a source item database."""
+        with Path(catalogue).open("rb") as stream:
+            header = stream.read(96)
+        if header.startswith(b"version https://git-lfs.github.com/spec/v1"):
+            raise ValueError("SOURCE_CATALOGUE_GIT_LFS_POINTER_NOT_HYDRATED")
+        if not header.startswith(b"SQLite format 3\x00"):
+            raise ValueError("SOURCE_CATALOGUE_NOT_SQLITE")
+
     def __init__(self, catalogue, rust_items, rust_enchants, reference):
         self.catalogue=Path(catalogue)
         self.rust_items=Path(rust_items)
         self.rust_enchants=Path(rust_enchants)
+        self.require_sqlite_catalogue(self.catalogue)
         self.connection=sqlite3.connect(f"file:{self.catalogue.resolve()}?mode=ro",uri=True)
         self.connection.row_factory=sqlite3.Row
         if self.connection.execute("PRAGMA quick_check").fetchone()[0]!="ok":

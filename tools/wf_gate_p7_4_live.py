@@ -58,6 +58,10 @@ def run_live(root: Path, class_key: str, level: int, *,
     if any(not path.is_file() for path in (catalogue, items, enchants)):
         return {"status": "BLOCKED",
                 "reasons": ["P7_4_PINNED_SOURCE_OR_NATIVE_ITEM_DATABASE_MISSING"]}
+    try:
+        gear_search.GearValidator.require_sqlite_catalogue(catalogue)
+    except ValueError as exc:
+        return {"status": "BLOCKED", "reasons": ["P7_4_" + str(exc)]}
     rng = random.Random(667)
     player = base["raid"]["parties"][0]["players"][0]
     executed = 0

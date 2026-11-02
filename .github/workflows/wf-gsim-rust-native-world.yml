@@ -23,6 +23,9 @@ jobs:
           repository: sage3648/mythicsim-forever-engine
           ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
           path: upstream
+      - name: Hydrate only the P7 source item catalogue from Git LFS
+        working-directory: project
+        run: git lfs pull --include="data/forever/catalogue/items_2026-09-29.sqlite" --exclude=""
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

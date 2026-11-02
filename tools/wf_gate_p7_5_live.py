@@ -65,6 +65,10 @@ def run_live(root: Path, class_key: str, level: int, *,
         return {"status": "BLOCKED",
                 "reasons": ["P7_5_SOURCE_OR_PINNED_RUST_ITEM_DATA_MISSING"]}
 
+    try:
+        source.GearValidator.require_sqlite_catalogue(catalogue)
+    except ValueError as exc:
+        return {"status": "BLOCKED", "reasons": ["P7_5_" + str(exc)]}
     validator = source.GearValidator(catalogue, items, enchants, base)
     rng = random.Random(670)
     best = None
