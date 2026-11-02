@@ -204,6 +204,19 @@ def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: 
     return sum(scores) / len(scores), final_live
 
 
+def _paid_step_has_budget(search_start: float, observed_max_s: float) -> bool:
+    """Do not launch an indivisible native+2D paid call too near 300s.
+
+    A full candidate/rerank includes multiple subprocess calls. The old loop
+    only checked time at its head, so a 24-fight finalist started at 299s
+    could finish at 302s and prevent the independent 1,000-fight holdout.
+    Reserve 1.5x the slowest observed same-kind step plus 250ms, while
+    leaving the final 300s deadline and all source-paid results unchanged.
+    """
+    reserve_s = max(0.25, observed_max_s * 1.5 + 0.25)
+    return time.monotonic() + reserve_s < search_start + 300.0
+
+
 def _freeze_paid_p74_winner(screen_best, reranked):
     """Freeze genuinely paid stochastic winner; never use the 1k holdout to rank."""
     if reranked:
@@ -260,6 +273,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     proposals = 0
     validator = gear_search.GearValidator(catalogue, items, enchants, base)
     search_start = time.monotonic()
+    worst_screen_s = 0.0
+    worst_finalist_s = 0.0
     try:
         # The existing source+Rust item validator enumerates the pool once;
         # re-querying SQLite for every candidate would waste the 300s budget.
@@ -292,8 +307,11 @@ def run_live(root: Path, class_key: str, level: int, *,
                     if hashlib.sha256(json.dumps(candidate, sort_keys=True).encode()).hexdigest()
                     not in rerank_seen), None)
                 if pending is not None:
+                    if not _paid_step_has_budget(search_start, worst_finalist_s):
+                        break  # last indivisible native+2D rerank cannot fit
                     screen_score, contender, contender_sha = pending
                     rerank_seen.add(contender_sha)
+                    paid_start = time.perf_counter()
                     try:
                         stochastic_score, stochastic_live = _paid_gear_stochastic_finalist(
                             production, binary, contender, player["distanceFromTarget"])
@@ -304,7 +322,14 @@ def run_live(root: Path, class_key: str, level: int, *,
                             subprocess.SubprocessError) as exc:
                         rerank_failures.append(
                             type(exc).__name__ + ":" + str(exc)[:180])
+                    finally:
+                        worst_finalist_s = max(
+                            worst_finalist_s, time.perf_counter() - paid_start)
                     continue
+            if full_search and not _paid_step_has_budget(
+                    search_start, worst_screen_s):
+                break  # preserve time for the final 1,000-fight holdout
+            paid_start = time.perf_counter()
             proposals += 1
             try:
                 # Local exploitation uses only a winner already paid in THIS
@@ -360,8 +385,16 @@ def run_live(root: Path, class_key: str, level: int, *,
             except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
                     TypeError, AssertionError, subprocess.SubprocessError) as exc:
                 failures.append(type(exc).__name__ + ":" + str(exc)[:180])
+            finally:
+                worst_screen_s = max(
+                    worst_screen_s, time.perf_counter() - paid_start)
     finally:
         validator.close()
+    if full_search:
+        # Unused tail time is too short for an observed paid native+2D step.
+        # Complete the actual 300s independent wall-time window rather than
+        # starting a long blocking call that can overrun it.
+        time.sleep(max(0.0, search_start + 300.0 - time.monotonic()))
     search_wall_s = time.monotonic() - search_start
     if best is None:
         return {"status": "FAIL",
