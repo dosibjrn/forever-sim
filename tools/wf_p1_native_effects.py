@@ -91,9 +91,34 @@ def _run(binary: Path, req: dict, *, timeout_s: float) -> dict:
         cp = subprocess.run([str(binary), "sim", "--request", str(request_path),
                              "--outfile", str(output_path), "--gate"],
                             capture_output=True, text=True, timeout=timeout_s)
+        if cp.returncode == 5:
+            # Rust prepare_request prints the structured refusal to stdout and
+            # exits 5. Its stderr is normally empty; do not erase the actual
+            # native reason or conflate unsupported input with an engine crash.
+            try:
+                refused = json.loads(cp.stdout)
+            except (ValueError, TypeError):
+                refused = None
+            detail = refused.get("refusal") if isinstance(refused, dict) else None
+            if isinstance(detail, dict):
+                code, reason = detail.get("code"), detail.get("reason")
+                if isinstance(code, str) and isinstance(reason, str):
+                    raise ValueError(f"NATIVE_PREPARE_REFUSED:{code}:{reason}")
+        if cp.returncode == 3:
+            # A valid prepared request can be refused by the coverage gate.
+            # The refusal report lives on stdout, not in a result file.
+            try:
+                coverage = json.loads(cp.stdout)
+            except (ValueError, TypeError):
+                coverage = None
+            if isinstance(coverage, dict) and coverage.get("supported") is False:
+                refusals = coverage.get("refusals")
+                raise ValueError("NATIVE_COVERAGE_REFUSED:"
+                                 + json.dumps(refusals, sort_keys=True))
         if cp.returncode != 0 or not output_path.is_file():
             raise ValueError("REAL_NATIVE_EXECUTION_FAILED:"
-                             + cp.stderr[-700:] + ":exit=" + str(cp.returncode))
+                             + cp.stderr[-700:] + ":exit=" + str(cp.returncode)
+                             + ":stdout=" + cp.stdout[-700:])
         data = json.loads(output_path.read_text())
     if data.get("identity", {}).get("engine") != "forever-engine":
         raise ValueError("NON_RUST_FOREVER_ENGINE_RESULT")

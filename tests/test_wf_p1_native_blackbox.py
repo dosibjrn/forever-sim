@@ -85,3 +85,38 @@ def test_source_only_nonimpact_never_becomes_an_effect_pass():
     for name in ("Aquatic Form", "Growl", "Cure Poison", "Rebirth", "Revive"):
         assert rows[name] == "NOT_RELEVANT_TO_SIMULATION"
     assert result["p1_certified"] is False
+
+
+
+def test_native_preparation_refusal_preserves_rust_reason(monkeypatch, tmp_path):
+    """The pinned Rust CLI emits a JSON refusal on stdout with exit code 5."""
+    from subprocess import CompletedProcess
+    from tools.wf_p1_native_effects import _run
+
+    def refused(argv, **kwargs):
+        return CompletedProcess(
+            argv, 5,
+            stdout='{"prepared":false,"refusal":{"code":"talents","reason":"illegal rank"}}',
+            stderr="",
+        )
+
+    monkeypatch.setattr("tools.wf_p1_native_effects.subprocess.run", refused)
+    with pytest.raises(ValueError, match="NATIVE_PREPARE_REFUSED:talents:illegal rank"):
+        _run(tmp_path / "forever-engine", _sample_request(), timeout_s=1.0)
+
+
+def test_native_coverage_refusal_preserves_rust_reason(monkeypatch, tmp_path):
+    """Valid unsupported inputs report exit 3, not a synthetic P1 success."""
+    from subprocess import CompletedProcess
+    from tools.wf_p1_native_effects import _run
+
+    def refused(argv, **kwargs):
+        return CompletedProcess(
+            argv, 3,
+            stdout='{"supported":false,"refusals":[{"code":"native_gap","reason":"unsupported spell"}]}',
+            stderr="",
+        )
+
+    monkeypatch.setattr("tools.wf_p1_native_effects.subprocess.run", refused)
+    with pytest.raises(ValueError, match="NATIVE_COVERAGE_REFUSED:"):
+        _run(tmp_path / "forever-engine", _sample_request(), timeout_s=1.0)
