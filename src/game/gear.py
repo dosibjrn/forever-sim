@@ -21,7 +21,8 @@ from src.game.data.forever.stat_conversions import (load_mode_stat_conversions,
 from src.game.data.forever.equipped_weapon_modes import load_equipped_weapon_mode_facts
 
 
-EXECUTABLE_CASTER_GEAR_STATS = ("spell_power", "intellect", "spirit", "mp5")
+EXECUTABLE_CASTER_GEAR_STATS = ("spell_power", "intellect", "spirit", "mp5",
+                                "crit", "hit", "dodge")
 # The shared combat executor already reads agility (mode AP modifiers) and
 # attack_power (weapon/auto-attack damage). Keep the legacy caster envelope
 # unchanged while allowing the joint search to evaluate sourced melee gear.
@@ -482,6 +483,19 @@ def _apply_executable_stats(
             selected_items=selected_items, db_path=db_path)
     if provenance.get('source') != 'generic_stat_sensitivity_probe':
         applied = _replace_named_stat_dps(applied, stat_delta, selected_items)
+    # A raw item chance field is NOT a combat stat on its own. Use the
+    # existing sourced Forever item-chance adapter (14 crit / 10 hit / 12
+    # dodge raw points per 1%) for both paid selected gear and the SAME
+    # finite-difference stat probe. That adapter validates the source
+    # scope and directly alters the channels read by CombatRuntime.
+    chance_stats = ('crit', 'hit', 'dodge')
+    if any(float(stat_delta.get(key, 0.) or 0.) for key in chance_stats):
+        from src.game.data.forever.source_checkpoint_p3_ratings import apply_source_item_stat_delta
+        level = int(ir_slice.actor.metadata['level'])
+        for key in chance_stats:
+            delta = float(stat_delta.get(key, 0.) or 0.)
+            if delta:
+                applied = apply_source_item_stat_delta(applied, key, delta, level=level)
     return applied
 
 
