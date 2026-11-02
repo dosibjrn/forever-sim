@@ -41,7 +41,7 @@ def _source_ranked_item_choice(items, rng: random.Random, *, ranked: bool):
 
 def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
                pool=None, enchant_pools=None, elite=None,
-               source_ranked=False):
+               source_ranked=False, neighbor_mode="mixed"):
     """Independent cold discovery or local edits of this run's paid winner.
 
     The saved loadout is never a search seed. An elite is only supplied after
@@ -62,6 +62,8 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
         paid_items = paid["equipment"]["items"]
         if len(paid_items) != len(reference):
             raise ValueError("P74_PAID_ELITE_CHANGED_GEAR_SLOTS")
+    if neighbor_mode not in ("mixed", "single", "enchant"):
+        raise ValueError("P74_INVALID_PAID_NEIGHBOR_MODE")
     for _ in range(60):
         if paid_items is None:
             ids = [_source_ranked_item_choice(pool[i], rng, ranked=source_ranked)
@@ -74,12 +76,28 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
             # engine. Keep the elite immutable; sample only source pools.
             ids = [int(item["id"]) for item in paid_items]
             enchants = [item.get("enchant") for item in paid_items]
-            for _step in range(rng.randint(1, min(5, len(reference)))):
+            if neighbor_mode == "enchant":
+                # Keep this genuinely paid item's gear fixed while testing a
+                # separate source-legal enchant choice. The previous search
+                # changed enchants only as a side effect of swapping gear.
+                if enchant_pools is None:
+                    raise ValueError("P74_ENCHANT_NEIGHBOR_REQUIRES_SOURCE_POOLS")
                 slot = rng.randrange(len(reference))
-                ids[slot] = _source_ranked_item_choice(
-                    pool[slot], rng, ranked=source_ranked)
-                if enchant_pools is not None:
-                    enchants[slot] = rng.choice(enchant_pools[slot])
+                enchants[slot] = rng.choice(enchant_pools[slot])
+            else:
+                # Single-slot coordinate improvements are less likely to
+                # erase several already-paid good slots than 1-5 random edits.
+                steps = (1 if neighbor_mode == "single" else
+                         rng.randint(1, min(5, len(reference))))
+                for _step in range(steps):
+                    slot = rng.randrange(len(reference))
+                    ids[slot] = _source_ranked_item_choice(
+                        pool[slot], rng, ranked=source_ranked)
+                    if enchant_pools is not None:
+                        enchants[slot] = rng.choice(enchant_pools[slot])
+            if (ids == [int(item["id"]) for item in paid_items]
+                    and enchants == [item.get("enchant") for item in paid_items]):
+                continue  # unchanged paid elite is not a new discovery
         # Reference-equivalent builds may be independently rediscovered, but
         # they are never used to initialize this cold search.
         if ids == reference and enchants == original_enchants:
@@ -181,7 +199,16 @@ def run_live(root: Path, class_key: str, level: int, *,
                     # Four of five proposals exploit legal stat-ranked source
                     # candidates; every fifth samples the entire source
                     # universe uniformly. This is not a top-N legality filter.
-                    source_ranked=full_search and proposals % 5 != 0)
+                    source_ranked=full_search and proposals % 5 != 0,
+                    # Within the 4/5 paid-elite proposals, use one-slot
+                    # coordinate edits or enchant-only corrections alongside
+                    # the existing 1-5-slot neighborhood. Every fifth draw
+                    # remains a fully independent cold source-pool candidate.
+                    neighbor_mode=(
+                        "enchant" if full_search and elite is not None
+                        and proposals % 4 == 0 else
+                        "single" if full_search and elite is not None
+                        and proposals % 4 in (1, 3) else "mixed"))
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
