@@ -101,10 +101,14 @@ def _saved_winner(report, *, expected_budget, source_hash, class_key, level):
     if not 0 <= index < len(rows):
         raise ValueError('COLD_COMPARISON_WINNER_OUTSIDE_SAVED_SHORTLIST')
     witnessed = next((row for row in validation.get('rows', ())
-                      if str(row.get('id')) == str(index)), None)
+                      if isinstance(row, dict)
+                      and str(row.get('id')) == str(index)), None)
+    seconds = witnessed.get('full_s_per_mob') if witnessed else None
     if (witnessed is None or witnessed.get('status') != 'COMPLETE'
-            or witnessed.get('count') != 100
-            or not isfinite(float(witnessed.get('full_s_per_mob') or float('inf')))):
+            or type(witnessed.get('count')) is not int
+            or witnessed['count'] != 100
+            or type(seconds) not in (int,float)
+            or not isfinite(seconds) or seconds<=0):
         raise ValueError('COLD_COMPARISON_WINNER_NOT_100MOB_COMPLETE')
     selected = rows[index]
     required = {'allocation', 'equipped_gear', 'opening_action_ids',
