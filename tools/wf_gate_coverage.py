@@ -60,3 +60,56 @@ def measured_live_coverage(report: dict) -> dict | None:
         "coverage_component": str(scope),
         "scope_provisional": provisional,
     }
+
+
+def measured_p7_dps_proximity(gate: str, report: dict) -> dict | None:
+    """P7 DPS-objective closeness; NEVER the full gate's functional success%.
+
+    A selected native↔world execution must have actually produced the measured
+    score on the pinned report. Earlier UI/legality/holdout requirements can
+    still BLOCK the gate. No 10000-iteration prerequisite is created here.
+    """
+    if gate not in ("P7.1", "P7.2", "P7.3", "P7.4", "P7.5"):
+        return None
+    if not isinstance(report, dict) or report.get("status") not in ("FAIL", "BLOCKED", "PASS"):
+        return None
+    if report.get("production_engine") != "pinned_mythicsim_rust_gsim_2d":
+        return None
+    if not (report.get("source_request_raw_sha256")
+            and report.get("native_source_revision")
+            and type(report.get("world_damage_events")) is int
+            and report["world_damage_events"] > 0
+            and type(report.get("world_boundaries")) is int
+            and report["world_boundaries"] > 0):
+        return None
+
+    reference = report.get("saved_reference_dps")
+    if type(reference) not in (int, float) or not isfinite(reference) or reference <= 0:
+        return None
+
+    if gate == "P7.5":
+        actual = report.get("holdout_mean_dps")
+        # Required comparator is the *strongest accepted compatible prior*,
+        # not whichever unverified trial happens to have the largest DPS.
+        prior = report.get("strongest_accepted_compatible_prior_dps")
+        if (type(prior) not in (int, float) or not isfinite(prior)
+                or prior <= 0):
+            return None
+        required = max(float(reference), .99 * prior)
+    else:
+        actual = report.get("world_dps") if gate == "P7.1" else report.get("winner_live_dps")
+        required = float(reference) * (.99 if gate in ("P7.2", "P7.3", "P7.4") else 1.)
+    if type(actual) not in (int, float) or not isfinite(actual) or actual < 0:
+        return None
+
+    c = min(1., float(actual) / required)
+    return {
+        "dps_objective_actual": round(float(actual), 4),
+        "dps_objective_required": round(required, 4),
+        "dps_objective_proximity_percent": round(100 * c, 2),
+        "dps_objective_pareto_effort_estimate_percent": round(
+            100 * pareto_effort_fraction(c), 2),
+        "dps_objective_scope": "COUPLED_LIVE_REFERENCE_DPS_ONLY",
+        "dps_objective_provisional": True,
+        "dps_objective_gate_pass": False,
+    }
