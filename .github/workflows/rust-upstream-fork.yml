@@ -2,6 +2,9 @@ name: Bootstrap and sync MythicSim Rust public fork
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [docs/RUST_UPSTREAM_FORK.md]
   pull_request:
     paths:
       - .github/workflows/rust-upstream-fork.yml
@@ -19,6 +22,7 @@ jobs:
       - name: Syntax check and verify fail-closed bootstrap guards
         run: |
           bash -n scripts/bootstrap_mythicsim_rust_fork.sh
+          python3 -m py_compile integrations/mythicsim-rust/verify_upstream_candidate.py
           python3 - <<'PY'
           from pathlib import Path
           s = Path("scripts/bootstrap_mythicsim_rust_fork.sh").read_text()
@@ -34,7 +38,7 @@ jobs:
           PY
 
   sync-fork:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.actor == 'dosibjrn' && contains(github.event.head_commit.message, 'run fork upstream validation retry'))
     needs: check-script
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -47,6 +51,13 @@ jobs:
         env:
           FOREVER_RUST_FORK_TOKEN: ${{ secrets.FOREVER_RUST_FORK_TOKEN }}
         run: bash scripts/bootstrap_mythicsim_rust_fork.sh
+      - name: Save versioned native/2D upstream comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-upstream-candidate-${{ github.run_id }}
+          path: rust-upstream-candidate.json
+          if-no-files-found: ignore
       - name: Report verified result
         env:
           FORK_SHA: ${{ steps.sync.outputs.FORK_ENGINE_SHA }}
