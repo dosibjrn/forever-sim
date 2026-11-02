@@ -57,6 +57,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     previous_ack_id = ""
     event_count = 0
     pet_damage_events = 0
+    precombat_damage_events = 0
     applied_damage = 0.
     applied_damage_compensation = 0.
     last_tick = -1
@@ -148,6 +149,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 for event in receipt["native_damage_events"]:
                     if event["native_caster_type"] == "pet":
                         pet_damage_events += 1
+                    if event["native_time_ns"] < 0:
+                        precombat_damage_events += 1
                     action = event["source_action_id"]
                     action_counter[action] = action_counter.get(action, 0) + 1
                 ack["iteration_index"] = iteration
@@ -198,6 +201,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "world_mean_dps": world_mean_dps, "iterations_done": iterations,
                     "world_applied_damage": applied_damage, "native_damage_events": event_count,
                     "native_pet_damage_events": pet_damage_events,
+                    "native_precombat_damage_events": precombat_damage_events,
                     "native_world_ticks": total_ticks,
                     "world_health_remaining": world.targets["m1"].health,
                     "per_iteration": samples,

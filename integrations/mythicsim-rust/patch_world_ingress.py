@@ -74,7 +74,10 @@ def main() -> None:
         "        if result.target == Side::Target {\n            self.encounter_damage_taken += result.damage;\n        }",
         """        if result.target == Side::Target {
             self.encounter_damage_taken += result.damage;
-            if self.now >= 0 && result.damage > 0.0 {
+            if result.damage > 0.0 {
+                // Pre-pull source hits are genuine target damage. Keep their
+                // negative native clock; gsim applies them at the first t=0
+                // boundary, before the next native combat decision.
                 // Source-native Fight owns spell caster; the gsim world
                 // must not misattribute a real pet hit to its player.
                 let caster = self.caster(spell);

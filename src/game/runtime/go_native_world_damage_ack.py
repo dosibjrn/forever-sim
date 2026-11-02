@@ -93,7 +93,12 @@ class GsimNativeDamageWorldApplier:
         if self._native_process_id is not None and pid != self._native_process_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_PROCESS_RESTARTED")
         last_event_id = self._previous_event_id
-        last_native_time = self._last_native_time_ns
+        # A genuine source pre-pull spell can deal damage before encounter t=0.
+        # It is visible to gsim at the first world ACK, with its original
+        # negative native timestamp retained (not fabricated as a t=0 hit).
+        # Later ticks may never smuggle in pre-pull damage retroactively.
+        first_precombat_boundary = seq == 0 and clock_ns == 0
+        last_native_time = -(1 << 63) if first_precombat_boundary else self._last_native_time_ns
         target_identity = self._native_target_identity
         ids = []
         damage = 0.0
@@ -121,8 +126,10 @@ class GsimNativeDamageWorldApplier:
             caster_index = event.get("native_caster_unit_index", 0)
             caster_label = event.get("native_caster_label", "")
             if (ordinal <= last_event_id or type(timestamp) is not int
-                    or timestamp < 0 or timestamp < last_native_time
-                    or timestamp < self._last_world_tick_ns or timestamp > clock_ns
+                    or (timestamp < 0 and not first_precombat_boundary)
+                    or timestamp < last_native_time
+                    or (timestamp < self._last_world_tick_ns and not first_precombat_boundary)
+                    or timestamp > clock_ns
                     or type(value) not in (float, int) or not isfinite(value) or value <= 0
                     or type(event.get("native_target_index")) is not int
                     or event["native_target_index"] != 0
