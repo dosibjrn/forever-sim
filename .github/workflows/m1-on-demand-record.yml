@@ -22,8 +22,11 @@ permissions:
   issues: read
   pull-requests: read
 
+# GitHub replaces older pending jobs in one concurrency group even when
+# cancel-in-progress=false. Unique dispatches must not lose live gate runs;
+# the publication step merges actual receipts on top of current main via CAS.
 concurrency:
-  group: m1-ledger-writer
+  group: m1-live-${{ github.event.comment.id || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -226,18 +229,40 @@ jobs:
             echo 'No genuinely improved gate evidence; M1 and chart stay unchanged.'
             exit 0
           fi
-          # Upload both blobs once. Each retry builds a single two-path commit
-          # from the freshest main; a concurrent ledger edit is fail-closed.
-          ledger_blob="$(jq -Rs '{content:.,encoding:"utf-8"}' docs/planning/M1_PASSES.tsv |
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
-          plot_blob="$(jq -Rs '{content:.,encoding:"utf-8"}' docs/planning/M1_HISTORY.svg |
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
-          expected="$(git rev-parse HEAD:docs/planning/M1_PASSES.tsv)"
-          for attempt in 1 2 3; do
-            current="$(gh api "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv?ref=main" --jq .sha)"
-            [[ "$current" == "$expected" ]] ||
-              { echo 'Concurrent M1 change: rerun live gates on fresh main' >&2; exit 1; }
+          # The live producer has already completed on pinned HEAD. Retain
+          # its actual changed receipts; never run the gate again for a CAS.
+          git show HEAD:docs/planning/M1_PASSES.tsv > "$RUNNER_TEMP/m1-base.tsv"
+          cp docs/planning/M1_PASSES.tsv "$RUNNER_TEMP/m1-measured.tsv"
+          for attempt in 1 2 3 4 5; do
+            # Each concurrent dispatcher carries only its own new gate rows
+            # into current main. Existing PASSes and better partials survive.
+            gh api "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv?ref=main" \
+              --jq '.content' | base64 -d > "$RUNNER_TEMP/m1-latest.tsv"
+            python tools/m1_progress.py --merge-snapshots \
+              "$RUNNER_TEMP/m1-base.tsv" "$RUNNER_TEMP/m1-measured.tsv" \
+              "$RUNNER_TEMP/m1-latest.tsv" "$RUNNER_TEMP/m1-merged.tsv"
+            if cmp -s "$RUNNER_TEMP/m1-latest.tsv" "$RUNNER_TEMP/m1-merged.tsv"; then
+              echo 'Concurrent run already recorded equal or stronger evidence.'
+              exit 0
+            fi
+            cp "$RUNNER_TEMP/m1-merged.tsv" docs/planning/M1_PASSES.tsv
+            # Recompute the derived homepage view from the just merged ledger,
+            # never from the runner's stale source snapshot.
+            python tools/m1_progress.py --plot-svg docs/planning/M1_HISTORY.svg > /dev/null
+            ledger_blob="$(jq -Rs '{content:.,encoding:"utf-8"}' docs/planning/M1_PASSES.tsv |
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
+            plot_blob="$(jq -Rs '{content:.,encoding:"utf-8"}' docs/planning/M1_HISTORY.svg |
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
             parent="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
+            # Another job may have advanced main after our TSV read. Its
+            # ledger must remain identical to the one we merged, otherwise
+            # retry against newer state; never publish a stale TSV.
+            latest_sha="$(git hash-object "$RUNNER_TEMP/m1-latest.tsv")"
+            parent_ledger="$(gh api "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv?ref=$parent" --jq .sha)"
+            if [[ "$latest_sha" != "$parent_ledger" ]]; then
+              echo "M1 changed before publication (attempt $attempt)"
+              continue
+            fi
             base_tree="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$parent" --jq .tree.sha)"
             new_tree="$(jq -nc --arg base "$base_tree" \
               --arg ledger "$ledger_blob" --arg svg "$plot_blob" \
@@ -246,15 +271,15 @@ jobs:
                  {path:"docs/planning/M1_HISTORY.svg",mode:"100644",type:"blob",sha:$svg}
                ]}' | gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq .sha)"
             new_commit="$(jq -nc --arg tree "$new_tree" --arg parent "$parent" \
-              --arg message "M1: record gates and refresh README chart (Actions $GITHUB_RUN_ID)" \
+              --arg message "M1: record concurrent gate receipts (Actions $GITHUB_RUN_ID)" \
               '{message:$message,tree:$tree,parents:[$parent]}' |
               gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq .sha)"
             if gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/main" \
               -f sha="$new_commit" -F force=false >/dev/null; then
-              echo "M1 ledger + README chart updated in the same commit: $new_commit"
+              echo "M1 and chart updated without lost concurrent receipts: $new_commit"
               exit 0
             fi
             echo "main advanced during publication (attempt $attempt); retrying"
           done
-          echo 'Failed to publish M1 atomically after 3 attempts' >&2
+          echo 'Concurrent M1 publication retry limit exhausted; source report remains in this Actions log.' >&2
           exit 1
