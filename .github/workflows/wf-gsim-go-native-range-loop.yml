@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - work/wf28-native-world-health-feedback-20261101
+      - work/first-native-source-long-horizon-20261102
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
@@ -169,6 +170,33 @@ jobs:
           assert a[i+1]["native_health_fraction_at_boundary"]<b[i+1]["native_health_fraction_at_boundary"]
           print("REAL_WORLD_HP_CHANGED_NEXT_NATIVE_EXECUTE_PHASE",near_effects,far_effects,
                 a[i+1]["native_execute_phase_at_boundary"],b[i+1]["native_execute_phase_at_boundary"])
+          PY
+      - name: Real saved Druid source request beyond old 100-tick bridge cap (NOT P7)
+        run: |
+          cd project
+          python3 - <<'PY'
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import run
+          binary=Path("../gsim-go-world-ingress")
+          request=Path("docs/evidence/druid-l60-balance/p7.3/frozen_winner_request.json")
+          # RED on previous production bridge: INVALID_PROBE_LIMITS at 101 ticks.
+          result=run(binary,request,ticks=101,target_spawn_yards=3.)
+          observations=result["observations"]
+          assert len(observations)==101,len(observations)
+          assert observations[-1]["world_tick"]["clock_ms"]==10000
+          assert result["native_spell_action_ack"]
+          assert result["native_process_reused"] and result["gsim_runtime_real"]
+          assert all(row["native_world_ack_confirmation"]["native_world_health_applied"]
+                     for row in observations)
+          assert all(row["native_world_ack_confirmation"]["native_process_id"]==result["native_process_id"]
+                     for row in observations)
+          print("REAL_SAVED_DRUID_NATIVE_WORLD_101_TICKS_ACK_PASS_NOT_P7")
+          try:
+              run(binary,request,ticks=1501)
+          except ValueError as exc:
+              assert "INVALID_PROBE_LIMITS" in str(exc)
+          else:
+              raise AssertionError("UNBOUNDED_NATIVE_WORLD_PROBE")
           PY
       - name: Real pinned Go native overkill kills the actual gsim target and closes session
         run: |
