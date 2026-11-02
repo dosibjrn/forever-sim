@@ -47,7 +47,7 @@ def test_paid_travel_transitions_are_included_in_complete_two_pull_receipt(monke
         assert pull["event_transitions"] == sum(pull[key] for key in (
             "combat_runtime_events", "maintenance_runtime_events",
             "between_pull_runtime_events", "mode_exit_runtime_events",
-            "travel_runtime_events"))
+            "ordinary_recovery_runtime_events", "travel_runtime_events"))
     assert result.pulls[0]["event_transitions"] >= (
         result.pulls[0]["combat_runtime_events"] + 3)
 
@@ -64,4 +64,4 @@ def test_source_two_mob_pack_has_exact_runtime_event_breakdown():
         assert pull["event_transitions"] == sum(pull[key] for key in (
             "combat_runtime_events", "maintenance_runtime_events",
             "between_pull_runtime_events", "mode_exit_runtime_events",
-            "travel_runtime_events"))
+            "ordinary_recovery_runtime_events", "travel_runtime_events"))
