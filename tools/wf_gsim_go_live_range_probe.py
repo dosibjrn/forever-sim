@@ -111,6 +111,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     recovery_offset_s = 0.
     last_committed_world_health = None
     last_committed_target_id = None
+    native_encounter_end_ns = None
+    native_encounter_end_reached = False
     try:
         for idx in range(ticks):
             runtime.advance_to(idx / 10. + recovery_offset_s)
@@ -135,6 +137,14 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                     or type(response.get('native_process_id')) is not int
                     or response['native_process_id'] != proc.pid):
                 raise RuntimeError('NATIVE_GO_RANGE_ENVELOPE_MISMATCH')
+            # Native samples the saved encounter's duration/variation using
+            # its pinned source RNG. The gsim controller must consume that
+            # boundary instead of running a fixed 120s past native termination.
+            reported_end = response.get('native_encounter_end_ns')
+            if (type(reported_end) is not int or reported_end <= tick['native_clock_ns']
+                    or (native_encounter_end_ns is not None and reported_end != native_encounter_end_ns)):
+                raise RuntimeError('NATIVE_ENCOUNTER_END_RECEIPT_INVALID')
+            native_encounter_end_ns = reported_end
             if native_pid is None:
                 native_pid = response['native_process_id']
             elif native_pid != response['native_process_id']:
@@ -225,6 +235,13 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                 # This is paid wall-clock recovery in the real gsim controller;
                 # the retained native scheduler advances through the same gap.
                 recovery_offset_s += recovery_s
+            # End the same retained session at the actual source-sampled
+            # native encounter boundary, without submitting an illegal tick.
+            # A sub-tick remainder (<100ms) is intentionally not simulated.
+            next_tick_ns = round(((idx + 1) / 10. + recovery_offset_s) * 1e9)
+            if next_tick_ns >= native_encounter_end_ns:
+                native_encounter_end_reached = True
+                break
         proc.stdin.close()
         if proc.wait(timeout=timeout_s) != 0:
             raise RuntimeError('NATIVE_GO_RANGE_SESSION_FAILED_ON_CLOSE: ' + native_failure_details())
@@ -248,6 +265,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
             'native_source_revision': PINNED_GO_REVISION,
             'native_request_sha256': request_sha,
             'native_process_id': native_pid,
+            'native_encounter_end_ns': native_encounter_end_ns,
+            'native_encounter_end_reached': native_encounter_end_reached,
             'killed_target_ids': killed_target_ids,
             'pulls_requested': pulls,
             'recovery_seconds_between_pulls': recovery_s,
