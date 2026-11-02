@@ -1,0 +1,21 @@
+name: Prio P5 approved breadth focused (one-shot)
+on:
+  push:
+    branches:
+      - prio/fix-legacy-p5-approved-breadth-20261103
+    paths:
+      - '.github/workflows/prio-p5-contract-one-shot.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
+      - run: python -m pytest -q tests/test_prio_p5_contract_alignment.py tests/test_work2_p5_approved_breadth.py
+      - run: python -m compileall -q tools/wf_gate.py tools/wf_gate_p4_p5_partial.py tools/wf_gate_p5_live.py
