@@ -48,42 +48,6 @@ def test_both_source_critical_resource_clauses_execute_for_each_rank():
         before, after, modifiers = rank_pair(rank)
         assert {m.target_id for m in modifiers} == {'rage', 'combo_points'}
         tests, missing = _behavior_fixtures(before, after, modifiers)
-        if missing:
-            from src.game.model.ir import ResourceChangeEffect
-            from src.game.runtime import ActorState, TargetState, CombatRuntime
-            from src.game.runtime.simulator import action_eligibility
-            print('DIAG rank', rank, 'missing', missing)
-            print('DIAG source resource rules', [
-                (r.id, r.scope, [(x.id, x.required_mode_id, x.filters, x.metadata)
-                                  for x in r.event_gain_rules])
-                for r in after.resources if r.id == 'combo_points'])
-            a = ActorState.from_ir(after.actor, after.resources, after.modes)
-            a.transition_mode('cat')
-            a.stats['melee_crit_chance'] = 1.
-            target = TargetState.with_health('enemy', 1000000.)
-            for action in after.actions:
-                if any(isinstance(e, ResourceChangeEffect)
-                       and e.resource_id == 'combo_points' for e in action.effects):
-                    print('DIAG action', action.id, [
-                        (e.resource_id, e.target, e.operation, e.amount)
-                        for e in action.effects if isinstance(e, ResourceChangeEffect)])
-                    for cost in action.costs:
-                        if cost.resource_id in a.resources:
-                            a.resources[cost.resource_id] = a.resource_capacity[cost.resource_id]
-                    print('DIAG eligible', action_eligibility(action=action, actor=a, target=target))
-            claw = next((x for x in after.actions if x.family_key == 'claw'), None)
-            if claw:
-                rt = CombatRuntime(actor=a, target=target, sampling_seed=1)
-                print('DIAG active', rt.actor.resource_is_active('combo_points'),
-                      'mode', rt.actor.current_mode_id)
-                try:
-                    end = rt.schedule_action(claw)
-                    rt.advance_to(end + .02)
-                    print('DIAG generated', rt._generated_resource_ids(claw.id))
-                    print('DIAG claw trace', [(e.kind, e.payload) for e in rt.trace
-                                              if e.kind in ('ResourceEventGain', 'Damage')])
-                except Exception as exc:
-                    print('DIAG claw exception', repr(exc))
         assert not missing
         assert len(tests) == 2
         assert {test['resource_id'] for test in tests} == {'rage', 'combo_points'}
