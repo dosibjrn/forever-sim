@@ -181,7 +181,9 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
         stages.append(stage)
         if stage['winner']:
             gear_results.append((stage['winner']['score_s_per_mob'], stage, selection))
-        for record in result['best_vs_budget']:
+        # An actual source-blocked search has no winner history; preserve the
+        # concrete blocker instead of crashing while publishing its stage.
+        for record in result.get('best_vs_budget', ()):
             incumbent = min((row[0] for row in gear_results),default=None)
             score = record['best_s_per_mob']
             # The other stages have already been completed when appended; use

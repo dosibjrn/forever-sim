@@ -80,3 +80,14 @@ def test_source_revision_changes_state_cache_key():
     a=run_source_budgeted_gear(class_key='druid',level=10,max_evaluations=1,ir_slice=ir)
     b=run_source_budgeted_gear(class_key='druid',level=10,max_evaluations=1,ir_slice=changed)
     assert a['source_context_sha256'] != b['source_context_sha256']
+
+
+def test_hunter_l20_source_blocked_prefix_is_a_result_not_missing_winner_history():
+    """Actual Hunter source has no prefix fallback; fail closed, do not KeyError."""
+    result = run_source_budgeted_gear(
+        class_key='hunter', level=20, max_evaluations=36,
+        initial_search=12, search_per_gear=3, max_gear_states=1)
+    assert result['status'] == 'BLOCKED_NO_NAKED_SUCCESS'
+    assert result['attempted'] == 0
+    assert result['stages'][0]['winner'] is None
+    assert result['stages'][0]['seed_skipped'] is None  # no seeds were produced
