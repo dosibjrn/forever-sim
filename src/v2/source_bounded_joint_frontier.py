@@ -2033,8 +2033,13 @@ def _select_screen_finalists(screened, max_finalists, *, score_key="screen_s_per
             if len(finalists)==max_finalists:break
     # Do not pad the shortlist with duplicate paid configurations: every
     # slot below is an independently executed 100-mob replay.
-    if controls and not any(configuration(x[0])==configuration(controls[0][0])
-                            for x in finalists):
+    # A single full-horizon slot must go to the fastest measured screen.
+    # Reserving the control there silently replaces the winner with a slower
+    # incumbent, defeating the actual paid gear/talent/APL optimization.
+    # When multiple slots exist, keep the independent control comparator.
+    if max_finalists > 1 and controls and not any(
+            configuration(x[0])==configuration(controls[0][0])
+            for x in finalists):
         finalists=finalists[:max_finalists-1]+[controls[0]]
     return finalists
 
