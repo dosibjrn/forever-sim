@@ -1,0 +1,3 @@
+[submodule "integrations/mythicsim-rust/engine"]
+	path = integrations/mythicsim-rust/engine
+	url = https://github.com/dosibjrn/mythicsim-forever-engine.git
