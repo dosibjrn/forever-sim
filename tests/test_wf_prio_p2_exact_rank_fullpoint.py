@@ -73,3 +73,25 @@ def test_real_druid_source_exact_rank_witness_when_constructible():
         assert sum(allocation.values()) == 21
         validate_talent_selection(compiled, allocation, level=30)
     assert examined > 0, "source fixture did not produce an exact-rank candidate"
+
+
+def test_live_p2_tests_partial_rank_when_spec_floor_forces_full_rank():
+    """No extra exact-full-point-rank gate: test source ranks on legal partials.
+
+    Druid L60 Balance's 31-point tree floor exhausts its executable tree
+    capacity, so some lower ranks cannot appear in any full-point profile.
+    P2 must still execute their legal partial-rank behavior probes instead of
+    declaring them untested. This does not certify P2 or P4/P5.
+    """
+    from tools.wf_gate_p2_live import run_live
+
+    root = Path(__file__).resolve().parents[1]
+    report = run_live(root, "druid", 60, spec="balance")
+    tested = {row["rank_key"]: row for row in report["ranks"]}
+    assert "improved_wrath:1" in tested
+    assert tested["improved_wrath:1"]["spec_full_point_exact_rank_witness"] is False
+    assert not any(row["reason"] == "SPEC_PROFILE_EXACT_RANK_FULL_POINT_WITNESS_NOT_FOUND"
+                   for row in report["unresolved"])
+    assert (report["pass_count"] + report["fail_count"]
+            + report["unresolved_count"] + report["unreachable_count"]
+            == report["source_rank_total"])
