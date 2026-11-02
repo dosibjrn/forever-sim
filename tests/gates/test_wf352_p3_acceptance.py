@@ -2,7 +2,7 @@ import copy, json
 from pathlib import Path
 from src.game.data.forever.source_checkpoint_p3_acceptance import l0_gear_top5_certificate
 from src.game.data.forever.source_checkpoint_p3_consistency import audit_stat_weight_curves
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 
 def _report():return json.loads((ROOT/'evidence/wf352/WF352_L30_P3_TOP5.json').read_text())
 def _curves():return json.loads((ROOT/'evidence/wf352/WF352_P3_ADVERSARIAL_CURVES.json').read_text())

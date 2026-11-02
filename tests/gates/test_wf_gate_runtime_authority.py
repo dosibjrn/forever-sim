@@ -18,14 +18,21 @@ def _forged_json(tmp_path, gate, **values):
     return path
 
 
-def test_forged_p3_json_does_not_certify(tmp_path, capsys):
+def test_forged_p3_json_does_not_certify(tmp_path, monkeypatch, capsys):
     _forged_json(tmp_path, 'P3')
+    # P3 now has a real provider. Assert the gate CLI calls it and ignores
+    # imported PASS-shaped JSON, independent of the provider's evolving failures.
+    from tools import wf_gate_p3_live
+    calls = []
+    def live(*args, **kwargs):
+        calls.append((args, kwargs))
+        return {'status': 'FAIL', 'reasons': ['LIVE_PRODUCTION_REJECTION']}
+    monkeypatch.setattr(wf_gate_p3_live, 'run_live', live)
     assert wf_gate.main(['--class','druid','--level','60','--spec','balance',
                          '--gate','P3','--evidence-dir',str(tmp_path)]) == 1
     report = json.loads(capsys.readouterr().out)
-    assert report['status'] == 'BLOCKED'
-    assert report['results'][0]['reasons'] == [
-        'LIVE_GATE_RUNNER_MISSING:tools.wf_gate_p3_live']
+    assert calls and report['status'] == 'FAIL'
+    assert report['results'][0]['reasons'] == ['LIVE_PRODUCTION_REJECTION']
 
 
 def test_forged_p75_json_does_not_certify(tmp_path, capsys):

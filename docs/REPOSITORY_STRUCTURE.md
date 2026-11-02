@@ -38,7 +38,7 @@ One place for each responsibility. This is a **logical layout**: names marked �
 │   ├── generic/              # cross-class search/runtime/publication contracts
 │   ├── mechanics/            # class-specific behavior contracts
 │   ├── integration/          # source→engine→world→recovery tests [target]
-│   ├── gates/                # live gate CLI and acceptance tests [target]
+│   ├── gates/                # live gate CLI and acceptance tests
 │   ├── fixtures/             # test-only immutable inputs
 │   ├── maintenance/          # layout, CI and hygiene safety checks
 │   └── release/              # explicitly invoked slow tests

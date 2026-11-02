@@ -1,6 +1,6 @@
 import importlib.util
 from pathlib import Path
-script=Path(__file__).resolve().parents[1]/'tools/wf_gate.py'
+script=Path(__file__).resolve().parents[2]/'tools/wf_gate.py'
 spec=importlib.util.spec_from_file_location('gate_p3',script)
 gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
 

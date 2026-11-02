@@ -16,7 +16,7 @@ from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.source_checkpoint_l0 import action_frontier
 from src.v2.source_budgeted_prefix import source_prefix_envelope, run_source_budgeted_prefix
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 
 @pytest.fixture(scope='module')
 def checkpoint_stage(tmp_path_factory):
