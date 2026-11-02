@@ -45,10 +45,11 @@ class HunterMechanicsLayout(unittest.TestCase):
         self.assertIn("norecursedirs = release", config)
         self.assertNotIn("norecursedirs = mechanics", config)
 
-    def test_ci_collection_contract_present(self):
-        yml = (ROOT / ".github" / "workflows" / "hunter-mechanics-test-layout.yml").read_text()
-        self.assertIn("tests/mechanics/hunter", yml)
-        self.assertIn("--collect-only", yml)
+    def test_current_ci_checks_hunter_layout(self):
+        # The private layout-only workflow was retired; use the maintained CI.
+        workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text()
+        self.assertIn("tests/mechanics/hunter/test_hunter_mechanics_layout.py", workflow)
+        self.assertIn("python -m pytest -q", workflow)
 
 
 if __name__ == "__main__":

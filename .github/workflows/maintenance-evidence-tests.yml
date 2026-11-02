@@ -1,8 +1,9 @@
-name: Feral evidence maintenance regressions
+name: Repository maintenance regressions
 on:
   pull_request:
     paths:
       - 'tests/maintenance/**'
+      - 'tests/mechanics/**'
       - 'tools/audit_feral_p7_holdout.py'
       - 'tools/import_feral_p7_archives.py'
       - 'docs/evidence/druid-p7/recovered/raw/**'
@@ -12,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  historical-evidence-maintenance:
+  source-layout-and-evidence-maintenance:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -26,10 +27,14 @@ jobs:
           python-version: '3.11'
       - name: Install focused test runner
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
-      - name: Verify maintenance layout and preserved feral evidence assertions
+      - name: Verify grouped mechanics layout and preserved evidence assertions
         run: >-
           python -m pytest -q
           tests/maintenance/test_maintenance_layout.py
           tests/maintenance/test_import_feral_p7_archives.py
           tests/maintenance/test_audit_feral_p7_holdout.py
           tests/maintenance/test_recovered_feral_p7_raw.py
+          tests/mechanics/druid/test_druid_mechanics_layout.py
+          tests/mechanics/hunter/test_hunter_mechanics_layout.py
+          tests/mechanics/mage/test_mage_extended_layout.py
+          tests/mechanics/paladin/test_paladin_mechanics_layout.py
