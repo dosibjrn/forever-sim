@@ -33,6 +33,23 @@ def test_druid_l60_gift_of_nature_rank_two_has_legal_paired_runtime_control():
     assert row["witness"]["gift_of_nature"] == 2
     assert row["search_witness"]["gift_of_nature"] == 2
 
+    # Conditional defense armor must be tested above the *sourced* level
+    # threshold. At base defense this talent legitimately has no extra effect.
+    # Both the floor (negative control) and positive excess are executed in
+    # ActorState.transition_mode, not inferred from a modifier registration.
+    for rank in (1, 2, 3):
+        thick=rows[f"thick_hide:{rank}"]
+        assert thick["status"] == "PASS", thick["reasons"]
+        witnesses=[test for test in thick["behavior_tests"]
+                   if test["probe"] == "paired_production_mode_defense_threshold"]
+        assert {w["mode_id"] for w in witnesses} == {"bear", "cat"}
+        for witness in witnesses:
+            assert witness["actually_executed"] and witness["passed"]
+            assert witness["test_defense_above_floor"] > witness["source_defense_floor"]
+            assert witness["observed_excess_rank_armor_delta"] > 0
+            assert abs(witness["observed_excess_rank_armor_delta"]
+                       - witness["expected_excess_rank_armor_delta"]) < 1e-6
+
     # No rank disappears from the canonical P2 denominator to obtain GREEN.
     assert (report["pass_count"] + report["fail_count"]
             + report["unresolved_count"] + report["unreachable_count"]
