@@ -22,7 +22,8 @@ from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps)
 
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
-                                     _source_native_world_parity, _executed_p7_runtime_proof)
+                                     _source_native_world_parity, _executed_p7_runtime_proof,
+                                     _selected_rust_submodule)
 
 
 def _source_module(path: Path, name: str):
@@ -94,12 +95,12 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     if not binary.is_file():
         return _blocked(gate.replace(".", "_") + "_PINNED_RUST_BINARY_MISSING")
     upstream = binary.parents[2]
-    revision = subprocess.run(["git", "-C", str(upstream), "rev-parse", "HEAD"],
-                              capture_output=True, text=True, check=False)
-    if (revision.returncode != 0 or revision.stdout.strip() != PINNED_RUST
+    selected_rust = _selected_rust_submodule(root, upstream)
+    if (selected_rust is None
             or not (upstream / "src/core/fight/world_bridge.rs").is_file()):
         return _blocked(gate.replace(".", "_") + "_PINNED_NATIVE_WORLD_BUILD_NOT_VERIFIED")
-
+    # Keep the saved report's original engine_revision unchanged.
+    meta["selected_engine_revision"] = selected_rust
     return (base, meta, binary)
 
 
@@ -239,12 +240,14 @@ def run_live(root: Path, class_key: str, level: int, *,
         reasons.append("P7_2_FROZEN_STOCHASTIC_DPS_BELOW_REFERENCE_FLOOR")
     return {
         "status": "PASS" if not reasons else "FAIL",
-        **(_executed_p7_runtime_proof("P7.2", final["frozen_request_raw_sha256"])
+        **(_executed_p7_runtime_proof(
+               "P7.2", final["frozen_request_raw_sha256"],
+               engine_revision=meta.get("selected_engine_revision", PINNED_RUST))
            if not reasons else {}),
         "reasons": reasons,
         "production_engine": "pinned_mythicsim_rust_gsim_2d",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py",
-        "native_source_revision": PINNED_RUST,
+        "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
         "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
         "saved_reference_dps": float(meta["reference_dps"]),
         "original_apl_hash": initial_hash,
