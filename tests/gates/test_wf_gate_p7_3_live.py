@@ -193,3 +193,34 @@ def test_p73_local_full_draw_uses_paid_target_not_saved_reference():
         base, HighRandom(8), TalentSource, elite=elite)
     assert calls == [[[4], [0], [0]]]
     assert result["raid"]["parties"][0]["players"][0]["talentsString"] == "legal-targeted"
+
+
+def test_p73_paid_elite_archive_can_choose_other_scored_winner():
+    """Reproduced search issue: local mutations must not only see rank #1."""
+    class ChooseLast:
+        @staticmethod
+        def choice(options):
+            return options[-1]
+
+    top = {"source": "paid-best", "talentsString": "a"}
+    other = {"source": "paid-second", "talentsString": "b"}
+    from tools.wf_gate_p7_3_live import _paid_elite_choice
+    # These entries are deliberately already paid/source-legal; caller appends
+    # them only AFTER native/world parity and a valid score.
+    elites = [(900.0, top), (800.0, other)]
+    assert _paid_elite_choice(elites, ChooseLast(), 2) is other
+    assert _paid_elite_choice(elites, ChooseLast(), 5) is None
+    assert _paid_elite_choice([], ChooseLast(), 2) is None
+
+
+def test_p73_paid_elite_archive_caps_source_pool_to_top_18():
+    from tools.wf_gate_p7_3_live import _paid_elite_choice
+
+    class PickLast:
+        @staticmethod
+        def choice(options):
+            assert len(options) == 18
+            return options[-1]
+
+    elites = [(float(100-i), {"rank": i}) for i in range(22)]
+    assert _paid_elite_choice(elites, PickLast(), 1)["rank"] == 17
