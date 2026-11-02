@@ -7,6 +7,7 @@ from src.v2.source_paid_cold_comparison import (
     _winner_gear_effect_gaps,
     _verify_winner_gear_legality,
     compare_saved_cold_winners,
+    _same_executed_source_search_space,
     source_gear_catalogue_snapshot,
 )
 
@@ -149,3 +150,49 @@ def test_real_source_slot_swap_and_duplicate_rejected():
         duplicated['equipped_gear']['slots'][b]['item_id'])
     with pytest.raises(ValueError, match='COLD_COMPARISON_WINNER_GEAR_NOT_SOURCE_LEGAL'):
         _verify_winner_gear_legality(duplicated, class_key='druid', level=30)
+
+
+def test_p6_source_space_requires_executed_proposer_not_two_matching_labels():
+    # The actual source search emits these fields in its result. A saved
+    # literal alone is not a witness that the paid proposer executed it.
+    from src.v2.source_bounded_joint_frontier import _SOURCE_GEAR_SAMPLING_VERSION
+    current = _SOURCE_GEAR_SAMPLING_VERSION
+    def report(declared, executed, *, offset=0, executed_offset=0):
+        return {
+            'source_search_space': {
+                'gear_slot_sampling_version': declared, 'gear_slot_offset': offset,
+                'max_gear_moves': 16},
+            'source_slot_proposal_coverage': {
+                'strategy': executed, 'slot_offset': executed_offset},
+        }
+
+    good30 = report(current, current)
+    good300 = deepcopy(good30)
+    assert _same_executed_source_search_space(good30, good300) is True
+
+    # Previously two matching stale saved versions could claim source-space
+    # parity, despite the real source proposer having moved to v10.
+    stale = report('stratified_source_slots_v1', current)
+    with pytest.raises(ValueError,
+                       match='COLD_COMPARISON_SEARCH_SPACE_STRATEGY_ATTESTATION_MISMATCH'):
+        _same_executed_source_search_space(stale, deepcopy(stale))
+
+    # Two reports from the same *old* executable may be replayed as numeric
+    # diagnostics, but are not proof of the current paid candidate universe.
+    old = report('stratified_source_slots_v1', 'stratified_source_slots_v1')
+    assert _same_executed_source_search_space(old, deepcopy(old)) is False
+
+    # A matching strategy but different actually executed slot rotation
+    # is a different source candidate universe, not an interchangeable run.
+    wrong_offset = report(current, current, executed_offset=1)
+    with pytest.raises(ValueError,
+                       match='COLD_COMPARISON_SEARCH_SPACE_STRATEGY_ATTESTATION_MISMATCH'):
+        _same_executed_source_search_space(wrong_offset, deepcopy(wrong_offset))
+
+    # Old reports without runtime-produced metadata are non-certifying.
+    legacy = {'source_search_space': deepcopy(good30['source_search_space'])}
+    assert _same_executed_source_search_space(legacy, deepcopy(legacy)) is False
+    with pytest.raises(ValueError,
+                       match='COLD_COMPARISON_DIFFERENT_SOURCE_SEARCH_SPACE'):
+        _same_executed_source_search_space(good30,
+            report(current, current, offset=1))
