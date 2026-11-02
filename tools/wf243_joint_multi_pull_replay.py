@@ -23,7 +23,7 @@ def frozen_policy(data):
 
 def run(*, allocations=10, screen_gears=3, finalists=2, pulls=3):
     fixture = json.loads((Path(__file__).resolve().parents[1] /
-                          'fixtures/wf243_heldout_feral_l20.json').read_text())
+                          'tests/fixtures/wf243_heldout_feral_l20.json').read_text())
     class_key, level = fixture['class_key'], fixture['level']
     old = fixture['talent_allocation']
     search = search_joint_repeated_pulls(
