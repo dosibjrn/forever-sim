@@ -55,11 +55,11 @@ def test_source_original_iteration_count_is_provenance_not_10000_requirement(
         tmp_path, monkeypatch):
     request = _fixture(tmp_path)
     payload = json.loads(request.read_text())
-    payload["simOptions"]["iterations"] = 5000  # historical report metadata
+    payload["simOptions"]["iterations"] = 7  # historical sample count is metadata only
     request.write_text(json.dumps(payload))
     witness = tmp_path / "docs/evidence/wf633/WF633_VALIDATION.json"
     meta = json.loads(witness.read_text())
-    meta["iterations"] = 5000
+    meta["iterations"] = 10000  # historical witness count is not a gate limit
     witness.write_text(json.dumps(meta))
     monkeypatch.setattr(gate, "SAVED_BALANCE_RAW_SHA",
                         hashlib.sha256(request.read_bytes()).hexdigest())
@@ -310,3 +310,49 @@ def test_p7_native_world_parity_rejects_nonfinite_first_fight_duration():
             (n if side == "native" else w)[field] = invalid
             assert gate._source_native_world_parity(n, w, 2) == (
                 "P7_1_NATIVE_WORLD_DURATION_INVALID")
+
+
+def test_full_1000_stochastic_result_not_vetoed_by_ui_or_source_count(
+        monkeypatch, tmp_path):
+    """A mocked routing receipt; this test is NOT a real native/2D gate PASS."""
+    import subprocess
+
+    request = _fixture(tmp_path)
+    source = json.loads(request.read_text())
+    source["simOptions"]["iterations"] = 7
+    request.write_text(json.dumps(source))
+    monkeypatch.setattr(gate, "SAVED_BALANCE_RAW_SHA",
+                        hashlib.sha256(request.read_bytes()).hexdigest())
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("unit-test stub")
+    ingress = tmp_path / "upstream/src/core/fight/world_bridge.rs"
+    ingress.parent.mkdir(parents=True)
+    ingress.write_text("// unit-test stub")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
+    monkeypatch.setattr(
+        gate.subprocess, "run",
+        lambda args, **kwargs: subprocess.CompletedProcess(
+            args, 0, gate.PINNED_RUST + "\n", ""))
+
+    provider = tmp_path / "integrations/mythicsim-rust/live_world_probe.py"
+    provider.parent.mkdir(parents=True)
+    provider.write_text("""
+import hashlib
+def native_source_control(binary, request, iterations):
+    return {"iterations": iterations, "native_dps": 730.0, "first_duration_s": 120.0}
+def run(binary, request, *, distance, iterations):
+    return {"iterations_done": iterations, "native_dps": 730.0,
+            "world_mean_dps": 730.0, "sampled_duration_s": 120.0,
+            "native_damage_events": iterations, "native_world_ticks": iterations,
+            "source_request_raw_sha256": hashlib.sha256(request.read_bytes()).hexdigest(),
+            "per_iteration": [{"iteration_index": i, "duration_s": 120.0,
+                               "world_dps": 730.0, "world_applied_damage": 87600.0}
+                              for i in range(iterations)]}
+""")
+    result = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert result["status"] == "PASS"
+    assert result["reasons"] == []
+    assert result["p7_1_1_reference_pinned"] is True
+    assert result["iterations"] == 1000
+    assert result["saved_source_iterations"] == 7

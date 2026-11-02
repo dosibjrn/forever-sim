@@ -246,7 +246,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert report["frozen_stochastic_external_only_floor_met"] is True
     assert report["final_required_dps"] is None
     assert report["status"] == "FAIL"
-    assert "P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR" in report["reasons"]
+    assert report["reasons"] == ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"]
     assert original == unchanged
 
 

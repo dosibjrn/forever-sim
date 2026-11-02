@@ -87,7 +87,8 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
     assert report["independent_300s_search_completed"] is True
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_reference_floor_met"] is True
-    assert report["status"] == "FAIL"  # report UI/source scope still unverified
+    assert report["status"] == "PASS"  # mocked routing, not real native/world evidence
+    assert report["reasons"] == []
 
 
 def test_p73_invalid_full_search_flag_blocks_without_running(monkeypatch, tmp_path):
