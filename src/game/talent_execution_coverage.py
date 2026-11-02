@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from src.game.data.forever.source_rank_promotion import promote_atomic_source_talent_effects
 from src.game.talents import apply_talent_selection
+from src.game.source_objective_relevance import solo_threat_exclusion
 
 
 def compile_talent_runtime(ir):
@@ -19,6 +20,7 @@ def compile_talent_runtime(ir):
     compiled, compilation = promote_atomic_source_talent_effects(ir)
     missing = []
     executable = []
+    excluded = []
     for talent in compiled.talents:
         for rank in talent.ranks:
             record = {'talent_id': talent.id, 'rank': rank.rank,
@@ -27,18 +29,24 @@ def compile_talent_runtime(ir):
                       'source_url': talent.metadata.get('checkpoint_source_url')
                                     or rank.provenance.get('source_url'),
                       'modifier_count': len(rank.modifiers)}
-            if not rank.modifiers:
-                missing.append({**record, 'code': 'TALENT_RANK_HAS_NO_EXECUTOR',
-                    'source_domains': [e.get('domain') for e in
-                        (rank.provenance.get('checkpoint_source_l0') or {}).get('effects', ())]})
-            else:
+            if rank.modifiers:
                 executable.append(record)
+            else:
+                exclusion = solo_threat_exclusion(compiled, rank)
+                if exclusion is not None:
+                    excluded.append({**record, 'objective_exclusion': exclusion})
+                else:
+                    missing.append({**record, 'code': 'TALENT_RANK_HAS_NO_EXECUTOR',
+                        'source_domains': [e.get('domain') for e in
+                            (rank.provenance.get('checkpoint_source_l0') or {}).get('effects', ())]})
     return compiled, {
         'status': 'PARTIAL_RUNTIME_COVERAGE' if missing else 'RANK_MODIFIERS_PRESENT_NOT_FULL_EXECUTION_PROOF',
         'talent_count': len(compiled.talents),
-        'rank_count': len(missing) + len(executable),
+        'rank_count': len(missing) + len(executable) + len(excluded),
         'rank_with_modifiers': len(executable),
         'rank_missing_executor': len(missing),
+        'rank_objective_excluded': len(excluded),
+        'objective_excluded': excluded,
         'missing': missing,
         'compilation': {
             'promoted_rank_count': compilation['promoted_rank_count'],
