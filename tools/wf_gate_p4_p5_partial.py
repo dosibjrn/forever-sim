@@ -183,9 +183,12 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
 
     if gate not in ("P4", "P5"):
         raise ValueError("UNSUPPORTED_LEVELING_SEARCH_GATE")
-    if (class_key, level, spec) != ("druid", 30, "unrestricted"):
-        return {"status": "BLOCKED", "reasons": [
-            gate + "_FULL_SOURCE_RUNNER_CURRENTLY_SUPPORTS_DRUID_L30_UNRESTRICTED_ONLY"]}
+    # Old L30 CLI defaults remain byte-compatible; other checkpoints use the
+    # same WF437 production search with explicit canonical source/spec inputs.
+    checkpoint_args = ([] if (class_key, level, spec) ==
+                       ("druid", 30, "unrestricted") else [
+        "--checkpoint-class", class_key, "--checkpoint-level", str(level),
+        "--checkpoint-spec", spec])
 
     budget, timeout_s = (30, 420) if gate == "P4" else (300, 720)
     compared = None
@@ -195,13 +198,13 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         # N30 from one 300s run. Reuse the same WF437 production runner and
         # its existing source-matched P6 independent replay comparator.
         if gate == "P5":
-            baseline, error = _execute(Path(root), ["--budget", "30"],
+            baseline, error = _execute(Path(root), ["--budget", "30", *checkpoint_args],
                                        folder / "cold-30.json", 420)
             if error:
                 return {"status": "FAIL", "reasons": ["P5_30S_" + error],
                         "production_engine": "gsim_CombatRuntime"}
         output = folder / ("cold-300.json" if gate == "P5" else "cold.json")
-        report, error = _execute(Path(root), ["--budget", str(budget)],
+        report, error = _execute(Path(root), ["--budget", str(budget), *checkpoint_args],
                                  output, timeout_s)
         if error:
             return {"status": "FAIL", "reasons": [gate + "_" + error],
@@ -210,7 +213,8 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
             compared, error = _execute(
                 Path(root),
                 ["--compare-30", str(folder / "cold-30.json"),
-                 "--compare-300", str(folder / "cold-300.json")],
+                 "--compare-300", str(folder / "cold-300.json"),
+                 *checkpoint_args],
                 folder / "comparison.json", 240, allowed_codes=(0, 1))
             if error:
                 return {"status": "FAIL", "reasons": ["P5_COMPARE_" + error],
