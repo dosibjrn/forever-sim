@@ -259,3 +259,85 @@ def test_joint_cold_admits_independently_rediscovered_reference_axes():
         assert selected == candidate, unchanged_axis
     assert len(tried) == 4
     assert original == _base()
+
+
+def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
+        monkeypatch, tmp_path):
+    """Routing RED on old production: every proposal used elite=None.
+
+    This tests the real provider/candidate routing with injected Rust/world
+    interfaces; it is not a native execution or a 300-second gate result.
+    """
+    import json
+
+    base = _base()
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    player(base)["distanceFromTarget"] = 15
+    original = copy.deepcopy(base)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("mock producer: never executed")
+    upstream = binary.parents[2]
+    (upstream / "data").mkdir()
+    (upstream / "data/items.jsonl").write_text("")
+    (upstream / "data/enchants.jsonl").write_text("")
+    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
+    catalogue.parent.mkdir(parents=True)
+    catalogue.write_text("injected validator")
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    # Start, two paid proposals, expired boundary, elapsed search time.
+    clock = iter([0., 0., 0., 300., 300.])
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(
+        gate, "_pinned_source_runtime",
+        lambda *a: (base, {"reference_dps": 728.19}, binary))
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *a, **kw: None)
+
+    class Validator:
+        engine = {10: {"name": "head"}, 20: {"name": "neck"}}
+        @staticmethod
+        def require_sqlite_catalogue(path):
+            assert path == catalogue
+        def __init__(self, *args): pass
+        def validate(self, ids, enchants):
+            assert ids == [10, 20]
+        def close(self): pass
+
+    seen_elites = []
+    def source_candidate(reference, pools, rng, elite=None, item_names=None):
+        assert reference is base
+        seen_elites.append(None if elite is None else
+                           player(elite)["talentsString"])
+        q = copy.deepcopy(reference if elite is None else elite)
+        player(q)["talentsString"] = (
+            "independently-found" if elite is None else "paid-elite-improved")
+        return q
+
+    def score(path):
+        talents = player(json.loads(path.read_text()))["talentsString"]
+        return 735.0 if talents == "paid-elite-improved" else 700.0
+
+    source = SimpleNamespace(
+        GearValidator=Validator,
+        candidate_pool=lambda validator, limit: ({0: [10], 1: [20]}, {}),
+        make_candidate=source_candidate, player=player,
+        RejectedGear=ValueError)
+    producer = SimpleNamespace(
+        native_source_control=lambda binary, path, n, *, rng_mode: {
+            "native_dps": score(path)},
+        run=lambda binary, path, distance, iterations, *, rng_mode: {
+            "world_mean_dps": score(path), "iterations_done": iterations,
+            "native_damage_events": 10, "native_world_ticks": 20})
+    monkeypatch.setattr(
+        gate, "_source_module",
+        lambda path, name: source if "joint_search" in str(path) else producer)
+
+    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert seen_elites == [None, "independently-found"]
+    assert report["source_legal_joint_candidates_paid"] == 2
+    assert report["joint_cold_world_dps"] == 735.0
+    assert report["frozen_stochastic_world_dps"] == 735.0
+    assert report["frozen_stochastic_iterations"] == 1000
+    assert report["status"] == "FAIL"  # saved UI and accepted prior not proved
+    assert base == original
