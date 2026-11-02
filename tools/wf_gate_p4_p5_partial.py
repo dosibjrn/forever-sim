@@ -70,10 +70,6 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
     if os.environ.get("FOREVER_P4_P5_FULL_SOURCE") == "1":
         return run_full_paid_source_search(root, class_key, level,
                                            spec=spec, gate=gate)
-    if spec != "unrestricted":
-        return {"status": "BLOCKED", "reasons": [
-            "SOURCE_SPEC_TREE_SEARCH_CONSTRAINT_NOT_YET_CONNECTED"],
-            "production_engine": "gsim_CombatRuntime"}
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.data.forever.gear import available_gear_roles
     from src.v2.source_bounded_joint_frontier import (
@@ -84,6 +80,29 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
     if ir is None or not roles:
         return {"status": "BLOCKED", "reasons": [
             "SOURCE_COLD_SEARCH_IR_OR_GEAR_ROLE_UNAVAILABLE"]}
+    # Named checkpoint specs are explicit product constraints, not inferred
+    # Forever mechanics. Reuse P2's validated canonical profile and the
+    # existing production joint search's source-legal spec frontier.
+    search_spec = {}
+    if spec != "unrestricted":
+        from hashlib import sha256
+        from src.game.data.forever.sqlite_talents import DEFAULT_DB
+        from tools.wf_gate_p2_live import _load_product_spec_profile
+
+        source_db = Path(DEFAULT_DB)
+        if not source_db.is_file():
+            return {"status": "BLOCKED", "reasons": [
+                "SOURCE_SPEC_PROFILE_DB_UNAVAILABLE"],
+                "production_engine": "gsim_CombatRuntime"}
+        profile = _load_product_spec_profile(
+            root, class_key, level, spec,
+            source_sha256=sha256(source_db.read_bytes()).hexdigest())
+        if profile is None:
+            return {"status": "BLOCKED", "reasons": [
+                "SOURCE_SPEC_PRODUCT_PROFILE_NOT_CONFIGURED"],
+                "production_engine": "gsim_CombatRuntime"}
+        search_spec = {"spec_tree": profile["tree_key"],
+                       "min_spec_points": profile["minimum_points"]}
     # The legal role only seeds equipment. It does not seed a talent, APL,
     # gear optimizer winner or previous run. Current native 2D integration
     # remains a separate gating dependency (gsim result is diagnostic).
@@ -98,7 +117,7 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         max_cpu_s=float(budget_s), per_candidate_wall_s=.75,
         screen_mobs=2, finalist_mobs=100, pack_size=2,
         search_only=True, screen_evaluator_backend="direct",
-        refinement_rounds=0)
+        refinement_rounds=0, **search_spec)
     counts = paid_gear_slot_coverage(search)
     # Explored gear slots are search BREADTH, not correctly functioning
     # behavioral assertions. They must never be a gate success percentage.
