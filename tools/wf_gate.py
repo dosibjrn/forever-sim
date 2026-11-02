@@ -455,7 +455,11 @@ def main(argv=None) -> int:
             if report["status"] == "PASS":
                 record_pass(class_key=a.class_key, level=a.level, spec=a.spec,
                             gate=gate, report=report)
-            elif report["status"] == "FAIL":
+            elif report["status"] == "FAIL" or (
+                    gate.startswith("P7.") and report["status"] == "BLOCKED"):
+                # A real coupled P7 DPS measurement can be useful even if a
+                # separate UI/holdout requirement keeps the gate BLOCKED.
+                # The recorder rejects non-executed BLOCKED and fake counts.
                 record_partial(class_key=a.class_key, level=a.level, spec=a.spec,
                                gate=gate, report=report)
         record = {"gate": gate, "status": report["status"],
