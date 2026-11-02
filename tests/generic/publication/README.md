@@ -1,8 +1,10 @@
 # Generic registry, publication and route-navigation regressions
 
-Ten existing tests were moved **byte-for-byte** from the flat `tests/`
-directory. They exercise:
+These regression modules are grouped by responsibility, with source files
+moved **byte-for-byte** from the flat `tests/` directory. They exercise:
 
+- G39: generic melee route DP, sourced modifier behavior and publication
+- G46f: validated generic route publication and release snapshots
 - G47/G47b: source registry, capabilities and route authority
 - G48/G48a: all-class publication availability and listener coverage
 - G48b/G48c: backend-neutral native route navigation and decisions
