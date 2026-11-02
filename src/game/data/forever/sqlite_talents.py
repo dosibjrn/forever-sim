@@ -112,7 +112,8 @@ def _parse_rank_tooltip(text: str, *, action_families: set[str], source: dict,
             r'\s+or\s+', critical_resources.group(4)) if x.strip())
         cat_label = _slug(critical_resources.group(5))
         modes = mode_labels or {}
-        mapped_bear = tuple(modes[x] for x in bear_labels if x in modes)
+        # Source form aliases must not install duplicate resource event rules.
+        mapped_bear = tuple(dict.fromkeys(modes[x] for x in bear_labels if x in modes))
         missing = tuple(x for x in (*bear_labels, cat_label) if x not in modes)
         if (not 0. < bear_chance <= 1. or not 0. < cat_chance <= 1.
                 or not 0. < bear_gain <= 100. or not bear_resource
