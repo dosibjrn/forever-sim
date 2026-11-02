@@ -134,7 +134,18 @@ def _evaluate_concurrent_source_packs(candidate, *, level, mobs, pack_size,
             recovery_health_fraction=(recovery_policy.health_fraction if recovery_policy else .5),
             recovery_mana_fraction=(recovery_policy.mana_fraction if recovery_policy else .1),
             source_maintenance_upkeep=True,
-            source_between_pack_policy=recovery_policy)
+            source_between_pack_policy=recovery_policy,
+            max_cpu_s=max_cpu_s, max_wall_s=max_wall_s,
+            max_total_events=max_total_events)
+    except (EventTransitionBudgetExceeded, ComputeDeadlineExceeded) as exc:
+        # Actual 2D pack execution now obeys the candidate's deadline during
+        # combat, upkeep and recovery, not only after all 100 mobs. An
+        # interrupted pack is never counted as a completed paid finalist.
+        return {'status':'BLOCKED_EVALUATION_COMPUTE_BUDGET',
+                'mob_completed':0, 'reason':str(exc),
+                'events':getattr(exc,'events_processed',0),
+                'elapsed_wall_s':monotonic()-wall_start,
+                'elapsed_cpu_s':process_time()-cpu_start}
     except ValueError as exc:
         reason = str(exc)
         if reason.startswith('pull ') and 'failed: actor_died' in reason:
@@ -375,6 +386,12 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         if index and layout.spacing_yards:
             try:
                 travel=CombatRuntime(actor=actor,target=TargetState.with_health('spaced_travel',1.0))
+                # Spaced movement uses the same paid actor clock and candidate
+                # compute/event ceilings as the combat and upkeep on either side.
+                travel.event_budget_cap=None if max_total_events is None else max_total_events-events
+                travel.event_budget_start=0
+                travel.cpu_deadline_ns=cpu_deadline
+                travel.wall_deadline_ns=wall_deadline
                 travel.advance_to(float(actor.current_time_s)+layout.segment_distances_yards[index-1] / layout.movement_speed_yards_s)
                 travel.persist_actor_periodics()
                 travel_elapsed+=layout.segment_distances_yards[index-1] / layout.movement_speed_yards_s

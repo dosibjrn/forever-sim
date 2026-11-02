@@ -8,12 +8,15 @@ window. Enemy state, incoming-swing queues and enemy DoTs do not survive.
 """
 
 from dataclasses import dataclass, replace
+from math import isfinite
+from time import monotonic_ns, process_time_ns
 from typing import Any
 
 from src.game.model import ModeChangeEffect
 from src.game.policy import execute_priority_policy
 from src.game.recovery import recover_actor_to_full
 from src.game.runtime import ActorState, CombatRuntime, TargetState, action_eligibility
+from src.game.runtime.simulator import ComputeDeadlineExceeded, EventTransitionBudgetExceeded
 
 
 @dataclass(frozen=True)
@@ -42,24 +45,28 @@ def _encounter_pack(*, mob_start: int, mob_count: int, target_health: float,
     return targets, positions, incoming
 
 
-def _paid_source_pack_upkeep(ir_slice, actor, enabled):
+def _paid_source_pack_upkeep(ir_slice, actor, enabled, *, cpu_deadline_ns=None, wall_deadline_ns=None, max_new_events=None):
     """Charge source maintenance on the same persistent actor, or do nothing."""
     if not enabled:
         return 0.0, 0, 0
     from src.game.runtime.source_maintenance import _execute_source_maintenance_upkeep
     try:
-        return _execute_source_maintenance_upkeep(ir_slice, actor)
+        return _execute_source_maintenance_upkeep(ir_slice, actor,
+            cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns,
+            max_new_event_transitions=max_new_events)
     except ValueError as exc:
         raise ValueError('BLOCKED_SOURCE_MAINTENANCE_UPKEEP:' + str(exc)) from exc
 
 
-def _paid_source_pack_recovery(ir_slice, actor, level, pack_index, pack_total, policy):
+def _paid_source_pack_recovery(ir_slice, actor, level, pack_index, pack_total, policy,
+                               *, cpu_deadline_ns=None, wall_deadline_ns=None, max_new_events=None):
     """Reuse the sequential sourced recovery state machine without a reset."""
     from src.game.recovery_between_pulls import between_pull_recovery
     try:
         return between_pull_recovery(ir=ir_slice, actor=actor, level=int(level),
                                      mob_index=pack_index, mob_count=pack_total,
-                                     policy=policy)
+                                     policy=policy, cpu_deadline_ns=cpu_deadline_ns,
+                                     wall_deadline_ns=wall_deadline_ns, max_new_events=max_new_events)
     except ValueError as exc:
         raise ValueError('BLOCKED_SOURCE_BETWEEN_PULL_RECOVERY:' + str(exc)) from exc
 
@@ -81,7 +88,24 @@ def evaluate_repeated_pulls(
     pack_size: int = 1,
     source_maintenance_upkeep: bool = False,
     source_between_pack_policy=None,
+    max_cpu_s: float | None = None,
+    max_wall_s: float | None = None,
+    max_total_events: int | None = None,
 ) -> RepeatedPullResult:
+    if max_total_events is not None and (type(max_total_events) is not int or max_total_events < 1):
+        raise ValueError('max_total_events must be a positive integer')
+    if max_cpu_s is not None and (not isfinite(float(max_cpu_s)) or max_cpu_s <= 0):
+        raise ValueError('max_cpu_s must be finite and positive')
+    if max_wall_s is not None and (not isfinite(float(max_wall_s)) or max_wall_s <= 0):
+        raise ValueError('max_wall_s must be finite and positive')
+    cpu_deadline_ns = None if max_cpu_s is None else process_time_ns() + int(max_cpu_s * 1e9)
+    wall_deadline_ns = None if max_wall_s is None else monotonic_ns() + int(max_wall_s * 1e9)
+    def check_compute_budget():
+        if cpu_deadline_ns is not None and process_time_ns() >= cpu_deadline_ns:
+            raise ComputeDeadlineExceeded(0, 'CPU')
+        if wall_deadline_ns is not None and monotonic_ns() >= wall_deadline_ns:
+            raise ComputeDeadlineExceeded(0, 'WALL')
+
     if not 1 <= int(count) <= 100:
         raise ValueError('repeated-pull count must be between 1 and 100')
     if type(pack_size) is not int or not 1 <= pack_size <= int(count):
@@ -135,9 +159,22 @@ def evaluate_repeated_pulls(
             raise ValueError('recovery selection contains non-healing or unknown action')
         recovery_actions = tuple(a for a in ir_slice.actions if a.id in chosen)
     initial_mode = next((m.id for m in ir_slice.modes if m.initial), None)
+    paid_events = 0
+    def remaining_events():
+        if max_total_events is None:
+            return None
+        remaining = max_total_events - paid_events
+        if remaining <= 0:
+            raise EventTransitionBudgetExceeded(paid_events)
+        return remaining
+
     for index, mob_start in enumerate(range(0, int(count), pack_size)):
+        check_compute_budget()
         upkeep_s, upkeep_casts, upkeep_events = _paid_source_pack_upkeep(
-            ir_slice, actor, source_maintenance_upkeep)
+            ir_slice, actor, source_maintenance_upkeep,
+            cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns,
+            max_new_events=remaining_events())
+        paid_events += upkeep_events
         mob_count = min(pack_size, int(count) - mob_start)
         target_metadata = {}
         if apply_target_defense:
@@ -168,6 +205,9 @@ def evaluate_repeated_pulls(
             mitigation_rules=(ir_slice.mitigation_rules if schedule_incoming_attacks else ()),
             triggers=ir_slice.triggers,
         )
+        runtime.cpu_deadline_ns = cpu_deadline_ns
+        runtime.wall_deadline_ns = wall_deadline_ns
+        runtime.event_budget_cap = remaining_events()
         carried_at_start = sum(e.kind == 'PeriodicTick' and e.payload.get('aura_scope') == 'actor'
                                for _, _, e in runtime.queue._heap)
         for action_id in pre_combat_action_ids:
@@ -218,6 +258,7 @@ def evaluate_repeated_pulls(
             not actor.resource_positive(str(a.health_resource_id)) for a in runtime.scheduled_incoming_attacks.values()
         )):
             raise ValueError(f'pull {index} failed: {execution.stopped_reason or "actor_died_or_target_survived"}')
+        paid_events += runtime.event_transitions
         # Decide recovery from real carried HP/mana. These thresholds are explicit
         # scenario parameters, NOT source gameplay facts. Charge final restoration
         # even if it was deferred on intermediate pulls (no free end-state debt).
@@ -236,7 +277,10 @@ def evaluate_repeated_pulls(
         source_recovery_actions = []
         if source_between_pack_policy is not None:
             step = _paid_source_pack_recovery(
-                ir_slice, actor, level, index, pack_total, source_between_pack_policy)
+                ir_slice, actor, level, index, pack_total, source_between_pack_policy,
+                cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns,
+                max_new_events=remaining_events())
+            paid_events += int(step['events'])
             recovery_s = float(step['elapsed_s'])
             between_pack_events = int(step['events'])
             source_recovery_actions = list(step['actions'])
@@ -254,6 +298,9 @@ def evaluate_repeated_pulls(
                     raise ValueError('post-combat transition must be sourced, free, and return to initial mode')
                 if actor.current_mode_id != initial_mode:
                     exit_runtime = CombatRuntime(actor=actor, target=TargetState.with_health('mode_exit', 1.0))
+                    exit_runtime.cpu_deadline_ns = cpu_deadline_ns
+                    exit_runtime.wall_deadline_ns = wall_deadline_ns
+                    exit_runtime.event_budget_cap = remaining_events()
                     gate = action_eligibility(action=action, actor=actor, target=exit_runtime.target)
                     if not gate.eligible and str(gate.reason or '').startswith('action not ready:'):
                         exit_runtime.advance_to(float(gate.next_ready_s))
@@ -262,11 +309,13 @@ def evaluate_repeated_pulls(
                         raise ValueError(f'cannot leave combat mode: {gate.reason}')
                     exit_runtime.schedule_action(action)
                     exit_runtime.persist_actor_periodics()
+                    paid_events += exit_runtime.event_transitions
             exit_wait = max(0.0, float(actor.current_time_s) - float(timeline.target_death_s))
             recovery = recover_actor_to_full(
                 actor=actor, level=int(level), actions=recovery_actions,
                 start_time_s=float(actor.current_time_s),
                 healing_power=float(actor.stats.get('spell_power', 0.0)),
+                cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns,
             )
             recovery_s = exit_wait + float(recovery.total_s)
             heal_actions = list(recovery.provenance.get('heal_action_sequence', []))
@@ -279,8 +328,12 @@ def evaluate_repeated_pulls(
         travel_charged_s = float(travel_time_s) if not is_final_pack else 0.0
         if travel_charged_s > 0:
             travel_runtime = CombatRuntime(actor=actor, target=TargetState.with_health('travel', 1.0))
+            travel_runtime.cpu_deadline_ns = cpu_deadline_ns
+            travel_runtime.wall_deadline_ns = wall_deadline_ns
+            travel_runtime.event_budget_cap = remaining_events()
             travel_runtime.advance_to(float(actor.current_time_s) + travel_charged_s)
             travel_runtime.persist_actor_periodics()
+            paid_events += travel_runtime.event_transitions
         pending_count = sum(e.kind == 'PeriodicTick' for e in actor.pending_actor_periodic_events)
         results.append({
             'pull_index': index,
@@ -316,6 +369,7 @@ def evaluate_repeated_pulls(
             'health_after_recovery': actor.resource_amount('health'),
             'mana_after_recovery': actor.resource_amount('mana'),
         })
+        check_compute_budget()
         for pet in companions:
             elapsed = float(recovery_s) + travel_charged_s
             resources = dict(pet.resources)
@@ -332,6 +386,9 @@ def evaluate_repeated_pulls(
                 actor.remove_aura(aura_id)
             actor.pending_actor_periodic_events = ()
             actor.pending_actor_periodic_actions.clear()
+    # A candidate is complete only if its entire paid evaluation, including
+    # final state carry/accounting, finishes within the compute deadline.
+    check_compute_budget()
     return RepeatedPullResult(
         seconds_per_mob=(float(actor.current_time_s) - start) / count,
         pulls=tuple(results), start_time_s=start,
