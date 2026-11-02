@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping
-from math import isclose
+from math import isclose, isfinite
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -65,6 +65,24 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
     """
     from src.game.runtime import ActorState, CombatRuntime, TargetState
     from src.game.runtime.simulator import action_eligibility
+    # A sourced positional precondition belongs to the encounter, not to a
+    # hardcoded class whitelist. Construct the required controlled situation
+    # for this effect probe and separately reject the opposite position.
+    # This does NOT certify movement/facing or the full 2D P1/P7 path.
+    positions={str(req.get('value') or '') for req in action.requirements
+               if req.get('kind')=='relative_position_is'}
+    if len(positions)>1 or (positions and not positions <= {'front','behind'}):
+        return None
+    required_position=next(iter(positions),None)
+
+    def fixture_target(*, opposite=False):
+        target=TargetState.with_health(target_id,100000.0,armor=0.0)
+        if required_position is not None:
+            position=({'front':'behind','behind':'front'}[required_position]
+                      if opposite else required_position)
+            target.metadata['attacker_relative_position']=position
+        return target
+
     # Check the *actual* runtime eligibility in each source mode. A caster mode
     # with an unrestricted enabled_action_ids list does not necessarily permit
     # a Bear-only action (e.g. Swipe). No class-specific mode names here.
@@ -74,7 +92,7 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
         if mode is not None and candidate.current_mode_id!=mode:
             try:candidate.transition_mode(mode)
             except (ValueError,KeyError,AttributeError):continue
-        target=TargetState.with_health(target_id,100000.0,armor=0.0)
+        target=fixture_target()
         if action_eligibility(action=action,actor=candidate,target=target).eligible:
             actor=candidate
             break
@@ -97,8 +115,14 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
     if 'health' in actor.resources:
         actor.resource_capacity['health']=max(float(actor.resource_capacity.get('health',0)),10000.)
         actor.resources['health']=actor.resource_capacity['health']-1000.
-    rt=CombatRuntime(actor=actor,target=TargetState.with_health(target_id,100000.0, armor=0.0))
+    rt=CombatRuntime(actor=actor,target=fixture_target())
     if not action_eligibility(action=action,actor=actor,target=rt.target).eligible:return None
+    if required_position is not None:
+        # Positive/negative positional control through production eligibility:
+        # a Shred-style rear-only action must remain illegal from the front.
+        if action_eligibility(action=action,actor=actor,
+                              target=fixture_target(opposite=True)).eligible:
+            return None
     before=dict(actor.resources)
     try:
         end=rt.schedule_action(action)
@@ -782,6 +806,59 @@ def _sourced_granted_action_behavior(before, after, mod):
             'observed': observed}
 
 
+def _excess_defense_runtime_witness(before, after, mod):
+    """Exercise sourced above-threshold armor in real ActorState form changes.
+
+    At ordinary base defense the conditional term can legitimately be zero.
+    Compare the *change in rank effect* between defense at the sourced floor
+    and defense above it. This removes any unrelated per-level armor bonus
+    from the same talent, without inventing a defense/armor game coefficient.
+    """
+    from src.game.runtime import ActorState
+    if mod.target_type != 'mode':
+        return None
+    mode_id=str(mod.target_id)
+    if mode_id not in {m.id for m in before.modes} & {m.id for m in after.modes}:
+        return None
+    try:
+        multiplier=float(mod.provenance['reference_level_multiplier'])
+        amount=float(mod.value)
+        initial=ActorState.from_ir(before.actor,before.resources,before.modes)
+        level=float(initial.metadata['level'])
+        if not all(isfinite(x) for x in (multiplier,amount,level)):
+            return None
+        if multiplier < 0 or level <= 0 or amount == 0:
+            return None
+        floor=level*multiplier
+        # Controlled test input only: the *rule* and threshold are sourced.
+        excess=max(10.0,level/3.0)
+
+        def armor(ir, defense):
+            actor=ActorState.from_ir(ir.actor,ir.resources,ir.modes)
+            actor.stats['defense']=defense
+            actor.transition_mode(mode_id)
+            return float(actor.stats.get('armor',0.0))
+
+        low_before=armor(before,floor)
+        low_after=armor(after,floor)
+        high_before=armor(before,floor+excess)
+        high_after=armor(after,floor+excess)
+    except (ValueError,TypeError,KeyError,AttributeError):
+        return None
+    observed=(high_after-high_before)-(low_after-low_before)
+    expected=excess*amount
+    if (not isfinite(observed) or not isclose(observed,expected,
+            rel_tol=1e-6,abs_tol=1e-6) or observed*expected<=0):
+        return None
+    return {'probe':'paired_production_mode_defense_threshold',
+            'mode_id':mode_id,'source_defense_floor':floor,
+            'test_defense_above_floor':floor+excess,
+            'at_floor_rank_armor_delta':low_after-low_before,
+            'above_floor_rank_armor_delta':high_after-high_before,
+            'observed_excess_rank_armor_delta':observed,
+            'expected_excess_rank_armor_delta':expected}
+
+
 def _behavior_fixtures(before, after, modifiers):
     """Require an observed L2 effect for *each* rank modifier, not just one.
 
@@ -833,6 +910,8 @@ def _behavior_fixtures(before, after, modifiers):
             if verified:
                 match={'probe':'production_actor_state_from_ir',
                     'observable_changes':verified[:6]}
+        elif kind == 'mode_armor_excess_defense':
+            match=_excess_defense_runtime_witness(before,after,mod)
         elif kind in ('effect_damage_pct','effect_healing_pct','effect_periodic_pct'):
             match=_runtime_effect_witness(before,after,mod)
         elif kind == 'periodic_duration_delta_s':
@@ -930,6 +1009,22 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
                 pass
             else:
                 attempts.insert(0,dict(isolated))
+    # A legal full-point optimizer build can rely on the target rank's last
+    # point to unlock an unrelated higher-tier talent. Decrementing the target
+    # alone then makes the paired control illegal (e.g. a 15-point tier floor
+    # becomes 14). P2 compares the target's behavior in a *legal* paired
+    # setup, not necessarily in a full-point search build. Try dropping one
+    # other talent from BOTH sides; apply_talent_selection below validates
+    # each side independently. Keep the original full-point profile candidate
+    # as the separate, already validated search-reachability witness.
+    if profile_full is not None:
+        for other_id in sorted(profile_full):
+            if other_id == talent.id:
+                continue
+            reduced = dict(profile_full)
+            reduced.pop(other_id)
+            if reduced not in attempts:
+                attempts.append(reduced)
     # An unrestricted rank probe can use a different executable filler.
     # The spec's full-point search candidate must never be replaced by it.
     if profile_tree is None:
