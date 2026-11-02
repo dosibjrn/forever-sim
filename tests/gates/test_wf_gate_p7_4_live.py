@@ -97,6 +97,9 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     catalogue.write_text("fake catalogue; validator injected")
 
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    # These routing fixtures advance a synthetic clock by entire stages.
+    # Deadline guards are tested separately with measured paid-step latency.
+    monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *a: True)
     clock = iter([0.0, 0.0, 0.0, 0.0, 0.0, 300.0, 300.0])
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
     monkeypatch.setattr(gate, "_pinned_source_runtime",
@@ -222,6 +225,9 @@ def test_late_paid_p74_gear_candidate_gets_stochastic_finalist_comparison(
     catalogue.parent.mkdir(parents=True)
     catalogue.write_text("fake source database")
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    # These routing fixtures advance a synthetic clock by entire stages.
+    # Deadline guards are tested separately with measured paid-step latency.
+    monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *a: True)
     # First real paid candidate at 0s. At 297s rerank it. At 298s
     # another genuine source candidate is paid; at 299s rerank that one.
     # The formerly hard-coded <295s cutoff skipped BOTH rerankings.
@@ -765,3 +771,23 @@ def test_paid_p74_single_slot_can_change_only_an_enchant():
             result["raid"]["parties"][0]["players"][0]["equipment"]["items"]] == (
         [None, 202])
     assert checked == [([11, 21], [None, 202])]
+
+
+def test_p74_paid_step_guard_prevents_observed_302s_overrun(monkeypatch):
+    """A measured 2.6s finalist may not start at 299s and block holdout.
+
+    Source-native+2D paid calls are indivisible; final 1,000 stochastic
+    iterations are a separate stage outside the 300s search clock.
+    """
+    clock = SimpleNamespace(now=299.0)
+    monkeypatch.setattr(gate.time, "monotonic", lambda: clock.now)
+    assert not gate._paid_step_has_budget(0.0, 2.6)
+    assert not gate._paid_step_has_budget(0.0, 0.9)
+    clock.now = 295.0
+    assert gate._paid_step_has_budget(0.0, 2.6)
+    # Fast 3-fight source-native+2D screens can still run late in the window;
+    # unlike the old fixed 295s rerank cutoff, budget depends on actual cost.
+    clock.now = 299.0
+    assert gate._paid_step_has_budget(0.0, 0.10)
+    clock.now = 299.95
+    assert not gate._paid_step_has_budget(0.0, 0.10)
