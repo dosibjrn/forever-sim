@@ -1132,6 +1132,135 @@ def _cast_pushback_runtime_witness(before, after, mod):
     return None
 
 
+def _critical_resource_gain_runtime_witness(before, after, mod):
+    """Observe a source-ranked critical resource proc in real CombatRuntime.
+
+    The sourced proc probability is checked on the compiled rule. The paired
+    witness then requires an actual *sampled* extra resource award on the
+    selected mode/trigger, plus a no-crit negative control. A rule merely
+    appearing in GameIR cannot pass P2.
+    """
+    from src.game.model.ir import ResourceChangeEffect
+    from src.game.runtime import ActorState, CombatRuntime, TargetState
+    from src.game.runtime.simulator import action_eligibility
+
+    source = mod.provenance
+    resource_id = str(mod.target_id)
+    mode = source.get('required_mode_id')
+    generator = source.get('requires_resource_generator')
+    amount = source.get('bonus_resource_amount')
+    if (mod.kind != 'critical_resource_gain' or mod.target_type != 'resource'
+            or not isinstance(mode, str) or not mode
+            or type(generator) is not bool or type(amount) not in (int, float)
+            or not isfinite(amount) or amount <= 0
+            or not 0 < float(mod.value) <= 1):
+        return None
+
+    def source_rule(ir):
+        matches = [(definition, rule)
+            for definition in ir.resources if definition.id == resource_id
+            for rule in definition.event_gain_rules
+            if rule.id.startswith('source_critical_gain:')
+            and rule.event_kind == 'nonperiodic_melee_critical'
+            and rule.required_mode_id == mode
+            and rule.metadata.get('resolution') == 'sampled_joint_critical'
+            and bool(rule.filters.get('required_generated_resource')) == generator]
+        return matches[0] if len(matches) == 1 else None
+
+    latest = source_rule(after)
+    earlier = source_rule(before)
+    if latest is None or (earlier is not None
+                          and earlier[1].id != latest[1].id):
+        return None
+    definition, rule = latest
+    old_probability = (float(earlier[1].metadata['proc_probability'])
+                       if earlier is not None else 0.)
+    new_probability = float(rule.metadata.get('proc_probability', -1))
+    if (not isclose(new_probability - old_probability, float(mod.value),
+                    abs_tol=1e-8, rel_tol=1e-7)
+            or not isclose(float(rule.multiplier), float(amount), abs_tol=1e-8)
+            or definition.scope not in ('actor', 'target')):
+        return None
+
+    def execute(ir, *, crit, target_id):
+        actor = ActorState.from_ir(ir.actor, ir.resources, ir.modes)
+        try:
+            actor.transition_mode(mode)
+        except (ValueError, KeyError, AttributeError):
+            return None
+        actor.stats['melee_crit_chance'] = crit
+        target = TargetState.with_health(target_id, 1000000.)
+        if generator:
+            # Discover a real sourced resource-generating melee action, not a
+            # class-specific Claw name or a synthetic trigger event.
+            actions = [a for a in ir.actions
+                if any(isinstance(e, ResourceChangeEffect)
+                       and e.resource_id == resource_id and e.target == 'target'
+                       and e.operation == 'add' and e.amount > 0
+                       for e in a.effects)]
+            for action in actions:
+                for cost in action.costs:
+                    if cost.resource_id in actor.resources:
+                        actor.resources[cost.resource_id] = float(
+                            actor.resource_capacity[cost.resource_id])
+                if action_eligibility(action=action, actor=actor,
+                                      target=target).eligible:
+                    break
+            else:
+                return None
+            rt = CombatRuntime(actor=actor, target=target)
+            try:
+                end = rt.schedule_action(action)
+                rt.advance_to(end + .02)
+            except (ValueError, KeyError, RuntimeError, TypeError):
+                return None
+        else:
+            if resource_id not in actor.resources or not ir.auto_attacks:
+                return None
+            actor.resources[resource_id] = min(
+                50., float(actor.resource_capacity[resource_id]) / 2.)
+            rt = CombatRuntime(actor=actor, target=target,
+                               auto_attacks=ir.auto_attacks)
+            try:
+                rt.advance_to(4.)
+            except (ValueError, KeyError, RuntimeError, TypeError):
+                return None
+        events = [e for e in rt.trace if e.kind == 'ResourceEventGain'
+                  and e.payload.get('rule_id') == rule.id
+                  and e.payload.get('resource_id') == resource_id
+                  and e.payload.get('event_kind') == 'nonperiodic_melee_critical'
+                  and e.payload.get('event_value') == 1.
+                  and float(e.payload.get('gained', 0.)) > 0.]
+        return {'gain': sum(float(e.payload['gained']) for e in events),
+                'events': len(events)}
+
+    # The event-keyed production RNG is deterministic for a given target.
+    # Probe distinct legal targets to witness a 0.5 -> 1.0 chance increment,
+    # never force the proc or manufacture a ResourceEventGain.
+    for seed in range(1, 65):
+        target_id = f'p2_critical_resource_target_{seed}'
+        old = execute(before, crit=1., target_id=target_id)
+        new = execute(after, crit=1., target_id=target_id)
+        if old is None or new is None:
+            return None
+        if new['gain'] <= old['gain'] + 1e-8 or new['events'] == 0:
+            continue
+        old_zero = execute(before, crit=0., target_id=target_id)
+        new_zero = execute(after, crit=0., target_id=target_id)
+        if (old_zero is None or new_zero is None
+                or old_zero['gain'] != 0. or new_zero['gain'] != 0.):
+            return None
+        return {'probe': 'paired_production_critical_resource_gain',
+                'resource_id': resource_id, 'mode_id': mode,
+                'source_probability_increment': float(mod.value),
+                'before_probability': old_probability,
+                'after_probability': new_probability,
+                'before_gain': old['gain'], 'after_gain': new['gain'],
+                'no_crit_control_gain': new_zero['gain'],
+                'target_id': target_id}
+    return None
+
+
 def _behavior_fixtures(before, after, modifiers):
     """Require an observed L2 effect for *each* rank modifier, not just one.
 
@@ -1203,6 +1332,8 @@ def _behavior_fixtures(before, after, modifiers):
             match=_critical_damage_runtime_witness(before,after,mod)
         elif kind=='action_control_proc':
             match=_control_proc_runtime_witness(before,after,mod)
+        elif kind=='critical_resource_gain':
+            match=_critical_resource_gain_runtime_witness(before,after,mod)
         elif kind=='grant_source_action':
             match=_sourced_granted_action_behavior(before,after,mod)
         elif kind in ('resource_cost_flat','resource_cost_pct'):
