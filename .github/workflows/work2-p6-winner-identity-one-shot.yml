@@ -1,0 +1,89 @@
+name: Work2 P6 paired paid-winner identity (one shot)
+on:
+  push:
+    branches: [work/work2-p6-cold-winner-identity-20261102]
+    paths: [.github/workflows/work2-p6-winner-identity-one-shot.yml]
+permissions:
+  contents: read
+jobs:
+  source-paid-winner-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Genuine paired cold 30s and 300s source-paid searches with separate 100-mob replays
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          git rev-parse HEAD
+          mkdir -p work2-source-paid
+          python -m tools.wf437_direct_budgeted_run --budget 30 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output work2-source-paid/30.json
+          python -m tools.wf437_direct_budgeted_run --budget 300 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output work2-source-paid/300.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          def describe(budget):
+              report=json.loads(Path(f'work2-source-paid/{budget}.json').read_text())
+              valid=report.get('validation') or {}
+              shortlist=report.get('validation_shortlist') or []
+              replay={str(row.get('id')):row for row in valid.get('rows') or []}
+              def row_detail(index, build):
+                  r=replay.get(str(index),{})
+                  gear=(build.get('equipped_gear') or {}).get('slots') or {}
+                  policy=build.get('policy_ir') or {}
+                  return {
+                      'index':index, 'screen_s_per_mob':build.get('screen_s_per_mob'),
+                      'full_s_per_mob':r.get('full_s_per_mob'), 'replay_status':r.get('status'),
+                      'allocation':build.get('allocation'),
+                      'equipped_ids':{slot:item.get('item_id') for slot,item in sorted(gear.items())},
+                      'policy_actions':[row.get('action_id') for row in policy.get('rules') or []],
+                      'policy_signature':build.get('policy_signature'),
+                      'recovery':build.get('recovery'),
+                      'opening':build.get('opening_action_ids'),
+                  }
+              winners=[row_detail(i,x) for i,x in enumerate(shortlist)]
+              best=valid.get('validated_winner_id')
+              return {
+                  'budget_s':budget, 'wall_s':report.get('wall_s'),
+                  'source_db_sha256':report.get('source_db_sha256'),
+                  'source_gear_catalogue_snapshot':report.get('source_gear_catalogue_snapshot'),
+                  'backend':report.get('screen_evaluator_backend'),
+                  'same_legal_space':report.get('source_search_space'),
+                  'unique_paid':report.get('unique_full_builds'),
+                  'refinement':{k:v for k,v in (report.get('refinement') or {}).items() if k!='rows'},
+                  '100mob_completed':valid.get('complete_100mob_replays'),
+                  'validated_winner_id':best,
+                  'winner': next((r for r in winners if str(r['index'])==str(best)),None),
+                  'shortlist':winners,
+              }
+
+          a,b=describe(30),describe(300)
+          assert a['source_db_sha256']==b['source_db_sha256'], 'SOURCE_HASH_MISMATCH'
+          assert a['same_legal_space']==b['same_legal_space'], 'SEARCH_SPACE_MISMATCH'
+          assert a['backend']==b['backend']=='direct', 'BACKEND_MISMATCH'
+          assert a['100mob_completed']==len(a['shortlist']) and b['100mob_completed']==len(b['shortlist']), 'INCOMPLETE_100MOB_REPLAY'
+          assert a['winner'] and b['winner'], 'NO_WINNER'
+          print('WORK2_P6_PAIRED_WINNER_IDENTITY='+json.dumps({
+             'source_db_sha256':a['source_db_sha256'], 'backend':a['backend'],
+             'T30':a['winner']['full_s_per_mob'],
+             'T300':b['winner']['full_s_per_mob'],
+             'ratio':a['winner']['full_s_per_mob']/b['winner']['full_s_per_mob'],
+             'N30':a['unique_paid'], 'N300':b['unique_paid'],
+             '30':a['winner'], '300':b['winner'],
+             '30_shortlist':a['shortlist'], '300_shortlist':b['shortlist'],
+          },sort_keys=True),flush=True)
+          Path('work2-source-paid/winner_identity.json').write_text(json.dumps({'30':a,'300':b},indent=2,default=str))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: work2-p6-paired-source-winner-identities
+          path: work2-source-paid/
+          retention-days: 5
