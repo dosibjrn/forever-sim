@@ -60,6 +60,19 @@ def _source_native_world_parity(
                 or row["world_applied_damage"] < 0
                 for i, row in enumerate(samples)):
             return "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
+        independent_world_mean = math.fsum(
+            row["world_dps"] for row in samples) / iterations
+        if abs(independent_world_mean - live["world_mean_dps"]) >= 1e-5:
+            return "P7_1_WORLD_FIGHT_MEAN_DIVERGED"
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
+    if (abs(native["first_duration_s"] - live["sampled_duration_s"]) >= 1e-9
+            or abs(samples[0]["duration_s"] - live["sampled_duration_s"]) >= 1e-9):
+        return "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED"
+    if (abs(native["native_dps"] - live["native_dps"]) >= 1e-6
+            or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
+        return "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
+    try:
         # Real live_world_probe records actual gsim-applied native damage
         # (including any negative-time/pre-pull damage) and scores only the
         # in-fight portion. Equal reported DPS is not a causal world receipt
@@ -79,18 +92,8 @@ def _source_native_world_parity(
                     rel_tol=1e-9, abs_tol=1e-4)
                 for row in samples):
             return "P7_1_WORLD_FIGHT_DAMAGE_DIVERGED"
-        independent_world_mean = math.fsum(
-            row["world_dps"] for row in samples) / iterations
-        if abs(independent_world_mean - live["world_mean_dps"]) >= 1e-5:
-            return "P7_1_WORLD_FIGHT_MEAN_DIVERGED"
     except (KeyError, TypeError, ValueError, OverflowError):
         return "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
-    if (abs(native["first_duration_s"] - live["sampled_duration_s"]) >= 1e-9
-            or abs(samples[0]["duration_s"] - live["sampled_duration_s"]) >= 1e-9):
-        return "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED"
-    if (abs(native["native_dps"] - live["native_dps"]) >= 1e-6
-            or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
-        return "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
     return None
 
 
