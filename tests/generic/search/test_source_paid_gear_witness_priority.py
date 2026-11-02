@@ -724,3 +724,48 @@ def test_nested_paid_candidate_expiry_does_not_arm_stray_alarm(monkeypatch):
                 pass
     assert state["timer"] == (0, 0)
     assert state["handler"] == signal.SIG_DFL
+
+
+def test_work2_selected_paid_parent_lineage_keeps_real_refinement_ancestry():
+    # P6's 300s round-3 candidate may descend from a paid round-2
+    # transfer. The source search must retain that actual parent relationship
+    # even though the public JSON omits full unselected gear/APL rows.
+    from src.v2.source_bounded_joint_frontier import _paid_refinement_lineages
+    paid=[
+        dict(allocation={"root": 5}, gear_move="incumbent",
+             policy_signature="p0", screen_s_per_mob=18.3),
+        dict(allocation={"other": 5}, gear_move="incumbent",
+             policy_signature="p0", screen_s_per_mob=18.2),
+        dict(allocation={"reflection": 3}, gear_move="talent_refined:2",
+             policy_signature="p0", screen_s_per_mob=17.824687,
+             refinement_round=2, refinement_parent_paid_index=0,
+             talent_neighbor_operation="macro_transfer:3"),
+        dict(allocation={"reflection": 3, "other": 2},
+             gear_move="talent_refined:3", policy_signature="p0",
+             screen_s_per_mob=17.825495, refinement_round=3,
+             refinement_parent_paid_index=2,
+             talent_neighbor_operation="point_transfer"),
+    ]
+    result=_paid_refinement_lineages(paid, [
+        {"paid_candidate_index":3},
+        {"paid_candidate_index":1},
+    ])
+    assert result[0]["shortlist_paid_candidate_index"]==3
+    path=result[0]["paid_parent_path"]
+    assert [r["paid_candidate_index"] for r in path]==[0,2,3]
+    assert [r["refinement_round"] for r in path]==[0,2,3]
+    assert [r["talent_neighbor_operation"] for r in path]==[
+        None, "macro_transfer:3", "point_transfer"]
+    assert path[-1]["screen_s_per_mob"]==17.825495
+    assert result[1]["paid_parent_path"][0]["paid_candidate_index"]==1
+    assert len(result[1]["paid_parent_path"])==1
+
+
+def test_work2_paid_parent_lineage_rejects_invalid_or_cyclic_ancestry():
+    from src.v2.source_bounded_joint_frontier import _paid_refinement_lineages
+    paid=[dict(refinement_parent_paid_index=1),
+          dict(refinement_parent_paid_index=0)]
+    with pytest.raises(ValueError,match="PAID_REFINEMENT_PARENT_CHAIN_INVALID"):
+        _paid_refinement_lineages(paid,[{"paid_candidate_index":1}])
+    with pytest.raises(ValueError,match="PAID_REFINEMENT_PARENT_CHAIN_INVALID"):
+        _paid_refinement_lineages(paid,[{"paid_candidate_index":7}])
