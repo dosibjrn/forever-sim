@@ -1,6 +1,8 @@
-# WoW Forever — PROCESS v2.11 (approved, reorganized)
+# WoW Forever — PROCESS v2.12 (approved, reorganized)
 
 **Scope:** This file governs HOW the project is developed. [OVERALL_PLAN.md](OVERALL_PLAN.md) v5 defines WHAT and the DONE DONE target. The detailed approved gate predicates now live in [docs/gates/](docs/gates/README.md). This preserves the **structural split of v2.10**. **Owner-approved v2.11 (2026-11-01) clarifies P1 only:** selected native MythicSim ability effects are validated directly on that engine without requiring a duplicate Python GameIR/gsim ability wrapper; the actual normative text is in [P1–P2](docs/gates/P1-P2.md), with an [implementation guide](docs/gates/P1_VALIDATION.md). No other gate thresholds or product goals change. Git history preserves the former consolidated PROCESS and its v2.3–v2.10 change records.
+
+**Owner-approved v2.12 (2026-11-02):** P1–P7.5 are potentially expensive **on-demand acceptance tests**, not unit tests or a permanently running CI suite. A gate needs one genuine successful execution to earn PASS; its persistent record may be just `PASS` plus the pass timestamp. Re-run only when an actual change materially invalidates what was accepted. This changes evidence retention and scheduling, **not** any P1–P7.5 behavior, thresholds, engine/source legality, or the 148-checkpoint goal.
 
 ## Authority and change control
 
@@ -12,7 +14,7 @@
 ## Acceptance contract
 
 - The scoreboard has **148 checkpoints**: nine unrestricted classes × four levels (20, 30, 40, 60) = 36; Druid four profiles × four levels = 16; eight other classes × three profiles × four levels = 96. There is no L50 checkpoint.
-- A checkpoint counts only when **P1–P6 and P7.1–P7.5** pass with current, compatible pinned source, ruleset and production engine evidence. P1–P6 assess continuous **100-mob leveling**; P7 assesses a separate pinned MythicSim DPS-reference encounter. Never splice incompatible proofs.
+- A checkpoint counts only when **P1–P6 and P7.1–P7.5** have each genuinely passed with mutually compatible source, ruleset and production-engine semantics. Acceptance can accumulate across separate runs; all gates need not pass in a single session or be rerun merely because unrelated commits landed. P1–P6 assess continuous **100-mob leveling**; P7 assesses a separate pinned MythicSim DPS-reference encounter. Never splice incompatible proofs.
 - **No additional implicit gates.** Tests, metadata, compilation, static manifests, native-only diagnostics, partial evidence and green CI are not a substitute for the actual stated predicate. Report PASS/FAIL/BLOCKED truthfully. Preserve previously accepted owner-specific historical decisions and disclose their limits.
 - Exact requirements and runtime authority:
   - [Common acceptance, engines, sources and transition](docs/gates/COMMON.md)
@@ -20,14 +22,14 @@
   - [P3 gear smoke](docs/gates/P3.md)
   - [P4–P6 independent search and 100-mob comparison](docs/gates/P4-P6.md)
   - [P7.1–P7.5 MythicSim reference and live integration](docs/gates/P7.md)
-- Stable CLI: `python tools/wf_gate.py --class <class> --level <level> --gate P1` (or P2–P7.5). Live execution is authoritative; see [runtime contract](docs/gates/RUNTIME_AUTHORITY.md).
+- Stable on-demand CLI: `python tools/wf_gate.py --class <class> --level <level> --gate P1` (or P2–P7.5). Actual production execution, not prewritten JSON, awards a new PASS; see [runtime contract](docs/gates/RUNTIME_AUTHORITY.md). Acceptance tests may be CLI/integration runs and need not be pytest unit tests.
 
 ## Delivery and evidence
 
 1. Prioritize the smallest **material critical-path improvement** toward 148/148, not documents, run counts, checklists or status theater. Use the mutable work priority and actionable issues; parallelize independent code work.
 2. Develop in an isolated branch. For a new/repaired gate, show **RED → GREEN → REFACTOR** against the *same* behavioral predicate; refactor shared mechanisms rather than implementing per-class exceptions, then rerun relevant cross-class/level regressions.
-3. A passing **formal gate** needs tested production behavior and reproducible evidence: pinned source/ruleset/runtime/config, exact input, measured output, relevant candidates, comparisons and causal traces. Commit evidence under `docs/evidence/` and merge the individually accepted gate to `main`; do not mix failed/pending gates into a PASS claim or inflate 0/148. Previously valid unchanged evidence may be reused when hashes match.
-4. Safe engineering changes can be merged independently after relevant tests, **without claiming a formal gate PASS**. Record actionable blockers instead of fabricating evidence or adding verification bureaucracy. Prefer fast focused checks; run expensive 30s/300s/100-mob proofs only for real affected acceptance.
+3. A passing **formal gate** requires **one real run** of the selected production code against the applicable approved gate predicate: source/ruleset/engine, inputs, measured effects, searches, comparisons and world causality are genuinely used where the gate requires them. The **persistent acceptance record may be only a gate-specific `PASS` and its timestamp**; optional run/commit links aid debugging but committed JSON, a `docs/evidence/` bundle, or a separate proof implementation is **not** mandatory. The test/production implementation remains executable for later revalidation. A timestamp cannot manufacture a PASS without the real successful run. Never mix incompatible runs or raise 0/148 on partial proof.
+4. **Run once, retain PASS, revalidate only when materially invalidated.** Do not routinely repeat heavy 30s/300s/100-mob/holdout acceptance runs each hour, commit, PR or CI cycle; a different git SHA alone is not invalidation. If a changed source rule, affected production behavior, chosen engine, scenario or scoring semantics defeats the earlier test's relevance, rerun only the affected gate(s) and update their PASS timestamp upon success. Safe engineering changes may merge after appropriate **fast** regression tests without changing unrelated accepted gates. Record actionable failures, not reporting bureaucracy.
 5. Use sourced Forever data and justified Classic defaults where Forever is unknown. Implement and test observable mechanics; don't require live-server measurement or speculative semantic-certification rounds. No invented game values, no hidden source completeness gates; see [common source rules](docs/gates/COMMON.md).
 
 The former consolidated v2.10 document, including its historical approvals, remains in Git history. Its **active gate predicates** were separated into the linked files above, not rescinded.

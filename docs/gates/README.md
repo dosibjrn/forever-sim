@@ -1,6 +1,8 @@
-# Gate contracts — PROCESS v2.11
+# Gate contracts — PROCESS v2.12
 
 [PROCESS](../../PROCESS.md) is the short governance and development contract; this directory holds its **normative acceptance rules**. The original v2.10 split changed locations only. Owner-approved v2.11 clarifies **P1 validation** on the selected native executor (no mandatory GameIR wrapper); it leaves eligible classes, run budgets, other gate criteria and previously approved outcomes unchanged. The former 50 KB consolidated PROCESS and its approval history remain in Git.
+
+**Owner-approved v2.12:** these are on-demand, potentially expensive production acceptance tests, not an always-on unit-test matrix. One real successful gate execution earns a PASS; persistent documentation may be only PASS + timestamp, and only materially invalidated gates require revalidation. No new proof bundle or extra gate is required; underlying P1–P7.5 predicates and budgets remain unchanged.
 
 | Contract | Owns |
 | --- | --- |
