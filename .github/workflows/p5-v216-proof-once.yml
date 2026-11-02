@@ -1,0 +1,28 @@
+name: P5 v2.16 exact-commit focused regression (one-shot)
+on:
+  push:
+    branches:
+      - work/p5-v216-regression-once-20261102
+permissions:
+  contents: read
+jobs:
+  p5-twofold-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact approved change SHA
+        uses: actions/checkout@v4
+        with:
+          ref: 64f29b79de9a7d16cf85a4de34d49daa060a7fbb
+          lfs: true
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run source P5 and gate/CLI regressions at exact commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "64f29b79de9a7d16cf85a4de34d49daa060a7fbb"
+          python -m pip install --disable-pip-version-check pytest==8.3.5 beautifulsoup4==4.13.4
+          python -m pytest -q tests/test_p5_paid_breadth_threshold.py tests/test_work2_full_source_p4_p5_gate_entry.py tests/generic/search/test_work2_p4_p5_cli_receipts.py
