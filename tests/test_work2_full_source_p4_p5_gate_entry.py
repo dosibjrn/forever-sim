@@ -42,7 +42,7 @@ def test_explicit_full_source_gate_uses_existing_real_production_cli(
         if args[0] == "--compare-30":
             return {
                 "N30_unique_paid": 25, "N300_unique_paid": 250,
-                "p5_10x_breadth": True,
+                "p5_2x_breadth": True, "p5_10x_breadth": True,
                 "same_source_legal_candidate_space_proven": True,
                 "replays": [
                     {"status": "COMPLETE", "count": 100,
@@ -78,10 +78,10 @@ def test_explicit_full_source_gate_uses_existing_real_production_cli(
     if gate == "P5":
         assert result["independent_N30_unique_paid"] == 25
         assert result["independent_N300_unique_paid"] == 250
-        assert result["independent_p5_10x_breadth"] is True
+        assert result["independent_p5_2x_breadth"] is True
         assert result["independent_same_source_candidate_space"] is True
         assert result["independent_100mob_winner_replays_complete"] is True
-        assert "P5_N300_GE_TEN_TIMES_N30_NOT_PROVEN" not in result["reasons"]
+        assert "P5_N300_GE_TWO_TIMES_N30_NOT_PROVEN" not in result["reasons"]
 
 
 @pytest.mark.parametrize("missing", ["breadth", "space", "replay"])
@@ -91,6 +91,7 @@ def test_p5_independent_cold_comparison_rejects_incomplete_proof(monkeypatch, mi
             return _production_receipt(int(args[1])), None
         comparison = {
             "N30_unique_paid": 25, "N300_unique_paid": 250,
+            "p5_2x_breadth": missing != "breadth",
             "p5_10x_breadth": missing != "breadth",
             "same_source_legal_candidate_space_proven": missing != "space",
             "replays": [
@@ -108,7 +109,7 @@ def test_p5_independent_cold_comparison_rejects_incomplete_proof(monkeypatch, mi
     result = gates.run_full_paid_source_search(
         Path("/project"), "druid", 30, spec="unrestricted", gate="P5")
     expected = {
-        "breadth": "P5_N300_GE_TEN_TIMES_N30_NOT_PROVEN",
+        "breadth": "P5_N300_GE_TWO_TIMES_N30_NOT_PROVEN",
         "space": "P5_INDEPENDENT_COLD_SOURCE_SPACE_NOT_MATCHED",
         "replay": "P5_INDEPENDENT_WINNERS_100MOB_REPLAY_INCOMPLETE",
     }
@@ -168,7 +169,7 @@ def test_full_l60_balance_uses_canonical_source_checkpoint_inputs(
         calls.append(args)
         if args[0] == "--compare-30":
             return {"N30_unique_paid": 25, "N300_unique_paid": 250,
-                    "p5_10x_breadth": True,
+                    "p5_2x_breadth": True, "p5_10x_breadth": True,
                     "same_source_legal_candidate_space_proven": True,
                     "replays": [{"status": "COMPLETE", "count": 100,
                                  "mob_completed": 100, "s_per_mob": 12.5}] * 2}, None
@@ -324,7 +325,7 @@ def test_approved_gsim_paid_gate_uses_actual_predicates_not_extra_catalogue_or_n
         if args[0] == "--compare-30":
             return {
                 "same_source_legal_candidate_space_proven": True,
-                "p5_10x_breadth": True,
+                "p5_2x_breadth": True, "p5_10x_breadth": True,
                 "N30_unique_paid": 25, "N300_unique_paid": 250,
                 "replays": [
                     {"status": "COMPLETE", "count": 100,
