@@ -111,3 +111,38 @@ def test_partial_real_gsim_health_is_projected_before_first_native_action():
     assert tick["world_target_health_before"] == 75.
     assert tick["world_target_max_health"] == 500.
     assert tick["selected_target_id"] == "m1"
+
+
+@pytest.mark.parametrize("distance,melee", [(15., False), (3., True)])
+def test_stationary_source_target_keeps_real_2d_position(distance, melee):
+    from src.game.model import ActorDefinition, ResourceDefinition
+    from src.game.runtime import ActorState, CombatRuntime, TargetState
+    actor = ActorState.from_ir(ActorDefinition('hero', 'player', base_stats={}),
+        (ResourceDefinition('health', 'Health', 'hero', initial_amount=500, capacity=500),), ())
+    runtime = CombatRuntime(actor=actor, target=TargetState.with_health('m0', 500),
+        other_targets=(TargetState.with_health('m1', 500),),
+        spatial_positions_yards={'m0': (0., 0.), 'm1': (distance, 0.)},
+        enemy_move_speed_yards_s=0., melee_radius_yards=5.)
+    runtime.engage_target('m1')
+    runtime.select_target('m1')
+    assert ('m1' in runtime._melee_targets) is melee
+    feed = GsimGoRangeFeed(runtime, native_player_index=0)
+    for idx in range(3):
+        runtime.advance_to(idx * 1.0)
+        tick = feed.next_tick()
+        assert tick["distance_yards"] == distance
+        assert tick["clock_ms"] == idx * 1000
+        feed.accept_range_receipt(receipt(tick))
+    assert runtime.enemy_positions_yards['m1'] == (distance, 0.)
+
+
+def test_negative_enemy_speed_still_rejected():
+    from src.game.model import ActorDefinition, ResourceDefinition
+    from src.game.runtime import ActorState, CombatRuntime, TargetState
+    actor = ActorState.from_ir(ActorDefinition('hero', 'player', base_stats={}),
+        (ResourceDefinition('health', 'Health', 'hero', initial_amount=500, capacity=500),), ())
+    with pytest.raises(ValueError, match="invalid enemy movement speed"):
+        CombatRuntime(actor=actor, target=TargetState.with_health('m0', 500),
+            other_targets=(TargetState.with_health('m1', 500),),
+            spatial_positions_yards={'m0': (0., 0.), 'm1': (15., 0.)},
+            enemy_move_speed_yards_s=-1., melee_radius_yards=5.)
