@@ -173,9 +173,14 @@ def record_partial(*, class_key, level, spec, gate, report, root=ROOT, path=LEDG
                 print(f"M1_REGRESSION_OR_SCOPE_CHANGE: {_key(row)} "
                       f"observed={new_ratio:.4f} best={old_ratio:.4f}")
             return False
-        # A broadened source universe changes the denominator; retain the
-        # provisional caveat until a full compatible PASS supersedes it.
+        # A changed denominator may be a new or narrower test universe.
+        # Don't allow shrinking scope to inflate a partial score, even when
+        # its ratio is larger. Require more actual passing behaviors too.
         if old["applicable"] != str(d):
+            if n < float(old["verified"]):
+                print(f"M1_SCOPE_CHANGE_NOT_COMPARABLE: {_key(row)} "
+                      f"old={old['verified']}/{old['applicable']} new={n}/{d}")
+                return False
             provisional = True
 
     row.update(status="PARTIAL", verified=str(n), applicable=str(d),
@@ -248,7 +253,7 @@ def main(argv=None):
     result = scoreboard(args.ledger)
     print(f"M1: {result['passed_gates']}/{TOTAL} accepted gate runs "
           f"({result['gate_percent']:.2f}%)")
-    print(f"Observed fractional gate coverage (NOT PASS): "
+    print(f"Best-observed fractional gate coverage (NOT PASS): "
           f"{result['measured_gate_equivalents']:.3f}/{TOTAL} "
           f"({result['measured_percent']:.4f}%, provisional where noted)")
     for p in result["partial_gates"]:
