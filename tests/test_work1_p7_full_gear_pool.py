@@ -32,8 +32,8 @@ def test_full_source_gear_pool_keeps_admitted_items_below_top_80(monkeypatch):
                 "INSERT INTO items VALUES (?, ?, 1, 0, 0, 0, 0)",
                 (idx, slot),
             )
-        # All 85 deliberately lower-ranked head items are admitted by the
-        # same validator; the old full-search top-80 rule hid some forever.
+        # All 85 additional head items are admitted by the
+        # same validator; the old full-search top-80 rule hid six forever.
         for idx in range(85):
             con.execute(
                 "INSERT INTO items VALUES (?, 'head', ?, 0, 0, 0, 0)",
