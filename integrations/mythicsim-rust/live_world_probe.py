@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -52,6 +53,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     previous_ack_id = ""
     event_count = 0
     applied_damage = 0.
+    applied_damage_compensation = 0.
     last_tick = -1
     iteration = -1
     samples = []
@@ -126,8 +128,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 ack = applier.apply(tick, receipt)
                 ack["iteration_index"] = iteration
                 event_count += len(ack["applied_event_ids"])
-                applied_damage += ack["applied_native_damage"]
-                iteration_damage += ack["applied_native_damage"]
+                # Millions of positive source-native events must not lose
+                # bookkeeping precision through naive global float addition.
+                # Compensated accumulation is independent of per-fight totals.
+                delta = ack["applied_native_damage"]
+                adjusted = delta - applied_damage_compensation
+                updated = applied_damage + adjusted
+                applied_damage_compensation = (updated - applied_damage) - adjusted
+                applied_damage = updated
+                iteration_damage += delta
                 previous_ack_id = ack["world_after_sha256"]
                 if forge_ack and event_count:
                     ack["applied_event_ids"] = []
@@ -156,7 +165,11 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             world_mean_dps = sum(s["world_dps"] for s in samples) / iterations
             assert abs(native_dps - world_mean_dps) < 1e-5, (
                 "NATIVE_WORLD_STOCHASTIC_DPS_MISMATCH", native_dps, world_mean_dps)
-            assert abs(sum(s["world_applied_damage"] for s in samples) - applied_damage) < 1e-4
+            assert math.isclose(
+                math.fsum(s["world_applied_damage"] for s in samples),
+                applied_damage, rel_tol=1e-12, abs_tol=1e-4,
+            ), ("LIVE_WORLD_DAMAGE_ACCOUNTING_DIVERGENCE",
+                math.fsum(s["world_applied_damage"] for s in samples), applied_damage)
             return {"native_dps": native_dps, "sampled_duration_s": duration,
                     "world_mean_dps": world_mean_dps, "iterations_done": iterations,
                     "world_applied_damage": applied_damage, "native_damage_events": event_count,
@@ -171,11 +184,78 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 proc.kill()
                 proc.wait(timeout=5)
 
+def native_source_control(binary: Path, request: Path, iterations: int) -> dict:
+    """Independent real Rust source engine with only iteration count reduced.
+
+    Keeps saved gear, talents, rotation, encounter and RNG seed unchanged.
+    The world path receives the ORIGINAL request and same first N fights.
+    """
+    source = json.loads(request.read_text())
+    assert 1 <= iterations <= source["simOptions"]["iterations"]
+    source["simOptions"]["iterations"] = iterations
+    with tempfile.TemporaryDirectory() as folder:
+        reduced = Path(folder) / "native_source_control.json"
+        output = Path(folder) / "native_result.json"
+        reduced.write_text(json.dumps(source, sort_keys=True))
+        completed = subprocess.run(
+            [str(binary.resolve()), "sim", "--request", str(reduced),
+             "--outfile", str(output), "--gate"],
+            capture_output=True, text=True, timeout=120,
+            env={k: v for k, v in os.environ.items()
+                 if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS")},
+        )
+        assert completed.returncode == 0, (
+            "NATIVE_SOURCE_CONTROL_FAILED", completed.stderr[-2000:])
+        result = json.loads(output.read_text())
+        assert result["identity"]["engine"] == "forever-engine"
+        measured = result["result"]
+        assert measured["iterationsDone"] == iterations
+        return {"native_dps": measured["raidMetrics"]["dps"].get("avg", 0.),
+                "first_duration_s": measured["firstIterationDuration"],
+                "iterations": iterations}
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--binary", type=Path, required=True)
     p.add_argument("--request", type=Path, required=True)
+    p.add_argument("--reference-iterations", type=int, default=0,
+                   help="on-demand native-vs-live stochastic reference run; 0=quick causal regression")
     args = p.parse_args()
+    if args.reference_iterations:
+        source = json.loads(args.request.read_text())
+        player = source["raid"]["parties"][0]["players"][0]
+        assert player["class"] == "ClassDruid" and "balanceDruid" in player
+        assert len(source["encounter"]["targets"]) == 1
+        assert source["encounter"]["targets"][0]["level"] == 63
+        assert args.reference_iterations <= source["simOptions"]["iterations"]
+        baseline = native_source_control(args.binary, args.request, args.reference_iterations)
+        coupled = run(args.binary, args.request,
+                      distance=player["distanceFromTarget"],
+                      iterations=args.reference_iterations)
+        assert coupled["iterations_done"] == baseline["iterations"]
+        assert abs(coupled["native_dps"] - baseline["native_dps"]) < 1e-6, (
+            "LIVE_RUST_SOURCE_DPS_DIVERGENCE", coupled["native_dps"], baseline["native_dps"])
+        assert abs(coupled["sampled_duration_s"] - baseline["first_duration_s"]) < 1e-9
+        # This is the original saved MythicSim reference, not an optimizer
+        # candidate; source-native-vs-live parity alone is not a gate PASS.
+        if args.reference_iterations == source["simOptions"]["iterations"]:
+            witness = json.loads((ROOT / "docs/evidence/wf633/WF633_VALIDATION.json").read_text())
+            assert coupled["native_dps"] >= witness["reference_dps"], (
+                "LIVE_RUST_BELOW_SAVED_REFERENCE", coupled["native_dps"], witness["reference_dps"])
+        print("REAL_RUST_LIVE_SOURCE_STOCHASTIC", json.dumps({
+            "iterations": coupled["iterations_done"],
+            "native_dps": baseline["native_dps"],
+            "live_native_dps": coupled["native_dps"],
+            "world_dps": coupled["world_mean_dps"],
+            "world_ticks": coupled["native_world_ticks"],
+            "source_sha256": coupled["source_request_raw_sha256"],
+            "world_damage_events": coupled["native_damage_events"],
+            "saved_reference_threshold_checked":
+                args.reference_iterations == source["simOptions"]["iterations"],
+            "checkpoint_certified": False,
+        }, sort_keys=True), flush=True)
+        return
     near = run(args.binary, args.request, distance=15.)
     print("REAL_RUST_NEAR_WORLD", json.dumps(near, sort_keys=True), flush=True)
     far = run(args.binary, args.request, distance=80.)
@@ -187,6 +267,12 @@ def main() -> None:
     assert multi["iterations_done"] == len(multi["per_iteration"]) == 3
     assert multi["native_world_ticks"] > near["native_world_ticks"]
     assert multi["native_damage_events"] > near["native_damage_events"]
+    control = native_source_control(args.binary, args.request, 3)
+    print("REAL_RUST_THREE_FIGHT_NATIVE_SOURCE_CONTROL", json.dumps(control, sort_keys=True), flush=True)
+    assert abs(multi["native_dps"] - control["native_dps"]) < 1e-6, (
+        "STATIC_WORLD_CHANGED_SOURCE_NATIVE_DPS", multi["native_dps"], control["native_dps"])
+    assert abs(multi["sampled_duration_s"] - control["first_duration_s"]) < 1e-9, (
+        "STATIC_WORLD_CHANGED_SOURCE_DURATION", multi["sampled_duration_s"], control["first_duration_s"])
     # RED against the old bridge: ignoring the real gsim next-world deadline
     # forces 100ms polling even for the static, event-free reference encounter.
     periodic = run(args.binary, args.request, distance=15., iterations=3,
