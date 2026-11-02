@@ -153,8 +153,8 @@ params=dict(class_key=class_key,level=level,source_ir=ir,seed_stage=stage,
     refinement_top_n=(4 if args.budget==30 else 12),
     refinement_rounds=(2 if args.budget==30 else 3),
     refinement_stat_axes=('spell_power','strength','agility','intellect','spirit','stamina'),
-    refinement_probe_delta=20.,refinement_gear_candidates=5,
-    refinement_policy_candidates=(3 if args.budget==30 else 5),pack_size=2,
+    refinement_probe_delta=20.,refinement_gear_candidates=(3 if args.budget==30 else 5),
+    refinement_policy_candidates=5,pack_size=2,
     **spec_params)
 print('START',args.budget,'params',str({k:v for k,v in params.items() if k not in ('source_ir','seed_stage')}),flush=True)
 r=search_bounded_joint_frontier(**params)
