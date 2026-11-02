@@ -1,0 +1,18 @@
+name: Work1 P7 scalar receipt regression (temporary exact branch)
+on:
+  push:
+    branches:
+      - work/work1-p7-nonfinite-causal-parity-20261102
+  workflow_dispatch:
+jobs:
+  scoped-p7-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pytest beautifulsoup4
+      - name: Run focused exact-source P7 acceptance assertion regressions
+        run: python -m pytest -q tests/test_work1_p7_1_live_entry.py tests/test_wf_gate_p7_2_live.py tests/test_wf_gate_p7_3_live.py tests/test_wf_gate_p7_4_live.py tests/test_wf_gate_p7_5_live.py
