@@ -39,9 +39,11 @@ jobs:
       - name: Unrecorded current-source Druid L60 Balance P2 production gate
         shell: bash
         run: |
+          set +e
           set -uo pipefail
           python tools/wf_gate.py --class druid --level 60 --spec balance --gate P2 --out /tmp/prio-p2-live.json > /tmp/prio-p2-cli.log 2>&1
           cli_exit=$?
+          set -e
           if [ ! -s /tmp/prio-p2-live.json ]; then
             cat /tmp/prio-p2-cli.log
             echo 'Gate crashed or emitted no structured execution evidence' >&2
