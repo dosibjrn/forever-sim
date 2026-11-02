@@ -145,7 +145,10 @@ params=dict(class_key=class_key,level=level,source_ir=ir,seed_stage=stage,
     max_paid_builds=(1000 if args.budget==30 else 20000),
     max_cpu_s=float(args.budget),screen_mobs=2,finalist_mobs=100,
     per_candidate_wall_s=1.,search_only=True,screen_evaluator_backend='direct',
-    refinement_top_n=(4 if args.budget==30 else 12),
+    # A 2-mob proxy cannot prove the best persistent leveling build. Give both
+    # independent cold searches the same full-horizon shortlist breadth;
+    # the 100-mob validation still happens only AFTER each wall-clock budget.
+    refinement_top_n=12,
     refinement_rounds=(1 if args.budget==30 else 3),
     refinement_stat_axes=('spell_power','strength','agility','intellect','spirit','stamina'),
     refinement_probe_delta=20.,refinement_gear_candidates=(3 if args.budget==30 else 5),
