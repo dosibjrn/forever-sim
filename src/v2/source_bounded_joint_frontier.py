@@ -1566,13 +1566,15 @@ def _source_priority_witness_probes(variants):
             if label in compound_origins),None)
         if matched is not None:
             composed.append((talent_i,0,matched,0))
-    modified_probes = [(i, 0, 0, 0) for i, policies in enumerate(variants)
-        if policies and policies[0][0].startswith('talent_modified:')][:8]
+    modified_probes = [(i, 0, next(j for j,(label,_) in enumerate(policies)
+        if label.startswith('talent_modified:')), 0)
+        for i, policies in enumerate(variants)
+        if any(label.startswith('talent_modified:') for label,_ in policies)][:8]
     return (*unlock_probes, *composed, *modified_probes)
 
 
 # Journal identity changes with source gear ordering or paid-row evidence schema.
-_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v5_real_paid_budget'
+_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v6_mandatory_unlock_axis'
 
 
 def _source_gear_witness_probes(gear_stages, *, max_probes=32):
@@ -1674,7 +1676,11 @@ def _source_talent_policy_variants(compiled, talents, seed_stage, policies, *, l
     helper never labels a generated APL as executed or certified.
     """
     from src.game.talents import apply_talent_selection
-    policies_by_talent=[]
+    # A small optional APL budget must not delete mandatory source-unlocked
+    # actions. Keep one real incumbent comparator as well, and expand the
+    # shared policy axis only when the number of unlocks requires it.
+    raw_variants=[]
+    mandatory_width=len(policies)
     expected_unlocks={}
     preparation_blockers=[]
     for allocation in talents:
@@ -1686,7 +1692,7 @@ def _source_talent_policy_variants(compiled, talents, seed_stage, policies, *, l
         except (ValueError,KeyError) as exc:
             preparation_blockers.append({'allocation':dict(allocation),
                 'reason':str(exc)[:320]})
-            policies_by_talent.append(tuple(policies))
+            raw_variants.append(list(policies))
             continue
         compositions=source_compositional_policies(selected_ir,
             max_candidates=max(32,len(policies)*3))
@@ -1734,18 +1740,33 @@ def _source_talent_policy_variants(compiled, talents, seed_stage, policies, *, l
                 'reason':str(exc)[:320]})
             modified=()
             conditional=()
-        variants=list(modified)
+        unlocks=[]
         for witness in witnesses:
             action_id=witness['action_id']
             expected_unlocks.setdefault(action_id,{'source_talent_id':witness['source_talent_id'],
                 'allocation':dict(allocation)})
-            variants.append(('talent_unlock:'+action_id,witness['policy']))
-        variants.extend(conditional)
-        # New unlocked/modifying talents get their own *compositional* APLs.
-        # Existing old-base APLs alone cannot express these new relationships.
-        variants.extend(compositions)
-        variants.extend(policies)
-        policies_by_talent.append(tuple(variants[:len(policies)]))
+            unlocks.append(('talent_unlock:'+action_id,witness['policy']))
+        mandatory_width=max(mandatory_width,len(unlocks)+1)
+        # Mandatory unlocked spells first, then the sourced incumbent
+        # comparator. The remaining optional slots still explore talent
+        # modifications, conditionals, compositions and generic APLs.
+        ordered=[*unlocks,policies[0],*modified,*conditional,*compositions,*policies[1:]]
+        variants=[]
+        seen_signatures=set()
+        for label,policy in ordered:
+            signature=policy_identity(policy)
+            if signature not in seen_signatures:
+                seen_signatures.add(signature)
+                variants.append((label,policy))
+        raw_variants.append(variants)
+    policies_by_talent=[]
+    for variants in raw_variants:
+        selected=list(variants[:mandatory_width])
+        # Preserve a rectangular deterministic search frontier without
+        # paying for duplicate policies in talents with fewer legal APLs.
+        selected.extend(('__no_distinct_source_policy__',policies[0][1])
+                        for _ in range(mandatory_width-len(selected)))
+        policies_by_talent.append(tuple(selected))
     return policies_by_talent,expected_unlocks,preparation_blockers
 
 
@@ -2789,7 +2810,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         if search_only and refinement_rounds else max_paid_builds)
     # Diagonal visitation gives EVERY axis a chance under tight budgets.
     # Lexical Cartesian loops previously exhausted budget on the first talent.
-    dimensions=(len(talents),len(gear_stages),len(policies),len(recoveries))
+    dimensions=(len(talents),len(gear_stages),len(policies_by_talent[0]),len(recoveries))
     coordinates=_source_witness_first_coordinates(dimensions,policies_by_talent,
         proposal_strategy,attempted,gear_stages=gear_stages)
     recovered_rows=len(attempted)
@@ -2834,6 +2855,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         try:
             # Preflight exclusions still occupy their deterministic frontier
             # coordinate in the journal, but never consume a paid evaluation.
+            if policy_label=='__no_distinct_source_policy__':
+                raise ValueError('NO_DISTINCT_SOURCE_POLICY_FOR_TALENT')
             if required_combat_mode and not _policy_mode_damage_action_ids(
                     compiled,policy,required_combat_mode):
                 raise ValueError('SPEC_COMBAT_MODE_OFFENSIVE_APL_MISSING')
@@ -3056,7 +3079,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             'unproposed_slots':sorted(set(k for k,v in slot_source_counts.items() if v)
                 -{slot for slot,_ in slot_moves}),
             'source_universe_exhaustive':False},
-        'policy_variants':len(policies),'recovery_variants':len(recoveries),
+        'policy_variants':len(policies_by_talent[0]),'recovery_variants':len(recoveries),
         'paid_candidates':len(attempted),
         'initial_frontier_paid_candidates':frontier_paid_candidates,
         'first_pass_screen_candidates':first_pass_paid_candidates,
