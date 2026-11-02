@@ -16,5 +16,7 @@ jobs:
           python-version: '3.11'
       - name: Install focused source test dependencies
         run: python -m pip install -q pytest beautifulsoup4
-      - name: Real Mage and Druid L30 source slot proposal regressions
-        run: python -m pytest -q tests/test_source_wand_paid_slot_proposals.py
+      - name: Compile changed production modules
+        run: python -m compileall -q src/v2/source_persistent_slot_search.py src/v2/source_bounded_joint_frontier.py tools/wf437_direct_budgeted_run.py
+      - name: Source-backed Mage Druid gear legality and joint-budget regressions
+        run: python -m pytest -q tests/test_source_wand_paid_slot_proposals.py tests/test_wf326_druid20_source_slot_search.py tests/test_wf391_generic_joint_frontier.py::test_bonus_points_supported_and_invalid_search_budget
