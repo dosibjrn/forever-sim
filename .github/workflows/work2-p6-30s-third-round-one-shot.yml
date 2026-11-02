@@ -1,4 +1,4 @@
-name: Work2 P6 five-gear-source-paid diagnostic (one shot)
+name: Work2 P6 five-policy-source-paid diagnostic (one shot)
 on:
   push:
     branches: [work/work2-p6-30s-three-refinement-rounds-20261102]
@@ -22,11 +22,11 @@ jobs:
           set -euo pipefail
           python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
           git rev-parse HEAD
-          python -m tools.wf437_direct_budgeted_run --budget 30 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output /tmp/work2-gear5.json
+          python -m tools.wf437_direct_budgeted_run --budget 30 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output /tmp/work2-policy5.json
           python - <<'PY'
           import json
           from pathlib import Path
-          r=json.loads(Path('/tmp/work2-gear5.json').read_text())
+          r=json.loads(Path('/tmp/work2-policy5.json').read_text())
           v=r.get('validation') or {}
           rows=v.get('rows') or []
           winner=next((x for x in rows if str(x.get('id'))==str(v.get('validated_winner_id'))),None)
@@ -44,7 +44,7 @@ jobs:
               'validated_winner_full_s_per_mob':winner.get('full_s_per_mob') if winner else None,
               'replayed_rows':[{'id':x.get('id'),'status':x.get('status'),
                 'full_s_per_mob':x.get('full_s_per_mob')} for x in rows]}
-          print('WORK2_P6_GEAR5_REAL_RECEIPT='+json.dumps(receipt,sort_keys=True,default=str),flush=True)
+          print('WORK2_P6_POLICY5_REAL_RECEIPT='+json.dumps(receipt,sort_keys=True,default=str),flush=True)
           assert receipt['budget_s']==30 and 0<receipt['search_wall_s']<=30
           assert receipt['complete_100mob_replays']==receipt['shortlist_size']
           assert receipt['validated_winner_full_s_per_mob'] is not None
