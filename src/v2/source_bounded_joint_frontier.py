@@ -3028,7 +3028,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             'proposed_slots':sorted({slot for slot,_ in slot_moves}),
             'paid_slots':sorted({slot_move_labels[row['gear_move']]
                 for row in paid_rows
-                and row.get('gear_move') in slot_move_labels}),
+                if row.get('gear_move') in slot_move_labels}),
             'unproposed_slots':sorted(set(k for k,v in slot_source_counts.items() if v)
                 -{slot for slot,_ in slot_moves}),
             'source_universe_exhaustive':False},
