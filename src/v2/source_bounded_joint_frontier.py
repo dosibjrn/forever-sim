@@ -1572,7 +1572,7 @@ def _source_priority_witness_probes(variants):
 
 
 # Journal identity must change whenever the paid source gear frontier changes.
-_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v2_depth10'
+_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v3_paid_axis_balance'
 
 
 def _source_gear_witness_probes(gear_stages, *, max_probes=32):
@@ -1621,9 +1621,28 @@ def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, a
         if variants[coords[0]][coords[2]][0].startswith('talent_unlock:'))
     other_priority=tuple(coords for coords in priority if coords not in unlocks)
     gear_probes=_source_gear_witness_probes(gear_stages)
+    # Pay one candidate per legal slot before repeating a slot. Once the
+    # first-slot and source-unlock probes are admitted, do not spend the
+    # remaining budget on second/third items ahead of compound source APLs
+    # and alternate talent allocations: these are the *same* paid screens.
+    first_slot_probes=[]
+    deeper_slot_probes=[]
+    sampled_slots=set()
+    for coords in gear_probes:
+        label=gear_stages[coords[1]][0]
+        if label.startswith('source_stat_package:'):
+            first_slot_probes.append(coords)
+        else:
+            slot=label.split(':',1)[0]
+            if slot in sampled_slots:
+                deeper_slot_probes.append(coords)
+            else:
+                sampled_slots.add(slot)
+                first_slot_probes.append(coords)
     seen = set()
     coord_index = {}
-    for coords in (*unlocks, *gear_probes, *other_priority, (0, 0, 0, 0)):
+    for coords in (*unlocks, *first_slot_probes, *other_priority,
+                   *deeper_slot_probes, (0, 0, 0, 0)):
         if coords not in seen:
             coord_index[coords] = len(coord_index)
             seen.add(coords)
