@@ -526,10 +526,20 @@ def main(argv=None) -> int:
                 "independent_p5_10x_breadth",
                 "independent_same_source_candidate_space",
                 "independent_100mob_winner_replays_complete")
+            boolean_fields = {
+                "real_100mob_complete", "saved_full_source_winner_build",
+                "gear_source_snapshot_matches_current",
+                "winning_gear_source_legality_verified",
+                "source_class_gear_membership_attested",
+                "independent_p5_10x_breadth",
+                "independent_same_source_candidate_space",
+                "independent_100mob_winner_replays_complete"}
             for key in paid_fields:
                 value = report.get(key)
-                if type(value) is bool or (
-                        type(value) in (int, float) and math.isfinite(value)):
+                if ((key in boolean_fields and type(value) is bool)
+                    or (key not in boolean_fields
+                        and type(value) in (int, float)
+                        and math.isfinite(value))):
                     record[key] = value
         if gate == "P6":
             # The existing paid evaluator already supplied these outcomes;
