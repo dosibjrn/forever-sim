@@ -52,14 +52,14 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
                            spec: str, gate: str):
     """One exact-source native preflight shared by P7 discovery gates."""
     if (class_key, level, spec) != ("druid", 60, "balance"):
-        return _blocked("P7_" + gate.replace(".", "_") + "_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
+        return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
     request = root / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
     witness = root / "docs/evidence/wf633/WF633_VALIDATION.json"
     if not request.is_file() or not witness.is_file():
-        return _blocked("P7_" + gate.replace(".", "_") + "_PINNED_SOURCE_REQUEST_OR_REFERENCE_MISSING")
+        return _blocked(gate.replace(".", "_") + "_PINNED_SOURCE_REQUEST_OR_REFERENCE_MISSING")
     raw = request.read_bytes()
     if hashlib.sha256(raw).hexdigest() != SAVED_BALANCE_RAW_SHA:
-        return _blocked("P7_" + gate.replace(".", "_") + "_PINNED_SOURCE_REQUEST_CHANGED")
+        return _blocked(gate.replace(".", "_") + "_PINNED_SOURCE_REQUEST_CHANGED")
     base = json.loads(raw)
     meta = json.loads(witness.read_text())
     if (meta.get("engine_revision") != PINNED_RUST
@@ -68,17 +68,17 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
             or base["raid"]["parties"][0]["players"][0]["class"] != "ClassDruid"
             or len(base["encounter"]["targets"]) != 1
             or base["encounter"]["targets"][0]["level"] != 63):
-        return _blocked("P7_" + gate.replace(".", "_") + "_PINNED_REFERENCE_SCENARIO_MISMATCH")
+        return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_SCENARIO_MISMATCH")
     binary = Path(os.environ.get("FOREVER_MYTHICSIM_RUST_BIN", str(
         root.parent / "upstream/target/release/forever-engine"))).resolve()
     if not binary.is_file():
-        return _blocked("P7_" + gate.replace(".", "_") + "_PINNED_RUST_BINARY_MISSING")
+        return _blocked(gate.replace(".", "_") + "_PINNED_RUST_BINARY_MISSING")
     upstream = binary.parents[2]
     revision = subprocess.run(["git", "-C", str(upstream), "rev-parse", "HEAD"],
                               capture_output=True, text=True, check=False)
     if (revision.returncode != 0 or revision.stdout.strip() != PINNED_RUST
             or not (upstream / "src/core/fight/world_bridge.rs").is_file()):
-        return _blocked("P7_" + gate.replace(".", "_") + "_PINNED_NATIVE_WORLD_BUILD_NOT_VERIFIED")
+        return _blocked(gate.replace(".", "_") + "_PINNED_NATIVE_WORLD_BUILD_NOT_VERIFIED")
 
     return (base, meta, binary)
 
