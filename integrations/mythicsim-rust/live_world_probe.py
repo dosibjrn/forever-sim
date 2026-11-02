@@ -36,7 +36,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     )
     feed = GsimGoRangeFeed(world, native_player_index=0)
     applier = GsimNativeDamageWorldApplier(world)
-    request_sha = hashlib.sha256(raw).hexdigest()
+    raw_sha = hashlib.sha256(raw).hexdigest()
+    # Rust's prepared request identity is SHA256 of deterministic protobuf
+    # wire encoding, NOT the raw JSON byte hash. Ask the genuine source engine.
+    with tempfile.TemporaryDirectory() as prep_dir:
+        prepared_file = Path(prep_dir) / "prepared.json"
+        subprocess.run([str(binary.resolve()), "prepare", "--request",
+                        str(request.resolve()), "--outfile", str(prepared_file)],
+                       check=True, capture_output=True, text=True)
+        request_sha = json.loads(prepared_file.read_text())["request_sha256"]
     previous_ack_id = ""
     event_count = 0
     applied_damage = 0.
@@ -104,7 +112,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "world_applied_damage": applied_damage, "native_damage_events": event_count,
                     "native_world_ticks": feed._sequence,
                     "world_health_remaining": world.targets["m1"].health,
-                    "source_request_sha256": request_sha,
+                    "source_request_proto_sha256": request_sha,
+                    "source_request_raw_sha256": raw_sha,
                     "checkpoint_certified": False}
         finally:
             if proc.poll() is None:
