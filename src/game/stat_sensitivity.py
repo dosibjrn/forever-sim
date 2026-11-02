@@ -74,6 +74,7 @@ def measure_stat_sensitivities(
         chosen_delta = None
         chosen_score = None
         chosen_value = 0.0
+        first_regression = None
         for delta in deltas:
             candidate = apply_stat_delta(ir_slice, stat, delta)
             candidate_score = score(candidate)
@@ -84,11 +85,22 @@ def measure_stat_sensitivities(
             if candidate_score is None:
                 continue
             candidate_score = float(candidate_score)
-            if abs(candidate_score - baseline) > 1e-12:
+            improvement = baseline - candidate_score
+            if improvement > 1e-12:
+                # Discrete kill/recovery thresholds can make a small positive
+                # gear perturbation worse while a larger one genuinely helps.
+                # Keep searching for the first *measured* beneficial step.
                 chosen_delta = float(delta)
                 chosen_score = candidate_score
-                chosen_value = (baseline - candidate_score) / float(delta)
+                chosen_value = improvement / float(delta)
                 break
+            if improvement < -1e-12 and first_regression is None:
+                first_regression = (float(delta), candidate_score)
+        if chosen_delta is None and first_regression is not None:
+            # Do not clip a real regression to zero or fabricate a positive
+            # P3 weight when no tested production perturbation improves time.
+            chosen_delta, chosen_score = first_regression
+            chosen_value = (baseline - chosen_score) / chosen_delta
         rows.append(StatSensitivity(
             stat=stat,
             value=float(chosen_value),
