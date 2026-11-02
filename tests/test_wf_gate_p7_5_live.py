@@ -37,6 +37,38 @@ def test_cold_joint_changes_all_three_dimensions_and_does_not_seed_winner():
     assert original == prior
 
 
+def test_source_joint_keeps_same_name_distinct_ids_for_real_legality_check(
+        monkeypatch):
+    """RED before fix: name equality alone rejected source-admissible pairs.
+
+    The actual joint generator must leave recorded uniqueness/limit-category
+    legality to GearValidator.validate, not invent a display-name rule.
+    """
+    import importlib
+    from pathlib import Path
+
+    monkeypatch.syspath_prepend(str(
+        Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"))
+    source = importlib.import_module("p75_joint_search")
+    base = _base()
+    player = source.player(base)
+    player["equipment"]["items"] = [{"id": 100 + i} for i in range(16)]
+    pools = {i: [100 + i] for i in range(16)}
+    names = {100 + i: f"distinct-{i}" for i in range(16)}
+    names[110] = names[111] = "same-display-name-not-same-id"
+    monkeypatch.setattr(source, "random_build", lambda rng: "legal-ranks")
+    monkeypatch.setattr(source, "validate", lambda ranks: True)
+    monkeypatch.setattr(source, "encode", lambda ranks: "legal")
+    monkeypatch.setattr(source, "mutate_apl", lambda *args, **kwargs: [1, 2, 3])
+
+    candidate = source.make_candidate(
+        base, pools, random.Random(3), item_names=names)
+    items = source.player(candidate)["equipment"]["items"]
+    assert [items[10]["id"], items[11]["id"]] == [110, 111]
+    assert [items[12]["id"], items[13]["id"]] == [112, 113]
+    assert source.player(base)["talentsString"] == "reference"
+
+
 def test_unrelated_checkpoint_does_not_use_balance_ref(tmp_path):
     report = gate.run_live(tmp_path, "warrior", 40, spec="arms")
     assert report["status"] == "BLOCKED"
