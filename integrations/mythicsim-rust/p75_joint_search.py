@@ -22,7 +22,7 @@ def pick_gear(pool,rng):
         return rng.choice(pool)
     return pool[min(len(pool)-1,int(rng.expovariate(0.15)))]
 
-def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=None):
+def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=None,repair_axes=None):
     """Independent cold generation; later mutations improve one axis at a time.
 
     A gear slot's captured reference enchant is a *per-slot option*, not a
@@ -47,23 +47,37 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
         enchants=[item.get("enchant") for item in base["equipment"]["items"]]
         ranks=parse(base["talentsString"])
         actions=copy.deepcopy(base["rotation"]["priorityList"])
-        axis=rng.choices(("gear","talents","rotation","enchant"),
-                         weights=(50,27,18,5))[0]
-        if axis=="gear":
-            for _ in range(1 if rng.random()<0.8 else 2):
-                j=rng.randrange(16)
-                ids[j]=pick_gear(pools[j],rng)
-        elif axis=="talents":
-            ranks=edit_neighbors(ranks,rng)
-        elif axis=="rotation":
-            actions=mutate_apl(actions,player(reference)["rotation"]["priorityList"],rng)
-        else:
-            candidates=[i for i,options in enchant_choices.items()
-                        if any(e != enchants[i] for e in options)]
-            if candidates:
-                i=rng.choice(candidates)
-                enchants[i]=rng.choice([e for e in enchant_choices[i]
-                                         if e != enchants[i]])
+        axes=(repair_axes if repair_axes is not None else
+              (rng.choices(("gear","talents","rotation","enchant"),
+                           weights=(50,27,18,5))[0],))
+        allowed=("gear","talents","rotation","enchant",
+                 "gear_rebuild","talents_rebuild","rotation_rebuild")
+        if (not isinstance(axes, tuple) or not axes or
+                any(a not in allowed for a in axes)):
+            raise ValueError("INVALID_REPAIR_AXES")
+        for axis in axes:
+            if axis=="gear":
+                for _ in range(1 if rng.random()<0.8 else 2):
+                    j=rng.randrange(16)
+                    ids[j]=pick_gear(pools[j],rng)
+            elif axis=="talents":
+                ranks=edit_neighbors(ranks,rng)
+            elif axis=="rotation":
+                actions=mutate_apl(actions,player(reference)["rotation"]["priorityList"],rng)
+            elif axis=="gear_rebuild":
+                ids=[pick_gear(pools[j],rng) for j in range(16)]
+                enchants=[rng.choice(enchant_choices[i]) for i in range(16)]
+            elif axis=="talents_rebuild":
+                ranks=random_build(rng)
+            elif axis=="rotation_rebuild":
+                actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
+            else:
+                candidates=[i for i,options in enchant_choices.items()
+                            if any(e != enchants[i] for e in options)]
+                if candidates:
+                    i=rng.choice(candidates)
+                    enchants[i]=rng.choice([e for e in enchant_choices[i]
+                                             if e != enchants[i]])
     else:
         ids=[pick_gear(pools[j],rng) for j in range(16)]
         enchants=([rng.choice(enchant_choices[i]) for i in range(16)]

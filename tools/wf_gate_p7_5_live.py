@@ -23,7 +23,7 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
-def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pools=None):
+def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pools=None, repair_axes=None):
     """Legal source build: cold discovery or mutation of this search's paid winner.
 
     The seed for a fresh search is always independent of the reference and of
@@ -38,9 +38,15 @@ def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pool
         try:
             kwargs = ({"enchant_pools": enchant_pools}
                       if enchant_pools is not None else {})
-            candidate = (source.make_candidate(base, pools, rng, **kwargs)
-                         if elite is None else source.make_candidate(
-                             base, pools, rng, elite=elite, **kwargs))
+            if elite is None:
+                candidate = source.make_candidate(base, pools, rng, **kwargs)
+            elif repair_axes is None:
+                candidate = source.make_candidate(
+                    base, pools, rng, elite=elite, **kwargs)
+            else:
+                candidate = source.make_candidate(
+                    base, pools, rng, elite=elite, repair_axes=repair_axes,
+                    **kwargs)
             p = source.player(candidate)
             items = p["equipment"]["items"]
             ids = [int(x["id"]) for x in items]
@@ -66,6 +72,10 @@ def run_live(root: Path, class_key: str, level: int, *,
         return {"status": "BLOCKED",
                 "reasons": ["P7_5_INVALID_FULL_SOURCE_SEARCH_MODE"]}
     full_search = search_mode == "1"
+    strategy = os.environ.get("FOREVER_P7_SEARCH_STRATEGY", "default")
+    if strategy not in ("default", "wf613"):
+        return {"status": "BLOCKED",
+                "reasons": ["P7_5_INVALID_SEARCH_STRATEGY"]}
     integration = root / "integrations/mythicsim-rust"
     sys.path.insert(0, str(integration))
     try:
@@ -75,6 +85,11 @@ def run_live(root: Path, class_key: str, level: int, *,
         sys.path.remove(str(integration))
     production = _source_module(integration / "live_world_probe.py",
                                 "p75_production_native_world")
+    # WF613 is a selectable producer policy, not a second simulator/gate.
+    # Leave the default production search untouched for A/B comparison.
+    wf613 = (_source_module(integration / "wf613_strategy.py",
+                            "p75_wf613_paid_archive").WF613Controller()
+             if strategy == "wf613" else None)
     upstream = binary.parents[2]
     catalogue = root / "data/forever/catalogue/items_2026-09-29.sqlite"
     items = upstream / "data/items.jsonl"
@@ -113,11 +128,18 @@ def run_live(root: Path, class_key: str, level: int, *,
             try:
                 # Only a winner already evaluated in THIS live 2D cold search
                 # can be an elite. Never seed the saved report or P7.1-P7.4.
-                elite = (best[3] if full_search and best is not None
-                         and proposals % 5 != 0 else None)
-                candidate = _cold_joint(
-                    base, source, validator, pools, rng,
-                    elite=elite, enchant_pools=enchant_pools)
+                if wf613 is not None:
+                    elite, axes, family = wf613.propose(rng)
+                    candidate = _cold_joint(
+                        base, source, validator, pools, rng,
+                        elite=elite, repair_axes=axes,
+                        enchant_pools=enchant_pools)
+                else:
+                    elite = (best[3] if full_search and best is not None
+                             and proposals % 5 != 0 else None)
+                    candidate = _cold_joint(
+                        base, source, validator, pools, rng,
+                        elite=elite, enchant_pools=enchant_pools)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
@@ -142,6 +164,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 if not 0 <= score < float("inf"):
                     raise ValueError("SOURCE_JOINT_NATIVE_WORLD_DPS_INVALID")
                 executed += 1
+                if wf613 is not None:
+                    wf613.observe(candidate, score, family)
                 if best is None or score > best[0]:
                     best = (score, live, candidate_sha, candidate)
             except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
@@ -249,6 +273,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "world_damage_events": int(live["native_damage_events"]),
         "world_boundaries": int(live["native_world_ticks"]),
         "source_legal_joint_candidates_paid": executed,
+        "search_strategy": strategy,
+        **(wf613.diagnostics() if wf613 is not None else {}),
         "cold_candidate_failures": failures[:4],
         "selected_validation": "3_native_world_fights_per_cold_full_build",
         "search_rng_mode": "balanced",
