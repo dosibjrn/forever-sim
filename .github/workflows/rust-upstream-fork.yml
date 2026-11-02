@@ -22,7 +22,7 @@ jobs:
       - name: Syntax check and verify fail-closed bootstrap guards
         run: |
           bash -n scripts/bootstrap_mythicsim_rust_fork.sh
-          python3 -m py_compile integrations/mythicsim-rust/verify_upstream_candidate.py
+          python3 -m py_compile integrations/mythicsim-rust/verify_upstream_candidate.py integrations/mythicsim-rust/port_upstream_paladin_typed_rng.py
           python3 - <<'PY'
           from pathlib import Path
           s = Path("scripts/bootstrap_mythicsim_rust_fork.sh").read_text()
