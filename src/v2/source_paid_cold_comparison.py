@@ -156,7 +156,21 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
     legal300 = _verify_winner_gear_legality(winner300, class_key=class_key, level=level)
     gaps30 = _winner_gear_effect_gaps(winner30, class_key=class_key, level=level)
     gaps300 = _winner_gear_effect_gaps(winner300, class_key=class_key, level=level)
-    same_space = bool(gear_pinned and space30 and space30 == space300)
+    # The version in saved search-space metadata must be the version the
+    # production proposer actually executed. Matching two stale literals is
+    # not proof that independent cold searches used the same candidate space.
+    for saved in (search30, search300):
+        declared = saved.get('source_search_space')
+        executed = saved.get('source_slot_proposal_coverage')
+        if declared is not None and executed is not None and (
+                not isinstance(executed, dict)
+                or declared.get('gear_slot_sampling_version') != executed.get('strategy')):
+            raise ValueError('COLD_COMPARISON_SEARCH_SPACE_STRATEGY_ATTESTATION_MISMATCH')
+    same_space = bool(gear_pinned and space30 and space30 == space300
+        and all(isinstance(s.get('source_slot_proposal_coverage'), dict)
+                and s['source_slot_proposal_coverage'].get('strategy')
+                    == s['source_search_space'].get('gear_slot_sampling_version')
+                for s in (search30, search300)))
 
     from src.v2.source_bounded_joint_frontier import replay_joint_shortlist_100mob
     results = []
