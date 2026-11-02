@@ -82,7 +82,7 @@ def _replace_equipped_weapon_dps(ir_slice: GameIRSlice, dps: float, *,
                       'source_item_slot':fact.source_item_slot}
         count = 0
         for i, attack in enumerate(auto_attacks):
-            if (attack.required_mode_id == mode_id
+            if ((mode_id is None or attack.required_mode_id == mode_id)
                     and attack.damage_source.kind == fact.damage_source_kind):
                 auto_attacks[i] = replace(attack,
                     damage_source=replace(attack.damage_source, flat_dps=source_dps, dps_stat_id=None),
@@ -90,8 +90,12 @@ def _replace_equipped_weapon_dps(ir_slice: GameIRSlice, dps: float, *,
                     provenance=attack.provenance + (provenance,))
                 count += 1
         for i, action in enumerate(actions):
-            if not any(req.get('kind') == 'mode_is' and req.get('value') == mode_id
-                       for req in action.requirements):
+            # A sourced '*' mode fact applies to actions without a form gate
+            # as well as actions in explicit modes. Requiring mode_is(None)
+            # silently dropped ordinary weapon abilities (e.g. a builder).
+            if mode_id is not None and not any(
+                    req.get('kind') == 'mode_is' and req.get('value') == mode_id
+                    for req in action.requirements):
                 continue
             effects = []
             changed = False
@@ -182,8 +186,16 @@ def executable_gear_stats(ir_slice: GameIRSlice, *, db_path: Path | None = None)
         | {row.source_stat for row in capacity_rows
            if row.mode_label in labels and row.target_stat in resources})
     weapon_axes = {fact.source_stat for fact, mode_id in _weapon_facts_for_ir(ir_slice, db_path=db_path)
-                   if any(a.required_mode_id == mode_id and a.damage_source.kind == fact.damage_source_kind
-                          for a in ir_slice.auto_attacks)}
+                   if any((mode_id is None or a.required_mode_id == mode_id)
+                          and a.damage_source.kind == fact.damage_source_kind
+                          for a in ir_slice.auto_attacks)
+                   or any((mode_id is None or any(
+                               req.get('kind') == 'mode_is' and req.get('value') == mode_id
+                               for req in action.requirements))
+                          and any(isinstance(effect, WeaponDamageEffect)
+                                  and effect.damage_source.kind == fact.damage_source_kind
+                                  for effect in action.effects)
+                          for action in ir_slice.actions)}
     auto_dps_axes = tuple(sorted(_equipped_stat_dps_sources(ir_slice)))
     hp5_axis = ('health_regeneration_per_5s',) if 'health' in resources else ()
     return tuple(dict.fromkeys((*EXECUTABLE_GEAR_STATS, *hp5_axis, *auto_dps_axes, *source_axes,
