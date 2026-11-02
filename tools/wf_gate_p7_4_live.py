@@ -436,7 +436,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "saved_reference_dps": float(meta["reference_dps"]),
         "required_reference_dps": p7_required_dps(
             "P7.4", float(meta["reference_dps"])),
-        "cold_winner_request_sha256": candidate_sha,
+        "cold_winner_request_sha256": hashlib.sha256(
+            json.dumps(frozen_winner, sort_keys=True).encode()).hexdigest(),
         # Publish the full frozen paid loadout, not merely its hash, so the
         # actual P7.4 winner is inspectable and can be reproduced/debugged.
         "cold_winner_gear": [
