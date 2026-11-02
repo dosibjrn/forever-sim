@@ -106,7 +106,8 @@ pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64> {
 }
 
 pub(crate) fn record_damage(time_ns: i64, damage: f64, crit: bool, landed: bool,
-    periodic: bool, action: String, target_label: String) {
+    periodic: bool, action: String, target_label: String,
+    caster_type: &str, caster_index: u32, caster_label: String) {
     if !enabled() { return; }
     assert!(damage.is_finite() && damage > 0.0 && landed, "RUST_WORLD_DAMAGE_INVALID");
     BRIDGE.with(|state| {
@@ -119,8 +120,8 @@ pub(crate) fn record_damage(time_ns: i64, damage: f64, crit: bool, landed: bool,
             rank: 0, landed, crit, periodic,
             native_target_index: 0, native_target_unit_index: 0,
             native_target_label: target_label,
-            native_caster_type: String::new(), native_caster_unit_index: 0,
-            native_caster_label: String::new(),
+            native_caster_type: caster_type.to_owned(), native_caster_unit_index: caster_index,
+            native_caster_label: caster_label,
         });
     });
 }

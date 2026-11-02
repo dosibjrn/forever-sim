@@ -88,6 +88,26 @@ jobs:
           assert abs(result["native_dps"]-result["world_mean_dps"])<1e-5
           assert result["checkpoint_certified"] is False
           PY
+      - name: Hunter source pet damage must retain true native caster identity in gsim
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          path=Path("integrations/mythicsim-rust/live_world_probe.py")
+          spec=importlib.util.spec_from_file_location("rust_live_world",path)
+          probe=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(probe)
+          binary=Path("../upstream/target/release/forever-engine")
+          request=Path("../upstream/fixtures/mage/prepared-v2/all-values-beast-mastery-hunter-labeled.request.json")
+          result=probe.run(binary,request,distance=12.)
+          print("REAL_RUST_HUNTER_PET_SOURCE_WORLD",result,flush=True)
+          assert result["native_damage_events"]>0
+          assert result["native_pet_damage_events"]>0, "SOURCE_PET_EVENTS_MISATTRIBUTED_AS_PLAYER"
+          assert result["native_precombat_damage_events"]>0, "SOURCE_PRECOMBAT_DAMAGE_UNACCOUNTED"
+          assert abs(result["native_dps"]-result["world_mean_dps"])<1e-5
+          assert result["checkpoint_certified"] is False
+          PY
       - name: Paired real gsim 2D near/far Rust damage ACK and forged ACK rejection
         working-directory: project
         run: |

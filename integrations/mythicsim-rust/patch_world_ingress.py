@@ -74,10 +74,22 @@ def main() -> None:
         "        if result.target == Side::Target {\n            self.encounter_damage_taken += result.damage;\n        }",
         """        if result.target == Side::Target {
             self.encounter_damage_taken += result.damage;
-            if self.now >= 0 && result.damage > 0.0 {
+            if result.damage > 0.0 {
+                // Pre-pull source hits are genuine target damage. Keep their
+                // negative native clock; gsim applies them at the first t=0
+                // boundary, before the next native combat decision.
+                // Source-native Fight owns spell caster; the gsim world
+                // must not misattribute a real pet hit to its player.
+                let caster = self.caster(spell);
+                let (caster_type, caster_index, caster_label) = match caster {
+                    Side::Player => ("", 0, String::new()),
+                    Side::Pet(index) => ("pet", index as u32, self.label_of(caster)),
+                    _ => panic!("RUST_WORLD_UNSUPPORTED_DAMAGE_CASTER"),
+                };
                 super::world_bridge::record_damage(
                     self.now, result.damage, result.crit(), result.landed(), periodic,
                     format!("{:?}", self.spells[spell].id), self.label_of(result.target),
+                    caster_type, caster_index, caster_label,
                 );
             }
         }""")

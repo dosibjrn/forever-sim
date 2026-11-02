@@ -56,12 +56,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
         request_sha = json.loads(prepared_file.read_text())["request_sha256"]
     previous_ack_id = ""
     event_count = 0
+    pet_damage_events = 0
+    precombat_damage_events = 0
     applied_damage = 0.
     applied_damage_compensation = 0.
     last_tick = -1
     iteration = -1
     samples = []
     iteration_damage = 0.
+    iteration_precombat_damage = 0.
     total_ticks = 0
     facing_switch_clock_ns = None
     source_action_events_before = {}
@@ -84,12 +87,16 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     assert native["native_process_id"] == proc.pid
                     assert native["native_request_sha256"] == request_sha
                     assert native["native_duration_ns"] > 0
-                    assert abs(native["native_total_damage"] - iteration_damage) < 1e-4
+                    assert abs(native["native_total_damage"] - iteration_damage) < 1e-4, ("NATIVE_WORLD_DAMAGE_EVENTS_UNACCOUNTED", native["native_total_damage"], iteration_damage, event_count, pet_damage_events)
                     samples.append({
                         "iteration_index": iteration,
                         "duration_s": native["native_duration_ns"] / 1e9,
                         "world_applied_damage": iteration_damage,
-                        "world_dps": iteration_damage / (native["native_duration_ns"] / 1e9),
+                        "world_applied_precombat_damage": iteration_precombat_damage,
+                        # Native raidMetrics excludes negative-time pre-pull
+                        # damage, though native encounter total and actual gsim
+                        # target HP include it. Score only in-fight damage.
+                        "world_dps": (iteration_damage - iteration_precombat_damage) / (native["native_duration_ns"] / 1e9),
                     })
                     continue
                 if native.get("type") != "native_rust_world_boundary_request":
@@ -102,6 +109,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     previous_ack_id = ""
                     last_tick = -1
                     iteration_damage = 0.
+                    iteration_precombat_damage = 0.
                 clock_ns = native["native_clock_ns"]
                 if clock_ns % 1_000_000 or clock_ns <= last_tick:
                     raise AssertionError("RUST_CLOCK_NOT_GSIM_MILLISECOND_MONOTONIC")
@@ -145,6 +153,11 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     if facing_switch_clock_ns is not None
                     else source_action_events_before)
                 for event in receipt["native_damage_events"]:
+                    if event["native_caster_type"] == "pet":
+                        pet_damage_events += 1
+                    if event["native_time_ns"] < 0:
+                        precombat_damage_events += 1
+                        iteration_precombat_damage += event["damage"]
                     action = event["source_action_id"]
                     action_counter[action] = action_counter.get(action, 0) + 1
                 ack["iteration_index"] = iteration
@@ -194,6 +207,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             return {"native_dps": native_dps, "sampled_duration_s": duration,
                     "world_mean_dps": world_mean_dps, "iterations_done": iterations,
                     "world_applied_damage": applied_damage, "native_damage_events": event_count,
+                    "native_pet_damage_events": pet_damage_events,
+                    "native_precombat_damage_events": precombat_damage_events,
                     "native_world_ticks": total_ticks,
                     "world_health_remaining": world.targets["m1"].health,
                     "per_iteration": samples,
