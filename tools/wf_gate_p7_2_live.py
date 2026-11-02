@@ -38,15 +38,28 @@ def _blocked(reason: str):
     return {"status": "BLOCKED", "reasons": [reason]}
 
 
-def _cold_apl(base: dict, rng: random.Random, mutation):
-    """Rebuild a genuinely new source-grammar APL with fixed gear and talents."""
+def _cold_apl(base: dict, rng: random.Random, mutation, *, elite=None):
+    """Cold grammar draw or local improvement of this search's paid best.
+
+    The first candidate is sampled independently of the saved reference.
+    The optional elite is this search's already executed native/world winner;
+    only its rotation is mutable, while gear and talents remain pinned.
+    """
     result = copy.deepcopy(base)
     p = result["raid"]["parties"][0]["players"][0]
-    initial = base["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
-    candidate = mutation.mutate_apl(None, initial, rng, cold=True)
-    # The cold generator receives no paid elite and uses its own random draw.
-    # Independently rediscovering the saved APL is legal; only seeding a cold
-    # search with it is prohibited. Let the search's SHA set deduplicate it.
+    original = base["raid"]["parties"][0]["players"][0]
+    grammar = original["rotation"]["priorityList"]
+    if elite is None:
+        candidate = mutation.mutate_apl(None, grammar, rng, cold=True)
+    else:
+        winner = elite["raid"]["parties"][0]["players"][0]
+        if (winner["equipment"] != original["equipment"]
+                or winner.get("talentsString") != original.get("talentsString")):
+            raise ValueError("P72_PAID_ELITE_CHANGED_FIXED_DIMENSIONS")
+        # Reuse only an actually paid P7.2 winner, never the reference policy
+        # or an independently accepted P7.1/P7.3-P7.5 result as a seed.
+        candidate = mutation.mutate_apl(
+            winner["rotation"]["priorityList"], grammar, rng, cold=False)
     p["rotation"]["priorityList"] = candidate
     original = base["raid"]["parties"][0]["players"][0]
     if p["equipment"] != original["equipment"] or (
@@ -123,7 +136,13 @@ def run_live(root: Path, class_key: str, level: int, *,
            if full_search else proposals < 4):
         proposals += 1
         try:
-            candidate = _cold_apl(base, rng, mutation)
+            # After the first paid winner, 4/5 proposals improve that
+            # winner locally; every fifth is a fresh independent cold draw.
+            # A bounded short probe always stays cold. Candidate SHA
+            # deduplication and native/world paid scoring remain unchanged.
+            elite = (best[3] if full_search and best is not None
+                     and proposals % 5 != 0 else None)
+            candidate = _cold_apl(base, rng, mutation, elite=elite)
             candidate_sha = hashlib.sha256(
                 json.dumps(candidate, sort_keys=True).encode()).hexdigest()
             if candidate_sha in paid_or_rejected:
