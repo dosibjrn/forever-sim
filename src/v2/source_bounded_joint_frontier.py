@@ -2580,7 +2580,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         options=dict(bonus_talent_points=bonus_talent_points,max_talents=max_talents,
             max_gear_moves=max_gear_moves,max_policies=max_policies,
             gear_slot_offset=gear_slot_offset,
-            gear_slot_sampling_version='stratified_source_slots_v1',
+            gear_slot_sampling_version='stratified_source_slots_v2_depth10',
             max_recovery_policies=max_recovery_policies,max_paid_builds=max_paid_builds,
             max_cpu_s=max_cpu_s,per_candidate_wall_s=per_candidate_wall_s,
             finalist_mobs=finalist_mobs,screen_mobs=screen_mobs,
@@ -2960,7 +2960,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         # complete legal gear universe. Preserve exact source slot omissions
         # for independently comparable 30s/300s cold searches.
         'source_slot_proposal_coverage':{
-            'strategy':'stratified_source_slots_v1',
+            'strategy':'stratified_source_slots_v2_depth10',
             'slot_offset':gear_slot_offset,'slot_quota':slot_quota,
             'source_slot_inventory_complete':slot_quota>0,
             'source_legal_slot_counts':slot_source_counts,
