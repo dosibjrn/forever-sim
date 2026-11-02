@@ -2,8 +2,14 @@ import ast
 from pathlib import Path
 
 
+ROOT = Path(__file__).resolve().parents[2]
+
+
 def _imports(path):
-    tree=ast.parse(Path(path).read_text(encoding='utf-8'))
+    source = Path(path)
+    if not source.is_absolute():
+        source = ROOT / source
+    tree=ast.parse(source.read_text(encoding='utf-8'))
     out=[]
     for n in ast.walk(tree):
         if isinstance(n, ast.Import):
@@ -30,7 +36,9 @@ def test_fast_compute_core_does_not_depend_on_legacy_persistent_mc_modules():
 
 
 def _python_files(root):
-    return sorted(Path(root).rglob('*.py'))
+    files = sorted((ROOT / root).rglob('*.py'))
+    assert files, f"Missing or empty architecture boundary: {root}"
+    return files
 
 
 def test_generic_shared_layer_has_no_ruleset_or_class_engine_dependency():
@@ -52,7 +60,7 @@ def test_forever_shared_layer_has_no_class_dependency():
 
 def test_forever_classes_do_not_import_sibling_class_backends():
     offenders={}
-    base=Path('src/rulesets/forever/classes')
+    base=ROOT / 'src/rulesets/forever/classes'
     for class_dir in (x for x in base.iterdir() if x.is_dir() and not x.name.startswith('__')):
         sibling_prefixes=tuple(
             f'src.rulesets.forever.classes.{other.name}'
@@ -63,6 +71,14 @@ def test_forever_classes_do_not_import_sibling_class_backends():
             bad=[x for x in _imports(path) if x.startswith(sibling_prefixes)] if sibling_prefixes else []
             if bad: offenders[str(path)]=bad
     assert offenders == {}
+
+
+def test_architecture_scans_use_the_repository_not_process_cwd(monkeypatch, tmp_path):
+    """Do not let an unrelated cwd silently return zero scanned modules."""
+    monkeypatch.chdir(tmp_path)
+    assert any(p.name == 'events.py' for p in _python_files('src/shared'))
+    assert any(p.name == 'mobs.py' for p in _python_files('src/rulesets/forever/shared'))
+    assert 'ast' in _imports('tests/maintenance/test_architecture_boundaries.py')
 
 
 def test_engine_registry_points_at_ruleset_owned_packages_except_frozen_classic_legacy():
