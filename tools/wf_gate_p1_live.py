@@ -636,6 +636,7 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
             'pass_count':observed_source_abilities,
             'behavior_probes_executed':len(exercised),
             'partial_scope':'OBSERVED_SOURCE_ELIGIBLE_ABILITY_EFFECTS',
+            'coverage_basis':'executed_behavior_assertions',
             'coverage_scope_complete':not any(
                 p['code'] in ('SOURCE_ACTION_LEGALITY_UNRESOLVED',
                               'UNRESOLVED_SOURCE_REQUIRED_LEVEL',
