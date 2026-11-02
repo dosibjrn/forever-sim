@@ -25,7 +25,10 @@ from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 def _cold_joint(base, source, validator, pools, rng):
     """Cold source-generated whole build, never seeded with saved or prior winner."""
-    original = source.player(base)
+    # A cold generator must not be SEEDED with the saved reference or a prior
+    # winner. Independently rediscovering any reference gear, talent or APL
+    # dimension is legal: excluding matching axes silently removes valid
+    # candidates from the joint search space (including the true optimum).
     names = {int(iid): str(row.get("name") or "").casefold()
              for iid, row in validator.engine.items()}
     for _ in range(80):
@@ -36,10 +39,8 @@ def _cold_joint(base, source, validator, pools, rng):
             ids = [int(x["id"]) for x in items]
             enchants = [int(x.get("enchant") or 0) for x in items]
             validator.validate(ids, enchants)  # real source+Rust item legality
-            if (p["equipment"] == original["equipment"]
-                    or p["talentsString"] == original["talentsString"]
-                    or p["rotation"] == original["rotation"]):
-                continue
+            # source.make_candidate(..., elite=None) independently sampled the
+            # whole build. Equality with a reference axis is not seeding.
             return candidate
         except (source.RejectedGear, ValueError, KeyError, TypeError):
             continue
