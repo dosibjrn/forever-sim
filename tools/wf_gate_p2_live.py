@@ -1075,7 +1075,7 @@ def _cast_pushback_runtime_witness(before, after, mod):
     def cast_under_attack(action, *, pushback):
         # Match the actual source action owner so the native production
         # action is eligible in this isolated cast-delay fixture.
-        player = str(action.source_actor_id)
+        player = str(action.owner_actor_id)
         state = ActorState.from_ir(
             ActorDefinition(player, 'player', base_stats={}),
             (ResourceDefinition('health', 'Health', player,
