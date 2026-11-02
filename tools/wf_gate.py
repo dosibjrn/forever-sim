@@ -509,6 +509,28 @@ def main(argv=None) -> int:
                     "cold_winner_request_sha256", "cold_candidate_failures"):
             if key in report:
                 record[key] = report[key]
+        if gate in ("P4", "P5"):
+            # Real 30/300s search and 100-mob finalist measurements are already
+            # present in the live provider. Keep them visible when the gate is
+            # still FAIL for separate native/world or source predicates.
+            # Report only bounded factual fields; no fabricated gate coverage.
+            paid_fields = (
+                "requested_wall_budget_s", "real_search_wall_s",
+                "real_paid_unique_full_builds", "real_paid_screen_complete",
+                "real_100mob_complete", "real_100mob_count",
+                "real_100mob_s_per_mob", "saved_full_source_winner_build",
+                "gear_source_snapshot_matches_current",
+                "winning_gear_source_legality_verified",
+                "source_class_gear_membership_attested",
+                "independent_N30_unique_paid", "independent_N300_unique_paid",
+                "independent_p5_10x_breadth",
+                "independent_same_source_candidate_space",
+                "independent_100mob_winner_replays_complete")
+            for key in paid_fields:
+                value = report.get(key)
+                if type(value) is bool or (
+                        type(value) in (int, float) and math.isfinite(value)):
+                    record[key] = value
         if gate == "P6":
             # The existing paid evaluator already supplied these outcomes;
             # publishing them reveals the first real incomplete replay reason.
