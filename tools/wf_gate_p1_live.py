@@ -147,8 +147,8 @@ def _legitimate_conditional(action, reason: str) -> bool:
 # housekeeping and unrelated passive regeneration are not an effect witness.
 # This is generic runtime vocabulary, NEVER a class/spell whitelist.
 P1_EFFECT_EVENTS = frozenset({
-    'Damage', 'Heal', 'AuraApply', 'AuraReplaced', 'AuraRemovedExclusive',
-    'ResourceChange', 'ResourceChanged', 'ModeChange', 'ModeChanged',
+    'Damage', 'Heal', 'AuraApplied', 'AuraReplaced', 'AuraRemovedExclusive',
+    'ResourceChange', 'ResourceChanged', 'ModeChanged',
     'ControlApplied', 'ControlTargetCapEvicted', 'AbsorbShieldGranted',
     'AutoAttackStarted', 'QueuedSwingArmed', 'SummonSpawn', 'SummonDespawn',
     'TargetStatDebuffApplied', 'SchoolPowerDebuffApplied',
@@ -166,6 +166,10 @@ def _p1_effect_observed(event) -> bool:
     """
     if event.kind not in P1_EFFECT_EVENTS:
         return False
+    if event.kind == 'ControlApplied':
+        # CombatRuntime emits ControlApplied even when a proc roll fails or
+        # the target is already dead. Only an applied control changes state.
+        return getattr(event, 'payload', {}).get('applied') is True
     if event.kind in ('ResourceChange', 'ResourceChanged'):
         payload = getattr(event, 'payload', {})
         before, after = payload.get('before'), payload.get('after')
