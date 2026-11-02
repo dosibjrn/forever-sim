@@ -222,3 +222,40 @@ def test_p75_rejects_invalid_full_search_mode_before_source_work(monkeypatch, tm
                         lambda *a: ({}, {"reference_dps": 728.19}, tmp_path / "binary"))
     assert gate.run_live(tmp_path, "druid", 60, spec="balance") == {
         "status": "BLOCKED", "reasons": ["P7_5_INVALID_FULL_SOURCE_SEARCH_MODE"]}
+
+
+def test_joint_cold_admits_independently_rediscovered_reference_axes():
+    """RED on old provider: matching even one reference axis was discarded.
+
+    These are source-generated cold builds; equality is not a saved-build seed.
+    The real catalogue/native legality remains a separate paid production check.
+    """
+    original = _base()
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    tried = []
+    for unchanged_axis in ("gear", "talents", "rotation", "all"):
+        candidate = copy.deepcopy(original)
+        p = player(candidate)
+        if unchanged_axis != "gear" and unchanged_axis != "all":
+            p["equipment"]["items"] = [{"id": 11}, {"id": 21}]
+        if unchanged_axis != "talents" and unchanged_axis != "all":
+            p["talentsString"] = "independently-found-legal"
+        if unchanged_axis != "rotation" and unchanged_axis != "all":
+            p["rotation"]["priorityList"] = [3, 1, 2]
+        def generate(reference, pools, rng, elite=None, item_names=None):
+            assert elite is None  # never seed candidate with a paid prior winner
+            assert reference == original
+            return copy.deepcopy(candidate)
+        def validate(ids, enchants):
+            tried.append((ids, enchants))
+            return True
+        validator = SimpleNamespace(
+            engine={10: {"name": "original"}, 20: {"name": "original2"},
+                    11: {"name": "cold"}, 21: {"name": "cold2"}},
+            validate=validate)
+        source = SimpleNamespace(make_candidate=generate, player=player,
+                                 RejectedGear=ValueError)
+        selected = gate._cold_joint(original, source, validator, {}, random.Random(4))
+        assert selected == candidate, unchanged_axis
+    assert len(tried) == 4
+    assert original == _base()
