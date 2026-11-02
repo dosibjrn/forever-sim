@@ -38,7 +38,14 @@ def request(cls='druid', level=10):
 def test_registry_declares_exact_source_only_queue_capabilities(monkeypatch):
     expected={'druid':(10,11),'warrior':(10,),'rogue':(10,),
               'priest':(10,),'shaman':(10,),'warlock':(10,),'mage':(10,)}
-    assert set(registered_class_keys()) == set(expected)
+    registered = set(registered_class_keys())
+    assert set(expected).issubset(registered)
+    # Registry membership is not queue admission. Newly sourced classes
+    # remain fail-closed until a specific queue capability is declared.
+    for cls in registered - set(expected):
+        assert native_generic_queue_levels(cls) == ()
+        with pytest.raises(ValueError):
+            require_native_generic_queue(cls, 10)
     for cls, levels in expected.items():
         assert native_generic_queue_levels(cls) == levels
         bounds = generic_source_level_bounds(cls)
