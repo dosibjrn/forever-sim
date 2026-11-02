@@ -8,35 +8,26 @@ for the other 147. One source/legal gear × talents × APL/pull/recovery search,
 one actual native combat executor and one gsim 2D world: do not reimplement
 those systems inside gate tests.
 
-## What 80/20 means
+## What 80/20 means — *effort estimate*, NOT work ordering
 
-Use the Pareto principle for **the order and granularity of work**, not to
-lower an acceptance threshold. First solve reusable mechanisms that remove
-most blockers across many classes/levels; only then address rare conditional
-abilities, specialized triggers and the final tail. Split each gate into
-**individually executable, meaningful behavioral slices** that an agent can
-finish in one small PR/turn. If a slice is already verified by an existing
-production function/test, reuse it: do not duplicate the implementation or
-re-run a heavy acceptance suite.
+Pareto is a **hypothesis for estimating the effort still ahead**, not a reason to change issue order or to postpone the difficult tail. Keep Prio's critical-path ordering and Work1/Work2 ownership exactly as they are. When measured unit coverage is known, report **both**:
+1. **Behavioral coverage** `c = real passed / currently known applicable` (directly measured).
+2. **Illustrative Pareto effort completed** `E(c)` (model-derived estimate, **not measured hours or acceptance**).
 
-Show **diagnostic progress milestones** at **50, 80, 85, 88, 91, 93, 95,
-97 and 99 percent** of an actually counted population. The **10th and final
-milestone is the approved gate's real PASS**, not a rounded-up 100% count.
-A 99%-covered source/action list is not a passing gate. These milestones
-are derived from the current real execution results, **not manually maintained
-JSONs, invented permanent ledgers or a replacement for the 148 score**.
-When exact total is unknown, say **estimated/provisional**, expose the
-unknown part, and use a conservative lower-bound denominator or an unscaled
-list of resolved cases. Do not shrink the denominator by omitting missing
-source records. A milestone can regress when the true scope increases;
-do not freeze a misleading percentage.
+Use the minimal two-segment mapping: assume the first 80% of comparable cases cost 20% of total effort and the final 20% cost 80%. For a fraction `c` in `[0, 1]`:
 
-A real blocking implementation change may advance the critical path before
-any threshold is crossed: report the **specific executable failure removed**
-rather than inventing a tick. Agents should prefer a testable slice they can
-actually complete, but never game the progress indicator by splitting
-trivial files, writing documentation-only PASS receipts or counting fixture
-registration as behavior.
+```text
+E(c) = 0.25 * c                  when 0 <= c <= 0.8
+E(c) = 0.20 + 4 * (c - 0.8)     when 0.8 < c <= 1
+```
+
+Examples: coverage 50% → estimated work 12.5%; coverage 80% → work 20%; coverage 90% → work 60%; coverage 95% → work 80%; coverage 100% → work 100%. Previous P2 74/103 = 71.8% coverage → ~18.0% modeled work; 83/103 = 80.6% coverage → ~22.3% modeled work. **The increase in E is only modeled movement; it is not proof that exactly that fraction of engineer-hours was spent.** This model makes the apparent movement near the end of a long gate more meaningful, while showing why 80% test coverage need not mean near-completion.
+
+Use this only when the unit count has a defensible, roughly comparable denominator. If source legality/universe is unfinished, mark **both percentages provisional** and disclose unknown cases; newly found cases may reduce them. If no meaningful denominator exists, or the gate consists of a few heterogeneous steps (e.g. P7.1.1/.2/.3, P4/P5 infrastructure), show the concrete completed/missing behaviors **without** applying a spurious effort percentage. Never weight a checkpoint's total progress by adding incompatible per-gate effort estimates.
+
+The original [draft PR #60](https://github.com/dosibjrn/forever-sim/pull/60) reports observed/checked effects and diagnostic threshold ticks at 50/80/85/88/91/93/95/97/99% **coverage**. Those remain diagnostic source/runtime counters, not the Pareto work estimate, not new gates and not a reason to re-order implementation. Reporting the continuous `E(c)` is preferable to celebrating threshold ticks. **Only a real accepted gate earns PASS**, irrespective of the model.
+
+A real blocking implementation fix may advance the critical path without changing either percentage; report that concrete fix, not an invented progress tick. Do not work on easy cases merely to maximize E or split cases to manipulate it. Keep existing 80/20 acceptance thresholds entirely unchanged (there are none); this is optional communication and estimation.
 
 ## Minimal measurement, by approved gate
 
@@ -114,6 +105,5 @@ each run and maintains the **minimum-total-time critical path**:
    **Clean** removes obsolete duplicate code as successor paths become real;
    architecture, not cosmetic file count, is its primary criterion.
 
-**Do not edit the sacred PROCESS/OVERALL PLAN** to impose these diagnostic
-progress ticks as a new requirement. If any desired predicate/threshold
+**Do not edit the sacred PROCESS/OVERALL PLAN** to impose this optional Pareto estimate or diagnostic ticks as acceptance requirements. If any desired predicate/threshold
 actually changes, request explicit owner approval first.
