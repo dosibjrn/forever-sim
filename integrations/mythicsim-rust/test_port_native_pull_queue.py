@@ -30,6 +30,17 @@ class PullQueuePortTests(unittest.TestCase):
         self.assertEqual(port_source(updated), updated)
         self.assertIn("if time > self.end_of_combat", updated)
 
+    def test_rejects_guard_moved_after_destructive_pop(self):
+        installed = port_source(BASE)
+        moved = installed.replace(GUARD + POP, POP + GUARD, 1)
+        with self.assertRaisesRegex(ValueError, "not directly before pop"):
+            port_source(moved)
+
+    def test_rejects_extra_guard_even_when_first_is_correct(self):
+        installed = port_source(BASE)
+        with self.assertRaisesRegex(ValueError, "not directly before pop"):
+            port_source(installed + "\n" + GUARD)
+
     def test_fails_closed_when_step_pop_seam_changes(self):
         with self.assertRaisesRegex(ValueError, "queued-action pop anchor"):
             port_source(BASE.replace("self.queue.pop()", "self.queue.pop_ready()"))
