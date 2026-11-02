@@ -37,11 +37,12 @@ def test_cold_apl_keeps_actual_gear_talents_and_saved_request_unmodified():
         base["raid"]["parties"][0]["players"][0]["talentsString"])
 
 
-def test_identical_apl_is_not_called_independent_discovery():
+def test_independently_rediscovered_reference_apl_remains_eligible():
     base = _request()
-    with pytest.raises(ValueError, match="IDENTICAL_TO_REFERENCE"):
-        gate._cold_apl(base, random.Random(3),
-                       SimpleNamespace(mutate_apl=lambda a, s, r, cold: copy.deepcopy(s)))
+    candidate = gate._cold_apl(base, random.Random(3),
+                               SimpleNamespace(mutate_apl=lambda a, s, r, cold: copy.deepcopy(s)))
+    assert candidate == base
+    assert candidate is not base
 
 
 def test_wrong_checkpoint_refuses_before_any_native_run(tmp_path):
