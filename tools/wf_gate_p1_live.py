@@ -182,9 +182,22 @@ def _p1_effect_observed(event) -> bool:
         return (type(gained) in (int, float)
                 and isfinite(gained) and gained > 1e-9)
     if event.kind in ('Damage', 'Heal'):
-        amount = getattr(event, 'payload', {}).get('amount')
-        return (type(amount) in (int, float)
-                and isfinite(amount) and amount > 1e-9)
+        payload = getattr(event, 'payload', {})
+        # CombatRuntime preserves ignored damage receipts after target death;
+        # a positive requested amount is not an applied combat effect.
+        if event.kind == 'Damage' and payload.get('applied') is False:
+            return False
+        # A heal at full resources emits positive requested amount with zero
+        # restored health. Only the production-applied delta is a witness.
+        value = payload.get('restored') if event.kind == 'Heal' else payload.get('amount')
+        return (type(value) in (int, float)
+                and isfinite(value) and value > 1e-9)
+    if event.kind == 'PeriodicTick':
+        # Tick dispatch alone is bookkeeping: subsequent Damage/Heal events
+        # prove their own effects; resource ticks mutate the actor in-place.
+        gained = getattr(event, 'payload', {}).get('gained')
+        return (type(gained) in (int, float)
+                and isfinite(gained) and gained > 1e-9)
     return True
 
 
@@ -668,6 +681,7 @@ def _runtime_exercise(ir,action,level):
     """
     from src.game.runtime import ActorState, CombatRuntime, TargetState
     from src.game.runtime.simulator import action_eligibility
+    from src.game.model.ir import HealEffect, PeriodicHealEffect
     actor=ActorState.from_ir(ir.actor,ir.resources,ir.modes)
     if isinstance(actor.metadata,dict):
         actor.metadata['level']=level
@@ -709,6 +723,15 @@ def _runtime_exercise(ir,action,level):
             for rid,cap in actor.resource_capacity.items():
                 if rid in actor.resources and actor.resource_is_active(rid):
                     actor.resources[rid]=float(cap)
+            # Real healing requires missing health. The old probe ran heals
+            # on a full-health actor and mistook overheal receipts for effect.
+            # Only source actions with an actual health-healing effect get this
+            # legal wounded-actor precondition; no combat effect is simulated.
+            if (any(isinstance(effect, (HealEffect, PeriodicHealEffect))
+                    and effect.resource_id == 'health' for effect in action.effects)
+                    and 'health' in actor.resources
+                    and float(actor.resource_capacity.get('health', 0.)) > 0.):
+                actor.resources['health'] = float(actor.resource_capacity['health']) * 0.5
             # Satisfy deterministic encounter conditions generically, so a
             # back-position action is *executed* rather than papered over as
             # 'conditional'. Keep external aura/proc triggers conditional: P1
