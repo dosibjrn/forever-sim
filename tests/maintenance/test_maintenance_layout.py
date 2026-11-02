@@ -47,6 +47,10 @@ class MaintenanceTestLayout(unittest.TestCase):
         new = ROOT / "config" / "gates" / "p1_scenario_applicability_v1.json"
         self.assertFalse(old.exists(), f"stale policy location: {old}")
         self.assertTrue(new.is_file(), f"missing scenario policy: {new}")
+        workflow = (ROOT / ".github" / "workflows"
+                    / "p1-native-validator-contract.yml").read_text()
+        self.assertIn("config/gates/p1_scenario_applicability_v1.json", workflow)
+        self.assertNotIn("gate_config/", workflow)
         for consumer in (
             ROOT / "tools" / "p1_native_source_inventory.py",
             ROOT / "tools" / "wf_gate_p1_live.py",
