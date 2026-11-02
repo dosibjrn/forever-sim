@@ -27,6 +27,12 @@ def _physical_slot(slot,item):
 
 
 def _gear_replace(base,slot,item):
+    # A single-slot coordinate must not silently equip a 2H weapon alongside
+    # an incumbent offhand. The shared atomic weapon-package proposer owns
+    # the legal 1H+offhand <-> 2H transition.
+    if (slot=='weapon' and item.weapon_hands==2 and 'offhand' in base['slots']
+            or slot=='offhand' and base['slots'].get('weapon',{}).get('weapon_hands')==2):
+        raise ValueError('SOURCE_SLOT_REQUIRES_ATOMIC_WEAPON_PACKAGE')
     slots={k:dict(v) for k,v in base['slots'].items()}
     slots[slot]=item_payload(item,display_slot=slot,effective_level=effective_level(item))
     from src.rulesets.forever.items.source_equipment_semantics import validate_equipped_item_ids
@@ -84,6 +90,13 @@ def _source_slot_proposals(*,class_key,level,base,per_slot=2,max_proposals=48,
     items=available_items(class_key,level,required_level_policy='observed')
     from src.rulesets.forever.items.source_equipment_semantics import validate_equipped_item_ids
     def group_legal(slot,item):
+        # P3-certified and weighted proposal frontiers must obey the SAME
+        # complete weapon/offhand constraint as the ordinary source frontier.
+        # Otherwise an illegal 2H swap consumes a scarce paid gear coordinate
+        # before the full equipment audit rejects it.
+        if (slot=='weapon' and item.weapon_hands==2 and 'offhand' in base['slots']
+                or slot=='offhand' and base['slots'].get('weapon',{}).get('weapon_hands')==2):
+            return False
         ids=[int(x['item_id']) for k,x in base['slots'].items() if k!=slot]
         try:
             validate_equipped_item_ids(ids+[int(item.item_id)])

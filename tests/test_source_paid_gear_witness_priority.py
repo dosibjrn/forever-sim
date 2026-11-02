@@ -397,3 +397,53 @@ def test_refinement_never_spends_a_second_real_screen_past_paid_budget(max_paid_
     assert result["refinement"]["paid_evaluations"] == expected_refinement
     assert result["all_quick_evaluations_including_stat_probes"] == max_paid_builds
     assert result["search_budget_exhausted"] is True
+
+
+def test_p3_source_weapon_proposals_preserve_complete_equipment_legality():
+    """Real Mage 1H+offhand must not spend P4 gear moves on a 2H swap.
+
+    The canonical P3 catalogue includes both weapon families. An atomic
+    weapon-package move can still switch them; a single-slot move cannot.
+    This exercises the actual source-certified proposal path, not mock items.
+    """
+    from src.rulesets.forever.items.runtime_selection import select_gear, available_items
+    from src.v2.source_bounded_joint_frontier import _cold_source_equipment_payload
+    from src.game.data.forever.source_checkpoint_p3 import checkpoint_item_l0
+    from src.v2.source_persistent_slot_search import _gear_replace
+
+    from src.rulesets.forever.items.source_equipment_semantics import validate_equipped_item_ids
+
+    class_key, level = "mage", 30
+    source_items = available_items(class_key, level, required_level_policy="observed")
+    selected = select_gear(class_key, level, "mage", weights={},
+        required_level_policy="observed", exclude_unknown_item_effects=False)
+    onehand = next(item for item in source_items
+        if item.weapon_hands == 1 and item.slot in ("one_hand", "main_hand"))
+    offhand = next(item for item in source_items
+        if item.slot == "off_hand" and item.weapon_hands != 2
+        and item.item_id != onehand.item_id)
+    twohand = next(item for item in source_items
+        if item.weapon_hands == 2 and item.slot in ("two_hand", "main_hand", "one_hand"))
+    selected = {**selected, "weapon": onehand, "offhand": offhand}
+    validate_equipped_item_ids(item.item_id for item in selected.values())
+    base = _cold_source_equipment_payload(
+        class_key=class_key, level=level, gear_role="mage", selected=selected)
+
+    # RED on the old code: the low-level single-slot stage builder accepted
+    # an illegal 2H+offhand package because unique-item validation alone
+    # cannot validate hand occupancy.
+    with pytest.raises(ValueError, match="SOURCE_SLOT_REQUIRES_ATOMIC_WEAPON_PACKAGE"):
+        _gear_replace(base, "weapon", twohand)
+
+    # RED on the old P3-certified frontier: a high-priority 2H item could
+    # consume a scarce paid slot despite being illegal with the current
+    # offhand. The real source catalogue and certificate remain unchanged.
+    certificate = checkpoint_item_l0(class_key=class_key, level=level)
+    proposals, counts = _source_slot_proposals(
+        class_key=class_key, level=level, base=base,
+        p3_certificate=certificate, allow_unattested_diagnostic=True,
+        per_slot=300, max_proposals=10000)
+    assert counts["weapon"] > 0
+    assert any(slot == "weapon" for slot, _ in proposals)
+    assert all(not (slot == "weapon" and item.weapon_hands == 2)
+               for slot, item in proposals)
