@@ -275,6 +275,7 @@ def evaluate_repeated_pulls(
         exit_wait = 0.0
         between_pack_events = 0
         mode_exit_events = 0
+        ordinary_recovery_events = 0
         travel_events = 0
         source_recovery_actions = []
         if source_between_pack_policy is not None:
@@ -319,7 +320,10 @@ def evaluate_repeated_pulls(
                 start_time_s=float(actor.current_time_s),
                 healing_power=float(actor.stats.get('spell_power', 0.0)),
                 cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns,
+                max_new_events=remaining_events(),
             )
+            ordinary_recovery_events = recovery.runtime_events
+            paid_events += ordinary_recovery_events
             recovery_s = exit_wait + float(recovery.total_s)
             heal_actions = list(recovery.provenance.get('heal_action_sequence', []))
         else:
@@ -362,13 +366,15 @@ def evaluate_repeated_pulls(
             # Receipt must count every transition charged to paid_events,
             # including sourced mode exit and actor-periodic ticks in travel.
             'event_transitions': (int(runtime.event_transitions) + upkeep_events
-                                  + between_pack_events + mode_exit_events + travel_events),
+                                  + between_pack_events + mode_exit_events
+                                  + ordinary_recovery_events + travel_events),
             'combat_runtime_events': int(runtime.event_transitions),
             'maintenance_s': float(upkeep_s),
             'maintenance_casts': int(upkeep_casts),
             'maintenance_runtime_events': int(upkeep_events),
             'between_pull_runtime_events': int(between_pack_events),
             'mode_exit_runtime_events': int(mode_exit_events),
+            'ordinary_recovery_runtime_events': int(ordinary_recovery_events),
             'travel_runtime_events': int(travel_events),
             'source_recovery_actions': source_recovery_actions,
             'damage_by_role': dict(timeline.damage_by_role),
