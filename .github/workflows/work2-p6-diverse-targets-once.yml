@@ -1,4 +1,4 @@
-name: Work2 P6 macro-target diversity 30s paid probe (one shot)
+name: Work2 P6 receiver-sweep 30s paid probe (one shot)
 on:
   push:
     branches: [work/work2-p6-diverse-macro-targets-20261102]
@@ -36,7 +36,7 @@ jobs:
           assert x.get('source_db_sha256')=='047204bab4b477420437c2680480312fbe2a1cd9f48085ef3ce70d00c955f2f9', 'SOURCE_CHANGED'
           assert v.get('complete_100mob_replays')==len(x.get('validation_shortlist') or []) and winner,'NOT_ALL_100MOB_COMPLETE'
           build=x['validation_shortlist'][int(winner['id'])]
-          print('WORK2_P6_DIVERSE_TARGET_REAL='+json.dumps({
+          print('WORK2_P6_RECEIVER_SWEEP_REAL='+json.dumps({
               'T30':winner['full_s_per_mob'],'baseline_T30':14.39155408333533,
               'T300_previous_paired':14.160863017969865,
               'ratio_vs_previous_T300':winner['full_s_per_mob']/14.160863017969865,
