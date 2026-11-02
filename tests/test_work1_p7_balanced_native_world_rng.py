@@ -89,3 +89,25 @@ def test_invalid_rng_mode_fails_before_source_execution(tmp_path):
         producer.native_source_control(
             tmp_path / "no-binary", tmp_path / "no-request", 3,
             rng_mode="unknown")
+
+
+def test_selected_rust_build_reuses_historical_full_rng_patch_chain():
+    """Do not regress to pre-WF659 dispatch or omit the recovered >100% fix.
+
+    Pure wiring guard: actual Rust and 2D behavior is tested by the existing
+    manual native-world workflow, not simulated in Python.
+    """
+    patcher = (Path(__file__).resolve().parents[1] /
+               "integrations/mythicsim-rust/patch_world_ingress.py").read_text()
+    original = "wf652_apply_balanced.py"
+    typed = "wf659_typed_rng.py"
+    migrated = "wf660_boolean_migration.py"
+    extremes = "rng_extreme_probability_fix.py"
+    audit = "wf659_rng_boolean_audit.py"
+    for name in (original, typed, migrated, extremes, audit):
+        assert name in patcher, f"Selected Rust production patch missing: {name}"
+    assert patcher.index(original) < patcher.index(typed)
+    assert patcher.index(typed) < patcher.index(migrated)
+    assert patcher.index(migrated) < patcher.index(extremes)
+    assert patcher.index(extremes) < patcher.index(audit)
+    assert "wf_l60_rng_extreme_tests" in patcher
