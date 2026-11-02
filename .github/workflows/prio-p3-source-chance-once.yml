@@ -1,7 +1,7 @@
 name: Prio P3 sourced chance exact-source one-shot
 on:
-  push:
-    branches: [prio/p3-source-chance-gear-20261102]
+  pull_request:
+    branches: [main]
 permissions:
   contents: read
 jobs:
