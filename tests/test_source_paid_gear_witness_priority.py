@@ -226,5 +226,5 @@ def test_real_source_third_item_executes_through_paid_combat_runtime():
             candidate, level=30, mobs=1, recovery_policy=None,
             timeout_s=8., pack_size=1, backend="direct")
         assert result["status"] == "COMPLETE", (class_key, slot, item.item_id, result)
-        assert result["mob_completed"] == 1
+        assert result["count"] == 1
         assert result["events"] > 0
