@@ -34,13 +34,11 @@ def _cold_joint(base, source, validator, pools, rng, *, elite=None):
     # winner. Independently rediscovering any reference gear, talent or APL
     # dimension is legal: excluding matching axes silently removes valid
     # candidates from the joint search space (including the true optimum).
-    names = {int(iid): str(row.get("name") or "").casefold()
-             for iid, row in validator.engine.items()}
     for _ in range(80):
         try:
-            candidate = (source.make_candidate(base, pools, rng, item_names=names)
+            candidate = (source.make_candidate(base, pools, rng)
                          if elite is None else source.make_candidate(
-                             base, pools, rng, elite=elite, item_names=names))
+                             base, pools, rng, elite=elite))
             p = source.player(candidate)
             items = p["equipment"]["items"]
             ids = [int(x["id"]) for x in items]
