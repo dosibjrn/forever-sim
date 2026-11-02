@@ -180,3 +180,56 @@ def test_denominator_shrink_cannot_fake_increased_completion(monkeypatch, tmp_pa
         report=_p2_partial(20, 20), path=path)
     saved = m1.scoreboard(path)["partial_gates"][0]
     assert (saved["verified"], saved["applicable"]) == (70, 100)
+
+
+def test_concurrent_actions_merge_disjoint_real_gate_receipts(monkeypatch, tmp_path):
+    """A newer M1 update cannot discard a separate source-executed gate."""
+    from shutil import copyfile
+    monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
+    base, measured, latest, out = (
+        tmp_path / x for x in ("base.tsv", "measured.tsv", "latest.tsv", "out.tsv"))
+    assert m1.record_partial(class_key="druid", level=60, spec="balance",
+        gate="P2", report=_p2_partial(70, 100), path=base)
+    copyfile(base, measured)
+    copyfile(base, latest)
+    assert m1.record_partial(class_key="druid", level=60, spec="balance",
+        gate="P2", report=_p2_partial(90, 100), path=measured)
+    m1.record_pass(class_key="druid", level=60, spec="balance", gate="P1",
+        report={"status": "PASS", "reasons": []}, path=latest)
+    m1.merge_concurrent_gate_results(base, measured, latest, out)
+    score = m1.scoreboard(out)
+    assert score["passed_gates"] == 1
+    assert score["partial_gates"][0]["verified"] == 90
+
+
+def test_concurrent_action_cannot_downgrade_existing_pass_or_better_fraction(
+        monkeypatch, tmp_path):
+    from shutil import copyfile
+    monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
+    base, measured, latest, out = (
+        tmp_path / x for x in ("base.tsv", "measured.tsv", "latest.tsv", "out.tsv"))
+    m1.record_partial(class_key="druid", level=60, spec="balance",
+        gate="P2", report=_p2_partial(10, 100), path=base)
+    copyfile(base, measured)
+    copyfile(base, latest)
+    m1.record_partial(class_key="druid", level=60, spec="balance",
+        gate="P2", report=_p2_partial(60, 100), path=measured)
+    m1.record_partial(class_key="druid", level=60, spec="balance",
+        gate="P2", report=_p2_partial(95, 100), path=latest)
+    m1.merge_concurrent_gate_results(base, measured, latest, out)
+    assert m1.scoreboard(out)["partial_gates"][0]["verified"] == 95
+    m1.record_pass(class_key="druid", level=60, spec="balance", gate="P2",
+        report={"status": "PASS", "reasons": []}, path=latest)
+    m1.merge_concurrent_gate_results(base, measured, latest, out)
+    assert m1.scoreboard(out)["passed_gates"] == 1
+    assert m1.scoreboard(out)["partial_gates"] == []
+
+
+def test_concurrent_action_never_republishes_implicit_invalidation(tmp_path):
+    from shutil import copyfile
+    base, measured, latest, out = (
+        tmp_path / x for x in ("base.tsv", "measured.tsv", "latest.tsv", "out.tsv"))
+    base.write_text("\t".join(m1.FIELDS) + "\n")
+    copyfile(base, measured)
+    copyfile(base, latest)
+    assert m1.merge_concurrent_gate_results(base, measured, latest, out) == {}

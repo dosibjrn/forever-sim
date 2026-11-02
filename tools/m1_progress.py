@@ -190,6 +190,43 @@ def record_partial(*, class_key, level, spec, gate, report, root=ROOT, path=LEDG
     return True
 
 
+
+def merge_concurrent_gate_results(base_path, measured_path, latest_path, output_path):
+    """Merge only the actually changed production gate receipts into fresh main.
+
+    GitHub Actions can have concurrent, unrelated source-backed gate jobs.
+    A newer main must not erase a separate accepted gate, nor can a stale
+    PARTIAL downgrade a newer result. This merges existing TSV receipts only:
+    no new score/probe, new evidence schema or invented gate acceptance.
+    """
+    before = _rows(base_path)
+    measured = _rows(measured_path)
+    latest = _rows(latest_path)
+    if set(before) - set(measured):
+        raise ValueError("M1_ACTION_CANNOT_AUTOMATICALLY_INVALIDATE_RECEIPTS")
+    for key, row in measured.items():
+        if before.get(key) == row:
+            continue
+        prior = latest.get(key)
+        if prior is None:
+            latest[key] = row
+        elif prior["status"] == "PASS":
+            continue
+        elif row["status"] == "PASS":
+            latest[key] = row
+        elif row["status"] == "PARTIAL" and prior["status"] == "PARTIAL":
+            n, d = float(row["verified"]), float(row["applicable"])
+            old_n, old_d = float(prior["verified"]), float(prior["applicable"])
+            # Keep best previously proven comparable component or objective.
+            # A shrunk denominator with fewer successful behaviors is not
+            # additional progress, and a stale run never erases a newer PASS.
+            if n / d > old_n / old_d + 1e-12 and (
+                    d == old_d or n >= old_n):
+                latest[key] = row
+    _write(latest, output_path)
+    return latest
+
+
 def scoreboard(path=LEDGER):
     rows = _rows(path)
     by_checkpoint = {}
@@ -351,9 +388,15 @@ def main(argv=None):
     parser.add_argument("--ledger", type=Path, default=LEDGER)
     parser.add_argument("--invalidate", nargs=4, metavar=("CLASS", "LEVEL", "SPEC", "GATE"),
                         help="Remove a materially invalidated historical PASS")
+    parser.add_argument("--merge-snapshots", nargs=4, type=Path,
+                        metavar=("BASE", "MEASURED", "LATEST", "OUTPUT"),
+                        help="Actions CAS retry: merge changed gate receipts onto newest TSV")
     parser.add_argument("--plot-svg", type=Path,
                         help="Render Git-history M1 chart for README; does not rerun gates")
     args = parser.parse_args(argv)
+    if args.merge_snapshots:
+        merge_concurrent_gate_results(*args.merge_snapshots)
+        return 0
     if args.invalidate:
         rows = _rows(args.ledger)
         del_key = tuple(args.invalidate)
