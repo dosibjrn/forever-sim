@@ -10,6 +10,7 @@ on:
       - work/first-native-source-long-horizon-20261102
       - work/first-native-druid-full-duration-20261102
       - work/first-native-source-target-health-20261102
+      - work/first-native-source-single-target-20261102
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
