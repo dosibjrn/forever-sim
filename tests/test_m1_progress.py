@@ -68,7 +68,7 @@ def test_compatible_eleven_and_invalidation(monkeypatch, tmp_path):
 def _p2_partial(verified=83, total=103):
     return {"status": "FAIL", "pass_count": verified,
             "reachability_count": total, "behavior_probes_executed": 110,
-            "unresolved_count": 2}
+            "unresolved_count": 2, "coverage_basis": "executed_behavior_assertions"}
 
 
 def test_partial_p2_is_visible_but_not_certified(monkeypatch, tmp_path, capsys):
@@ -129,3 +129,41 @@ def test_old_pass_only_ledger_is_backwards_compatible(tmp_path):
                     "\t".join(("druid", "60", "balance", "P2",
                                "2026-11-02T00:00:00+00:00", SHA, "", "")) + "\n")
     assert m1.scoreboard(path)["passed_gates"] == 1
+
+
+def test_partial_watermark_is_monotonic_but_logs_lower_current_measurement(
+        monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
+    path = tmp_path / "m1.tsv"
+    def record(n, d=100):
+        return m1.record_partial(
+            class_key="druid", level=60, spec="balance", gate="P2",
+            report=_p2_partial(n, d), path=path)
+    assert record(1)
+    assert record(50)
+    assert not record(25)
+    assert "M1_REGRESSION_OR_SCOPE_CHANGE" in capsys.readouterr().out
+    assert m1.scoreboard(path)["partial_gates"][0]["verified"] == 50
+    assert record(100)  # Full measured subcomponent is NOT a whole gate PASS.
+    assert m1.scoreboard(path)["passed_gates"] == 0
+    assert m1.scoreboard(path)["partial_gates"][0]["coverage"] == 1.0
+
+
+def test_p7_actual_coupled_dps_is_partial_even_when_ui_gate_blocked(
+        monkeypatch, tmp_path):
+    monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
+    path = tmp_path / "m1.tsv"
+    report = dict(status="BLOCKED", reasons=["UI_AUDIT_PENDING"],
+                  production_engine="pinned_mythicsim_rust_gsim_2d",
+                  native_source_revision="pinned", source_request_raw_sha256="source",
+                  world_damage_events=20, world_boundaries=400,
+                  saved_reference_dps=800., world_dps=720.)
+    assert m1.record_partial(class_key="druid", level=60, spec="balance",
+                             gate="P7.1", report=report, path=path)
+    row = m1.scoreboard(path)["partial_gates"][0]
+    assert row["coverage"] == pytest.approx(720. / 792.)
+    assert row["provisional"]
+    assert m1.scoreboard(path)["passed_gates"] == 0
+    assert not m1.record_partial(class_key="druid", level=60, spec="balance",
+                                 gate="P7.1", report={**report, "world_damage_events": 0},
+                                 path=path)
