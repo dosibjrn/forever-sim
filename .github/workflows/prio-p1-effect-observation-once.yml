@@ -1,0 +1,43 @@
+name: One-shot Prio P1 observed effect exact-head regression
+on:
+  push:
+    branches: [work/prio-p1-conditional-effect-fail-closed]
+    paths:
+      - .github/workflows/prio-p1-effect-observation-once.yml
+  workflow_dispatch:
+jobs:
+  p1-observed-effects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Exact-head P1 source and effect regressions
+        run: python -m pytest -q tests/test_wf466_p1_live.py tests/test_wf34_p1_acquisition_ledger_fail_closed.py tests/test_wf470_p1_scope.py tests/test_wf472_p1_gate_nonimpact.py
+      - name: Live Druid L60 Balance P1 (diagnostic, not auto-PASS)
+        if: success()
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P1 > p1-live.json || true
+          python - <<'PY'
+          import json
+          with open('p1-live.json', encoding='utf-8') as f:
+              report=json.load(f)
+          print('Live P1 status:', report.get('status'))
+          for entry in report.get('results', []):
+              print('Live P1 gate:', entry.get('gate'), 'status:', entry.get('status'))
+              for reason in entry.get('reasons', [])[:12]:
+                  print('  ', reason)
+              for problem in entry.get('problems', [])[:12]:
+                  print('  ', problem)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prio-p1-observed-effect-live
+          path: p1-live.json
+          if-no-files-found: ignore
