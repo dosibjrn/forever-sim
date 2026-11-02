@@ -62,6 +62,67 @@ PR, commit or CI cycle—only when a materially relevant behavior/source/scenari
 change invalidates it. Do not reinterpret a successful native-only subtest as
 a live-2D gate when 2D causality is part of that gate.
 
+## Generic implementation path: gates validate one real product
+
+**P1–P7.5 are on-demand integration/acceptance tests, NOT 5 ms unit tests.**
+A real 30/300-second search, 100-mob run or ≥1000-fight stochastic holdout
+is a legitimate gate execution. Run once for PASS and retain timestamp;
+repeat only if a relevant production change invalidates it. Keep small,
+focused unit tests for regressions, not as replacement P1–P7 suites or
+permanent expensive CI.
+
+**One generic production path for all 148 checkpoints:**
+
+```text
+canonical class/level/spec source + legal abilities/talents/gear
+    -> ONE legal candidate generator / whole-build optimizer
+    -> ONE production evaluator
+       -> selected genuine MythicSim Rust/Go combat
+       -> real persistent gsim 2D world/recovery when applicable
+    -> observed effects, scores and searches
+    -> thin on-demand P1–P7.5 assertions against those same functions
+```
+
+The leveling 100-mob scenario and P7 saved DPS reference differ in
+configuration, **not** in the core combat/legality engine. Each gate
+selects its actual scenario, invokes existing production functions and
+checks the approved behavioral predicate. P1 native effects need no
+parallel Python GameIR action implementation.
+
+**Code-first order:**
+
+1. **First-pass all gates** on one selected checkpoint: invoke an existing
+   real function, or name the *first actual missing production dependency*.
+   Do not build mock gate scaffolding to get a GREEN or run 300 seconds
+   when the engine is known not to work.
+2. **Implement the missing shared production capability** in place:
+   source-legal action/talent effects → native combat → actual world feedback
+   → persistent paid 100-mob evaluation → same legal whole-build search →
+   exact saved-reference evaluation and independent searches. Test the
+   smallest real failed behavior and keep existing Work1/Work2 ownership.
+   **Never duplicate combat, search or scorer logic inside gate tooling.**
+3. **Validate first checkpoint vertically**, retaining independently earned
+   PASS+timestamp for each compatible gate. Then run the **same code**
+   at a different class and level (e.g. Hunter with pet/autoattack versus
+   Druid caster; L20 versus L60). Fix common effect families or source
+   rules rather than adding per-class runners, hardcoded whitelists or
+   148 separate implementations.
+4. **Coverage means product readiness**, not paperwork: all accepted
+   checkpoints must actually exercise legal spells/talents, gear scoring,
+   continuous combat/recovery, independent timed search and selected
+   native↔world reference comparisons. The 148 class/level/profile cases
+   then demonstrate broad functioning across the approved scope; they
+   do not claim every level 1–60 or every untested mechanic is perfect.
+
+**No MD/JSON busywork:** this is the **one updated plan**;
+[issue #131](https://github.com/dosibjrn/forever-sim/issues/131)
+holds decisions, failures and discussion; production PRs hold code.
+No new evidence-document tree, per-spell result JSON, permanent
+status matrix, duplicate gate-only simulator/optimizer, recurring heavy
+test suite or additional checkpoint. Diagnostic numerator/denominator
+comes directly from actual production executions; a real gate PASS needs
+only its existing PASS+timestamp.
+
 ## What 80/20 means — *effort estimate*, NOT work ordering
 
 Pareto is a **hypothesis for estimating the effort still ahead**, not a reason to change issue order or to postpone the difficult tail. Keep Prio's critical-path ordering and Work1/Work2 ownership exactly as they are. When measured unit coverage is known, report **both**:
