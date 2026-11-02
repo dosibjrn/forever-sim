@@ -1,8 +1,8 @@
 """On-demand P7.1 entry into the existing pinned MythicSim Rust/gsim 2D path.
 
 No new engine or score implementation: live_world_probe runs the native
-baseline and the genuine world-ACKed fight. A reconstructed saved request
-cannot, by itself, certify the P7.1.1 saved-report UI field inventory.
+baseline and the genuine world-ACKed fight. The recovered original saved request cannot, by itself, certify the
+P7.1.1 saved-report interactive Settings UI field inventory.
 """
 from __future__ import annotations
 
@@ -130,9 +130,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 "p7_1_2_native_reproduced": False,
                 "p7_1_3_live_reproduced": False, **actual}
 
-    # Owner-approved WF633 is a genuine native reference replay, but its
-    # reconstructed input is not an audited field-by-field capture of the
-    # exact saved report's interactive Settings UI. DPS equality is not
+    # WF648 recovered the original saved API request; WF633 witnessed the
+    # native reference DPS. Neither establishes a field-by-field audit of
+    # the exact saved report's interactive Settings UI. DPS equality is not
     # permission to manufacture that missing P7.1.1 provenance.
     return _blocked("P7_1_1_SAVED_REPORT_UI_FIELD_AUDIT_MISSING",
                     production_engine="pinned_mythicsim_rust_gsim_2d",
