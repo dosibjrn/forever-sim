@@ -23,6 +23,7 @@ from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.data.forever.checkpoint_p2_execution_gate import _executable_filler_witness
 from src.game.talents import apply_talent_selection, talented_bonus_for_level, available_talent_points, validate_talent_selection
 from src.game.talent_frontier import source_legal_talent_neighbors, allocation_key
+from src.game.source_objective_relevance import solo_threat_exclusion
 
 
 def _runtime_actor_state_delta(before, after):
@@ -1395,7 +1396,11 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
             'witness':dict(witness),'status':'FAIL','reasons':[],
             'behavior_tests':[], 'search_reachable':False}
     r=next((x for x in talent.ranks if x.rank==rank),None)
-    if not r or not r.modifiers:
+    if r is None:
+        result['reasons'].append('IMPLEMENTATION_MISSING')
+        return result
+    exclusion = solo_threat_exclusion(compiled, r) if not r.modifiers else None
+    if not r.modifiers and exclusion is None:
         result['reasons'].append('IMPLEMENTATION_MISSING')
         return result
     # Prefer the canonical source witness; when filler ranks cannot execute,
@@ -1448,7 +1453,7 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
                                         level=level,bonus_talent_points=bonus)
             applied=[x for x in receipt.applied_modifiers
                      if x.get('talent_id')==talent.id and int(x.get('rank',-1))==rank]
-            if not applied:
+            if not applied and exclusion is None:
                 last_error='TARGET_RANK_NOT_APPLIED'
                 continue
             prior=dict(trial)
@@ -1464,7 +1469,12 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
     else:
         result['reasons'].append('ALLOCATION_INVALID:'+str(last_error))
         return result
-    if not _effect_change(before,selected):
+    if exclusion is not None:
+        # No effect probe is claimed. The source-only threat clause is checked
+        # against the actual single-actor solo IR; legal rank and search checks
+        # below still run. Group/pet scenarios remain FAIL, not silent no-ops.
+        result['objective_exclusion'] = exclusion
+    elif not _effect_change(before,selected):
         result['reasons'].append('IMPLEMENTATION_MISSING:NO_GAME_IR_DELTA')
         return result
     # Every modifier's applicable effect family needs an executed behavior
@@ -1488,10 +1498,11 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
         if mod.kind=='critical_damage_bonus_pct' and (1+prior_value)>0:
             meta['_gate_crit_bonus_ratio']=(1+float(mod.value))/(1+prior_value)
         increments.append(replace(mod,value=float(mod.value)-prior_value,provenance=meta))
-    tests,missing=_behavior_fixtures(before,selected,increments)
-    result['behavior_tests'].extend(tests)
-    if missing:
-        result['reasons'].append('BEHAVIOR_TEST_MISSING:'+','.join(missing))
+    if exclusion is None:
+        tests,missing=_behavior_fixtures(before,selected,increments)
+        result['behavior_tests'].extend(tests)
+        if missing:
+            result['reasons'].append('BEHAVIOR_TEST_MISSING:'+','.join(missing))
     # The sourced tooltip contains *two* independent effects: hit chance and
     # increased offensive range.  Proving hit alone must never turn this rank
     # GREEN while its real travel/pull-distance behavior is explicitly absent.
@@ -1788,7 +1799,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
         # Each numerator unit is a reached source rank whose actual
         # CombatRuntime behavior assertions passed, NOT a compiled modifier,
         # source row, or merely an attempted test.
-        result['coverage_basis']='executed_behavior_assertions'
+        result['coverage_basis']='executed_behavior_or_checked_solo_exclusion'
         result['partial_scope']='SOURCE_REACHABLE_RANK_RUNTIME_BEHAVIOR'
         result['fail_count']=len(fail)
         result['unresolved_count']=len(result['unresolved'])

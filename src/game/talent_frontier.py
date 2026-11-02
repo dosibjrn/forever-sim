@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 from src.game.talents import validate_talent_selection, available_talent_points
+from src.game.source_objective_relevance import solo_threat_exclusion
 
 
 def allocation_key(selection: Mapping[str, int]) -> tuple[tuple[str, int], ...]:
@@ -38,9 +39,13 @@ def source_legal_talent_neighbors(ir, allocation: Mapping[str, int], *, level: i
     validate_talent_selection(ir, allocation, level=level, bonus_talent_points=bonus_talent_points)
     roster = tuple(ir.talents)
     current = dict(allocation_key(allocation))
-    blocked = tuple(t.id for t in roster if not any(r.modifiers for r in t.ranks))
+    # Explicitly checked objective-neutral ranks remain legal optimizer options.
+    # Unparsed ranks without such proof are still excluded from paid search.
+    rank_rows = {t.id: {int(r.rank) for r in t.ranks
+                        if r.modifiers or solo_threat_exclusion(ir, r) is not None}
+                 for t in roster}
+    blocked = tuple(t.id for t in roster if not rank_rows[t.id])
     candidates: dict[tuple, Neighbor] = {}
-    rank_rows = {t.id: {int(r.rank) for r in t.ranks if r.modifiers} for t in roster}
     rejected = Counter()
     generated = 0
     max_points = available_talent_points(level, bonus_talent_points=bonus_talent_points)
