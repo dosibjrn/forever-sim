@@ -185,6 +185,7 @@ def snapshot_gsim_world(runtime) -> dict:
             "engaged": target_id in runtime._engaged_targets,
             "controls": {str(k): float(v) for k, v in sorted(target.active_controls.items())},
             "attacker_relative_position": target.metadata.get("attacker_relative_position"),
+            "facing_xy_yards": target.metadata.get("facing_xy_yards"),
         }
     return {
         "clock_ms": clock_ms,
