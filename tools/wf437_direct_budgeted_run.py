@@ -145,13 +145,14 @@ params=dict(class_key=class_key,level=level,source_ir=ir,seed_stage=stage,
     max_paid_builds=(1000 if args.budget==30 else 20000),
     max_cpu_s=float(args.budget),screen_mobs=2,finalist_mobs=100,
     per_candidate_wall_s=1.,search_only=True,screen_evaluator_backend='direct',
-    # Short cold search needs two exploitation passes on its strongest four
-    # genuinely paid candidates, rather than one expensive pass across twelve
-    # near-equal screens. Longer cold search retains broader local refinement.
-    # Both searches still use the same source-legal whole-build universe and
-    # independently replay every frozen finalist for 100 real mobs afterward.
-    refinement_top_n=(4 if args.budget==30 else 12),
-    refinement_rounds=(2 if args.budget==30 else 3),
+    # The short search previously promoted only four paid parent builds;
+    # measured 30s/100-mob production runs missed later legal talent
+    # transfers. Keep source-neutral exploration across twelve paid parents
+    # in three rounds, with broader legal neighbors within the same 30s clock.
+    # The 300s strategy remains unchanged and both budgets cold-start.
+    refinement_top_n=12,
+    refinement_rounds=3,
+    refinement_talent_neighbors=(6 if args.budget==30 else 2),
     refinement_stat_axes=('spell_power','strength','agility','intellect','spirit','stamina'),
     refinement_probe_delta=20.,refinement_gear_candidates=(3 if args.budget==30 else 5),
     refinement_policy_candidates=(3 if args.budget==30 else 5),pack_size=2,
