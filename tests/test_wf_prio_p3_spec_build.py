@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from src.game.data.forever.registry import build_game_ir_slice
+from src.game.gear import apply_stat_delta, executable_gear_stats
+from src.game.runtime.state import ActorState
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import (
     talented_bonus_for_level, validate_talent_selection,
@@ -41,7 +43,22 @@ def test_real_p3_balance_paid_gear_evaluates_selected_source_profile():
     assert result["status"] != "PASS", "Other P3 stat weights are still incomplete"
     assert result["real_source_search_evaluated"] > 0, result
     assert result["real_catalogue_top5_items_scored"] > 0, result
+    # The real paid source sensitivity must include the HP5 channel exposed
+    # by the canonical item scorer, not silently omit it from P3 weights.
+    assert "health_regeneration_per_5s" in result["real_measured_stat_weight_axes"], result
     assert result["source_profile_production_build"]["full_point_source_allocation"]
     assert result["source_profile_production_build"]["applied_modifiers"] > 0
     assert not any("SPEC_CONSTRAINED_PRODUCTION_BUILD_NOT_EVALUATED" in reason
                    for reason in result["reasons"]), result
+
+
+def test_p3_hp5_probe_reaches_real_actor_health_regeneration():
+    """The probed source item HP5 stat must change production runtime state."""
+    ir = build_game_ir_slice(class_key="druid", level=60)
+    stat = "health_regeneration_per_5s"
+    assert stat in executable_gear_stats(ir)
+    before = ActorState.from_ir(ir.actor, ir.resources, ir.modes)
+    after_ir = apply_stat_delta(ir, stat, 10.0)
+    after = ActorState.from_ir(after_ir.actor, after_ir.resources, after_ir.modes)
+    assert after.resource_regeneration_per_s["health"] == pytest.approx(
+        before.resource_regeneration_per_s["health"] + 2.0)
