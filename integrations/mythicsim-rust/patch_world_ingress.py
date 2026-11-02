@@ -7,6 +7,7 @@ a parallel simulator. Abort if any upstream anchor drifts.
 from pathlib import Path
 import argparse
 import subprocess
+import sys
 
 REV = "666fe17a42682068a3c8497d88d5fa3732cbdfb9"
 
@@ -105,7 +106,21 @@ def main() -> None:
     if target.exists():
         raise SystemExit("RUST_WORLD_MODULE_ALREADY_EXISTS")
     target.write_bytes(module.read_bytes())
-    print("PATCHED_EXACT_PINNED_RUST_FIGHT_WORLD_SEAM")
+    # The production P7 searches select balanced RNG via WOWSIM_RNG_MODE,
+    # but pinned upstream has no native consumer for that flag. Apply the
+    # existing WF652/659/660 core-RNG patches to this SAME pinned checkout,
+    # after the world seam and before either Actions workflow builds it.
+    # Both M1 and native-world Actions call this exact production patcher.
+    for name in ("wf652_apply_balanced.py", "wf659_typed_rng.py",
+                 "wf660_boolean_migration.py"):
+        subprocess.run(
+            [sys.executable, str(Path(__file__).with_name(name))],
+            cwd=root, check=True,
+        )
+    rng = (src / "core/rng.rs").read_text()
+    if "WOWSIM_RNG_MODE" not in rng or "SimRng::Balanced" not in rng:
+        raise SystemExit("PINNED_RUST_BALANCED_RNG_PATCH_NOT_APPLIED")
+    print("PATCHED_EXACT_PINNED_RUST_FIGHT_WORLD_SEAM_AND_TYPED_BALANCED_RNG")
 
 
 if __name__ == "__main__":
