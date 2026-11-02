@@ -134,20 +134,45 @@ def measured_p7_dps_proximity(gate: str, report: dict) -> dict | None:
     if type(reference) not in (int, float) or not isfinite(reference) or reference <= 0:
         return None
 
-    if gate == "P7.5":
-        actual = report.get("holdout_mean_dps")
-        # Required comparator is the *strongest accepted compatible prior*,
-        # not whichever unverified trial happens to have the largest DPS.
-        prior = report.get("strongest_accepted_compatible_prior_dps")
-        if (type(prior) not in (int, float) or not isfinite(prior)
-                or prior <= 0):
+    # The discovery gates' "winner_live_dps" is the *three-fight balanced
+    # search score*. It is not the frozen 1,000-stochastic-fight final mean and
+    # must never be published as proximity to the P7 acceptance DPS floor.
+    # A completed final uses the existing live provider's actual field names.
+    if gate == "P7.1":
+        # Three-fight live probes are valuable diagnostics, but do not imply
+        # 96%+ of an accepted 1,000-fight DPS result. Only a genuine completed
+        # final has comparable arithmetic-mean DPS for M1 proximity.
+        if (type(report.get("iterations")) is not int
+                or report["iterations"] != P7_FINAL_STOCHASTIC_ITERATIONS
+                or report.get("selected_validation")
+                != "1000_native_and_live_stochastic_fights"
+                or report.get("stochastic_rng") is not True):
             return None
-        required = p7_required_dps(
-            gate, float(reference),
-            strongest_accepted_compatible_prior=float(prior))
-    else:
-        actual = report.get("world_dps") if gate == "P7.1" else report.get("winner_live_dps")
+        actual = report.get("world_dps")
         required = p7_required_dps(gate, float(reference))
+    else:
+        if (type(report.get("frozen_stochastic_iterations")) is not int
+                or report["frozen_stochastic_iterations"] != P7_FINAL_STOCHASTIC_ITERATIONS
+                or not report.get("frozen_request_raw_sha256")
+                or type(report.get("frozen_stochastic_world_damage_events")) is not int
+                or report["frozen_stochastic_world_damage_events"] <= 0
+                or type(report.get("frozen_stochastic_world_boundaries")) is not int
+                or report["frozen_stochastic_world_boundaries"] <= 0):
+            return None
+        actual = report.get("frozen_stochastic_world_dps")
+        if gate == "P7.5":
+            # An accepted-compatible prior is mandatory for the P7.5 floor.
+            # Search scores and unaccepted historical native-only wins do not
+            # establish that provenance.
+            prior = report.get("strongest_accepted_compatible_prior_dps")
+            if (type(prior) not in (int, float) or not isfinite(prior)
+                    or prior <= 0):
+                return None
+            required = p7_required_dps(
+                gate, float(reference),
+                strongest_accepted_compatible_prior=float(prior))
+        else:
+            required = p7_required_dps(gate, float(reference))
     if type(actual) not in (int, float) or not isfinite(actual) or actual < 0:
         return None
 
