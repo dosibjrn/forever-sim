@@ -10,6 +10,8 @@ MOVED = (
     "test_generic_talent_policy_search_g19.py",
     "test_generic_gear_stat_sensitivity_g20.py",
     "test_optimizer_fixed_point_g21.py",
+    "test_per_level_fixed_point_v0114846.py",
+    "test_stat_weight_model.py",
     "test_generic_level_frontier_g22.py",
     "test_generic_mode_g23.py",
     "test_generic_cross_mode_policy_g30.py",
