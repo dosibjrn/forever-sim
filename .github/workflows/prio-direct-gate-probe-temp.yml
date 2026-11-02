@@ -1,7 +1,7 @@
 name: Prio direct gate probe source test (temporary)
 on:
-  push:
-    branches: [prio/direct-live-gate-probe-20261102]
+  pull_request:
+    branches: [main]
 jobs:
   live-gates:
     runs-on: ubuntu-latest
