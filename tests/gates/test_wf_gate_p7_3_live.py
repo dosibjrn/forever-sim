@@ -51,8 +51,9 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
     base["raid"]["parties"][0]["players"][0].update({
         "class": "ClassDruid", "distanceFromTarget": 15})
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # Two attempts, same source talents; then a 300-second end boundary.
-    clock = iter([0.0, 0.0, 0.0, 300.0, 300.0])
+    # Allow cold and paid-elite attempts before the simulated 300s boundary.
+    # Both may rediscover the same legal allocation; it is paid only once.
+    clock = iter([0.0] * 10 + [300.0] * 10)
     monkeypatch.setattr(p73.time, "monotonic", lambda: next(clock))
     monkeypatch.setattr(
         p73, "_pinned_source_runtime",
@@ -60,7 +61,9 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
     monkeypatch.setattr(
         p73, "_source_native_world_parity", lambda *a, **kw: None)
     source = SimpleNamespace(
-        random_build=lambda rng: [[1], [0], [0]],
+        random_build=lambda rng, target=None: [[1], [0], [0]],
+        parse=lambda value: [[1], [0], [0]],
+        edit_neighbors=lambda ranks, rng: [[1], [0], [0]],
         validate=lambda ranks: True,
         encode=lambda ranks: "cold-source-legal")
     calls = []
