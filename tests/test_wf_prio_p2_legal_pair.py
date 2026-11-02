@@ -24,6 +24,23 @@ def test_druid_l60_gift_of_nature_rank_two_has_legal_paired_runtime_control():
                    and test["actually_executed"] and test["passed"]
                    and test["after_amount"] > test["before_amount"] > 0
                    for test in rank["behavior_tests"]), rank["rank_key"]
+    # Nature's Reach has two sourced effects: offensive spell hit AND range.
+    # The former must change real CombatRuntime damage at <100% hit with a
+    # saturated 100%-hit negative control; the latter is not yet implemented.
+    # Never mark the whole talent rank PASS on a hit-only witness.
+    for rank in (1, 2):
+        reach = rows[f"natures_reach:{rank}"]
+        hit = [t for t in reach["behavior_tests"]
+               if t["probe"] == "paired_production_spell_hit_probability"]
+        assert len(hit) == 1, (reach["rank_key"], reach["reasons"])
+        probe = hit[0]
+        assert probe["actually_executed"] and probe["passed"]
+        assert probe["source_scoped_actions_checked"] > 0
+        assert probe["after_amount"] > probe["before_amount"] > 0
+        assert abs(probe["saturated_after"] - probe["saturated_before"]) < 1e-6
+        assert reach["status"] == "FAIL"
+        assert "IMPLEMENTATION_MISSING:source_offensive_range_world_behavior" in reach["reasons"]
+
     row = rows["gift_of_nature:2"]
 
     # An illegal rank-1 predecessor must not be accepted, but neither should
