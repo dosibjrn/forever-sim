@@ -60,7 +60,7 @@ def test_small_paid_budget_interleaves_real_source_slots_across_classes():
     # The joint optimizer passes a *global* slot quota, not per-slot quota.
     # Before this fix, 6 moves meant two items each from alphabetically first
     # slots, and every later slot (including wand) was invisible to L2.
-    for class_key in ('mage', 'hunter'):
+    for class_key in ('mage', 'druid'):
         ir = build_game_ir_slice(class_key=class_key, level=30)
         seed = source_cold_start_stage(
             class_key=class_key, level=30, source_ir=ir, gear_role=class_key)
@@ -70,7 +70,7 @@ def test_small_paid_budget_interleaves_real_source_slots_across_classes():
             per_slot=2, max_proposals=100)
         legal_slots = sorted(slot for slot, count in counts.items() if count)
         assert len(legal_slots) >= 6, (class_key, counts)
-        # Use the same six-candidate global budget on two actual source DBs.
+        # Use the same six-candidate global budget on two actually compiled source class profiles.
         small, small_counts = _source_slot_proposals(
             class_key=class_key, level=30, base=base,
             per_slot=2, max_proposals=6)
