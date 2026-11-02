@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+from math import isfinite
 from pathlib import Path
 import re
 import sqlite3
@@ -146,14 +147,45 @@ def _legitimate_conditional(action, reason: str) -> bool:
 # housekeeping and unrelated passive regeneration are not an effect witness.
 # This is generic runtime vocabulary, NEVER a class/spell whitelist.
 P1_EFFECT_EVENTS = frozenset({
-    'Damage', 'Heal', 'AuraApply', 'AuraReplaced', 'AuraRemovedExclusive',
-    'ResourceChange', 'ResourceChanged', 'ModeChange', 'ModeChanged',
+    'Damage', 'Heal', 'AuraApplied', 'AuraReplaced', 'AuraRemovedExclusive',
+    'ResourceChange', 'ResourceChanged', 'ModeChanged',
     'ControlApplied', 'ControlTargetCapEvicted', 'AbsorbShieldGranted',
     'AutoAttackStarted', 'QueuedSwingArmed', 'SummonSpawn', 'SummonDespawn',
     'TargetStatDebuffApplied', 'SchoolPowerDebuffApplied',
     'NextCastInstantGranted', 'CastChargeGranted', 'TimedSpellCritHasteGranted',
     'SpatialChargeArrival', 'PeriodicTick', 'TriggerFired', 'ResourceEventGain',
 })
+
+
+def _p1_effect_observed(event) -> bool:
+    """Require an actual runtime effect, not a zero-delta event receipt.
+
+    Production emits ResourceChange/ResourceChanged even when the requested
+    gain is capped at full resources. Damage and Heal can also resolve to zero.
+    Those event kinds alone cannot certify P1 behavior.
+    """
+    if event.kind not in P1_EFFECT_EVENTS:
+        return False
+    if event.kind == 'ControlApplied':
+        # CombatRuntime emits ControlApplied even when a proc roll fails or
+        # the target is already dead. Only an applied control changes state.
+        return getattr(event, 'payload', {}).get('applied') is True
+    if event.kind in ('ResourceChange', 'ResourceChanged'):
+        payload = getattr(event, 'payload', {})
+        before, after = payload.get('before'), payload.get('after')
+        return (type(before) in (int, float) and type(after) in (int, float)
+                and isfinite(before)
+                and isfinite(after)
+                and abs(after - before) > 1e-9)
+    if event.kind == 'ResourceEventGain':
+        gained = getattr(event, 'payload', {}).get('gained')
+        return (type(gained) in (int, float)
+                and isfinite(gained) and gained > 1e-9)
+    if event.kind in ('Damage', 'Heal'):
+        amount = getattr(event, 'payload', {}).get('amount')
+        return (type(amount) in (int, float)
+                and isfinite(amount) and amount > 1e-9)
+    return True
 
 
 # P1 is a bounded combat-action gate: damage, buffs/debuffs and CC only.
@@ -372,9 +404,9 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                     scenario_id=P1_DEFAULT_SCENARIO):
     """PROCESS P1 gate: all source actions are traceable, legal, and offered.
 
-    An effect's full numerical behaviour belongs to P2/P4, not P1. A recognised,
-    explicitly reported conditional setup is allowed here when the dispatch path
-    exists. Unknown/no-op/broken effects and silent optimizer omissions are not.
+    A recognized unmet conditional prerequisite is reported but cannot PASS
+    without observed applicable execution (PROCESS v2.11). Unknown/no-op/broken
+    effects and silent optimizer omissions are not accepted.
     """
     problems: list[dict[str,Any]] = []
     conditional: list[dict[str,str]] = []
@@ -580,8 +612,14 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                 exercised.append(action.id)
             elif (outcome.get('status')=='conditional' and
                   _legitimate_conditional(action, str(outcome.get('reason') or ''))):
+                # A recognized prerequisite is a useful diagnostic, but it
+                # does not demonstrate the ability's applicable effect.
+                # PROCESS v2.11 requires a suitable triggered real-runtime
+                # test before a source-legal conditional action can PASS P1.
                 conditional.append({'action_id':action.id,'ability':_id_label(row),
                                     'reason':str(outcome['reason'])})
+                issue('CONDITIONAL_EFFECT_NOT_EXECUTED',row,
+                      f"{action.id}:{outcome['reason']}")
             else:
                 issue('COMBAT_ACTION_NOT_EXECUTED',row,f'{action.id}:{outcome}')
     return {'status':'PASS' if not problems and eligible else 'FAIL',
@@ -688,7 +726,7 @@ def _runtime_exercise(ir,action,level):
             result=runtime.result()
             events=[ev for ev in result.events if ev.action_id == action.id]
             completed=any(ev.kind=='ActionCompleted' for ev in events)
-            effective=any(ev.kind in P1_EFFECT_EVENTS for ev in events)
+            effective=any(_p1_effect_observed(ev) for ev in events)
             if queued:
                 effective=any(ev.kind=='Damage' and ev.payload.get('queued_swing_replacement')
                               for ev in events)

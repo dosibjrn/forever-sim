@@ -132,7 +132,7 @@ def test_action_started_only_is_not_proof_of_effect():
     assert r['status']=='FAIL' and 'COMBAT_ACTION_NOT_EXECUTED' in codes(r)
 
 
-def test_conditional_action_with_recognised_requirement_and_effect_dispatch_is_p1_pass():
+def test_conditional_action_with_recognised_requirement_is_not_p1_pass_without_effect():
     a=action(req=({'kind':'relative_position_is','value':'rear'},))
     r=audit_inventory([row()],ir_with(a),parser=lambda a:set(),
         source_classifier=lambda r,raw:{'role':'ABILITY'},
@@ -140,8 +140,27 @@ def test_conditional_action_with_recognised_requirement_and_effect_dispatch_is_p
         scratch_builder=lambda ir,max_candidates:[policy(a.id)],
         executor=lambda ir,a:{'status':'conditional','reason':"requires relative position 'rear'; have None"},
         effect_checker=lambda e:'direct_damage')
-    assert r['status']=='PASS' and len(r['conditional_actions'])==1
+    assert r['status']=='FAIL' and len(r['conditional_actions'])==1
     assert r['production_runtime_exercises']==0
+    assert 'CONDITIONAL_EFFECT_NOT_EXECUTED' in codes(r)
+    assert any('requires relative position' in (p['detail'] or '')
+               for p in r['problems'] if p['code']=='CONDITIONAL_EFFECT_NOT_EXECUTED')
+
+
+def test_source_legal_conditional_with_observed_effect_can_pass():
+    # The prerequisite does not waive effect execution, but a genuine
+    # observed effect still passes the existing production probe contract.
+    for sid in (100, 200):
+        a=action(sid,req=({'kind':'relative_position_is','value':'rear'},))
+        r=audit_inventory([row(sid=sid)],ir_with(a),parser=lambda a:set(),
+            source_classifier=lambda r,raw:{'role':'ABILITY'},
+            policy_builder=lambda ir,rules:policy(rules[0][0]),
+            scratch_builder=lambda ir,max_candidates:[policy(a.id)],
+            executor=lambda ir,a:{'status':'executed','effect_observed':True},
+            effect_checker=lambda e:'direct_damage')
+        assert r['status']=='PASS',r['problems']
+        assert r['production_runtime_exercises']==1
+        assert not r['conditional_actions']
 
 
 def test_conditional_status_cannot_hide_missing_source_prerequisite():
@@ -289,7 +308,10 @@ def test_real_p1_probe_rejects_bookkeeping_only_and_accepts_effect_event(monkeyp
     events_holder['events']=[N(kind=k,action_id=a.id) for k in ('ActionStarted','ActionCompleted')]
     result=_runtime_exercise(test_ir,a,20)
     assert result['status']=='invalid' and result['reason']=='ACTION_COMPLETED_WITHOUT_OBSERVABLE_EFFECT'
-    events_holder['events'].append(N(kind='Damage',action_id=a.id))
+    events_holder['events'].append(N(kind='ResourceChanged',action_id=a.id,
+        payload={'before':100.0,'after':100.0}))
+    assert _runtime_exercise(test_ir,a,20)['status']=='invalid'
+    events_holder['events'].append(N(kind='Damage',action_id=a.id,payload={'amount':10.0}))
     assert _runtime_exercise(test_ir,a,20)['status']=='executed'
 
 
@@ -312,7 +334,8 @@ def test_probe_tries_next_legal_mode_if_first_raises(monkeypatch):
         def __init__(self,actor,target):pass
         def schedule_action(self,action):self.action=action
         def run_until_idle(self):pass
-        def result(self):return N(events=[N(kind=k,action_id=self.action.id)
+        def result(self):return N(events=[N(kind=k,action_id=self.action.id,
+                 payload={'amount':10.0} if k=='Damage' else {})
                  for k in ('ActionStarted','Damage','ActionCompleted')])
     runtime_mod=types.ModuleType('src.game.runtime')
     runtime_mod.ActorState=Actor;runtime_mod.TargetState=Target;runtime_mod.CombatRuntime=Runtime
@@ -343,7 +366,8 @@ def test_probe_builds_generic_positive_relative_position_for_execution(monkeypat
             assert target.metadata['attacker_relative_position']=='rear'
         def schedule_action(self,action):self.a=action
         def run_until_idle(self):pass
-        def result(self):return N(events=[N(kind=k,action_id=self.a.id)
+        def result(self):return N(events=[N(kind=k,action_id=self.a.id,
+                payload={'amount':10.0} if k=='Damage' else {})
                 for k in ('ActionStarted','Damage','ActionCompleted')])
     runtime_mod=types.ModuleType('src.game.runtime')
     runtime_mod.ActorState=Actor;runtime_mod.TargetState=Target;runtime_mod.CombatRuntime=Runtime
@@ -381,7 +405,7 @@ def test_p1_false_positive_background_regeneration_must_fail(monkeypatch):
     monkeypatch.setitem(sys.modules,'src.game.runtime.simulator',sim)
     ir=N(actor=N(id='actor'),resources=(),modes=())
     assert _runtime_exercise(ir,action(),20)['status']=='invalid'
-    events[1]='AuraApply'  # real sourced effect, not timing/bookkeeping
+    events[1]='AuraApplied'  # confirmed runtime aura, not queued intent
     assert _runtime_exercise(ir,action(),20)['status']=='executed'
 
 
@@ -396,7 +420,10 @@ def test_matching_conditional_requirement_only():
            effect_checker=lambda e:'direct_damage')
     assert run('requires mode cat')['status']=='FAIL'
     assert run('requires 35 rage; have 0')['status']=='FAIL'
-    assert run('requires 35 energy; have 0')['status']=='PASS'
+    recognized=run('requires 35 energy; have 0')
+    assert recognized['status']=='FAIL'
+    assert 'CONDITIONAL_EFFECT_NOT_EXECUTED' in codes(recognized)
+    assert recognized['conditional_actions'][0]['reason']=='requires 35 energy; have 0'
 
 
 def test_source_rank_cannot_be_cast_before_own_minimum_level():
@@ -441,3 +468,41 @@ def test_probe_checks_next_source_legal_mode_after_empty_completion(monkeypatch)
     ir=N(actor=N(id='actor'),resources=(),modes=(N(id='neutral',enabled_action_ids=None),N(id='effective',enabled_action_ids=None)))
     r=_runtime_exercise(ir,action(),20)
     assert r['status']=='executed' and r['mode']=='effective'
+
+
+def test_p1_zero_delta_events_cannot_certify_effect_execution():
+    """Real CombatRuntime emits resource receipts even when capped at full."""
+    from wf_gate_p1_live import _p1_effect_observed
+    assert not _p1_effect_observed(N(kind='ResourceChange',
+        payload={'before':100.,'after':100.}))
+    assert not _p1_effect_observed(N(kind='ResourceChanged',
+        payload={'before':100.,'after':100.}))
+    assert not _p1_effect_observed(N(kind='ResourceEventGain',
+        payload={'requested_gain':25.,'gained':0.,'capped':True}))
+    assert not _p1_effect_observed(N(kind='Damage',payload={'amount':0.}))
+    assert not _p1_effect_observed(N(kind='Heal',payload={'amount':0.}))
+    assert _p1_effect_observed(N(kind='ResourceChange',
+        payload={'before':100.,'after':110.}))
+    assert _p1_effect_observed(N(kind='ResourceChanged',
+        payload={'before':100.,'after':110.}))
+    assert _p1_effect_observed(N(kind='ResourceEventGain',
+        payload={'requested_gain':25.,'gained':10.,'capped':True}))
+    assert _p1_effect_observed(N(kind='Damage',payload={'amount':10.}))
+    assert _p1_effect_observed(N(kind='Heal',payload={'amount':10.}))
+    assert not _p1_effect_observed(N(kind='AuraApply',payload={}))
+    assert _p1_effect_observed(N(kind='AuraApplied',payload={}))
+    assert not _p1_effect_observed(N(kind='ModeChange',payload={}))
+    assert _p1_effect_observed(N(kind='ModeChanged',payload={}))
+    assert not _p1_effect_observed(N(kind='ControlApplied',
+        payload={'applied':False,'proc_triggered':False}))
+    assert _p1_effect_observed(N(kind='ControlApplied',
+        payload={'applied':True,'proc_triggered':True}))
+
+
+def test_p1_missing_or_nonfinite_effect_payload_fails_closed():
+    from wf_gate_p1_live import _p1_effect_observed
+    for kind in ('ResourceChange','ResourceChanged','ResourceEventGain','Damage','Heal'):
+        assert not _p1_effect_observed(N(kind=kind,payload={}))
+    assert not _p1_effect_observed(N(kind='Damage',payload={'amount':float('nan')}))
+    assert not _p1_effect_observed(N(kind='ResourceChange',
+        payload={'before':0.,'after':float('inf')}))
