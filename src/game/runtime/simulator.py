@@ -623,7 +623,10 @@ class CombatRuntime:
         self._source_control_owners: dict[tuple[str,str],tuple[str,str,float]] = {}
         if len(self.targets) != 1 + len(other_targets):
             raise ValueError('duplicate encounter target id')
-        self.multi_target = bool(other_targets)
+        # Explicit coordinates make even a single enemy a real 2D encounter.
+        # Otherwise a source single-target benchmark needs a fake second mob
+        # just to activate range, movement, facing and control semantics.
+        self.multi_target = bool(other_targets) or bool(spatial_positions_yards)
         self._pack_positions = dict(spatial_positions_yards or {})
         self.enemy_positions_yards = dict(self._pack_positions)
         if self.multi_target:
