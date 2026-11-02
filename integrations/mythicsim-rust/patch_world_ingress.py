@@ -117,8 +117,25 @@ def main() -> None:
             [sys.executable, str(Path(__file__).with_name(name))],
             cwd=root, check=True,
         )
+    # Historical native L60 diagnostics found legal >100% crit thresholds.
+    # Reuse their tested fix in the ACTUAL selected production Rust build:
+    # stochastic treats p >= 1 as certain, p <= 0 as impossible, while NaN
+    # remains a hard error. Apply AFTER WF659's typed dispatch is installed.
+    subprocess.run(
+        [sys.executable, str(Path(__file__).with_name("rng_extreme_probability_fix.py")),
+         "--patch-engine", str(root)],
+        cwd=root, check=True,
+    )
+    # Existing old-repo CI invariant; don't allow untyped comparisons to
+    # silently bypass the quota RNG in future source additions.
+    subprocess.run(
+        [sys.executable, str(Path(__file__).with_name("wf659_rng_boolean_audit.py")),
+         str(src)],
+        cwd=root, check=True,
+    )
     rng = (src / "core/rng.rs").read_text()
-    if "WOWSIM_RNG_MODE" not in rng or "SimRng::Balanced" not in rng:
+    if ("WOWSIM_RNG_MODE" not in rng or "SimRng::Balanced" not in rng
+            or "wf_l60_rng_extreme_tests" not in rng):
         raise SystemExit("PINNED_RUST_BALANCED_RNG_PATCH_NOT_APPLIED")
     print("PATCHED_EXACT_PINNED_RUST_FIGHT_WORLD_SEAM_AND_TYPED_BALANCED_RNG")
 
