@@ -95,7 +95,10 @@ def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypat
             "iterations": n, "first_duration_s": 120.0, "native_dps": 730.0},
         run=lambda binary, path, distance, iterations, *, rng_mode: {
             "iterations_done": iterations,
-            "per_iteration": [{"duration_s": 119.0}] * iterations,
+            "per_iteration": [
+                {"iteration_index": i, "duration_s": 119.0,
+                 "world_dps": 730.0, "world_applied_damage": 730.0 * 119.0}
+                for i in range(iterations)],
             "sampled_duration_s": 119.0,
             "native_dps": 730.0, "world_mean_dps": 730.0,
             "native_damage_events": 10, "native_world_ticks": 20})
