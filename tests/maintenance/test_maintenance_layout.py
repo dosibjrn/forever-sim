@@ -10,6 +10,8 @@ MODULES = (
     "test_root_launcher_phase2b.py",
     "test_release_suite_layout.py",
     "test_sqlite_sidecar_git_hygiene.py",
+    "test_manual_exact_pr_head_workflow.py",
+    "test_wf_coverage_sample_wrappers.py",
 )
 
 class MaintenanceTestLayout(unittest.TestCase):

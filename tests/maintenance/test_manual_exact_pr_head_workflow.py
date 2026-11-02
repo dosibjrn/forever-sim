@@ -5,8 +5,8 @@ These tests do NOT substitute for a real hosted-runner positive/negative smoke.
 from pathlib import Path
 import unittest
 
-WORKFLOW = (Path(__file__).resolve().parents[1] /
-            ".github/workflows/manual-exact-pr-head.yml")
+ROOT = Path(__file__).resolve().parents[2]
+WORKFLOW = ROOT / ".github/workflows/manual-exact-pr-head.yml"
 TEXT = WORKFLOW.read_text(encoding="utf-8")
 
 
