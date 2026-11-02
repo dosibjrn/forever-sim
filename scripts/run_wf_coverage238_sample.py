@@ -3,6 +3,13 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+
+# Direct `python scripts/...` also works outside the repository cwd.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_search import enumerate_legal_talent_allocations, talent_candidate_id
 import src.v2.source_staged_joint_search as staged

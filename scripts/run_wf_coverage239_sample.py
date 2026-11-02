@@ -1,6 +1,12 @@
 """WF239 deterministic sample replay, using the shared WF238 sampler."""
 import argparse
 from pathlib import Path
+import sys
+
+# Keep the historical direct-script CLI functional without PYTHONPATH.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts.run_wf_coverage238_sample import run as _shared_run
 

@@ -1,5 +1,8 @@
 """Both historical sample replay entry points share one deterministic sampler."""
 import json
+import subprocess
+import sys
+from pathlib import Path
 
 from scripts import run_wf_coverage238_sample as wf238
 from scripts import run_wf_coverage239_sample as wf239
@@ -44,3 +47,14 @@ def test_wf238_and_wf239_share_samples_but_keep_evidence_contracts(tmp_path, mon
         if k not in ('version', 'finalist_talent_count')}
     assert json.loads(path238.read_text()) == first
     assert json.loads(path239.read_text()) == second
+
+
+def test_replay_entrypoints_support_direct_script_cli_outside_repo(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    for name in ('run_wf_coverage238_sample.py', 'run_wf_coverage239_sample.py'):
+        completed = subprocess.run(
+            [sys.executable, str(root / 'scripts' / name), '--help'],
+            cwd=tmp_path, capture_output=True, text=True, check=False,
+        )
+        assert completed.returncode == 0, (name, completed.stderr)
+        assert '--output' in completed.stdout
