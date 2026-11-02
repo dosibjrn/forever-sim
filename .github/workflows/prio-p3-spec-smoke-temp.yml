@@ -2,6 +2,7 @@ name: Prio P3 source-profile smoke (temporary)
 on:
   push:
     branches: [work/prio-p3-source-profile-paid-gear-20261102]
+  pull_request:
 jobs:
   p3:
     runs-on: ubuntu-latest
