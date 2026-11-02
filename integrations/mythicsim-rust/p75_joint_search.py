@@ -8,7 +8,7 @@ winners initialize the search population.
 import argparse,copy,json,random,re,sqlite3,subprocess,time
 from pathlib import Path
 from p73_talent_search_v2 import random_build,edit_neighbors,encode,validate,parse,run,sha,player
-from p74_gear_search import candidate_pool
+from p74_gear_search import candidate_pool, source_enchant_pools
 from p74_gear_validation import GearValidator, RejectedGear, sha256
 from apl_mutation import mutate_apl
 
@@ -21,29 +21,6 @@ def pick_gear(pool,rng):
     if rng.random()<0.13:
         return rng.choice(pool)
     return pool[min(len(pool)-1,int(rng.expovariate(0.15)))]
-
-def source_enchant_pools(validator, pools):
-    """Find enchant IDs through existing selected-source item+enchant legality.
-
-    No guessed enchant-slot table or saved-reference-only whitelist. The same
-    validator checks candidate loadouts again after gear/enchant mutation.
-    """
-    enchant_ids=sorted(int(effect_id) for effect_id in validator.enchants if int(effect_id)>0)
-    result={}
-    for i in range(16):
-        if not pools.get(i):
-            raise ValueError("NO_SOURCE_LEGAL_GEAR_FOR_ENCHANT_SLOT")
-        anchor=pools[i][0]
-        legal=[None]
-        for effect_id in enchant_ids:
-            try:
-                validator.item(i,anchor,effect_id)
-            except RejectedGear:
-                continue
-            legal.append(effect_id)
-        result[i]=legal
-    return result
-
 
 def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=None):
     """Independent cold generation; later mutations improve one axis at a time.
