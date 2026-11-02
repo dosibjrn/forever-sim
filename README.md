@@ -1,6 +1,15 @@
-> **Migration status (2026-11-01): COMPLETE.** [Public P0 issue #25](https://github.com/dosibjrn/forever-sim/issues/25) records the pinned audited source publication: 1,877 permitted paths published from 1,914 tracked private paths, with 37 intentionally protected. [Independent public checkout and LFS hydration](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045) succeeded with 13/13 snapshot tests; 11 SQLite and three large JSON LFS payloads were hydrated. Legacy private auto-trigger workflows remain excluded deliberately. `dosibjrn/mage-level-sim` is historical read-only source. **This is not a P1–P7.5 checkpoint acceptance; 0/148 remain certified.**
+> **Migration status (2026-11-01): COMPLETE.** [Public P0 issue #25](https://github.com/dosibjrn/forever-sim/issues/25) records the pinned audited source publication: 1,877 permitted paths published from 1,914 tracked private paths, with 37 intentionally protected. [Independent public checkout and LFS hydration](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045) succeeded with 13/13 snapshot tests; 11 SQLite and three large JSON LFS payloads were hydrated. Legacy private auto-trigger workflows remain excluded deliberately. `dosibjrn/mage-level-sim` is historical read-only source. **This is not a P1–P7.5 checkpoint acceptance; current M1 certification is shown in the live chart below.**
 
 # WoW Forever — simulator and optimizer
+
+
+## M1 — verified progress over time
+
+![M1 verified acceptance and diagnostic partial progress](docs/planning/M1_HISTORY.svg)
+
+**Green:** genuine accepted P1–P7.5 gate PASSes out of 1,628. **Amber:** best measured partial-inclusive diagnostic progress (not an accepted PASS). Fully certified checkpoints out of 148 are shown separately; incomplete or incompatible gate results do not certify a checkpoint. The vertical scale is zoomed to visible progress, not 0–100%.
+
+The [M1 ledger](docs/planning/M1_PASSES.tsv) is the only measurement source. Its Git history supplies the timestamps. Each [Merge-launched on-demand gate run](.github/workflows/m1-on-demand-record.yml) that improves the recorded results updates the ledger **and this chart together** on main. No chart-only scheduling, synthetic progress, or independent status records.
 
 ## Upstream inspiration and acknowledgments
 
@@ -8,11 +17,11 @@ This is an independent Forever simulation and optimization research project. The
 
 **Credit and scope:** this repository is not the official MythicSim project and is not affiliated with its maintainers. Engine references and pinned versions must remain traceable; upstream licenses and notices govern any adapted code.
 
-**Fully certified P1–P7 checkpoints evidenced in this repo: 0/148.** User-accepted P7 subgates are tracked separately; do not mistake them for full P1–P7 checkpoint certification. A green CI job or a standalone reference replay does not certify P1–P7.
+**Fully certified P1–P7 checkpoints are counted in the live M1 chart above.** User-accepted P7 subgates are tracked separately; do not mistake them for full P1–P7 checkpoint certification. A green CI job or a standalone reference replay does not certify P1–P7.
 
 ## Work queue and the 148-checkpoint matrix
 
-**Fully certified P1–P7 checkpoints: 0 / 148.** Four levels **20, 30, 40 and 60** × (9 unrestricted classes + 4 Druid profiles + 24 other profiles) = **37 per level**. Level 50 is **not** in the approved 148-checkpoint scope.
+**Fully certified P1–P7 checkpoints: see the M1 chart above.** Four levels **20, 30, 40 and 60** × (9 unrestricted classes + 4 Druid profiles + 24 other profiles) = **37 per level**. Level 50 is **not** in the approved 148-checkpoint scope.
 
 | Level | Unrestricted | Druid spec profiles | Other class spec profiles | Total |
 | --- | ---: | ---: | ---: | ---: |
@@ -24,7 +33,7 @@ This is an independent Forever simulation and optimization research project. The
 
 **Combat executor policy:** MythicSim **Rust preferred, Go equally valid**, with one selected pinned engine per compatible gate chain and live gsim-2D integration whenever mandated by PROCESS. Build PASS is not gameplay PASS.
 
-**Current critical path:** [live native→world event/HP/hash/ACK→next decision (public #7)](https://github.com/dosibjrn/forever-sim/issues/7) and [source-paid persistent 100-mob evaluation (public #19)](https://github.com/dosibjrn/forever-sim/issues/19), as ordered by [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md). Historical P7 diagnostics follow; they are not the current implementation queue. The owner has accepted **Balance P7.1 via exact Rust-input/Rust-engine replay**, and **Feral Cat P7** by explicit approval; see [recorded decision](docs/evidence/druid-p7/README.md) and [full Rust input/output](docs/evidence/druid-l60-balance/p7.1/README.md). These owner decisions are not evidence of Go-native or live 2D tests, and do not increase the 0/148 count.
+**Current critical path:** [live native→world event/HP/hash/ACK→next decision (public #7)](https://github.com/dosibjrn/forever-sim/issues/7) and [source-paid persistent 100-mob evaluation (public #19)](https://github.com/dosibjrn/forever-sim/issues/19), as ordered by [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md). Historical P7 diagnostics follow; they are not the current implementation queue. The owner has accepted **Balance P7.1 via exact Rust-input/Rust-engine replay**, and **Feral Cat P7** by explicit approval; see [recorded decision](docs/evidence/druid-p7/README.md) and [full Rust input/output](docs/evidence/druid-l60-balance/p7.1/README.md). These owner decisions are not evidence of Go-native or live 2D tests, and do not automatically increase certified-checkpoint counts.
 
 **Balance Druid L60 P7.3:** [WF663 native Rust talent search and frozen 4,000-fight holdout](docs/evidence/druid-l60-balance/p7.3/WF663_ACCEPTANCE.md) — 729.388 DPS, 7,255 paid candidates, 263 s. Native search PASS by the recorded result; full gsim-2D↔Rust causal gate remains **NOT CERTIFIED**. 
 

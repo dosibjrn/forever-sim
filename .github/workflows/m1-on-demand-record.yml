@@ -93,7 +93,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
           lfs: true
           persist-credentials: false
 
@@ -151,28 +151,49 @@ jobs:
           echo '~~~text' >> "$GITHUB_STEP_SUMMARY"
           cat "$RUNNER_TEMP/m1-scoreboard.txt" >> "$GITHUB_STEP_SUMMARY"
           echo '~~~' >> "$GITHUB_STEP_SUMMARY"
-          git diff --stat -- docs/planning/M1_PASSES.tsv
+          # Plot is a derived view of Git-backed M1 TSV snapshots, not a ledger.
+          python tools/m1_progress.py --plot-svg docs/planning/M1_HISTORY.svg > /dev/null
+          git diff --stat -- docs/planning/M1_PASSES.tsv docs/planning/M1_HISTORY.svg
 
-      - name: Update M1 in main only if the ledger changed
+      - name: Publish M1 ledger and README chart atomically
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if git diff --quiet -- docs/planning/M1_PASSES.tsv; then
-            echo 'No measured new PASS/PARTIAL; M1 stays unchanged.'
+            echo 'No genuinely improved gate evidence; M1 and chart stay unchanged.'
             exit 0
           fi
-          # GitHub Contents API update is optimistic; no blind overwrite or
-          # competing status file. Concurrent main changes in other files are OK.
+          # Upload both blobs once. Each retry builds a single two-path commit
+          # from the freshest main; a concurrent ledger edit is fail-closed.
+          ledger_blob="$(jq -Rs '{content:.,encoding:"utf-8"}' docs/planning/M1_PASSES.tsv |
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
+          plot_blob="$(jq -Rs '{content:.,encoding:"utf-8"}' docs/planning/M1_HISTORY.svg |
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
           expected="$(git rev-parse HEAD:docs/planning/M1_PASSES.tsv)"
-          current="$(gh api "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv?ref=main" --jq '.sha')"
-          [[ "$current" == "$expected" ]] ||
-            { echo 'Concurrent M1 edit: rerun against current main' >&2; exit 1; }
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv" \
-            -f branch=main \
-            -f message="M1: record live gate progress (Actions $GITHUB_RUN_ID)" \
-            -f sha="$current" \
-            -f content="$(base64 -w0 docs/planning/M1_PASSES.tsv)" \
-            --jq '.commit.html_url'
-          echo 'M1 updated in main; totals are derived from the one TSV.'
+          for attempt in 1 2 3; do
+            current="$(gh api "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv?ref=main" --jq .sha)"
+            [[ "$current" == "$expected" ]] ||
+              { echo 'Concurrent M1 change: rerun live gates on fresh main' >&2; exit 1; }
+            parent="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
+            base_tree="$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$parent" --jq .tree.sha)"
+            new_tree="$(jq -nc --arg base "$base_tree" \
+              --arg ledger "$ledger_blob" --arg svg "$plot_blob" \
+              '{base_tree:$base,tree:[
+                 {path:"docs/planning/M1_PASSES.tsv",mode:"100644",type:"blob",sha:$ledger},
+                 {path:"docs/planning/M1_HISTORY.svg",mode:"100644",type:"blob",sha:$svg}
+               ]}' | gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq .sha)"
+            new_commit="$(jq -nc --arg tree "$new_tree" --arg parent "$parent" \
+              --arg message "M1: record gates and refresh README chart (Actions $GITHUB_RUN_ID)" \
+              '{message:$message,tree:$tree,parents:[$parent]}' |
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq .sha)"
+            if gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/main" \
+              -f sha="$new_commit" -F force=false >/dev/null; then
+              echo "M1 ledger + README chart updated in the same commit: $new_commit"
+              exit 0
+            fi
+            echo "main advanced during publication (attempt $attempt); retrying"
+          done
+          echo 'Failed to publish M1 atomically after 3 attempts' >&2
+          exit 1

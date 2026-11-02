@@ -237,11 +237,122 @@ def scoreboard(path=LEDGER):
             "total_checkpoints": 148}
 
 
+
+def render_history_svg(output, ledger=LEDGER):
+    """README graph from versioned M1 TSV snapshots; never run acceptance here.
+
+    One chart artifact, no time-series ledger: the normal git history of
+    M1_PASSES.tsv is the entire time axis. Current uncommitted gate results
+    become the last point so the recorder can commit ledger+SVG together.
+    """
+    import tempfile
+    from xml.sax.saxutils import escape
+
+    rel = Path(ledger).resolve().relative_to(ROOT).as_posix()
+    log = subprocess.check_output(
+        ["git", "log", "--format=%H%x09%cI", "--", rel],
+        cwd=ROOT, text=True).splitlines()
+    samples = []
+    with tempfile.TemporaryDirectory() as tmp:
+        snapshot = Path(tmp) / "m1.tsv"
+        for line in reversed(log):
+            sha, stamp = line.split("\t", 1)
+            snapshot.write_bytes(subprocess.check_output(
+                ["git", "show", f"{sha}:{rel}"], cwd=ROOT))
+            score = scoreboard(snapshot)  # one canonical scoring implementation
+            samples.append((datetime.fromisoformat(stamp).timestamp(), score))
+    current = scoreboard(ledger)
+    if (not samples or
+            abs(samples[-1][1]["measured_percent"] - current["measured_percent"]) > 1e-10 or
+            samples[-1][1]["passed_gates"] != current["passed_gates"] or
+            samples[-1][1]["certified_checkpoints"] != current["certified_checkpoints"]):
+        rows = _rows(ledger)
+        stamp = max((row["measured_at_utc"] for row in rows.values()),
+                    default=datetime.now(timezone.utc).isoformat())
+        measured_time = datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp()
+        samples.append((max(measured_time, samples[-1][0] if samples else 0), current))
+
+    max_value = max([s["measured_percent"] for _, s in samples] +
+                    [s["gate_percent"] for _, s in samples] + [0.005])
+    raw_step = max_value * 1.18 / 4
+    power = 10 ** math.floor(math.log10(raw_step))
+    tick_step = next(v * power for v in (1, 2, 5, 10) if v * power >= raw_step)
+    ceiling = math.ceil(max_value * 1.18 / tick_step) * tick_step
+    x0, x1, y0, y1 = 90, 1050, 160, 400
+    first = samples[0][0]
+    last = samples[-1][0]
+    x_at = lambda ts: (x0 + (x1 - x0) * (ts - first) / (last - first)
+                       if last > first else (x0 + x1) / 2)
+    y_at = lambda pct: y1 - (y1 - y0) * pct / ceiling
+    svg = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="485" '
+        'viewBox="0 0 1120 485" role="img" '
+        'aria-label="M1 gate acceptance and measured partial progress over time">',
+        '<rect width="1120" height="485" rx="16" fill="#111827"/>',
+        '<text x="38" y="42" fill="#f9fafb" font-family="Arial,sans-serif" '
+        'font-size="25" font-weight="bold">Forever Sim — M1 progress</text>',
+        '<text x="38" y="70" fill="#9ca3af" font-family="Arial,sans-serif" '
+        'font-size="15">Git-verified gate results · 1,628 gate targets · 148 checkpoints</text>',
+        f'<text x="38" y="103" fill="#34d399" font-family="Arial,sans-serif" '
+        f'font-size="19" font-weight="bold">PASS {current["passed_gates"]}/1628 '
+        f'({current["gate_percent"]:.4f}%)</text>',
+        f'<text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" '
+        f'font-size="19" font-weight="bold">Measured {current["measured_percent"]:.4f}%</text>',
+        f'<text x="785" y="103" fill="#f9fafb" font-family="Arial,sans-serif" '
+        f'font-size="19" font-weight="bold">Certified {current["certified_checkpoints"]}/148</text>',
+        '<line x1="39" y1="130" x2="67" y2="130" stroke="#34d399" stroke-width="3"/>',
+        '<text x="75" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">'
+        'Full gate PASS (% of 1628)</text>',
+        '<line x1="350" y1="130" x2="378" y2="130" stroke="#fbbf24" stroke-width="3"/>',
+        '<text x="386" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">'
+        'Partial-inclusive diagnostic index (NOT PASS)</text>',
+    ]
+    for i in range(5):
+        val = ceiling * i / 4
+        y = y_at(val)
+        svg.extend((
+            f'<line x1="{x0}" y1="{y:.1f}" x2="{x1}" y2="{y:.1f}" '
+            'stroke="#374151" stroke-width="1"/>',
+            f'<text x="{x0-12}" y="{y+5:.1f}" text-anchor="end" fill="#9ca3af" '
+            f'font-family="Arial,sans-serif" font-size="13">{val:.3f}%</text>',
+        ))
+    for ts in sorted(set((first, (first + last) / 2, last))):
+        x = x_at(ts)
+        label = datetime.fromtimestamp(ts, timezone.utc).strftime("%d %b %H:%M")
+        svg.extend((
+            f'<line x1="{x:.1f}" y1="{y1}" x2="{x:.1f}" y2="{y1+6}" stroke="#6b7280"/>',
+            f'<text x="{x:.1f}" y="{y1+25}" text-anchor="middle" fill="#9ca3af" '
+            f'font-family="Arial,sans-serif" font-size="13">{escape(label)}</text>',
+        ))
+    for field, color in (("gate_percent", "#34d399"),
+                         ("measured_percent", "#fbbf24")):
+        coords = [(x_at(ts), y_at(score[field])) for ts, score in samples]
+        parts = [f"M {coords[0][0]:.1f} {coords[0][1]:.1f}"]
+        for x, y in coords[1:]:
+            parts.extend((f"H {x:.1f}", f"V {y:.1f}"))
+        svg.append(f'<path d="{" ".join(parts)}" fill="none" '
+                   f'stroke="{color}" stroke-width="3" stroke-linejoin="round"/>')
+        x, y = coords[-1]
+        svg.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" fill="{color}"/>')
+    svg.extend((
+        '<text x="40" y="472" fill="#9ca3af" font-family="Arial,sans-serif" '
+        'font-size="13">UTC timeline from TSV Git commits · Y-axis zoomed to observed progress '
+        '(starts at zero) · Historical measured best, not current regression status</text>',
+        '</svg>',
+    ))
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(svg) + "\n", encoding="utf-8")
+    return output
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="M1 live-PASS scoreboard (no gate reruns)")
     parser.add_argument("--ledger", type=Path, default=LEDGER)
     parser.add_argument("--invalidate", nargs=4, metavar=("CLASS", "LEVEL", "SPEC", "GATE"),
                         help="Remove a materially invalidated historical PASS")
+    parser.add_argument("--plot-svg", type=Path,
+                        help="Render Git-history M1 chart for README; does not rerun gates")
     args = parser.parse_args(argv)
     if args.invalidate:
         rows = _rows(args.ledger)
@@ -250,6 +361,8 @@ def main(argv=None):
             parser.error("No such PASS to invalidate")
         del rows[del_key]
         _write(rows, args.ledger)
+    if args.plot_svg:
+        render_history_svg(args.plot_svg, args.ledger)
     result = scoreboard(args.ledger)
     print(f"M1: {result['passed_gates']}/{TOTAL} accepted gate runs "
           f"({result['gate_percent']:.2f}%)")
