@@ -160,6 +160,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "pass_count": item_check["verified_stat_assertions"],
         "behavior_probes_executed": result.get("evaluated", 0),
         "partial_scope": "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS",
+        "coverage_basis": "executed_behavior_assertions",
         "coverage_scope_complete": False,
         "real_item_score_checked": item_check["source"] == "CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS",
         "real_measured_stat_weight_axes": sorted(weights),
