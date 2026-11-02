@@ -47,6 +47,23 @@ def _source_native_world_parity(
     if expected_raw_sha is not None and (
             live.get("source_request_raw_sha256") != expected_raw_sha):
         return "P7_1_LIVE_SOURCE_REQUEST_IDENTITY_DIVERGED"
+    # NaN makes ordinary abs(actual - expected) >= tolerance comparisons
+    # false. Reject nonnumeric/nonfinite native and 2D scores BEFORE parity,
+    # or a forged full stochastic receipt could appear compatible at every P7 gate.
+    try:
+        scores = (native["native_dps"], live["native_dps"],
+                  live["world_mean_dps"])
+        if any(type(value) not in (int, float)
+               or not math.isfinite(value) or value < 0
+               for value in scores):
+            return "P7_1_NATIVE_WORLD_DPS_INVALID"
+        durations = (native["first_duration_s"], live["sampled_duration_s"])
+        if any(type(value) not in (int, float)
+               or not math.isfinite(value) or value <= 0
+               for value in durations):
+            return "P7_1_NATIVE_WORLD_DURATION_INVALID"
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return "P7_1_NATIVE_WORLD_SCALARS_MISSING"
     samples = live["per_iteration"]
     try:
         if any(
