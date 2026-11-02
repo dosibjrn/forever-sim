@@ -4,7 +4,7 @@ name: Work1 one-shot P7.4 paid gear neighbor live source-native 2D
 on:
   push:
     branches: [work/work1-p74-paid-source-gear-neighbors-20261102]
-    paths: [.github/workflows/work1-p74-full-paid-elite-once.yml]
+    paths: [.github/workflows/work1-p74-full-paid-neighbor-once.yml]
 
 permissions:
   contents: read
