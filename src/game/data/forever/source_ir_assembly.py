@@ -51,8 +51,15 @@ def assemble_source_ir(ir: GameIRSlice, *, class_key: str, level: int,
     ir = source_reactive_control_actions(ir, class_key=key, level=int(level), db_path=ability_db_path)
     from .source_stealth_actions import source_stealth_actions
     ir = source_stealth_actions(ir, class_key=key, level=int(level), db_path=ability_db_path)
-    ir = source_enrich_incoming_world(source_enrich_target_combat(
-        source_enrich_primary_stats(source_enrich_indexed_talents(source_enrich_area_actions(source_enrich_action_ranks(ir))),db_path=ability_db_path)))
+    # Preserve the legacy source-overlay order explicitly. Each step consumes
+    # the previous slice; none is an alternative native Rust combat model.
+    # Keep the DB override on the same primary-stat enrichment as before.
+    ir = source_enrich_action_ranks(ir)
+    ir = source_enrich_area_actions(ir)
+    ir = source_enrich_indexed_talents(ir)
+    ir = source_enrich_primary_stats(ir)
+    ir = source_enrich_target_combat(ir, db_path=ability_db_path)
+    ir = source_enrich_incoming_world(ir)
     from .source_enemy_melee_ap_debuff import source_enrich_enemy_melee_ap_incoming
     ir = source_enrich_enemy_melee_ap_incoming(ir)
     return attach_indexed_ability_coverage(ir, class_key=key, level=int(level), db_path=ability_db_path)
