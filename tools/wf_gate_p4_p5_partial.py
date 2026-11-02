@@ -73,9 +73,17 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         search_only=True, screen_evaluator_backend="direct",
         refinement_rounds=0)
     counts = paid_gear_slot_coverage(search)
-    if not counts["applicable"]:
-        return {"status": "BLOCKED", "reasons": [counts["reason"]],
-                "production_engine": "gsim_CombatRuntime"}
+    # Explored gear slots are search BREADTH, not correctly functioning
+    # behavioral assertions. They must never be a gate success percentage.
+    # P4/P5 do have an actual sourced functional requirement: talent-unlocked
+    # actions must be cast in a completed paid CombatRuntime screen.
+    unlocked = search.get("p4_talent_unlock_coverage") or {}
+    verified_unlocks = sum(
+        (row.get("status") == "EXECUTED_IN_COMPLETE_PAID_SCREEN"
+         and int(row.get("executed_casts") or 0) > 0
+         and int(row.get("complete_paid_screens") or 0) > 0)
+        for row in unlocked.values()
+    )
     reasons = [
         gate + "_FULL_SEARCH_AND_INDEPENDENT_100MOB_NOT_EXECUTED",
         gate + "_SELECTED_NATIVE_2D_COMPATIBILITY_NOT_VERIFIED"]
@@ -86,10 +94,18 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         "reasons": reasons,
         "production_component": "src.v2.source_bounded_joint_frontier.search_bounded_joint_frontier",
         "production_engine": "gsim_CombatRuntime",
-        "reachability_count": counts["applicable"],
-        "pass_count": counts["verified"],
-        "behavior_probes_executed": counts["executed"],
-        "partial_scope": "COMPLETED_PAID_SOURCE_GEAR_SLOT_CANDIDATES",
+        # This is the observed source-legal search BREADTH, never success%.
+        "explored_paid_gear_slots": counts["verified"],
+        "source_eligible_gear_slot_count": counts["applicable"],
+        # Count real executed talent-unlocked actions only where the
+        # source legal search discovered them. No denominator = no percent.
+        **({
+            "reachability_count": len(unlocked),
+            "pass_count": verified_unlocks,
+            "behavior_probes_executed": counts["executed"],
+            "partial_scope": "SOURCE_TALENT_UNLOCK_CAST_IN_COMPLETE_PAID_SCREEN",
+            "coverage_basis": "executed_behavior_assertions",
+        } if unlocked and counts["executed"] > 0 else {}),
         "coverage_scope_complete": False,
         "paid_source_gear_slots": counts["paid_slots"],
         "source_eligible_gear_slots": counts["eligible_slots"],
