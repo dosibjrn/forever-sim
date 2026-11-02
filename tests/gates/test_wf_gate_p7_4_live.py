@@ -327,3 +327,93 @@ def test_source_ranked_p74_gear_proposal_is_independent_of_saved_loadout():
     assert checked and checked[0][0] in range(1, 501)
     assert candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] != 999
     assert base == original
+
+
+def test_paid_p74_enchant_only_neighbor_preserves_all_paid_gear():
+    """An enchant can be optimized independently of gear item swaps."""
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 10}, {"id": 20}, {"id": 30}]},
+        "talentsString": "fixed",
+        "rotation": {"priorityList": []},
+    }]}]}}
+    elite = copy.deepcopy(base)
+    for item, iid in zip(
+            elite["raid"]["parties"][0]["players"][0]["equipment"]["items"],
+            [11, 21, 31]):
+        item["id"] = iid
+    before = copy.deepcopy(elite)
+    calls = []
+    def validate(ids, enchants):
+        calls.append((list(ids), list(enchants)))
+        assert ids == [11, 21, 31]
+        assert enchants == [None, 202, None]
+    def swap(reference, ids):
+        req = copy.deepcopy(reference)
+        for item, iid in zip(
+                req["raid"]["parties"][0]["players"][0]["equipment"]["items"],
+                ids):
+            item["id"] = iid
+        return req
+    class Choice:
+        def randrange(self, count):
+            assert count == 3
+            return 1
+        def choice(self, choices):
+            return choices[-1]
+    source = SimpleNamespace(
+        _swap=swap, preflight=lambda *a: True, RejectedGear=ValueError)
+    candidate = gate._cold_gear(
+        base, SimpleNamespace(validate=validate), source, Choice(),
+        pool={0: [11], 1: [21], 2: [31]},
+        enchant_pools={0: [None], 1: [None, 202], 2: [None]},
+        elite=elite, neighbor_mode="enchant")
+    player = candidate["raid"]["parties"][0]["players"][0]
+    assert [i["id"] for i in player["equipment"]["items"]] == [11, 21, 31]
+    assert [i.get("enchant") for i in player["equipment"]["items"]] == [None, 202, None]
+    assert player["talentsString"] == "fixed"
+    assert player["rotation"] == {"priorityList": []}
+    assert len(calls) == 1
+    assert elite == before
+
+
+def test_paid_p74_single_slot_neighbor_preserves_other_paid_slots():
+    """Source-legal coordinate descent does not alter other paid gear."""
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 10}, {"id": 20}, {"id": 30}]},
+        "talentsString": "fixed",
+        "rotation": {"priorityList": []},
+    }]}]}}
+    elite = copy.deepcopy(base)
+    for item, iid in zip(
+            elite["raid"]["parties"][0]["players"][0]["equipment"]["items"],
+            [11, 21, 31]):
+        item["id"] = iid
+    old = copy.deepcopy(elite)
+    def swap(reference, ids):
+        req = copy.deepcopy(reference)
+        for item, iid in zip(
+                req["raid"]["parties"][0]["players"][0]["equipment"]["items"],
+                ids):
+            item["id"] = iid
+        return req
+    class Choice:
+        def randrange(self, count):
+            assert count == 3
+            return 2
+        def choice(self, choices):
+            return choices[-1]
+    checked = []
+    source = SimpleNamespace(
+        _swap=swap, preflight=lambda *a: True, RejectedGear=ValueError)
+    candidate = gate._cold_gear(
+        base, SimpleNamespace(validate=lambda ids, enchants:
+                              checked.append((list(ids), list(enchants)))),
+        source, Choice(), pool={0: [11], 1: [21], 2: [31, 32]},
+        enchant_pools={0: [None], 1: [None], 2: [None]},
+        elite=elite, neighbor_mode="single")
+    player = candidate["raid"]["parties"][0]["players"][0]
+    assert [i["id"] for i in player["equipment"]["items"]] == [11, 21, 32]
+    assert checked == [([11, 21, 32], [None, None, None])]
+    assert player["talentsString"] == "fixed"
+    assert player["rotation"] == {"priorityList": []}
+    assert elite == old
