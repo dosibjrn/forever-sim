@@ -158,13 +158,36 @@ def test_cold_search_bad_budget_does_not_claim_actual_run(monkeypatch):
     assert "real_100mob_complete" not in result
 
 
-def test_full_p4_p5_only_for_source_implemented_checkpoint(monkeypatch):
-    monkeypatch.setattr(executor, "_execute",
-                        lambda *args, **kw: pytest.fail("must not execute"))
+@pytest.mark.parametrize("gate,budget", [("P4", 30), ("P5", 300)])
+def test_full_l60_balance_uses_canonical_source_checkpoint_inputs(
+        monkeypatch, gate, budget):
+    # This is a CLI routing contract, not a substitute for the real 30/300 s
+    # source-paid run or the selected native/world runtime.
+    calls = []
+    def execute(root, args, output, time_limit, **kwargs):
+        calls.append(args)
+        if args[0] == "--compare-30":
+            return {"N30_unique_paid": 25, "N300_unique_paid": 250,
+                    "p5_10x_breadth": True,
+                    "same_source_legal_candidate_space_proven": True,
+                    "replays": [{"status": "COMPLETE", "count": 100,
+                                 "mob_completed": 100, "s_per_mob": 12.5}] * 2}, None
+        report = _production_receipt(int(args[1]))
+        report["level"] = 60
+        report["spec_constraint"] = {"tree_key": "balance",
+                                     "minimum_points": 31,
+                                     "required_combat_mode": None}
+        return report, None
+    monkeypatch.setattr(executor, "_execute", execute)
     result = gates.run_full_paid_source_search(
-        Path("/project"), "druid", 60, spec="balance", gate="P5")
-    assert result["status"] == "BLOCKED"
-    assert "P5_FULL_SOURCE_RUNNER_CURRENTLY_SUPPORTS_DRUID_L30_UNRESTRICTED_ONLY" in result["reasons"]
+        Path("/project"), "druid", 60, spec="balance", gate=gate)
+    assert result["status"] == "FAIL"  # gsim-only is never formal P4/P5 PASS
+    assert result["real_100mob_complete"] is True
+    assert result["real_search_wall_s"] == budget - 0.1
+    context = ["--checkpoint-class", "druid",
+               "--checkpoint-level", "60", "--checkpoint-spec", "balance"]
+    assert len(calls) == (3 if gate == "P5" else 1)
+    assert all(call[-len(context):] == context for call in calls)
 
 
 def test_opt_in_routes_and_default_not_eager(monkeypatch):
