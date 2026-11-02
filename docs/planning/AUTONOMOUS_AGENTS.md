@@ -4,6 +4,8 @@
 
 **Purpose:** reach **148/148 genuinely certified checkpoints** in the least overall time. The immediate integration milestone is the **first complete 0/148 → 1/148** certification, using a generalizable solution that scales to the other 147. The current checkpoint count must be read from the approved evidence and register, not assumed from this document.
 
+**P7 final and optimizer RNG, owner-approved 2026-11-02:** Work1 owns implementing one real production Rust/Go↔gsim P7 path. Its **internal P7.2–P7.5 searches use reproducible deterministic balanced RNG with few candidate repetitions**; freeze the winner, then run the separate **1,000-iteration stochastic** final reference/holdout. P7.1 native baseline and live 2D final also use 1,000 stochastic iterations. Each P7.1–P7.4 final mean must reach **99% of the saved external reference**; P7.5 final holdout mean must reach **99% of the larger of saved reference and strongest accepted-compatible P7.1–P7.4 prior**. Do not treat saved-request 10k metadata, repeated balanced search scores or per-fight sample fractions as PASS. Prio and Merge check `docs/gates/P7.md` and `tools/wf_gate_coverage.py`, and demand exact native/2D/seed/scenario evidence before any M1 recording. No new evidence file hierarchy or heavy hourly CI.
+
 ## Operating model
 
 - **Five independent conversations, five independent hourly tasks:** Prio XX:00; Work1 XX:10; Work2 XX:20; Merge XX:40; Clean XX:50, timezone Europe/Helsinki. Each task is created in its **own conversation**, never all five in one transcript. These times are the intended staggering, not evidence that the automations are currently active.

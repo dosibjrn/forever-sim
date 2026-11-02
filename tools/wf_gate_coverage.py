@@ -62,12 +62,59 @@ def measured_live_coverage(report: dict) -> dict | None:
     }
 
 
+P7_FINAL_STOCHASTIC_ITERATIONS = 1_000
+P7_FINAL_DPS_FLOOR_FRACTION = 0.99
+
+
+def p7_required_dps(gate: str, saved_reference: float, *,
+                    strongest_accepted_compatible_prior: float | None = None) -> float:
+    """Single owner-approved 1%-tolerant P7.1–P7.5 DPS floor.
+
+    The strongest prior must be from independently ACCEPTED compatible P7
+    evidence, never a tentative search candidate. A common floor avoids a
+    stale P7.1 full-reference or P7.5 full-external special case.
+    """
+    if gate not in ("P7.1", "P7.2", "P7.3", "P7.4", "P7.5"):
+        raise ValueError("UNKNOWN_P7_GATE")
+    if (type(saved_reference) not in (int, float)
+            or not isfinite(saved_reference) or saved_reference <= 0):
+        raise ValueError("P7_SAVED_REFERENCE_DPS_INVALID")
+    comparator = float(saved_reference)
+    if gate == "P7.5":
+        prior = strongest_accepted_compatible_prior
+        if type(prior) not in (int, float) or not isfinite(prior) or prior <= 0:
+            raise ValueError("P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED")
+        comparator = max(comparator, float(prior))
+    return P7_FINAL_DPS_FLOOR_FRACTION * comparator
+
+
+def p7_final_stochastic_mean_passes(gate: str, observed_mean: float,
+                                   saved_reference: float, *,
+                                   iterations: int, stochastic: bool,
+                                   strongest_accepted_compatible_prior: float | None = None
+                                   ) -> bool:
+    """Final DPS numerical predicate, not source/legal/live integration PASS.
+
+    Search uses low-repeat deterministic balanced RNG. A final numerical PASS
+    must use exactly 1000 genuine stochastic iterations from a FROZEN result;
+    legal configs, selected-engine causality and holdout independence must be
+    verified by the actual producer before it can award the whole gate.
+    """
+    floor = p7_required_dps(
+        gate, saved_reference,
+        strongest_accepted_compatible_prior=strongest_accepted_compatible_prior)
+    return bool(type(iterations) is int and iterations == P7_FINAL_STOCHASTIC_ITERATIONS
+                and stochastic is True
+                and type(observed_mean) in (int, float)
+                and isfinite(observed_mean) and observed_mean >= floor)
+
+
 def measured_p7_dps_proximity(gate: str, report: dict) -> dict | None:
     """P7 DPS-objective closeness; NEVER the full gate's functional success%.
 
     A selected native↔world execution must have actually produced the measured
     score on the pinned report. Earlier UI/legality/holdout requirements can
-    still BLOCK the gate. No 10000-iteration prerequisite is created here.
+    still BLOCK the gate. The final full gate uses 1000 stochastic iterations; search diagnostics may be shorter.
     """
     if gate not in ("P7.1", "P7.2", "P7.3", "P7.4", "P7.5"):
         return None
@@ -95,10 +142,12 @@ def measured_p7_dps_proximity(gate: str, report: dict) -> dict | None:
         if (type(prior) not in (int, float) or not isfinite(prior)
                 or prior <= 0):
             return None
-        required = max(float(reference), .99 * prior)
+        required = p7_required_dps(
+            gate, float(reference),
+            strongest_accepted_compatible_prior=float(prior))
     else:
         actual = report.get("world_dps") if gate == "P7.1" else report.get("winner_live_dps")
-        required = float(reference) * (.99 if gate in ("P7.2", "P7.3", "P7.4") else 1.)
+        required = p7_required_dps(gate, float(reference))
     if type(actual) not in (int, float) or not isfinite(actual) or actual < 0:
         return None
 

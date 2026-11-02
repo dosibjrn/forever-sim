@@ -13,6 +13,10 @@ import os
 from pathlib import Path
 import subprocess
 
+from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
+                                    p7_required_dps,
+                                    p7_final_stochastic_mean_passes)
+
 PINNED_RUST = "666fe17a42682068a3c8497d88d5fa3732cbdfb9"
 SAVED_BALANCE_RAW_SHA = "e99b06e5aa891a941ac077643a4209ab8582c810b678df4ec2d47ac48c6c646a"
 
@@ -37,13 +41,19 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     meta = json.loads(witness.read_text())
     player = source["raid"]["parties"][0]["players"][0]
     target = source["encounter"]["targets"]
-    iterations = source["simOptions"]["iterations"]
+    source_iterations = source["simOptions"]["iterations"]
     if (meta["engine_revision"] != PINNED_RUST
-            or meta["iterations"] != iterations or iterations != 10000
+            or meta["iterations"] != source_iterations
             or player.get("class") != "ClassDruid"
             or "balanceDruid" not in player or len(target) != 1
             or target[0]["level"] != 63):
         return _blocked("P7_1_SAVED_REFERENCE_SCENARIO_MISMATCH")
+    # Preserve the original report's 10k iteration field as pinned provenance;
+    # the user-approved final validation itself uses only 1000 stochastic
+    # samples. No universal 10k-simulation acceptance criterion.
+    iterations = P7_FINAL_STOCHASTIC_ITERATIONS
+    if (type(source_iterations) is not int or source_iterations < iterations):
+        return _blocked("P7_1_ORIGINAL_REQUEST_INSUFFICIENT_FOR_1000_SAMPLES")
 
     # Refuse an arbitrary executable: it must be the pinned original Rust
     # checkout with the real world ingress patched into its production Fight.
@@ -61,8 +71,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     if not (upstream / "src/core/fight/world_bridge.rs").is_file():
         return _blocked("P7_1_LIVE_WORLD_INGRESS_NOT_BUILT")
 
-    # These are the actual production functions already used by the
-    # source-backed live 10k-fight integration, not gate-specific simulators.
+    # Direct genuine production functions, reduced to the approved 1000-fight
+    # final stochastic verification; never a separate gate-only simulator.
     path = root / "integrations/mythicsim-rust/live_world_probe.py"
     module_spec = importlib.util.spec_from_file_location("forever_p7_live_world", path)
     if module_spec is None or module_spec.loader is None:
@@ -81,11 +91,21 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
               "source_request_raw_sha256": raw_sha,
               "native_source_revision": PINNED_RUST,
               "iterations": live["iterations_done"],
+              "source_original_iterations": source_iterations,
+              "stochastic_rng": True,
+              "selected_validation": "1000_native_and_live_stochastic_fights",
+              "required_dps": p7_required_dps("P7.1", reference),
               "saved_reference_dps": reference}
     if (live["iterations_done"] != iterations
+            or native["iterations"] != iterations
+            or len(live["per_iteration"]) != iterations
             or live["native_damage_events"] <= 0
-            or native["native_dps"] < reference
-            or live["world_mean_dps"] < reference
+            or not p7_final_stochastic_mean_passes(
+                "P7.1", native["native_dps"], reference,
+                iterations=iterations, stochastic=True)
+            or not p7_final_stochastic_mean_passes(
+                "P7.1", live["world_mean_dps"], reference,
+                iterations=iterations, stochastic=True)
             or abs(native["native_dps"] - live["native_dps"]) >= 1e-6
             or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
         return {"status": "FAIL", "reasons": ["P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"],

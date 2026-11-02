@@ -10,6 +10,9 @@ import pytest
 from tools.wf_gate import ROOT
 from tools.wf_gate_coverage import (measured_live_coverage,
                                     measured_p7_dps_proximity,
+                                    p7_final_stochastic_mean_passes,
+                                    p7_required_dps,
+                                    P7_FINAL_STOCHASTIC_ITERATIONS,
                                     pareto_effort_fraction)
 from tools.wf_gate_probe import probe_gate
 
@@ -98,8 +101,9 @@ def _real_coupled_p7_dps_report(*, gate: str, score: float, reference: float,
 def test_p7_1_objective_closeness_not_stochastic_sample_fraction():
     r = _real_coupled_p7_dps_report(gate="P7.1", score=720., reference=800.)
     m = measured_p7_dps_proximity("P7.1", r)
-    assert m["dps_objective_proximity_percent"] == 90.0
-    assert m["dps_objective_pareto_effort_estimate_percent"] == 60.0
+    assert m["dps_objective_required"] == 792.0
+    assert m["dps_objective_proximity_percent"] == 90.91
+    assert m["dps_objective_pareto_effort_estimate_percent"] == 63.64
     assert m["dps_objective_gate_pass"] is False
     assert measured_live_coverage(r) is None
 
@@ -131,3 +135,38 @@ def test_unverified_native_only_or_incomplete_p7_cannot_show_score():
     r["production_engine"] = "pinned_mythicsim_rust_gsim_2d"
     r["world_damage_events"] = 0
     assert measured_p7_dps_proximity("P7.1", r) is None
+
+
+def test_owner_approved_all_five_p7_gates_use_same_one_percent_floor():
+    for gate in ("P7.1", "P7.2", "P7.3", "P7.4"):
+        assert p7_required_dps(gate, 1000.) == pytest.approx(990.)
+        assert p7_final_stochastic_mean_passes(
+            gate, 990., 1000., iterations=1000, stochastic=True)
+        assert not p7_final_stochastic_mean_passes(
+            gate, 989.9, 1000., iterations=1000, stochastic=True)
+
+
+def test_final_requires_1000_original_stochastic_iterations_not_balanced_search():
+    assert P7_FINAL_STOCHASTIC_ITERATIONS == 1000
+    for count, stochastic in ((999, True), (10000, True), (1000, False)):
+        assert not p7_final_stochastic_mean_passes(
+            "P7.1", 1000., 1000., iterations=count,
+            stochastic=stochastic)
+    assert p7_final_stochastic_mean_passes(
+        "P7.1", 990., 1000., iterations=1000, stochastic=True)
+
+
+def test_p7_5_one_percent_applies_to_both_external_and_best_accepted_prior():
+    assert p7_required_dps("P7.5", 1000.,
+        strongest_accepted_compatible_prior=850.) == pytest.approx(990.)
+    assert p7_required_dps("P7.5", 800.,
+        strongest_accepted_compatible_prior=1000.) == pytest.approx(990.)
+    for external, prior in ((1000., 850.), (800., 1000.)):
+        assert p7_final_stochastic_mean_passes(
+            "P7.5", 990., external, iterations=1000,
+            stochastic=True, strongest_accepted_compatible_prior=prior)
+        assert not p7_final_stochastic_mean_passes(
+            "P7.5", 989., external, iterations=1000,
+            stochastic=True, strongest_accepted_compatible_prior=prior)
+    with pytest.raises(ValueError, match="PRIOR_REQUIRED"):
+        p7_required_dps("P7.5", 800.)
