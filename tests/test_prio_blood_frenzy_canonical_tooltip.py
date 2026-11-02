@@ -12,7 +12,7 @@ from src.game.data.forever.checkpoint_p2_execution_gate import _source_partial_s
 
 SOURCE = {
     "url": "https://theforeverera.com/en/talents/druid/blood-frenzy/",
-    "source_build": "1.60.1.70338",
+    "source_build": "synthetic_test_build",
     "capture_id": "test_source_rank",
 }
 MODES = {"bear_form": "bear", "cat_form": "cat"}
