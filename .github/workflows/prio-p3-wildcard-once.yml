@@ -39,3 +39,20 @@ jobs:
       - name: Real production wildcard regression
         run: |
           python -m pytest -q tests/test_prio_p3_wildcard_weapon.py
+
+      - name: Source-backed Druid Balance L60 P3 actual production gate (read-only)
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P3 > /tmp/prio_p3_live.json || true
+          python - <<'PY'
+          import json
+          report=json.load(open('/tmp/prio_p3_live.json'))
+          gate=report['results'][0]
+          print('LIVE_P3_STATUS',gate.get('status'),flush=True)
+          print('LIVE_P3_REASON',gate.get('reasons'),flush=True)
+          print('LIVE_P3_AXES',gate.get('real_measured_stat_weight_axes'),flush=True)
+          print('LIVE_P3_ITEMS',gate.get('real_catalogue_top5_items_scored'),flush=True)
+          print('LIVE_P3_EVALUATED',gate.get('real_source_search_evaluated'),flush=True)
+          assert gate.get('status') in ('PASS','FAIL'), gate
+          assert 'weapon_dps' in gate.get('real_measured_stat_weight_axes',()), gate
+          assert gate.get('real_source_search_evaluated',0) > 0, gate
+          PY
