@@ -13,6 +13,7 @@ from src.v2.source_paid_cold_comparison import (
 def _saved_report(budget, gear_snapshot):
     return {
         'class_key': 'druid', 'level': 30,
+        'bonus_talent_points': 0, 'pack_size': 2,
         'source_db_sha256': 'pinned-ability-source',
         'search_only': True, 'complete_100mob_candidates': 0,
         'requested_wall_budget_s': budget, 'wall_s': budget - 0.1,
