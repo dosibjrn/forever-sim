@@ -1,7 +1,7 @@
 """Work2: short paid talent sampling explores legal receiver families fairly."""
 from src.game.talent_frontier import Neighbor
 from src.v2.source_bounded_joint_frontier import (
-    _interleave_macro_transfer_targets, _spread_candidates,
+    _interleave_macro_transfer_targets, _first_macro_per_receiving_talent, _spread_candidates,
 )
 
 
@@ -28,3 +28,16 @@ def test_macro_sampling_spreads_across_distinct_receiver_talents():
 
 def test_empty_macro_frontier_remains_empty():
     assert _interleave_macro_transfer_targets(())==()
+
+
+def test_receiving_target_sweep_is_bounded_and_does_not_seed_specific_talent():
+    pool=tuple(Neighbor(((donor,2),(receiver,3)), 'macro_transfer:3',
+                        (donor,receiver))
+               for donor in ('d1','d2','d3')
+               for receiver in ('r1','r2','r3','r4'))
+    ordered=_interleave_macro_transfer_targets(pool)
+    result=_first_macro_per_receiving_talent(ordered,limit=3)
+    assert [n.changed_ids[-1] for n in result]==['r1','r2','r3']
+    assert all(candidate in pool for candidate in result)
+    assert len(_first_macro_per_receiving_talent(ordered,limit=24))==4
+    assert _first_macro_per_receiving_talent((),limit=24)==()
