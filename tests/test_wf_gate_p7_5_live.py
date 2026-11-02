@@ -95,7 +95,10 @@ def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypat
             "iterations": n, "first_duration_s": 120.0, "native_dps": 730.0},
         run=lambda binary, path, distance, iterations, *, rng_mode: {
             "iterations_done": iterations,
-            "per_iteration": [{"duration_s": 119.0}] * iterations,
+            "per_iteration": [
+                {"iteration_index": i, "duration_s": 119.0,
+                 "world_dps": 730.0, "world_applied_damage": 730.0 * 119.0}
+                for i in range(iterations)],
             "sampled_duration_s": 119.0,
             "native_dps": 730.0, "world_mean_dps": 730.0,
             "native_damage_events": 10, "native_world_ticks": 20})
@@ -120,3 +123,102 @@ def test_shared_source_preflight_uses_exact_p7_gate_reason(tmp_path):
         assert report["reasons"] == [
             gate_name.replace(".", "_") +
             "_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT"]
+
+
+def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
+        monkeypatch, tmp_path):
+    """Injected producer routing; this is NOT a real 300s or P7.5 PASS."""
+    import hashlib
+    import json
+    from pathlib import Path
+
+    original = _base()
+    original["raid"]["parties"][0]["players"][0]["distanceFromTarget"] = 15
+    unchanged = copy.deepcopy(original)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("producer stub, never invoked")
+    upstream = binary.parents[2]
+    (upstream / "data").mkdir()
+    (upstream / "data/items.jsonl").write_text("")
+    (upstream / "data/enchants.jsonl").write_text("")
+    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
+    catalogue.parent.mkdir(parents=True)
+    catalogue.write_text("validator injected")
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    clock = iter([0.0, 0.0, 300.0, 300.0])
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
+    monkeypatch.setattr(gate, "_pinned_source_runtime",
+                        lambda *a: (original, {"reference_dps": 728.19}, binary))
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *a, **kw: None)
+
+    class Validator:
+        engine = {11: {"name": "one"}, 21: {"name": "two"}}
+        @staticmethod
+        def require_sqlite_catalogue(path):
+            assert path == catalogue
+        def __init__(self, *args):
+            assert args[-1] is original
+        def validate(self, ids, enchants):
+            assert ids == [11, 21]
+        def close(self): pass
+
+    pool_calls = []
+    def pool(v, limit):
+        pool_calls.append(limit)
+        return ({0: [11], 1: [21]}, {})
+
+    def player(q):
+        return q["raid"]["parties"][0]["players"][0]
+
+    def make_candidate(base, pools, rng, item_names=None):
+        q = copy.deepcopy(base)
+        p = player(q)
+        p["equipment"]["items"] = [{"id": 11}, {"id": 21}]
+        p["talentsString"] = "new-source-legal"
+        p["rotation"]["priorityList"] = [3, 2, 1]
+        return q
+
+    source = SimpleNamespace(
+        GearValidator=Validator, candidate_pool=pool, make_candidate=make_candidate,
+        player=player, RejectedGear=ValueError)
+    calls = []
+    def native(binary, path, n, *, rng_mode):
+        calls.append(("native", n, rng_mode, path.read_text()))
+        return {"native_dps": 730.0}
+    def world(binary, path, distance, iterations, *, rng_mode):
+        assert distance == 15
+        calls.append(("world", iterations, rng_mode, path.read_text()))
+        return {"world_mean_dps": 729.0, "iterations_done": iterations,
+                "native_damage_events": 20, "native_world_ticks": 30}
+    producer = SimpleNamespace(native_source_control=native, run=world)
+    monkeypatch.setattr(
+        gate, "_source_module",
+        lambda path, name: source if "joint_search" in str(path) else producer)
+
+    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert pool_calls == [80]
+    assert [(a, b, c) for a, b, c, _ in calls] == [
+        ("native", 3, "balanced"), ("world", 3, "balanced"),
+        ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
+    assert json.loads(calls[0][3]) == json.loads(calls[-1][3])
+    assert report["frozen_request_raw_sha256"] == hashlib.sha256(
+        calls[-1][3].encode()).hexdigest()
+    assert report["independent_300s_search_completed"] is True
+    assert report["cold_unique_source_requests"] == 1
+    assert report["source_legal_joint_candidates_paid"] == 1
+    assert report["frozen_stochastic_iterations"] == 1000
+    assert report["frozen_stochastic_external_only_floor_met"] is True
+    assert report["final_required_dps"] is None
+    assert report["status"] == "FAIL"
+    assert "P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR" in report["reasons"]
+    assert original == unchanged
+
+
+def test_p75_rejects_invalid_full_search_mode_before_source_work(monkeypatch, tmp_path):
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "anything")
+    monkeypatch.setattr(gate, "_pinned_source_runtime",
+                        lambda *a: ({}, {"reference_dps": 728.19}, tmp_path / "binary"))
+    assert gate.run_live(tmp_path, "druid", 60, spec="balance") == {
+        "status": "BLOCKED", "reasons": ["P7_5_INVALID_FULL_SOURCE_SEARCH_MODE"]}
