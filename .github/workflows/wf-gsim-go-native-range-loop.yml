@@ -12,6 +12,8 @@ on:
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
+      - src/game/runtime/simulator.py
+      - tests/test_wf_gsim_go_world_range_feed.py
 
 permissions:
   contents: read
