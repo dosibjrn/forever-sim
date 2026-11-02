@@ -124,8 +124,6 @@ def _parse_rank_tooltip(text: str, *, action_families: set[str], source: dict,
             'source': dict(source), 'raw_text_summary': text,
             'resource_amount_source_build': source.get('source_build'),
             'unsupported_source_mode_scope': missing,
-            'unsupported_unpinned_resource_amount_source_build':
-                not bool(source.get('source_build')),
         }
         modifiers = tuple(
             TalentModifier(kind='critical_resource_gain', target_type='resource',
