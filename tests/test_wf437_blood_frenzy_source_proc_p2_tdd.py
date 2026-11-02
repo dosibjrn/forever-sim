@@ -65,21 +65,34 @@ def test_two_rank_proc_rules_compiled_as_indivisible_source_pair():
     assert [m.value for m in talent.ranks[1].modifiers]==[1.,1.]
 
 
-def test_bear_expected_critical_proc_ranks_are_2_5_and_5_rage():
+def test_bear_sourced_critical_proc_is_sampled_as_whole_5_rage_award():
     one=live(1,'bear');two=live(2,'bear')
-    assert one.actor.resources['rage']==pytest.approx(52.5)
+    # Production sampled_joint_critical awards an integer whole proc, not
+    # the old 0.5 * 5 expected-value approximation.
+    rank1_gains=[e.payload['gained'] for e in one.trace
+                 if e.kind=='ResourceEventGain' and e.payload.get('resource_id')=='rage']
+    rank2_gains=[e.payload['gained'] for e in two.trace
+                 if e.kind=='ResourceEventGain' and e.payload.get('resource_id')=='rage']
+    assert one.actor.resources['rage'] in (50.,55.)
     assert two.actor.resources['rage']==pytest.approx(55.)
-    assert next(e.payload['gained'] for e in one.trace if e.kind=='ResourceEventGain')==pytest.approx(2.5)
-    assert next(e.payload['gained'] for e in two.trace if e.kind=='ResourceEventGain')==pytest.approx(5.)
+    assert rank1_gains in ([],[5.])
+    assert rank2_gains==[5.]
 
 
-def test_cat_expected_critical_combo_points_are_target_scoped_and_generator_only():
+def test_cat_sampled_critical_combo_points_are_target_scoped_and_generator_only():
     one=live(1,'cat');two=live(2,'cat')
-    assert one.target.resources['combo_points']==pytest.approx(1.5)
+    # 50% rank 1 samples either zero or one extra target-scoped point.
+    assert one.target.resources['combo_points'] in (1.,2.)
     assert two.target.resources['combo_points']==pytest.approx(2.)
-    assert not 'combo_points' in one.actor.resources
+    assert 'combo_points' not in one.actor.resources
     for rt in (one,two):
-        assert any(e.kind=='ResourceEventGain' and e.target_id=='enemy' for e in rt.trace)
+        gains=[e.payload['gained'] for e in rt.trace
+               if e.kind=='ResourceEventGain'
+               and e.target_id=='enemy'
+               and e.payload.get('resource_id')=='combo_points']
+        assert gains in ([],[1.])
+    assert any(e.kind=='ResourceEventGain' and e.target_id=='enemy'
+               for e in two.trace)
     # A Cat auto-attack is a crit but NOT a combo-generating action.
     ir=selected(2)
     a=ActorState.from_ir(ir.actor,ir.resources,ir.modes);a.transition_mode('cat')

@@ -30,6 +30,8 @@ def _source_partial_semantics(rank):
                        if is_channel else 'SOURCE_PARTY_AURA_NOT_EXECUTED')
         if provenance.get('unsupported_expected_value_distribution'):
             result.add('DISCRETE_CRIT_PROC_DISTRIBUTION_NOT_CERTIFIED')
+        if provenance.get('unsupported_source_mode_scope'):
+            result.add('SOURCE_CRITICAL_RESOURCE_MODE_SCOPE_NOT_EXECUTED')
         if provenance.get('unsupported_heal_school_binding'):
             result.add('SOURCE_NATURE_HEAL_ACTION_SCHOOL_NOT_VERIFIED')
         if provenance.get('unsupported_future_action_scope'):

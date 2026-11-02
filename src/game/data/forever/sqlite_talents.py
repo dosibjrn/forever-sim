@@ -92,6 +92,56 @@ def _parse_rank_tooltip(text: str, *, action_families: set[str], source: dict,
             provenance={'source': dict(source), 'raw_text_summary': text,
                         'baseline_cast_pushback_seconds':
                         'REQUIRES_SEPARATELY_SOURCED_INCOMING_PROFILE'}),), (), None
+    # Source-typed compound critical resource effect, shared across modes.
+    # Both resource amounts and both proc probabilities are in the rank text.
+    # An unrepresented source form stays an explicit P2 partial, never green.
+    critical_resources = re.fullmatch(
+        r'Gives you a (\d+(?:\.\d+)?)% chance to gain an additional (\d+(?:\.\d+)?) (\w+) '
+        r'any time you get a critical strike while in (.+?)\. In addition, '
+        r'your non-periodic critical strikes from (.+?) abilities that generate '
+        r'(.+?) have a (\d+(?:\.\d+)?)% chance to add an additional (.+?)\.',
+        text.strip(), re.IGNORECASE)
+    if critical_resources:
+        bear_chance = float(critical_resources.group(1)) / 100.
+        cat_chance = float(critical_resources.group(7)) / 100.
+        bear_gain = float(critical_resources.group(2))
+        bear_resource = _slug(critical_resources.group(3))
+        cat_resource = _slug(critical_resources.group(6))
+        bonus_resource = _slug(critical_resources.group(8))
+        bear_labels = tuple(_slug(x) for x in re.split(
+            r'\s+or\s+', critical_resources.group(4)) if x.strip())
+        cat_label = _slug(critical_resources.group(5))
+        modes = mode_labels or {}
+        # Source form aliases must not install duplicate resource event rules.
+        mapped_bear = tuple(dict.fromkeys(modes[x] for x in bear_labels if x in modes))
+        missing = tuple(x for x in (*bear_labels, cat_label) if x not in modes)
+        if (not 0. < bear_chance <= 1. or not 0. < cat_chance <= 1.
+                or not 0. < bear_gain <= 100. or not bear_resource
+                or not cat_resource or bonus_resource != cat_resource.removesuffix('s')
+                or not bear_labels or not mapped_bear or cat_label not in modes
+                or not str(source.get('url', '')).startswith('https://')):
+            return (), missing, 'invalid_source_critical_resource_compound'
+        common = {
+            'source': dict(source), 'raw_text_summary': text,
+            'resource_amount_source_build': source.get('source_build'),
+            'unsupported_source_mode_scope': missing,
+        }
+        modifiers = tuple(
+            TalentModifier(kind='critical_resource_gain', target_type='resource',
+                target_id=bear_resource, value=bear_chance,
+                provenance={**common, 'required_mode_id': mode,
+                    'bonus_resource_amount': bear_gain,
+                    'requires_resource_generator': False})
+            for mode in mapped_bear)
+        modifiers += (TalentModifier(
+            kind='critical_resource_gain', target_type='resource',
+            target_id=cat_resource, value=cat_chance,
+            provenance={**common, 'required_mode_id': modes[cat_label],
+                'bonus_resource_amount': 1.0,
+                'requires_resource_generator': True}),)
+        return modifiers, missing, (
+            'source_critical_resource_partial_mode_scope' if missing else None)
+
     casting_regen = re.fullmatch(
         r'Allows (\d+(?:\.\d+)?)% of your Mana regeneration to continue while casting\.',
         text.strip(), re.IGNORECASE)
