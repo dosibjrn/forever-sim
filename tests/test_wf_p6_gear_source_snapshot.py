@@ -234,3 +234,59 @@ def test_independent_paid_p6_replay_receipts_fail_closed_without_losing_other_le
     assert completed['status'] == 'COMPLETE'
     assert completed['mob_completed'] == completed['count'] == 100
     assert completed['s_per_mob'] == 12.5
+
+
+@pytest.mark.parametrize('first_rows, expected_mobs', [
+    ([], 0),
+    ([{'status': 'BLOCKED_ACTOR_DIED', 'count': 42,
+       'failed_pull_index': 21, 'events': 987}], 42),
+])
+def test_p6_independent_comparison_keeps_both_paid_legs_on_first_failure(
+        monkeypatch, first_rows, expected_mobs):
+    """Exercise the real comparison caller, not just the receipt helper.
+
+    Source legality and actual combat remain separately validated by the
+    hydrated production regressions; this focused negative control checks
+    that a failed 30s replay cannot erase the independent paid 300s result.
+    """
+    from src.v2 import source_paid_cold_comparison as comparison
+    from src.v2 import source_bounded_joint_frontier as frontier
+
+    snapshot = {'schema': 'test-source-snapshot',
+                'class_membership_verified': False}
+    thirty = _saved_report(30, snapshot)
+    three_hundred = _saved_report(300, snapshot)
+    monkeypatch.setattr(comparison, 'source_gear_catalogue_snapshot',
+                        lambda class_key, level: snapshot)
+    monkeypatch.setattr(comparison, '_verify_winner_gear_legality',
+                        lambda winner, **kwargs: {
+                            'equipment_legality_complete': True,
+                            'sourced_acquisition_methods': []})
+    monkeypatch.setattr(comparison, '_winner_gear_effect_gaps',
+                        lambda winner, **kwargs: {})
+
+    calls = []
+    def paid_replay(search_report, **kwargs):
+        calls.append((search_report, kwargs))
+        if len(calls) == 1:
+            return {'rows': first_rows, 'wall_s_outside_search_budget': 1.0}
+        return {'rows': [{'status': 'COMPLETE', 'count': 100,
+                          'full_s_per_mob': 12.5, 'events': 5000}],
+                'wall_s_outside_search_budget': 2.0}
+
+    monkeypatch.setattr(frontier, 'replay_joint_shortlist_100mob', paid_replay)
+    result = compare_saved_cold_winners(
+        thirty, three_hundred, source_ir=None, seed_stage=None,
+        class_key='druid', level=30,
+        source_hash='pinned-ability-source', bonus_talent_points=0)
+
+    assert len(calls) == 2
+    assert [r['budget_s'] for r in result['replays']] == [30, 300]
+    assert result['status'] == 'INCOMPLETE_INDEPENDENT_100MOB_REPLAY'
+    assert result['replays'][0]['mob_completed'] == expected_mobs
+    assert result['replays'][1]['status'] == 'COMPLETE'
+    assert result['replays'][1]['mob_completed'] == 100
+    assert result['replays'][1]['s_per_mob'] == 12.5
+    assert result['ratio_T30_T300'] is None
+    assert result['numeric_p6_within_1pct'] is False
+    assert result['eligible_for_checkpoint_acceptance'] is False
