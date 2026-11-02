@@ -1572,7 +1572,7 @@ def _source_priority_witness_probes(variants):
 
 
 # Journal identity changes with source gear ordering or paid-row evidence schema.
-_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v4_paid_events_identity'
+_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v5_real_paid_budget'
 
 
 def _source_gear_witness_probes(gear_stages, *, max_probes=32):
@@ -2732,7 +2732,10 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     attempted=deepcopy(recovered['rows']) if recovered else []
     completed=[r for r in attempted if r.get('status')=='COMPLETE'
                and r.get('mobs')==100]
-    paid=len(attempted)
+    # The journal records *coordinates* for deterministic resume, including
+    # source-legal preflight rejects. Only actual evaluator invocations spend
+    # max_paid_builds; otherwise a malformed proposal can starve real screens.
+    paid=sum(bool(row.get('screen_invoked')) for row in attempted)
     events=int(recovered['events']) if recovered else 0
     screened=[]
     full_evaluated=int(recovered['full_evaluated_candidates']) if recovered else 0
@@ -2807,16 +2810,19 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                 screened.append((row,candidate,recovery))
             return
         t=process_time()
-        if required_combat_mode and not _policy_mode_damage_action_ids(
-                compiled,policy,required_combat_mode):
-            return
         row={'allocation':allocation,'gear_move':gear_label,'policy':policy_label,
             'recovery':recovery_label,'policy_origin':policy_label,
             'is_control':(_key(allocation)==_key(seed_stage.get('allocation',{}))
                           and gear_i==0 and policy_label=='incumbent'
                           and recovery_i==0),
-            'policy_signature':policy_identity(policy),'policy_ir':policy.as_dict()}
+            'policy_signature':policy_identity(policy),'policy_ir':policy.as_dict(),
+            'screen_invoked':False}
         try:
+            # Preflight exclusions still occupy their deterministic frontier
+            # coordinate in the journal, but never consume a paid evaluation.
+            if required_combat_mode and not _policy_mode_damage_action_ids(
+                    compiled,policy,required_combat_mode):
+                raise ValueError('SPEC_COMBAT_MODE_OFFENSIVE_APL_MISSING')
             hard_guard = (_quick_candidate_wall_budget(max(.001,
                 min(per_candidate_wall_s, active_deadline-monotonic(), t0+max_cpu_s-monotonic())))
                 if search_only and screen_evaluator_backend == 'direct' else nullcontext())
@@ -2841,6 +2847,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                 # reserves its full-horizon evaluations for finalists.
                 remaining=max(.01,(active_deadline if screen_then_finalists
                                     else t0+max_cpu_s)-monotonic())
+                row['screen_invoked']=True
                 screen=_quick_joint_evaluation(candidate,level=level,
                     backend=screen_evaluator_backend,
                     mobs=screen_mobs,timeout_s=min(per_candidate_wall_s,remaining),
@@ -2886,7 +2893,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             row.update(status='BLOCKED_PREPARATION_OR_EXECUTION',
                 blocker=str(exc)[:500])
         row['parent_cpu_s']=process_time()-t
-        attempted.append(row);paid+=1
+        attempted.append(row)
+        paid+=int(row['screen_invoked'])
         persist_partial('SCREENING' if screen_then_finalists else 'IMMEDIATE_FULL')
     coordinate_iter=enumerate(coordinates)
     pending=None
@@ -2897,7 +2905,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         evaluate_coordinate(index,coords,screen_deadline)
     if not recovered or recovered_phase in ('PREPARED','SCREENING'):
         screen_phase_wall_s=monotonic()-t0
-    first_pass_paid_candidates=len(attempted)
+    first_pass_paid_candidates=paid
     qualification_evaluated=sum('qualification_status' in r for r in attempted)
     qualification_complete=sum(r.get('qualification_status')=='COMPLETE' for r in attempted)
     qualification_events=sum(int(r.get('qualification_events') or 0) for r in attempted)
@@ -2931,8 +2939,9 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         for index,coords in chain((pending,),coordinate_iter):
             if paid>=max_paid_builds or monotonic()>=t0+max_cpu_s:
                 break
+            before=paid
             evaluate_coordinate(index,coords,t0+max_cpu_s)
-            backfill_screen_candidates+=1
+            backfill_screen_candidates+=paid-before
     backfill_phase_wall_s=monotonic()-backfill_start if backfill_screen_candidates else 0.
     frontier_paid_candidates=first_pass_paid_candidates+backfill_screen_candidates
     if screen_then_finalists and not search_only:
@@ -3041,7 +3050,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'refinement_phase_wall_s':refinement_phase_wall_s,
         'screen_budget_fraction_effective':search_screen_fraction if search_only else screen_fraction,
         'stat_probe_evaluations':refinement['stat_probes'],
-        'all_quick_evaluations_including_stat_probes':len(attempted)+refinement['stat_probes'],
+        'all_quick_evaluations_including_stat_probes':sum(bool(r.get('screen_invoked'))
+            for r in attempted)+refinement['stat_probes'],
         'search_only':bool(search_only),
         'screen_evaluator_backend':screen_evaluator_backend,
         'search_winner':search_winner,
@@ -3085,7 +3095,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'requested_wall_budget_s':requested_wall_budget_s,
         'internal_wall_budget_s':max_cpu_s,
         'budget_type':'shared_wall_with_os_isolated_candidates',
-        'search_budget_exhausted':first_pass_paid_candidates>=max_paid_builds or monotonic()-t0>=max_cpu_s,
+        'search_budget_exhausted':paid>=max_paid_builds or monotonic()-t0>=max_cpu_s,
         'source_legal_gear_universe_verified':False,
         'named_forever_enemy_verified':enemy.exact_forever_enemy_verified,
         'global_optimum_proven':False,'eligible_for_checkpoint_acceptance':False,
