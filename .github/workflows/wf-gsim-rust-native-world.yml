@@ -1,4 +1,4 @@
-name: Live pinned MythicSim Rust fight to real gsim world (NOT P7)
+name: Live exact-submodule MythicSim Rust fight to real gsim world (NOT P7)
 on:
   workflow_dispatch:
   push:
@@ -6,7 +6,8 @@ on:
     branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/work1-p73-native-world-cold-final-20261102]
     paths:
       - .github/workflows/wf-gsim-rust-native-world.yml
-      - integrations/mythicsim-rust/patch_world_ingress.py
+      - .gitmodules
+      - integrations/mythicsim-rust/engine
       - integrations/mythicsim-rust/rng_extreme_probability_fix.py
       - tests/test_work1_p7_balanced_native_world_rng.py
       - integrations/mythicsim-rust/world_bridge.rs
@@ -21,11 +22,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: project
-      - uses: actions/checkout@v4
-        with:
-          repository: sage3648/mythicsim-forever-engine
-          ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
-          path: upstream
+          submodules: true
+      - name: Verify exact public Rust fork gitlink (never floating upstream)
+        run: |
+          set -euo pipefail
+          engine=project/integrations/mythicsim-rust/engine
+          recorded="$(git -C project ls-tree HEAD -- integrations/mythicsim-rust/engine | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          [[ -n "$recorded" && "$recorded" == "$actual" ]] || {
+            echo "RUST_FORK_SUBMODULE_PIN_MISMATCH recorded=$recorded actual=$actual"; exit 1;
+          }
+          [[ "$(git -C "$engine" remote get-url origin)" == *"dosibjrn/mythicsim-forever-engine"* ]] || {
+            echo 'WRONG_RUST_FORK_REMOTE'; exit 1;
+          }
+          ln -s project/integrations/mythicsim-rust/engine upstream
+          echo "Trusted exact fork Rust source $actual"
       - name: Hydrate only the P7 source item catalogue from Git LFS
         working-directory: project
         run: git lfs pull --include="data/forever/catalogue/items_2026-09-29.sqlite" --exclude=""
@@ -43,16 +54,17 @@ jobs:
             tests/test_wf_gate_p7_2_live.py \
             tests/test_work1_p7_balanced_native_world_rng.py \
             integrations/mythicsim-rust/tests/test_rng_extreme_probability_fix.py
-      - name: Verify patch anchors and Python source
+      - name: Check submodule's versioned Rust typed RNG and 2D world seam
         run: |
-          python -m compileall -q project/integrations/mythicsim-rust/patch_world_ingress.py project/integrations/mythicsim-rust/live_world_probe.py
-          python project/integrations/mythicsim-rust/patch_world_ingress.py upstream
+          python -m compileall -q project/integrations/mythicsim-rust/live_world_probe.py
+          python project/integrations/mythicsim-rust/wf659_rng_boolean_audit.py upstream/src
+          test -f upstream/src/core/fight/world_bridge.rs
       - name: Verify actual Rust balanced quota and historical high-crit edge tests
         working-directory: upstream
         run: |
           cargo test --locked --lib wf652_balanced_tests
           cargo test --locked --lib wf_l60_rng_extreme_tests
-      - name: Build actual pinned source Rust fight engine with synchronous world seam
+      - name: Build exact pinned fork Rust fight engine with synchronous world seam
         working-directory: upstream
         env:
           # Native Rust mechanics are unchanged; avoid single-CGU ThinLTO build
