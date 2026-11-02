@@ -89,6 +89,32 @@ def test_partial_p2_is_visible_but_not_certified(monkeypatch, tmp_path, capsys):
     assert "83/103" in capsys.readouterr().out
 
 
+def test_solo_p2_exclusion_repair_updates_real_partial_without_fake_gate_pass(
+        monkeypatch, tmp_path):
+    # Reproduces production M1 #41516847262: real P2 measured 93/103
+    # after source-checked Subtlety exclusions but old 90/103 stayed in TSV.
+    monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
+    path = tmp_path / "m1.tsv"
+    old = {**_p2_partial(90, 103), "gate": "P2"}
+    assert m1.record_partial(class_key="druid", level=60, spec="balance",
+                             gate="P2", report=old, path=path)
+    measured = {**old, "pass_count": 93,
+                "coverage_basis": "executed_behavior_or_checked_solo_exclusion"}
+    assert m1.measured_live_coverage(measured)["verified"] == 93
+    assert m1.record_partial(class_key="druid", level=60, spec="balance",
+                             gate="P2", report=measured, path=path)
+    score = m1.scoreboard(path)
+    assert score["passed_gates"] == 0
+    assert score["certified_checkpoints"] == 0
+    assert score["partial_gates"][0]["verified"] == 93
+    assert score["partial_gates"][0]["applicable"] == 103
+    # A forged marker for another gate, or no actual behavior probes,
+    # must not produce any measured acceptance/coverage.
+    assert m1.measured_live_coverage({**measured, "gate": "P3"}) is None
+    assert m1.measured_live_coverage(
+        {**measured, "behavior_probes_executed": 0}) is None
+
+
 def test_partial_rejects_blocked_or_only_source_data(monkeypatch, tmp_path):
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
     path = tmp_path / "passes.tsv"
