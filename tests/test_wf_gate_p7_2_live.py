@@ -67,7 +67,10 @@ def test_p72_rejects_equal_native_world_dps_if_fight_duration_differs(monkeypatc
             "iterations": n, "first_duration_s": 120.0, "native_dps": 730.0},
         run=lambda binary, request, distance, iterations, *, rng_mode: {
             "iterations_done": iterations,
-            "per_iteration": [{"duration_s": 119.0}] * iterations,
+            "per_iteration": [
+                {"iteration_index": i, "duration_s": 119.0,
+                 "world_dps": 730.0, "world_applied_damage": 86870.0}
+                for i in range(iterations)],
             "sampled_duration_s": 119.0,
             "native_dps": 730.0, "world_mean_dps": 730.0,
             "native_damage_events": 10, "native_world_ticks": 20})
