@@ -1571,10 +1571,26 @@ def _source_priority_witness_probes(variants):
     return (*unlock_probes, *composed, *modified_probes)
 
 
-def _source_gear_witness_probes(gear_stages, *, max_probes=2):
-    """Reserve paid screens for source-legal mixed-stat packages only."""
-    return tuple((0,i,0,0) for i,(label,_) in enumerate(gear_stages)
-        if label.startswith('source_stat_package:') and '+' in label)[:max_probes]
+def _source_gear_witness_probes(gear_stages, *, max_probes=20):
+    """Pay for distinct real source slots before repeating gear coordinates.
+
+    Gear proposals already passed the shared source-equipment legality check.
+    Reserve one actual runtime screen per proposed slot (within the existing
+    paid candidate/time budgets), then source-legal mixed-stat packages.
+    A witness is an ATTEMPT, not a completed paid screen or a gate PASS.
+    """
+    first_by_slot={}
+    mixed=[]
+    for i,(label,_) in enumerate(gear_stages):
+        if label.startswith('source_stat_package:'):
+            if '+' in label:
+                mixed.append((0,i,0,0))
+            continue
+        if label.startswith('package:') or ':' not in label:
+            continue
+        slot=label.split(':',1)[0]
+        first_by_slot.setdefault(slot,(0,i,0,0))
+    return tuple((*first_by_slot.values(),*mixed)[:max_probes])
 
 
 def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, attempted, *, gear_stages=()):
@@ -1587,11 +1603,16 @@ def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, a
     if not dimensions or any(d <= 0 for d in dimensions):
         return
     priority = _source_priority_witness_probes(variants)
-    # Preserve source unlocks before paid hybrid gear screens.
+    # First preserve source-unlocked ability executions. Then give distinct
+    # source-legal gear slots a paid chance before generic talent/APL variants
+    # exhaust a short cold budget. Every candidate uses the SAME runtime.
+    unlocks=tuple(coords for coords in priority
+        if variants[coords[0]][coords[2]][0].startswith('talent_unlock:'))
+    other_priority=tuple(coords for coords in priority if coords not in unlocks)
     gear_probes=_source_gear_witness_probes(gear_stages)
     seen = set()
     coord_index = {}
-    for coords in (*priority, *gear_probes, (0, 0, 0, 0)):
+    for coords in (*unlocks, *gear_probes, *other_priority, (0, 0, 0, 0)):
         if coords not in seen:
             coord_index[coords] = len(coord_index)
             seen.add(coords)

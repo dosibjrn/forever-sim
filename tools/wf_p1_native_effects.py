@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from tools.p1_native_source_inventory import inventory
+from tools.p1_native_progress import native_p1_progress
 
 
 def _player(req: dict) -> dict:
@@ -127,7 +128,8 @@ def run_native(binary: Path, request: dict, *, class_key: str, level: int,
     other = {r["spell_id"]: r for r in source["separate"]}
     if spell_id in other:
         return {"status": other[spell_id]["status"], "spell_id": spell_id,
-                "effect_observed": False, "p1_certified": False}
+                "effect_observed": False, "p1_certified": False,
+                "p1_native_progress": native_p1_progress(source)}
     if spell_id not in selected:
         raise ValueError("SOURCE_SPELL_NOT_IN_P1_CANDIDATES:" + str(spell_id))
     if not binary.is_file():
@@ -153,8 +155,18 @@ def run_native(binary: Path, request: dict, *, class_key: str, level: int,
         "status": "NATIVE_APL_ABLATION_DIFFERENCE" if diff
                   else "NO_COMBAT_METRIC_DIFFERENCE",
         "native_executed": True,
-        "effect_observed": bool(diff),
+        # APL removal can perturb other casts/timing, so no directly verified
+        # per-ability effect is asserted here, even if native DPS/HPS changes.
+        "effect_observed": False,
+        "apl_metric_delta_observed": bool(diff),
         "p1_certified": False,
+        "p1_native_progress": native_p1_progress(source, [{
+            "spell_id": spell_id, "status":
+                "NATIVE_APL_ABLATION_DIFFERENCE" if diff
+                else "NO_COMBAT_METRIC_DIFFERENCE",
+            "proof_kind": "RUST_APL_ABLATION_DIAGNOSTIC_NOT_ISOLATED_P1",
+            "native_executed": True,
+        }]),
         "proof_kind": "RUST_APL_ABLATION_DIAGNOSTIC_NOT_ISOLATED_P1",
         "engine_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
         "real_request_sha256": sha(baseline),
