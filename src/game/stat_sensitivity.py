@@ -3,6 +3,7 @@ from __future__ import annotations
 """Exact-scorer stat sensitivities for discrete generic objectives."""
 
 from dataclasses import dataclass
+from math import isfinite
 from typing import Any, Callable, Iterable, Mapping
 
 from src.game.gear import apply_stat_delta
@@ -68,6 +69,8 @@ def measure_stat_sensitivities(
     if baseline is None:
         raise ValueError("baseline generic scorer returned no score")
     baseline = float(baseline)
+    if not isfinite(baseline) or baseline <= 0.0:
+        raise ValueError('baseline generic scorer returned nonpositive or nonfinite seconds per mob')
     rows = []
     for stat in tuple(str(x) for x in stats):
         probes = []
@@ -78,13 +81,19 @@ def measure_stat_sensitivities(
         for delta in deltas:
             candidate = apply_stat_delta(ir_slice, stat, delta)
             candidate_score = score(candidate)
+            if candidate_score is not None:
+                candidate_score = float(candidate_score)
+                # The paid production evaluator can fail to complete a kill
+                # or return an invalid score. Such a probe is NOT a measured
+                # improvement and must not manufacture a positive gear weight.
+                if not isfinite(candidate_score) or candidate_score <= 0.0:
+                    candidate_score = None
             probes.append({
                 "delta": float(delta),
-                "seconds_per_mob": None if candidate_score is None else float(candidate_score),
+                "seconds_per_mob": candidate_score,
             })
             if candidate_score is None:
                 continue
-            candidate_score = float(candidate_score)
             improvement = baseline - candidate_score
             if improvement > 1e-12:
                 # Discrete kill/recovery thresholds can make a small positive

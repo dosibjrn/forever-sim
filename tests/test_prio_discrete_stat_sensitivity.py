@@ -53,3 +53,27 @@ def test_flat_small_step_does_not_hide_larger_real_improvement():
     row = _real_gear_probe({0.0: 10.0, 5.0: 10.0, 20.0: 8.0})
     assert row.first_effective_delta == 20.0
     assert row.value == pytest.approx(0.1)
+
+
+def test_nonfinite_and_nonpositive_paid_probes_cannot_create_fake_positive_weight():
+    # Real source gear application; invalid paid-score outputs are not valid
+    # CombatRuntime seconds/mob and cannot count as stat improvement.
+    for invalid in (float("nan"), float("inf"), float("-inf"), 0.0, -1.0):
+        row = _real_gear_probe({0.0: 10.0, 5.0: invalid, 20.0: 8.0})
+        assert row.first_effective_delta == 20.0
+        assert row.value == pytest.approx(0.1)
+        assert row.probes[0]["seconds_per_mob"] is None
+        assert row.probes[1]["seconds_per_mob"] == 8.0
+
+
+def test_all_invalid_paid_probes_never_produce_a_weight():
+    row = _real_gear_probe({0.0: 10.0, 5.0: -1.0, 20.0: float("nan")})
+    assert row.first_effective_delta is None
+    assert row.value == 0.0
+    assert all(probe["seconds_per_mob"] is None for probe in row.probes)
+
+
+def test_invalid_paid_baseline_fails_closed_before_any_stat_claim():
+    for invalid in (float("nan"), float("inf"), 0.0, -1.0):
+        with pytest.raises(ValueError, match="nonpositive or nonfinite"):
+            _real_gear_probe({0.0: invalid})
