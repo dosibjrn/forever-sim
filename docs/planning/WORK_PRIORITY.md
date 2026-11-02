@@ -1,6 +1,6 @@
 # WORK PRIORITY — forever-sim (public main)
 
-**Canonical repository:** [dosibjrn/forever-sim](https://github.com/dosibjrn/forever-sim). Updated 2026-11-01. The former private `dosibjrn/mage-level-sim` is a **read-only historical source**, not a work target. The old Mage Sim recurring agents have been paused; **do not automatically restart or redirect them** without a separate instruction.
+**Canonical repository:** [dosibjrn/forever-sim](https://github.com/dosibjrn/forever-sim). Updated 2026-11-02 after verified #111/#112. The former private `dosibjrn/mage-level-sim` is a **read-only historical source**, not a work target. The old Mage Sim recurring agents have been paused; **do not automatically restart or redirect them** without a separate instruction.
 
 ## AKTIIVINEN TYÖNJAKO — Prio päättää, työagentit toteuttavat
 
@@ -17,7 +17,7 @@
 
 **Testibudjetti:** RED voi olla todellinen virheajon tulos, ei pakollinen uusi testi. Valitse pienin nopea aito source+tuotantomoottori-reproduktio. Älä korvaa todellista simulaatiota mockilla; älä myöskään aja 100 mobia, 300 sekuntia tai stochastic holdoutia rutiinina joka tunti. Laajat ajot tehdään, kun muuttunut semantiikka tai PROCESSin hyväksyntä niitä tarvitsee.
 
-**Approved project contracts:** [current approved OVERALL PLAN](../../OVERALL_PLAN.md) and [current approved PROCESS](../../PROCESS.md), including the [gate contracts](../gates/README.md). This page is a mutable routing index; actual work items and acceptance criteria belong in GitHub issues. **Fully certified checkpoints: 0/148.** Historical P1–P6-only or independent native/P7 results are not full accepted P1–P7.5 checkpoints. **New 2026-11-01 audit:** PR #20 has a genuine successful pinned Go↔gsim source-effect/ACK diagnostic, but **later native decision consumption of changed gsim HP is not yet proven**, so this is still not P7 or 1/148.
+**Approved project contracts:** [current approved OVERALL PLAN](../../OVERALL_PLAN.md) and [current approved PROCESS](../../PROCESS.md), including the [gate contracts](../gates/README.md). This page is a mutable routing index; actual work items and acceptance criteria belong in GitHub issues. **Fully certified checkpoints: 0/148.** Historical P1–P6-only or independent native/P7 results are not full accepted P1–P7.5 checkpoints. **Latest source-executed audit:** merged PR #111 and [Actions #41371143125](https://github.com/dosibjrn/forever-sim/actions/runs/41371143125) now prove gsim HP feedback into a subsequent native decision and a source Druid full-duration session; the exact saved P7 reference, target semantics and DPS parity remain unproven, so this is still not P7.1.3 or 1/148.
 
 ## CI failure remediation — 2026-11-01, newer than the historical PR queue below
 
