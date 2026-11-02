@@ -65,6 +65,24 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
     """
     from src.game.runtime import ActorState, CombatRuntime, TargetState
     from src.game.runtime.simulator import action_eligibility
+    # A sourced positional precondition belongs to the encounter, not to a
+    # hardcoded class whitelist. Construct the required controlled situation
+    # for this effect probe and separately reject the opposite position.
+    # This does NOT certify movement/facing or the full 2D P1/P7 path.
+    positions={str(req.get('value') or '') for req in action.requirements
+               if req.get('kind')=='relative_position_is'}
+    if len(positions)>1 or (positions and not positions <= {'front','behind'}):
+        return None
+    required_position=next(iter(positions),None)
+
+    def fixture_target(*, opposite=False):
+        target=TargetState.with_health(target_id,100000.0,armor=0.0)
+        if required_position is not None:
+            position=({'front':'behind','behind':'front'}[required_position]
+                      if opposite else required_position)
+            target.metadata['attacker_relative_position']=position
+        return target
+
     # Check the *actual* runtime eligibility in each source mode. A caster mode
     # with an unrestricted enabled_action_ids list does not necessarily permit
     # a Bear-only action (e.g. Swipe). No class-specific mode names here.
@@ -74,7 +92,7 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
         if mode is not None and candidate.current_mode_id!=mode:
             try:candidate.transition_mode(mode)
             except (ValueError,KeyError,AttributeError):continue
-        target=TargetState.with_health(target_id,100000.0,armor=0.0)
+        target=fixture_target()
         if action_eligibility(action=action,actor=candidate,target=target).eligible:
             actor=candidate
             break
@@ -97,8 +115,14 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
     if 'health' in actor.resources:
         actor.resource_capacity['health']=max(float(actor.resource_capacity.get('health',0)),10000.)
         actor.resources['health']=actor.resource_capacity['health']-1000.
-    rt=CombatRuntime(actor=actor,target=TargetState.with_health(target_id,100000.0, armor=0.0))
+    rt=CombatRuntime(actor=actor,target=fixture_target())
     if not action_eligibility(action=action,actor=actor,target=rt.target).eligible:return None
+    if required_position is not None:
+        # Positive/negative positional control through production eligibility:
+        # a Shred-style rear-only action must remain illegal from the front.
+        if action_eligibility(action=action,actor=actor,
+                              target=fixture_target(opposite=True)).eligible:
+            return None
     before=dict(actor.resources)
     try:
         end=rt.schedule_action(action)
