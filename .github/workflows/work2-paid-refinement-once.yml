@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/work2-paid-refinement-once.yml
       - tests/test_source_paid_gear_witness_priority.py
+      - src/v2/source_bounded_joint_frontier.py
 permissions:
   contents: read
 jobs:
