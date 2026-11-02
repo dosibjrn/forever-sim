@@ -69,14 +69,33 @@ def test_small_paid_budget_interleaves_real_source_slots_across_classes():
             class_key=class_key, level=30, base=base,
             per_slot=2, max_proposals=100)
         legal_slots = sorted(slot for slot, count in counts.items() if count)
-        assert len(legal_slots) >= 6, (class_key, counts)
-        # Use the same six-candidate global budget on two actually compiled source class profiles.
-        small, small_counts = _source_slot_proposals(
+        assert len(legal_slots) > 6, (class_key, counts)
+        # A budget below the legal slot count must cover the source range,
+        # not always select the same alphabetically earliest slots.
+        # This is the real six-move paid frontier, not an invented item list.
+        chosen_by_offset = []
+        for offset in (0, 1):
+            small, small_counts = _source_slot_proposals(
+                class_key=class_key, level=30, base=base,
+                per_slot=2, max_proposals=6, slot_offset=offset)
+            assert small_counts == counts
+            assert len(small) == 6
+            selected_slots = [slot for slot, _ in small]
+            expected_slots = [legal_slots[(offset + (i*len(legal_slots))//6)
+                                          % len(legal_slots)] for i in range(6)]
+            assert selected_slots == expected_slots
+            assert len(set(selected_slots)) == 6
+            assert all(_physical_slot(slot, item) for slot, item in small)
+            # Every sampled item is still a genuine legal source replacement.
+            assert all(any(slot == full_slot and item.item_id == full_item.item_id
+                           for full_slot, full_item in full)
+                       for slot, item in small)
+            chosen_by_offset.append(set(selected_slots))
+        assert len(chosen_by_offset[0] | chosen_by_offset[1]) > 6
+        # Same source, same explicit offset, same proposal identities.
+        repeated, _ = _source_slot_proposals(
             class_key=class_key, level=30, base=base,
-            per_slot=2, max_proposals=6)
-        assert small_counts == counts
-        assert len(small) == 6
-        assert [slot for slot, _ in small] == legal_slots[:6]
-        assert small == full[:6]
-        # All emitted item IDs must remain in the canonical legal source set.
-        assert all(_physical_slot(slot, item) for slot, item in small)
+            per_slot=2, max_proposals=6, slot_offset=0)
+        assert repeated == _source_slot_proposals(
+            class_key=class_key, level=30, base=base,
+            per_slot=2, max_proposals=6, slot_offset=0)[0]

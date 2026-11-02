@@ -39,11 +39,42 @@ def _gear_replace(base,slot,item):
     return {**base,'slots':slots,'aggregate_stats':stats,'item_count':len(slots)}
 
 
+def _bounded_slot_proposals(rankings, *, per_slot, max_proposals, slot_offset):
+    """Sample real legal source slots fairly inside a global paid move quota.
+
+    When the quota is smaller than the number of eligible slots, stratify
+    across the entire sorted source slot range instead of always truncating
+    its alphabetic prefix. An explicit offset rotates the same legal frontier
+    between independently scheduled cold searches. It is NOT an exhaustive
+    item-universe proof and does not add any free paid evaluations.
+    """
+    slots=sorted(slot for slot, rows in rankings.items() if rows)
+    count=len(slots)
+    if not count or not max_proposals:
+        return []
+    if max_proposals<count:
+        return [(slot,rankings[slot][0]) for slot in (
+            slots[(slot_offset+(i*count)//max_proposals)%count]
+            for i in range(max_proposals))]
+    shift=slot_offset%count
+    order=slots[shift:]+slots[:shift]
+    proposals=[]
+    for depth in range(per_slot):
+        for slot in order:
+            if depth<len(rankings[slot]):
+                proposals.append((slot,rankings[slot][depth]))
+                if len(proposals)>=max_proposals:
+                    return proposals
+    return proposals
+
+
 def _source_slot_proposals(*,class_key,level,base,per_slot=2,max_proposals=48,
                            p3_certificate=None,weighted_p3_report=None,seed_stage=None,
-                           allow_unattested_diagnostic=False):
+                           allow_unattested_diagnostic=False,slot_offset=0):
     if max_proposals < 0:
         raise ValueError('invalid source slot proposal budget')
+    if type(slot_offset) is not int or slot_offset<0:
+        raise ValueError('INVALID_SOURCE_SLOT_OFFSET')
     if max_proposals == 0:
         if p3_certificate is not None:
             from src.game.data.forever.source_checkpoint_p3 import verify_checkpoint_item_l0
@@ -80,13 +111,9 @@ def _source_slot_proposals(*,class_key,level,base,per_slot=2,max_proposals=48,
                 and _physical_slot(slot,by_id[int(i)]) and group_legal(slot,by_id[int(i)])]
             groups[slot]=legal
             rankings[slot]=legal[:per_slot]
-        proposals=[]
-        for depth in range(per_slot):
-            for slot in sorted(rankings):
-                if depth<len(rankings[slot]):
-                    proposals.append((slot,rankings[slot][depth]))
-                    if len(proposals)>=max_proposals:return proposals,{k:len(v) for k,v in groups.items()}
-        return proposals,{k:len(v) for k,v in groups.items()}
+        return _bounded_slot_proposals(rankings,per_slot=per_slot,
+            max_proposals=max_proposals,slot_offset=slot_offset),{
+                k:len(v) for k,v in groups.items()}
     if p3_certificate is not None:
         # Reuse the complete L0 certificate to drive *real* paid proposals.
         # Every item remains in the certificate, even if the paid budget can
@@ -110,16 +137,11 @@ def _source_slot_proposals(*,class_key,level,base,per_slot=2,max_proposals=48,
                    and _physical_slot(slot,by_id[i]) and group_legal(slot,by_id[i])]
             groups[slot]=legal
             rankings[slot]=legal[:per_slot]
-        # Slot round-robin: an overall 48-proposal budget must not drop
-        # weapon/relic/trinket just because their names sort late.
-        proposals=[]
-        for depth in range(per_slot):
-            for slot in sorted(rankings):
-                if depth<len(rankings[slot]):
-                    proposals.append((slot,rankings[slot][depth]))
-                    if len(proposals)>=max_proposals:
-                        return proposals,{k:len(v) for k,v in groups.items()}
-        return proposals,{k:len(v) for k,v in groups.items()}
+        # Use the same source-legal, quota-bounded slot sampling as the
+        # ordinary and weighted source frontiers.
+        return _bounded_slot_proposals(rankings,per_slot=per_slot,
+            max_proposals=max_proposals,slot_offset=slot_offset),{
+                k:len(v) for k,v in groups.items()}
     groups=defaultdict(list)
     for slot in base['slots']:
         used={int(x['item_id']) for other,x in base['slots'].items() if other!=slot}
@@ -175,18 +197,11 @@ def _source_slot_proposals(*,class_key,level,base,per_slot=2,max_proposals=48,
                         ranked.append(item);seen.add(item.item_id)
             if len(ranked)>=per_slot:break
         rankings[slot]=ranked[:per_slot]
-    # The *paid* slot quota is global. Appending two candidates per alphabetic
-    # slot before slicing silently excludes later slots (e.g. Mage wand).
-    # Give each source-legal slot one candidate before a second from any slot.
-    # P3-certified and weighted paths already use this same slot round-robin.
-    proposals=[]
-    for depth in range(per_slot):
-        for slot in sorted(rankings):
-            if depth<len(rankings[slot]):
-                proposals.append((slot,rankings[slot][depth]))
-                if len(proposals)>=max_proposals:
-                    return proposals,{slot:len(rows) for slot,rows in groups.items()}
-    return proposals,{slot:len(rows) for slot,rows in groups.items()}
+    # Stratify a small paid quota across the full source slot range.
+    # Full-budget calls retain depth-first round-robin across legal slots.
+    return _bounded_slot_proposals(rankings,per_slot=per_slot,
+        max_proposals=max_proposals,slot_offset=slot_offset),{
+            slot:len(rows) for slot,rows in groups.items()}
 
 
 

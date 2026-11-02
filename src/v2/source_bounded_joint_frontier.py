@@ -2483,7 +2483,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
 
 def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                                   bonus_talent_points=0,max_talents=4,
-                                  max_gear_moves=2,max_policies=2,
+                                  max_gear_moves=2,max_policies=2,gear_slot_offset=0,
                                   max_recovery_policies=2,
                                   max_paid_builds=16,max_cpu_s=80., per_candidate_wall_s=8.,
                                   finalist_mobs=100,screen_mobs=4,
@@ -2529,6 +2529,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     if (max_paid_builds<1 or max_cpu_s<=0 or not 0<per_candidate_wall_s<=120
         or not 1<=screen_mobs<finalist_mobs<=100 or max_recovery_policies<1
         or not 1<=max_policies<=16 or not 1<=max_talents<=256 or max_gear_moves<0
+        or type(gear_slot_offset) is not int or gear_slot_offset<0
         or (screen_then_finalists and not 1<=max_finalists<=max_paid_builds)
         or proposal_strategy not in ("diagonal","marginal_screen")
         or type(pack_size) is not int or not 1<=pack_size<=screen_mobs
@@ -2550,6 +2551,8 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     if progress_path is not None:
         options=dict(bonus_talent_points=bonus_talent_points,max_talents=max_talents,
             max_gear_moves=max_gear_moves,max_policies=max_policies,
+            gear_slot_offset=gear_slot_offset,
+            gear_slot_sampling_version='stratified_source_slots_v1',
             max_recovery_policies=max_recovery_policies,max_paid_builds=max_paid_builds,
             max_cpu_s=max_cpu_s,per_candidate_wall_s=per_candidate_wall_s,
             finalist_mobs=finalist_mobs,screen_mobs=screen_mobs,
@@ -2613,8 +2616,10 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     # otherwise a short paid search samples only isolated gear substitutions.
     stat_package_quota,weapon_package_quota,slot_quota=(
         _joint_gear_move_quotas(max_gear_moves))
-    slot_moves,_=_source_slot_proposals(class_key=class_key,level=level,base=base,
-        per_slot=2,max_proposals=slot_quota)
+    slot_moves,slot_source_counts=_source_slot_proposals(class_key=class_key,
+        level=level,base=base,per_slot=2,max_proposals=slot_quota,
+        slot_offset=gear_slot_offset)
+    slot_move_labels={f'{slot}:{item.item_id}':slot for slot,item in slot_moves}
     stat_packages,_=_source_stat_package_proposals(class_key=class_key,level=level,
         base=base,max_packages=stat_package_quota)
     packages,_=_source_weapon_package_proposals(class_key=class_key,level=level,
@@ -2923,6 +2928,22 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'proposal_strategy':proposal_strategy,
         'talent_ranks_missing_executor':coverage['rank_missing_executor'],
         'talent_allocations_proposed':len(talents),'gear_variants':len(gear_stages),
+        # Proposal coverage is NOT paid coverage, and neither proves the
+        # complete legal gear universe. Preserve exact source slot omissions
+        # for independently comparable 30s/300s cold searches.
+        'source_slot_proposal_coverage':{
+            'strategy':'stratified_source_slots_v1',
+            'slot_offset':gear_slot_offset,'slot_quota':slot_quota,
+            'source_slot_inventory_complete':slot_quota>0,
+            'source_legal_slot_counts':slot_source_counts,
+            'eligible_slots':sorted(k for k,v in slot_source_counts.items() if v),
+            'proposed_slots':sorted({slot for slot,_ in slot_moves}),
+            'paid_slots':sorted({slot_move_labels[row['gear_move']]
+                for row in attempted if row.get('screen_status')
+                and row.get('gear_move') in slot_move_labels}),
+            'unproposed_slots':sorted(set(k for k,v in slot_source_counts.items() if v)
+                -{slot for slot,_ in slot_moves}),
+            'source_universe_exhaustive':False},
         'policy_variants':len(policies),'recovery_variants':len(recoveries),
         'paid_candidates':len(attempted),
         'initial_frontier_paid_candidates':frontier_paid_candidates,
