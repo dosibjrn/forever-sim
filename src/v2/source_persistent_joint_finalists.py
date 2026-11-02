@@ -134,7 +134,17 @@ def _evaluate_concurrent_source_packs(candidate, *, level, mobs, pack_size,
             recovery_health_fraction=(recovery_policy.health_fraction if recovery_policy else .5),
             recovery_mana_fraction=(recovery_policy.mana_fraction if recovery_policy else .1),
             source_maintenance_upkeep=True,
-            source_between_pack_policy=recovery_policy)
+            source_between_pack_policy=recovery_policy,
+            max_cpu_s=max_cpu_s, max_wall_s=max_wall_s)
+    except (EventTransitionBudgetExceeded, ComputeDeadlineExceeded) as exc:
+        # Actual 2D pack execution now obeys the candidate's deadline during
+        # combat, upkeep and recovery, not only after all 100 mobs. An
+        # interrupted pack is never counted as a completed paid finalist.
+        return {'status':'BLOCKED_EVALUATION_COMPUTE_BUDGET',
+                'mob_completed':0, 'reason':str(exc),
+                'events':getattr(exc,'events_processed',0),
+                'elapsed_wall_s':monotonic()-wall_start,
+                'elapsed_cpu_s':process_time()-cpu_start}
     except ValueError as exc:
         reason = str(exc)
         if reason.startswith('pull ') and 'failed: actor_died' in reason:
