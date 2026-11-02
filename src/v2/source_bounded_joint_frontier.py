@@ -2465,6 +2465,41 @@ def _refinement_build_identity(row, candidate):
             row['recovery'])
 
 
+def _paid_refinement_lineages(attempted, shortlist):
+    """Trace selected paid 2-mob screens to their actually evaluated parents.
+
+    Persist a small provenance path instead of serializing every candidate's
+    full gear/APL into a 30s/300s report. These are measured proxy scores,
+    never independent 100-mob results or a claim of optimizer convergence.
+    """
+    lineages=[]
+    for selected in shortlist:
+        pos=selected['paid_candidate_index']
+        seen=set()
+        reverse_path=[]
+        while pos is not None:
+            if type(pos) is not int or pos<0 or pos>=len(attempted) or pos in seen:
+                raise ValueError('PAID_REFINEMENT_PARENT_CHAIN_INVALID')
+            seen.add(pos)
+            row=attempted[pos]
+            reverse_path.append({
+                'paid_candidate_index':pos,
+                'parent_paid_candidate_index':row.get('refinement_parent_paid_index'),
+                'refinement_round':row.get('refinement_round',0),
+                'talent_neighbor_operation':row.get('talent_neighbor_operation'),
+                'screen_s_per_mob':row.get('screen_s_per_mob'),
+                'allocation':row.get('allocation'),
+                'gear_move':row.get('gear_move'),
+                'policy_signature':row.get('policy_signature'),
+            })
+            pos=row.get('refinement_parent_paid_index')
+        lineages.append({
+            'shortlist_paid_candidate_index':selected['paid_candidate_index'],
+            'paid_parent_path':list(reversed(reverse_path)),
+        })
+    return lineages
+
+
 def _refine_screened_top_n(*, screened, class_key, level, compiled,
                            policies_by_talent, talents, bonus_talent_points,
                            max_top_n, rounds, stat_axes, probe_delta,
@@ -2489,11 +2524,13 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                           'paid_evaluations':0,'events':0,'worker_cpu_s':0.,'rows':[]}
     top=_select_screen_finalists(screened,max_top_n)
     seen={_refinement_build_identity(r,c) for r,c,_ in screened}
+    paid_positions={id(row):index for index,row in enumerate(attempted)}
     completed_rounds=0
     for turn in range(rounds):
         if evaluated >= max_evaluations: break
         any_attempt=False
         for parent,candidate,recovery in tuple(top):
+            parent_paid_index=paid_positions[id(parent)]
             if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
             original=float(parent['screen_s_per_mob'])
             # Talent neighborhoods must be paid independently of the stat
@@ -2551,6 +2588,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                 trace={'allocation':allocation,
                                     'gear_move':'talent_refined:'+str(turn+1),
                                     'policy':label,'recovery':parent['recovery'],
+                                    'refinement_parent_paid_index':parent_paid_index,
                                     'policy_signature':signature}
                                 gear=candidate.source_stage['gear_policy_result']['winner']['gear']
                                 key=_refinement_build_identity(trace,fresh)
@@ -2583,6 +2621,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                 opening_action_ids=list(fresh.opening),refinement_round=turn+1,
                                 talent_neighbor_operation=neighbor.operation)
                             rows.append(trace);attempted.append(trace)
+                            paid_positions[id(trace)]=len(attempted)-1
                             if result['status']=='COMPLETE':screened.append((trace,fresh,recovery))
                     except (ValueError,RuntimeError,KeyError,AssertionError):continue
             gradient={}
@@ -2648,6 +2687,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                         trace={'allocation':dict(candidate.allocation),
                             'gear_move':'refined:'+str(turn+1)+':'+str(identity(gear)),
                             'policy':label,'recovery':parent['recovery'],
+                            'refinement_parent_paid_index':parent_paid_index,
                             'policy_signature':policy_identity(fresh.policy)}
                         key=_refinement_build_identity(trace,fresh)
                         if key in seen:continue
@@ -2677,6 +2717,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                         opening_action_ids=list(fresh.opening),
                         refinement_round=turn+1,stat_weights_measured=dict(gradient))
                     rows.append(trace);attempted.append(trace)
+                    paid_positions[id(trace)]=len(attempted)-1
                     if result['status']=='COMPLETE':screened.append((trace,fresh,recovery))
         if any_attempt:completed_rounds+=1
         top=_select_screen_finalists(screened,max_top_n)
@@ -3120,7 +3161,10 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     # must rank it against other screened candidates after the clock stops.
     ranked_screen=_select_screen_finalists(screened,refinement_top_n,
         diversify_apl=True) if search_only else []
-    validation_shortlist=[dict(row) for row,_,_ in ranked_screen]
+    paid_positions={id(row):index for index,row in enumerate(attempted)}
+    validation_shortlist=[dict(row,paid_candidate_index=paid_positions[id(row)])
+                          for row,_,_ in ranked_screen]
+    paid_refinement_lineages=_paid_refinement_lineages(attempted,validation_shortlist)
     search_winner=validation_shortlist[0] if validation_shortlist else None
     # Three phase times partition one shared wall budget without double counting.
     finalist_phase_wall_s=monotonic()-t0-screen_phase_wall_s-qualification_phase_wall_s
@@ -3190,6 +3234,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         'screen_evaluator_backend':screen_evaluator_backend,
         'search_winner':search_winner,
         'validation_shortlist':validation_shortlist,
+        'paid_refinement_lineages':paid_refinement_lineages,
         'refinement':refinement,
         'refinement_top_n':refinement_top_n,
         'refinement_rounds':refinement_rounds,
