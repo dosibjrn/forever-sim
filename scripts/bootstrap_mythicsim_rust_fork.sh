@@ -64,17 +64,18 @@ test_engine() {
   CARGO_PROFILE_RELEASE_LTO=off CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 cargo build --release --locked
   # Historical fixture is a regression witness; failure must be investigated,
   # never silently deleted or rebranded as an accepted new reference.
+  local engine_bin="$PWD/target/release/forever-engine"
   if [[ "$mode" == baseline ]]; then
     # EXACT old engine reference is a permanent regression witness.
     (cd "$PROJECT" && python3 integrations/mythicsim-rust/verify_reference.py \
-      --engine "$PWD/../engine/target/release/forever-engine")
+      --engine "$engine_bin")
   elif [[ "$mode" == upstream ]]; then
     # New upstream mechanics can change DPS legitimately. Keep the old witness,
     # but validate the new source identity, native↔2D causality, real RNG, and
     # actual changed score before updating the integration branch.
     python3 "$PROJECT/integrations/mythicsim-rust/wf659_rng_boolean_audit.py" "$PWD/src"
     (cd "$PROJECT" && python3 integrations/mythicsim-rust/verify_upstream_candidate.py \
-      --engine "$OLDPWD/engine/target/release/forever-engine" \
+      --engine "$engine_bin" \
       --out "$GITHUB_WORKSPACE/rust-upstream-candidate.json")
   else
     echo "::error::Unrecognized Rust validation mode $mode"; exit 2
