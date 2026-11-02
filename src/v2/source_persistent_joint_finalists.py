@@ -385,6 +385,12 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         if index and layout.spacing_yards:
             try:
                 travel=CombatRuntime(actor=actor,target=TargetState.with_health('spaced_travel',1.0))
+                # Spaced movement uses the same paid actor clock and candidate
+                # compute/event ceilings as the combat and upkeep on either side.
+                travel.event_budget_cap=None if max_total_events is None else max_total_events-events
+                travel.event_budget_start=0
+                travel.cpu_deadline_ns=cpu_deadline
+                travel.wall_deadline_ns=wall_deadline
                 travel.advance_to(float(actor.current_time_s)+layout.segment_distances_yards[index-1] / layout.movement_speed_yards_s)
                 travel.persist_actor_periodics()
                 travel_elapsed+=layout.segment_distances_yards[index-1] / layout.movement_speed_yards_s
