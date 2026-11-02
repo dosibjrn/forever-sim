@@ -66,11 +66,18 @@ def run(binary: Path) -> dict:
         ("hunter_pet_prepull",
          "fixtures/mage/prepared-v2/all-values-beast-mastery-hunter-labeled.request.json", 12.),
     ):
-        source = binary.parents[2] / request  # <clone>/target/release/forever-engine
-        # fixtures live in the cloned fork, not forever-sim.
+        # Fixtures live in the cloned fork, not forever-sim.
         source = binary.parents[2] / request
         assert source.is_file(), ("UPDATED_RUST_SOURCE_FIXTURE_MISSING", str(source))
-        world = probe.run(binary, source, distance=distance)
+        try:
+            world = probe.run(binary, source, distance=distance)
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(
+                f"UPSTREAM_NATIVE_PREPARE_REFUSED_OR_BROKEN {spec_name} "
+                f"returncode={exc.returncode} "
+                f"stdout={(exc.stdout or '')[-3000:]} "
+                f"stderr={(exc.stderr or '')[-3000:]}"
+            ) from exc
         assert world["native_damage_events"] > 0
         assert abs(world["native_dps"] - world["world_mean_dps"]) < 1e-5
         if spec_name == "hunter_pet_prepull":
