@@ -191,5 +191,6 @@ def test_m1_action_prepares_exact_source_native_p7_without_heavy_opt_in():
     assert "FOREVER_MYTHICSIM_RUST_BIN:" in workflow
     assert "FOREVER_P7_LIVE_PROBE_ITERATIONS=3" in workflow
     assert '"$gate" != P7.1' in workflow
+    assert '"$entry" == *:P7.*' in workflow  # future P7.2-.5 use same native binary
     assert '"$gate" == P6' in workflow
     assert '"$gate" == P7.*' in workflow
