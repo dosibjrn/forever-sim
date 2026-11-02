@@ -66,7 +66,7 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
 
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
     clock = iter([0.0, 0.0, 300.0, 300.0])
-    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
     monkeypatch.setattr(gate, "_pinned_source_runtime",
                         lambda *a: (base, {"reference_dps": 728.19}, binary))
     monkeypatch.setattr(gate, "_source_native_world_parity",
