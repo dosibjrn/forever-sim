@@ -32,7 +32,7 @@ This is an independent Forever simulation and optimization research project. The
 
 **Gate order within a checkpoint:** P1 abilities → P2 talents → P3 gear smoke → P4 independent cold 30 s search → P5 cold 300 s → P6 100-mob saturation replay → P7.1 reference → P7.2 rotation → P7.3 talents → P7.4 gear → P7.5 joint search. The historical overall checkpoint priority is Druid L20 → Druid L30 → Mage L30; the mutable milestone plan controls future execution order.
 
-**Work and promotion:** worker implements **one formal gate per branch**, commits tests/results under [docs/evidence](docs/evidence/README.md); integrator reviews and merges accepted gates into `main`. No incomplete gate code should reach `main`. Current approved [PROCESS.md](PROCESS.md) governs implementation, with [formal gate predicates](docs/gates/README.md) split into focused contracts; [OVERALL_PLAN.md](OVERALL_PLAN.md) is v5. Git history holds the former consolidated process and earlier versions.
+**Implementation and acceptance:** develop and merge focused, regression-tested production improvements incrementally. Run expensive P1–P7.5 acceptance only when ready; Merge alone records genuine PASS timestamps in the canonical M1 ledger. The authoritative requirements are [PROCESS.md](PROCESS.md), [gate predicates](docs/gates/README.md) and [OVERALL_PLAN.md](OVERALL_PLAN.md).
 
 ## Command launchers
 
@@ -52,9 +52,9 @@ The root `run.sh` and `run.ps1` remain unchanged stable entry points.
 | --- | --- |
 | [`src/`](src/) | Python GameIR, rulesets, 2D world, optimizers and local services |
 | [`tests/`](tests/README.md) | Unit, regression, integration and acceptance tests (currently mostly flat) |
-| [`tools/`](tools/README.md) | Existing Python gate/capture/ingest/audit entry points |
+| [`tools/`](tools/) | Python gate/capture/ingest/audit entry points |
 | [`data/`](data/) | Forever source snapshots, catalogues and staged databases |
-| [`docs/`](docs/INDEX.md) | Canonical documentation map, active evidence, reference and archive |
+| [`docs/`](docs/INDEX.md) | Canonical documentation map, accepted reference evidence and source notes |
 | [`docs/evidence/`](docs/evidence/README.md) | Curated accepted gate decisions, reproducible requests/results and build proof |
 | [`evidence/`](evidence/README.md) | Historical WF experiments; **not** the current PASS scoreboard |
 | `gate_config/`, `gate_sources/`, `gate_evidence/` | Operational gate policy, source inputs and machine evidence; paths still used by code |
@@ -62,29 +62,3 @@ The root `run.sh` and `run.ps1` remain unchanged stable entry points.
 **[Large assets and Git LFS migration](docs/LARGE_ASSETS_LFS.md)** — binary catalogues, large historical JSON and source archives; public LFS payloads were hydrated in an independent checkout; do not mistake pointer files for hydrated bytes.
 
 **[Clean-owned ideal repository architecture and convergence rules](docs/REPOSITORY_STRUCTURE.md).** The numerous shell/PowerShell launchers are a completed [historical private-repo launcher cleanup](https://github.com/dosibjrn/mage-level-sim/issues/14); `run.sh` and `run.ps1` remain stable root entry points.
-
-## Gate scoreboard and evidence
-
-| Gate / engineering milestone | Status | Evidence |
-| --- | --- | --- |
-| Go pinned native Linux build (WF637) | **PASS — build only** | [Build logs, source and binary checksum](docs/evidence/go-native-build/README.md) |
-| Rust BalancedRNG compile and smoke (WF636) | **PASS — build only** | [CI and 50-fight test, known limits](docs/evidence/rust-balanced-build/README.md) |
-| Rust pinned engine build (WF632) | **PASS** | [Build, pinned commit and artifact](docs/evidence/rust-reference-replay.md) |
-| Rust 10,000-iteration Balance reference replay (WF633) | **PASS — standalone** | [Settings, gear, raid buffs, DPS parity, limitations](docs/evidence/rust-reference-replay.md) |
-| Druid Feral Cat — P7 | **CLOSED — user approved** | [Decision and evidence gaps](docs/evidence/druid-p7/README.md) |
-| Druid Balance — P7.2 (WF641, 1% tolerance) | **CLOSED — user approved** | [300s search, 2,000-fight holdout, technical exceptions](docs/evidence/druid-l60-balance/p7.2/README.md) |
-| Druid Balance — P7.1 | **CLOSED — user approved** | [Rust reference evidence and remaining raw evidence](docs/evidence/druid-p7/README.md) |
-| Native Go P7.1.2 full reference parity | **OPEN** | No passing evidence |
-| Live gsim 2D integration P7.1.3 | **OPEN** | No passing evidence |
-| Rust probability-balanced RNG (including hit tables) | **IN PROGRESS** | [WF636 CI](https://github.com/dosibjrn/mage-level-sim/actions/runs/40898989538) |
-| Complete P1–P7 checkpoint certification | **0/148 PASS** | [PROCESS](PROCESS.md) |
-
-### Evidence contract
-
-For **each passing gate**, commit a self-contained folder under `docs/evidence/<gate-or-checkpoint>/` with the exact source revision, input requests, item/gear/talent IDs, buffs/debuffs/consumes, build commands and binary hashes, full logs/raw results, statistics, acceptance validator output, and independent holdout as applicable. README links to the folder's `README.md`. Missing evidence = OPEN/FAIL, never inferred PASS. Binary CI artifacts may remain in GitHub Actions if the evidence includes a durable source revision and build/run link; preserve text logs and inputs under Git when practical.
-
-Per [PROCESS](PROCESS.md), promote **each individually accepted gate** to `main` after verifying its evidence. Do not mix unaccepted work into a passing merge. Git handles document history: use canonical [PROCESS.md](PROCESS.md) and [OVERALL_PLAN.md](OVERALL_PLAN.md), without filename versioning.
-
----
-
-Historical WF464 README material is preserved in [Git history](https://github.com/dosibjrn/mage-level-sim/blob/8ff66bab8ee5259e6dc76f291452b2f36ac5d4c6/README.md); it is not current gate evidence.
