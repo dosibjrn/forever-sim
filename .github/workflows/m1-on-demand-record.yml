@@ -1,144 +1,149 @@
-name: M1 - Merge-owned on-demand live gate recorder
+name: M1 - Merge-owned batch live gate recorder
 
-# No push, pull_request or schedule trigger: no recurring heavy acceptance CI.
+# One explicit Merge command on a merged PR, or manual Actions dispatch.
+# Never run acceptance scans automatically for every push or every hour.
 on:
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
-      class_key:
-        description: "Checkpoint class"
-        required: true
-        type: choice
-        options: [druid, hunter, mage, paladin, priest, rogue, shaman, warlock, warrior]
-      level:
-        description: "Checkpoint level"
-        required: true
-        type: choice
-        options: ["20", "30", "40", "60"]
-      spec:
-        description: "Exact canonical checkpoint spec/profile"
+      targets:
+        description: "Space-separated class:level:spec:gate pairs"
         required: true
         type: string
-        default: unrestricted
-      gate:
-        description: "One approved PROCESS gate"
-        required: true
-        type: choice
-        options: [P1, P2, P3, P4, P5, P6, P7.1, P7.2, P7.3, P7.4, P7.5]
       allow_heavy:
-        description: "Explicit opt-in for P5/P6/P7 full production paths; do not use routinely"
-        required: true
+        description: "Explicit opt-in for P5/P6/P7 acceptance"
+        required: false
         type: boolean
         default: false
 
 permissions:
   contents: write
-  pull-requests: write
+  issues: read
+  pull-requests: read
 
 concurrency:
-  group: m1-on-demand-ledger
+  group: m1-ledger-writer
   cancel-in-progress: false
 
 jobs:
-  live-record:
-    # Only the repository owner may initiate the Merge-delegated recorder.
-    # GitHub actor alone cannot distinguish agent roles: a separate Merge review
-    # of the resulting ledger-only PR remains mandatory.
-    if: github.ref == 'refs/heads/main' && github.actor == 'dosibjrn'
+  record:
+    if: >-
+      github.actor == 'dosibjrn' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/m1-run ')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-          fetch-depth: 0
-          persist-credentials: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Materialize canonical LFS source data
-        run: git lfs pull
-      - name: Install existing Python gate dependencies
-        run: python -m pip install pytest==8.3.5 beautifulsoup4==4.13.4
-      - name: Run one actual production gate and stage PASS or eligible PARTIAL
-        id: gate
-        env:
-          CLASS_KEY: ${{ inputs.class_key }}
-          CHECKPOINT_LEVEL: ${{ inputs.level }}
-          CHECKPOINT_SPEC: ${{ inputs.spec }}
-          CHECKPOINT_GATE: ${{ inputs.gate }}
-          ALLOW_HEAVY: ${{ inputs.allow_heavy }}
+      - name: Verify Merge command and parse only allowed gate targets
+        id: targets
         shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! "$CHECKPOINT_SPEC" =~ ^[a-z][a-z0-9_-]*$ ]]; then
-            echo "Invalid checkpoint spec" >&2; exit 2
-          fi
-          if [[ "$CHECKPOINT_GATE" == P5 || "$CHECKPOINT_GATE" == P6 || "$CHECKPOINT_GATE" == P7.* ]]; then
-            if [[ "$ALLOW_HEAVY" != "true" ]]; then
-              echo "Explicit allow_heavy required; refusing accidental expensive gate run" >&2
-              exit 2
-            fi
-          fi
-          set +e
-          python tools/wf_gate.py \
-            --class "$CLASS_KEY" --level "$CHECKPOINT_LEVEL" \
-            --spec "$CHECKPOINT_SPEC" --gate "$CHECKPOINT_GATE" \
-            --record-progress --out "$RUNNER_TEMP/m1-live-result.json"
-          rc=$?
-          set -e
-          # FAIL is exit 1 by contract and may still have a genuine PARTIAL.
-          if [[ "$rc" -gt 1 || ! -s "$RUNNER_TEMP/m1-live-result.json" ]]; then
-            echo "Gate could not produce a completed source-backed result" >&2
-            exit 2
-          fi
-          python - <<'PY'
-          import json, os
-          from pathlib import Path
-          report = json.loads((Path(os.environ["RUNNER_TEMP"]) / "m1-live-result.json").read_text())
-          assert report["class"] == os.environ["CLASS_KEY"]
-          assert str(report["level"]) == os.environ["CHECKPOINT_LEVEL"]
-          assert report["spec"] == os.environ["CHECKPOINT_SPEC"]
-          assert report["gate"] == os.environ["CHECKPOINT_GATE"]
-          print("Measured gate result:", report["status"], report["results"][0]["reasons"][:3])
-          PY
-          python tools/m1_progress.py
-          if git diff --quiet -- docs/planning/M1_PASSES.tsv; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No new defensible PASS/PARTIAL; no M1 write PR."
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "New live result staged; Merge review required."
-          fi
-      - name: Open ledger-only review PR (never write main directly)
-        if: steps.gate.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          CLASS_KEY: ${{ inputs.class_key }}
-          CHECKPOINT_LEVEL: ${{ inputs.level }}
-          CHECKPOINT_SPEC: ${{ inputs.spec }}
-          CHECKPOINT_GATE: ${{ inputs.gate }}
-        shell: bash
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          DISPATCH_TARGETS: ${{ inputs.targets }}
+          DISPATCH_HEAVY: ${{ inputs.allow_heavy }}
         run: |
           set -euo pipefail
-          branch="m1/on-demand-${GITHUB_RUN_ID}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$branch"
-          git add -- docs/planning/M1_PASSES.tsv
-          git commit -m "chore(m1): stage live $CLASS_KEY L$CHECKPOINT_LEVEL $CHECKPOINT_SPEC $CHECKPOINT_GATE result"
-          git push origin "HEAD:refs/heads/$branch"
-          cat > "$RUNNER_TEMP/m1-review.md" <<EOF
-          Merge-only M1 review candidate generated by the **real production gate runner** with --record-progress.
+          heavy=false
+          if [[ "$GITHUB_EVENT_NAME" == issue_comment ]]; then
+            [[ "$COMMENT_BODY" == '/m1-run '* && "$COMMENT_BODY" != *$'\n'* ]] ||
+              { echo 'Expected a single-line /m1-run command' >&2; exit 2; }
+            pr="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
+            [[ "$(jq -r '.merged' <<< "$pr")" == true &&
+               "$(jq -r '.base.ref' <<< "$pr")" == main &&
+               "$(jq -r '.base.repo.full_name' <<< "$pr")" == "$GITHUB_REPOSITORY" ]] ||
+              { echo 'M1 command must belong to an already merged PR into main' >&2; exit 2; }
+            targets="${COMMENT_BODY#'/m1-run '}"
+            if [[ "$targets" == '--heavy '* ]]; then
+              heavy=true
+              targets="${targets#'--heavy '}"
+            fi
+          else
+            [[ "$GITHUB_REF" == refs/heads/main ]] || exit 2
+            targets="$DISPATCH_TARGETS"
+            [[ "$DISPATCH_HEAVY" != true ]] || heavy=true
+          fi
+          [[ "$targets" != *$'\n'* ]] || exit 2
+          read -r -a entries <<< "$targets"
+          (( ${#entries[@]} >= 1 && ${#entries[@]} <= 12 )) ||
+            { echo 'Choose 1-12 checkpoint:gate pairs' >&2; exit 2; }
+          declare -A seen=()
+          unique=()
+          for entry in "${entries[@]}"; do
+            [[ "$entry" =~ ^(druid|hunter|mage|paladin|priest|rogue|shaman|warlock|warrior):(20|30|40|60):[a-z][a-z0-9_-]*:(P[1-6]|P7\.[1-5])$ ]] ||
+              { echo "Invalid gate target: $entry" >&2; exit 2; }
+            gate="${entry##*:}"
+            if [[ "$heavy" != true && ( "$gate" == P5 || "$gate" == P6 || "$gate" == P7.* ) ]]; then
+              echo "Gate $gate needs explicit --heavy / allow_heavy opt-in" >&2; exit 2
+            fi
+            if [[ -z "${seen[$entry]:-}" ]]; then
+              unique+=("$entry")
+              seen[$entry]=1
+            fi
+          done
+          printf 'targets=%s\n' "$(IFS=' '; echo "${unique[*]}")" >> "$GITHUB_OUTPUT"
+          echo "Accepted ${#unique[@]} production targets"
 
-          - Checkpoint: $CLASS_KEY L$CHECKPOINT_LEVEL $CHECKPOINT_SPEC
-          - Gate: $CHECKPOINT_GATE
-          - Tested source HEAD: $GITHUB_SHA
-          - Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-          - Scope: only docs/planning/M1_PASSES.tsv
-          - The TSV changed because the live runner returned PASS or a recordable FAIL/PARTIAL.
-          - Merge must validate source/ruleset/selected production backend, behavioral denominator, compatibility and invalidation before merging. No CI-green implies certification.
-          - Merge resolves conflicts with any concurrently landed M1 row; do not overwrite other rows.
-          EOF
-          gh pr create --base main --head "$branch" \
-            --title "chore(m1): live $CLASS_KEY L$CHECKPOINT_LEVEL $CHECKPOINT_SPEC $CHECKPOINT_GATE" \
-            --body-file "$RUNNER_TEMP/m1-review.md"
+      - name: Checkout current main, without saved write credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          fetch-depth: 1
+          lfs: true
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+
+      - name: Run real production gates and update one TSV
+        shell: bash
+        env:
+          TARGETS: ${{ steps.targets.outputs.targets }}
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          echo "Measured production HEAD: $(git rev-parse HEAD)"
+          read -r -a entries <<< "$TARGETS"
+          for entry in "${entries[@]}"; do
+            IFS=: read -r class level spec gate <<< "$entry"
+            echo "::group::M1 $entry"
+            report="$(mktemp)"
+            rc=0
+            timeout 600s python tools/wf_gate.py --class "$class" --level "$level" \
+              --spec "$spec" --gate "$gate" --record-progress --out "$report" || rc=$?
+            python -c 'import json,sys; from pathlib import Path; d=json.loads(Path(sys.argv[1]).read_text()); rc=int(sys.argv[2]); assert d["status"] in ("PASS","FAIL","BLOCKED") and rc in (0,1) and ((rc==0)==(d["status"]=="PASS")), "Incomplete or inconsistent live gate"; print(json.dumps(d, ensure_ascii=False))' "$report" "$rc"
+            rm -f "$report"
+            echo "::endgroup::"
+          done
+          python tools/m1_progress.py
+          git diff --stat -- docs/planning/M1_PASSES.tsv
+
+      - name: Update M1 in main only if the ledger changed
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/planning/M1_PASSES.tsv; then
+            echo 'No measured new PASS/PARTIAL; M1 stays unchanged.'
+            exit 0
+          fi
+          # GitHub Contents API update is optimistic; no blind overwrite or
+          # competing status file. Concurrent main changes in other files are OK.
+          expected="$(git rev-parse HEAD:docs/planning/M1_PASSES.tsv)"
+          current="$(gh api "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv?ref=main" --jq '.sha')"
+          [[ "$current" == "$expected" ]] ||
+            { echo 'Concurrent M1 edit: rerun against current main' >&2; exit 1; }
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/docs/planning/M1_PASSES.tsv" \
+            -f branch=main \
+            -f message="M1: record live gate progress (Actions $GITHUB_RUN_ID)" \
+            -f sha="$current" \
+            -f content="$(base64 -w0 docs/planning/M1_PASSES.tsv)" \
+            --jq '.commit.html_url'
+          echo 'M1 updated in main; totals are derived from the one TSV.'

@@ -35,7 +35,17 @@ For **every newly integrated Work1/Work2/Prio production-code PR**, Merge must r
 
 **Merging code and examining its reported gates are a single integration responsibility.** A safe code PR may merge before a full PASS, but never conclude “M1 unchanged because a merge is not gate evidence” *without actually examining the affected gate and available cheap live probe*. Don't run unrelated ports every hour. A bounded native/2D probe is a diagnostic, not a P7 PASS; a genuine P7 DPS proximity is a distinct noncertifying metric, not counted fight coverage.
 
-**Optional on-demand GitHub Actions recorder:** [`m1-on-demand-record.yml`](../../.github/workflows/m1-on-demand-record.yml) runs only through an explicit, Merge-authorized workflow dispatch on `main` for a specific checkpoint/gate; it calls the **same production `wf_gate.py --record-progress`** once, computes `m1_progress.py` immediately, and creates **a reviewable ledger-only PR only if the TSV changed**. It does **not** schedule expensive acceptance runs or push directly to `main`. The workflow bot is merely a delegated execution mechanism; **Merge alone validates, merges and publishes the official ledger**. No other agent may dispatch it to claim accepted progress. A full gate's substantive approval, especially P7's source/engine/UI/holdout and checkpoint compatibility, is never inferred from “Actions green”. A merged TSV is the **only** persistent score source; compute all totals dynamically from it, never maintain a second scoreboard file.
+**Merge-triggered GitHub Actions recorder (batch, direct main):** [`m1-on-demand-record.yml`](../../.github/workflows/m1-on-demand-record.yml) uses the EXISTING production `wf_gate.py --record-progress` and `m1_progress.py`. At the **end of each Merge cycle containing relevant merged PRs**, collect the actually affected `class:level:spec:gate` pairs from their PR descriptions **and real diffs**, deduplicate them, then post **one single-line command on the most recently merged PR**, for example:
+
+```text
+/m1-run druid:60:balance:P2 druid:60:balance:P3
+```
+
+The owner-authenticated comment on an **already merged PR to main** launches a single GitHub Actions run against **fresh main** for up to twelve explicitly named gates. No scan of unchanged gates, no hourly CI polling. For intentionally heavy P5/P6/P7 acceptance use `/m1-run --heavy ...` only with a justified full run; these are never launched by default. An optional manual Actions dispatch exists if a merged PR comment is unavailable.
+
+The live runner stores qualifying **PASS or FAIL/PARTIAL directly in the sole TSV**, even when a gate remains FAIL; BLOCKED, bogus denominators and nonexecuted probes never count. After the batch, the workflow recomputes the existing M1 scoreboard and, **only when the TSV changed**, writes that single file directly to `main` via the GitHub Contents API with a matching-blob-SHA concurrency check. No secondary JSON register, no separate M1 bookkeeping PR and no authored total counts. A rejected concurrent update must be retried with fresh main; never overwrite another writer.
+
+**Responsibility stays with Merge**, not with the Actions bot: Merge audits the affected pairs, the code diff, selected production engine/source/ruleset, full PASS/partial denominator, run logs, compatibility and invalidation. It confirms the Action completed and that the exact new TSV rows appear in `main`. The workflow does not turn CI-GREEN into a PASS; `wf_gate.py` owns execution and predicates, and Merge must not send unvalidated full-PASS claims. If there are no eligible changed gates, Merge reports the reason instead of triggering a useless run.
 
 ## Responsibilities and ownership
 
