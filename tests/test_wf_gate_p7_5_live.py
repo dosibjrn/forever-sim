@@ -245,7 +245,9 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_external_only_floor_met"] is True
     assert report["final_required_dps"] is None
-    assert report["status"] == "FAIL"
+    # Real search and 1000-fight numeric result exist; only the unestablished
+    # accepted-compatible prior prevents the complete gate from proceeding.
+    assert report["status"] == "BLOCKED"
     assert report["reasons"] == ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"]
     assert original == unchanged
 
@@ -374,7 +376,7 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     assert report["joint_cold_world_dps"] == 735.0
     assert report["frozen_stochastic_world_dps"] == 735.0
     assert report["frozen_stochastic_iterations"] == 1000
-    assert report["status"] == "FAIL"  # saved UI and accepted prior not proved
+    assert report["status"] == "BLOCKED"  # accepted compatible prior not established
     assert base == original
 
 
