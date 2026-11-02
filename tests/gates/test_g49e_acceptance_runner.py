@@ -30,7 +30,7 @@ def test_g49e_junit_parser_counts_skip_as_non_pass(tmp_path):
 def test_g49e_native_strict_gate_is_not_optional(monkeypatch):
     def run(cmd, **kwargs):
         assert kwargs['env']['WOW_REQUIRE_NATIVE_BROWSER_E2E'] == '1'
-        assert 'tests/test_g49d_native_browser_e2e.py' in cmd
+        assert 'tests/integration/service/test_g49d_native_browser_e2e.py' in cmd
         Path(cmd[cmd.index('--junitxml') + 1]).write_text(
             '<testsuite tests="1" failures="0" errors="0" skipped="0" time="0.4"/>')
         return subprocess.CompletedProcess(cmd, 0, '1 passed')
@@ -67,7 +67,7 @@ def test_g49e_stage_timeout_is_not_pass(monkeypatch):
 
 
 def test_g49e_browser_executable_can_be_overridden_for_local_runner():
-    native = Path('tests/test_g49d_native_browser_e2e.py').read_text()
+    native = Path('tests/integration/service/test_g49d_native_browser_e2e.py').read_text()
     slow = Path('tests/test_generic_all_class_product_gate_g48d.py').read_text()
     assert 'WOW_CHROMIUM_EXECUTABLE' in native
     assert 'WOW_CHROMIUM_EXECUTABLE' in slow
@@ -92,3 +92,12 @@ def test_g49e_canonical_route_snapshots_are_fresh_before_slow_gate():
     assert druid["levels"] == list(generic_frontier.GENERIC_DRUID_ROUTE_LEVELS)
     assert melee["levels"] == {k: list(v) for k, v in generic_melee_routes.MELEE_CORRIDORS.items()}
     assert melee["source_code_fingerprint"] == generic_melee_routes._fingerprint()
+
+
+def test_g49e_all_stage_files_resolve_from_repository_root():
+    """The public G49 runner must never call the removed flat test paths."""
+    for stage, (_, args) in gate.STAGES.items():
+        for arg in args:
+            if arg.startswith('tests/'):
+                path = gate.ROOT / arg.split('::', 1)[0]
+                assert path.is_file(), (stage, str(path))
