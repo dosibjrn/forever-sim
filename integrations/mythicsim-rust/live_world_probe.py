@@ -25,7 +25,8 @@ from tools.wf_gsim_go_live_range_probe import (
 )
 
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
-        iterations: int = 1, periodic_world_poll: bool = False) -> dict:
+        iterations: int = 1, periodic_world_poll: bool = False,
+        facing_switch_at_s: float | None = None) -> dict:
     raw = request.read_bytes()
     source = json.loads(raw)
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
@@ -33,6 +34,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     assert players[0]["class"] == "ClassDruid"
     if not 1 <= iterations <= source["simOptions"]["iterations"]:
         raise ValueError("RUST_WORLD_ITERATIONS_OUT_OF_SOURCE_RANGE")
+    if facing_switch_at_s is not None and (
+            not math.isfinite(facing_switch_at_s) or facing_switch_at_s <= 0 or iterations != 1):
+        raise ValueError("RUST_WORLD_FACING_SWITCH_INVALID")
     def new_world():
         world = diagnostic_gsim_world(
             target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
@@ -59,6 +63,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     samples = []
     iteration_damage = 0.
     total_ticks = 0
+    facing_switch_clock_ns = None
+    source_action_events_before = {}
+    source_action_events_after = {}
     with tempfile.TemporaryDirectory() as folder:
         output = Path(folder) / "result.json"
         env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1",
@@ -103,6 +110,14 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 if native["native_process_id"] != proc.pid:
                     raise AssertionError("RUST_NATIVE_PID_MISMATCH")
                 world.advance_to(clock_ns / 1e9)
+                if (facing_switch_at_s is not None and facing_switch_clock_ns is None
+                        and clock_ns >= round(facing_switch_at_s * 1e9)):
+                    # The real 2D world, not a patched source request, turns
+                    # its stationary target before the next native decision.
+                    # Target starts at +distance, hero at origin: heading -X
+                    # puts the hero in front, whereas +X means behind.
+                    world.targets["m1"].metadata["facing_xy_yards"] = (-1., 0.)
+                    facing_switch_clock_ns = clock_ns
                 tick = feed.next_tick()
                 assert tick["sequence"] == native["sequence"]
                 assert tick["native_clock_ns"] == clock_ns
@@ -126,6 +141,12 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 assert receipt["native_process_id"] == proc.pid
                 feed.accept_range_receipt(receipt["native_range_receipt"])
                 ack = applier.apply(tick, receipt)
+                action_counter = (source_action_events_after
+                    if facing_switch_clock_ns is not None
+                    else source_action_events_before)
+                for event in receipt["native_damage_events"]:
+                    action = event["source_action_id"]
+                    action_counter[action] = action_counter.get(action, 0) + 1
                 ack["iteration_index"] = iteration
                 event_count += len(ack["applied_event_ids"])
                 # Millions of positive source-native events must not lose
@@ -178,6 +199,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "per_iteration": samples,
                     "source_request_proto_sha256": request_sha,
                     "source_request_raw_sha256": raw_sha,
+                    "facing_switch_clock_ns": facing_switch_clock_ns,
+                    "source_action_events_before": source_action_events_before,
+                    "source_action_events_after": source_action_events_after,
                     "checkpoint_certified": False}
         finally:
             if proc.poll() is None:

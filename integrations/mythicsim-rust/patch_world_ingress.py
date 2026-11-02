@@ -58,7 +58,13 @@ def main() -> None:
                     self.config.distance = distance;
                     self.changed(reads::CASTS);
                 }
-                self.config.melee.in_front_of_target = front;
+                // Facing can invalidate cached APL FrontOfTarget conditions
+                // even when the distance is unchanged. Mirror range's
+                // production invalidation at the native scheduler boundary.
+                if self.config.melee.in_front_of_target != front {
+                    self.config.melee.in_front_of_target = front;
+                    self.changed(reads::CASTS);
+                }
                 return true;
             }
         }
