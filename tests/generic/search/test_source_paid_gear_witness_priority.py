@@ -724,3 +724,46 @@ def test_nested_paid_candidate_expiry_does_not_arm_stray_alarm(monkeypatch):
                 pass
     assert state["timer"] == (0, 0)
     assert state["handler"] == signal.SIG_DFL
+
+
+def test_refinement_identity_does_not_charge_again_for_weight_only_search_path():
+    # Actual canonical source gear (not fake equipment): the same items/stats
+    # may be reached by independent stat-weight searches, but only one paid
+    # CombatRuntime screen must be charged for that build. A changed effective
+    # stat vector or a different source item must still be a separate build.
+    from copy import deepcopy
+    from types import SimpleNamespace
+    from src.v2.source_bounded_joint_frontier import _refinement_build_identity
+
+    for class_key in ("mage", "druid"):
+        source_ir = build_game_ir_slice(class_key=class_key, level=30)
+        seed = source_cold_start_stage(
+            class_key=class_key, level=30, source_ir=source_ir, gear_role=class_key)
+        source_gear = seed["gear_policy_result"]["winner"]["gear"]
+        candidate = SimpleNamespace(source_stage=seed, opening=())
+        row = {"allocation": {}, "policy_signature": "source_apl", "recovery": "always",
+               "equipped_gear": deepcopy(source_gear)}
+        original = _refinement_build_identity(row, candidate)
+
+        same_items = deepcopy(source_gear)
+        same_items["selection_weights"] = {"spell_power": 17, "intellect": 1}
+        assert _refinement_build_identity(
+            {**row, "equipped_gear": same_items}, candidate) == original
+
+        changed_stats = deepcopy(source_gear)
+        changed_stats["aggregate_stats"]["stamina"] = (
+            changed_stats["aggregate_stats"].get("stamina", 0) + 1)
+        assert _refinement_build_identity(
+            {**row, "equipped_gear": changed_stats}, candidate) != original
+
+        moves, _ = _source_slot_proposals(
+            class_key=class_key, level=30, base=source_gear, per_slot=2,
+            max_proposals=8, slot_offset=0)
+        assert moves
+        slot, item = moves[0]
+        alternate_stage = substituted_multi_stage(
+            stage=seed, class_key=class_key, level=30,
+            swaps={slot: int(item.item_id)})
+        swapped_gear = alternate_stage["gear_policy_result"]["winner"]["gear"]
+        assert _refinement_build_identity(
+            {**row, "equipped_gear": swapped_gear}, candidate) != original
