@@ -14,6 +14,55 @@ _COMMON = ('class_key', 'level', 'source_db_sha256', 'enemy', 'pack_size',
            'spec_constraint', 'reference_origin', 'screen_evaluator_backend')
 
 
+
+def source_gear_catalogue_snapshot(class_key, level):
+    """Pin the actual gear source separately from the ability/talent SQLite.
+
+    A class/level item frontier is not proven complete merely because its
+    current catalogue can be enumerated. Keep membership attestation explicit.
+    """
+    from hashlib import sha256
+    from src.rulesets.forever.items.runtime_selection import (
+        available_items, catalogue_path, source_class_item_membership_verified)
+    from src.rulesets.forever.items.source_equipment_semantics import ledger_path
+
+    catalogue = catalogue_path()
+    semantics = ledger_path()
+    rows = available_items(class_key, level, required_level_policy='observed')
+    ids = sorted(int(item.item_id) for item in rows)
+    if not ids or len(ids) != len(set(ids)):
+        raise ValueError('COLD_SOURCE_GEAR_EMPTY_OR_DUPLICATE_ITEM_UNIVERSE')
+    return {
+        'schema': 'source_gear_snapshot_v1',
+        'class_key': class_key, 'level': level,
+        'catalogue_sha256': sha256(catalogue.read_bytes()).hexdigest(),
+        'equipment_semantics_sha256': sha256(semantics.read_bytes()).hexdigest(),
+        'observed_eligible_item_ids_sha256': sha256(
+            ''.join(f'{item_id}\\n' for item_id in ids).encode()).hexdigest(),
+        'observed_eligible_item_count': len(ids),
+        'class_membership_verified': source_class_item_membership_verified(
+            class_key, catalogue),
+    }
+
+
+def _winner_gear_effect_gaps(winner, *, class_key, level):
+    """Check actual equipped source items; partial diagnostics are not P4 L2."""
+    from src.game.data.forever.source_checkpoint_p3 import source_item_l0
+    from src.rulesets.forever.items.runtime_selection import available_items
+
+    by_id = {int(item.item_id): item for item in available_items(
+        class_key, level, required_level_policy='observed')}
+    gaps = {}
+    for slot, record in winner['equipped_gear']['slots'].items():
+        item_id = int(record['item_id'])
+        if item_id not in by_id:
+            raise ValueError('COLD_COMPARISON_WINNER_ITEM_NOT_IN_SOURCE:' + str(item_id))
+        unresolved = source_item_l0(by_id[item_id])['unresolved_effects']
+        if unresolved:
+            gaps[slot] = {'item_id': item_id, 'unresolved_effects': unresolved}
+    return gaps
+
+
 def _saved_winner(report, *, expected_budget, source_hash, class_key, level):
     """Fail closed on a missing or unverified 100-mob search finalist."""
     if (report.get('source_db_sha256') != source_hash
@@ -63,10 +112,21 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
         source_hash=source_hash, class_key=class_key, level=level)
     winner300 = _saved_winner(search300, expected_budget=300,
         source_hash=source_hash, class_key=class_key, level=level)
-    # New reports preserve the exact legal candidate-universe limits. Older
-    # reports can be independently replayed but cannot prove same-space P4/P5.
+    # The ability/talent SQLite hash does NOT pin the separate item catalogue
+    # or its typed equipment-effects ledger. Recheck both source snapshots
+    # against the current runtime before paying for an independent replay.
+    # Legacy reports lacking snapshots remain diagnostic, never same-space proof.
+    gear30 = search30.get('source_gear_catalogue_snapshot')
+    gear300 = search300.get('source_gear_catalogue_snapshot')
+    gear_pinned = bool(gear30 and gear300)
+    if gear30 is not None or gear300 is not None:
+        if (not gear_pinned or gear30 != gear300
+                or gear30 != source_gear_catalogue_snapshot(class_key, level)):
+            raise ValueError('COLD_COMPARISON_DIFFERENT_GEAR_SOURCE_SNAPSHOT')
+    gaps30 = _winner_gear_effect_gaps(winner30, class_key=class_key, level=level)
+    gaps300 = _winner_gear_effect_gaps(winner300, class_key=class_key, level=level)
     space30, space300 = search30.get('source_search_space'), search300.get('source_search_space')
-    same_space = bool(space30 and space30 == space300)
+    same_space = bool(gear_pinned and space30 and space30 == space300)
 
     from src.v2.source_bounded_joint_frontier import replay_joint_shortlist_100mob
     results = []
@@ -107,5 +167,11 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
         'ratio_T30_T300': ratio, 'numeric_p6_within_1pct': bool(complete and ratio <= 1.01),
         'N30_unique_paid': n30, 'N300_unique_paid': n300,
         'p5_10x_breadth': breadth, 'same_source_legal_candidate_space_proven': same_space,
-        'p4_p5_source_coverage_proven': source_coverage,
+        'p4_p5_source_coverage_proven': source_coverage and gear_pinned
+            and not gaps30 and not gaps300,
+        'same_gear_catalogue_and_semantics_proven': gear_pinned,
+        'source_class_gear_membership_attested': bool(gear_pinned
+            and gear30['class_membership_verified']),
+        'winning_gear_unresolved_effects': {'30s': gaps30, '300s': gaps300},
+        'winning_gear_l2_effects_supported': not gaps30 and not gaps300,
         'eligible_for_checkpoint_acceptance': False}
