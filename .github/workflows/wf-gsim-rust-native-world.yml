@@ -43,6 +43,14 @@ jobs:
       - name: Prove the patched engine still exactly reproduces 10k saved Rust reference
         working-directory: project
         run: python integrations/mythicsim-rust/verify_reference.py --engine ../upstream/target/release/forever-engine
+      - name: One-time exact-source 10000-fight live stochastic reference comparison (NOT automatic PASS)
+        working-directory: project
+        timeout-minutes: 20
+        run: |
+          python integrations/mythicsim-rust/live_world_probe.py \
+            --binary ../upstream/target/release/forever-engine \
+            --request docs/evidence/druid-l60-balance/p7.3/saved_728_request.json \
+            --reference-iterations 10000
       - name: Paired real gsim 2D near/far Rust damage ACK and forged ACK rejection
         working-directory: project
         run: |

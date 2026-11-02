@@ -206,7 +206,43 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--binary", type=Path, required=True)
     p.add_argument("--request", type=Path, required=True)
+    p.add_argument("--reference-iterations", type=int, default=0,
+                   help="on-demand native-vs-live stochastic reference run; 0=quick causal regression")
     args = p.parse_args()
+    if args.reference_iterations:
+        source = json.loads(args.request.read_text())
+        player = source["raid"]["parties"][0]["players"][0]
+        assert player["class"] == "ClassDruid" and "balanceDruid" in player
+        assert len(source["encounter"]["targets"]) == 1
+        assert source["encounter"]["targets"][0]["level"] == 63
+        assert args.reference_iterations <= source["simOptions"]["iterations"]
+        baseline = native_source_control(args.binary, args.request, args.reference_iterations)
+        coupled = run(args.binary, args.request,
+                      distance=player["distanceFromTarget"],
+                      iterations=args.reference_iterations)
+        assert coupled["iterations_done"] == baseline["iterations"]
+        assert abs(coupled["native_dps"] - baseline["native_dps"]) < 1e-6, (
+            "LIVE_RUST_SOURCE_DPS_DIVERGENCE", coupled["native_dps"], baseline["native_dps"])
+        assert abs(coupled["sampled_duration_s"] - baseline["first_duration_s"]) < 1e-9
+        # This is the original saved MythicSim reference, not an optimizer
+        # candidate; source-native-vs-live parity alone is not a gate PASS.
+        if args.reference_iterations == source["simOptions"]["iterations"]:
+            witness = json.loads((ROOT / "docs/evidence/wf633/WF633_VALIDATION.json").read_text())
+            assert coupled["native_dps"] >= witness["reference_dps"], (
+                "LIVE_RUST_BELOW_SAVED_REFERENCE", coupled["native_dps"], witness["reference_dps"])
+        print("REAL_RUST_LIVE_SOURCE_STOCHASTIC", json.dumps({
+            "iterations": coupled["iterations_done"],
+            "native_dps": baseline["native_dps"],
+            "live_native_dps": coupled["native_dps"],
+            "world_dps": coupled["world_mean_dps"],
+            "world_ticks": coupled["native_world_ticks"],
+            "source_sha256": coupled["source_request_raw_sha256"],
+            "world_damage_events": coupled["native_damage_events"],
+            "saved_reference_threshold_checked":
+                args.reference_iterations == source["simOptions"]["iterations"],
+            "checkpoint_certified": False,
+        }, sort_keys=True), flush=True)
+        return
     near = run(args.binary, args.request, distance=15.)
     print("REAL_RUST_NEAR_WORLD", json.dumps(near, sort_keys=True), flush=True)
     far = run(args.binary, args.request, distance=80.)
