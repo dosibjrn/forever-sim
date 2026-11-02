@@ -411,6 +411,36 @@ def _run_live_gate(root: Path, class_key: str, level: int, spec: str,
     return report
 
 
+def _p6_replay_receipts(report: dict) -> list[dict] | None:
+    """Surface the two actual paid replay outcomes without changing gate scoring.
+
+    The paid provider already computes each cold leg's status and first reason.
+    Without these small receipts the public no-record gate report only says
+    100/200, losing the actual failure necessary for the next RED->GREEN fix.
+    Keep the output bounded; this is diagnostic data, never PASS evidence.
+    """
+    rows = report.get("source_replay_results")
+    if not isinstance(rows, list):
+        return None
+    allowed = ("cold_search_budget_s", "status", "reason", "count",
+               "mob_completed", "failed_pull_index", "paid_screens",
+               "mean_s_per_mob", "s_per_mob", "events")
+    out = []
+    for row in rows[:2]:
+        if not isinstance(row, dict):
+            out.append({"status": "INVALID_REPLAY_RECEIPT"})
+            continue
+        clean = {}
+        for key in allowed:
+            value = row.get(key)
+            if type(value) is str:
+                clean[key] = value[:240]
+            elif type(value) in (int, float) and math.isfinite(value):
+                clean[key] = value
+        out.append(clean)
+    return out
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="Execute live source-backed WoW Forever P1–P7.5 gates")
@@ -479,6 +509,13 @@ def main(argv=None) -> int:
                     "cold_winner_request_sha256", "cold_candidate_failures"):
             if key in report:
                 record[key] = report[key]
+        if gate == "P6":
+            # The existing paid evaluator already supplied these outcomes;
+            # publishing them reveals the first real incomplete replay reason.
+            # The receipt is NOT an additional passed assertion or M1 credit.
+            replay_receipts = _p6_replay_receipts(report)
+            if replay_receipts is not None:
+                record["source_replay_results"] = replay_receipts
         # One canonical calculation: no percent for BLOCKED, inventories,
         # or FAIL without an executed production behavior. A bounded component
         # is explicitly provisional and never substitutes for gate acceptance.
