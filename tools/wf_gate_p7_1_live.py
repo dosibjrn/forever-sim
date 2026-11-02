@@ -97,7 +97,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
               "iterations": live["iterations_done"],
               "saved_reference_dps": reference,
               "source_report_url": "https://api.mythicsim.com/api/forever/ranking-sims/d9d85974-a1f7-4700-ab22-2335d767a944/report",
-              "coverage_component": "per-fight native source damage ↔ gsim 2D applied HP/ACK parity",
+              "coverage_component": "P7.1.3 source-native ↔ gsim per-fight damage/ACK parity (source requires 10000 fights)",
               "behavior_probes_executed": len(live["per_iteration"]),
               # A stochastic fight sample is NOT the fraction of the entire
               # P7.1 gate; UI configuration and scenario causality remain open.
@@ -117,12 +117,18 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # bridge for source-native damage == gsim applied HP damage and ACK IDs.
     # This denominator is ONLY the executed comparable fight sample, not the
     # full P7.1 gate or a certifying fractional M1 value.
-    actual.update(verified=run_iterations, applicable=run_iterations)
+    actual.update(verified=run_iterations, applicable=iterations,
+                  pass_count=run_iterations, reachability_count=iterations,
+                  # A provisional component sample is NOT a P7.1 PASS.
+                  # Its 10k denominator is the original source's actual
+                  # stochastic iterations, not an invented TODO percentage.
+                  coverage_scope_complete=False)
     if not full_reference_run:
-        return _blocked("P7_1_PARTIAL_DIAGNOSTIC_NOT_FULL_REFERENCE",
-                        production_engine="pinned_mythicsim_rust_gsim_2d",
-                        p7_1_2_native_reproduced=False,
-                        p7_1_3_live_reproduced=False, **actual)
+        return {"status": "FAIL",
+                "reasons": ["P7_1_INCOMPLETE_SOURCE_STOCHASTIC_ITERATIONS"],
+                "production_engine": "pinned_mythicsim_rust_gsim_2d",
+                "p7_1_2_native_reproduced": False,
+                "p7_1_3_live_reproduced": False, **actual}
 
     # Owner-approved WF633 is a genuine native reference replay, but its
     # reconstructed input is not an audited field-by-field capture of the
