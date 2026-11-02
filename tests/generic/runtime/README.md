@@ -15,5 +15,5 @@ python -m pytest -q tests/generic/runtime
 ```
 
 Default `pytest -q` still collects this group. The slow `tests/release/`
-suite remains opt-in. The workflow includes a structure check and a
-collection-only pass; it does not establish P1–P7 checkpoint certification.
+suite remains opt-in. The private layout-only Actions workflow was not
+migrated; no layout smoke is evidence of P1–P7 checkpoint certification.

@@ -15,6 +15,6 @@ through repository-root-relative paths. Run from the repository root as before.
 python -m pytest -q tests/generic/classes
 ```
 
-These tests remain part of normal pytest collection. The Actions workflow
-checks structure and collection only; it does not certify the game's
-mechanics or P1–P7 acceptance, and skipped jobs do not imply PASS.
+These tests remain part of normal pytest collection. The private
+layout-only Actions workflow was not migrated to the public repository;
+pytest discovery does not certify mechanics or P1–P7 acceptance.

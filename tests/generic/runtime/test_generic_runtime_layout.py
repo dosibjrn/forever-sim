@@ -43,8 +43,8 @@ class GenericRuntimeLayout(unittest.TestCase):
         self.assertIn("testpaths = tests", config)
         self.assertIn("norecursedirs = release", config)
         self.assertNotIn("norecursedirs = generic", config)
-        self.assertIn("--collect-only -q tests/generic/runtime",
-            (ROOT / ".github/workflows/generic-runtime-test-layout.yml").read_text())
+        # Public main intentionally has no separate legacy layout-only Actions
+        # workflow. pytest.ini remains the current collection authority.
 
     def test_source_paths_referenced_from_repo_root_are_not_moved(self):
         self.assertTrue((ROOT / "src/game/runtime/simulator.py").is_file())

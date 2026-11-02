@@ -40,16 +40,14 @@ class GenericSearchLayout(unittest.TestCase):
         self.assertIn("norecursedirs = release", ini)
         self.assertNotIn("norecursedirs = generic", ini)
 
-    def test_unrelated_workflow_triggers_are_not_broad(self):
-        # Avoid executing two unrelated layout jobs for every generic-test edit.
-        for name in ("generic-class-test-layout.yml",
-                     "generic-runtime-test-layout.yml"):
-            source = (ROOT / ".github" / "workflows" / name).read_text()
-            self.assertNotIn("'tests/test_generic_*.py'", source)
-        launcher = (ROOT / ".github/workflows/root-launcher-relocation.yml").read_text()
-        self.assertNotIn("'docs/REPOSITORY_STRUCTURE.md'", launcher)
-        self.assertNotIn("'README.md'", launcher)
-        self.assertIn("'scripts/commands/**'", launcher)
+    def test_current_workflows_do_not_reintroduce_legacy_generic_glob(self):
+        # The private layout-only workflows were deliberately not migrated.
+        # Guard the original broad-trigger concern against actual live files.
+        workflows = sorted((ROOT / ".github/workflows").glob("*.yml"))
+        self.assertTrue(workflows)
+        for path in workflows:
+            source = path.read_text(encoding="utf-8")
+            self.assertNotIn("'tests/test_generic_*.py'", source, path.name)
 
 
 if __name__ == "__main__":
