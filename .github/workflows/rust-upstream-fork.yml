@@ -1,0 +1,57 @@
+name: Bootstrap and sync MythicSim Rust public fork
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/rust-upstream-fork.yml
+      - scripts/bootstrap_mythicsim_rust_fork.sh
+      - docs/RUST_UPSTREAM_FORK.md
+
+permissions:
+  contents: read
+
+jobs:
+  check-script:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check and verify fail-closed bootstrap guards
+        run: |
+          bash -n scripts/bootstrap_mythicsim_rust_fork.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path("scripts/bootstrap_mythicsim_rust_fork.sh").read_text()
+          for required in (
+              "FOREVER_RUST_FORK_TOKEN", "who", "actual_parent",
+              "git push fork refs/remotes/origin/main:refs/heads/main",
+              "wf652_balanced_tests", "wf_l60_rng_extreme_tests",
+              "verify_reference.py", "git merge --no-ff",
+              "FORK_ENGINE_SHA",
+          ):
+              assert required in s, required
+          print("SOURCE_AND_VALIDATION_RETENTION_GUARDS_PRESENT")
+          PY
+
+  sync-fork:
+    if: github.event_name == 'workflow_dispatch'
+    needs: check-script
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python source-validator dependencies
+        run: python3 -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Fork upstream and carry Rust integrations across all upstream commits
+        id: sync
+        env:
+          FOREVER_RUST_FORK_TOKEN: ${{ secrets.FOREVER_RUST_FORK_TOKEN }}
+        run: bash scripts/bootstrap_mythicsim_rust_fork.sh
+      - name: Report verified result
+        env:
+          FORK_SHA: ${{ steps.sync.outputs.FORK_ENGINE_SHA }}
+          MAIN_SHA: ${{ steps.sync.outputs.FORK_UPSTREAM_MAIN }}
+        run: |
+          echo "Upstream main: $MAIN_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tested integration: $FORK_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "forever-sim's existing pinned production engine and P1–P7.5 gates were not changed." >> "$GITHUB_STEP_SUMMARY"
