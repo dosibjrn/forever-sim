@@ -156,6 +156,33 @@ P1_EFFECT_EVENTS = frozenset({
 })
 
 
+def _p1_effect_observed(event) -> bool:
+    """Require an actual runtime effect, not a zero-delta event receipt.
+
+    Production emits ResourceChange/ResourceChanged even when the requested
+    gain is capped at full resources. Damage and Heal can also resolve to zero.
+    Those event kinds alone cannot certify P1 behavior.
+    """
+    if event.kind not in P1_EFFECT_EVENTS:
+        return False
+    if event.kind in ('ResourceChange', 'ResourceChanged'):
+        payload = getattr(event, 'payload', {})
+        before, after = payload.get('before'), payload.get('after')
+        return (type(before) in (int, float) and type(after) in (int, float)
+                and __import__('math').isfinite(before)
+                and __import__('math').isfinite(after)
+                and abs(after - before) > 1e-9)
+    if event.kind == 'ResourceEventGain':
+        gained = getattr(event, 'payload', {}).get('gained')
+        return (type(gained) in (int, float)
+                and __import__('math').isfinite(gained) and gained > 1e-9)
+    if event.kind in ('Damage', 'Heal'):
+        amount = getattr(event, 'payload', {}).get('amount')
+        return (type(amount) in (int, float)
+                and __import__('math').isfinite(amount) and amount > 1e-9)
+    return True
+
+
 # P1 is a bounded combat-action gate: damage, buffs/debuffs and CC only.
 # Role facts live in sourced data rather than a class/spell name allowlist.
 P1_REQUIRED_ROLES = frozenset({'damage', 'buff', 'debuff', 'cc'})
@@ -694,7 +721,7 @@ def _runtime_exercise(ir,action,level):
             result=runtime.result()
             events=[ev for ev in result.events if ev.action_id == action.id]
             completed=any(ev.kind=='ActionCompleted' for ev in events)
-            effective=any(ev.kind in P1_EFFECT_EVENTS for ev in events)
+            effective=any(_p1_effect_observed(ev) for ev in events)
             if queued:
                 effective=any(ev.kind=='Damage' and ev.payload.get('queued_swing_replacement')
                               for ev in events)
