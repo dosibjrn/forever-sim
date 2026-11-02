@@ -9,6 +9,7 @@ No saved search reports, independent simulator, synthetic mobs or fake PASS.
 from __future__ import annotations
 
 from pathlib import Path
+from math import isfinite
 
 
 def _mob_kills(row: dict) -> int:
@@ -40,7 +41,25 @@ def _replay_first_paid_winner(search, *, source_ir, seed_stage, class_key, level
     rows = replay.get("rows") or []
     if not rows:
         return {"status": "NO_COMPLETED_REPLAY", "mob_completed": 0}
+    if (not isinstance(rows, (list, tuple)) or len(rows) != 1
+            or not isinstance(rows[0], dict)):
+        # A single shortlisted build must produce exactly one replay receipt.
+        # Taking rows[0] silently masks a malformed/duplicated paid evaluation.
+        return {"status": "AMBIGUOUS_SOURCE_PAID_REPLAY",
+                "mob_completed": 0, "reason": "EXPECTED_ONE_PAID_RESULT_ROW"}
     row = rows[0]
+    if row.get("status") == "COMPLETE":
+        seconds = row.get("full_s_per_mob")
+        if (type(row.get("count")) is not int or row["count"] != 100
+                or _mob_kills(row) != 100
+                or type(seconds) not in (int, float)
+                or not isfinite(seconds) or seconds <= 0):
+            # Real complete 100-mob paid scores must be positive and finite;
+            # an invalid receipt never contributes saturation or verified mobs.
+            return {"status": "INVALID_COMPLETE_PAID_REPLAY",
+                    "mob_completed": 0, "count": row.get("count"),
+                    "mean_s_per_mob": None,
+                    "reason": "EXPECTED_100_KILLS_AND_FINITE_POSITIVE_TIME"}
     return {
         "status": row.get("status", "UNKNOWN"),
         "mob_completed": _mob_kills(row),
@@ -102,7 +121,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                         "paid_screens": paid, **row})
     verified = sum(_mob_kills(row) for row in results)
     both = all(row["status"] == "COMPLETE" and row["mob_completed"] == 100
-               and isinstance(row.get("mean_s_per_mob"), (int, float))
+               and type(row.get("count")) is int and row["count"] == 100
+               and type(row.get("mean_s_per_mob")) in (int, float)
+               and isfinite(row["mean_s_per_mob"])
                and row["mean_s_per_mob"] > 0 for row in results)
     ratio = (results[0]["mean_s_per_mob"] / results[1]["mean_s_per_mob"]
              if both else None)
