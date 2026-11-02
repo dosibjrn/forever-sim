@@ -198,7 +198,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
         lambda path, name: source if "joint_search" in str(path) else producer)
 
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert pool_calls == [80]
+    assert pool_calls == [None]
     assert [(a, b, c) for a, b, c, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]

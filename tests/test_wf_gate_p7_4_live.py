@@ -119,7 +119,7 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
                         else producer)
 
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert pool_calls == [80], "Source catalogue must be enumerated once"
+    assert pool_calls == [None], "Full search must keep all admitted source items"
     assert [(kind, n, mode) for kind, n, mode, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
