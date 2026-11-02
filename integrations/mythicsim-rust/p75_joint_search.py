@@ -22,16 +22,48 @@ def pick_gear(pool,rng):
         return rng.choice(pool)
     return pool[min(len(pool)-1,int(rng.expovariate(0.15)))]
 
-def make_candidate(reference,pools,rng,elite=None,item_names=None):
+def source_enchant_pools(validator, pools):
+    """Find enchant IDs through existing selected-source item+enchant legality.
+
+    No guessed enchant-slot table or saved-reference-only whitelist. The same
+    validator checks candidate loadouts again after gear/enchant mutation.
+    """
+    enchant_ids=sorted(int(effect_id) for effect_id in validator.enchants if int(effect_id)>0)
+    result={}
+    for i in range(16):
+        if not pools.get(i):
+            raise ValueError("NO_SOURCE_LEGAL_GEAR_FOR_ENCHANT_SLOT")
+        anchor=pools[i][0]
+        legal=[None]
+        for effect_id in enchant_ids:
+            try:
+                validator.item(i,anchor,effect_id)
+            except RejectedGear:
+                continue
+            legal.append(effect_id)
+        result[i]=legal
+    return result
+
+
+def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=None):
     """Independent cold generation; later mutations improve one axis at a time.
 
     A gear slot's captured reference enchant is a *per-slot option*, not a
     saved loadout seed. The additional 'none' option keeps enchant free.
-    Broader enchant catalogue / legal effect mapping still needs certification.
+    In selected full live search, enchant_pools comes from the pinned Rust
+    source validator rather than the reference's enchant subset.
     """
     q=copy.deepcopy(reference)
     template=player(reference)["equipment"]["items"]
     allowed_enchants=[item.get("enchant") for item in template]
+    # Old standalone diagnostics retain their historical reference/no-enchant
+    # choices. The selected full 2D production search supplies every enchant
+    # admitted for this slot by the existing pinned Rust/source validator.
+    if enchant_pools is not None:
+        enchant_choices={i:list(enchant_pools[i]) for i in range(len(template))}
+    else:
+        enchant_choices={i:[None]+([e] if e is not None else [])
+                         for i,e in enumerate(allowed_enchants)}
     if elite is not None:
         base=player(elite)
         ids=[item["id"] for item in base["equipment"]["items"]]
@@ -49,13 +81,17 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None):
         elif axis=="rotation":
             actions=mutate_apl(actions,player(reference)["rotation"]["priorityList"],rng)
         else:
-            candidates=[i for i,e in enumerate(allowed_enchants) if e is not None]
+            candidates=[i for i,options in enchant_choices.items()
+                        if any(e != enchants[i] for e in options)]
             if candidates:
                 i=rng.choice(candidates)
-                enchants[i]=None if enchants[i] is not None else allowed_enchants[i]
+                enchants[i]=rng.choice([e for e in enchant_choices[i]
+                                         if e != enchants[i]])
     else:
         ids=[pick_gear(pools[j],rng) for j in range(16)]
-        enchants=[e if rng.random()<0.86 else None for e in allowed_enchants]
+        enchants=([rng.choice(enchant_choices[i]) for i in range(16)]
+                  if enchant_pools is not None else
+                  [e if rng.random()<0.86 else None for e in allowed_enchants])
         ranks=random_build(rng)
         actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
     # Duplicate item IDs are forbidden. Equal catalogue display names are
