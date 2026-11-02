@@ -511,3 +511,38 @@ def test_p3_source_weapon_proposals_preserve_complete_equipment_legality():
     assert any(slot == "weapon" for slot, _ in proposals)
     assert all(not (slot == "weapon" and item.weapon_hands == 2)
                for slot, item in proposals)
+
+
+def test_independent_100mob_replay_pins_talented_budget_from_real_source_search():
+    """A 30s +5-point search cannot be replayed with a different point budget.
+
+    This uses actual Forever Mage L30 source/gear preparation. The deliberately
+    incomplete saved candidate is enough to prove the budget is validated
+    *before* an expensive 100-mob attempt, not to fabricate a 100-mob PASS.
+    """
+    from src.v2.source_bounded_joint_frontier import replay_joint_shortlist_100mob
+
+    ir = build_game_ir_slice(class_key="mage", level=30)
+    stage = source_cold_start_stage(
+        class_key="mage", level=30, source_ir=ir, gear_role="mage")
+    report = {"search_only": True, "validation_shortlist": [
+        {"allocation": stage["allocation"]}],
+        "bonus_talent_points": 5, "complete_100mob_candidates": 0}
+
+    with pytest.raises(ValueError, match="INDEPENDENT_100MOB_TALENT_BUDGET_MISMATCH"):
+        replay_joint_shortlist_100mob(
+            report, source_ir=ir, seed_stage=stage,
+            class_key="mage", level=30, bonus_talent_points=0)
+
+    # Without an override the actual saved +5 source budget is authoritative.
+    # The next expected error is the intentionally absent gear/APL fields,
+    # proving the correct budget was admitted before replay preparation.
+    with pytest.raises(ValueError, match="INCOMPLETE_SEARCH_CONFIGURATION"):
+        replay_joint_shortlist_100mob(
+            report, source_ir=ir, seed_stage=stage,
+            class_key="mage", level=30)
+
+    with pytest.raises(ValueError, match="INDEPENDENT_100MOB_TALENT_BUDGET_NOT_PINNED"):
+        replay_joint_shortlist_100mob(
+            {k: v for k, v in report.items() if k != "bonus_talent_points"},
+            source_ir=ir, seed_stage=stage, class_key="mage", level=30)
