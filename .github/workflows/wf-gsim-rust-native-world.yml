@@ -1,0 +1,51 @@
+name: Live pinned MythicSim Rust fight to real gsim world (NOT P7)
+on:
+  workflow_dispatch:
+  push:
+    branches: [work/first-rust-native-world-damage-20261102]
+    paths:
+      - .github/workflows/wf-gsim-rust-native-world.yml
+      - integrations/mythicsim-rust/patch_world_ingress.py
+      - integrations/mythicsim-rust/world_bridge.rs
+      - integrations/mythicsim-rust/live_world_probe.py
+permissions:
+  contents: read
+jobs:
+  pinned-rust-live-world:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine
+          ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
+          path: upstream
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install existing gsim source dependencies
+        run: python -m pip install --disable-pip-version-check beautifulsoup4
+      - name: Verify patch anchors and Python source
+        run: |
+          python -m compileall -q project/integrations/mythicsim-rust/patch_world_ingress.py project/integrations/mythicsim-rust/live_world_probe.py
+          python project/integrations/mythicsim-rust/patch_world_ingress.py upstream
+      - name: Build actual pinned source Rust fight engine with synchronous world seam
+        working-directory: upstream
+        env:
+          # Native Rust mechanics are unchanged; avoid single-CGU ThinLTO build
+          # latency for the short exact-HEAD integration iteration.
+          CARGO_PROFILE_RELEASE_LTO: "off"
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+        run: cargo build --release --locked
+      - name: Prove the patched engine still exactly reproduces 10k saved Rust reference
+        working-directory: project
+        run: python integrations/mythicsim-rust/verify_reference.py --engine ../upstream/target/release/forever-engine
+      - name: Paired real gsim 2D near/far Rust damage ACK and forged ACK rejection
+        working-directory: project
+        run: |
+          python integrations/mythicsim-rust/live_world_probe.py \
+            --binary ../upstream/target/release/forever-engine \
+            --request docs/evidence/druid-l60-balance/p7.3/saved_728_request.json
