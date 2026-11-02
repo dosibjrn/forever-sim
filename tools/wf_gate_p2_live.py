@@ -58,7 +58,7 @@ def _effect_change(before, after):
 
 def _action_runtime_probe(ir, action, *, observe_periodic=False,
                           observe_controls=False, target_id='p2_fixture',
-                          target_spell_hit=1.0):
+                          target_spell_hit=1.0, capture_source_hit=False):
     """Execute real action on a live actor/target; deterministic fixture.
 
     Only differences that are actually observed in runtime count. No event
@@ -79,6 +79,11 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
     def fixture_target(*, opposite=False):
         target=TargetState.with_health(target_id,100000.0,armor=0.0)
         target.metadata['spell_hit'] = float(target_spell_hit)
+        if capture_source_hit:
+            # The real source-captured target activates the production
+            # expected-hit resolver; an ordinary generic dummy intentionally
+            # does not apply sourced hit/miss mechanics.
+            target.metadata['combat_capture_id'] = 'p2_sourced_hit_fixture'
         if required_position is not None:
             position=({'front':'behind','behind':'front'}[required_position]
                       if opposite else required_position)
@@ -361,7 +366,6 @@ def _sourced_hit_runtime_witness(before, after, mod):
 
     new = {action.id: action for action in after.actions}
     applicable = [action for action in before.actions if scoped(action)]
-    print('PRIO_DEBUG applicable', len(applicable), 'rank_delta', mod.value)
     if not applicable:
         return None
     for action in applicable:
@@ -370,19 +374,16 @@ def _sourced_hit_runtime_witness(before, after, mod):
                 isinstance(p, Mapping) and p.get('stage') == 'talent_modifier'
                 and p.get('kind') == mod.kind
                 for p in updated.provenance):
-            print('PRIO_DEBUG missing provenance', action.id)
             return None
         delta = (float(updated.metadata.get('outgoing_hit_bonus', 0.))
                  - float(action.metadata.get('outgoing_hit_bonus', 0.)))
         if not isclose(delta, float(mod.value), abs_tol=1e-8, rel_tol=1e-6):
-            print('PRIO_DEBUG wrong delta', action.id, delta, mod.value)
             return None
     # The modifier must not leak to other, source-ineligible actions.
     if any(not scoped(action) and action.id in new and not isclose(
             float(new[action.id].metadata.get('outgoing_hit_bonus', 0.)),
             float(action.metadata.get('outgoing_hit_bonus', 0.)),
             abs_tol=1e-8) for action in before.actions):
-        print('PRIO_DEBUG bonus leaked')
         return None
 
     for action in applicable:
@@ -398,16 +399,19 @@ def _sourced_hit_runtime_witness(before, after, mod):
             **dict(action.metadata), 'outgoing_hit_bonus': current_bonus})
         periodic = any(isinstance(e, PeriodicEffect) for e in action.effects)
         x = _action_runtime_probe(before, action, observe_periodic=periodic,
-                                  target_spell_hit=base_hit)
+                                  target_spell_hit=base_hit,
+                                  capture_source_hit=True)
         y = _action_runtime_probe(before, isolated, observe_periodic=periodic,
-                                  target_spell_hit=base_hit)
+                                  target_spell_hit=base_hit,
+                                  capture_source_hit=True)
         # Negative control: at 100% hit, adding a chance bonus has no
         # gameplay effect.  This rejects unrelated damage scaling.
         saturated_x = _action_runtime_probe(
-            before, action, observe_periodic=periodic, target_spell_hit=1.)
+            before, action, observe_periodic=periodic, target_spell_hit=1.,
+            capture_source_hit=True)
         saturated_y = _action_runtime_probe(
-            before, isolated, observe_periodic=periodic, target_spell_hit=1.)
-        print('PRIO_DEBUG runtime',action.id, 'x',None if x is None else x['damage'],'y',None if y is None else y['damage'],'satx',None if saturated_x is None else saturated_x['damage'],'saty',None if saturated_y is None else saturated_y['damage'])
+            before, isolated, observe_periodic=periodic, target_spell_hit=1.,
+            capture_source_hit=True)
         if any(z is None for z in (x, y, saturated_x, saturated_y)):
             continue
         if (x['damage'] > 0 and y['damage'] > x['damage'] + 1e-7
