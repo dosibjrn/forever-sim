@@ -171,6 +171,37 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 proc.kill()
                 proc.wait(timeout=5)
 
+def native_source_control(binary: Path, request: Path, iterations: int) -> dict:
+    """Independent real Rust source engine with only iteration count reduced.
+
+    Keeps saved gear, talents, rotation, encounter and RNG seed unchanged.
+    The world path receives the ORIGINAL request and same first N fights.
+    """
+    source = json.loads(request.read_text())
+    assert 1 <= iterations <= source["simOptions"]["iterations"]
+    source["simOptions"]["iterations"] = iterations
+    with tempfile.TemporaryDirectory() as folder:
+        reduced = Path(folder) / "native_source_control.json"
+        output = Path(folder) / "native_result.json"
+        reduced.write_text(json.dumps(source, sort_keys=True))
+        completed = subprocess.run(
+            [str(binary.resolve()), "sim", "--request", str(reduced),
+             "--outfile", str(output), "--gate"],
+            capture_output=True, text=True, timeout=120,
+            env={k: v for k, v in os.environ.items()
+                 if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS")},
+        )
+        assert completed.returncode == 0, (
+            "NATIVE_SOURCE_CONTROL_FAILED", completed.stderr[-2000:])
+        result = json.loads(output.read_text())
+        assert result["identity"]["engine"] == "forever-engine"
+        measured = result["result"]
+        assert measured["iterationsDone"] == iterations
+        return {"native_dps": measured["raidMetrics"]["dps"].get("avg", 0.),
+                "first_duration_s": measured["firstIterationDuration"],
+                "iterations": iterations}
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--binary", type=Path, required=True)
@@ -187,6 +218,12 @@ def main() -> None:
     assert multi["iterations_done"] == len(multi["per_iteration"]) == 3
     assert multi["native_world_ticks"] > near["native_world_ticks"]
     assert multi["native_damage_events"] > near["native_damage_events"]
+    control = native_source_control(args.binary, args.request, 3)
+    print("REAL_RUST_THREE_FIGHT_NATIVE_SOURCE_CONTROL", json.dumps(control, sort_keys=True), flush=True)
+    assert abs(multi["native_dps"] - control["native_dps"]) < 1e-6, (
+        "STATIC_WORLD_CHANGED_SOURCE_NATIVE_DPS", multi["native_dps"], control["native_dps"])
+    assert abs(multi["sampled_duration_s"] - control["first_duration_s"]) < 1e-9, (
+        "STATIC_WORLD_CHANGED_SOURCE_DURATION", multi["sampled_duration_s"], control["first_duration_s"])
     # RED against the old bridge: ignoring the real gsim next-world deadline
     # forces 100ms polling even for the static, event-free reference encounter.
     periodic = run(args.binary, args.request, distance=15., iterations=3,
