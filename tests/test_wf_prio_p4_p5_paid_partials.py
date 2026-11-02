@@ -23,12 +23,18 @@ def test_paid_slot_partial_only_counts_complete_action_executions():
 def test_p4_unrestricted_druid_l30_executes_real_source_paid_backend():
     report = _run_live_gate(ROOT, "druid", 30, "unrestricted", "P4", "")
     assert report["status"] == "FAIL", report
-    assert report["partial_scope"] == "COMPLETED_PAID_SOURCE_GEAR_SLOT_CANDIDATES"
+    # Merely exploring a legal slot is NOT a successful behavioral assertion.
+    assert report["explored_paid_gear_slots"] >= 0
+    assert report["source_eligible_gear_slot_count"] > 0
+    assert report.get("partial_scope") != "COMPLETED_PAID_SOURCE_GEAR_SLOT_CANDIDATES"
     assert report["production_engine"] == "gsim_CombatRuntime"
     assert report["required_full_search_s"] == 30
     assert report["real_paid_unique_full_builds"] >= 0
-    assert 0 <= report["pass_count"] <= report["reachability_count"]
-    assert report["reachability_count"] > 0
+    if "pass_count" in report:
+        assert report["coverage_basis"] == "executed_behavior_assertions"
+        assert report["partial_scope"] == "SOURCE_TALENT_UNLOCK_CAST_IN_COMPLETE_PAID_SCREEN"
+        assert 0 <= report["pass_count"] <= report["reachability_count"]
+        assert report["reachability_count"] > 0
     assert report["selected_backend_integration_pending"]
     assert report["reasons"], report
 
