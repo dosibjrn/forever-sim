@@ -279,12 +279,14 @@ def run_live(root: Path, class_key: str, level: int, *,
         reasons.append("P7_3_FROZEN_STOCHASTIC_DPS_BELOW_REFERENCE_FLOOR")
     return {
         "status": "PASS" if not reasons else "FAIL",
-        **(_executed_p7_runtime_proof("P7.3", final["frozen_request_raw_sha256"])
+        **(_executed_p7_runtime_proof(
+               "P7.3", final["frozen_request_raw_sha256"],
+               engine_revision=meta.get("selected_engine_revision", PINNED_RUST))
            if not reasons else {}),
         "reasons": reasons,
         "production_engine": "pinned_mythicsim_rust_gsim_2d",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py",
-        "native_source_revision": PINNED_RUST,
+        "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
         "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
         "saved_reference_dps": float(meta["reference_dps"]),
         "required_reference_dps": p7_required_dps(
