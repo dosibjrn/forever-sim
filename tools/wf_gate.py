@@ -467,7 +467,8 @@ def main(argv=None) -> int:
                     "real_catalogue_top5_items_scored",
                     "source_report_url", "source_request_raw_sha256",
                     "native_source_revision", "iterations",
-                    "sampled_source_fights", "saved_source_iterations"):
+                    "sampled_source_fights", "saved_source_iterations",
+                    "native_first_duration_s", "world_first_duration_s"):
             if key in report:
                 record[key] = report[key]
         # One canonical calculation: no percent for BLOCKED, inventories,
