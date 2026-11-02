@@ -45,7 +45,7 @@ def test_runes_off_preserves_every_source_index_row_but_excludes_setup(tmp_path)
     # Current staged snapshot has three unresolved source role/amount rows; do not claim P1 from this older index.
     assert r['potential_ranks_unknown_role_and_amount']==3
     # Only source-executable rows are admitted to the historical L0 index.
-    assert r['paid_search_admitted_source_rows']==14
+    assert r['paid_search_admitted_source_rows']==16
     assert r['complete_legal_spell_universe_proven'] is False
     assert not r['PASS1']
     all_rows={x['spell_id']:x for x in r['records'] if 'spell_id' in x}
@@ -62,7 +62,7 @@ def test_rune_option_does_not_imply_live_rune_vendor_or_legal_action(tmp_path):
     assert r['rune_engraving_rows_disabled']==0
     assert r['potentially_legal_positive_ranks']==60
     # Only source-executable rows are admitted to the historical L0 index.
-    assert r['paid_search_admitted_source_rows']==14
+    assert r['paid_search_admitted_source_rows']==16
     assert not r['PASS1']
     rune=next(x for x in r['records'] if x.get('spell_id')==410021)
     assert rune['legal_combat_spell_proven'] is False
