@@ -1,0 +1,29 @@
+name: Merge Clean139 baseline independent validator diagnosis
+on:
+  push:
+    branches: [merge/verify-clean139-baseline-20261102]
+    paths: [.github/workflows/merge-clean139-baseline-once.yml]
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Check old-main independent validator status without Clean139 changes
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          python - <<'PY'
+          from tools.report_backend_reconciliation import build_report
+          report=build_report()
+          print('MAIN_BEFORE_CLEAN139_DRUID',report['druid'],flush=True)
+          assert report['druid']['status']=='independent_validator_failed', report['druid']
+          PY
