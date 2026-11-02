@@ -144,6 +144,45 @@ def _same_executed_source_search_space(search30, search300):
                     == _SOURCE_GEAR_SAMPLING_VERSION)
 
 
+def _summarize_independent_paid_replay(replay, *, budget):
+    """Preserve a real replay failure without inventing 100 completed mobs.
+
+    The persistent executor can return no finalist row after an early abort.
+    An empty/malformed receipt must remain a structured FAIL, not an IndexError
+    that discards the other independent cold winner's measured result.
+    """
+    rows = replay.get('rows') if isinstance(replay, dict) else None
+    wall_s = replay.get('wall_s_outside_search_budget') if isinstance(replay, dict) else None
+    row = (rows[0] if isinstance(rows, (list, tuple)) and len(rows) == 1
+           and isinstance(rows[0], dict) else None)
+    if row is None:
+        return {'budget_s': budget, 'status': 'MISSING_SINGLE_PAID_REPLAY_ROW',
+                'count': 0, 'mob_completed': 0, 's_per_mob': None,
+                'events': None, 'reason': 'PAID_REPLAY_NO_SINGLE_RESULT_ROW',
+                'failed_pull_index': None, 'replay_wall_s': wall_s}
+    status = row.get('status', 'UNKNOWN')
+    count = row.get('count')
+    mobs = row.get('mob_completed', count)
+    mobs = mobs if type(mobs) is int and 0 <= mobs <= 100 else 0
+    seconds = row.get('full_s_per_mob')
+    valid_seconds = (type(seconds) in (int, float)
+                     and isfinite(seconds) and seconds > 0)
+    if status == 'COMPLETE' and (type(count) is not int or count != 100
+                                 or mobs != 100 or not valid_seconds):
+        return {'budget_s': budget, 'status': 'INVALID_COMPLETE_PAID_REPLAY',
+                'count': count, 'mob_completed': 0, 's_per_mob': None,
+                'events': row.get('events'),
+                'reason': 'PAID_REPLAY_COMPLETE_REQUIRES_100_KILLS_AND_POSITIVE_TIME',
+                'failed_pull_index': row.get('failed_pull_index'),
+                'replay_wall_s': wall_s}
+    return {'budget_s': budget, 'status': status,
+            'count': count, 'mob_completed': mobs,
+            's_per_mob': seconds if valid_seconds else None,
+            'events': row.get('events'), 'reason': row.get('reason'),
+            'failed_pull_index': row.get('failed_pull_index'),
+            'replay_wall_s': wall_s}
+
+
 def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
                                class_key, level, source_hash,
                                bonus_talent_points=0, max_per_candidate_wall_s=60.):
@@ -202,14 +241,11 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
             bonus_talent_points=bonus_talent_points,
             pack_size=int(saved['pack_size']),
             max_per_candidate_wall_s=max_per_candidate_wall_s)
-        row = replay['rows'][0]
-        results.append({'budget_s': budget, 'status': row['status'],
-            'count': row.get('count'), 's_per_mob': row.get('full_s_per_mob'),
-            'events': row.get('events'), 'reason': row.get('reason'),
-            'failed_pull_index': row.get('failed_pull_index'),
-            'replay_wall_s': replay['wall_s_outside_search_budget']})
+        results.append(_summarize_independent_paid_replay(replay, budget=budget))
     complete = all(r['status'] == 'COMPLETE' and r['count'] == 100
-                   and r['s_per_mob'] is not None and isfinite(r['s_per_mob'])
+                   and r['mob_completed'] == 100
+                   and r['s_per_mob'] is not None
+                   and isfinite(r['s_per_mob']) and r['s_per_mob'] > 0
                    for r in results)
     ratio = results[0]['s_per_mob'] / results[1]['s_per_mob'] if complete else None
     n30, n300 = (int(s.get('unique_full_builds') or 0)
