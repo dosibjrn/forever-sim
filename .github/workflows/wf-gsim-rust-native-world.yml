@@ -2,7 +2,7 @@ name: Live pinned MythicSim Rust fight to real gsim world (NOT P7)
 on:
   workflow_dispatch:
   push:
-    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102]
+    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/first-rust-live-facing-switch-20261102]
     paths:
       - .github/workflows/wf-gsim-rust-native-world.yml
       - integrations/mythicsim-rust/patch_world_ingress.py
@@ -43,6 +43,33 @@ jobs:
       - name: Prove the patched engine still exactly reproduces 10k saved Rust reference
         working-directory: project
         run: python integrations/mythicsim-rust/verify_reference.py --engine ../upstream/target/release/forever-engine
+      - name: Source Feral 2D facing flip changes real native Rust positional attacks
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          module=Path("integrations/mythicsim-rust/live_world_probe.py")
+          spec=importlib.util.spec_from_file_location("rust_live_world",module)
+          probe=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(probe)
+          request=Path("docs/evidence/druid-l60-feral/p7.1/saved_811_request.json")
+          binary=Path("../upstream/target/release/forever-engine")
+          result=probe.run(binary,request,distance=3.,facing_switch_at_s=10.)
+          before=result["source_action_events_before"]
+          after=result["source_action_events_after"]
+          print("SOURCE_FERAL_NATIVE_ACTIONS_BACK",before,flush=True)
+          print("SOURCE_FERAL_NATIVE_ACTIONS_FRONT",after,flush=True)
+          assert result["facing_switch_clock_ns"] is not None
+          assert result["native_damage_events"]>0 and result["native_world_ticks"]>2
+          assert result["checkpoint_certified"] is False
+          # Source Shred 9830 is behind-only and Claw 9850 works in front.
+          def count(actions,needle):
+              return sum(c for a,c in actions.items() if needle in str(a))
+          assert count(before,"9830")>0,(before,after)
+          assert count(after,"9850")>0,(before,after)
+          print("REAL_RUST_FERAL_WORLD_FACING_CAUSAL_ACTION_CHANGE_NOT_P7",flush=True)
+          PY
       - name: Paired real gsim 2D near/far Rust damage ACK and forged ACK rejection
         working-directory: project
         run: |
