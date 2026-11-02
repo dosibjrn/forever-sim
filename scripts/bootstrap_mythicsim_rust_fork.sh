@@ -109,6 +109,15 @@ if ! git merge --no-ff --no-edit refs/remotes/origin/main; then
   exit 1
 fi
 
+# The 114+ new upstream commits added Bernoulli call sites after the original
+# typed-RNG migration. Port those exact source decisions into the one common
+# RNG before auditing and testing; do not skip or weaken the audit.
+python3 "$PROJECT/integrations/mythicsim-rust/port_upstream_paladin_typed_rng.py" "$PWD"
+git add src/classes/paladin/spells/strikes.rs src/classes/paladin/spells/heals.rs
+if ! git diff --cached --quiet; then
+  git commit -m "fix(forever): route new Paladin proc decisions through typed RNG"
+fi
+
 test_engine upstream
 sha="$(git rev-parse HEAD)"
 git push fork HEAD:refs/heads/forever-integration
