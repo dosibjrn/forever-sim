@@ -93,9 +93,9 @@ def test_verifiable_native_direct_effects_count_conservatively_no_formal_pass():
     results = [_real_direct_test(i) for i in range(1, 100)]
     measured = native_p1_progress(scope, results)
     assert measured["verified"] == 99
-    # One unresolved acquisition on top of 100 provisional source candidates:
-    # 99 / 101 < 99%, so eighth rather than ninth milestone.
-    assert measured["conservative_denominator"] == 101
+    # One explicit autoattack (also relevant) plus one unresolved acquisition
+    # on 100 provisional source candidates: 99 / 102 < 99%.
+    assert measured["conservative_denominator"] == 102
     assert measured["milestones_reached"][-1] == 97
     assert measured["progress_naksut"] == 8
     assert measured["formal_gate_pass"] is False
@@ -121,3 +121,22 @@ def test_real_hunter_inventory_progress_never_counts_raw_index_as_verified():
     assert measured["progress_naksut"] == 0
     assert measured["source_legality_confirmed"] is False
     assert measured["formal_gate_pass"] is False
+
+
+def test_actual_native_pet_or_auto_channel_can_contribute_direct_effect_only():
+    scope = _scope(2)
+    actual_auto = native_p1_progress(scope, [_real_direct_test(10003)])
+    assert actual_auto["native_auto_or_pet_count"] == 1
+    assert actual_auto["verified"] == 1
+    assert actual_auto["verified_spell_ids"] == [10003]
+    assert actual_auto["formal_gate_pass"] is False
+
+
+def test_real_hunter_auto_shot_is_in_relevant_source_population():
+    source = inventory("hunter", 20)
+    measured = native_p1_progress(source)
+    assert measured["native_auto_or_pet_count"] >= 1
+    assert 75 not in measured["other_channel_spell_ids"]
+    assert measured["scope_count"] > measured["source_candidate_count"]
+    assert measured["source_acquisition_unverified_count"] > 0
+    assert measured["verified"] == 0
