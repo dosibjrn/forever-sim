@@ -208,7 +208,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
 
     current_ir, current_record = ir, naked['winner']
     axis_set = set(executable_gear_stats(ir))
-    axes = tuple(x for x in probe_stats if x in axis_set and x != 'weapon_dps')
+    axes = tuple(x for x in probe_stats if x in axis_set)
     sensitivity_history = []
 
     def reweight(ir_for_probe, policy_record, label):

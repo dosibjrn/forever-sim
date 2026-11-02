@@ -116,6 +116,71 @@ def _replace_equipped_weapon_dps(ir_slice: GameIRSlice, dps: float, *,
                    provenance={**dict(ir_slice.provenance), 'equipped_weapon_dps_application': applied})
 
 
+def _perturb_equipped_weapon_dps(ir_slice: GameIRSlice, delta: float, *,
+                                 db_path: Path | None = None) -> GameIRSlice:
+    """Measure a sourced equipped-weapon DPS marginal on the real damage IR.
+
+    A named weapon's DPS is an *absolute* replacement; a stat sensitivity is
+    a delta to the CURRENT source-authorized form/weapon anchor. Preserve each
+    form's own baseline instead of replacing every form with one invented DPS.
+    The actual CombatRuntime consumes these same auto/action damage sources.
+    """
+    if not math.isfinite(delta):
+        raise ValueError('nonfinite equipped weapon DPS probe')
+    facts = _weapon_facts_for_ir(ir_slice, db_path=db_path)
+    if not facts:
+        raise ValueError('no source-authorized equipped weapon DPS probe')
+    autos = list(ir_slice.auto_attacks)
+    actions = list(ir_slice.actions)
+    applied = []
+    def perturbed(source):
+        baseline = (float(ir_slice.actor.base_stats[source.dps_stat_id])
+                    if source.dps_stat_id is not None else float(source.flat_dps))
+        if not math.isfinite(baseline) or baseline <= 0 or baseline + delta <= 0:
+            raise ValueError('invalid sourced equipped weapon DPS probe baseline')
+        return replace(source, flat_dps=baseline + delta, dps_stat_id=None)
+
+    for fact, mode_id in facts:
+        if fact.source_stat != 'weapon_dps':
+            continue
+        count = 0
+        provenance = {'stage': 'source_equipped_weapon_dps_stat_probe',
+                      'mode_id': mode_id, 'source_stat': fact.source_stat,
+                      'source_url': fact.source_url, 'delta': float(delta)}
+        for i, attack in enumerate(autos):
+            if ((mode_id is None or attack.required_mode_id == mode_id)
+                    and attack.damage_source.kind == fact.damage_source_kind):
+                autos[i] = replace(attack, damage_source=perturbed(attack.damage_source),
+                                  provenance=attack.provenance + (provenance,))
+                count += 1
+        for i, action in enumerate(actions):
+            if mode_id is not None and not any(
+                    req.get('kind') == 'mode_is' and req.get('value') == mode_id
+                    for req in action.requirements):
+                continue
+            effects = []
+            changed = False
+            for effect in action.effects:
+                if (isinstance(effect, WeaponDamageEffect)
+                        and effect.damage_source.kind == fact.damage_source_kind):
+                    effects.append(replace(effect,
+                        damage_source=perturbed(effect.damage_source),
+                        provenance=effect.provenance + (provenance,)))
+                    changed = True
+                    count += 1
+                else:
+                    effects.append(effect)
+            if changed:
+                actions[i] = replace(action, effects=tuple(effects),
+                                     provenance=action.provenance + (provenance,))
+        if count:
+            applied.append({**provenance, 'rewritten_sources': count})
+    if not applied:
+        raise ValueError('no executable sourced equipped weapon DPS probe target')
+    return replace(ir_slice, auto_attacks=tuple(autos), actions=tuple(actions),
+                   provenance={**dict(ir_slice.provenance),
+                               'equipped_weapon_dps_sensitivity': applied})
+
 def _equipped_stat_dps_sources(ir_slice: GameIRSlice) -> dict[str, str]:
     """Generic named-slot DPS anchors for auto attacks without weapon-mode facts.
 
@@ -471,7 +536,7 @@ def apply_stat_delta(ir_slice: GameIRSlice, stat: str, delta: float, *, db_path:
     if stat not in executable_gear_stats(ir_slice, db_path=db_path):
         raise ValueError(f"stat {stat!r} has no executable generic gear semantic")
     if stat == 'weapon_dps':
-        raise ValueError('weapon_dps is an absolute equipped-weapon replacement, not an additive stat delta')
+        return _perturb_equipped_weapon_dps(ir_slice, float(delta), db_path=db_path)
     return _apply_executable_stats(
         ir_slice,
         {stat: float(delta)},
