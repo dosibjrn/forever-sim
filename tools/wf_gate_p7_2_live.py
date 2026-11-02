@@ -110,9 +110,11 @@ def run_live(root: Path, class_key: str, level: int, *,
             with tempfile.TemporaryDirectory(prefix="forever_p72_live_") as temp:
                 file = Path(temp) / "source-cold-candidate.json"
                 file.write_text(json.dumps(candidate))
-                native = production.native_source_control(binary, file, 3)
+                native = production.native_source_control(binary, file, 3,
+                                                          rng_mode="balanced")
                 result = production.run(
-                    binary, file, distance=player["distanceFromTarget"], iterations=3)
+                    binary, file, distance=player["distanceFromTarget"],
+                    iterations=3, rng_mode="balanced")
                 parity_failure = _source_native_world_parity(native, result, 3)
                 if parity_failure is not None:
                     raise ValueError("SOURCE_NATIVE_WORLD_PARITY_FAILED:" + parity_failure)
@@ -154,6 +156,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "source_legal_cold_candidates_paid": executed,
         "cold_candidate_failures": failures[:4],
         "selected_validation": "3_native_world_fights_per_cold_candidate",
+        "search_rng_mode": "balanced",
         "source_fixed_gear_and_talents": True,
         "coverage_scope_complete": False,
     }

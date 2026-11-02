@@ -63,9 +63,9 @@ def test_p72_rejects_equal_native_world_dps_if_fight_duration_differs(monkeypatc
         lambda *args: (baseline, {"reference_dps": 728.19}, tmp_path / "binary"))
     source = SimpleNamespace(mutate_apl=lambda a, actions, rng, cold: list(reversed(actions)))
     producer = SimpleNamespace(
-        native_source_control=lambda binary, request, n: {
+        native_source_control=lambda binary, request, n, *, rng_mode: {
             "iterations": n, "first_duration_s": 120.0, "native_dps": 730.0},
-        run=lambda binary, request, distance, iterations: {
+        run=lambda binary, request, distance, iterations, *, rng_mode: {
             "iterations_done": iterations,
             "per_iteration": [{"duration_s": 119.0}] * iterations,
             "sampled_duration_s": 119.0,

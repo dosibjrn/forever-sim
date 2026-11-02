@@ -79,8 +79,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                 with tempfile.TemporaryDirectory(prefix="forever_p75_live_") as tmp:
                     path = Path(tmp) / "cold-full-source-build.json"
                     path.write_text(json.dumps(candidate))
-                    native = production.native_source_control(binary, path, 3)
-                    live = production.run(binary, path, distance=distance, iterations=3)
+                    native = production.native_source_control(binary, path, 3,
+                                                              rng_mode="balanced")
+                    live = production.run(binary, path, distance=distance,
+                                          iterations=3, rng_mode="balanced")
                 # A high DPS number is not evidence of a correct coupled
                 # timeline. Reject mismatched native/world durations and
                 # damage accounting even when both means are identical.
@@ -133,5 +135,6 @@ def run_live(root: Path, class_key: str, level: int, *,
         "source_legal_joint_candidates_paid": executed,
         "cold_candidate_failures": failures[:3],
         "selected_validation": "3_native_world_fights_per_cold_full_build",
+        "search_rng_mode": "balanced",
         "coverage_scope_complete": False,
     }

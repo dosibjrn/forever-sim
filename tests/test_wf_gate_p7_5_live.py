@@ -86,9 +86,9 @@ def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypat
         candidate_pool=lambda validator, limit: ({0: [11], 1: [21]}, {}),
         make_candidate=cold, player=player, RejectedGear=ValueError)
     production = SimpleNamespace(
-        native_source_control=lambda binary, path, n: {
+        native_source_control=lambda binary, path, n, *, rng_mode: {
             "iterations": n, "first_duration_s": 120.0, "native_dps": 730.0},
-        run=lambda binary, path, distance, iterations: {
+        run=lambda binary, path, distance, iterations, *, rng_mode: {
             "iterations_done": iterations,
             "per_iteration": [{"duration_s": 119.0}] * iterations,
             "sampled_duration_s": 119.0,
