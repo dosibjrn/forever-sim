@@ -63,7 +63,7 @@ def test_bounded_l20_l40_representative_school_sanity():
     import math
     from src import game_context
     from src.v2 import expected_engine
-    from tools.report_backend_reconciliation import _mage_structural_build
+    from tools.report_backend_comparison import _mage_structural_build
 
     game_context.configure('forever', 'mage')
     cfg=e.SimConfig(seed=7,use_best_water=True)
