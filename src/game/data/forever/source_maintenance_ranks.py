@@ -13,23 +13,41 @@ _THORNS_SHAPE=re.compile(r'^Thorns sprout from the friendly target causing (?P<d
 _COST=re.compile(r'^(?P<amount>\d+) (?P<resource>Mana|Rage|Energy)$')
 
 
+def _latest_source_maintenance_rank(class_key: str, family_name: str, level: int,
+                                    db_path: Path | None, *, kind: str):
+    """One source-index lookup and identity check for both maintenance families.
+
+    Keep the original fail-closed reason codes: callers distinguish an invalid
+    source identity, a removed rank and an unsupported tooltip.
+    """
+    path = Path(db_path or active_ability_db(DEFAULT_DB))
+    with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as conn:
+        row = conn.execute('''SELECT spell_id,name,level_hint,raw_listview_json,source_url
+          FROM spell_index WHERE class_key=? AND kind='abilities' AND name=?
+            AND level_hint BETWEEN 1 AND ?
+          ORDER BY level_hint DESC,spell_id DESC LIMIT 1''',
+          (class_key.lower(), family_name, int(level))).fetchone()
+    if row is None:
+        return None
+    sid, name, learn, raw_text, url = row
+    raw = json.loads(raw_text)
+    if (raw.get('id'), raw.get('name'), raw.get('level')) != (sid, name, learn):
+        raise ValueError(f'{kind}_SOURCE_IDENTITY_CONFLICT')
+    env = raw.get('envChange') or {}
+    if env.get('status') == 'removed':
+        raise ValueError(f'LATEST_{kind}_REMOVED')
+    after = env.get('after')
+    if not isinstance(after, dict):
+        raise ValueError(f'{kind}_NEEDS_UNAMBIGUOUS_AFTER_TOOLTIP')
+    return sid, name, learn, after, url
+
+
 def latest_reactive_maintenance_rank(class_key:str,family_name:str,level:int,*,db_path:Path|None=None)->dict|None:
     """Only return exact parsed reactive auras; unknown grammar fails closed."""
-    path=Path(db_path or active_ability_db(DEFAULT_DB))
-    with sqlite3.connect(f'file:{path}?mode=ro',uri=True) as conn:
-        row=conn.execute('''SELECT spell_id,name,level_hint,raw_listview_json,source_url FROM spell_index
-          WHERE class_key=? AND kind='abilities' AND name=?
-            AND level_hint IS NOT NULL AND level_hint BETWEEN 1 AND ?
-          ORDER BY level_hint DESC,spell_id DESC LIMIT 1''',
-          (class_key.lower(),family_name,int(level))).fetchone()
-    if row is None:return None
-    sid,name,learn,raw_text,url=row;raw=json.loads(raw_text)
-    if raw.get('id')!=sid or raw.get('name')!=name or raw.get('level')!=learn:
-        raise ValueError('REACTIVE_AURA_SOURCE_IDENTITY_CONFLICT')
-    env=raw.get('envChange') or {}
-    if env.get('status')=='removed':raise ValueError('LATEST_REACTIVE_AURA_REMOVED')
-    after=env.get('after')
-    if not isinstance(after,dict):raise ValueError('REACTIVE_AURA_NEEDS_UNAMBIGUOUS_AFTER_TOOLTIP')
+    row = _latest_source_maintenance_rank(class_key, family_name, level, db_path, kind='REACTIVE_AURA')
+    if row is None:
+        return None
+    sid, name, learn, after, url = row
     match=_THORNS_SHAPE.fullmatch(str(after.get('text','')))
     cost=_COST.fullmatch(str(after.get('cost','')))
     if (not match or not cost or after.get('cast')!='Instant' or after.get('cooldown') not in ('',None)
@@ -56,24 +74,10 @@ def latest_stat_maintenance_rank(class_key: str, family_name: str, level: int, *
     Acquisition and derived-stat completeness are deliberately not certified by
     the index. The caller must keep those separate from executable effects.
     """
-    path = Path(db_path or active_ability_db(DEFAULT_DB))
-    with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as conn:
-        row = conn.execute('''SELECT spell_id,name,level_hint,raw_listview_json,source_url
-          FROM spell_index WHERE class_key=? AND kind='abilities' AND name=?
-            AND level_hint BETWEEN 1 AND ? ORDER BY level_hint DESC,spell_id DESC LIMIT 1''',
-                           (class_key.lower(), family_name, int(level))).fetchone()
+    row = _latest_source_maintenance_rank(class_key, family_name, level, db_path, kind='STAT_AURA')
     if row is None:
         return None
-    sid, name, learn, raw_text, url = row
-    raw = json.loads(raw_text)
-    if (raw.get('id'),raw.get('name'),raw.get('level')) != (sid,name,learn):
-        raise ValueError('STAT_AURA_SOURCE_IDENTITY_CONFLICT')
-    env = raw.get('envChange') or {}
-    if env.get('status') == 'removed':
-        raise ValueError('LATEST_STAT_AURA_REMOVED')
-    after = env.get('after')
-    if not isinstance(after,dict):
-        raise ValueError('STAT_AURA_NEEDS_UNAMBIGUOUS_AFTER_TOOLTIP')
+    sid, name, learn, after, url = row
     match = _MARK_SHAPE.fullmatch(str(after.get('text', '')))
     cost = _COST.fullmatch(str(after.get('cost','')))
     if (not match or not cost or after.get('cast') != 'Instant'
