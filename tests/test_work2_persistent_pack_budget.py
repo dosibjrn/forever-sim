@@ -73,3 +73,30 @@ def test_real_source_two_mob_pack_still_completes_with_ample_budget():
     assert sum(p["mob_count"] for p in result.pulls) == 2
     assert all(p["pack_all_defeated"] for p in result.pulls)
     assert result.seconds_per_mob > 0
+
+
+def test_real_pack_rejects_deadline_exhausted_after_last_pack(monkeypatch):
+    """Even post-pack state accounting cannot return an over-budget winner."""
+    from src.game import multi_pull, recovery
+    from src.game.data.forever import build_game_ir_slice
+    from src.game.model import PolicyDefinition, PolicyRuleDefinition
+    from src.game.runtime import simulator
+
+    # The first three boundary checks are within budget: deadline creation,
+    # pack start, and pack completion. Only the final result check expires.
+    clock = iter((0, 0, 0, 2_000_000_000))
+    monkeypatch.setattr(multi_pull, "monotonic_ns", lambda: next(clock))
+    monkeypatch.setattr(simulator, "monotonic_ns", lambda: 0)
+    monkeypatch.setattr(recovery, "monotonic_ns", lambda: 0)
+
+    ir = build_game_ir_slice(class_key="druid", level=30)
+    wrath = next(a for a in ir.actions if a.family_key == "wrath")
+    policy = PolicyDefinition(
+        id="work2:budget:final", label="Source Wrath",
+        rules=(PolicyRuleDefinition(
+            id="work2:budget:final:rule", action_id=wrath.id),))
+    with pytest.raises(ComputeDeadlineExceeded, match="BUDGET_WALL_DEADLINE"):
+        multi_pull.evaluate_repeated_pulls(
+            ir_slice=ir, policy=policy, level=30,
+            target_health=20., count=2, pack_size=2,
+            schedule_incoming_attacks=False, max_wall_s=1.)
