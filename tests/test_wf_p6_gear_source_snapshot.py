@@ -196,3 +196,104 @@ def test_p6_source_space_requires_executed_proposer_not_two_matching_labels():
                        match='COLD_COMPARISON_DIFFERENT_SOURCE_SEARCH_SPACE'):
         _same_executed_source_search_space(good30,
             report(current, current, offset=1))
+
+
+def test_independent_paid_p6_replay_receipts_fail_closed_without_losing_other_leg():
+    from src.v2.source_paid_cold_comparison import _summarize_independent_paid_replay
+
+    missing = _summarize_independent_paid_replay(
+        {'rows': [], 'wall_s_outside_search_budget': 0.2}, budget=30)
+    assert missing['status'] == 'MISSING_SINGLE_PAID_REPLAY_ROW'
+    assert missing['mob_completed'] == 0 and missing['s_per_mob'] is None
+    assert missing['replay_wall_s'] == 0.2
+    duplicate = _summarize_independent_paid_replay(
+        {'rows': [{'status': 'COMPLETE', 'count': 100, 'full_s_per_mob': 10.}] * 2},
+        budget=30)
+    assert duplicate['status'] == 'MISSING_SINGLE_PAID_REPLAY_ROW'
+
+    for bad in (0., -2., float('nan'), float('inf')):
+        result = _summarize_independent_paid_replay(
+            {'rows': [{'status': 'COMPLETE', 'count': 100,
+                       'mob_completed': 100, 'full_s_per_mob': bad}]}, budget=300)
+        assert result['status'] == 'INVALID_COMPLETE_PAID_REPLAY'
+        assert result['mob_completed'] == 0 and result['s_per_mob'] is None
+
+    # Real partial paid kills from a failed pull remain observable, never
+    # silently promoted to a complete independent 100-mob leg.
+    interrupted = _summarize_independent_paid_replay(
+        {'rows': [{'status': 'BLOCKED_ACTOR_DIED', 'mob_completed': 42,
+                   'failed_pull_index': 21, 'events': 987}]}, budget=30)
+    assert interrupted['mob_completed'] == 42
+    assert interrupted['status'] == 'BLOCKED_ACTOR_DIED'
+    assert interrupted['failed_pull_index'] == 21
+
+    completed = _summarize_independent_paid_replay(
+        {'rows': [{'status': 'COMPLETE', 'count': 100,
+                   'mob_completed': 100, 'full_s_per_mob': 12.5, 'events': 5200}],
+         'wall_s_outside_search_budget': 2.}, budget=300)
+    assert completed['status'] == 'COMPLETE'
+    assert completed['mob_completed'] == completed['count'] == 100
+    assert completed['s_per_mob'] == 12.5
+
+
+@pytest.mark.parametrize('first_rows, expected_mobs', [
+    ([], 0),
+    ([{'status': 'BLOCKED_ACTOR_DIED', 'count': 42,
+       'failed_pull_index': 21, 'events': 987}], 42),
+    ('RAISE', 0),
+])
+def test_p6_independent_comparison_keeps_both_paid_legs_on_first_failure(
+        monkeypatch, first_rows, expected_mobs):
+    """Exercise the real comparison caller, not just the receipt helper.
+
+    Source legality and actual combat remain separately validated by the
+    hydrated production regressions; this focused negative control checks
+    that a failed 30s replay cannot erase the independent paid 300s result.
+    """
+    from src.v2 import source_paid_cold_comparison as comparison
+    from src.v2 import source_bounded_joint_frontier as frontier
+
+    snapshot = {'schema': 'test-source-snapshot',
+                'class_membership_verified': False}
+    thirty = _saved_report(30, snapshot)
+    three_hundred = _saved_report(300, snapshot)
+    monkeypatch.setattr(comparison, 'source_gear_catalogue_snapshot',
+                        lambda class_key, level: snapshot)
+    monkeypatch.setattr(comparison, '_verify_winner_gear_legality',
+                        lambda winner, **kwargs: {
+                            'equipment_legality_complete': True,
+                            'sourced_acquisition_methods': []})
+    monkeypatch.setattr(comparison, '_winner_gear_effect_gaps',
+                        lambda winner, **kwargs: {})
+
+    calls = []
+    def paid_replay(search_report, **kwargs):
+        calls.append((search_report, kwargs))
+        if len(calls) == 1:
+            if first_rows == 'RAISE':
+                raise RuntimeError('source preparation failed before paid combat')
+            return {'rows': first_rows, 'wall_s_outside_search_budget': 1.0}
+        return {'rows': [{'status': 'COMPLETE', 'count': 100,
+                          'full_s_per_mob': 12.5, 'events': 5000}],
+                'wall_s_outside_search_budget': 2.0}
+
+    monkeypatch.setattr(frontier, 'replay_joint_shortlist_100mob', paid_replay)
+    result = compare_saved_cold_winners(
+        thirty, three_hundred, source_ir=None, seed_stage=None,
+        class_key='druid', level=30,
+        source_hash='pinned-ability-source', bonus_talent_points=0)
+
+    assert len(calls) == 2
+    assert [r['budget_s'] for r in result['replays']] == [30, 300]
+    assert result['status'] == 'INCOMPLETE_INDEPENDENT_100MOB_REPLAY'
+    assert result['replays'][0]['mob_completed'] == expected_mobs
+    if first_rows == 'RAISE':
+        assert result['replays'][0]['status'] == 'PAID_REPLAY_EXECUTOR_EXCEPTION'
+        assert 'RuntimeError: source preparation failed' in result['replays'][0]['reason']
+        assert result['replays'][0]['replay_wall_s'] >= 0
+    assert result['replays'][1]['status'] == 'COMPLETE'
+    assert result['replays'][1]['mob_completed'] == 100
+    assert result['replays'][1]['s_per_mob'] == 12.5
+    assert result['ratio_T30_T300'] is None
+    assert result['numeric_p6_within_1pct'] is False
+    assert result['eligible_for_checkpoint_acceptance'] is False
