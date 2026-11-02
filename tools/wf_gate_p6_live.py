@@ -70,6 +70,17 @@ def _replay_first_paid_winner(search, *, source_ir, seed_stage, class_key, level
     }
 
 
+def _complete_finite_paid_replay(row: dict) -> bool:
+    """Only one valid completed, timed 100-mob run can enter P6's ratio."""
+    seconds = row.get("mean_s_per_mob") if isinstance(row, dict) else None
+    return bool(isinstance(row, dict)
+        and row.get("status") == "COMPLETE"
+        and type(row.get("count")) is int and row["count"] == 100
+        and _mob_kills(row) == 100
+        and type(seconds) in (int, float)
+        and isfinite(seconds) and seconds > 0)
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     # Full 30/300s paid searches are deliberately explicit, never hourly.
@@ -120,11 +131,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         results.append({"cold_search_budget_s": budget,
                         "paid_screens": paid, **row})
     verified = sum(_mob_kills(row) for row in results)
-    both = all(row["status"] == "COMPLETE" and row["mob_completed"] == 100
-               and type(row.get("count")) is int and row["count"] == 100
-               and type(row.get("mean_s_per_mob")) in (int, float)
-               and isfinite(row["mean_s_per_mob"])
-               and row["mean_s_per_mob"] > 0 for row in results)
+    both = all(_complete_finite_paid_replay(row) for row in results)
     ratio = (results[0]["mean_s_per_mob"] / results[1]["mean_s_per_mob"]
              if both else None)
     reasons = ["P6_FULL_INDEPENDENT_30S_300S_WINNERS_NOT_EXECUTED",
