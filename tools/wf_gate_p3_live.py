@@ -97,11 +97,12 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "src.v2.source_bounded_joint_frontier.source_spec_talent_frontier"}
     result = run_source_budgeted_gear(
         class_key=class_key, level=level, ir_slice=ir,
-        max_evaluations=36, initial_search=12, search_per_gear=3,
+        max_evaluations=44, initial_search=12, search_per_gear=3,
         max_gear_states=1, probe_deltas=(5., 20.),
         probe_stats=("armor", "stamina", "strength", "agility", "intellect",
                      "spirit", "spell_power", "attack_power", "mp5",
-                     "crit", "hit", "dodge", "parry"),
+                     "crit", "hit", "dodge", "parry",
+                     "health_regeneration_per_5s"),
         schedule_incoming_attacks=True)
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
