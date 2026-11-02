@@ -38,7 +38,7 @@ def native_request(cls='mage', level=10):
 def test_real_listener_service_submit_status_worker_and_explicit_inspect(tmp_path,monkeypatch):
     import src.listener as listener
     from http.server import ThreadingHTTPServer
-    monkeypatch.setenv('PYTHONPATH',str(Path(__file__).resolve().parents[1]))
+    monkeypatch.setenv('PYTHONPATH',str(Path(__file__).resolve().parents[3]))
     store=QueueStore(tmp_path/'q.sqlite3')
     service=OptimizerHTTPServer(('127.0.0.1',0),store,project_root=tmp_path)
     st=Thread(target=service.serve_forever,daemon=True);st.start()

@@ -15,7 +15,7 @@ from src.service.models import JobRequest
 from src.service.store import QueueStore
 from src.service.scheduler import Scheduler
 from src.service.executors import executor_for
-from tests.test_g50c_cold_service_http_isolation import _guard_environment, ROOT
+from tests.integration.service.test_g50c_cold_service_http_isolation import _guard_environment, ROOT
 
 
 def _enqueue(tmp_path):

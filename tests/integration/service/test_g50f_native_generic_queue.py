@@ -13,8 +13,8 @@ from src.service.store import QueueStore
 from src.service.scheduler import Scheduler
 from src.service.executors import executor_for
 from src.service.publication import PublicationError, _validate_attempt_state, current_publication
-from tests.test_g50e_worker_child_legacy_boundary import _interpreter_guard_shim
-from tests.test_g50c_cold_service_http_isolation import _guard_environment, ROOT
+from tests.integration.service.test_g50e_worker_child_legacy_boundary import _interpreter_guard_shim
+from tests.integration.service.test_g50c_cold_service_http_isolation import _guard_environment, ROOT
 
 
 def _request(**kw):

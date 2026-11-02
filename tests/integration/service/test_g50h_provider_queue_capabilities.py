@@ -24,9 +24,9 @@ from src.service.http_api import OptimizerHTTPServer
 from src.service.client import ServiceClient
 from src.v2.decision_dashboard import _generic_ui_metadata
 from src.version import SOFTWARE_VERSION
-from tests.test_g50c_cold_service_http_isolation import _guard_environment
-from tests.test_g50e_worker_child_legacy_boundary import _interpreter_guard_shim
-from tests.test_g50g_explicit_queued_decision_read import http_json
+from tests.integration.service.test_g50c_cold_service_http_isolation import _guard_environment
+from tests.integration.service.test_g50e_worker_child_legacy_boundary import _interpreter_guard_shim
+from tests.integration.service.test_g50g_explicit_queued_decision_read import http_json
 
 
 def request(cls='druid', level=10):
@@ -98,7 +98,7 @@ def test_real_guarded_native_child_and_hashed_read_for_several_classes(tmp_path,
 
 def test_http_admission_and_queued_read_across_service_listener_for_mage(tmp_path,monkeypatch):
     import src.listener as listener
-    monkeypatch.setenv('PYTHONPATH',str(Path(__file__).resolve().parents[1]))
+    monkeypatch.setenv('PYTHONPATH',str(Path(__file__).resolve().parents[3]))
     store=QueueStore(tmp_path/'queue.sqlite3')
     job,_=store.enqueue(request('mage',10))
     result=Scheduler(store,runs_root=tmp_path/'runs').run_once(project_root=tmp_path)
