@@ -2,8 +2,8 @@
 <rect width="1120" height="485" rx="16" fill="#111827"/>
 <text x="38" y="42" fill="#f9fafb" font-family="Arial,sans-serif" font-size="25" font-weight="bold">Forever Sim — M1 progress</text>
 <text x="38" y="70" fill="#9ca3af" font-family="Arial,sans-serif" font-size="15">Git-verified gate results · 1,628 gate targets · 148 checkpoints</text>
-<text x="38" y="103" fill="#34d399" font-family="Arial,sans-serif" font-size="19" font-weight="bold">PASS 4/1628 (0.2457%)</text>
-<text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Measured 0.8175%</text>
+<text x="38" y="103" fill="#34d399" font-family="Arial,sans-serif" font-size="19" font-weight="bold">PASS 5/1628 (0.3071%)</text>
+<text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Measured 0.8199%</text>
 <text x="785" y="103" fill="#f9fafb" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Certified 0/148</text>
 <line x1="39" y1="130" x2="67" y2="130" stroke="#34d399" stroke-width="3"/>
 <text x="75" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">Full gate PASS (% of 1628)</text>
@@ -22,12 +22,12 @@
 <line x1="90.0" y1="400" x2="90.0" y2="406" stroke="#6b7280"/>
 <text x="90.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 07:17</text>
 <line x1="570.0" y1="400" x2="570.0" y2="406" stroke="#6b7280"/>
-<text x="570.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 13:03</text>
+<text x="570.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 13:06</text>
 <line x1="1050.0" y1="400" x2="1050.0" y2="406" stroke="#6b7280"/>
-<text x="1050.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 18:48</text>
-<path d="M 90.0 400.0 H 158.8 V 400.0 H 209.1 V 400.0 H 626.2 V 400.0 H 650.6 V 385.3 H 672.4 V 385.3 H 676.6 V 385.3 H 681.1 V 385.3 H 694.5 V 385.3 H 706.7 V 385.3 H 717.7 V 385.3 H 722.0 V 385.3 H 726.2 V 385.3 H 763.0 V 385.3 H 763.2 V 385.3 H 791.9 V 385.3 H 827.9 V 385.3 H 860.1 V 385.3 H 888.7 V 370.5 H 955.9 V 370.5 H 1025.2 V 370.5 H 1050.0 V 341.0" fill="none" stroke="#34d399" stroke-width="3" stroke-linejoin="round"/>
-<circle cx="1050.0" cy="341.0" r="4" fill="#34d399"/>
-<path d="M 90.0 400.0 H 158.8 V 400.0 H 209.1 V 376.3 H 626.2 V 370.6 H 650.6 V 355.9 H 672.4 V 354.6 H 676.6 V 353.3 H 681.1 V 351.9 H 694.5 V 337.7 H 706.7 V 323.0 H 717.7 V 313.2 H 722.0 V 299.7 H 726.2 V 287.7 H 763.0 V 275.7 H 763.2 V 263.7 H 791.9 V 261.8 H 827.9 V 258.3 H 860.1 V 252.0 H 888.7 V 250.7 H 955.9 V 249.7 H 1025.2 V 233.3 H 1050.0 V 203.8" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linejoin="round"/>
-<circle cx="1050.0" cy="203.8" r="4" fill="#fbbf24"/>
+<text x="1050.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 18:54</text>
+<path d="M 90.0 400.0 H 158.2 V 400.0 H 208.0 V 400.0 H 621.4 V 400.0 H 645.6 V 385.3 H 667.2 V 385.3 H 671.4 V 385.3 H 675.8 V 385.3 H 689.1 V 385.3 H 701.2 V 385.3 H 712.1 V 385.3 H 716.3 V 385.3 H 720.5 V 385.3 H 757.0 V 385.3 H 757.2 V 385.3 H 785.6 V 385.3 H 821.3 V 385.3 H 853.2 V 385.3 H 881.5 V 370.5 H 948.1 V 370.5 H 1016.8 V 370.5 H 1041.5 V 341.0 H 1050.0 V 326.3" fill="none" stroke="#34d399" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="1050.0" cy="326.3" r="4" fill="#34d399"/>
+<path d="M 90.0 400.0 H 158.2 V 400.0 H 208.0 V 376.3 H 621.4 V 370.6 H 645.6 V 355.9 H 667.2 V 354.6 H 671.4 V 353.3 H 675.8 V 351.9 H 689.1 V 337.7 H 701.2 V 323.0 H 712.1 V 313.2 H 716.3 V 299.7 H 720.5 V 287.7 H 757.0 V 275.7 H 757.2 V 263.7 H 785.6 V 261.8 H 821.3 V 258.3 H 853.2 V 252.0 H 881.5 V 250.7 H 948.1 V 249.7 H 1016.8 V 233.3 H 1041.5 V 203.8 H 1050.0 V 203.2" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="1050.0" cy="203.2" r="4" fill="#fbbf24"/>
 <text x="40" y="472" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">UTC timeline from TSV Git commits · Y-axis zoomed to observed progress (starts at zero) · Historical measured best, not current regression status</text>
 </svg>
