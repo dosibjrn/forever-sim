@@ -19,13 +19,14 @@ from src.game.model.ir import GameIRSlice, ModeStatModifier, ModeResourceCapacit
 from src.game.data.forever.stat_conversions import (load_mode_stat_conversions,
     load_mode_resource_capacity_conversions)
 from src.game.data.forever.equipped_weapon_modes import load_equipped_weapon_mode_facts
+from src.game.data.forever.source_checkpoint_p3_ratings import source_item_stat_to_combat
 
 
 EXECUTABLE_CASTER_GEAR_STATS = ("spell_power", "intellect", "spirit", "mp5")
 # The shared combat executor already reads agility (mode AP modifiers) and
 # attack_power (weapon/auto-attack damage). Keep the legacy caster envelope
 # unchanged while allowing the joint search to evaluate sourced melee gear.
-EXECUTABLE_GEAR_STATS = EXECUTABLE_CASTER_GEAR_STATS + ("agility", "attack_power", "armor")
+EXECUTABLE_GEAR_STATS = EXECUTABLE_CASTER_GEAR_STATS + ("agility", "attack_power", "armor", "crit", "hit")
 
 
 def _mode_label(label: str) -> str:
@@ -305,7 +306,7 @@ def _apply_executable_stats(
     missing_base = dict(ir_slice.actor.metadata.get('canonical_missing_base_stat_proxies') or {})
     for stat in available:
         delta = float(stat_delta.get(stat, 0.0) or 0.0)
-        if delta and stat != 'weapon_dps' and stat not in named_stat_dps and stat not in missing_base:
+        if delta and stat not in ('weapon_dps', 'crit', 'hit') and stat not in named_stat_dps and stat not in missing_base:
             stats[stat] = float(stats.get(stat, 0.0)) + delta
 
     # Canonical primary stat deltas affect the real combat table, not merely
@@ -319,6 +320,23 @@ def _apply_executable_stats(
         if delta:
             target = str(row['target_id'])
             stats[target] = float(stats.get(target, 0.0)) + delta * float(row['coefficient'])
+
+    # Pinned Forever item chance points are raw client stats, not probability
+    # fractions. Use the same sourced conversion as real equipped-item combat,
+    # for BOTH named gear and finite-difference production stat probes.
+    # Never add raw crit/hit to actor stats and silently claim it affected DPS.
+    chance_evidence = []
+    for source_stat in ('crit', 'hit'):
+        raw_delta = float(stat_delta.get(source_stat, 0.0) or 0.0)
+        if not raw_delta:
+            continue
+        level = ir_slice.actor.metadata.get('level')
+        if level is None:
+            raise ValueError('source item chance requires selected actor level')
+        evidence = source_item_stat_to_combat(source_stat, raw_delta, level=int(level))
+        for channel, chance_delta in evidence['channel_deltas'].items():
+            stats[channel] = float(stats.get(channel, 0.0)) + float(chance_delta)
+        chance_evidence.append(evidence)
 
     # Source-compiled actor Armor is 2*total Agility plus armor from equipped
     # items. Recompute exactly once from canonical coefficients after each gear
@@ -413,6 +431,10 @@ def _apply_executable_stats(
         metadata={
             **dict(ir_slice.actor.metadata),
             "gear_included": True,
+            "gear_item_chance_source_evidence": [
+                *ir_slice.actor.metadata.get('gear_item_chance_source_evidence', ()),
+                *chance_evidence,
+            ],
             "gear_executable_stats": {
                 stat: float(stat_delta.get(stat, 0.0) or 0.0)
                 for stat in available
