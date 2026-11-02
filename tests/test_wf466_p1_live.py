@@ -331,7 +331,8 @@ def test_probe_tries_next_legal_mode_if_first_raises(monkeypatch):
         def __init__(self,actor,target):pass
         def schedule_action(self,action):self.action=action
         def run_until_idle(self):pass
-        def result(self):return N(events=[N(kind=k,action_id=self.action.id)
+        def result(self):return N(events=[N(kind=k,action_id=self.action.id,
+                 payload={'amount':10.0} if k=='Damage' else {})
                  for k in ('ActionStarted','Damage','ActionCompleted')])
     runtime_mod=types.ModuleType('src.game.runtime')
     runtime_mod.ActorState=Actor;runtime_mod.TargetState=Target;runtime_mod.CombatRuntime=Runtime
