@@ -17,7 +17,7 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Regression tests for canonical source talent grants
-        run: python -m pytest -q tests/test_wf_prio_p2_source_grant.py
+        run: python -m pytest -q tests/test_wf_prio_p2_source_grant.py tests/test_wf35_source_spec_p2_adapter.py
       - name: Inspect exact source-compiled executable rank gaps
         run: |
           python - <<'PY'
@@ -81,4 +81,20 @@ jobs:
               print('P2_SOURCE_PROFILE_BUILD_COUNT',len(builds),flush=True)
           except Exception as exc:
               print('P2_SOURCE_PROFILE_ERROR',type(exc).__name__,str(exc),flush=True)
+          PY
+      - name: Live Druid L60 Balance P2 on exact source (diagnostic only)
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P2 > p2-live.json || true
+          python - <<'PY'
+          import json
+          report=json.load(open('p2-live.json'))
+          print('P2_LIVE_REPORT',report.get('status'))
+          for gate in report.get('gates', [report]):
+              if gate.get('gate') != 'P2':
+                  continue
+              print('P2_LIVE_GATE',gate.get('status'),'ranks',gate.get('reachability_count'),
+                    'passed',gate.get('pass_count'),'failed',gate.get('fail_count'),
+                    'unresolved',gate.get('unresolved_count'))
+              print('P2_LIVE_REASONS',gate.get('reasons',[])[:35])
+              print('P2_LIVE_UNRESOLVED',gate.get('unresolved',[])[:25])
           PY
