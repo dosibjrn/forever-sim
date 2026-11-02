@@ -1,5 +1,6 @@
 name: M1 scoreboard exact-head smoke (temporary)
 on:
+  pull_request:
   push:
     branches:
       - work/m1-1628-live-pass-counter-20261102
