@@ -1387,8 +1387,15 @@ class CombatRuntime:
             return
         generated = self._generated_resource_ids(event.action_id)
         applicable = False
+        # Resource rules are owned by the actor, but their *active host* may
+        # be the struck target (e.g. cat combo points). The actor-only check
+        # suppresses legitimate target-scoped source procs before the real
+        # joint attack outcome is sampled.
+        recipient = (self.targets.get(str(event.target_id), self.target)
+                     if event.target_id is not None else self.target)
         for definition in self.actor.resource_definitions.values():
-            if not self.actor.resource_is_active(str(definition.id)):
+            host = _resource_host(self.actor, recipient, str(definition.id))
+            if host is None or not bool(host.resource_active.get(str(definition.id), False)):
                 continue
             for rule in definition.event_gain_rules:
                 if (rule.event_kind!='nonperiodic_melee_critical' or
