@@ -110,6 +110,11 @@ class RustStepSession:
             raise NativeProtocolError("WORLD_CLOCK_NOT_MONOTONIC")
         if self._pending is not None:
             raise NativeProtocolError("UNACKNOWLEDGED_NATIVE_ACTION")
+        # The world snapshot and boundary must describe the SAME gsim instant.
+        # Otherwise the native actor can decide using a different clock than
+        # the acknowledged 2D position/target state.
+        if type(world.get("clock_ms")) is not int or world["clock_ms"] != clock_ms:
+            raise NativeProtocolError("WORLD_BOUNDARY_CLOCK_MISMATCH")
         digest = state_hash(world)
         seq = self._seq + 1
         self._send({"type": "boundary", "protocol": PROTOCOL, "session_id": self.session_id,
@@ -133,10 +138,19 @@ class RustStepSession:
         """Called only AFTER the real gsim world applies a native world action."""
         if self._pending is None or action_id != self._pending:
             raise NativeProtocolError("WORLD_ACK_ACTION_ID_MISMATCH")
+        # An applied world event may consume time (movement/recovery), but
+        # cannot rewind the shared clock or report a different ACK timestamp.
+        applied_clock_ms = world_after.get("clock_ms")
+        if type(applied_clock_ms) is not int or applied_clock_ms < self._last_clock_ms:
+            raise NativeProtocolError("WORLD_APPLIED_ACK_CLOCK_INVALID")
         digest = state_hash(world_after)
         ack = {"ack_id": f"{self.session_id}:{self._seq}:{action_id}",
                "action_id": action_id, "world_after_sha256": digest,
-               "clock_ms": self._last_clock_ms}
+               "clock_ms": applied_clock_ms}
+        # The applied world time, not the pre-action boundary, is the next
+        # native decision's monotonic floor. Paid movement/recovery cannot
+        # be rewound by the next pull's world snapshot.
+        self._last_clock_ms = applied_clock_ms
         self._last_ack = ack
         self._pending = None
         return ack
