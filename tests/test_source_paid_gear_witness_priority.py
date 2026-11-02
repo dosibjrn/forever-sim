@@ -364,3 +364,32 @@ def test_rejected_source_preflight_resumes_without_repaying_it(monkeypatch, tmp_
     assert any(row.get("screen_events", 0) > 0 for row in result["rows"][1:])
     assert result["unique_full_builds"] >= 1
     assert not result["eligible_for_checkpoint_acceptance"]
+
+
+def test_refinement_never_spends_a_second_real_screen_past_paid_budget():
+    # Genuine source-backed Druid L20 cold search, no mocked scorer.
+    # Before the fix the first real frontier screen exhausted the one-call
+    # budget, but the Top-N refinement still paid another CombatRuntime call.
+    from src.v2.source_bounded_joint_frontier import search_bounded_joint_frontier
+
+    source_ir = build_game_ir_slice(class_key="druid", level=20)
+    stage = source_cold_start_stage(
+        class_key="druid", level=20, source_ir=source_ir,
+        gear_role="druid_feral")
+    result = search_bounded_joint_frontier(
+        class_key="druid", level=20, source_ir=source_ir,
+        seed_stage=stage, max_paid_builds=1, max_cpu_s=9.,
+        per_candidate_wall_s=3., max_talents=1,
+        max_gear_moves=0, max_policies=1, max_recovery_policies=1,
+        screen_mobs=1, search_only=True,
+        screen_evaluator_backend="direct", refinement_rounds=1,
+        refinement_top_n=1, refinement_stat_axes=("strength",),
+        refinement_probe_delta=20., refinement_gear_candidates=1,
+        refinement_policy_candidates=1, refinement_talent_neighbors=0,
+        screen_budget_fraction=.4)
+    assert result["screen_complete_candidates"] == 1, result["rows"]
+    assert result["events"] > 0
+    assert result["first_pass_screen_candidates"] == 1
+    assert result["refinement"]["paid_evaluations"] == 0
+    assert result["all_quick_evaluations_including_stat_probes"] == 1
+    assert result["search_budget_exhausted"] is True
