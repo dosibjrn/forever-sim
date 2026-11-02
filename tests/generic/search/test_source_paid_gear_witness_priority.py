@@ -651,3 +651,43 @@ def test_independent_100mob_replay_pins_talented_budget_from_real_source_search(
         replay_joint_shortlist_100mob(
             {k: v for k, v in report.items() if k != "bonus_talent_points"},
             source_ir=ir, seed_stage=stage, class_key="mage", level=30)
+
+
+def test_refinement_identity_does_not_repay_same_source_build_under_different_gear_labels():
+    """The short paid budget should fund new legal candidates, not label aliases.
+
+    Build the actual source-backed Mage/Druid L30 candidate with the normal
+    production preparation path. A second gear-selection coordinate yielding
+    exactly that equipment/rotation/talents/recovery must have the SAME key,
+    while independent recovery/APL/opening dimensions stay distinguishable.
+    This is a bounded identity regression, not a P6 or checkpoint PASS.
+    """
+    from src.game.policy_evolution import _identity as policy_identity
+    from src.v2.source_bounded_joint_frontier import _refinement_build_identity
+
+    for class_key in ("mage", "druid"):
+        source_ir = build_game_ir_slice(class_key=class_key, level=30)
+        seed = source_cold_start_stage(
+            class_key=class_key, level=30, source_ir=source_ir, gear_role=class_key)
+        candidate = prepare_candidate(
+            class_key=class_key, level=30, stage=seed, source_ir=source_ir,
+            allow_partial_gear_stats=True)
+        row = {
+            "allocation": dict(candidate.allocation),
+            "gear_move": "incumbent",
+            "policy_signature": policy_identity(candidate.policy),
+            "recovery": "always",
+            "opening_action_ids": list(candidate.opening),
+            "equipped_gear": candidate.source_stage["gear_policy_result"]["winner"]["gear"],
+        }
+        original = _refinement_build_identity(row, candidate)
+        alias = {**row, "gear_move": "source_stat_package:spell_power"}
+        assert _refinement_build_identity(alias, candidate) == original
+        # The original key included gear_move even with identical source gear.
+        assert alias["gear_move"] != row["gear_move"]
+        assert _refinement_build_identity(
+            {**alias, "recovery": "never"}, candidate) != original
+        assert _refinement_build_identity(
+            {**alias, "policy_signature": "different_source_apl"}, candidate) != original
+        assert _refinement_build_identity(
+            {**alias, "opening_action_ids": ["distinct_source_opening"]}, candidate) != original
