@@ -81,8 +81,10 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         def __init__(self, *args):
             assert args[-1] is base
 
-        def validate(self, ids):
+        def validate(self, ids, enchants=None):
             assert ids == [11, 21]
+            if enchants is not None:
+                assert len(enchants) == 2
 
         def close(self):
             pass
@@ -99,9 +101,11 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
             slot["id"] = iid
         return result
 
-    gear = SimpleNamespace(GearValidator=Validator,
-                           candidate_pool=candidate_pool, _swap=swap,
-                           RejectedGear=ValueError)
+    gear = SimpleNamespace(
+        GearValidator=Validator, candidate_pool=candidate_pool, _swap=swap,
+        preflight=lambda reference, candidate: True,
+        source_enchant_pools=lambda validator, pools: {0: [None, 201], 1: [None]},
+        RejectedGear=ValueError)
     calls = []
     def native(binary, path, n, *, rng_mode):
         calls.append(("native", n, rng_mode, path.read_text()))
@@ -145,3 +149,36 @@ def test_p74_invalid_full_search_flag_blocks_before_source_work(
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report == {"status": "BLOCKED",
                       "reasons": ["P7_4_INVALID_FULL_SOURCE_SEARCH_MODE"]}
+
+
+def test_full_cold_p74_can_free_enchant_without_changing_fixed_axes():
+    """Pre-fix: unchanged reference item IDs could never gain a new enchant."""
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 100+i} for i in range(16)]},
+        "talentsString": "fixed-talents",
+        "rotation": {"priorityList": [{"action": 1}]},
+    }]}]}}
+    original = copy.deepcopy(base)
+    checked = []
+    def validate(ids, enchants=None):
+        checked.append((ids, enchants))
+        assert ids == [100+i for i in range(16)]
+        assert enchants == [411] + [None]*15
+    def swap(reference, ids):
+        q = copy.deepcopy(reference)
+        for item, iid in zip(q["raid"]["parties"][0]["players"][0]["equipment"]["items"], ids):
+            item["id"] = iid
+        return q
+    search = SimpleNamespace(_swap=swap, preflight=lambda *a: True,
+                             RejectedGear=ValueError)
+    pools = {i: [100+i] for i in range(16)}
+    enchants = {i: ([411] if i == 0 else [None]) for i in range(16)}
+    winner = gate._cold_gear(
+        base, SimpleNamespace(validate=validate), search, random.Random(1),
+        pool=pools, enchant_pools=enchants)
+    player = winner["raid"]["parties"][0]["players"][0]
+    assert player["equipment"]["items"][0] == {"id": 100, "enchant": 411}
+    assert player["talentsString"] == "fixed-talents"
+    assert player["rotation"] == {"priorityList": [{"action": 1}]}
+    assert len(checked) == 1
+    assert base == original
