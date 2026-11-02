@@ -37,7 +37,10 @@ class MaintenanceTestLayout(unittest.TestCase):
         ):
             source = consumer.read_text()
             self.assertIn("tests/fixtures/wf243_heldout_feral_l20.json", source)
-            self.assertNotIn("ROOT / 'fixtures/wf243_heldout_feral_l20.json'", source)
+            self.assertNotIn(
+                "fixtures/wf243_heldout_feral_l20.json",
+                source.replace("tests/fixtures/wf243_heldout_feral_l20.json", ""),
+            )
 
     def test_current_ci_does_not_reference_old_test_locations(self):
         workflows = ROOT / ".github" / "workflows"
