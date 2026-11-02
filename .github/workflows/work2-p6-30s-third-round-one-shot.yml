@@ -1,0 +1,51 @@
+name: Work2 P6 third-round source-paid diagnostic (one shot)
+on:
+  push:
+    branches: [work/work2-p6-30s-three-refinement-rounds-20261102]
+    paths: [.github/workflows/work2-p6-30s-third-round-one-shot.yml]
+permissions:
+  contents: read
+jobs:
+  source-paid-30s:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Real source-backed 30s cold search and independent 100-mob replay
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          git rev-parse HEAD
+          python -m tools.wf437_direct_budgeted_run --budget 30 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output /tmp/work2-round3.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/work2-round3.json').read_text())
+          v=r.get('validation') or {}
+          rows=v.get('rows') or []
+          winner=next((x for x in rows if str(x.get('id'))==str(v.get('validated_winner_id'))),None)
+          receipt={'checkpoint':'druid:60:balance',
+              'budget_s':r.get('requested_wall_budget_s'),
+              'search_wall_s':r.get('wall_s'),
+              'source_db_sha256':r.get('source_db_sha256'),
+              'backend':r.get('screen_evaluator_backend'),
+              'unique_paid':r.get('unique_full_builds'),
+              'first_pass_screen_candidates':r.get('first_pass_screen_candidates'),
+              'backfill_screen_candidates':r.get('backfill_screen_candidates'),
+              'refinement':r.get('refinement'),
+              'shortlist_size':len(r.get('validation_shortlist') or []),
+              'complete_100mob_replays':v.get('complete_100mob_replays'),
+              'validated_winner_full_s_per_mob':winner.get('full_s_per_mob') if winner else None,
+              'replayed_rows':[{'id':x.get('id'),'status':x.get('status'),
+                'full_s_per_mob':x.get('full_s_per_mob')} for x in rows]}
+          print('WORK2_P6_ROUND3_REAL_RECEIPT='+json.dumps(receipt,sort_keys=True,default=str),flush=True)
+          assert receipt['budget_s']==30 and 0<receipt['search_wall_s']<=30
+          assert receipt['complete_100mob_replays']==receipt['shortlist_size']
+          assert receipt['validated_winner_full_s_per_mob'] is not None
+          PY
