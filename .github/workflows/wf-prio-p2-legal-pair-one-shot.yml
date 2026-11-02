@@ -1,5 +1,11 @@
 name: Prio P2 legal paired control — one-shot source check
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/wf-prio-p2-legal-pair-one-shot.yml
+      - tools/wf_gate_p2_live.py
+      - tests/test_wf_prio_p2_legal_pair.py
   push:
     branches:
       - work/prio-p2-legal-paired-control
