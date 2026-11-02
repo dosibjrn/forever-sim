@@ -12,7 +12,7 @@ from copy import deepcopy
 from itertools import combinations, permutations
 from math import ceil, inf
 from time import process_time_ns, monotonic_ns
-from src.game.runtime.simulator import ComputeDeadlineExceeded
+from src.game.runtime.simulator import ComputeDeadlineExceeded, EventTransitionBudgetExceeded
 from typing import Iterable
 
 from src.game.model import ActionDefinition, HealEffect, PeriodicHealEffect
@@ -53,7 +53,8 @@ def _plans(actions: Iterable[ActionDefinition], hp_missing: float, healing_power
 
 def _simulate(actor, *, level: int, start: float, plan, healing_power: float,
               health_id: str, mana_id: str, passive: float,
-              cpu_deadline_ns: int | None = None, wall_deadline_ns: int | None = None):
+              cpu_deadline_ns: int | None = None, wall_deadline_ns: int | None = None,
+              max_new_events: int | None = None):
     """Return an executed candidate, or None if an action cannot be paid/cast."""
     _check_deadline(cpu_deadline_ns,wall_deadline_ns)
     trial = deepcopy(actor)
@@ -65,6 +66,7 @@ def _simulate(actor, *, level: int, start: float, plan, healing_power: float,
                             spell_power=float(healing_power), enable_casting_regen=False)
     runtime.cpu_deadline_ns=cpu_deadline_ns
     runtime.wall_deadline_ns=wall_deadline_ns
+    runtime.event_budget_cap=max_new_events
     for action in plan:
         _check_deadline(cpu_deadline_ns,wall_deadline_ns)
         gate = action_eligibility(action=action, actor=trial, target=runtime.target)
@@ -78,6 +80,8 @@ def _simulate(actor, *, level: int, start: float, plan, healing_power: float,
         old = float(trial.current_time_s)
         try:
             runtime.schedule_action(action)
+        except EventTransitionBudgetExceeded:
+            raise
         except (ValueError, RuntimeError):
             return None
         if has_mana: trial.restore(mana_id, passive * (trial.current_time_s - old))
@@ -125,10 +129,12 @@ def _check_deadline(cpu_deadline_ns,wall_deadline_ns):
 def optimize_mixed_recovery(*, actor, level: int, actions: Iterable[ActionDefinition],
                             start_time_s: float, healing_power: float,
                             health_resource_id: str, mana_resource_id: str, passive: float,
-                            cpu_deadline_ns: int | None = None, wall_deadline_ns: int | None = None):
+                            cpu_deadline_ns: int | None = None, wall_deadline_ns: int | None = None,
+                            max_new_events: int | None = None):
     before = {str(k): float(v) for k, v in actor.resources.items()}
     hp_missing = max(0.0, float(actor.resource_capacity[health_resource_id]) - before[health_resource_id])
     best = None
+    budget_exhausted = False
     # Source-defined actions can be absent or ineligible (forms, mana, etc.).
     mana_missing = max(0.0, float(actor.resource_capacity[mana_resource_id]) - before[mana_resource_id]) \
         if mana_resource_id in before else 0.0
@@ -142,10 +148,15 @@ def optimize_mixed_recovery(*, actor, level: int, actions: Iterable[ActionDefini
     plans = ((),) if only_ordinary else _plans(actions, hp_missing, healing_power)
     for plan in plans:
         _check_deadline(cpu_deadline_ns,wall_deadline_ns)
-        candidate = _simulate(actor, level=level, start=start_time_s, plan=plan,
-                              healing_power=healing_power, health_id=health_resource_id,
-                              mana_id=mana_resource_id, passive=passive,
-                              cpu_deadline_ns=cpu_deadline_ns,wall_deadline_ns=wall_deadline_ns)
+        try:
+            candidate = _simulate(actor, level=level, start=start_time_s, plan=plan,
+                                  healing_power=healing_power, health_id=health_resource_id,
+                                  mana_id=mana_resource_id, passive=passive,
+                                  cpu_deadline_ns=cpu_deadline_ns,wall_deadline_ns=wall_deadline_ns,
+                                  max_new_events=max_new_events)
+        except EventTransitionBudgetExceeded:
+            budget_exhausted = True
+            continue  # This source policy cannot complete within the paid event ceiling.
         if candidate is None: continue
         trial, runtime, food_s, water_s = candidate
         elapsed = max(0.0, float(trial.current_time_s) - float(start_time_s))
@@ -153,6 +164,8 @@ def optimize_mixed_recovery(*, actor, level: int, actions: Iterable[ActionDefini
         if best is None or key < best[0]:
             best = (key, trial, runtime, plan, food_s, water_s)
     if best is None:
+        if budget_exhausted:
+            raise EventTransitionBudgetExceeded(max_new_events or 0)
         raise ValueError('no executable recovery candidate, including ordinary food/water')
     _, trial, runtime, plan, food_s, water_s = best
     pending_hot_auras = sorted({str(e.payload['aura_id'])
@@ -172,6 +185,7 @@ def optimize_mixed_recovery(*, actor, level: int, actions: Iterable[ActionDefini
         heal_events=tuple(e.as_dict() for e in runtime.result().events
                           if e.kind in ('Heal', 'AuraApplied', 'AuraReplaced', 'AuraExpired')),
         food_s=food_s, water_s=water_s,
+        runtime_events=runtime.event_transitions,
         food_tier=food_tier(level).name,
         water_tier=water_tier(level).name if mana_resource_id in before else 'not_applicable',
         passive_mana_regen_per_s=passive,

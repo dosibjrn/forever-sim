@@ -13,7 +13,7 @@ from dataclasses import dataclass, replace
 from copy import deepcopy
 from typing import Any, Iterable, Mapping
 from time import monotonic_ns, process_time_ns
-from src.game.runtime.simulator import ComputeDeadlineExceeded
+from src.game.runtime.simulator import ComputeDeadlineExceeded, EventTransitionBudgetExceeded
 
 from src.game.model import ActionDefinition, HealEffect, PeriodicHealEffect, PeriodicResourceEffect
 from src.game.runtime import ActorState, CombatRuntime, TargetState, action_eligibility
@@ -41,6 +41,7 @@ class RecoveryExecutionResult:
     method: str
     provenance: Mapping[str, Any]
     periodic_recovery_events: int = 0
+    runtime_events: int = 0  # all executed recovery CombatRuntime transitions
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -61,6 +62,7 @@ class RecoveryExecutionResult:
             "passive_mana_regen_per_s": float(self.passive_mana_regen_per_s),
             "method": self.method,
             "periodic_recovery_events": int(self.periodic_recovery_events),
+            "runtime_events": int(self.runtime_events),
             "provenance": dict(self.provenance),
         }
 
@@ -106,7 +108,8 @@ def _execute_paid_mana_channel(*, initial: ActorState, action: ActionDefinition,
                                level: int, start: float, healing_power: float,
                                health_resource_id: str, mana_resource_id: str,
                                cpu_deadline_ns: int | None,
-                               wall_deadline_ns: int | None):
+                               wall_deadline_ns: int | None,
+                               max_new_events: int | None = None):
     """One source action, its actual event clock, then paid ordinary recovery.
 
     Return None if it cannot legally start now; never wait through its cooldown.
@@ -120,23 +123,28 @@ def _execute_paid_mana_channel(*, initial: ActorState, action: ActionDefinition,
         enable_casting_regen=False)
     runtime.cpu_deadline_ns = cpu_deadline_ns
     runtime.wall_deadline_ns = wall_deadline_ns
+    runtime.event_budget_cap = max_new_events
     try:
         runtime.schedule_action(action)
         runtime.persist_actor_periodics()
+    except EventTransitionBudgetExceeded:
+        raise
     except (ValueError, RuntimeError):
         return None
     remaining = recover_actor_to_full(actor=trial, level=level,
         actions=remaining_actions, start_time_s=float(trial.current_time_s),
         healing_power=healing_power, health_resource_id=health_resource_id,
         mana_resource_id=mana_resource_id, cpu_deadline_ns=cpu_deadline_ns,
-        wall_deadline_ns=wall_deadline_ns)
-    return trial, remaining, tuple(e.as_dict() for e in runtime.trace)
+        wall_deadline_ns=wall_deadline_ns,
+        max_new_events=None if max_new_events is None else max_new_events-runtime.event_transitions)
+    return trial, remaining, tuple(e.as_dict() for e in runtime.trace), runtime.event_transitions
 
 
 def recover_actor_to_full(
     *, actor: ActorState, level: int, actions: Iterable[ActionDefinition], start_time_s: float,
     healing_power: float = 0.0, health_resource_id: str = "health", mana_resource_id: str = "mana",
     cpu_deadline_ns: int | None = None, wall_deadline_ns: int | None = None,
+    max_new_events: int | None = None,
 ) -> RecoveryExecutionResult:
     """Recover the supplied post-combat ActorState to full HP/Mana.
 
@@ -150,6 +158,8 @@ def recover_actor_to_full(
         if wall_deadline_ns is not None and monotonic_ns() >= wall_deadline_ns:
             raise ComputeDeadlineExceeded(0,'WALL')
     check_deadline()
+    if max_new_events is not None and (type(max_new_events) is not int or max_new_events < 0):
+        raise ValueError('max_new_events must be a nonnegative integer')
     start = float(start_time_s)
     actor.current_time_s = start
     before = {str(k): float(v) for k, v in actor.resources.items()}
@@ -186,19 +196,24 @@ def recover_actor_to_full(
         baseline = recover_actor_to_full(actor=baseline_actor, level=level,
             actions=non_channels, start_time_s=start, healing_power=healing_power,
             health_resource_id=health_resource_id, mana_resource_id=mana_resource_id,
-            cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns)
+            cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns,
+            max_new_events=max_new_events)
         best_actor, best_result, best_action_id = baseline_actor, baseline, None
         for action in mana_channels:
             check_deadline()
-            candidate = _execute_paid_mana_channel(
-                initial=initial, action=action, remaining_actions=non_channels,
-                level=level, start=start, healing_power=healing_power,
-                health_resource_id=health_resource_id,
-                mana_resource_id=mana_resource_id,
-                cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns)
+            try:
+                candidate = _execute_paid_mana_channel(
+                    initial=initial, action=action, remaining_actions=non_channels,
+                    level=level, start=start, healing_power=healing_power,
+                    health_resource_id=health_resource_id,
+                    mana_resource_id=mana_resource_id,
+                    cpu_deadline_ns=cpu_deadline_ns, wall_deadline_ns=wall_deadline_ns,
+                    max_new_events=max_new_events)
+            except EventTransitionBudgetExceeded:
+                continue  # An over-budget alternative cannot displace the legal baseline.
             if candidate is None:
                 continue
-            trial, remaining, channel_trace = candidate
+            trial, remaining, channel_trace, channel_events = candidate
             elapsed = float(trial.current_time_s) - start
             if elapsed + 1e-9 < best_result.total_s:
                 best_actor = trial
@@ -208,6 +223,7 @@ def recover_actor_to_full(
                     total_s=elapsed, resources_before=before,
                     health_missing_before=hp_missing, mana_missing_before=mana_missing,
                     heal_events=channel_trace + remaining.heal_events,
+                    runtime_events=channel_events + remaining.runtime_events,
                     method="mana_channel+" + remaining.method)
         # Preserve the caller's ActorState identity across the encounter boundary.
         actor.__dict__.update(deepcopy(best_actor.__dict__))
@@ -231,6 +247,7 @@ def recover_actor_to_full(
             healing_power=float(healing_power), health_resource_id=health_resource_id,
             mana_resource_id=mana_resource_id, passive=passive,
             cpu_deadline_ns=cpu_deadline_ns,wall_deadline_ns=wall_deadline_ns,
+            max_new_events=max_new_events,
         )
 
     pairs = _direct_heal_options(actions,
@@ -251,6 +268,7 @@ def recover_actor_to_full(
             selected_casts = 0
 
     heal_events: list[Mapping[str, Any]] = []
+    runtime_events = 0
     if selected_action is not None and selected_casts > 0:
         context = TargetState.with_health("postcombat_recovery_context", 1.0, context="self_recovery")
         for _ in range(selected_casts):
@@ -267,8 +285,11 @@ def recover_actor_to_full(
                                     enable_casting_regen=False)
             runtime.cpu_deadline_ns=cpu_deadline_ns
             runtime.wall_deadline_ns=wall_deadline_ns
+            runtime.event_budget_cap = (None if max_new_events is None
+                                        else max_new_events-runtime_events)
             runtime.schedule_action(selected_action)
             runtime.run_until_idle()
+            runtime_events += runtime.event_transitions
             heal_events.extend(event.as_dict() for event in runtime.result().events)
         heal_elapsed = max(0.0, float(actor.current_time_s) - start)
         if has_mana:
@@ -294,9 +315,12 @@ def recover_actor_to_full(
             enable_casting_regen=False)
         recovery_runtime.cpu_deadline_ns = cpu_deadline_ns
         recovery_runtime.wall_deadline_ns = wall_deadline_ns
+        recovery_runtime.event_budget_cap = (None if max_new_events is None
+                                             else max_new_events-runtime_events)
         recovery_runtime.advance_to(float(actor.current_time_s) + sit_s)
         recovery_runtime.persist_actor_periodics()
         periodic_recovery_events = recovery_runtime.event_transitions
+        runtime_events += periodic_recovery_events
     else:
         actor.current_time_s = float(actor.current_time_s) + sit_s
     actor.restore(health_resource_id, hp_missing_after_heals)
@@ -333,6 +357,7 @@ def recover_actor_to_full(
         passive_mana_regen_per_s=passive,
         method=method,
         periodic_recovery_events=periodic_recovery_events,
+        runtime_events=runtime_events,
         provenance={
             "ordinary_recovery_authority": "src.rulesets.forever.shared.recovery",
             "direct_heal_execution": "src.game.runtime.CombatRuntime",
