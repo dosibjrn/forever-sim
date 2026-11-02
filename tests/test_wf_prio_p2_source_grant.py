@@ -59,3 +59,31 @@ def test_missing_or_mismatched_grant_cannot_promote_noop_rank():
         rank = next(t.ranks[0] for t in compiled.talents if t.id == 'insect_swarm')
         assert not rank.modifiers
         assert any(row['talent_id'] == 'insect_swarm' for row in coverage['unscored'])
+
+
+def test_real_canonical_l60_source_has_legal_51_point_balance_build():
+    """RED before grant promotion: Balance had only 30 executable points.
+
+    This is a real canonical SQLite/optimizer legality test, not P2 PASS.
+    """
+    from src.game.data.forever.sqlite_talents import DEFAULT_DB
+    from src.game.talent_execution_coverage import compile_talent_runtime
+    from src.game.talents import validate_talent_selection
+    from src.v2.source_bounded_joint_frontier import (
+        _source_unlock_full_point_allocation, _executable_rank_prefix,
+    )
+    source = build_game_ir_slice(class_key='druid', level=60, ability_db_path=DEFAULT_DB)
+    compiled, _ = compile_talent_runtime(source)
+    insect = next(t for t in compiled.talents if t.id == 'insect_swarm')
+    assert insect.ranks[0].modifiers[0].kind == 'grant_source_action'
+    balance = [t for t in compiled.talents if t.tree_key == 'balance']
+    assert sum(_executable_rank_prefix(t) for t in balance) >= 31
+    target = next(t for t in balance if t.id == 'improved_wrath')
+    allocation = _source_unlock_full_point_allocation(
+        compiled, target, level=60, bonus_talent_points=0,
+        target_rank=5, preferred_tree='balance', minimum_tree_points=31)
+    assert allocation is not None
+    assert sum(allocation.values()) == 51
+    assert sum(rank for tid, rank in allocation.items()
+               if next(t for t in compiled.talents if t.id == tid).tree_key == 'balance') >= 31
+    validate_talent_selection(compiled, allocation, level=60)
