@@ -10,6 +10,12 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Materialize canonical SQLite from Git LFS
+        run: |
+          git lfs pull
+          file data/forever/catalogue/forever_abilities.sqlite
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
