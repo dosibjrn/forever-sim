@@ -2215,8 +2215,17 @@ def independently_compare_shortlist(rows, replay, *, max_mobs=100):
     for row in rows:
         result=replay(row)
         count=result.get('count',result.get('mob_completed'))
-        valid=(result.get('status')=='COMPLETE' and count==100
-               and isfinite(float(result.get('mean_s_per_mob') or float('inf'))))
+        kills=result.get('mob_completed',count)
+        seconds=result.get('mean_s_per_mob')
+        # A finished 100-mob receipt requires genuine integer kills and
+        # finite, strictly positive paid elapsed time. NaN, negative time,
+        # bool-as-int, and contradictory completed-kill counts cannot become
+        # the frozen shortlist winner (even as a diagnostic).
+        valid=(result.get('status')=='COMPLETE'
+               and type(count) is int and count==100
+               and type(kills) is int and kills==100
+               and type(seconds) in (int,float)
+               and isfinite(seconds) and seconds>0)
         results.append({'id':row['id'] if 'id' in row else _joint_row_identity(row),
                         'screen_s_per_mob':row.get('screen_s_per_mob'),
                         'full_s_per_mob':result.get('mean_s_per_mob') if valid else None,
