@@ -19,7 +19,7 @@ CLASSES = frozenset(("druid", "hunter", "mage", "paladin", "priest",
 
 
 def _waivers(root: Path, class_key: str, level: int, scenario: str) -> dict[int, dict]:
-    document = json.loads((root / "gate_config/p1_scenario_applicability_v1.json").read_text())
+    document = json.loads((root / "config/gates/p1_scenario_applicability_v1.json").read_text())
     if document.get("schema") != "wf_p1_scenario_applicability_v1":
         raise ValueError("UNKNOWN_P1_SCENARIO_POLICY")
     if scenario not in {x["id"] for x in document["scenarios"]}:

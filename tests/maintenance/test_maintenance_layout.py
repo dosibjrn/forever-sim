@@ -42,6 +42,19 @@ class MaintenanceTestLayout(unittest.TestCase):
                 source.replace("tests/fixtures/wf243_heldout_feral_l20.json", ""),
             )
 
+    def test_p1_policy_has_one_static_config_home(self):
+        old = ROOT / "gate_config" / "p1_scenario_applicability_v1.json"
+        new = ROOT / "config" / "gates" / "p1_scenario_applicability_v1.json"
+        self.assertFalse(old.exists(), f"stale policy location: {old}")
+        self.assertTrue(new.is_file(), f"missing scenario policy: {new}")
+        for consumer in (
+            ROOT / "tools" / "p1_native_source_inventory.py",
+            ROOT / "tools" / "wf_gate_p1_live.py",
+        ):
+            content = consumer.read_text()
+            self.assertIn("p1_scenario_applicability_v1.json", content)
+            self.assertNotIn("gate_config", content)
+
     def test_current_ci_does_not_reference_old_test_locations(self):
         workflows = ROOT / ".github" / "workflows"
         for workflow in workflows.glob("*.yml"):

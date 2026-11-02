@@ -366,7 +366,7 @@ def _load_p1_scenario_nonimpact(root: Path, class_key: str, level: int,
     unsupported, incorrectly implemented, or unimportant in other scenarios.
     The JSON is owned by the P1 gate; the canonical spell DB stays unchanged.
     """
-    path = root / 'gate_config' / 'p1_scenario_applicability_v1.json'
+    path = root / 'config' / 'gates' / 'p1_scenario_applicability_v1.json'
     try:
         document = json.loads(path.read_text(encoding='utf-8'))
     except (OSError, ValueError) as exc:

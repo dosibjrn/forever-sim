@@ -17,7 +17,7 @@ One place for each responsibility. This is a **logical layout**: names marked �
 ├── .github/workflows/          # focused, bounded reproducible CI
 ├── config/
 │   ├── validation/             # static 148-checkpoint configuration
-│   └── gates/                  # static gate applicability/policies [target]
+│   └── gates/                  # static gate applicability/policies
 ├── data/forever/               # pinned source observations and canonical catalogues
 ├── src/
 │   ├── game/
@@ -53,7 +53,7 @@ One place for each responsibility. This is a **logical layout**: names marked �
     └── reference/            # necessary retained external/source reference notes
 ```
 
-**Not intended as permanent top-level responsibility islands:** `gate_config/`, `gate_sources/`, `gate_evidence/`, `fixtures/`, `state/`, historical `evidence/`, root coverage JSON/TXT, migration one-offs. These currently exist. Their contents need classification and **proof of consumer migration before movement/removal**; the ideal map does not authorize blindly deleting or relocating them. `docs/archive/` is not a destination for new obsolete files. Git history retains deleted history.
+**Not intended as permanent top-level responsibility islands:** `gate_sources/`, `gate_evidence/`, `state/`, historical `evidence/`, root coverage JSON/TXT, migration one-offs. These currently exist. Their contents need classification and **proof of consumer migration before movement/removal**; the ideal map does not authorize blindly deleting or relocating them. `docs/archive/` is not a destination for new obsolete files. Git history retains deleted history.
 
 ## Architecture and dependency rules
 
@@ -73,7 +73,7 @@ These are **observed categories** from public main inspection, **not** a claim t
 | --- | --- | --- |
 | `src/` has many flat legacy modules; `src/v2/` is large | Group by concrete domain boundary; converge on one generic production path | Import graph, actual runtime callers, benchmarks and backward compatibility |
 | Very large `tests/` and `tools/` roots | Group tests by behavior and tools by stable responsibility; remove superseded one-off entry points | Pytest collection, invoked workflows, imports, CLI compatibility |
-| `gate_config/`, `gate_sources/`, `gate_evidence/`, `fixtures/` | Consolidate static config, source inputs, formal proof and test fixtures into their intended homes | Search every path consumer and update CLI defaults/tests/evidence references together |
+| `gate_sources/`, `gate_evidence/` | Consolidate source inputs and formal proof into their intended homes | Search every path consumer and update CLI defaults/tests/evidence references together |
 | `evidence/` and `docs/evidence/` coexist | Retain only still-used reference/replay inputs; PASS timestamps live in one TSV | Actual data consumers and accepted historical decisions |
 | `state/`, coverage reports and migration scripts tracked | Keep only required reproducible fixtures/source; ignore generated noise; delete completed migration tooling | Verify no runtime startup, test or required replay depends on tracked artifacts |
 | `docs/archive/` and long historical narrative in guides | Git history is the archive; retain only currently useful explanations | Preserve current normative instructions and valid reference links |
@@ -92,6 +92,6 @@ These are **observed categories** from public main inspection, **not** a claim t
 
 ## Grounded baseline and navigation
 
-On 2026-11-02 the checked `main` root includes `src/`, `tests/`, `tools/`, `scripts/`, `integrations/`, `data/`, `docs/`, `config/`, `state/`, `evidence/`, `gate_config/`, `gate_sources/`, `gate_evidence/`, `fixtures/` and root coverage artifacts. `src/game/` already has model/data/runtime partitions; `tests/generic/`, `tests/mechanics/`, `tests/maintenance/`, and `tests/release/` exist. These are starting points, not the goal's completion.
+On 2026-11-02 the checked `main` root includes `src/`, `tests/`, `tools/`, `scripts/`, `integrations/`, `data/`, `docs/`, `config/`, `state/`, `evidence/`, `gate_sources/`, `gate_evidence/` and root coverage artifacts. `src/game/` already has model/data/runtime partitions; `tests/generic/`, `tests/mechanics/`, `tests/maintenance/`, and `tests/release/` exist. These are starting points, not the goal's completion.
 
 See [README](../README.md) for entry points, [docs index](INDEX.md) for normative docs, [evidence index](evidence/README.md) for formal gate proof, and [work queue](planning/WORK_PRIORITY.md) for live ownership. Completed historical migration steps and obsolete directory manifests belong in Git history, not expanded here.

@@ -66,7 +66,7 @@ The root `run.sh` and `run.ps1` remain unchanged stable entry points.
 | [`docs/`](docs/INDEX.md) | Canonical documentation map, accepted reference evidence and source notes |
 | [`docs/evidence/`](docs/evidence/README.md) | Curated accepted gate decisions, reproducible requests/results and build proof |
 | [`evidence/`](evidence/README.md) | Historical WF experiments; **not** the current PASS scoreboard |
-| `gate_config/`, `gate_sources/`, `gate_evidence/` | Operational gate policy, source inputs and machine evidence; paths still used by code |
+| `config/gates/`, `gate_sources/`, `gate_evidence/` | Static gate applicability policy, source inputs and machine evidence |
 
 **[Large assets and Git LFS migration](docs/LARGE_ASSETS_LFS.md)** — binary catalogues, large historical JSON and source archives; public LFS payloads were hydrated in an independent checkout; do not mistake pointer files for hydrated bytes.
 
