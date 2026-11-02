@@ -30,8 +30,14 @@ def main() -> None:
     replace_once(fight, "mod absorb;\n", "pub(crate) mod world_bridge;\nmod absorb;\n")
     replace_once(fight,
         "        let iterations = self.config.iterations;\n",
-        "        if world_bridge::enabled() { self.config.iterations = 1; }\n"
+        "        if world_bridge::enabled() {\n"
+        "            self.config.iterations = world_bridge::requested_iterations(self.config.iterations);\n"
+        "        }\n"
         "        let iterations = self.config.iterations;\n")
+    replace_once(fight,
+        "            self.run_once();\n",
+        "            if world_bridge::enabled() { world_bridge::begin_iteration(iteration as u32); }\n"
+        "            self.run_once();\n")
     replace_once(fight,
         "        while self.step() {}\n        self.cleanup();",
         "        while self.step() {}\n"

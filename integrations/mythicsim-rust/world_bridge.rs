@@ -1,7 +1,7 @@
 //! Synchronous source-Rust fight ↔ actual gsim world boundary.
 //! Activated only by FOREVER_GSIM_WORLD_BRIDGE=1. All damage comes from the
 //! unchanged native Fight::deal_damage; the world applies it before native
-//! scheduler resumes. This is a first-fight diagnostic, NOT P7 acceptance.
+//! scheduler resumes. This is a bounded multi-fight diagnostic, NOT P7 acceptance.
 use std::{cell::RefCell, io::{self, BufRead, Write}};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -27,6 +27,7 @@ struct DamageEvent {
 }
 
 struct Bridge {
+    iteration: u32,
     sequence: u64,
     next_tick_ns: i64,
     last_tick_ns: i64,
@@ -47,11 +48,38 @@ pub(crate) fn enabled() -> bool {
 pub(crate) fn start(source_hash: &str) {
     assert!(enabled() && source_hash.len() == 64, "RUST_WORLD_INVALID_SOURCE");
     BRIDGE.with(|state| *state.borrow_mut() = Some(Bridge {
-        sequence: 0, next_tick_ns: 0, last_tick_ns: -1,
+        iteration: 0, sequence: 0, next_tick_ns: 0, last_tick_ns: -1,
         last_health: None, previous_ack_id: String::new(),
         source_hash: source_hash.to_owned(), event_ordinal: 0,
         pending: Vec::new(),
     }));
+}
+
+/// Preserve original source request and seed; only first N source fights
+/// run during a cheap diagnostic, never silently award 10k-fight acceptance.
+pub(crate) fn requested_iterations(source_count: u32) -> u32 {
+    let count = std::env::var("FOREVER_GSIM_WORLD_ITERATIONS")
+        .ok().map(|s| s.parse::<u32>().expect("RUST_WORLD_ITERATIONS_NOT_INTEGER"))
+        .unwrap_or(1);
+    assert!(count > 0 && count <= source_count, "RUST_WORLD_ITERATIONS_OUT_OF_SOURCE_RANGE");
+    count
+}
+
+pub(crate) fn begin_iteration(iteration: u32) {
+    BRIDGE.with(|state| {
+        let mut state = state.borrow_mut();
+        let bridge = state.as_mut().expect("RUST_WORLD_NOT_STARTED");
+        assert!(iteration == 0 || iteration == bridge.iteration + 1,
+            "RUST_WORLD_ITERATION_NOT_SEQUENTIAL");
+        assert!(bridge.pending.is_empty(), "RUST_WORLD_UNFLUSHED_EVENTS");
+        bridge.iteration = iteration;
+        bridge.sequence = 0;
+        bridge.next_tick_ns = 0;
+        bridge.last_tick_ns = -1;
+        bridge.last_health = None;
+        bridge.previous_ack_id.clear();
+        bridge.event_ordinal = 0;
+    });
 }
 
 pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64> {
@@ -117,6 +145,7 @@ pub(crate) fn exchange(clock_ns: i64, duration_ns: i64, cumulative_damage: f64) 
     let pid = std::process::id();
     send(&json!({
         "type": "native_rust_world_boundary_request",
+        "iteration_index": bridge.iteration,
         "sequence": bridge.sequence, "native_clock_ns": clock_ns,
         "native_encounter_end_ns": duration_ns,
         "native_process_id": pid, "native_request_sha256": bridge.source_hash,
@@ -124,6 +153,7 @@ pub(crate) fn exchange(clock_ns: i64, duration_ns: i64, cumulative_damage: f64) 
     let tick = receive();
     assert!(tick["type"] == "gsim_world_range_tick"
         && tick["sequence"] == bridge.sequence
+        && tick["iteration_index"] == bridge.iteration
         && tick["native_clock_ns"] == clock_ns
         && tick["world_source"] == "gsim.CombatRuntime"
         && tick["previous_world_ack_id"] == bridge.previous_ack_id,
@@ -142,6 +172,7 @@ pub(crate) fn exchange(clock_ns: i64, duration_ns: i64, cumulative_damage: f64) 
     let before_hash = string(&tick, "world_sha256").to_owned();
     send(&json!({
         "type": "native_rust_world_receipt",
+        "iteration_index": bridge.iteration,
         "sequence": bridge.sequence, "native_process_id": pid,
         "native_request_sha256": bridge.source_hash,
         "observed_input_world_sha256": before_hash,
@@ -157,6 +188,7 @@ pub(crate) fn exchange(clock_ns: i64, duration_ns: i64, cumulative_damage: f64) 
     let ack = receive();
     assert!(ack["type"] == "gsim_native_damage_applied_ack"
         && ack["sequence"] == bridge.sequence
+        && ack["iteration_index"] == bridge.iteration
         && ack["native_process_id"] == pid
         && ack["world_before_sha256"] == before_hash,
         "RUST_WORLD_DAMAGE_ACK_IDENTITY_INVALID");
@@ -189,4 +221,17 @@ pub(crate) fn finish(duration_ns: i64, cumulative_damage: f64) {
         .expect("RUST_WORLD_NOT_STARTED").last_tick_ns);
     let clock = clock.max(last + 1_000_000);
     let _ = exchange(clock, duration_ns, cumulative_damage);
+    BRIDGE.with(|state| {
+        let state = state.borrow();
+        let bridge = state.as_ref().expect("RUST_WORLD_NOT_STARTED");
+        assert!(bridge.pending.is_empty(), "RUST_WORLD_FINISH_UNFLUSHED");
+        send(&json!({
+            "type": "native_rust_world_iteration_done",
+            "iteration_index": bridge.iteration,
+            "native_process_id": std::process::id(),
+            "native_request_sha256": bridge.source_hash,
+            "native_duration_ns": duration_ns,
+            "native_total_damage": cumulative_damage,
+        }));
+    });
 }
