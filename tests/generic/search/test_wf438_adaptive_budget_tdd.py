@@ -5,7 +5,7 @@ from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.source_bounded_joint_frontier import (
     search_bounded_joint_frontier, source_cold_start_stage)
 
-DB=Path(__file__).resolve().parents[1]/'data/forever/staged_druid_l30_talents_70338.sqlite'
+DB=Path(__file__).resolve().parents[3]/'data/forever/staged_druid_l30_talents_70338.sqlite'
 
 
 def test_search_only_reclaims_unused_refinement_budget_into_unique_legal_frontier():
