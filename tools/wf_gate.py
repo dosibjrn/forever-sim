@@ -459,6 +459,16 @@ def main(argv=None) -> int:
                     "behavior_probes_executed", "runtime_proof"):
             if key in report:
                 record[key] = report[key]
+        # Derived directly from real gate probes; not an acceptance score.
+        count, passed = report.get("reachability_count"), report.get("pass_count")
+        if (type(count) is int and count > 0 and type(passed) is int
+                and 0 <= passed <= count):
+            coverage = passed / count
+            effort = (0.25 * coverage if coverage <= 0.8
+                      else 0.20 + 4 * (coverage - 0.8))
+            record["partial_coverage_percent"] = round(100 * coverage, 2)
+            record["pareto_effort_estimate_percent"] = round(100 * effort, 2)
+            record["scope_provisional"] = bool(report.get("unresolved_count"))
         results.append(record)
     statuses = [x["status"] for x in results]
     verdict = ("PASS" if all(x == "PASS" for x in statuses)
