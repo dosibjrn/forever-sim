@@ -317,7 +317,32 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                 proc.wait()
         stderr_thread.join(timeout=1)
         proc.stderr.close()
+    # The accepted world-effect ACK is the authoritative production damage
+    # ledger. Spell counters are cumulative diagnostics and MUST NOT be used
+    # as a DPS numerator. Preserve raw native damage and effective world HP
+    # loss separately (they differ when a lethal spell overkills a target).
+    raw_damage = sum(float(row['gsim_applied_world_ack']['applied_native_damage'])
+                     for row in observations)
+    effective_damage = sum(
+        float(row['gsim_applied_world_ack']['world_target_health_before']) -
+        float(row['gsim_applied_world_ack']['world_target_health_after'])
+        for row in observations)
+    if (not math.isfinite(raw_damage) or not math.isfinite(effective_damage)
+            or raw_damage < 0 or effective_damage < 0
+            or effective_damage > raw_damage + 1e-6):
+        raise RuntimeError('NATIVE_WORLD_DAMAGE_ACCOUNTING_INVALID')
+    # Only a complete source-sampled encounter can yield a full-duration DPS.
+    # A 20-tick range smoke must not masquerade as a P7 measurement.
+    sampled_duration_s = (native_encounter_end_ns / 1e9
+                          if native_encounter_end_reached else None)
     return {'kind': 'real_gsim_2d_pinned_go_live_range_only_v1',
+            'raw_native_damage': raw_damage,
+            'effective_gsim_world_damage': effective_damage,
+            'source_sampled_duration_s': sampled_duration_s,
+            'raw_native_dps': (raw_damage / sampled_duration_s
+                               if sampled_duration_s is not None else None),
+            'effective_gsim_world_dps': (effective_damage / sampled_duration_s
+                                         if sampled_duration_s is not None else None),
             'world_target_count': len(runtime.targets),
             'target_spawn_yards': target_spawn_yards,
             'enemy_move_speed_yards_s': enemy_move_speed_yards_s,
