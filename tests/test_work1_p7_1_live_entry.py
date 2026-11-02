@@ -49,3 +49,26 @@ def test_no_native_binary_never_awards_pass(tmp_path, monkeypatch):
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report["status"] == "BLOCKED"
     assert report["reasons"] == ["P7_1_PINNED_RUST_BINARY_MISSING"]
+
+
+def test_invalid_bounded_probe_cannot_start_native(tmp_path, monkeypatch):
+    request = _fixture(tmp_path)
+    monkeypatch.setattr(gate, "SAVED_BALANCE_RAW_SHA",
+                        hashlib.sha256(request.read_bytes()).hexdigest())
+    for value in ("0", "10001", "not-an-integer"):
+        monkeypatch.setenv("FOREVER_P7_LIVE_PROBE_ITERATIONS", value)
+        report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+        assert report["status"] == "BLOCKED"
+        assert report["reasons"] == ["P7_1_INVALID_LIVE_PROBE_ITERATIONS"]
+
+
+def test_bounded_probe_still_requires_real_pinned_native(tmp_path, monkeypatch):
+    request = _fixture(tmp_path)
+    monkeypatch.setattr(gate, "SAVED_BALANCE_RAW_SHA",
+                        hashlib.sha256(request.read_bytes()).hexdigest())
+    monkeypatch.setenv("FOREVER_P7_LIVE_PROBE_ITERATIONS", "3")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN",
+                       str(tmp_path / "missing-forever-engine"))
+    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert report["status"] == "BLOCKED"
+    assert report["reasons"] == ["P7_1_PINNED_RUST_BINARY_MISSING"]
