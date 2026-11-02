@@ -132,6 +132,10 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     assert report["frozen_request_raw_sha256"] == hashlib.sha256(
         calls[3][3].encode()).hexdigest()
     assert report["cold_unique_source_requests"] == 1
+    frozen_items = json.loads(calls[3][3])["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    assert report["cold_winner_gear"] == [
+        {"slot": slot, "item_id": item["id"], "enchant_id": item.get("enchant")}
+        for slot, item in enumerate(frozen_items)]
     assert report["source_legal_cold_candidates_paid"] == 1
     assert report["independent_300s_search_completed"] is True
     assert report["frozen_stochastic_iterations"] == 1000
