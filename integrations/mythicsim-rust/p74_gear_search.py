@@ -53,6 +53,30 @@ def candidate_pool(validator, limit):
         pool[i]=ids
     return pool,exclusions
 
+
+def source_enchant_pools(validator, pools):
+    """Enumerate slot-legal native enchants; never whitelist saved gear only.
+
+    The selected GearValidator enforces native enchant existence and slot
+    restrictions in item(); candidate loadouts are validated again afterwards.
+    """
+    enchant_ids = sorted(int(e) for e in validator.enchants if int(e) > 0)
+    result = {}
+    for slot in range(len(pools)):
+        if not pools.get(slot):
+            raise ValueError("NO_SOURCE_LEGAL_GEAR_FOR_ENCHANT_SLOT")
+        anchor = pools[slot][0]
+        options = [None]
+        for enchant_id in enchant_ids:
+            try:
+                validator.item(slot, anchor, enchant_id)
+            except RejectedGear:
+                continue
+            options.append(enchant_id)
+        result[slot] = options
+    return result
+
+
 def simulate(binary, request, mode, iterations, seed, deadline):
     remaining=deadline-time.monotonic()
     if remaining<=0.05:raise TimeoutError("native deadline exhausted")

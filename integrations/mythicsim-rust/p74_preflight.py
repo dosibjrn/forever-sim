@@ -32,8 +32,12 @@ def preflight(reference,candidate=None):
         if len(items)!=len(ga["items"]):
             raise ValueError("All 16 gear positions must be specified")
         for orig,cand in zip(ga["items"],items):
-            if {k:v for k,v in orig.items() if k!="id"}!={k:v for k,v in cand.items() if k!="id"}:
-                raise ValueError("Only item IDs may change; preserve enchants, gems and suffixes")
+            if {k:v for k,v in orig.items() if k not in ("id","enchant")}!={k:v for k,v in cand.items() if k not in ("id","enchant")}:
+                raise ValueError("Only item IDs and enchants may change; preserve gems and suffixes")
+            if "enchant" in cand and (isinstance(cand["enchant"],bool)
+                                     or not isinstance(cand["enchant"],int)
+                                     or cand["enchant"]<0):
+                raise ValueError("Enchant IDs must be nonnegative integers")
         if not all(isinstance(x.get("id"),int) and x["id"]>0 for x in items):
             raise ValueError("Each slot needs a positive item ID")
         witness["candidate_gear_sha256"]=digest(gb)

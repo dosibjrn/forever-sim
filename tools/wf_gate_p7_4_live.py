@@ -25,22 +25,39 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
-def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *, pool=None):
-    """Select an independently sourced full loadout; never seed saved winner."""
+def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
+               pool=None, enchant_pools=None):
+    """Cold source-legal gear+enchant discovery; all non-equipment fields fixed."""
     if pool is None:
         pool, _ = gear_search.candidate_pool(validator, limit=15)
-    reference = [x["id"] for x in base["raid"]["parties"][0]["players"][0]["equipment"]["items"]]
+    original_items = base["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    reference = [item["id"] for item in original_items]
+    original_enchants = [item.get("enchant") for item in original_items]
     for _ in range(60):
         ids = [rng.choice(pool[i]) for i in range(len(reference))]
-        if ids == reference:
+        enchants = ([rng.choice(enchant_pools[i]) for i in range(len(reference))]
+                    if enchant_pools is not None else original_enchants)
+        # Reference-equivalent builds may be independently rediscovered, but
+        # they are never used to initialize this cold search.
+        if ids == reference and enchants == original_enchants:
             continue
         try:
-            validator.validate(ids)  # actual source+Rust item rules
+            if enchant_pools is None:
+                validator.validate(ids)
+            else:
+                validator.validate(ids, enchants)
         except gear_search.RejectedGear:
             continue
-        candidate = gear_search._swap(base, ids)  # fixed-dimension source preflight
+        candidate = gear_search._swap(base, ids)
+        if enchant_pools is not None:
+            actual_items = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+            for item, enchant_id in zip(actual_items, enchants):
+                item.pop("enchant", None)
+                if enchant_id is not None:
+                    item["enchant"] = int(enchant_id)
+            gear_search.preflight(base, candidate)
         return candidate
-    raise ValueError("NO_SOURCE_LEGAL_COLD_GEAR_ALTERNATIVE")
+    raise ValueError("NO_SOURCE_LEGAL_COLD_GEAR_OR_ENCHANT_ALTERNATIVE")
 
 
 def run_live(root: Path, class_key: str, level: int, *,
@@ -90,14 +107,19 @@ def run_live(root: Path, class_key: str, level: int, *,
         # because their heuristic static score falls below a top-80 cutoff.
         # candidate_pool already validates all catalogue item IDs, and
         # list[:None] preserves the entire per-slot admitted pool. Enchant
-        # and unrecorded source-effect parity remain independent blockers.
+        # choices are also selected from the pinned source/Rust validator;
+        # unrecorded item-effect semantics are not inferred.
         pool, _ = gear_search.candidate_pool(
             validator, limit=None if full_search else 15)
+        enchant_pools = (gear_search.source_enchant_pools(validator, pool)
+                         if full_search else None)
         while (time.monotonic() - search_start < 300.0
                if full_search else proposals < 3):
             proposals += 1
             try:
-                candidate = _cold_gear(base, validator, gear_search, rng, pool=pool)
+                candidate = _cold_gear(
+                    base, validator, gear_search, rng, pool=pool,
+                    enchant_pools=enchant_pools)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
