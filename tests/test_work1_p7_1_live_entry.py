@@ -27,6 +27,59 @@ def _fixture(root):
     return request
 
 
+def test_selected_fork_requires_parent_gitlink_not_historical_engine(
+        tmp_path, monkeypatch):
+    """The saved WF633 engine is provenance, while the executable is the gitlink."""
+    import subprocess
+    selected = "1f170913f0af47f0de455c2b91581d777e713d3a"
+    actual = [selected]
+    mode = ["valid"]
+
+    def fake_git(args, **kwargs):
+        if "ls-tree" in args:
+            row = ("160000 commit " + selected
+                   + "\tintegrations/mythicsim-rust/engine\n")
+            if mode[0] == "not_gitlink":
+                row = "100644 blob " + selected + "\tintegrations/mythicsim-rust/engine\n"
+            return subprocess.CompletedProcess(args, 0, row, "")
+        assert "rev-parse" in args
+        return subprocess.CompletedProcess(args, 0, actual[0] + "\n", "")
+
+    monkeypatch.setattr(gate.subprocess, "run", fake_git)
+    assert gate._selected_rust_submodule(tmp_path, tmp_path / "upstream") == selected
+    assert selected != gate.PINNED_RUST
+    actual[0] = gate.PINNED_RUST
+    assert gate._selected_rust_submodule(tmp_path, tmp_path / "upstream") is None
+    actual[0] = selected
+    mode[0] = "not_gitlink"
+    assert gate._selected_rust_submodule(tmp_path, tmp_path / "upstream") is None
+
+
+def test_shared_p74_preflight_accepts_exact_fork_without_overwriting_saved_witness(
+        tmp_path, monkeypatch):
+    from tools import wf_gate_p7_2_live as discovery
+    request = _fixture(tmp_path)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("unit test path only")
+    bridge = tmp_path / "upstream/src/core/fight/world_bridge.rs"
+    bridge.parent.mkdir(parents=True)
+    bridge.write_text("// unit test bridge marker")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
+    monkeypatch.setattr(discovery, "SAVED_BALANCE_RAW_SHA",
+                        hashlib.sha256(request.read_bytes()).hexdigest())
+    selected = "1f170913f0af47f0de455c2b91581d777e713d3a"
+    monkeypatch.setattr(discovery, "_selected_rust_submodule",
+                        lambda *args: selected)
+    prepared = discovery._pinned_source_runtime(
+        tmp_path, "druid", 60, "balance", "P7.4")
+    assert isinstance(prepared, tuple)
+    _, meta, selected_binary = prepared
+    assert selected_binary == binary
+    assert meta["engine_revision"] == gate.PINNED_RUST
+    assert meta["selected_engine_revision"] == selected
+
+
 def test_unrelated_checkpoint_cannot_use_balance_reference(tmp_path):
     report = gate.run_live(tmp_path, "hunter", 20, spec="beast-mastery")
     assert report["status"] == "BLOCKED"
@@ -121,12 +174,11 @@ def test_cli_separates_sample_breadth_from_live_dps_proximity(monkeypatch, capsy
         assert key not in row
     assert row["sampled_source_fights"] == 3
     assert row["saved_source_iterations"] == 10000
-    from tools.wf_gate_coverage import p7_required_dps
-    required = p7_required_dps("P7.1", 728.1936126415858)
-    assert row["dps_objective_required"] == round(required, 4)
-    assert row["dps_objective_proximity_percent"] == round(
-        100 * min(1.0, 692.1030471575785 / required), 2)
-    assert row["dps_objective_gate_pass"] is False
+    # 3 sampled fights are not the required 1,000 stochastic final.
+    # Production correctly withholds an acceptance-comparable DPS ratio.
+    for key in ("dps_objective_required", "dps_objective_proximity_percent",
+                "dps_objective_gate_pass"):
+        assert key not in row
 
 
 def test_source_fight_sample_cannot_earn_m1_partial():
@@ -191,9 +243,10 @@ def test_m1_action_prepares_exact_source_native_p7_without_heavy_opt_in():
     """
     from tools.wf_gate import ROOT
     workflow = (ROOT / ".github/workflows/m1-on-demand-record.yml").read_text()
-    assert "repository: sage3648/mythicsim-forever-engine" in workflow
-    assert gate.PINNED_RUST in workflow
-    assert "patch_world_ingress.py upstream" in workflow
+    assert 'git submodule update --init --depth 1' in workflow
+    assert 'git ls-tree HEAD -- "$engine"' in workflow
+    assert 'RUST_FORK_SUBMODULE_PIN_MISMATCH' in workflow
+    assert "patch_world_ingress.py upstream" not in workflow
     assert "cargo build --release --locked" in workflow
     assert "FOREVER_MYTHICSIM_RUST_BIN:" in workflow
     assert "FOREVER_P7_LIVE_PROBE_ITERATIONS=3" in workflow
@@ -330,10 +383,9 @@ def test_full_1000_stochastic_result_not_vetoed_by_ui_or_source_count(
     ingress.parent.mkdir(parents=True)
     ingress.write_text("// unit-test stub")
     monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
-    monkeypatch.setattr(
-        gate.subprocess, "run",
-        lambda args, **kwargs: subprocess.CompletedProcess(
-            args, 0, gate.PINNED_RUST + "\n", ""))
+    selected = "1f170913f0af47f0de455c2b91581d777e713d3a"
+    monkeypatch.setattr(gate, "_selected_rust_submodule",
+                        lambda root, upstream: selected)
 
     provider = tmp_path / "integrations/mythicsim-rust/live_world_probe.py"
     provider.parent.mkdir(parents=True)
@@ -359,4 +411,4 @@ def run(binary, request, *, distance, iterations):
     assert result["saved_source_iterations"] == 7
     assert result["runtime_proof"]["executed"] is True
     assert result["runtime_proof"]["source_revision"] == hashlib.sha256(request.read_bytes()).hexdigest()
-    assert result["runtime_proof"]["engine_revision"] == gate.PINNED_RUST
+    assert result["runtime_proof"]["engine_revision"] == selected

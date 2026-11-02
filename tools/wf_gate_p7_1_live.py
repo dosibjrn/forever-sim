@@ -21,11 +21,39 @@ from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps,
                                     p7_final_stochastic_mean_passes)
 
+# Historical WF633 engine identity: preserve its provenance after fork updates.
 PINNED_RUST = "666fe17a42682068a3c8497d88d5fa3732cbdfb9"
 SAVED_BALANCE_RAW_SHA = "e99b06e5aa891a941ac077643a4209ab8582c810b678df4ec2d47ac48c6c646a"
 
 
-def _executed_p7_runtime_proof(gate: str, frozen_source_sha256: str) -> dict:
+def _selected_rust_submodule(root: Path, upstream: Path) -> str | None:
+    """Require the running Rust checkout to match this parent HEAD's gitlink.
+
+    Saved-reference engine revision is historical provenance, not the current
+    executable pin. Never select a floating fork branch for a gate run.
+    """
+    path = "integrations/mythicsim-rust/engine"
+    try:
+        pin = subprocess.run(
+            ["git", "-C", str(root), "ls-tree", "HEAD", "--", path],
+            capture_output=True, text=True, check=False)
+        if pin.returncode:
+            return None
+        record = pin.stdout.strip().split()
+        if (len(record) != 4 or record[:2] != ["160000", "commit"]
+                or record[3] != path or len(record[2]) != 40
+                or any(ch not in "0123456789abcdef" for ch in record[2])):
+            return None
+        actual = subprocess.run(
+            ["git", "-C", str(upstream), "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return record[2] if actual.returncode == 0 and actual.stdout.strip() == record[2] else None
+
+
+def _executed_p7_runtime_proof(gate: str, frozen_source_sha256: str, *,
+                               engine_revision: str = PINNED_RUST) -> dict:
     """Stamp only an already executed and accepted native/world final.
 
     The caller reaches this helper after the real pinned Rust + 2D world
@@ -34,7 +62,7 @@ def _executed_p7_runtime_proof(gate: str, frozen_source_sha256: str) -> dict:
     """
     return {"runtime_proof": {
         "executed": True,
-        "engine_revision": PINNED_RUST,
+        "engine_revision": engine_revision,
         "source_revision": frozen_source_sha256,
         "run_id": f"{gate}-rust-gsim2d-{uuid4()}",
     }}
@@ -172,19 +200,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             return _blocked("P7_1_INVALID_LIVE_PROBE_ITERATIONS", requested=requested)
     full_validation = run_iterations == iterations
 
-    # Refuse an arbitrary executable: it must be the pinned original Rust
-    # checkout with the real world ingress patched into its production Fight.
+    # Refuse arbitrary executables: only the exact fork gitlink checked into
+    # this parent HEAD can run. The historical reference stays separately pinned.
     binary = Path(os.environ.get("FOREVER_MYTHICSIM_RUST_BIN", str(
         root.parent / "upstream/target/release/forever-engine"))).resolve()
     if not binary.is_file():
         return _blocked("P7_1_PINNED_RUST_BINARY_MISSING", binary=str(binary))
     upstream = binary.parents[2]
-    revision = subprocess.run(
-        ["git", "-C", str(upstream), "rev-parse", "HEAD"],
-        capture_output=True, text=True, check=False)
-    if revision.returncode != 0 or revision.stdout.strip() != PINNED_RUST:
-        return _blocked("P7_1_RUST_SOURCE_REVISION_NOT_PINNED",
-                        observed_revision=revision.stdout.strip())
+    selected_rust = _selected_rust_submodule(root, upstream)
+    if selected_rust is None:
+        return _blocked("P7_1_RUST_SOURCE_REVISION_NOT_PINNED")
     if not (upstream / "src/core/fight/world_bridge.rs").is_file():
         return _blocked("P7_1_LIVE_WORLD_INGRESS_NOT_BUILT")
 
@@ -211,7 +236,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
               "world_boundaries": live["native_world_ticks"],
               "source_request_raw_sha256": raw_sha,
               "live_request_raw_sha256": live.get("source_request_raw_sha256"),
-              "native_source_revision": PINNED_RUST,
+              "native_source_revision": selected_rust,
               "iterations": live["iterations_done"],
               "source_original_iterations": source_iterations,
               "stochastic_rng": True,
@@ -259,4 +284,5 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "p7_1_1_reference_pinned": True,
             "p7_1_2_native_reproduced": True,
             "p7_1_3_live_reproduced": True,
-            **_executed_p7_runtime_proof("P7.1", raw_sha), **actual}
+            **_executed_p7_runtime_proof("P7.1", raw_sha,
+                                                 engine_revision=selected_rust), **actual}
