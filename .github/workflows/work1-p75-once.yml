@@ -1,0 +1,61 @@
+name: One-shot Work1 P7.5 pinned Rust gsim proof
+on:
+  push:
+    branches: [work/work1-p75-source-joint-native-world-first-20261102]
+    paths: [.github/workflows/work1-p75-once.yml]
+permissions:
+  contents: read
+jobs:
+  pinned-p75:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+          lfs: true
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: sage3648/mythicsim-forever-engine
+          ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Focused regression
+        working-directory: project
+        run: |
+          python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+          python -m pytest -q tests/test_wf_gate_p7_5_live.py
+      - name: Build pinned native with actual gsim ingress
+        run: |
+          python project/integrations/mythicsim-rust/patch_world_ingress.py upstream
+          cd upstream
+          CARGO_PROFILE_RELEASE_LTO=off CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 cargo build --release --locked
+      - name: Prove real cold source joint native-world candidate (no M1 record)
+        working-directory: project
+        env:
+          FOREVER_MYTHICSIM_RUST_BIN: ../upstream/target/release/forever-engine
+        run: |
+          set +e
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P7.5 --out /tmp/p75-live.json
+          code=$?
+          set -e
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          row=json.loads(Path('/tmp/p75-live.json').read_text())['results'][0]
+          print('REAL_P75_NATIVE_WORLD',json.dumps(row,sort_keys=True))
+          assert row['status']=='FAIL',row
+          assert row['production_engine']=='pinned_mythicsim_rust_gsim_2d',row
+          assert row.get('source_legal_cold_candidates_paid',0)>0,row
+          assert row.get('world_damage_events',0)>0,row
+          assert row.get('world_boundaries',0)>0,row
+          assert row.get('winner_live_dps',0)>0,row
+          assert row['external_only_not_p7_5_accepted_prior_comparison'] is True,row
+          assert 'dps_objective_gate_pass' not in row,row
+          assert 'P7_5_FROZEN_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED' in row['reasons'],row
+          PY
+          test "$code" -eq 1
