@@ -1,0 +1,48 @@
+name: Work2 P5 approved 2x paid search acceptance (one-shot)
+on:
+  push:
+    branches:
+      - work/work2-p5-approved-twofold-20261102
+jobs:
+  real-p5-breadth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Verify exact Work2 2x predicate and full-source adapter
+        run: |
+          git rev-parse HEAD
+          python -m pytest -q tests/test_work2_p5_approved_breadth.py tests/test_work2_full_source_p4_p5_gate_entry.py
+      - name: Reproduce true P5 cold 30/300s paid breadth and 100-mob replay (NO M1 RECORD)
+        shell: bash
+        run: |
+          set +e
+          FOREVER_P4_P5_FULL_SOURCE=1 python tools/wf_gate.py --class druid --level 60 --spec balance --gate P5 --out /tmp/work2-p5.json
+          result=$?
+          set -e
+          echo "WORK2_P5_EXIT_CODE=$result"
+          if [ -f /tmp/work2-p5.json ]; then
+            python - <<'PY'
+          import json
+          x=json.load(open('/tmp/work2-p5.json'))
+          for row in x.get('results', []):
+              keys=('gate','status','reasons','production_engine','requested_wall_budget_s',
+                    'real_search_wall_s','real_paid_unique_full_builds','real_paid_screen_complete',
+                    'real_100mob_count','real_100mob_s_per_mob',
+                    'independent_N30_unique_paid','independent_N300_unique_paid',
+                    'independent_p5_2x_breadth','independent_p5_10x_breadth',
+                    'independent_same_source_candidate_space',
+                    'independent_100mob_winner_replays_complete')
+              print('WORK2_P5_PAID_BREADTH_RECEIPT='+json.dumps(
+                  {k:row.get(k) for k in keys},sort_keys=True),flush=True)
+          PY
+          fi
+          exit "$result"
