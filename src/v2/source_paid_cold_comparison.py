@@ -113,6 +113,37 @@ def _saved_winner(report, *, expected_budget, source_hash, class_key, level):
     return selected
 
 
+def _same_executed_source_search_space(search30, search300):
+    """Attest the real paid proposal strategy/offset before 100-mob replay.
+
+    Saved 30s and 300s reports can agree with each other while both naming
+    an obsolete proposer. The runtime-produced source_slot_proposal_coverage
+    is the independent witness; legacy reports without it are diagnostics.
+    """
+    from src.v2.source_bounded_joint_frontier import _SOURCE_GEAR_SAMPLING_VERSION
+
+    spaces = [search30.get('source_search_space'),
+              search300.get('source_search_space')]
+    if any(space is not None for space in spaces):
+        if (not all(isinstance(space, dict) and space for space in spaces)
+                or spaces[0] != spaces[1]):
+            raise ValueError('COLD_COMPARISON_DIFFERENT_SOURCE_SEARCH_SPACE')
+    attested = []
+    for report, space in zip((search30, search300), spaces):
+        executed = report.get('source_slot_proposal_coverage')
+        if executed is None:
+            attested.append(False)
+            continue
+        if (not isinstance(executed, dict) or not isinstance(space, dict)
+                or executed.get('strategy') != space.get('gear_slot_sampling_version')
+                or executed.get('slot_offset') != space.get('gear_slot_offset')):
+            raise ValueError('COLD_COMPARISON_SEARCH_SPACE_STRATEGY_ATTESTATION_MISMATCH')
+        attested.append(True)
+    return bool(all(attested) and spaces[0]
+                and spaces[0].get('gear_slot_sampling_version')
+                    == _SOURCE_GEAR_SAMPLING_VERSION)
+
+
 def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
                                class_key, level, source_hash,
                                bonus_talent_points=0, max_per_candidate_wall_s=60.):
@@ -134,10 +165,7 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
     # A stratified slot offset changes the actual cold gear candidate set.
     # Never pay two expensive 100-mob replays on mismatched source universes.
     # Legacy reports with neither field remain diagnostics, not same-space proof.
-    space30, space300 = search30.get('source_search_space'), search300.get('source_search_space')
-    if (space30 is not None or space300 is not None) and (
-            not space30 or space30 != space300):
-        raise ValueError('COLD_COMPARISON_DIFFERENT_SOURCE_SEARCH_SPACE')
+    same_executed_space = _same_executed_source_search_space(search30, search300)
     # The ability/talent SQLite hash does NOT pin the separate item catalogue
     # or its typed equipment-effects ledger. Recheck both source snapshots
     # against the current runtime before paying for an independent replay.
@@ -156,16 +184,9 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
     legal300 = _verify_winner_gear_legality(winner300, class_key=class_key, level=level)
     gaps30 = _winner_gear_effect_gaps(winner30, class_key=class_key, level=level)
     gaps300 = _winner_gear_effect_gaps(winner300, class_key=class_key, level=level)
-    # A catalogue SHA pins items, not the *proposal ordering*. The old
-    # standalone WF437 CLI recorded a stale literal sampling version and
-    # could claim same-space evidence after production changed its frontier.
-    # Numeric replay remains diagnostic for legacy reports, but source-space
-    # parity requires the real currently executing paid-search revision.
-    from src.v2.source_bounded_joint_frontier import _SOURCE_GEAR_SAMPLING_VERSION
-    current_sampling = (isinstance(space30, dict) and
-        space30.get('gear_slot_sampling_version') == _SOURCE_GEAR_SAMPLING_VERSION)
-    same_space = bool(gear_pinned and space30 and space30 == space300
-                      and current_sampling)
+    # Both cold reports must have actually executed the current proposer.
+    # The source item catalogue alone cannot attest candidate-space identity.
+    same_space = bool(gear_pinned and same_executed_space)
 
     from src.v2.source_bounded_joint_frontier import replay_joint_shortlist_100mob
     results = []
