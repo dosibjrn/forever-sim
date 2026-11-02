@@ -260,3 +260,53 @@ def test_equal_reported_dps_cannot_hide_unapplied_or_prepull_world_damage():
     assert check() == "P7_1_WORLD_FIGHT_DAMAGE_DIVERGED"
     live["per_iteration"][0]["world_applied_precombat_damage"] = -1.0
     assert check() == "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
+
+
+def test_p7_native_world_parity_rejects_nonfinite_or_malformed_aggregate_scores():
+    """RED on old production code: NaN skips every >= tolerance comparison.
+
+    Exercises the shared real-producer acceptance assertion, not a simulated
+    combat engine or a P7 PASS. Applies to all P7.1–P7.5 provider calls.
+    """
+    import copy
+
+    native = {"iterations": 2, "native_dps": 90.0,
+              "first_duration_s": 120.0}
+    world = {"iterations_done": 2, "native_dps": 90.0,
+             "world_mean_dps": 90.0, "sampled_duration_s": 120.0,
+             "native_damage_events": 2, "native_world_ticks": 2,
+             "per_iteration": [
+                 {"iteration_index": i, "duration_s": 120.0,
+                  "world_dps": 90.0, "world_applied_damage": 10800.0}
+                 for i in range(2)]}
+    assert gate._source_native_world_parity(native, world, 2) is None
+    for invalid in (float("nan"), float("inf"), -float("inf"), "90", True):
+        for side, field in (("native", "native_dps"),
+                            ("world", "native_dps"),
+                            ("world", "world_mean_dps")):
+            changed_native, changed_world = copy.deepcopy(native), copy.deepcopy(world)
+            (changed_native if side == "native" else changed_world)[field] = invalid
+            assert gate._source_native_world_parity(
+                changed_native, changed_world, 2) == "P7_1_NATIVE_WORLD_DPS_INVALID"
+
+
+def test_p7_native_world_parity_rejects_nonfinite_first_fight_duration():
+    import copy
+
+    native = {"iterations": 2, "native_dps": 90.0,
+              "first_duration_s": 120.0}
+    world = {"iterations_done": 2, "native_dps": 90.0,
+             "world_mean_dps": 90.0, "sampled_duration_s": 120.0,
+             "native_damage_events": 2, "native_world_ticks": 2,
+             "per_iteration": [
+                 {"iteration_index": i, "duration_s": 120.0,
+                  "world_dps": 90.0, "world_applied_damage": 10800.0}
+                 for i in range(2)]}
+    assert gate._source_native_world_parity(native, world, 2) is None
+    for field, side in (("first_duration_s", "native"),
+                        ("sampled_duration_s", "world")):
+        for invalid in (float("nan"), float("inf"), -float("inf"), "120", True):
+            n, w = copy.deepcopy(native), copy.deepcopy(world)
+            (n if side == "native" else w)[field] = invalid
+            assert gate._source_native_world_parity(n, w, 2) == (
+                "P7_1_NATIVE_WORLD_DURATION_INVALID")
