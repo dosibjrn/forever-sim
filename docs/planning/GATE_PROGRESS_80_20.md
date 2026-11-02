@@ -8,6 +8,60 @@ for the other 147. One source/legal gear × talents × APL/pull/recovery search,
 one actual native combat executor and one gsim 2D world: do not reimplement
 those systems inside gate tests.
 
+## First delivery: one real first pass through every gate
+
+**Implement → run against production → identify the first real defect → fix → repeat only what changed.**
+Before polishing one gate to perfection, Prio must establish a **first attempted
+production acceptance pass for all eleven existing gates** (P1–P6 and P7.1–P7.5)
+on the *same chosen checkpoint*. This is a **thin horizontal discovery pass**,
+followed by the smallest dependency-ordered fixes and the full vertical checkpoint.
+It does **not** mean all eleven must PASS initially or that independently owned
+Work1/Work2 development must stop.
+
+Use the existing `tools/wf_gate.py --class ... --level ... --spec ... --gate Pn`
+or the exact real production call that gate already uses. Each gate's first
+attempt must expose an **actual behavior/result or the first concrete missing
+production dependency**. If the engine/optimizer/reference needed to execute a
+heavy gate does not yet exist, fail fast with the specific missing function or
+runtime capability; **do not spend a 300-second budget on known-unrunnable work**,
+and do not count a schema test or a generated BLOCKED report as an executed gate.
+Once prerequisites are ready, perform the real approved test once.
+
+| First pass | Existing production code that must eventually run |
+| --- | --- |
+| **P1 / P2** | Source-legal spells / talent allocations → actual selected MythicSim/production effects and search admission |
+| **P3** | Real legal item DB → existing build-context gear scorer and stat-weight mechanics |
+| **P4 / P5 / P6** | Same real production whole-build evaluator → paid 100-mob leveling, independent 30s/300s searches, comparable finalist replays |
+| **P7.1** | Exact saved reference → real native engine → real live 2D/native causality |
+| **P7.2 / P7.3 / P7.4 / P7.5** | Same real live 2D/native evaluator → cold APL/talent/gear/joint search and required frozen holdout |
+
+**Code-first definition of progress:** a change counts as useful engineering work
+when it enables/fixes a real production operation, removes a measured failure,
+makes a genuine gate executable, or earns a genuine gate PASS. Merely adding a
+per-gate wrapper, unit-test scaffold, synthetic fixture, CI matrix, JSON,
+checklist, status page or documentation does **not** advance implementation.
+Do not build separate gate-only combat logic, search algorithms, scores or
+a continuously executing acceptance suite. Gate validation is a **thin
+on-demand call into the real implementation**, plus assertions of the existing
+approved predicate. Normal *focused* unit/regression tests can protect changed
+production code; **do not create always-run P1–P7 acceptance unit tests**.
+
+**First pass reporting:** keep the moving discussion and exact failed
+production calls in its GitHub issue, not another evidence/document tree.
+For each gate, give only: `callable/executed?`, **observed behavior or first
+concrete defect**, and next code change / owning issue. For homogeneous gates,
+show the existing code-derived `verified/relevant` fraction and any provisional
+scope; for heterogeneous gates show the missing real steps, **not an invented
+percentage**. Prio updates this *one living plan* only when execution strategy,
+cross-gate dependencies or ownership genuinely changes. Issue comments carry
+the conversation.
+
+**Acceptance cadence:** after an actual full successful on-demand run, retain
+PASS and timestamp. Do not rerun a passed expensive gate on every hourly task,
+PR, commit or CI cycle—only when a materially relevant behavior/source/scenario
+change invalidates it. Do not reinterpret a successful native-only subtest as
+a live-2D gate when 2D causality is part of that gate.
+
 ## What 80/20 means — *effort estimate*, NOT work ordering
 
 Pareto is a **hypothesis for estimating the effort still ahead**, not a reason to change issue order or to postpone the difficult tail. Keep Prio's critical-path ordering and Work1/Work2 ownership exactly as they are. When measured unit coverage is known, report **both**:
@@ -92,10 +146,12 @@ each run and maintains the **minimum-total-time critical path**:
    and **#12 P2 rank behavior**. Fix the first exact failing native/source
    case. Run a focused real behavior test. Report verified numerator/denominator,
    unknown source cases and next concrete failure, not merely labels.
-3. **Single-checkpoint vertical completion** is the routing objective:
-   reuse existing verified behavior, integrate Work1/Work2's production
-   function, earn missing P1–P7.5 gates once, record at least PASS+timestamp
-   and report **1/148** only when all compatible gates passed.
+3. **First pass all eleven gates for one checkpoint, then finish vertically:**
+   call real production functions where runnable and record the exact first
+   failure for the rest in the coordinating issue. Reuse Work1/Work2's
+   production path to remove those failures. Earn each genuine accepted gate
+   once and keep its PASS timestamp; do not postpone first-contact discovery
+   of later gates until P1/P2 are perfectly polished.
 4. **After 1/148**, expand the common executor/search/tests across levels
    and specs. Favor changes removing many class-level failures before
    special-case tail fixes. Batch sourced effect families where appropriate;
