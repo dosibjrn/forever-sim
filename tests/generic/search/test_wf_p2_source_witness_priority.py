@@ -10,7 +10,7 @@ from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import validate_talent_selection
 from src.v2.source_bounded_joint_frontier import source_spec_talent_frontier
 
-SOURCE = Path(__file__).resolve().parents[1] / "data/forever/staged_druid_l30_talents_70338.sqlite"
+SOURCE = Path(__file__).resolve().parents[3] / "data/forever/staged_druid_l30_talents_70338.sqlite"
 
 
 def test_source_rank_witness_is_not_crowded_out_by_input_seed():
