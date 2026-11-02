@@ -57,8 +57,8 @@ def assemble_source_ir(ir: GameIRSlice, *, class_key: str, level: int,
     ir = source_enrich_action_ranks(ir)
     ir = source_enrich_area_actions(ir)
     ir = source_enrich_indexed_talents(ir)
-    ir = source_enrich_primary_stats(ir)
-    ir = source_enrich_target_combat(ir, db_path=ability_db_path)
+    ir = source_enrich_primary_stats(ir, db_path=ability_db_path)
+    ir = source_enrich_target_combat(ir)
     ir = source_enrich_incoming_world(ir)
     from .source_enemy_melee_ap_debuff import source_enrich_enemy_melee_ap_incoming
     ir = source_enrich_enemy_melee_ap_incoming(ir)
