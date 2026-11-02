@@ -125,3 +125,39 @@ def test_complete_unlock_screen_can_claim_paid_p4_coverage():
         assert record['complete_paid_screens'] >= 1
         assert record['status'] == 'EXECUTED_IN_COMPLETE_PAID_SCREEN'
         assert result['p4_talent_unlock_coverage_pass'] is True
+
+
+def test_real_source_unlock_and_incumbent_survive_one_generic_policy_slot():
+    """P4 must not silently truncate a source-unlocked action to fit APL budget.
+
+    One optional generic policy slot is not a license to delete the actual
+    source talent unlock or its legal incumbent comparator.
+    """
+    from src.v2.source_bounded_joint_frontier import (
+        _source_talent_policy_variants, source_joint_policy_frontier,
+        _prepare_joint_policy_candidate,
+    )
+    with ability_source_scope(SOURCE):
+        root = _source()
+        stage = _stage()
+        base_policies = source_joint_policy_frontier(
+            root, stage, max_policies=1, include_mode_cycles=True)
+        variants, expected, blockers = _source_talent_policy_variants(
+            root, [ALLOCATION], stage, base_policies, level=30)
+        assert not blockers, blockers
+        assert 'primal_bite:25' in expected
+        labels = [label for label, _ in variants[0]]
+        assert 'talent_unlock:primal_bite:25' in labels, labels
+        assert 'incumbent' in labels, labels
+        unlock_label, unlock_policy = next(
+            (label, policy) for label, policy in variants[0]
+            if label == 'talent_unlock:primal_bite:25')
+        candidate = _prepare_joint_policy_candidate(
+            class_key='druid', level=30, stage=stage, allocation=ALLOCATION,
+            source_ir=root, allow_partial_gear_stats=True,
+            policy_label=unlock_label, policy=unlock_policy)
+        paid = evaluate_persistent_candidate(
+            candidate, level=30, mobs=1, max_total_events=200000)
+        assert paid['status'] == 'COMPLETE', paid
+        assert paid['count'] == 1
+        assert paid['source_action_counts']['primal_bite:25'] > 0
