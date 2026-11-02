@@ -1,0 +1,28 @@
+name: Prio P3 sourced item chance live production proof (temporary)
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  paid-source-chance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pytest==8.3.5 beautifulsoup4==4.13.4
+      - run: python -m pytest -q tests/test_prio_p3_live_sourced_chance_gear.py
+      - name: Unrecorded real Druid L60 Balance P3 gate
+        run: |
+          python - <<'PY'
+          from tools.wf_gate import ROOT,_run_live_gate
+          r=_run_live_gate(ROOT,'druid',60,'balance','P3','')
+          print('REAL_P3',r['status'],'verified',r.get('pass_count'),
+                'applicable',r.get('reachability_count'),
+                'executed',r.get('behavior_probes_executed'),
+                'first_blockers',r.get('reasons',[])[:7], flush=True)
+          assert r['status'] != 'PASS' or r.get('runtime_proof',{}).get('executed')
+          PY
