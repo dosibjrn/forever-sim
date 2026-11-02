@@ -126,13 +126,14 @@ def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
     source_ir = build_game_ir_slice(class_key=class_key, level=level)
     seed = source_cold_start_stage(
         class_key=class_key, level=level, source_ir=source_ir, gear_role=class_key)
-    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v4_paid_events_identity"
+    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v5_real_paid_budget"
     new_options = {"gear_slot_sampling_version": _SOURCE_GEAR_SAMPLING_VERSION}
     new_hash = search_context_sha256(
         class_key=class_key, level=level, source_ir=source_ir,
         seed_stage=seed, options=new_options)
     for old_version in ("stratified_source_slots_v1", "stratified_source_slots_v2_depth10",
-                        "stratified_source_slots_v3_paid_axis_balance"):
+                        "stratified_source_slots_v3_paid_axis_balance",
+                        "stratified_source_slots_v4_paid_events_identity"):
         old_hash = search_context_sha256(
             class_key=class_key, level=level, source_ir=source_ir,
             seed_stage=seed, options={"gear_slot_sampling_version": old_version})
@@ -266,3 +267,130 @@ def test_p5_breadth_uses_real_distinct_paid_builds_not_attempted_coordinates():
     blocked["screen_status"] = "BLOCKED_PREPARATION_OR_EXECUTION"
     assert _unique_paid_full_builds([witness, duplicate, blocked]) == 1
     assert _unique_paid_full_builds([blocked]) == 0
+
+
+def test_rejected_preflight_cannot_spend_the_only_paid_screen(monkeypatch):
+    """One malformed source coordinate must not steal a real CombatRuntime slot.
+
+    Only candidate preparation is fault-injected as a negative control; the
+    following legal source candidate uses the unmodified production evaluator.
+    """
+    import src.v2.source_bounded_joint_frontier as joint
+
+    ir = build_game_ir_slice(class_key="druid", level=20)
+    seed = source_cold_start_stage(
+        class_key="druid", level=20, source_ir=ir, gear_role="druid_feral")
+    prepare = joint._prepare_joint_policy_candidate
+    calls = 0
+
+    def reject_first_source_preflight(**kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise ValueError("SOURCE_PREFLIGHT_INVALID_GEAR_NEGATIVE_CONTROL")
+        return prepare(**kwargs)
+
+    monkeypatch.setattr(joint, "_prepare_joint_policy_candidate",
+                        reject_first_source_preflight)
+    result = joint.search_bounded_joint_frontier(
+        class_key="druid", level=20, source_ir=ir, seed_stage=seed,
+        max_talents=2, max_gear_moves=0, max_policies=2,
+        max_recovery_policies=2, max_paid_builds=1, max_cpu_s=8.,
+        per_candidate_wall_s=2., screen_mobs=1, search_only=True,
+        screen_evaluator_backend="direct", refinement_rounds=0)
+
+    assert calls >= 2, result["rows"]
+    assert result["rows"][0]["status"] == "BLOCKED_PREPARATION_OR_EXECUTION"
+    assert not result["rows"][0].get("screen_invoked")
+    assert result["paid_candidates"] >= 2  # attempts are journalled for resume
+    assert result["initial_frontier_paid_candidates"] == 1
+    assert sum(bool(row.get("screen_invoked")) for row in result["rows"]) == 1
+    assert any(row.get("screen_events", 0) > 0 for row in result["rows"][1:])
+    assert result["unique_full_builds"] >= 1  # real paid, source-legal build
+    assert not result["eligible_for_checkpoint_acceptance"]
+
+
+def test_rejected_source_preflight_resumes_without_repaying_it(monkeypatch, tmp_path):
+    """A journalled rejection occupies a coordinate, not a paid slot."""
+    from src.v2.source_joint_progress import load_verified_joint_progress
+    import src.v2.source_bounded_joint_frontier as joint
+
+    ir = build_game_ir_slice(class_key="druid", level=20)
+    seed = source_cold_start_stage(
+        class_key="druid", level=20, source_ir=ir, gear_role="druid_feral")
+    real_prepare = joint._prepare_joint_policy_candidate
+    calls = 0
+
+    def reject_then_interrupt(**kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise ValueError("SOURCE_PREFLIGHT_INVALID_GEAR_NEGATIVE_CONTROL")
+        if calls == 2:
+            raise KeyboardInterrupt("interrupt before next paid screen")
+        return real_prepare(**kwargs)
+
+    monkeypatch.setattr(joint, "_prepare_joint_policy_candidate",
+                        reject_then_interrupt)
+    journal = tmp_path / "real-source-preflight.json"
+    options = dict(
+        class_key="druid", level=20, source_ir=ir, seed_stage=seed,
+        max_talents=2, max_gear_moves=0, max_policies=2,
+        max_recovery_policies=2, max_paid_builds=1, max_cpu_s=12.,
+        per_candidate_wall_s=3., screen_mobs=1,
+        screen_then_finalists=True, max_finalists=1,
+        progress_path=journal)
+    with pytest.raises(KeyboardInterrupt, match="interrupt before next paid"):
+        joint.search_bounded_joint_frontier(**options)
+    snapshot = load_verified_joint_progress(journal)
+    assert snapshot["paid_candidates"] == 1  # one journalled preflight reject
+    assert snapshot["rows"][0]["status"] == "BLOCKED_PREPARATION_OR_EXECUTION"
+    assert snapshot["rows"][0]["screen_invoked"] is False
+
+    prepared_on_resume = 0
+
+    def count_real_preparations(**kwargs):
+        nonlocal prepared_on_resume
+        prepared_on_resume += 1
+        return real_prepare(**kwargs)
+
+    monkeypatch.setattr(joint, "_prepare_joint_policy_candidate",
+                        count_real_preparations)
+    result = joint.search_bounded_joint_frontier(**options, resume_progress=True)
+    assert prepared_on_resume == 1, result["rows"]
+    assert result["paid_candidates"] >= 2
+    assert sum(bool(row.get("screen_invoked")) for row in result["rows"]) == 1
+    assert result["initial_frontier_paid_candidates"] == 1
+    assert any(row.get("screen_events", 0) > 0 for row in result["rows"][1:])
+    assert result["unique_full_builds"] >= 1
+    assert not result["eligible_for_checkpoint_acceptance"]
+
+
+@pytest.mark.parametrize("max_paid_builds,expected_refinement", [(1, 0), (2, 1)])
+def test_refinement_never_spends_a_second_real_screen_past_paid_budget(max_paid_builds, expected_refinement):
+    # Genuine source-backed Druid L20 cold search, no mocked scorer.
+    # Before the fix the first real frontier screen exhausted the one-call
+    # budget, but the Top-N refinement still paid another CombatRuntime call.
+    from src.v2.source_bounded_joint_frontier import search_bounded_joint_frontier
+
+    source_ir = build_game_ir_slice(class_key="druid", level=20)
+    stage = source_cold_start_stage(
+        class_key="druid", level=20, source_ir=source_ir,
+        gear_role="druid_feral")
+    result = search_bounded_joint_frontier(
+        class_key="druid", level=20, source_ir=source_ir,
+        seed_stage=stage, max_paid_builds=max_paid_builds, max_cpu_s=9.,
+        per_candidate_wall_s=3., max_talents=1,
+        max_gear_moves=0, max_policies=1, max_recovery_policies=1,
+        screen_mobs=1, search_only=True,
+        screen_evaluator_backend="direct", refinement_rounds=1,
+        refinement_top_n=1, refinement_stat_axes=("strength",),
+        refinement_probe_delta=20., refinement_gear_candidates=1,
+        refinement_policy_candidates=1, refinement_talent_neighbors=0,
+        screen_budget_fraction=.4)
+    assert result["screen_complete_candidates"] == 1, result["rows"]
+    assert result["events"] > 0
+    assert result["first_pass_screen_candidates"] == 1
+    assert result["refinement"]["paid_evaluations"] == expected_refinement
+    assert result["all_quick_evaluations_including_stat_probes"] == max_paid_builds
+    assert result["search_budget_exhausted"] is True
