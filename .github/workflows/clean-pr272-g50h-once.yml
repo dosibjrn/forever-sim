@@ -1,0 +1,23 @@
+name: Clean PR272 G50h queue boundary fix (one-shot)
+on:
+  push:
+    branches:
+      - clean/group-g50c-i-service-integration-20261102-1947
+    paths:
+      - .github/workflows/clean-pr272-g50h-once.yml
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - run: python -m pytest -vv -ra tests/integration/service/test_g50h_provider_queue_capabilities.py -k 'test_registry_declares_exact_source_only_queue_capabilities'
