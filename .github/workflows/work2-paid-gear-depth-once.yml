@@ -6,6 +6,7 @@ on:
       - work/work2-paid-gear-depth-balanced-screens-20261102
     paths:
       - .github/workflows/work2-paid-gear-depth-once.yml
+      - tests/test_source_paid_gear_witness_priority.py
 
 permissions:
   contents: read
