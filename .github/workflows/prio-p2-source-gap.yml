@@ -89,7 +89,7 @@ jobs:
           import json
           report=json.load(open('p2-live.json'))
           print('P2_LIVE_REPORT',report.get('status'))
-          for gate in report.get('gates', [report]):
+          for gate in report.get('results', [report]):
               if gate.get('gate') != 'P2':
                   continue
               print('P2_LIVE_GATE',gate.get('status'),'ranks',gate.get('reachability_count'),
