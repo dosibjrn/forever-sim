@@ -437,6 +437,14 @@ def run_live(root: Path, class_key: str, level: int, *,
         "required_reference_dps": p7_required_dps(
             "P7.4", float(meta["reference_dps"])),
         "cold_winner_request_sha256": candidate_sha,
+        # Publish the full frozen paid loadout, not merely its hash, so the
+        # actual P7.4 winner is inspectable and can be reproduced/debugged.
+        "cold_winner_gear": [
+            {"slot": slot, "item_id": int(item["id"]),
+             "enchant_id": item.get("enchant")}
+            for slot, item in enumerate(frozen_winner["raid"]["parties"][0]
+                                        ["players"][0]["equipment"]["items"])
+        ],
         "winner_live_dps": score,
         "winner_screen_dps": winner_screen_dps,
         "winner_selection": winner_selection,
