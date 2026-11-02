@@ -26,7 +26,7 @@ STAGES = {
             "tests/integration/service/test_generic_capability_default_g49a.py",
             "tests/integration/service/test_g49b_browser_live_bridge.py",
             "tests/integration/service/test_generic_auto_browser_network_g49b.py",
-            "tests/test_generic_g46g_authority.py",
+            "tests/integration/service/test_generic_g46g_authority.py",
             "tests/gates/test_g49e_acceptance_runner.py",
             "-k", "not test_g49b_real_auto_promoted_generic_http_never_reads_legacy",
         ),
@@ -37,7 +37,7 @@ STAGES = {
     "http": (100, (
         "tests/integration/service/test_generic_auto_browser_network_g49b.py::test_g49b_real_auto_promoted_generic_http_never_reads_legacy",
     )),
-    "slow": (180, ("tests/test_generic_all_class_product_gate_g48d.py",)),
+    "slow": (180, ("tests/generic/publication/test_generic_all_class_product_gate_g48d.py",)),
     "native": (60, ("tests/integration/service/test_g49d_native_browser_e2e.py",)),
 }
 
