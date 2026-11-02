@@ -1,0 +1,45 @@
+name: Merge once — exact PR158 launcher regression
+on:
+  push:
+    branches: [merge/verify-clean158-20261102]
+    paths: [.github/workflows/merge-clean158-one-shot.yml]
+permissions:
+  contents: read
+jobs:
+  verify-clean158:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          lfs: true
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Require exact PR head and only verification workflow delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "bcc2fab1ef071a1508573224932f65adb2c360b6"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/merge-clean158-one-shot.yml"
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - name: Install bounded test prerequisites
+        run: |
+          python -m pip install --disable-pip-version-check pytest==8.3.5 playwright==1.56.0 beautifulsoup4==4.13.4
+          command -v chromium || command -v google-chrome || command -v chromium-browser || true
+      - name: Real V1 V2 V3 test modules, with Chromium required for V1/V2
+        shell: bash
+        run: |
+          set -euo pipefail
+          export REQUIRE_CHROMIUM=1 PYTHONUTF8=1 PYTHONIOENCODING=utf-8
+          python -m pytest -q -r s tests/test_v1_browser_workflow_v0114819.py tests/test_v2_restart_persistence_v0114820.py tests/test_v3_checkpoint_failure_semantics_v0114821.py
+      - name: Real launcher maintenance and PowerShell parse/syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q tests/maintenance/test_root_launcher_relocation.py
+          for n in 1 2 3; do bash -n "scripts/commands/run-validation-v${n}.sh"; done
+          if command -v pwsh >/dev/null; then
+            pwsh -NoProfile -Command '$errors = $null; 1..3 | ForEach-Object { $p = "scripts/commands/run-validation-v$_.ps1"; [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw $p), [ref]$errors) | Out-Null; if ($errors) { throw "PowerShell parse failure in $p" } }'
+          fi
