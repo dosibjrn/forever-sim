@@ -347,6 +347,10 @@ def item_vector(item: ItemRecord) -> dict[str, float]:
         "strength": float(item.strength), "agility": float(item.agility), "stamina": float(item.stamina),
         "intellect": float(item.intellect), "spirit": float(item.spirit), "attack_power": float(item.attack_power),
         "spell_power": damage_spell_power(item), "healing": float(item.healing), "mp5": float(item.mp5),
+        # Preserve raw source-stat units. The existing canonical item-chance
+        # adapter converts these to real spell/melee hit/crit/dodge channels
+        # at gear application time, not in the optimiser's selector.
+        "crit": float(item.crit), "hit": float(item.hit), "dodge": float(item.dodge),
         "armor": float(item.armor) + float(item.bonus_armor), "weapon_dps": float(item.weapon_dps),
         "wand_dps": float(item.weapon_dps) if item.weapon_type == "wand" else 0.0,
     }
