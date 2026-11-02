@@ -99,9 +99,12 @@ jobs:
               "BALANCED_RNG_ENV_IGNORED_BY_SELECTED_RUST",outputs)
           print("REAL_SELECTED_RUST_NATIVE_2D_RNG_MODE_DIVERGENCE_GREEN",flush=True)
           PY
-      - name: Prove the patched engine still exactly reproduces 10k saved Rust reference
+      - name: Verify updated native source and real gsim world without rewriting old reference
         working-directory: project
-        run: python integrations/mythicsim-rust/verify_reference.py --engine ../upstream/target/release/forever-engine
+        run: |
+          python integrations/mythicsim-rust/verify_upstream_candidate.py \
+            --engine ../upstream/target/release/forever-engine \
+            --out ../rust-upstream-candidate.json
       - name: Long frozen-source balanced RNG accuracy and determinism (NOT P7)
         working-directory: project
         run: |
