@@ -187,3 +187,30 @@ def test_one_generic_policy_slot_still_pays_source_unlocked_action_in_joint_sear
         assert result['policy_variants'] >= 2
         assert result['all_quick_evaluations_including_stat_probes'] <= 3
         assert not result['eligible_for_checkpoint_acceptance']
+
+
+
+def test_unlock_witness_scheduler_has_no_silent_eight_action_cutoff():
+    """Stress the shared paid scheduler's cardinality, not a gate PASS.
+
+    Reuse an actually source-generated unlocked policy; repeat distinct
+    unlock labels only to exercise the >8 scheduling boundary. The live
+    primal_bite cast is independently checked by the tests above.
+    """
+    from src.v2.source_bounded_joint_frontier import (
+        _source_priority_witness_probes, _source_witness_first_coordinates)
+    from itertools import islice
+    with ability_source_scope(SOURCE):
+        root = _source()
+        talented, _ = apply_talent_selection(root, ALLOCATION, level=30)
+        real = next(w for w in source_talent_unlock_witnesses(
+            root, talented, _stage()) if w['action_id'] == 'primal_bite:25')
+        variants = tuple(
+            ((f"talent_unlock:{real['action_id']}:stress-{i}", real['policy']),)
+            for i in range(9))
+        probes = _source_priority_witness_probes(variants)
+        assert len(probes) == 9, probes
+        assert {i for i, _, _, _ in probes} == set(range(9))
+        scheduled = list(islice(_source_witness_first_coordinates(
+            (9, 1, 1, 1), variants, 'diagonal', [], gear_stages=()), 9))
+        assert scheduled == list(probes), scheduled
