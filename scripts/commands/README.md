@@ -12,7 +12,7 @@ Run them from any working directory. Examples:
 - `powershell -File scripts/commands/run-validation-v1.ps1`
 
 All wrappers now locate the repository root relative to their own file.
-Arguments and environment configuration remain unchanged. Validation V1–V3
+Arguments and environment configuration remain unchanged. Validation V1–V4
 now invoke their existing pytest suites directly, without redundant Python shims. These are real commands that may start browsers or services;
 CI uses an inert Python stub rather than invoking their side effects.
 
