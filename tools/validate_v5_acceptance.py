@@ -4,11 +4,11 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 STAGES=[
-    ('V0','run-validation-fast.sh',25),
-    ('V1','run-validation-v1.sh',20),
-    ('V2','run-validation-v2.sh',20),
-    ('V3','run-validation-v3.sh',15),
-    ('V4','run-validation-v4.sh',20),
+    ('V0','scripts/commands/run-validation-fast.sh',25),
+    ('V1','scripts/commands/run-validation-v1.sh',20),
+    ('V2','scripts/commands/run-validation-v2.sh',20),
+    ('V3','scripts/commands/run-validation-v3.sh',15),
+    ('V4','scripts/commands/run-validation-v4.sh',20),
 ]
 LOGDIR=ROOT/'.runtime'/'validation-v5'
 LOGDIR.mkdir(parents=True, exist_ok=True)
