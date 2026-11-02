@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Mapping
 
+from src.game.source_objective_relevance import solo_threat_exclusion
+
 from src.game.model.ir import (ActionDefinition, GameIRSlice, ResourceCost, ResourceEventGainRule, TalentDefinition,
                                PeriodicEffect, PeriodicHealEffect, HealEffect, ResourceScaledPeriodicEffect, ModeChangeEffect, ResourceScaledDirectDamageEffect, DamageEffect, WeaponDamageEffect,
                                ModeStatModifier, ModeResourceCapacityModifier, ModeEntryResourceModifier, ControlEffect)
@@ -73,7 +75,7 @@ def validate_talent_selection(ir_slice: GameIRSlice, selection: Mapping[str, int
         rank_row = next((row for row in talent.ranks if int(row.rank) == rank), None)
         if rank_row is None:
             raise ValueError(f"rank {rank} for {talent_id} has no canonical rank record")
-        if not rank_row.modifiers:
+        if not rank_row.modifiers and solo_threat_exclusion(ir_slice, rank_row) is None:
             raise ValueError(f"unsupported talent effect for {talent_id} rank {rank}; refusing no-op selection")
         prerequisite = talent.prerequisite
         if prerequisite:
