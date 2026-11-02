@@ -94,7 +94,7 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
                 equipped_dps = True
                 equipped_mean_hit = True
             for fact, mode_id in facts:
-                if (mode_id in action_modes
+                if ((mode_id is None or mode_id in action_modes)
                         and source.kind == fact.damage_source_kind
                         and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
                     equipped_dps = True
@@ -111,7 +111,7 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
         if getattr(source, 'dps_stat_id', None) in _EQUIPPED_WEAPON_DPS_AXES:
             equipped_dps = True
         for fact, mode_id in facts:
-            if (mode == mode_id
+            if ((mode_id is None or mode == mode_id)
                     and source.kind == fact.damage_source_kind
                     and fact.source_stat in _EQUIPPED_WEAPON_DPS_AXES):
                 equipped_dps = True
