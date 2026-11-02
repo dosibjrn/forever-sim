@@ -3,7 +3,7 @@
 <text x="38" y="42" fill="#f9fafb" font-family="Arial,sans-serif" font-size="25" font-weight="bold">Forever Sim — M1 progress</text>
 <text x="38" y="70" fill="#9ca3af" font-family="Arial,sans-serif" font-size="15">Git-verified gate results · 1,628 gate targets · 148 checkpoints</text>
 <text x="38" y="103" fill="#34d399" font-family="Arial,sans-serif" font-size="19" font-weight="bold">PASS 1/1628 (0.0614%)</text>
-<text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Measured 0.5180%</text>
+<text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Measured 0.5681%</text>
 <text x="785" y="103" fill="#f9fafb" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Certified 0/148</text>
 <line x1="39" y1="130" x2="67" y2="130" stroke="#34d399" stroke-width="3"/>
 <text x="75" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">Full gate PASS (% of 1628)</text>
@@ -24,10 +24,10 @@
 <line x1="570.0" y1="400" x2="570.0" y2="406" stroke="#6b7280"/>
 <text x="570.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 11:19</text>
 <line x1="1050.0" y1="400" x2="1050.0" y2="406" stroke="#6b7280"/>
-<text x="1050.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 15:21</text>
-<path d="M 90.0 400.0 H 188.1 V 400.0 H 259.9 V 400.0 H 854.8 V 400.0 H 889.7 V 381.6 H 920.8 V 381.6 H 926.8 V 381.6 H 933.2 V 381.6 H 952.3 V 381.6 H 969.7 V 381.6 H 985.4 V 381.6 H 991.5 V 381.6 H 997.5 V 381.6 H 1050.0 V 381.6" fill="none" stroke="#34d399" stroke-width="3" stroke-linejoin="round"/>
+<text x="1050.0" y="425" text-anchor="middle" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">02 Nov 15:22</text>
+<path d="M 90.0 400.0 H 188.1 V 400.0 H 259.8 V 400.0 H 854.7 V 400.0 H 889.5 V 381.6 H 920.7 V 381.6 H 926.6 V 381.6 H 933.0 V 381.6 H 952.1 V 381.6 H 969.5 V 381.6 H 985.2 V 381.6 H 991.3 V 381.6 H 997.2 V 381.6 H 1050.0 V 381.6" fill="none" stroke="#34d399" stroke-width="3" stroke-linejoin="round"/>
 <circle cx="1050.0" cy="381.6" r="4" fill="#34d399"/>
-<path d="M 90.0 400.0 H 188.1 V 400.0 H 259.9 V 370.3 H 854.8 V 363.3 H 889.7 V 344.8 H 920.8 V 343.3 H 926.8 V 341.7 H 933.2 V 339.8 H 952.3 V 322.1 H 969.7 V 303.7 H 985.4 V 291.5 H 991.5 V 274.6 H 997.5 V 259.6 H 1050.0 V 244.6" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linejoin="round"/>
-<circle cx="1050.0" cy="244.6" r="4" fill="#fbbf24"/>
+<path d="M 90.0 400.0 H 188.1 V 400.0 H 259.8 V 370.3 H 854.7 V 363.3 H 889.5 V 344.8 H 920.7 V 343.3 H 926.6 V 341.7 H 933.0 V 339.8 H 952.1 V 322.1 H 969.5 V 303.7 H 985.2 V 291.5 H 991.3 V 274.6 H 997.2 V 259.6 H 1050.0 V 229.6" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="1050.0" cy="229.6" r="4" fill="#fbbf24"/>
 <text x="40" y="472" fill="#9ca3af" font-family="Arial,sans-serif" font-size="13">UTC timeline from TSV Git commits · Y-axis zoomed to observed progress (starts at zero) · Historical measured best, not current regression status</text>
 </svg>
