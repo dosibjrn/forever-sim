@@ -183,3 +183,60 @@ def test_source_target_health_fails_closed_on_invalid_reference(mutation):
     mutation(source)
     with pytest.raises(ValueError, match="SOURCE_"):
         source_target_health_from_request(json.dumps(source).encode())
+
+
+def test_source_dps_world_has_exactly_one_real_spatial_target():
+    """The saved single-target MythicSim encounter must not gain a phantom mob."""
+    from src.game.runtime.native_step_protocol import snapshot_gsim_world
+    from tools.wf_gsim_go_live_range_probe import diagnostic_gsim_world
+    runtime = diagnostic_gsim_world(target_spawn_yards=15.,
+        enemy_move_speed_yards_s=0., target_health=127393.,
+        source_single_target=True)
+    world = snapshot_gsim_world(runtime)
+    assert set(runtime.targets) == set(world["enemies"]) == {"m1"}
+    assert runtime.multi_target and runtime.spatial_context["simultaneous_2d"]
+    assert world["selected_target_id"] == "m1"
+    assert world["enemies"]["m1"]["engaged"]
+    assert world["enemies"]["m1"]["xy_yards"] == [15., 0.]
+    assert runtime.scheduled_incoming_attacks == {}
+    feed = GsimGoRangeFeed(runtime, native_player_index=0)
+    for idx in range(3):
+        runtime.advance_to(float(idx))
+        tick = feed.next_tick()
+        assert tick["distance_yards"] == 15.
+        assert tick["world_target_max_health"] == 127393.
+        feed.accept_range_receipt(receipt(tick))
+
+
+def test_single_target_spatial_mode_uses_real_approach_and_range():
+    from tools.wf_gsim_go_live_range_probe import diagnostic_gsim_world
+    runtime = diagnostic_gsim_world(target_spawn_yards=20.,
+        enemy_move_speed_yards_s=5., target_health=500.,
+        source_single_target=True)
+    feed = GsimGoRangeFeed(runtime, native_player_index=0)
+    before = feed.next_tick()
+    assert before["distance_yards"] == 20.
+    feed.accept_range_receipt(receipt(before))
+    runtime.advance_to(1.)
+    after = feed.next_tick()
+    assert after["distance_yards"] == pytest.approx(15.)
+    assert after["world_sha256"] != before["world_sha256"]
+    feed.accept_range_receipt(receipt(after))
+
+
+def test_legacy_two_target_diagnostic_remains_spatial():
+    from tools.wf_gsim_go_live_range_probe import diagnostic_gsim_world
+    runtime = diagnostic_gsim_world(target_spawn_yards=15.,
+        enemy_move_speed_yards_s=0.)
+    assert set(runtime.targets) == {"m0", "m1"}
+    assert runtime.multi_target
+
+
+def test_source_single_target_rejects_unmatched_spatial_positions():
+    from src.game.model import ActorDefinition, ResourceDefinition
+    from src.game.runtime import ActorState, CombatRuntime, TargetState
+    actor = ActorState.from_ir(ActorDefinition('hero', 'player', base_stats={}),
+        (ResourceDefinition('health', 'Health', 'hero', initial_amount=500, capacity=500),), ())
+    with pytest.raises(ValueError, match="2D pack requires positions"):
+        CombatRuntime(actor=actor, target=TargetState.with_health('m1', 500),
+            spatial_positions_yards={'m0': (0., 0.)})
