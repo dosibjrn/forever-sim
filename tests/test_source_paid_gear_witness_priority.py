@@ -4,9 +4,9 @@ This tests production candidate scheduling using the real Mage/Druid item
 catalogue and valid full-equipment substitutions. It does not claim a P4 gate.
 """
 from collections import Counter
+from itertools import islice
 
 import pytest
-from itertools import islice
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.source_checkpoint_p3_swaps import substituted_multi_stage
@@ -116,7 +116,6 @@ def test_real_source_depth_three_enters_joint_paid_witness_prefix():
             dimensions, variants, "diagonal", [],
             gear_stages=gear_stages), len(witnesses)))
         assert scheduled == list(witnesses), (class_key, scheduled, witnesses)
-
 
 
 def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
