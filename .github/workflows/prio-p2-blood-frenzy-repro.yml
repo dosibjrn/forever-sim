@@ -1,0 +1,51 @@
+name: Prio P2 Blood Frenzy canonical source + live repro (one-shot)
+on:
+  push:
+    branches:
+      - work/prio-blood-frenzy-source-proc
+permissions:
+  contents: read
+jobs:
+  verify-source-to-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install focused dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Verify PR HEAD and focused sourced + runtime regressions
+        run: |
+          git rev-parse HEAD
+          python -m pytest -q tests/test_prio_blood_frenzy_canonical_tooltip.py tests/test_wf437_blood_frenzy_source_proc_p2_tdd.py tests/test_prio_p2_live_critical_resource_gain.py
+      - name: Run canonical P2, never record M1
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          python tools/wf_gate.py --class druid --level 30 --spec unrestricted --gate P2 --out /tmp/prio-p2-l30.json
+          code30=$?
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P2 --out /tmp/prio-p2-l60.json
+          code60=$?
+          echo "No-record P2 L30 exit=$code30 L60 exit=$code60"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for name in ('l30','l60'):
+              p=Path('/tmp/prio-p2-'+name+'.json')
+              if not p.exists():
+                  print(name+' NO_REPORT')
+                  continue
+              d=json.loads(p.read_text())
+              print(name, json.dumps({
+                  k:v for k,v in d.items()
+                  if k in ('status','reason','reasons','verified','applicable',
+                           'behavior_probes','failures','blockers','source_id')
+              }, default=str)[:6000])
+          PY
+          exit 0
