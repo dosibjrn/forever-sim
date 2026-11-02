@@ -135,3 +135,42 @@ def test_source_fight_sample_cannot_earn_m1_partial():
               "reachability_count": 10000,
               "behavior_probes_executed": 3}
     assert measured_live_coverage(sample) is None
+
+
+def test_equal_mean_dps_cannot_hide_wrong_source_encounter_duration():
+    # Negative control for the real P7.1 native-vs-ACK-world comparison.
+    # These small metric dicts test the assertion, NOT a substitute engine.
+    native = {"iterations": 3, "native_dps": 692.1030471575785,
+              "first_duration_s": 133.0027}
+    live = {"iterations_done": 3, "native_dps": 692.1030471575785,
+            "world_mean_dps": 692.1030471575785,
+            "sampled_duration_s": 133.0027,
+            "native_damage_events": 430, "native_world_ticks": 792,
+            "per_iteration": [{"duration_s": 133.0027}] * 3}
+    assert gate._source_native_world_parity(native, live, 3) is None
+    live["sampled_duration_s"] = 132.0027
+    assert gate._source_native_world_parity(native, live, 3) == (
+        "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED")
+    live["sampled_duration_s"] = 133.0027
+    live["per_iteration"][0] = {"duration_s": 132.0027}
+    assert gate._source_native_world_parity(native, live, 3) == (
+        "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED")
+    live["per_iteration"][0] = {"duration_s": 133.0027}
+    live["native_world_ticks"] = 0
+    assert gate._source_native_world_parity(native, live, 3) == (
+        "P7_1_NATIVE_WORLD_EXECUTION_INCOMPLETE")
+
+
+def test_dps_floor_failure_is_not_mislabeled_as_native_world_parity():
+    from tools.wf_gate_coverage import p7_final_stochastic_mean_passes
+    assert not p7_final_stochastic_mean_passes(
+        "P7.1", 700.0, 728.1936126415858,
+        iterations=1000, stochastic=True)
+    assert gate._source_native_world_parity(
+        {"iterations": 1000, "native_dps": 700.0,
+         "first_duration_s": 120.0},
+        {"iterations_done": 1000, "native_dps": 700.0,
+         "world_mean_dps": 700.0, "sampled_duration_s": 120.0,
+         "native_damage_events": 1, "native_world_ticks": 1,
+         "per_iteration": [{"duration_s": 120.0}] * 1000},
+        1000) is None
