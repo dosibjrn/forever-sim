@@ -930,6 +930,22 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
                 pass
             else:
                 attempts.insert(0,dict(isolated))
+    # A legal full-point optimizer build can rely on the target rank's last
+    # point to unlock an unrelated higher-tier talent. Decrementing the target
+    # alone then makes the paired control illegal (e.g. a 15-point tier floor
+    # becomes 14). P2 compares the target's behavior in a *legal* paired
+    # setup, not necessarily in a full-point search build. Try dropping one
+    # other talent from BOTH sides; apply_talent_selection below validates
+    # each side independently. Keep the original full-point profile candidate
+    # as the separate, already validated search-reachability witness.
+    if profile_full is not None:
+        for other_id in sorted(profile_full):
+            if other_id == talent.id:
+                continue
+            reduced = dict(profile_full)
+            reduced.pop(other_id)
+            if reduced not in attempts:
+                attempts.append(reduced)
     # An unrestricted rank probe can use a different executable filler.
     # The spec's full-point search candidate must never be replaced by it.
     if profile_tree is None:
