@@ -37,15 +37,37 @@ def test_explicit_full_source_gate_uses_existing_real_production_cli(
         monkeypatch, gate, budget, timeout):
     calls = []
 
-    def execute(root, args, output, time_limit):
-        calls.append((root, args, output.name, time_limit))
-        return _production_receipt(budget), None
+    def execute(root, args, output, time_limit, **kwargs):
+        calls.append((root, args, output.name, time_limit, kwargs))
+        if args[0] == "--compare-30":
+            return {
+                "N30_unique_paid": 25, "N300_unique_paid": 250,
+                "p5_10x_breadth": True,
+                "same_source_legal_candidate_space_proven": True,
+                "replays": [
+                    {"status": "COMPLETE", "count": 100,
+                     "mob_completed": 100, "s_per_mob": 13.0},
+                    {"status": "COMPLETE", "count": 100,
+                     "mob_completed": 100, "s_per_mob": 12.5},
+                ],
+            }, None
+        return _production_receipt(int(args[1])), None
 
     monkeypatch.setattr(executor, "_execute", execute)
     result = gates.run_full_paid_source_search(
         Path("/project"), "druid", 30, spec="unrestricted", gate=gate)
-    assert calls == [(Path("/project"), ["--budget", str(budget)],
-                      "cold.json", timeout)]
+    if gate == "P4":
+        assert calls == [(Path("/project"), ["--budget", "30"],
+                          "cold.json", timeout, {})]
+    else:
+        assert len(calls) == 3
+        assert calls[0] == (Path("/project"), ["--budget", "30"],
+                            "cold-30.json", 420, {})
+        assert calls[1] == (Path("/project"), ["--budget", "300"],
+                            "cold-300.json", 720, {})
+        assert calls[2][1][0] == "--compare-30"
+        assert calls[2][1][2] == "--compare-300"
+        assert calls[2][2:] == ("comparison.json", 240, {"allowed_codes": (0, 1)})
     assert result["status"] == "FAIL"  # actual native/world not yet proven
     assert result["real_search_wall_s"] == budget - 0.1
     assert result["real_100mob_complete"] is True
@@ -54,7 +76,57 @@ def test_explicit_full_source_gate_uses_existing_real_production_cli(
     assert result["selected_backend_integration_pending"] is True
     assert result["real_paid_unique_full_builds"] > 0
     if gate == "P5":
-        assert "P5_INDEPENDENT_N300_GE_10_N30_NOT_COMPARED" in result["reasons"]
+        assert result["independent_N30_unique_paid"] == 25
+        assert result["independent_N300_unique_paid"] == 250
+        assert result["independent_p5_10x_breadth"] is True
+        assert result["independent_same_source_candidate_space"] is True
+        assert result["independent_100mob_winner_replays_complete"] is True
+        assert "P5_N300_GE_TEN_TIMES_N30_NOT_PROVEN" not in result["reasons"]
+
+
+@pytest.mark.parametrize("missing", ["breadth", "space", "replay"])
+def test_p5_independent_cold_comparison_rejects_incomplete_proof(monkeypatch, missing):
+    def execute(root, args, output, time_limit, **kwargs):
+        if args[0] != "--compare-30":
+            return _production_receipt(int(args[1])), None
+        comparison = {
+            "N30_unique_paid": 25, "N300_unique_paid": 250,
+            "p5_10x_breadth": missing != "breadth",
+            "same_source_legal_candidate_space_proven": missing != "space",
+            "replays": [
+                {"status": "COMPLETE", "count": 100,
+                 "mob_completed": 100, "s_per_mob": 13.0},
+                {"status": "COMPLETE", "count": 100,
+                 "mob_completed": 100, "s_per_mob": 12.5},
+            ],
+        }
+        if missing == "replay":
+            comparison["replays"][1]["count"] = 99
+        return comparison, None
+
+    monkeypatch.setattr(executor, "_execute", execute)
+    result = gates.run_full_paid_source_search(
+        Path("/project"), "druid", 30, spec="unrestricted", gate="P5")
+    expected = {
+        "breadth": "P5_N300_GE_TEN_TIMES_N30_NOT_PROVEN",
+        "space": "P5_INDEPENDENT_COLD_SOURCE_SPACE_NOT_MATCHED",
+        "replay": "P5_INDEPENDENT_WINNERS_100MOB_REPLAY_INCOMPLETE",
+    }
+    assert result["status"] == "FAIL"
+    assert expected[missing] in result["reasons"]
+    assert result["selected_backend_integration_pending"] is True
+
+
+def test_p5_stops_before_300s_when_independent_30s_fails(monkeypatch):
+    calls = []
+    def execute(root, args, output, time_limit, **kwargs):
+        calls.append(args)
+        return None, "PAID_SOURCE_RUN_FAILED:rc=1"
+    monkeypatch.setattr(executor, "_execute", execute)
+    result = gates.run_full_paid_source_search(
+        Path("/project"), "druid", 30, spec="unrestricted", gate="P5")
+    assert calls == [["--budget", "30"]]
+    assert result["reasons"] == ["P5_30S_PAID_SOURCE_RUN_FAILED:rc=1"]
 
 
 @pytest.mark.parametrize("seconds,kills", [
