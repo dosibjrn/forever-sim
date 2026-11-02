@@ -2,6 +2,8 @@
 
 **Owner-approved acceptance cadence (2026-11-02):** The gate CLI is an **on-demand** way to earn or revalidate a PASS, not a mandatory continuously executing test suite. An acceptance test may be a heavy direct CLI/integration run of actual production code (not necessarily a unit/pytest test). Run each gate successfully **once** to record `PASS` and a timestamp; rerun only when relevant functional changes invalidate it. Keep fast regression checks independent from heavy formal gate acceptance. A persistent PASS timestamp needs no separate evidence JSON or committed run bundle. A stored PASS is historical acceptance, **not** authority for a new unexecuted CLI PASS.
 
+**P7 owner-approved stochastic acceptance (2026-11-02):** On-demand P7.1–P7.5 final comparisons use **1,000 stochastic native Rust/Go iterations** with real causal 2D coupling where required and a **0.99× DPS comparator** on all gates, including P7.1 and P7.5. P7.2–P7.5 candidate searches instead use **deterministic low-repeat balanced RNG**, preserving their independent 300-second search budgets. Compare via the common `p7_required_dps` / `p7_final_stochastic_mean_passes` functions in `tools/wf_gate_coverage.py`. Missing actual P7.2–P7.5 production providers remain BLOCKED; a correct numeric helper is not gate acceptance. Historical source request iteration counts remain provenance only.
+
 The following describes the current live-provider implementation; providers must call real production code, not duplicate combat or optimization just to satisfy gate fields.
 
 `python tools/wf_gate.py --class druid --level 60 --spec balance --gate P7.2`
