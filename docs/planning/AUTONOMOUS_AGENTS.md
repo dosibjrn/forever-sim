@@ -6,6 +6,18 @@
 
 **P7 final and optimizer RNG, owner-approved 2026-11-02:** Work1 owns implementing one real production Rust/Go↔gsim P7 path. Its **internal P7.2–P7.5 searches use reproducible deterministic balanced RNG with few candidate repetitions**; freeze the winner, then run the separate **1,000-iteration stochastic** final reference/holdout. P7.1 native baseline and live 2D final also use 1,000 stochastic iterations. Each P7.1–P7.4 final mean must reach **99% of the saved external reference**; P7.5 final holdout mean must reach **99% of the larger of saved reference and strongest accepted-compatible P7.1–P7.4 prior**. Do not treat saved-request 10k metadata, repeated balanced search scores or per-fight sample fractions as PASS. Prio and Merge check `docs/gates/P7.md` and `tools/wf_gate_coverage.py`, and demand exact native/2D/seed/scenario evidence before any M1 recording. No new evidence file hierarchy or heavy hourly CI.
 
+## Kaikkien agenttien sääntö: älä keksi ongelmia (omistajan ohje 2026-11-02)
+
+**Koskee Prio-, Work1-, Work2-, Merge- ja Clean-agenttia joka kierroksella.** Oikeita ongelmia on jo riittävästi: käytä työaika niiden ratkaisemiseen, älä keksi uusia.
+
+- **Ongelma tai blocker vaatii konkreettisen näytön:** todellinen lähde-/tuotantokoodin FAIL, toistettava virhe, hyväksytyn PROCESS/gate-ehdon täyttymättä jääminen tai nimetty välttämätön puuttuva toiminto. Nimeä havainto ja osoita se olemassa olevalla ajolla, tuloksella, lähdekoodilla tai täsmällisellä gate-kriteerillä. Älä esitä hypoteesia todettuna vikana.
+- **Erota kolme asiaa:** `todettu vika`, `ei vielä ajettu/todennettu` ja `mahdollinen riski`. Suorittamattoman hyväksymistestin puuttuva PASS on oikea hyväksyntätila mutta **ei sellaisenaan todiste** rikkinäisestä toteutuksesta, laittomasta buildista tai viallisesta lähdedatasta. Jos laittomuudesta tai ristiriidasta ei ole näyttöä, älä väitä sellaista.
+- **Gate määrää vaatimukset.** Älä lisää omia täydellisen kombinatorisen kattavuuden, kaiken lähdedatan auditoinnin, UI-todentamisen tai yhteensopivuustodistelun **lisäehtoja**, ellei juuri kyseinen hyväksytty gate niitä vaadi. Toteuta ja tarkista vain sopimuksen todelliset ehdot; lähdedatan rajattu hakustrategia ei yksin ole laillisuusvirhe.
+- **Toimintajärjestys:** jatka olemassa olevaa omistettua työtä, suorita pienin relevantti oikea tuotantotesti kun se on aiheellinen, korjaa ensimmäinen havaittu FAIL, regressiotestaa ja etene. Älä aloita spekulatiivisia tutkimusprojekteja, suunnittele hyväksymistä uusiksi tai hidasta toimivan koodin mergeä oletetuilla riskeillä.
+- **Raportoi täsmällisesti:** mikä on *todistettu*, mikä on *vielä testaamatta*, mikä on *seuraava oikea gate-vaatimus*. Älä listaa todentamattomia mahdollisuuksia “seuraavina teknisinä esteinä”. Näytön puuttuessa jatka toteutusta tai ilmoita yksinkertaisesti, ettei testiä ole vielä ajettu.
+
+Tämä ohje **ei löysennä** OVERALL PLANia, PROCESSia eikä yhtäkään gatea: hyväksyntä ei synny ilman vaadittua aitoa ajoa. Se estää ylimääräisten esteiden ja perusteettomien vikaväitteiden luomisen.
+
 ## Operating model
 
 - **Five independent conversations, five independent hourly tasks:** Prio XX:00; Work1 XX:10; Work2 XX:20; Merge XX:40; Clean XX:50, timezone Europe/Helsinki. Each task is created in its **own conversation**, never all five in one transcript. These times are the intended staggering, not evidence that the automations are currently active.
