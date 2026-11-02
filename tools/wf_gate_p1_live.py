@@ -372,9 +372,9 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                     scenario_id=P1_DEFAULT_SCENARIO):
     """PROCESS P1 gate: all source actions are traceable, legal, and offered.
 
-    An effect's full numerical behaviour belongs to P2/P4, not P1. A recognised,
-    explicitly reported conditional setup is allowed here when the dispatch path
-    exists. Unknown/no-op/broken effects and silent optimizer omissions are not.
+    A recognized unmet conditional prerequisite is reported but cannot PASS
+    without observed applicable execution (PROCESS v2.11). Unknown/no-op/broken
+    effects and silent optimizer omissions are not accepted.
     """
     problems: list[dict[str,Any]] = []
     conditional: list[dict[str,str]] = []
@@ -580,8 +580,14 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                 exercised.append(action.id)
             elif (outcome.get('status')=='conditional' and
                   _legitimate_conditional(action, str(outcome.get('reason') or ''))):
+                # A recognized prerequisite is a useful diagnostic, but it
+                # does not demonstrate the ability's applicable effect.
+                # PROCESS v2.11 requires a suitable triggered real-runtime
+                # test before a source-legal conditional action can PASS P1.
                 conditional.append({'action_id':action.id,'ability':_id_label(row),
                                     'reason':str(outcome['reason'])})
+                issue('CONDITIONAL_EFFECT_NOT_EXECUTED',row,
+                      f"{action.id}:{outcome['reason']}")
             else:
                 issue('COMBAT_ACTION_NOT_EXECUTED',row,f'{action.id}:{outcome}')
     return {'status':'PASS' if not problems and eligible else 'FAIL',
