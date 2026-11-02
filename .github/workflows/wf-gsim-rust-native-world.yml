@@ -34,6 +34,11 @@ jobs:
           python project/integrations/mythicsim-rust/patch_world_ingress.py upstream
       - name: Build actual pinned source Rust fight engine with synchronous world seam
         working-directory: upstream
+        env:
+          # Native Rust mechanics are unchanged; avoid single-CGU ThinLTO build
+          # latency for the short exact-HEAD integration iteration.
+          CARGO_PROFILE_RELEASE_LTO: "off"
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: cargo build --release --locked
       - name: Prove the patched engine still exactly reproduces 10k saved Rust reference
         working-directory: project
