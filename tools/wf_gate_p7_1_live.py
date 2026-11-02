@@ -60,6 +60,25 @@ def _source_native_world_parity(
                 or row["world_applied_damage"] < 0
                 for i, row in enumerate(samples)):
             return "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
+        # Real live_world_probe records actual gsim-applied native damage
+        # (including any negative-time/pre-pull damage) and scores only the
+        # in-fight portion. Equal reported DPS is not a causal world receipt
+        # when the independently applied damage ledger disagrees.
+        if any(
+                not math.isfinite(row.get("world_applied_precombat_damage", 0.0))
+                or row.get("world_applied_precombat_damage", 0.0) < 0
+                or row.get("world_applied_precombat_damage", 0.0)
+                > row["world_applied_damage"] + 1e-4
+                for row in samples):
+            return "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
+        if any(
+                not math.isclose(
+                    row["world_applied_damage"]
+                    - row.get("world_applied_precombat_damage", 0.0),
+                    row["world_dps"] * row["duration_s"],
+                    rel_tol=1e-9, abs_tol=1e-4)
+                for row in samples):
+            return "P7_1_WORLD_FIGHT_DAMAGE_DIVERGED"
         independent_world_mean = math.fsum(
             row["world_dps"] for row in samples) / iterations
         if abs(independent_world_mean - live["world_mean_dps"]) >= 1e-5:
