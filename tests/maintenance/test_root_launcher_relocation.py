@@ -23,9 +23,9 @@ POWERSHELL_SCRIPTS = (
 )
 TARGETS = {
     "run-validation-fast.sh": "tools/validate_fast.py",
-    "run-validation-v1.sh": "tools/validate_v1_browser.py",
-    "run-validation-v2.sh": "tools/validate_v2_restart.py",
-    "run-validation-v3.sh": "tools/validate_v3_checkpoint_failure.py",
+    "run-validation-v1.sh": "-m pytest -q -r s tests/test_v1_browser_workflow_v0114819.py",
+    "run-validation-v2.sh": "-m pytest -q -r s tests/test_v2_restart_persistence_v0114820.py",
+    "run-validation-v3.sh": "-m pytest -q -r s tests/test_v3_checkpoint_failure_semantics_v0114821.py",
     "run-validation-v4.sh": "tools/validate_v4_concurrency.py",
     "run-validation-v5.sh": "tools/validate_v5_acceptance.py",
     "run-release-smoke.sh": "-m pytest",
