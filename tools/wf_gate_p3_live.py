@@ -102,7 +102,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         probe_stats=("armor", "stamina", "strength", "agility", "intellect",
                      "spirit", "spell_power", "attack_power", "mp5",
                      "crit", "hit", "dodge", "parry",
-                     "health_regeneration_per_5s"),
+                     "health_regeneration_per_5s", "weapon_dps"),
         schedule_incoming_attacks=True)
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
