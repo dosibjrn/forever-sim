@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def test_capture_script_direct_execution_can_import_repo_src():
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[3]
     env = os.environ.copy()
     env["PYTHONPATH"] = ""
     proc = subprocess.run(
