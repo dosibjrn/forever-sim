@@ -1,0 +1,35 @@
+name: Feral evidence maintenance regressions
+on:
+  pull_request:
+    paths:
+      - 'tests/maintenance/**'
+      - 'tools/audit_feral_p7_holdout.py'
+      - 'tools/import_feral_p7_archives.py'
+      - 'docs/evidence/druid-p7/recovered/raw/**'
+      - '.github/workflows/maintenance-evidence-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  historical-evidence-maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source and retained evidence
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install focused test runner
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5'
+      - name: Verify maintenance layout and preserved feral evidence assertions
+        run: >-
+          python -m pytest -q
+          tests/maintenance/test_maintenance_layout.py
+          tests/maintenance/test_import_feral_p7_archives.py
+          tests/maintenance/test_audit_feral_p7_holdout.py
+          tests/maintenance/test_recovered_feral_p7_raw.py
