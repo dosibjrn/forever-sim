@@ -31,6 +31,24 @@ from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApp
 PINNED_GO_REVISION = 'a667dce8492bd9fb94269a9f864289cb74006775'
 
 
+def source_target_health_from_request(raw: bytes) -> float:
+    """Read the target's Health stat from the actual pinned Go RaidSimRequest.
+
+    The source Go stats.Stats enum maps Health to index 32. Do not replace
+    this with the bridge's former arbitrary 10-million-HP diagnostic target.
+    """
+    try:
+        targets = json.loads(raw)['encounter']['targets']
+        if len(targets) != 1 or targets[0]['level'] != 63:
+            raise ValueError('SOURCE_DPS_TARGET_NOT_SINGLE_LEVEL_63')
+        health = targets[0]['stats'][32]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError('SOURCE_TARGET_HEALTH_MISSING') from exc
+    if type(health) not in (int, float) or not math.isfinite(health) or health <= 0:
+        raise ValueError('SOURCE_TARGET_HEALTH_INVALID')
+    return float(health)
+
+
 def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
                           target_health: float = 10_000_000.,
                           target_initial_health_fraction: float = 1.):
@@ -59,7 +77,7 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
         corrupt_ack: bool = False, target_health: float = 10_000_000.,
         target_initial_health_fraction: float = 1., pulls: int = 1,
-        recovery_s: float = 0.) -> dict:
+        recovery_s: float = 0., source_target_health: bool = False) -> dict:
     # 1500 x 100 ms covers the saved 120 s +/- 15 s encounter horizon.
     # The native server independently limits sessions to 10000 world ticks.
     if (ticks < 2 or ticks > 1500 or timeout_s <= 0 or pulls not in (1, 2)
@@ -69,6 +87,10 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     raw = request.read_bytes()
     request_sha = hashlib.sha256(raw).hexdigest()
     binary_sha = hashlib.sha256(binary.read_bytes()).hexdigest()
+    if source_target_health:
+        if target_health != 10_000_000.:
+            raise ValueError('SOURCE_TARGET_HEALTH_OVERRIDE_CONFLICT')
+        target_health = source_target_health_from_request(raw)
     runtime = diagnostic_gsim_world(target_spawn_yards=target_spawn_yards,
         enemy_move_speed_yards_s=enemy_move_speed_yards_s, target_health=target_health,
         target_initial_health_fraction=target_initial_health_fraction)
