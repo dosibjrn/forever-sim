@@ -97,6 +97,7 @@ def test_single_finalist_retains_fastest_real_paid_build_over_slower_control():
     from src.v2.source_persistent_joint_finalists import (
         prepare_candidate, evaluate_persistent_candidate)
     from src.v2.source_bounded_joint_frontier import _select_screen_finalists
+    from src.game.policy_evolution import _identity as policy_identity
 
     ir, seed = _scenario('mage')
     gear = seed['gear_policy_result']['winner']['gear']
@@ -131,7 +132,7 @@ def test_single_finalist_retains_fastest_real_paid_build_over_slower_control():
         row = {
             'screen_s_per_mob': score, 'allocation': candidate.allocation,
             'gear_move': 'incumbent' if control else label,
-            'policy': 'incumbent', 'policy_signature': 'real_source_policy',
+            'policy': 'incumbent', 'policy_signature': policy_identity(candidate.policy),
             'policy_ir': candidate.policy.as_dict(), 'recovery': 'always',
             'equipped_gear': candidate.source_stage['gear_policy_result']['winner']['gear'],
             'is_control': control, 'screen_events': result['events'],
