@@ -71,3 +71,21 @@ def test_druid_l60_gift_of_nature_rank_two_has_legal_paired_runtime_control():
     assert (report["pass_count"] + report["fail_count"]
             + report["unresolved_count"] + report["unreachable_count"]
             == report["source_rank_total"] == 103)
+
+
+def test_druid_l60_vengeance_critical_bonus_executes_real_damage():
+    """A sourced crit-bonus field delta alone is not a P2 behavior PASS."""
+    report = run_live(Path(__file__).resolve().parents[1], "druid", 60, spec="balance")
+    vengeance = [row for row in report["ranks"]
+                 if row["talent_id"] == "vengeance"]
+    assert vengeance, "source rank missing from P2 denominator"
+    for rank in vengeance:
+        assert rank["status"] == "PASS", (rank["rank_key"], rank["reasons"])
+        witnesses = [test for test in rank["behavior_tests"]
+                     if test["probe"] == "paired_production_critical_bonus"]
+        assert witnesses, rank["rank_key"]
+        for witness in witnesses:
+            assert witness["actually_executed"] and witness["passed"]
+            assert witness["after_amount"] > witness["before_amount"] > 0
+            assert witness["after_crit_multiplier"] > witness["before_crit_multiplier"]
+            assert witness["source_bonus_ratio"] > 1.0
