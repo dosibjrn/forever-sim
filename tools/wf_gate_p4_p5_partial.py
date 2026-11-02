@@ -212,8 +212,53 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
             gate + "_SOURCE_COLD_SEARCH_RECEIPT_INCOMPLETE"],
             "production_engine": "gsim_CombatRuntime"}
 
+    # The paid 100-mob count is not evidence that the SAVED winner is a
+    # source-legal whole build. Reuse the P6 source/catalogue/equipment audit,
+    # rather than trusting the shortlist's item IDs or serialized stats.
+    required = {"allocation", "equipped_gear", "opening_action_ids",
+                "policy_ir", "policy_signature", "recovery"}
+    winner = shortlist[winner_index] if 0 <= winner_index < len(shortlist) else None
+    full_saved_build = isinstance(winner, dict) and required <= winner.keys()
+    pinned_gear_source = False
+    gear_legal = False
+    gear_effect_gaps = {}
+    class_membership_attested = False
+    gear_audit_error = None
+    if full_saved_build:
+        from src.v2 import source_paid_cold_comparison as source_comparison
+        try:
+            saved_snapshot = report.get("source_gear_catalogue_snapshot")
+            pinned_gear_source = (
+                isinstance(saved_snapshot, dict)
+                and saved_snapshot == source_comparison.source_gear_catalogue_snapshot(
+                    class_key, level))
+            if pinned_gear_source:
+                class_membership_attested = (
+                    saved_snapshot.get("class_membership_verified") is True)
+                source_comparison._verify_winner_gear_legality(
+                    winner, class_key=class_key, level=level)
+                gear_effect_gaps = source_comparison._winner_gear_effect_gaps(
+                    winner, class_key=class_key, level=level)
+                gear_legal = True
+            else:
+                gear_audit_error = "SOURCE_GEAR_SNAPSHOT_MISSING_OR_CHANGED"
+        except Exception as exc:
+            # The failed source audit remains a diagnostic, never a gate PASS;
+            # retain the first error type without hiding actual paid-kill data.
+            gear_audit_error = type(exc).__name__ + ": " + str(exc)[:160]
+    else:
+        gear_audit_error = "SAVED_SOURCE_WINNER_INCOMPLETE"
+
     reasons = [gate + "_SELECTED_NATIVE_2D_WORLD_BACKEND_NOT_VERIFIED",
                gate + "_SOURCE_LEGAL_SPACE_COMPLETENESS_NOT_PROVEN"]
+    if not pinned_gear_source:
+        reasons.append(gate + "_GEAR_CATALOGUE_SNAPSHOT_NOT_VERIFIED")
+    if not gear_legal:
+        reasons.append(gate + "_WINNING_GEAR_SOURCE_LEGALITY_NOT_VERIFIED")
+    if gear_effect_gaps:
+        reasons.append(gate + "_WINNER_ITEM_EFFECTS_UNRESOLVED")
+    if not class_membership_attested:
+        reasons.append(gate + "_SOURCE_CLASS_ITEM_MEMBERSHIP_NOT_ATTESTED")
     if not complete:
         reasons.append(gate + "_INCOMPLETE_PAID_100MOB_FINALIST")
     if gate == "P5":
@@ -229,6 +274,14 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         "real_paid_unique_full_builds": report.get("unique_full_builds"),
         "real_paid_screen_complete": report.get("screen_complete_candidates"),
         "real_talent_unlocked_actions": report.get("p4_talent_unlock_coverage"),
+        "saved_full_source_winner_build": full_saved_build,
+        "gear_source_snapshot_matches_current": pinned_gear_source,
+        "winning_gear_source_legality_verified": gear_legal,
+        "winning_gear_unresolved_effects": gear_effect_gaps,
+        "source_class_gear_membership_attested": class_membership_attested,
+        "winning_gear_audit_error": gear_audit_error,
+        "source_legal_gear_universe_verified": (
+            report.get("source_legal_gear_universe_verified") is True),
         "real_100mob_complete": complete,
         "real_100mob_count": row.get("count") if complete else 0,
         "real_100mob_s_per_mob": seconds if complete else None,
