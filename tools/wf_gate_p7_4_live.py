@@ -132,33 +132,39 @@ def _paid_gear_elite_choice(elites, rng, proposal_index):
 
 
 def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: float):
-    """Paid native+2D rerank on non-holdout stochastic seeds inside cold budget.
+    """Paid independent stochastic seed pairs reduce 24-fight winner's curse.
 
-    Balanced three-fight screening is an exploration heuristic, not proof
-    that its top candidate is best on the frozen stochastic objective.
-    This restores the existing source-native P7.4 finalist stage on the
-    *same selected live evaluator*, without using the saved build as a seed.
+    The old single 24-fight seed selected a 671.34 DPS frozen winner in the
+    completed 2026-11-02 P7.4 run (versus the prior 706.29 DPS screen policy).
+    Use two distinct non-holdout 24-fight seeds, both genuinely native+2D
+    paid. Their mean selects a finalist; the separate 1,000 stochastic
+    frozen holdout is never used for candidate selection.
     """
-    rerank_request = copy.deepcopy(request)
-    rerank_request["simOptions"]["randomSeed"] = "1947004"
-    with tempfile.TemporaryDirectory(prefix="forever_p74_rerank_") as tmp:
-        path = Path(tmp) / "source-legal-gear-finalist.json"
-        path.write_text(json.dumps(rerank_request))
-        native = production.native_source_control(
-            binary, path, 24, rng_mode="stochastic")
-        live = production.run(binary, path, distance=distance,
-                              iterations=24, rng_mode="stochastic")
-        mismatch = _source_native_world_parity(native, live, 24)
-        if mismatch is not None:
-            raise ValueError("P74_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
-    if (live.get("iterations_done") != 24
-            or live.get("native_damage_events", 0) <= 0
-            or live.get("native_world_ticks", 0) <= 0):
-        raise ValueError("P74_FINALIST_LIVE_PAIR_INCOMPLETE")
-    score = float(live["world_mean_dps"])
-    if not 0 <= score < float("inf"):
-        raise ValueError("P74_FINALIST_LIVE_DPS_INVALID")
-    return score, live
+    scores = []
+    final_live = None
+    for rerank_seed in ("1947004", "1947047"):
+        rerank_request = copy.deepcopy(request)
+        rerank_request["simOptions"]["randomSeed"] = rerank_seed
+        with tempfile.TemporaryDirectory(prefix="forever_p74_rerank_") as tmp:
+            path = Path(tmp) / "source-legal-gear-finalist.json"
+            path.write_text(json.dumps(rerank_request))
+            native = production.native_source_control(
+                binary, path, 24, rng_mode="stochastic")
+            live = production.run(binary, path, distance=distance,
+                                  iterations=24, rng_mode="stochastic")
+            mismatch = _source_native_world_parity(native, live, 24)
+            if mismatch is not None:
+                raise ValueError("P74_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
+        if (live.get("iterations_done") != 24
+                or live.get("native_damage_events", 0) <= 0
+                or live.get("native_world_ticks", 0) <= 0):
+            raise ValueError("P74_FINALIST_LIVE_PAIR_INCOMPLETE")
+        score = float(live["world_mean_dps"])
+        if not 0 <= score < float("inf"):
+            raise ValueError("P74_FINALIST_LIVE_DPS_INVALID")
+        scores.append(score)
+        final_live = live
+    return sum(scores) / len(scores), final_live
 
 
 def _freeze_paid_p74_winner(screen_best, reranked):
