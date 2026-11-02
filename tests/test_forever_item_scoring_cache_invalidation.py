@@ -11,7 +11,7 @@ from src.rulesets.forever.items.catalogue import ItemRecord
 
 def _source_item() -> ItemRecord:
     return ItemRecord(
-        item_id=7348, name="Source item", slot="hands",
+        item_id=123456789, name="Cache invalidation fixture", slot="hands",
         item_level=45, required_level=40, agility=3.0,
     )
 
