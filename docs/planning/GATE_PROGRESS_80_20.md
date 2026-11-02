@@ -4,7 +4,7 @@
 
 ## The one implementation we are building
 
-\`\`\`text
+```text
 canonical Forever source + class/level/profile + objective
    -> legal gear, talent, ability and policy candidates
    -> ONE shared whole-build optimizer
@@ -13,7 +13,7 @@ canonical Forever source + class/level/profile + objective
         -> real continuous gsim 2D world / movement / recovery where required
    -> real measured performance and behavior
    -> thin on-demand assertions for P1–P6 and P7.1–P7.5
-\`\`\`
+```
 
 **148 are input checkpoints, not 148 implementations.** P1/P2 check source legality and actually observed native/selected-engine effects; P3 calls the production gear scorer; P4/P5 call the same legal optimizer with independent cold 30/300-second budgets and genuine 100-mob results; P6 independently replays those winners; P7.1–P7.5 call the real native+2D evaluator on the separate exact pinned MythicSim reference, including independent searches and the required stochastic holdout. Same source/legal/combat implementation, different legitimate scenarios. Never substitute gsim-only, raw native-only, a source inventory, CI green or a wrapper for a hybrid acceptance requirement. Keep ALL existing numeric and source/engine criteria.
 
@@ -31,29 +31,29 @@ canonical Forever source + class/level/profile + objective
 
 M1 has **148 × 11 = 1,628** approved checkpoint-gate pairs. Show BOTH exact counts, with no invented equivalence:
 
-- **M1 passed gate executions:** \`N/1628\`, \`100*N/1628 %\`; **a row is added ONLY by the actual live gate runner returning PASS**. A missing/blocked/failed/diagnostic gate contributes zero.
-- **Fully certified checkpoints:** \`C/148\`, only when the eleven gate PASSes for the same checkpoint are **mutually compatible** under the approved PROCESS. Eleven rows with absent/inconsistent compatibility provenance are a candidate, NOT a certified checkpoint.
+- **M1 passed gate executions:** `N/1628`, `100*N/1628 %`; **a row is added ONLY by the actual live gate runner returning PASS**. A missing/blocked/failed/diagnostic gate contributes zero.
+- **Fully certified checkpoints:** `C/148`, only when the eleven gate PASSes for the same checkpoint are **mutually compatible** under the approved PROCESS. Eleven rows with absent/inconsistent compatibility provenance are a candidate, NOT a certified checkpoint.
 - **Inside a failing gate:** measured applicable effects/ranks/slots over known applicable cases, if a defensible denominator exists, with unresolved source cases separate. For heterogeneous P4–P7 steps list concrete executable/missing functions rather than invent a percentage.
 
-The minimal implementation is **existing** \`tools/wf_gate.py\` plus **one** \`tools/m1_progress.py\` display/invalidator and **one flat** \`docs/planning/M1_PASSES.tsv\` (no 1,628 JSON or Markdown files). After an actual source-backed, on-demand acceptance run:
+The minimal implementation is **existing** `tools/wf_gate.py` plus **one** `tools/m1_progress.py` display/invalidator and **one flat** `docs/planning/M1_PASSES.tsv` (no 1,628 JSON or Markdown files). After an actual source-backed, on-demand acceptance run:
 
-\`\`\`sh
+```sh
 python tools/wf_gate.py --class druid --level 60 --spec balance --gate P2 --record-pass
 python tools/m1_progress.py
-\`\`\`
+```
 
-\`--record-pass\` records a UTC timestamp + HEAD revision and optional Actions URL/production compatibility ID **only on a real PASS**; no stored report can cause a PASS. Commit the updated single TSV alongside the successful implementation/validation PR to persist the stamp in \`main\`. Displaying progress does **not** rerun any gate. If a behavior/source/engine change invalidates a past pass, invalidate **only that pair** with \`python tools/m1_progress.py --invalidate CLASS LEVEL SPEC GATE\`, then rerun the real gate when fixed. A new commit *alone* does not invalidate unrelated passes. Keep ordinary focused unit regressions fast; 30/300s, 100-mob and 1,000+ fight tests are intentionally on-demand.
+`--record-pass` records a UTC timestamp + HEAD revision and optional Actions URL/production compatibility ID **only on a real PASS**; no stored report can cause a PASS. Commit the updated single TSV alongside the successful implementation/validation PR to persist the stamp in `main`. Displaying progress does **not** rerun any gate. If a behavior/source/engine change invalidates a past pass, invalidate **only that pair** with `python tools/m1_progress.py --invalidate CLASS LEVEL SPEC GATE`, then rerun the real gate when fixed. A new commit *alone* does not invalidate unrelated passes. Keep ordinary focused unit regressions fast; 30/300s, 100-mob and 1,000+ fight tests are intentionally on-demand.
 
-**Compatibility is fail-closed.** A passing live provider must supply trustworthy common source/ruleset/executor compatibility identity before eleven independent stamps may yield automatic 1/148. At present providers do not all emit one; the score command correctly separates \`11/11 candidate\` from \`certified\` until the actual integrated production path reports compatibility. Do not invent this field merely to move the number. The stamp is an audit record of executed code, not a substitute for execution.
+**Compatibility is fail-closed.** A passing live provider must supply trustworthy common source/ruleset/executor compatibility identity before eleven independent stamps may yield automatic 1/148. At present providers do not all emit one; the score command correctly separates `11/11 candidate` from `certified` until the actual integrated production path reports compatibility. Do not invent this field merely to move the number. The stamp is an audit record of executed code, not a substitute for execution.
 
 ### 80/20 means effort interpretation, never scheduling
 
-For comparable, known per-gate items let \`c = verified/known applicable\`. Show **actual coverage** \`100c %\` and optionally **illustrative modeled effort completed**:
+For comparable, known per-gate items let `c = verified/known applicable`. Show **actual coverage** `100c %` and optionally **illustrative modeled effort completed**:
 
-\`\`\`text
+```text
 E(c) = 0.25*c            if c <= 0.8
 E(c) = 0.2 + 4*(c-0.8)  if c > 0.8
-\`\`\`
+```
 
 The assumption is 80% of comparable cases can cost ~20% of total effort and the final 20% can cost ~80%. Thus 83/103 = 80.6% measured rank coverage, but only ~22.3% *modeled* effort done. It is NOT measured time, ETA, an extra gate, or a reason to reorder Prio. With unknown denominators mark estimates *provisional* or omit them. Do not aggregate incompatible gate-specific Pareto values into M1; M1's **N/1628 is based only on actual full gate PASSes**.
 
