@@ -419,32 +419,39 @@ def test_paid_p74_single_slot_neighbor_preserves_other_paid_slots():
     assert elite == old
 
 
-def test_p74_stochastic_paid_finalist_uses_separate_seed_and_real_pair(monkeypatch, tmp_path):
-    """Finalist reranking is paid by both production evaluators, not 1k holdout."""
+def test_p74_stochastic_paid_finalist_uses_two_independent_seed_pairs(monkeypatch, tmp_path):
+    """Actual paired 24+24 stochastic scoring; no 1k holdout or saved seed."""
     base = {"simOptions": {"randomSeed": "667"}, "raid": {"parties": [
         {"players": [{"equipment": {"items": [{"id": 123}]}}]}]}}
     untouched = copy.deepcopy(base)
     calls = []
+    seed_scores = {"1947004": 732.0, "1947047": 708.0}
+
     def native(binary, path, iterations, *, rng_mode):
         req = __import__("json").loads(path.read_text())
         calls.append(("native", iterations, rng_mode, req))
-        return {"native_dps": 721.0}
+        return {"native_dps": seed_scores[req["simOptions"]["randomSeed"]]}
+
     def world(binary, path, distance, iterations, *, rng_mode):
         req = __import__("json").loads(path.read_text())
         calls.append(("world", iterations, rng_mode, req))
         assert distance == 15
-        return {"world_mean_dps": 721.0, "iterations_done": 24,
-                "native_damage_events": 5, "native_world_ticks": 10}
+        return {"world_mean_dps": seed_scores[req["simOptions"]["randomSeed"]],
+                "iterations_done": 24, "native_damage_events": 5,
+                "native_world_ticks": 10}
+
     monkeypatch.setattr(gate, "_source_native_world_parity",
                         lambda native, world, n: None)
     production = SimpleNamespace(native_source_control=native, run=world)
     dps, live = gate._paid_gear_stochastic_finalist(
         production, tmp_path/"native", base, 15)
-    assert dps == 721.0
+    assert dps == 720.0  # mean of both independent, paid 24-fight seeds
     assert live["iterations_done"] == 24
     assert [r[:3] for r in calls] == [
+        ("native", 24, "stochastic"), ("world", 24, "stochastic"),
         ("native", 24, "stochastic"), ("world", 24, "stochastic")]
-    assert all(r[3]["simOptions"]["randomSeed"] == "1947004" for r in calls)
+    assert [r[3]["simOptions"]["randomSeed"] for r in calls] == [
+        "1947004", "1947004", "1947047", "1947047"]
     assert base == untouched
 
 
