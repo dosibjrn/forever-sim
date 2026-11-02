@@ -25,7 +25,10 @@ from tools.wf_gsim_go_live_range_probe import (
 )
 
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
-        iterations: int = 1, periodic_world_poll: bool = False) -> dict:
+        iterations: int = 1, periodic_world_poll: bool = False,
+        world_facing_override: bool | None = None,
+        flip_facing_at_s: float | None = None,
+        capture_actions: bool = False) -> dict:
     raw = request.read_bytes()
     source = json.loads(raw)
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
@@ -37,7 +40,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
         world = diagnostic_gsim_world(
             target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
             target_health=source_target_health_from_request(raw), source_single_target=True,
-            source_in_front_of_target=players[0].get("inFrontOfTarget", False),
+            source_in_front_of_target=(players[0].get("inFrontOfTarget", False)
+                                       if world_facing_override is None else world_facing_override),
         )
         return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeDamageWorldApplier(world)
     world = feed = applier = None
@@ -59,6 +63,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     samples = []
     iteration_damage = 0.
     total_ticks = 0
+    facing_flipped = False
+    actions = []
     with tempfile.TemporaryDirectory() as folder:
         output = Path(folder) / "result.json"
         env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1",
@@ -103,6 +109,12 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 if native["native_process_id"] != proc.pid:
                     raise AssertionError("RUST_NATIVE_PID_MISMATCH")
                 world.advance_to(clock_ns / 1e9)
+                if (flip_facing_at_s is not None and not facing_flipped
+                        and clock_ns >= flip_facing_at_s * 1e9):
+                    # A genuine change to the live gsim target's 2D heading,
+                    # not an altered native request or fabricated range tick.
+                    world.targets["m1"].metadata["facing_xy_yards"] = (-1., 0.)
+                    facing_flipped = True
                 tick = feed.next_tick()
                 assert tick["sequence"] == native["sequence"]
                 assert tick["native_clock_ns"] == clock_ns
@@ -125,6 +137,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 assert receipt["native_request_sha256"] == request_sha
                 assert receipt["native_process_id"] == proc.pid
                 feed.accept_range_receipt(receipt["native_range_receipt"])
+                if capture_actions:
+                    actions.extend((event["native_time_ns"] / 1e9, event["source_action_id"])
+                                   for event in receipt["native_damage_events"])
                 ack = applier.apply(tick, receipt)
                 ack["iteration_index"] = iteration
                 event_count += len(ack["applied_event_ids"])
@@ -178,7 +193,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "per_iteration": samples,
                     "source_request_proto_sha256": request_sha,
                     "source_request_raw_sha256": raw_sha,
-                    "checkpoint_certified": False}
+                    "checkpoint_certified": False,
+                    "source_actions": actions if capture_actions else None,
+                    "world_facing_flipped": facing_flipped}
         finally:
             if proc.poll() is None:
                 proc.kill()
@@ -213,6 +230,51 @@ def native_source_control(binary: Path, request: Path, iterations: int) -> dict:
         return {"native_dps": measured["raidMetrics"]["dps"].get("avg", 0.),
                 "first_duration_s": measured["firstIterationDuration"],
                 "iterations": iterations}
+
+
+def verify_live_facing_reaction(binary: Path, reference: Path) -> dict:
+    """Native APL must react to a *mid-fight* real gsim heading change.
+
+    The source reference is copied only to construct a separate, legal
+    front-vs-back APL diagnostic; the saved P7 request is never modified.
+    Both casts are real native Druid spells, not synthetic outcomes.
+    """
+    source = json.loads(reference.read_text())
+    source["simOptions"]["iterations"] = 1
+    player = source["raid"]["parties"][0]["players"][0]
+    player["rotation"]["prepullActions"] = []
+    player["rotation"]["priorityList"] = [
+        {"action": {"castSpell": {
+            "spellId": {"rank": 8, "spellId": 9912},
+            "condition": {"frontOfTarget": {}}}}},
+        {"action": {"castSpell": {"spellId": {"rank": 7, "spellId": 25298}}}},
+    ]
+    with tempfile.TemporaryDirectory() as folder:
+        request = Path(folder) / "source_front_back_apl.json"
+        request.write_text(json.dumps(source, sort_keys=True))
+        back = run(binary, request, distance=15., capture_actions=True,
+                   world_facing_override=False)
+        front = run(binary, request, distance=15., capture_actions=True,
+                    world_facing_override=True)
+        flip = run(binary, request, distance=15., capture_actions=True,
+                   world_facing_override=False, flip_facing_at_s=10.)
+    back_actions = {action for _, action in back["source_actions"]}
+    front_actions = {action for _, action in front["source_actions"]}
+    before = {action for at, action in flip["source_actions"] if at < 9.}
+    after = {action for at, action in flip["source_actions"] if at > 15.}
+    assert len(back_actions) == len(front_actions) == 1, (
+        "SOURCE_APL_DIAGNOSTIC_NOT_SINGLE_SPELL", back_actions, front_actions)
+    assert back_actions != front_actions, (
+        "NATIVE_FRONT_OF_TARGET_APL_IGNORED_WORLD", back_actions, front_actions)
+    assert before == back_actions and after == front_actions, (
+        "NATIVE_APL_DID_NOT_REACT_TO_GSIM_FACING_CHANGE",
+        before, after, back_actions, front_actions)
+    assert flip["world_facing_flipped"] and flip["native_damage_events"] > 0
+    return {"back_source_action": sorted(back_actions),
+            "front_source_action": sorted(front_actions),
+            "flipped_before": sorted(before), "flipped_after": sorted(after),
+            "world_facing_flipped": True, "native_backend": "pinned MythicSim Rust",
+            "checkpoint_certified": False}
 
 
 def main() -> None:
@@ -291,6 +353,8 @@ def main() -> None:
         "periodic_dps": periodic["native_dps"],
     }, sort_keys=True), flush=True)
     print("REAL_RUST_THREE_INDEPENDENT_SOURCE_FIGHTS", json.dumps(multi, sort_keys=True), flush=True)
+    facing = verify_live_facing_reaction(args.binary, args.request)
+    print("REAL_RUST_LIVE_FACING_APL_REACTION", json.dumps(facing, sort_keys=True), flush=True)
     print(json.dumps({"near": near, "far": far, "forged": forged, "multi": multi,
                       "verdict": "REAL_RUST_GSIM_RANGE_DAMAGE_ACK_CAUSAL_DIAGNOSTIC_NOT_P7"},
                      sort_keys=True))
