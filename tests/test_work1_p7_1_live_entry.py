@@ -148,7 +148,7 @@ def test_equal_mean_dps_cannot_hide_wrong_source_encounter_duration():
             "native_damage_events": 430, "native_world_ticks": 792,
             "per_iteration": [{"iteration_index": i, "duration_s": 133.0027,
                                "world_dps": 692.1030471575785,
-                               "world_applied_damage": 100.0} for i in range(3)]}
+                               "world_applied_damage": 692.1030471575785 * 133.0027} for i in range(3)]}
     assert gate._source_native_world_parity(native, live, 3) is None
     live["sampled_duration_s"] = 132.0027
     assert gate._source_native_world_parity(native, live, 3) == (
@@ -178,7 +178,7 @@ def test_dps_floor_failure_is_not_mislabeled_as_native_world_parity():
          "native_damage_events": 1, "native_world_ticks": 1000,
          "per_iteration": [{"iteration_index": i, "duration_s": 120.0,
                             "world_dps": 700.0,
-                            "world_applied_damage": 100.0}
+                            "world_applied_damage": 700.0 * 120.0}
                            for i in range(1000)]},
         1000) is None
 
@@ -213,7 +213,7 @@ def test_equal_aggregate_dps_cannot_hide_missing_or_reordered_world_fights():
             "source_request_raw_sha256": "source-sha",
             "per_iteration": [
                 {"iteration_index": i, "duration_s": 120.0,
-                 "world_dps": 700.0, "world_applied_damage": 100.0}
+                 "world_dps": 700.0, "world_applied_damage": 700.0 * 120.0}
                 for i in range(3)]}
     check = lambda: gate._source_native_world_parity(
         native, live, 3, expected_raw_sha="source-sha")
@@ -228,4 +228,35 @@ def test_equal_aggregate_dps_cannot_hide_missing_or_reordered_world_fights():
     assert check() == "P7_1_LIVE_SOURCE_REQUEST_IDENTITY_DIVERGED"
     live["source_request_raw_sha256"] = "source-sha"
     del live["per_iteration"][2]["world_applied_damage"]
+    assert check() == "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
+
+
+def test_equal_reported_dps_cannot_hide_unapplied_or_prepull_world_damage():
+    """Reject a forged ACK ledger even when mean native/world DPS agrees.
+
+    The real producer scores (applied damage minus precombat damage)
+    divided by duration. This is a production acceptance assertion test,
+    not a substitute Rust/2D fight or a certified P7 result.
+    """
+    native = {"iterations": 2, "native_dps": 700.0,
+              "first_duration_s": 120.0}
+    live = {"iterations_done": 2, "native_dps": 700.0,
+            "world_mean_dps": 700.0, "sampled_duration_s": 120.0,
+            "native_damage_events": 10, "native_world_ticks": 20,
+            "per_iteration": [
+                {"iteration_index": 0, "duration_s": 120.0,
+                 "world_dps": 700.0, "world_applied_damage": 84025.0,
+                 "world_applied_precombat_damage": 25.0},
+                {"iteration_index": 1, "duration_s": 120.0,
+                 "world_dps": 700.0, "world_applied_damage": 84000.0,
+                 "world_applied_precombat_damage": 0.0},
+            ]}
+    check = lambda: gate._source_native_world_parity(native, live, 2)
+    assert check() is None
+    live["per_iteration"][1]["world_applied_damage"] = 0.0
+    assert check() == "P7_1_WORLD_FIGHT_DAMAGE_DIVERGED"
+    live["per_iteration"][1]["world_applied_damage"] = 84000.0
+    live["per_iteration"][0]["world_applied_precombat_damage"] = 24.0
+    assert check() == "P7_1_WORLD_FIGHT_DAMAGE_DIVERGED"
+    live["per_iteration"][0]["world_applied_precombat_damage"] = -1.0
     assert check() == "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
