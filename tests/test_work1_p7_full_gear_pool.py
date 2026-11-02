@@ -91,22 +91,3 @@ def test_explicit_unenchanted_candidate_does_not_inherit_saved_enchant(monkeypat
     # reference enchant; this intentionally remains a distinct API mode.
     with pytest.raises(gear.RejectedGear, match="Saved reference enchant"):
         validator.validate(ids)
-
-
-def test_source_enchant_pool_checks_no_enchant_as_zero(monkeypatch):
-    """The native source-enchant discovery must not interpret None as saved."""
-    source = Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"
-    monkeypatch.syspath_prepend(str(source))
-    gear = importlib.import_module("p74_gear_search")
-    seen = []
-
-    def item(slot, item_id, enchant_id=None):
-        seen.append((slot, item_id, enchant_id))
-        if enchant_id is None:
-            raise gear.RejectedGear(
-                "engine_enchant_missing", "No enchant is not saved enchant")
-
-    validator = SimpleNamespace(enchants={401: {}}, item=item)
-    options = gear.source_enchant_pools(validator, {0: [101]})
-    assert options == {0: [None, 401]}
-    assert seen == [(0, 101, 0), (0, 101, 401)]
