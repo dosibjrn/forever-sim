@@ -425,8 +425,9 @@ def main(argv=None) -> int:
                         help="Historical source diagnostics, not live acceptance")
     parser.add_argument("--out", type=Path,
                         help="Write the freshly executed results and provenance")
-    parser.add_argument("--record-pass", action="store_true",
-                        help="Stamp actual live PASSes in the flat M1 ledger (not a gate test)")
+    parser.add_argument("--record-pass", "--record-progress", dest="record_pass",
+                        action="store_true",
+                        help="Merge-only: record genuine live PASS or measured PARTIAL in the same M1 ledger")
     a = parser.parse_args(argv)
     for name, value in (("class", a.class_key), ("spec", a.spec)):
         if not re.fullmatch(r"[a-z][a-z0-9_-]*", value):
@@ -449,10 +450,14 @@ def main(argv=None) -> int:
     for gate in targets:
         report = _run_live_gate(ROOT, a.class_key, a.level, a.spec,
                                 gate, a.p1_scenario)
-        if a.record_pass and report["status"] == "PASS":
-            from tools.m1_progress import record_pass
-            record_pass(class_key=a.class_key, level=a.level, spec=a.spec,
-                        gate=gate, report=report)
+        if a.record_pass:
+            from tools.m1_progress import record_partial, record_pass
+            if report["status"] == "PASS":
+                record_pass(class_key=a.class_key, level=a.level, spec=a.spec,
+                            gate=gate, report=report)
+            elif report["status"] == "FAIL":
+                record_partial(class_key=a.class_key, level=a.level, spec=a.spec,
+                               gate=gate, report=report)
         record = {"gate": gate, "status": report["status"],
                   "reasons": report.get("reasons", [])}
         for key in ("reachability_count", "pass_count", "unresolved_count",
