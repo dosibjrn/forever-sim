@@ -1,1 +1,3 @@
 class	level	spec	gate	passed_at_utc	commit	run_url	compatibility_id	status	verified	applicable	scope_provisional	measured_at_utc
+druid	20	unrestricted	P2		42abc08f7d1a395f2745b0386d3eca6bd5f77c66	https://github.com/dosibjrn/forever-sim/actions/runs/41415051542		PARTIAL	70	88	1	2026-11-02T08:43:03.272300+00:00
+druid	60	balance	P2		42abc08f7d1a395f2745b0386d3eca6bd5f77c66	https://github.com/dosibjrn/forever-sim/actions/runs/41415051542		PARTIAL	84	103	1	2026-11-02T08:43:02.288403+00:00
