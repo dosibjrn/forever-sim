@@ -302,7 +302,7 @@ def _policy_uses_bear_form(ir, policy) -> bool:
         if action is None:
             raise ValueError('P3_POLICY_ACTION_NOT_IN_SOURCE_IR:' + str(rule.action_id))
         if any(req.get('kind') == 'mode_is' and str(req.get('value')) == 'bear'
-               for req in action.requirements):
+               for req in getattr(action, 'requirements', ())):
             return True
         if any(getattr(effect, 'effect_type', None) == 'mode_change'
                and str(effect.target_mode_id) == 'bear'
