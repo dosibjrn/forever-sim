@@ -147,6 +147,10 @@ class RustStepSession:
         ack = {"ack_id": f"{self.session_id}:{self._seq}:{action_id}",
                "action_id": action_id, "world_after_sha256": digest,
                "clock_ms": applied_clock_ms}
+        # The applied world time, not the pre-action boundary, is the next
+        # native decision's monotonic floor. Paid movement/recovery cannot
+        # be rewound by the next pull's world snapshot.
+        self._last_clock_ms = applied_clock_ms
         self._last_ack = ack
         self._pending = None
         return ack
