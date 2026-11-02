@@ -2409,41 +2409,6 @@ def _spread_candidates(pool, slots, offset):
     return tuple(pool[(offset+i*stride)%len(pool)] for i in range(slots))
 
 
-def _interleave_macro_transfer_targets(neighbors):
-    """Visit distinct source-legal receiving talents before repeating a target.
-
-    Macro moves are already fully validated by their proposer. A short paid
-    budget must not exhaust its small sample on alternate donors/depths for
-    one receiver while overlooking other legal receiver families.
-    """
-    by_receiver={}
-    for neighbor in neighbors:
-        by_receiver.setdefault(neighbor.changed_ids[-1], []).append(neighbor)
-    buckets=tuple(by_receiver[key] for key in sorted(by_receiver))
-    return tuple(neighbor for depth in range(max(map(len,buckets),default=0))
-                 for bucket in buckets if depth<len(bucket)
-                 for neighbor in (bucket[depth],))
-
-
-def _first_macro_per_receiving_talent(neighbors, *, limit):
-    """Source-legal target sweep for a short paid beam, without a winner preset.
-
-    Each recipient gets at most one proposal; downstream same-runtime screens
-    determine merit. This is a bounded discovery operator, not a score proxy.
-    """
-    first=[]
-    seen_targets=set()
-    for candidate in neighbors:
-        receiver=candidate.changed_ids[-1]
-        if receiver in seen_targets:
-            continue
-        first.append(candidate)
-        seen_targets.add(receiver)
-        if len(first)>=limit:
-            break
-    return tuple(first)
-
-
 def _spread_full_point_talent_neighbors(ir, allocation, *, level,
                                         bonus_talent_points, count, offset):
     """Sample both local and distant legal moves without a curated build list."""
@@ -2455,8 +2420,8 @@ def _spread_full_point_talent_neighbors(ir, allocation, *, level,
     local=tuple(sorted((n for n in neighbors if
         sum(rank for _,rank in n.allocation)==full_points),
         key=lambda n:(n.operation,n.changed_ids,n.allocation)))
-    macro=_interleave_macro_transfer_targets(_source_legal_macro_talent_transfers(
-        ir,allocation,level=level,bonus_talent_points=bonus_talent_points))
+    macro=_source_legal_macro_talent_transfers(ir,allocation,level=level,
+        bonus_talent_points=bonus_talent_points)
     # Reserve capacity for meaningful distant allocations; preserve local
     # exploration so single-rank improvements are never silently excluded.
     macro_slots=min(len(macro),(count+1)//2)
@@ -2496,7 +2461,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
     for turn in range(rounds):
         if evaluated >= max_evaluations: break
         any_attempt=False
-        for parent_index,(parent,candidate,recovery) in enumerate(tuple(top)):
+        for parent,candidate,recovery in tuple(top):
             if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
             original=float(parent['screen_s_per_mob'])
             # Talent neighborhoods must be paid independently of the stat
@@ -2507,20 +2472,6 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                     candidate.allocation,level=level,
                     bonus_talent_points=bonus_talent_points,
                     count=max_talent_neighbors,offset=turn+len(rows))
-                # Source-paid 30s searches previously sampled just one macro
-                # receiving talent per root. The paired 300s winner's stronger
-                # allocation contained a receiving talent absent from every
-                # 30s finalist. On first-turn top roots, pay one legal macro
-                # candidate per receiver before spending the rest on backfill.
-                # No saved winner/rank name is inserted into the proposal pool.
-                if turn==0 and parent_index<2:
-                    sweep=_first_macro_per_receiving_talent(
-                        _interleave_macro_transfer_targets(
-                            _source_legal_macro_talent_transfers(compiled,
-                                candidate.allocation,level=level,
-                                bonus_talent_points=bonus_talent_points)),
-                        limit=24)
-                    chosen=tuple(dict.fromkeys(chosen+sweep))
                 for neighbor in chosen:
                     if deadline-monotonic()<=.05 or evaluated>=max_evaluations:break
                     allocation=dict(neighbor.allocation)
