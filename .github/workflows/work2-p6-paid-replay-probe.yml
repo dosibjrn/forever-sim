@@ -1,0 +1,30 @@
+name: Work2 one-shot real P6 Balance replay diagnosis
+on:
+  push:
+    branches: [work/work2-p6-paid-replay-redgreen-20261102]
+    paths:
+      - .github/workflows/work2-p6-paid-replay-probe.yml
+      - tools/wf_gate_p6_live.py
+      - tests/test_wf_gate_p6_live.py
+jobs:
+  p6-source-paid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Bounded unrecorded real source-paid P6 (diagnostic only)
+        shell: bash
+        run: |
+          set +e
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P6 --out /tmp/work2-p6.json
+          rc=$?
+          echo "P6 return code: $rc (FAIL expected until hybrid acceptance)"
+          cat /tmp/work2-p6.json
+          test "$rc" -eq 1
