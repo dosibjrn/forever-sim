@@ -4,7 +4,7 @@ from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talent_subset_search import enumerate_executable_allocations,search_executable_talent_subspace
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[3]
 MAGE=ROOT/'data/forever/staged_mage_l30_talent_positions_70374.sqlite'
 DRUID=ROOT/'data/forever/staged_druid_l30_talents_70338.sqlite'
 

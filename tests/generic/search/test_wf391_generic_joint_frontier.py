@@ -10,7 +10,7 @@ from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import validate_talent_selection
 import src.v2.source_bounded_joint_frontier as joint
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[3]
 DRUID=ROOT/'data/forever/staged_druid_l30_talents_70338.sqlite'
 MAGE=ROOT/'data/forever/staged_mage_l30_talent_positions_70374.sqlite'
 

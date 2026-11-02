@@ -6,7 +6,7 @@ from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.source_bounded_joint_frontier import (search_bounded_joint_frontier,
                                                   source_gear_seed_stage)
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[3]
 
 
 def _scenario(class_key):

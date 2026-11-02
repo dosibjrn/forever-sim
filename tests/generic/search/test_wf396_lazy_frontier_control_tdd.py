@@ -54,7 +54,7 @@ def test_legal_full_point_source_seed_is_exact_search_reference():
     from pathlib import Path
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.talent_execution_coverage import compile_talent_runtime
-    root=Path(__file__).resolve().parents[1]
+    root=Path(__file__).resolve().parents[3]
     ir=build_game_ir_slice(class_key='druid',level=30,
         ability_db_path=root/'data/forever/staged_druid_l30_talents_70338.sqlite')
     compiled,_=compile_talent_runtime(ir)
@@ -71,7 +71,7 @@ def test_incomplete_source_stage_is_not_falsely_marked_as_incumbent():
     from pathlib import Path
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.talent_execution_coverage import compile_talent_runtime
-    root=Path(__file__).resolve().parents[1]
+    root=Path(__file__).resolve().parents[3]
     ir=build_game_ir_slice(class_key='druid',level=30,
         ability_db_path=root/'data/forever/staged_druid_l30_talents_70338.sqlite')
     compiled,_=compile_talent_runtime(ir)
