@@ -100,6 +100,15 @@ if ! git diff --cached --quiet; then
   git commit -m "fix(forever): route new Paladin proc decisions through typed RNG"
 fi
 
+# Preserve native scheduler events beyond a pull boundary on the fork itself.
+# A future stateful two-target session must be able to resume queued events
+# instead of silently consuming them at the previous target's deadline.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_pull_queue.py" "$PWD"
+git add src/core/fight.rs
+if ! git diff --cached --quiet; then
+  git commit -m "fix(forever): retain native post-pull scheduled events"
+fi
+
 # This is an engine packaging update, not a gate or native reference test.
 check_engine_source
 sha="$(git rev-parse HEAD)"
