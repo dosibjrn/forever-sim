@@ -32,7 +32,15 @@ def measured_live_coverage(report: dict) -> dict | None:
     # This marker alone is never enough: the executed-probe check below,
     # source-backed positive/negative regression tests and Merge review
     # must all hold. No arbitrary metadata-only progress is allowed.
-    if report.get("coverage_basis") != "executed_behavior_assertions":
+    # P2 also counts source-checked solo-objective exclusions: the actual
+    # selected production P2 executor proves these ranks legal/reachable and
+    # verifies that their threat-only effect has no possible alternate target.
+    # They are NOT reported as executed effects or a whole P2 gate PASS.
+    basis = report.get("coverage_basis")
+    if basis == "executed_behavior_or_checked_solo_exclusion":
+        if report.get("gate") != "P2":
+            return None
+    elif basis != "executed_behavior_assertions":
         return None
     n, d = report.get("pass_count"), report.get("reachability_count")
     if not (type(n) is int and type(d) is int and 0 <= n <= d and d > 0):
