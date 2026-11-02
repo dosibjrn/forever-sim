@@ -157,9 +157,21 @@ jobs:
             # opt-in merely to obtain its first genuine functional PARTIAL.
             # If P5 later evolves into full acceptance, keep this light cap.
             if [[ "$gate" == P5 && "$ALLOW_HEAVY" != true ]]; then timeout_s=20; fi
-            # P6's current provider is a bounded production 100-mob probe,
-            # NEVER a substitute for accepted 30/300s winners.
-            if [[ "$gate" == P6 && "$ALLOW_HEAVY" != true ]]; then timeout_s=120; fi
+            # P6 without --heavy is a bounded paid 100-mob probe. An explicit
+            # --heavy runs two NEW 30/300s cold searches and independent paid
+            # winner replays through the existing WF437 production command.
+            # This remains gsim-only diagnostic until native/world is coupled.
+            if [[ "$gate" == P6 ]]; then
+              if [[ "$ALLOW_HEAVY" == true ]]; then
+                export FOREVER_P6_FULL_SOURCE_COMPARE=1
+                timeout_s=1500
+              else
+                unset FOREVER_P6_FULL_SOURCE_COMPARE || true
+                timeout_s=120
+              fi
+            else
+              unset FOREVER_P6_FULL_SOURCE_COMPARE || true
+            fi
             if [[ ( "$gate" == P7.1 || "$gate" == P7.2 || "$gate" == P7.3 || "$gate" == P7.4 ) && "$ALLOW_HEAVY" != true ]]; then
               # Only the approved producer can decide whether its actual
               # coupled DPS supports a provisional objective PARTIAL.
