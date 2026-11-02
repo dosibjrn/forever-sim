@@ -173,7 +173,7 @@ def _freeze_paid_p74_winner(screen_best, reranked):
         score, live, sha, request, screen_score = max(
             reranked, key=lambda row: row[0])
         return (score, live, sha, request, screen_score,
-                "paid_24_stochastic_live_native_finalist")
+                "paid_2x24_stochastic_live_native_finalist")
     score, live, sha, request = screen_best
     return (score, live, sha, request, score,
             "three_balanced_live_screen_only")
