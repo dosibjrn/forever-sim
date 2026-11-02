@@ -77,7 +77,7 @@ def test_p5_numbers_are_bounded_and_false_stays_false(monkeypatch, capsys):
                          "balance", "--gate", "P5"]) == 1
     row = json.loads(capsys.readouterr().out)["results"][0]
     assert row["requested_wall_budget_s"] == 300
-    assert row["real_paid_unique_full_builds"] is True
+    assert "real_paid_unique_full_builds" not in row
     assert row["real_100mob_complete"] is False
     assert row["independent_N30_unique_paid"] == 30
     assert row["independent_N300_unique_paid"] == 300
