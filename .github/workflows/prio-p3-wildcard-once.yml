@@ -2,6 +2,8 @@ name: Prio P3 wildcard weapon source (temporary)
 on:
   push:
     branches: [prio/p3-wildcard-weapon-dps-20261102]
+  pull_request:
+    branches: [main]
 jobs:
   source-weapon:
     runs-on: ubuntu-latest
@@ -26,3 +28,7 @@ jobs:
               print('AXES',executable_gear_stats(ir),flush=True)
               print('ACTIONS',[(a.id,[(e.damage_source.kind,e.damage_source.dps_stat_id) for e in a.effects if isinstance(e,WeaponDamageEffect)],a.requirements) for a in ir.actions if any(isinstance(e,WeaponDamageEffect) for e in a.effects)],flush=True)
           PY
+      - name: Real production wildcard regression
+        run: |
+          python -m pip install pytest==8.3.5 beautifulsoup4==4.13.4
+          python -m pytest -q tests/test_prio_p3_wildcard_weapon.py
