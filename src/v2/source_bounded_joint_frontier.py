@@ -2409,6 +2409,22 @@ def _spread_candidates(pool, slots, offset):
     return tuple(pool[(offset+i*stride)%len(pool)] for i in range(slots))
 
 
+def _interleave_macro_transfer_targets(neighbors):
+    """Visit distinct source-legal receiving talents before repeating a target.
+
+    Macro moves are already fully validated by their proposer. A short paid
+    budget must not exhaust its small sample on alternate donors/depths for
+    one receiver while overlooking other legal receiver families.
+    """
+    by_receiver={}
+    for neighbor in neighbors:
+        by_receiver.setdefault(neighbor.changed_ids[-1], []).append(neighbor)
+    buckets=tuple(by_receiver[key] for key in sorted(by_receiver))
+    return tuple(neighbor for depth in range(max(map(len,buckets),default=0))
+                 for bucket in buckets if depth<len(bucket)
+                 for neighbor in (bucket[depth],))
+
+
 def _spread_full_point_talent_neighbors(ir, allocation, *, level,
                                         bonus_talent_points, count, offset):
     """Sample both local and distant legal moves without a curated build list."""
@@ -2420,8 +2436,8 @@ def _spread_full_point_talent_neighbors(ir, allocation, *, level,
     local=tuple(sorted((n for n in neighbors if
         sum(rank for _,rank in n.allocation)==full_points),
         key=lambda n:(n.operation,n.changed_ids,n.allocation)))
-    macro=_source_legal_macro_talent_transfers(ir,allocation,level=level,
-        bonus_talent_points=bonus_talent_points)
+    macro=_interleave_macro_transfer_targets(_source_legal_macro_talent_transfers(
+        ir,allocation,level=level,bonus_talent_points=bonus_talent_points))
     # Reserve capacity for meaningful distant allocations; preserve local
     # exploration so single-rank improvements are never silently excluded.
     macro_slots=min(len(macro),(count+1)//2)
