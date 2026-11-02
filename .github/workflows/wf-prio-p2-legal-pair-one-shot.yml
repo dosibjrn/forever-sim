@@ -1,0 +1,44 @@
+name: Prio P2 legal paired control — one-shot source check
+on:
+  push:
+    branches:
+      - work/prio-p2-legal-paired-control
+    paths:
+      - .github/workflows/wf-prio-p2-legal-pair-one-shot.yml
+      - tools/wf_gate_p2_live.py
+      - tests/test_wf_prio_p2_legal_pair.py
+permissions:
+  contents: read
+concurrency:
+  group: prio-p2-legal-pair-one-shot
+  cancel-in-progress: true
+jobs:
+  real-source-p2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bounded test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Real Druid P2 paired-control regressions
+        run: python -m pytest -q tests/test_wf_prio_p2_legal_pair.py tests/test_wf_prio_p2_exact_rank_fullpoint.py
+      - name: Full real-source P2 remaining failure classification (diagnostic only)
+        run: |
+          python - <<'PY'
+          from collections import Counter
+          from pathlib import Path
+          from tools.wf_gate_p2_live import run_live
+          r=run_live(Path.cwd(),'druid',60,spec='balance')
+          print('P2_SOURCE_RESULT',r['status'],r['pass_count'],r['fail_count'],r['unresolved_count'],r['unreachable_count'],r['source_rank_total'])
+          failed=[x for x in r['ranks'] if x['status']!='PASS']
+          for x in failed:
+              print('P2_FAIL',x['rank_key'],'|'.join(x['reasons']))
+          print('P2_REASON_CATEGORIES',dict(Counter(y.split(':')[0] for x in failed for y in x['reasons'])))
+          assert sum(r[k] for k in ('pass_count','fail_count','unresolved_count','unreachable_count'))==r['source_rank_total']
+          PY
