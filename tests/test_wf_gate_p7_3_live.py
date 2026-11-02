@@ -77,7 +77,8 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
         p73, "_source_module",
         lambda path, name: source if "p73_talent" in str(path) else producer)
 
-    report = p73.run_live(tmp_path, "druid", 60, spec="balance")
+    from tools.wf_gate import _run_live_gate
+    report = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.3", "")
     assert [(kind, n, mode) for kind, n, mode, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
@@ -88,6 +89,8 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_reference_floor_met"] is True
     assert report["status"] == "PASS"  # mocked routing, not real native/world evidence
+    assert report["runtime_proof"]["executed"] is True
+    assert report["runtime_proof"]["source_revision"] == report["frozen_request_raw_sha256"]
     assert report["reasons"] == []
 
 

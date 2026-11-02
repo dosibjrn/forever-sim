@@ -15,6 +15,7 @@ import math
 import os
 from pathlib import Path
 import subprocess
+from uuid import uuid4
 
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps,
@@ -22,6 +23,21 @@ from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
 
 PINNED_RUST = "666fe17a42682068a3c8497d88d5fa3732cbdfb9"
 SAVED_BALANCE_RAW_SHA = "e99b06e5aa891a941ac077643a4209ab8582c810b678df4ec2d47ac48c6c646a"
+
+
+def _executed_p7_runtime_proof(gate: str, frozen_source_sha256: str) -> dict:
+    """Stamp only an already executed and accepted native/world final.
+
+    The caller reaches this helper after the real pinned Rust + 2D world
+    parity and frozen 1000-stochastic DPS predicates succeed. This metadata
+    is not a substitute for those production measurements.
+    """
+    return {"runtime_proof": {
+        "executed": True,
+        "engine_revision": PINNED_RUST,
+        "source_revision": frozen_source_sha256,
+        "run_id": f"{gate}-rust-gsim2d-{uuid4()}",
+    }}
 
 
 def _blocked(reason: str, **details) -> dict:
@@ -242,4 +258,5 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "reference_configuration_source": "WF648_original_saved_report_request",
             "p7_1_1_reference_pinned": True,
             "p7_1_2_native_reproduced": True,
-            "p7_1_3_live_reproduced": True, **actual}
+            "p7_1_3_live_reproduced": True,
+            **_executed_p7_runtime_proof("P7.1", raw_sha), **actual}

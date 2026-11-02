@@ -22,7 +22,7 @@ from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps)
 
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
-                                     _source_native_world_parity)
+                                     _source_native_world_parity, _executed_p7_runtime_proof)
 
 
 def _source_module(path: Path, name: str):
@@ -219,6 +219,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         reasons.append("P7_2_FROZEN_STOCHASTIC_DPS_BELOW_REFERENCE_FLOOR")
     return {
         "status": "PASS" if not reasons else "FAIL",
+        **(_executed_p7_runtime_proof("P7.2", final["frozen_request_raw_sha256"])
+           if not reasons else {}),
         "reasons": reasons,
         "production_engine": "pinned_mythicsim_rust_gsim_2d",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py",

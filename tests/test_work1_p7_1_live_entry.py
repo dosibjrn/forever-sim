@@ -350,9 +350,13 @@ def run(binary, request, *, distance, iterations):
                                "world_dps": 730.0, "world_applied_damage": 87600.0}
                               for i in range(iterations)]}
 """)
-    result = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    from tools.wf_gate import _run_live_gate
+    result = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.1", "")
     assert result["status"] == "PASS"
     assert result["reasons"] == []
     assert result["p7_1_1_reference_pinned"] is True
     assert result["iterations"] == 1000
     assert result["saved_source_iterations"] == 7
+    assert result["runtime_proof"]["executed"] is True
+    assert result["runtime_proof"]["source_revision"] == hashlib.sha256(request.read_bytes()).hexdigest()
+    assert result["runtime_proof"]["engine_revision"] == gate.PINNED_RUST

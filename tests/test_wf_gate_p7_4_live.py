@@ -122,7 +122,8 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
                         lambda path, name: gear if "p74_gear_search" in str(path)
                         else producer)
 
-    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    from tools.wf_gate import _run_live_gate
+    report = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.4", "")
     assert pool_calls == [None], "Full search must keep all admitted source items"
     assert [(kind, n, mode) for kind, n, mode, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
@@ -136,6 +137,8 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_reference_floor_met"] is True
     assert report["status"] == "PASS"  # mocked routing, not real source/native proof
+    assert report["runtime_proof"]["executed"] is True
+    assert report["runtime_proof"]["source_revision"] == report["frozen_request_raw_sha256"]
     assert report["reasons"] == []
     assert base == original
 
