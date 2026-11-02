@@ -58,21 +58,16 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None):
         enchants=[e if rng.random()<0.86 else None for e in allowed_enchants]
         ranks=random_build(rng)
         actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
-    # Conservative legality: no duplicate IDs OR identical catalogue names
-    # across ring/trinket pairs. Precise unique-equipped families still need
-    # source validation; this prevents known rank-variant duplicates.
-    item_names=item_names or {}
-    def collides(first,second):
-        same_name=(item_names.get(ids[first]) is not None
-                   and item_names.get(ids[first])==item_names.get(ids[second]))
-        return ids[first]==ids[second] or same_name
+    # Duplicate item IDs are forbidden. Equal catalogue display names are
+    # NOT a source unique-equipped rule: distinct item ranks/variants may be
+    # legal together. GearValidator.validate checks actual source/Rust item
+    # IDs and recorded unique-equipped limit categories after generation.
+    # Do not silently exclude legal builds using an unsourced name heuristic.
     for first,second in ((10,11),(12,13)):
-        if collides(first,second):
-            alternatives=[x for x in pools[second] if x!=ids[first]
-                          and (item_names.get(ids[first]) is None
-                               or item_names.get(ids[first])!=item_names.get(x))]
+        if ids[first]==ids[second]:
+            alternatives=[x for x in pools[second] if x!=ids[first]]
             if not alternatives:
-                raise ValueError("No distinct ring/trinket family remains in source pool")
+                raise ValueError("No distinct ring/trinket item ID remains in source pool")
             ids[second]=pick_gear(alternatives,rng)
     p=player(q)
     for i,item in enumerate(p["equipment"]["items"]):
