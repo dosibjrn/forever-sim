@@ -333,7 +333,7 @@ def test_full_1000_stochastic_result_not_vetoed_by_ui_or_source_count(
     monkeypatch.setattr(
         gate.subprocess, "run",
         lambda args, **kwargs: subprocess.CompletedProcess(
-            args, 0, gate.PINNED_RUST + "\\n", ""))
+            args, 0, gate.PINNED_RUST + "\n", ""))
 
     provider = tmp_path / "integrations/mythicsim-rust/live_world_probe.py"
     provider.parent.mkdir(parents=True)
