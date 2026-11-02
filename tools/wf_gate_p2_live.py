@@ -359,7 +359,6 @@ def _sourced_hit_runtime_witness(before, after, mod):
                     and e.school.lower() != 'physical' for e in action.effects)
                 and any(c.resource_id == 'mana' for c in action.costs))
 
-    old = {action.id: action for action in before.actions}
     new = {action.id: action for action in after.actions}
     applicable = [action for action in before.actions if scoped(action)]
     if not applicable:
