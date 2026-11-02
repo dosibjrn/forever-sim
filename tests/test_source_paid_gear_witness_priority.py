@@ -308,3 +308,59 @@ def test_rejected_preflight_cannot_spend_the_only_paid_screen(monkeypatch):
     assert any(row.get("screen_events", 0) > 0 for row in result["rows"][1:])
     assert result["unique_full_builds"] >= 1  # real paid, source-legal build
     assert not result["eligible_for_checkpoint_acceptance"]
+
+
+def test_rejected_source_preflight_resumes_without_repaying_it(monkeypatch, tmp_path):
+    """A journalled rejection occupies a coordinate, not a paid slot."""
+    from src.v2.source_joint_progress import load_verified_joint_progress
+    import src.v2.source_bounded_joint_frontier as joint
+
+    ir = build_game_ir_slice(class_key="druid", level=20)
+    seed = source_cold_start_stage(
+        class_key="druid", level=20, source_ir=ir, gear_role="druid_feral")
+    real_prepare = joint._prepare_joint_policy_candidate
+    calls = 0
+
+    def reject_then_interrupt(**kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise ValueError("SOURCE_PREFLIGHT_INVALID_GEAR_NEGATIVE_CONTROL")
+        if calls == 2:
+            raise KeyboardInterrupt("interrupt before next paid screen")
+        return real_prepare(**kwargs)
+
+    monkeypatch.setattr(joint, "_prepare_joint_policy_candidate",
+                        reject_then_interrupt)
+    journal = tmp_path / "real-source-preflight.json"
+    options = dict(
+        class_key="druid", level=20, source_ir=ir, seed_stage=seed,
+        max_talents=2, max_gear_moves=0, max_policies=2,
+        max_recovery_policies=2, max_paid_builds=1, max_cpu_s=12.,
+        per_candidate_wall_s=3., screen_mobs=1,
+        screen_then_finalists=True, max_finalists=1,
+        progress_path=journal)
+    with pytest.raises(KeyboardInterrupt, match="interrupt before next paid"):
+        joint.search_bounded_joint_frontier(**options)
+    snapshot = load_verified_joint_progress(journal)
+    assert snapshot["paid_candidates"] == 1  # one journalled preflight reject
+    assert snapshot["rows"][0]["status"] == "BLOCKED_PREPARATION_OR_EXECUTION"
+    assert snapshot["rows"][0]["screen_invoked"] is False
+
+    prepared_on_resume = 0
+
+    def count_real_preparations(**kwargs):
+        nonlocal prepared_on_resume
+        prepared_on_resume += 1
+        return real_prepare(**kwargs)
+
+    monkeypatch.setattr(joint, "_prepare_joint_policy_candidate",
+                        count_real_preparations)
+    result = joint.search_bounded_joint_frontier(**options, resume_progress=True)
+    assert prepared_on_resume == 1, result["rows"]
+    assert result["paid_candidates"] >= 2
+    assert sum(bool(row.get("screen_invoked")) for row in result["rows"]) == 1
+    assert result["initial_frontier_paid_candidates"] == 1
+    assert any(row.get("screen_events", 0) > 0 for row in result["rows"][1:])
+    assert result["unique_full_builds"] >= 1
+    assert not result["eligible_for_checkpoint_acceptance"]
