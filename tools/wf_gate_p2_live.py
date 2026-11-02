@@ -1029,6 +1029,107 @@ def _excess_defense_runtime_witness(before, after, mod):
             'expected_excess_rank_armor_delta':expected}
 
 
+
+def _cast_pushback_runtime_witness(before, after, mod):
+    """Run the source-scoped rank delta through real CombatRuntime cast delays.
+
+    A separately sourced incoming pushback is a paired controlled fixture,
+    not a new Forever player/target rule. The chosen cast is an actual sourced
+    GameIR action; only unrelated resource/mode prerequisites are isolated.
+    """
+    from src.game.model.ir import (
+        ActorDefinition, ResourceDefinition, IncomingAttackDefinition,
+        DamageEffect, PeriodicEffect)
+    from src.game.runtime import ActorState, CombatRuntime, TargetState
+
+    if (mod.kind != 'cast_pushback_avoidance_chance'
+            or mod.target_type != 'action_filter'
+            or not str(mod.target_id).startswith('damage_schools:')):
+        return None
+    schools = set(str(mod.target_id).split(':', 1)[1].split(','))
+    if not schools or '' in schools or not 0. < float(mod.value) <= 1.:
+        return None
+    previous = {action.id: action for action in before.actions}
+    eligible = []
+    for action in after.actions:
+        old = previous.get(action.id)
+        if old is None:
+            continue
+        scoped = (float(action.cast_time_s) > 0.
+                  and any(isinstance(effect, (DamageEffect, PeriodicEffect))
+                          and effect.school.lower() in schools
+                          for effect in action.effects))
+        prior = float(old.metadata.get('cast_pushback_avoidance_chance', 0.))
+        current = float(action.metadata.get('cast_pushback_avoidance_chance', 0.))
+        if scoped:
+            if not isclose(current - prior, float(mod.value),
+                           rel_tol=1e-6, abs_tol=1e-8):
+                return None
+            if float(action.cast_time_s) > 0.75:
+                eligible.append((old, action))
+        elif not isclose(prior, current, abs_tol=1e-8):
+            return None
+    if not eligible:
+        return None
+
+    def cast_under_attack(action, *, pushback):
+        player = 'p2_cast_actor'
+        state = ActorState.from_ir(
+            ActorDefinition(player, 'player', base_stats={}),
+            (ResourceDefinition('health', 'Health', player,
+                                initial_amount=500., capacity=500.),), ())
+        runtime = CombatRuntime(
+            actor=state, target=TargetState.with_health('p2_target', 100000.))
+        # This is the source-built action with costs/mode requirements isolated,
+        # not a substitute action or an alternate combat implementation.
+        isolated = replace(action, costs=(), requirements=())
+        runtime.enqueue_action(isolated)
+        at_time = min(.5, float(action.cast_time_s) / 3.)
+        runtime.advance_to(at_time)
+        attack = IncomingAttackDefinition(
+            'p2_pushback_hit', 'Controlled incoming hit', 'p2_target',
+            player, 'physical', 10., 1., 'health',
+            metadata={'representative_swing_s': 2.,
+                      'cast_pushback_on_hit_s': float(pushback),
+                      'cast_pushback_source_url':
+                      'https://warcraft.wiki.gg/wiki/Pushback'},
+            provenance=({'fixture': 'paired_sourced_cast_pushback'},))
+        runtime.resolve_incoming_attack(attack, at_time_s=at_time)
+        runtime.run_until_idle()
+        events = runtime.result().events
+        completed = [e.time_s for e in events
+                     if e.kind == 'ActionCompleted' and e.action_id == action.id]
+        delays = [float(e.payload['delay_s']) for e in events
+                  if e.kind == 'CastPushbackApplied' and e.action_id == action.id]
+        if len(completed) != 1:
+            return None
+        return (float(completed[0]), sum(delays))
+
+    for old, action in eligible:
+        try:
+            base = cast_under_attack(old, pushback=.5)
+            boosted = cast_under_attack(action, pushback=.5)
+            no_hit_base = cast_under_attack(old, pushback=0.)
+            no_hit_boosted = cast_under_attack(action, pushback=0.)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            continue
+        if any(x is None for x in (base, boosted, no_hit_base, no_hit_boosted)):
+            continue
+        expected = .5 * float(mod.value)
+        if (base[1] > boosted[1] and
+                isclose(base[1] - boosted[1], expected, abs_tol=1e-6) and
+                isclose(base[0] - boosted[0], expected, abs_tol=1e-6) and
+                isclose(no_hit_base[0], no_hit_boosted[0], abs_tol=1e-6) and
+                isclose(no_hit_base[1], 0., abs_tol=1e-8) and
+                isclose(no_hit_boosted[1], 0., abs_tol=1e-8)):
+            return {'probe': 'paired_production_cast_pushback',
+                    'action_id': action.id, 'source_scoped_actions_checked':
+                    len(eligible), 'rank_delta': float(mod.value),
+                    'before_delay_s': base[1], 'after_delay_s': boosted[1],
+                    'without_pushback_completion_s': no_hit_base[0]}
+    return None
+
+
 def _behavior_fixtures(before, after, modifiers):
     """Require an observed L2 effect for *each* rank modifier, not just one.
 
@@ -1094,6 +1195,8 @@ def _behavior_fixtures(before, after, modifiers):
             match=_isolated_crit_witness(before,after,mod)
         elif kind=='hit_chance_bonus':
             match=_sourced_hit_runtime_witness(before,after,mod)
+        elif kind=='cast_pushback_avoidance_chance':
+            match=_cast_pushback_runtime_witness(before,after,mod)
         elif kind=='critical_damage_bonus_pct':
             match=_critical_damage_runtime_witness(before,after,mod)
         elif kind=='action_control_proc':
