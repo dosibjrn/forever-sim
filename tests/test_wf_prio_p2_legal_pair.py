@@ -14,6 +14,16 @@ from src.game.talents import available_talent_points
 def test_druid_l60_gift_of_nature_rank_two_has_legal_paired_runtime_control():
     report = run_live(Path(__file__).resolve().parents[1], "druid", 60, spec="balance")
     rows = {row["rank_key"]: row for row in report["ranks"]}
+    # One real source run also checks the previously missing Vengeance
+    # critical-bonus behavior; no duplicate expensive full-gate invocation.
+    vengeance = [row for row in report["ranks"] if row["talent_id"] == "vengeance"]
+    assert vengeance, "Vengeance absent from the source P2 denominator"
+    for rank in vengeance:
+        assert rank["status"] == "PASS", (rank["rank_key"], rank["reasons"])
+        assert any(test["probe"] == "paired_production_critical_bonus"
+                   and test["actually_executed"] and test["passed"]
+                   and test["after_amount"] > test["before_amount"] > 0
+                   for test in rank["behavior_tests"]), rank["rank_key"]
     row = rows["gift_of_nature:2"]
 
     # An illegal rank-1 predecessor must not be accepted, but neither should
@@ -71,3 +81,4 @@ def test_druid_l60_gift_of_nature_rank_two_has_legal_paired_runtime_control():
     assert (report["pass_count"] + report["fail_count"]
             + report["unresolved_count"] + report["unreachable_count"]
             == report["source_rank_total"] == 103)
+
