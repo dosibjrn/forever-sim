@@ -135,3 +135,100 @@ def test_full_budget_frontier_rejects_tier_gate_violation():
     assert sum(invalid.values())==51
     with pytest.raises(ValueError,match="SOURCE_SPEC_FRONTIER_ILLEGAL_ALLOCATION"):
         _build_with(lambda ir,src,**kw:([invalid],{}))
+
+
+def test_p2_reuses_exact_legal_full_point_spec_witness_for_unlock():
+    """RED on old P2: the unrestricted greedy builder was always called.
+
+    A full-point source/profile candidate has already been validated in the
+    P2 spec frontier. Rebuilding it can spuriously fail or lose the profile.
+    """
+    witness = _allocation()
+    target = N(id="source_capstone")
+    with patch.object(p2, "available_talent_points", return_value=51), patch(
+        "src.v2.source_bounded_joint_frontier._source_unlock_full_point_allocation",
+        side_effect=AssertionError("do not rebuild an already validated full spec"),
+    ):
+        full = p2._full_point_unlock_witness(
+            _ir(), target, 1, witness, level=60, bonus=0)
+    assert full == witness
+    assert full is not witness
+    assert sum(full.values()) == 51
+    assert sum(v for k, v in full.items() if k.startswith("source_")) >= 31
+
+
+def test_p2_partial_witness_still_uses_generic_full_point_builder():
+    target = N(id="source_capstone")
+    partial = {"source_capstone": 1}
+    rebuilt = _allocation()
+    compiled = _ir()
+    with patch.object(p2, "available_talent_points", return_value=51), patch(
+        "src.v2.source_bounded_joint_frontier._source_unlock_full_point_allocation",
+        return_value=rebuilt,
+    ) as builder:
+        full = p2._full_point_unlock_witness(
+            compiled, target, 1, partial, level=60, bonus=0)
+    assert full == rebuilt
+    builder.assert_called_once_with(
+        compiled, target, level=60, bonus_talent_points=0, target_rank=1)
+
+
+def test_spec_rank_probe_uses_legal_partial_effect_control_but_full_search_candidate():
+    """A 51-point profile may have no legal 50-point predecessor in that profile.
+
+    Behavioral comparison can use an independently legal smaller allocation;
+    actual search reachability is the validated full-point optimizer candidate.
+    Never call unrestricted neighbors on an out-of-profile predecessor.
+    """
+    full = _allocation()
+    isolated = {**{f"source_t{i}": 5 for i in range(6)},
+                "source_capstone": 1}
+    modifier = N(kind="stat_pct", target_type="actor", target_id="intellect",
+                 value=0.1, provenance={})
+    talent = N(id="source_capstone",
+               ranks=(N(rank=1, modifiers=(modifier,)),))
+    compiled = _ir()
+    # Unlike a mocked legality check, this synthetic allocation satisfies
+    # the actual generic tier/prerequisite/budget validator (31/51 points).
+    p2.validate_talent_selection(compiled, isolated, level=60)
+    receipt = N(applied_modifiers=[{"talent_id": "source_capstone", "rank": 1}])
+    with patch.object(p2, "available_talent_points", return_value=51), patch.object(
+        p2, "_witness", return_value=isolated
+    ), patch.object(
+        p2, "apply_talent_selection", return_value=(compiled, receipt)
+    ), patch.object(p2, "_effect_change", return_value=True), patch.object(
+        p2, "_behavior_fixtures", return_value=([{"actually_executed": True, "passed": True}], [])
+    ), patch.object(p2, "replace", side_effect=lambda mod, **kw: mod), patch.object(
+        p2, "source_legal_talent_neighbors",
+        side_effect=AssertionError("must not use out-of-profile predecessor"),
+    ):
+        result = p2._rank_probe(compiled, talent, 1, full, level=60,
+                                bonus=0, profile_tree="balance")
+    assert result["status"] == "PASS"
+    assert result["witness"] == isolated
+    assert result["search_witness"] == full
+    assert result["search_reachable"] is True
+
+
+def test_unrestricted_rank_probe_still_checks_real_neighbor_reachability():
+    """A legal applied rank alone must not mark an unrestricted search PASS."""
+    modifier = N(kind="stat_pct", target_type="actor", target_id="intellect",
+                 value=0.1, provenance={})
+    talent = N(id="source_capstone",
+               ranks=(N(rank=1, modifiers=(modifier,)),))
+    compiled = _ir()
+    receipt = N(applied_modifiers=[{"talent_id": "source_capstone", "rank": 1}])
+    with patch.object(p2, "available_talent_points", return_value=51), patch.object(
+        p2, "_executable_filler_witness", return_value=None
+    ), patch.object(p2, "apply_talent_selection", return_value=(compiled, receipt)
+    ), patch.object(p2, "_effect_change", return_value=True), patch.object(
+        p2, "_behavior_fixtures", return_value=([], [])
+    ), patch.object(p2, "replace", side_effect=lambda mod, **kw: mod), patch.object(
+        p2, "source_legal_talent_neighbors", return_value={"neighbors": ()}
+    ) as neighbors:
+        result = p2._rank_probe(compiled, talent, 1, {"source_capstone": 1},
+                                level=60, bonus=0)
+    neighbors.assert_called_once()
+    assert result["status"] == "FAIL"
+    assert result["search_reachable"] is False
+    assert "SEARCH_RANK_NOT_GENERATED" in result["reasons"]

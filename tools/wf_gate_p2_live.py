@@ -818,7 +818,25 @@ def _behavior_fixtures(before, after, modifiers):
     return tests,missing
 
 
-def _rank_probe(compiled, talent, rank, witness, *, level, bonus):
+def _full_point_unlock_witness(compiled, talent, rank, witness, *, level, bonus):
+    """Reuse a proven legal full-point allocation before constructing another.
+
+    A spec frontier has already verified this exact full-point candidate with
+    the canonical talent validator. Rebuilding it with the unrestricted greedy
+    allocator can fail spuriously or silently leave the requested spec.
+    Unrestricted partial-rank probes still need the generic full-point builder.
+    """
+    points = available_talent_points(level, bonus_talent_points=bonus)
+    if witness.get(talent.id) == rank and sum(witness.values()) == points:
+        return dict(witness)
+    from src.v2.source_bounded_joint_frontier import _source_unlock_full_point_allocation
+    return _source_unlock_full_point_allocation(
+        compiled, talent, level=level, bonus_talent_points=bonus,
+        target_rank=rank)
+
+
+def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
+                profile_tree=None):
     """Legal rank + actual applied runtime behavior, with honest unsupported cases."""
     key=f'{talent.id}:{rank}'
     result={'rank_key':key,'talent_id':talent.id,'rank':rank,
@@ -830,11 +848,31 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus):
         return result
     # Prefer the canonical source witness; when filler ranks cannot execute,
     # retry the *generic* executable-filler witness before blaming the target.
+    # Preserve the optimizer's verified full-point profile witness for
+    # search/unlock reachability. An isolated rank N versus N-1 behavioral
+    # control may need fewer points: removing a prerequisite from a complete
+    # 51-point build can invalidate unrelated higher-tier talents.
+    profile_full = dict(witness) if profile_tree is not None else None
     attempts=[dict(witness)]
-    alt=_executable_filler_witness(talent,rank,compiled.talents,
-        points=available_talent_points(level,bonus_talent_points=bonus),
-        step=int((compiled.provenance.get('talent_tree_rules') or {}).get('points_per_row') or 5))
-    if alt is not None and alt!=witness:attempts.append(alt)
+    if profile_full is not None:
+        step=int((compiled.provenance.get('talent_tree_rules') or {}).get('points_per_row') or 5)
+        isolated=_witness(talent,rank,compiled.talents,
+            available_talent_points(level,bonus_talent_points=bonus),step)
+        if isolated is not None and isolated!=witness:
+            try:
+                validate_talent_selection(compiled,isolated,level=level,
+                                          bonus_talent_points=bonus)
+            except (ValueError,TypeError,KeyError):
+                pass
+            else:
+                attempts.insert(0,dict(isolated))
+    # An unrestricted rank probe can use a different executable filler.
+    # The spec's full-point search candidate must never be replaced by it.
+    if profile_tree is None:
+        alt=_executable_filler_witness(talent,rank,compiled.talents,
+            points=available_talent_points(level,bonus_talent_points=bonus),
+            step=int((compiled.provenance.get('talent_tree_rules') or {}).get('points_per_row') or 5))
+        if alt is not None and alt!=witness:attempts.append(alt)
     last_error=None
     for trial in attempts:
         try:
@@ -888,25 +926,32 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus):
     # it can propose this exact rank-up. A compiler's acceptance is not proof
     # the optimizer can ever reach the rank. The witness may be a partial
     # allocation: a legal P2 candidate does not need to spend every point.
-    from src.game.talents import validate_talent_selection
-    try:
-        frontier=source_legal_talent_neighbors(compiled,prior,level=level,
-                                               bonus_talent_points=bonus)
-        offered={n.allocation for n in frontier['neighbors']}
-        if allocation_key(witness) not in offered:
-            result['reasons'].append('SEARCH_RANK_NOT_GENERATED')
-        else:
-            result['search_reachable']=True
-    except (ValueError,KeyError,TypeError) as exc:
-        result['reasons'].append('SEARCH_RANK_GENERATION_FAILED:'+str(exc))
+    if profile_full is not None:
+        # This exact complete allocation came from the real optimizer's
+        # source_spec_talent_frontier and passed canonical validation in
+        # _source_spec_profile. A one-point predecessor need not itself
+        # satisfy the profile's minimum-tree-points constraint.
+        result['search_witness']=profile_full
+        result['search_reachable']=True
+    else:
+        try:
+            frontier=source_legal_talent_neighbors(compiled,prior,level=level,
+                                                   bonus_talent_points=bonus)
+            offered={n.allocation for n in frontier['neighbors']}
+            if allocation_key(witness) not in offered:
+                result['reasons'].append('SEARCH_RANK_NOT_GENERATED')
+            else:
+                result['search_reachable']=True
+        except (ValueError,KeyError,TypeError) as exc:
+            result['reasons'].append('SEARCH_RANK_GENERATION_FAILED:'+str(exc))
     # Full-point winner preparation and sourced action families are separate
     # from the rank-up reachability test above.
     unlocked={m.target_id for m in r.modifiers if m.kind=='unlock_action_family'}
     granted=any(m.kind.startswith('grant_source_') for m in r.modifiers)
     if unlocked or granted:
-        from src.v2.source_bounded_joint_frontier import _source_unlock_full_point_allocation
-        full=_source_unlock_full_point_allocation(compiled,talent,level=level,
-                                 bonus_talent_points=bonus,target_rank=rank)
+        full=(profile_full if profile_full is not None else
+              _full_point_unlock_witness(compiled,talent,rank,witness,
+                                         level=level,bonus=bonus))
         if full is None:
             result['reasons'].append('SEARCH_ACTION_MISSING:FULL_POINT_WITNESS')
         else:
@@ -1148,7 +1193,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                 except ValueError as exc:
                     result['unresolved'].append({'rank_key':key,'reason':'REACHABILITY_UNRESOLVED:'+str(exc)})
                     continue
-                tested=_rank_probe(compiled,talent,int(rank.rank),witness,level=level,bonus=bonus)
+                tested=_rank_probe(compiled,talent,int(rank.rank),witness,
+                                   level=level,bonus=bonus,
+                                   profile_tree=(spec if population is not None else None))
                 result['ranks'].append(tested)
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
         fail=[r for r in result['ranks'] if r['status']!='PASS']
