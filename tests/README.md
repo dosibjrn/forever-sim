@@ -10,4 +10,5 @@ Purpose-based groups now include [`gates/`](gates/) (gate and checkpoint contrac
 
 [Repository structure guide](../docs/REPOSITORY_STRUCTURE.md).
 
-Run the maintenance contracts explicitly with `python -m pytest -q tests/maintenance` or `python -m unittest discover -s tests/maintenance -p 'test_root_launcher_*.py'`. Existing CI workflows reference the new paths. `tests/maintenance/` is **not** excluded from the normal test suite.
+Run the maintenance contracts explicitly with `python -m pytest -q tests/maintenance` or `python -m unittest discover -s tests/maintenance -p 'test_root_launcher_*.py'`. Default pytest collection includes these moved tests; the retired private
+layout-only workflows are not prerequisites for discovery. `tests/maintenance/` is **not** excluded from the normal test suite.

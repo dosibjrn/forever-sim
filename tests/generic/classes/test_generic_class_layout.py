@@ -46,8 +46,7 @@ class GenericClassLayout(unittest.TestCase):
         self.assertIn("testpaths = tests", ini)
         self.assertIn("norecursedirs = release", ini)
         self.assertNotIn("norecursedirs = generic", ini)
-        workflow = (ROOT / ".github/workflows/generic-class-test-layout.yml").read_text()
-        self.assertIn("--collect-only -q tests/generic/classes", workflow)
+        # Default collection follows pytest.ini, not a retired private CI job.
 
     def test_referenced_source_paths_stay_at_repo_root(self):
         for path in ("src/game/runtime/simulator.py", "src/game/policy.py",
