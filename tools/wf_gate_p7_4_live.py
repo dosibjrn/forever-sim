@@ -6,6 +6,7 @@ This is not the 300s search or frozen 1000-fight P7.4 acceptance.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -130,6 +131,48 @@ def _paid_gear_elite_choice(elites, rng, proposal_index):
     return rng.choice(elites[:min(15, len(elites))])[1]
 
 
+def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: float):
+    """Paid native+2D rerank on non-holdout stochastic seeds inside cold budget.
+
+    Balanced three-fight screening is an exploration heuristic, not proof
+    that its top candidate is best on the frozen stochastic objective.
+    This restores the existing source-native P7.4 finalist stage on the
+    *same selected live evaluator*, without using the saved build as a seed.
+    """
+    rerank_request = copy.deepcopy(request)
+    rerank_request["simOptions"]["randomSeed"] = "1947004"
+    with tempfile.TemporaryDirectory(prefix="forever_p74_rerank_") as tmp:
+        path = Path(tmp) / "source-legal-gear-finalist.json"
+        path.write_text(json.dumps(rerank_request))
+        native = production.native_source_control(
+            binary, path, 24, rng_mode="stochastic")
+        live = production.run(binary, path, distance=distance,
+                              iterations=24, rng_mode="stochastic")
+        mismatch = _source_native_world_parity(native, live, 24)
+        if mismatch is not None:
+            raise ValueError("P74_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
+    if (live.get("iterations_done") != 24
+            or live.get("native_damage_events", 0) <= 0
+            or live.get("native_world_ticks", 0) <= 0):
+        raise ValueError("P74_FINALIST_LIVE_PAIR_INCOMPLETE")
+    score = float(live["world_mean_dps"])
+    if not 0 <= score < float("inf"):
+        raise ValueError("P74_FINALIST_LIVE_DPS_INVALID")
+    return score, live
+
+
+def _freeze_paid_p74_winner(screen_best, reranked):
+    """Freeze genuinely paid stochastic winner; never use the 1k holdout to rank."""
+    if reranked:
+        score, live, sha, request, screen_score = max(
+            reranked, key=lambda row: row[0])
+        return (score, live, sha, request, screen_score,
+                "paid_24_stochastic_live_native_finalist")
+    score, live, sha, request = screen_best
+    return (score, live, sha, request, score,
+            "three_balanced_live_screen_only")
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.4")
@@ -166,6 +209,9 @@ def run_live(root: Path, class_key: str, level: int, *,
     executed = 0
     best = None
     elites = []  # top 24 source-legal loadouts actually scored by native+2D
+    reranked = []  # separate paid 24-fight stochastic native+2D finalists
+    rerank_seen = set()
+    rerank_failures = []
     failures = []
     seen = set()
     proposals = 0
@@ -186,6 +232,31 @@ def run_live(root: Path, class_key: str, level: int, *,
                          if full_search else None)
         while (time.monotonic() - search_start < 300.0
                if full_search else proposals < 3):
+            # The original native P7.4 optimized finalist stochastic DPS,
+            # whereas the live gate so far froze only the three-fight screen.
+            # Use an independent ranking seed, not the final holdout, and
+            # charge the same 300s budget. Do not seed from saved reference.
+            if (full_search and 240.0 <= time.monotonic() - search_start < 295.0):
+                pending = next((
+                    (screen_score, candidate,
+                     hashlib.sha256(json.dumps(candidate, sort_keys=True).encode()).hexdigest())
+                    for screen_score, candidate in elites
+                    if hashlib.sha256(json.dumps(candidate, sort_keys=True).encode()).hexdigest()
+                    not in rerank_seen), None)
+                if pending is not None:
+                    screen_score, contender, contender_sha = pending
+                    rerank_seen.add(contender_sha)
+                    try:
+                        stochastic_score, stochastic_live = _paid_gear_stochastic_finalist(
+                            production, binary, contender, player["distanceFromTarget"])
+                        reranked.append((stochastic_score, stochastic_live,
+                                         contender_sha, contender, screen_score))
+                    except (ValueError, RuntimeError, OSError, KeyError,
+                            TimeoutError, TypeError, AssertionError,
+                            subprocess.SubprocessError) as exc:
+                        rerank_failures.append(
+                            type(exc).__name__ + ":" + str(exc)[:180])
+                    continue
             proposals += 1
             try:
                 # Local exploitation uses only a winner already paid in THIS
@@ -251,7 +322,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "search_wall_s": search_wall_s,
                 "source_candidate_failures": failures[:4]}
 
-    score, live, candidate_sha, frozen_winner = best
+    (score, live, candidate_sha, frozen_winner,
+     winner_screen_dps, winner_selection) = _freeze_paid_p74_winner(best, reranked)
     complete_search = full_search and 300.0 <= search_wall_s <= 301.0
     final = {}
     if complete_search:
@@ -322,6 +394,10 @@ def run_live(root: Path, class_key: str, level: int, *,
             "P7.4", float(meta["reference_dps"])),
         "cold_winner_request_sha256": candidate_sha,
         "winner_live_dps": score,
+        "winner_screen_dps": winner_screen_dps,
+        "winner_selection": winner_selection,
+        "paid_stochastic_finalists": len(reranked),
+        "paid_stochastic_finalist_failures": rerank_failures[:4],
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
         "independent_300s_search_completed": complete_search,
