@@ -10,9 +10,6 @@ on:
       - 'src/game/talent_execution_coverage.py'
       - 'src/game/talents.py'
       - '.github/workflows/generic-source-search-regressions.yml'
-  push:
-    branches:
-      - 'clean/source-paid-witness-search-tests-nov02'
 
 permissions:
   contents: read
