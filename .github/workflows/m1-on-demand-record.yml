@@ -1,7 +1,9 @@
 name: M1 - Merge-owned on-demand live gate recorder
 
-# No push, pull_request or schedule trigger: no recurring heavy acceptance CI.
+# No push, pull_request or schedule trigger: only owner-authorized /m1 commands or manual dispatch.
 on:
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       class_key:
@@ -43,10 +45,49 @@ jobs:
     # Only the repository owner may initiate the Merge-delegated recorder.
     # GitHub actor alone cannot distinguish agent roles: a separate Merge review
     # of the resulting ledger-only PR remains mandatory.
-    if: github.ref == 'refs/heads/main' && github.actor == 'dosibjrn'
+    if: >-
+      github.ref == 'refs/heads/main' && github.actor == 'dosibjrn' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issue_comment' && github.event.issue.number == 131 &&
+        github.event.comment.user.login == 'dosibjrn' &&
+        startsWith(github.event.comment.body, '/m1 record ')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Resolve strictly scoped owner request
+        id: request
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          e = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
+          if os.environ["GITHUB_EVENT_NAME"] == "issue_comment":
+              # The Merge agent can post on issue #131 through its GitHub connector;
+              # a shared GitHub user account is not a role boundary, so only
+              # Merge is authorized by the agent contract to request this.
+              pattern = r"/m1 record (druid|hunter|mage|paladin|priest|rogue|shaman|warlock|warrior) (20|30|40|60) ([a-z][a-z0-9_-]*) (P1|P2|P3|P4)"
+              m = re.fullmatch(pattern, e["comment"]["body"].strip())
+              if not m:
+                  raise SystemExit("Invalid M1 command; expected /m1 record CLASS LEVEL SPEC P1|P2|P3|P4")
+              cls, lev, spec, gate = m.groups()
+              heavy = "false"
+          else:
+              args = e.get("inputs") or {}
+              cls, lev, spec, gate = (str(args.get(k, "")) for k in
+                                    ("class_key", "level", "spec", "gate"))
+              heavy = str(args.get("allow_heavy", "false")).lower()
+          assert cls in ("druid", "hunter", "mage", "paladin", "priest", "rogue", "shaman", "warlock", "warrior")
+          assert lev in ("20", "30", "40", "60")
+          assert re.fullmatch(r"[a-z][a-z0-9_-]*", spec)
+          assert gate in ("P1","P2","P3","P4","P5","P6","P7.1","P7.2","P7.3","P7.4","P7.5")
+          assert heavy in ("true","false")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              for k,v in (("class_key", cls), ("level", lev), ("spec", spec),
+                          ("gate", gate), ("allow_heavy", heavy)):
+                  print(k + "=" + v, file=out)
+          print("Authorized M1 request", cls, lev, spec, gate, "heavy="+heavy)
+          PY
       - uses: actions/checkout@v4
         with:
           lfs: true
@@ -62,11 +103,11 @@ jobs:
       - name: Run one actual production gate and stage PASS or eligible PARTIAL
         id: gate
         env:
-          CLASS_KEY: ${{ inputs.class_key }}
-          CHECKPOINT_LEVEL: ${{ inputs.level }}
-          CHECKPOINT_SPEC: ${{ inputs.spec }}
-          CHECKPOINT_GATE: ${{ inputs.gate }}
-          ALLOW_HEAVY: ${{ inputs.allow_heavy }}
+          CLASS_KEY: ${{ steps.request.outputs.class_key }}
+          CHECKPOINT_LEVEL: ${{ steps.request.outputs.level }}
+          CHECKPOINT_SPEC: ${{ steps.request.outputs.spec }}
+          CHECKPOINT_GATE: ${{ steps.request.outputs.gate }}
+          ALLOW_HEAVY: ${{ steps.request.outputs.allow_heavy }}
         shell: bash
         run: |
           set -euo pipefail
@@ -113,10 +154,10 @@ jobs:
         if: steps.gate.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          CLASS_KEY: ${{ inputs.class_key }}
-          CHECKPOINT_LEVEL: ${{ inputs.level }}
-          CHECKPOINT_SPEC: ${{ inputs.spec }}
-          CHECKPOINT_GATE: ${{ inputs.gate }}
+          CLASS_KEY: ${{ steps.request.outputs.class_key }}
+          CHECKPOINT_LEVEL: ${{ steps.request.outputs.level }}
+          CHECKPOINT_SPEC: ${{ steps.request.outputs.spec }}
+          CHECKPOINT_GATE: ${{ steps.request.outputs.gate }}
         shell: bash
         run: |
           set -euo pipefail
