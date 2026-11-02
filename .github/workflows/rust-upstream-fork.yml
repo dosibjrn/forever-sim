@@ -2,10 +2,6 @@ name: Bootstrap and sync MythicSim Rust public fork
 
 on:
   workflow_dispatch:
-  # One-shot owner-approved kick via reviewed main commit; no external dispatch API needed.
-  push:
-    branches: [main]
-    paths: [docs/RUST_UPSTREAM_FORK.md]
   pull_request:
     paths:
       - .github/workflows/rust-upstream-fork.yml
@@ -38,7 +34,7 @@ jobs:
           PY
 
   sync-fork:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'run fork bootstrap one-shot'))
+    if: github.event_name == 'workflow_dispatch'
     needs: check-script
     runs-on: ubuntu-24.04
     timeout-minutes: 120
