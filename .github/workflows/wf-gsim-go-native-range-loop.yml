@@ -236,6 +236,13 @@ jobs:
           assert baseline["native_source_revision"]==result["native_source_revision"]
           assert baseline["iterations"]==1 and not baseline["checkpoint_certified"]
           assert baseline["native_dps"]>0 and baseline["native_duration_s"]>0
+          assert baseline["source_random_seed"]==int(source["simOptions"]["randomSeed"])
+          # Actual same-seed source Druid: native-only vs real 2D+native
+          # must agree numerically in this stationary/no-CC scenario.
+          # This is a bounded deterministic regression, NOT stochastic P7.
+          assert abs(baseline["native_duration_s"]-result["source_sampled_duration_s"])<1e-9
+          assert abs(baseline["native_dps"]-result["raw_native_dps"])<1e-6
+          assert abs(baseline["native_dps"]-result["effective_gsim_world_dps"])<1e-6
           print("REAL_PINNED_GO_SINGLE_FIGHT_NATIVE_VS_GSIM_DPS_NOT_P7",
                 baseline["native_dps"],result["raw_native_dps"],
                 result["effective_gsim_world_dps"],baseline["native_duration_s"],
