@@ -64,6 +64,12 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
                      spec: str, gate: str, budget_s: float = 6.) -> dict:
     if gate not in ("P4", "P5"):
         raise ValueError("UNSUPPORTED_LEVELING_SEARCH_GATE")
+    # Full acceptance budgets are explicit: never run 30/300 s during hourly
+    # bounded gate probes or ordinary CI. Both modes reuse WF437 production.
+    import os
+    if os.environ.get("FOREVER_P4_P5_FULL_SOURCE") == "1":
+        return run_full_paid_source_search(root, class_key, level,
+                                           spec=spec, gate=gate)
     if spec != "unrestricted":
         return {"status": "BLOCKED", "reasons": [
             "SOURCE_SPEC_TREE_SEARCH_CONSTRAINT_NOT_YET_CONNECTED"],
@@ -141,4 +147,85 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         "required_full_search_s": (30 if gate == "P4" else 300),
         "source_role": role,
         "selected_backend_integration_pending": True,
+    }
+
+
+def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
+                                spec: str, gate: str) -> dict:
+    """Opt-in REAL 30/300s cold source search plus external paid 100-mob replay.
+
+    The existing WF437 production entrypoint does the search and replay; this
+    gate adapter only checks its actual receipt. A gsim-only search cannot
+    certify the selected native/world P4/P5 gate, even if every mob dies.
+    """
+    from math import isfinite
+    from tempfile import TemporaryDirectory
+    from tools.wf_gate_p6_full_source import _execute
+
+    if gate not in ("P4", "P5"):
+        raise ValueError("UNSUPPORTED_LEVELING_SEARCH_GATE")
+    if (class_key, level, spec) != ("druid", 30, "unrestricted"):
+        return {"status": "BLOCKED", "reasons": [
+            gate + "_FULL_SOURCE_RUNNER_CURRENTLY_SUPPORTS_DRUID_L30_UNRESTRICTED_ONLY"]}
+
+    budget, timeout_s = (30, 420) if gate == "P4" else (300, 720)
+    with TemporaryDirectory(prefix="source-paid-" + gate.lower() + "-") as temp:
+        report, error = _execute(Path(root), ["--budget", str(budget)],
+                                 Path(temp) / "cold.json", timeout_s)
+    if error:
+        return {"status": "FAIL", "reasons": [gate + "_" + error],
+                "production_engine": "gsim_CombatRuntime"}
+
+    # The actual cold run embeds independent 100-mob finalist replay OUTSIDE
+    # the 30/300s search budget. A successful subprocess alone proves neither.
+    validation = report.get("validation") or {}
+    rows = validation.get("rows") or []
+    winner_id = validation.get("validated_winner_id")
+    witnesses = ([r for r in rows if isinstance(r, dict)
+                  and str(r.get("id")) == str(winner_id)]
+                 if winner_id is not None and isinstance(rows, list) else [])
+    row = witnesses[0] if len(witnesses) == 1 else {}
+    seconds = row.get("full_s_per_mob")
+    complete = (row.get("status") == "COMPLETE"
+                and type(row.get("count")) is int and row["count"] == 100
+                and type(seconds) in (int, float)
+                and isfinite(seconds) and seconds > 0)
+    wall = report.get("wall_s")
+    valid_search = (report.get("class_key") == class_key
+                    and report.get("level") == level
+                    and report.get("search_only") is True
+                    and report.get("requested_wall_budget_s") == budget
+                    and type(wall) in (int, float)
+                    and isfinite(wall) and 0 < wall <= budget
+                    and isinstance(report.get("source_db_sha256"), str)
+                    and len(report["source_db_sha256"]) == 64
+                    and isinstance(report.get("validation_shortlist"), list)
+                    and bool(report["validation_shortlist"]))
+    if not valid_search:
+        return {"status": "FAIL", "reasons": [
+            gate + "_SOURCE_COLD_SEARCH_RECEIPT_INCOMPLETE"],
+            "production_engine": "gsim_CombatRuntime"}
+
+    reasons = [gate + "_SELECTED_NATIVE_2D_WORLD_BACKEND_NOT_VERIFIED",
+               gate + "_SOURCE_LEGAL_SPACE_COMPLETENESS_NOT_PROVEN"]
+    if not complete:
+        reasons.append(gate + "_INCOMPLETE_PAID_100MOB_FINALIST")
+    if gate == "P5":
+        reasons.append("P5_INDEPENDENT_N300_GE_10_N30_NOT_COMPARED")
+    return {
+        "status": "FAIL", "reasons": reasons,
+        "production_engine": "gsim_CombatRuntime",
+        "production_component": "tools.wf437_direct_budgeted_run",
+        "requested_wall_budget_s": budget,
+        "real_search_wall_s": wall,
+        "source_db_sha256": report["source_db_sha256"],
+        "source_gear_catalogue_snapshot": report.get("source_gear_catalogue_snapshot"),
+        "real_paid_unique_full_builds": report.get("unique_full_builds"),
+        "real_paid_screen_complete": report.get("screen_complete_candidates"),
+        "real_talent_unlocked_actions": report.get("p4_talent_unlock_coverage"),
+        "real_100mob_complete": complete,
+        "real_100mob_count": row.get("count") if complete else 0,
+        "real_100mob_s_per_mob": seconds if complete else None,
+        "selected_backend_integration_pending": True,
+        "coverage_scope_complete": False,
     }
