@@ -28,8 +28,11 @@ def port_source(source: str) -> str:
         raise ValueError("Rust Fight::step anchor missing or ambiguous")
     head, step_body = source.split(STEP, 1)
     if GUARD in step_body:
-        if step_body.count(GUARD) != 1 or step_body.count(POP) != 1:
-            raise ValueError("Rust queue guard already present but source changed")
+        # The patched guard must be IMMEDIATELY before the destructive pop.
+        # A moved guard is unsafe even if the same two strings still occur.
+        if (step_body.count(GUARD) != 1 or step_body.count(POP) != 1
+                or step_body.count(GUARD + POP) != 1):
+            raise ValueError("Rust queue guard present but not directly before pop")
         return source
     if step_body.count(POP) != 1:
         raise ValueError("Rust queued-action pop anchor missing or ambiguous")
