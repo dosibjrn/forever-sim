@@ -1,0 +1,77 @@
+name: Prio selected Rust Druid P2 native paired probe
+on:
+  push:
+    branches: [prio/native-talent-bridge-20261103]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-druid-p2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - name: Build exact pinned production Rust fork
+        working-directory: integrations/mythicsim-rust/engine
+        run: cargo build --locked --bin forever-engine
+      - name: Real native positive/negative Druid talent effect and invalid-rank refusal
+        run: |
+          python3 - <<'PY'
+          import copy, json, pathlib, subprocess, tempfile
+          engine = pathlib.Path("integrations/mythicsim-rust/engine")
+          binary = engine / "target/debug/forever-engine"
+          source = engine / "fixtures/mage/prepared-v2/production-balance-druid.request.json"
+          request = json.loads(source.read_text())
+          request["simOptions"]["iterations"] = 3
+          request["simOptions"]["debugFirstIteration"] = False
+          player = request["raid"]["parties"][0]["players"][0]
+          talents = player["talentsString"]
+          assert talents.startswith("5"), talents
+          reports = {}
+          with tempfile.TemporaryDirectory() as tmp:
+              for rank in (5, 4):
+                  candidate = copy.deepcopy(request)
+                  candidate["raid"]["parties"][0]["players"][0]["talentsString"] = str(rank) + talents[1:]
+                  req = pathlib.Path(tmp) / f"rank{rank}.json"
+                  prepared = pathlib.Path(tmp) / f"rank{rank}.prepared.json"
+                  output = pathlib.Path(tmp) / f"rank{rank}.result.json"
+                  req.write_text(json.dumps(candidate))
+                  subprocess.run([str(binary), "prepare", "--request", str(req),
+                                  "--scenario", "prio-druid-native-p2",
+                                  "--outfile", str(prepared)], check=True)
+                  data = json.loads(prepared.read_text())
+                  wrath = [s for s in data["player"]["spells"] if s.get("class_spell") == "wrath"]
+                  assert wrath, "native Rust did not prepare Wrath"
+                  casts = {s["rank"]: s["default_cast"]["cast_time_ns"] for s in wrath}
+                  subprocess.run([str(binary), "sim", "--request", str(req),
+                                  "--scenario", "prio-druid-native-p2",
+                                  "--outfile", str(output), "--gate"], check=True)
+                  result = json.loads(output.read_text())
+                  assert result["result"]["iterationsDone"] == 3
+                  assert result["identity"]["engine"] == "forever-engine"
+                  reports[rank] = {"casts_ns": casts, "dps": result["result"]["raidMetrics"]["dps"]["avg"]}
+              assert set(reports[5]["casts_ns"]) == set(reports[4]["casts_ns"])
+              deltas = {rank: reports[4]["casts_ns"][rank] - reports[5]["casts_ns"][rank]
+                        for rank in reports[5]["casts_ns"]}
+              assert all(value > 0 for value in deltas.values()), ("native improved_wrath effect absent", deltas)
+              invalid = copy.deepcopy(request)
+              invalid["raid"]["parties"][0]["players"][0]["talentsString"] = "9" + talents[1:]
+              bad_path = pathlib.Path(tmp) / "invalid.json"
+              bad_path.write_text(json.dumps(invalid))
+              refused = subprocess.run([str(binary), "prepare", "--request", str(bad_path)],
+                                       text=True, capture_output=True)
+              assert refused.returncode == 5, (refused.returncode, refused.stdout, refused.stderr)
+              refusal = json.loads(refused.stdout).get("refusal", {})
+              assert refusal.get("code") == "talents", refusal
+              print("NATIVE_DRUID_P2_REAL_EFFECT", json.dumps({
+                  "fixture": str(source), "engine": "pinned mythicsim-rust",
+                  "improved_wrath_rank_5": reports[5],
+                  "improved_wrath_rank_4": reports[4],
+                  "rank4_minus_rank5_cast_ns": deltas,
+                  "illegal_rank9_refusal": refusal,
+                  "gate_pass": False
+              }, sort_keys=True))
+          PY
