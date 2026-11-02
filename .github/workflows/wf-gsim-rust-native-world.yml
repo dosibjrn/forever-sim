@@ -2,12 +2,15 @@ name: Live pinned MythicSim Rust fight to real gsim world (NOT P7)
 on:
   workflow_dispatch:
   push:
-    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102]
+    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/work1-p71-live-partial-probe-20261102]
     paths:
       - .github/workflows/wf-gsim-rust-native-world.yml
       - integrations/mythicsim-rust/patch_world_ingress.py
       - integrations/mythicsim-rust/world_bridge.rs
       - integrations/mythicsim-rust/live_world_probe.py
+      - tools/wf_gate_p7_1_live.py
+      - tools/wf_gate.py
+      - tests/test_work1_p7_1_live_entry.py
 permissions:
   contents: read
 jobs:
@@ -41,8 +44,37 @@ jobs:
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: cargo build --release --locked
       - name: Prove the patched engine still exactly reproduces 10k saved Rust reference
+        if: github.ref != 'refs/heads/work/work1-p71-live-partial-probe-20261102'
         working-directory: project
         run: python integrations/mythicsim-rust/verify_reference.py --engine ../upstream/target/release/forever-engine
+      - name: Work1 P7.1 real 3-fight provider + canonical no-sample-percent gate CLI
+        working-directory: project
+        run: |
+          python -m pip install --disable-pip-version-check pytest==8.3.5
+          python -m pytest -q tests/test_work1_p7_1_live_entry.py tests/test_wf_gate_live_success_percent.py
+          python - <<'PY'
+          import json, os, subprocess, sys
+          env=dict(os.environ, FOREVER_P7_LIVE_PROBE_ITERATIONS="3")
+          cmd=[sys.executable, "tools/wf_gate.py", "--class", "druid",
+               "--level", "60", "--spec", "balance", "--gate", "P7.1"]
+          p=subprocess.run(cmd, env=env, capture_output=True, text=True)
+          print("EXACT_HEAD_REAL_P7_1_NATIVE_GSIM_STDOUT",p.stdout,flush=True)
+          print("EXACT_HEAD_REAL_P7_1_NATIVE_GSIM_STDERR",p.stderr[-1500:],flush=True)
+          assert p.returncode==1 and p.stdout,p.stderr
+          x=json.loads(p.stdout)
+          r=x["results"][0]
+          assert x["status"]==r["status"]=="FAIL",x
+          assert r["reasons"]==["P7_1_BOUNDED_DIAGNOSTIC_NOT_FULL_SAVED_REFERENCE"],x
+          assert r["production_engine"]=="pinned_mythicsim_rust_gsim_2d"
+          assert r["source_request_raw_sha256"]=="e99b06e5aa891a941ac077643a4209ab8582c810b678df4ec2d47ac48c6c646a"
+          assert r["native_source_revision"]=="666fe17a42682068a3c8497d88d5fa3732cbdfb9"
+          assert r["sampled_source_fights"]==r["behavior_probes_executed"]==3
+          assert r["saved_source_iterations"]==10000
+          assert 0<r["dps_objective_proximity_percent"]<=100,r
+          assert not any(k in r for k in ("verified","applicable","partial_coverage_percent","pareto_effort_estimate_percent")),r
+          assert r["dps_objective_gate_pass"] is False
+          print("REAL_SOURCE_RUST_GSIM_P7_1_PROXIMITY_ONLY_NO_M1",flush=True)
+          PY
       - name: Source Feral 2D facing flip changes real native Rust positional attacks
         working-directory: project
         run: |
