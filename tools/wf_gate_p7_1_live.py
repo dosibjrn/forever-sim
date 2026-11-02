@@ -1,8 +1,10 @@
 """On-demand P7.1 entry into the existing pinned MythicSim Rust/gsim 2D path.
 
 No new engine or score implementation: live_world_probe runs the native
-baseline and the genuine world-ACKed fight. A reconstructed saved request
-cannot, by itself, certify the P7.1.1 saved-report UI field inventory.
+baseline and genuine world-ACKed fight. A bounded source-fight sample
+measures coupled DPS but does not measure the fraction of functioning
+gate assertions. The original request alone cannot certify P7.1.1's
+saved-report interactive Settings UI field audit.
 """
 from __future__ import annotations
 
@@ -23,6 +25,30 @@ SAVED_BALANCE_RAW_SHA = "e99b06e5aa891a941ac077643a4209ab8582c810b678df4ec2d47ac
 
 def _blocked(reason: str, **details) -> dict:
     return {"status": "BLOCKED", "reasons": [reason], **details}
+
+
+
+def _source_native_world_parity(native: dict, live: dict, iterations: int) -> str | None:
+    """Compare actual production outputs; equal aggregate DPS is insufficient.
+
+    The first stochastic encounter must have the same duration in the
+    independent native control and in the ACK-driven 2D run. Otherwise the
+    source encounter/timing changed, even if aggregate DPS happens to match.
+    """
+    if (live["iterations_done"] != iterations
+            or native["iterations"] != iterations
+            or len(live["per_iteration"]) != iterations
+            or live["native_damage_events"] <= 0
+            or live["native_world_ticks"] <= 0):
+        return "P7_1_NATIVE_WORLD_EXECUTION_INCOMPLETE"
+    if (abs(native["first_duration_s"] - live["sampled_duration_s"]) >= 1e-9
+            or abs(live["per_iteration"][0]["duration_s"]
+                   - live["sampled_duration_s"]) >= 1e-9):
+        return "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED"
+    if (abs(native["native_dps"] - live["native_dps"]) >= 1e-6
+            or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
+        return "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
+    return None
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
@@ -54,6 +80,21 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     iterations = P7_FINAL_STOCHASTIC_ITERATIONS
     if (type(source_iterations) is not int or source_iterations < iterations):
         return _blocked("P7_1_ORIGINAL_REQUEST_INSUFFICIENT_FOR_1000_SAMPLES")
+    # A brief source-backed runtime diagnostic must not silently replace the
+    # approved 1000-fight stochastic verification. Default always remains
+    # the 1000-fight production run, independent of the old saved source's
+    # original 10000-iteration setting.
+    requested = os.environ.get("FOREVER_P7_LIVE_PROBE_ITERATIONS")
+    if requested is None:
+        run_iterations = iterations
+    else:
+        try:
+            run_iterations = int(requested)
+        except ValueError:
+            return _blocked("P7_1_INVALID_LIVE_PROBE_ITERATIONS", requested=requested)
+        if not 1 <= run_iterations <= iterations:
+            return _blocked("P7_1_INVALID_LIVE_PROBE_ITERATIONS", requested=requested)
+    full_validation = run_iterations == iterations
 
     # Refuse an arbitrary executable: it must be the pinned original Rust
     # checkout with the real world ingress patched into its production Fight.
@@ -79,11 +120,14 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return _blocked("P7_1_PRODUCTION_WORLD_MODULE_MISSING")
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
-    native = module.native_source_control(binary, request, iterations)
+    native = module.native_source_control(binary, request, run_iterations)
     live = module.run(binary, request,
-                      distance=player["distanceFromTarget"], iterations=iterations)
+                      distance=player["distanceFromTarget"], iterations=run_iterations)
     reference = float(meta["reference_dps"])
+    parity_failure = _source_native_world_parity(native, live, run_iterations)
     actual = {"native_dps": native["native_dps"],
+              "native_first_duration_s": native["first_duration_s"],
+              "world_first_duration_s": live["sampled_duration_s"],
               "live_native_dps": live["native_dps"],
               "world_dps": live["world_mean_dps"],
               "world_damage_events": live["native_damage_events"],
@@ -93,23 +137,39 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
               "iterations": live["iterations_done"],
               "source_original_iterations": source_iterations,
               "stochastic_rng": True,
-              "selected_validation": "1000_native_and_live_stochastic_fights",
+              "selected_validation": ("1000_native_and_live_stochastic_fights"
+                                      if full_validation else
+                                      "bounded_native_live_source_diagnostic"),
               "required_dps": p7_required_dps("P7.1", reference),
-              "saved_reference_dps": reference}
-    if (live["iterations_done"] != iterations
-            or native["iterations"] != iterations
-            or len(live["per_iteration"]) != iterations
-            or live["native_damage_events"] <= 0
-            or not p7_final_stochastic_mean_passes(
-                "P7.1", native["native_dps"], reference,
-                iterations=iterations, stochastic=True)
+              "saved_reference_dps": reference,
+              "source_report_url": "https://api.mythicsim.com/api/forever/ranking-sims/d9d85974-a1f7-4700-ab22-2335d767a944/report",
+              "behavior_probes_executed": len(live["per_iteration"]),
+              # Iterations are raw sample breadth, never measured function%
+              # for M1 or any gate's partial behavior assertions.
+              "sampled_source_fights": live["iterations_done"],
+              "saved_source_iterations": source_iterations}
+    if parity_failure is not None:
+        return {"status": "FAIL", "reasons": [parity_failure],
+                "production_engine": "pinned_mythicsim_rust_gsim_2d", **actual}
+    if full_validation and (not p7_final_stochastic_mean_passes(
+            "P7.1", native["native_dps"], reference,
+            iterations=iterations, stochastic=True)
             or not p7_final_stochastic_mean_passes(
                 "P7.1", live["world_mean_dps"], reference,
-                iterations=iterations, stochastic=True)
-            or abs(native["native_dps"] - live["native_dps"]) >= 1e-6
-            or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
-        return {"status": "FAIL", "reasons": ["P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"],
+                iterations=iterations, stochastic=True)):
+        return {"status": "FAIL",
+                "reasons": ["P7_1_DPS_BELOW_APPROVED_99_PERCENT_FLOOR"],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d", **actual}
+
+    # The real native↔world execution established source/ACK parity, but a
+    # bounded stochastic sample has NO comparable gate success denominator.
+    # Use the shared live-DPS proximity output, not pass_count/total_samples.
+    if not full_validation:
+        return {"status": "FAIL",
+                "reasons": ["P7_1_BOUNDED_DIAGNOSTIC_NOT_FULL_SAVED_REFERENCE"],
+                "production_engine": "pinned_mythicsim_rust_gsim_2d",
+                "p7_1_2_native_reproduced": False,
+                "p7_1_3_live_reproduced": False, **actual}
 
     # Owner-approved WF633 is a genuine native reference replay, but its
     # reconstructed input is not an audited field-by-field capture of the
