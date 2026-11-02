@@ -1,4 +1,4 @@
-from tools.report_backend_reconciliation import build_report
+from tools.report_backend_comparison import build_report
 
 
 def test_backend_reconciliation_distinguishes_classic_mc_from_forever_equivalent_gate():
