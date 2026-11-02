@@ -43,15 +43,18 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
     The existing WF437 production command owns all search/replay mechanics.
     Files exist only in a temporary directory during this one explicit run.
     """
-    if (class_key, level, spec) != ('druid', 30, 'unrestricted'):
-        return {'status': 'BLOCKED', 'reasons': [
-            'P6_FULL_SOURCE_RUNNER_CURRENTLY_SUPPORTS_DRUID_L30_UNRESTRICTED_ONLY']}
+    # The same WF437 source-paid CLI is parameterized by checkpoint.
+    # Its historical Druid L30 unrestricted defaults stay unchanged.
+    checkpoint_args = ([] if (class_key, level, spec) ==
+                       ('druid', 30, 'unrestricted') else [
+        '--checkpoint-class', class_key, '--checkpoint-level', str(level),
+        '--checkpoint-spec', spec])
     root = Path(root)
     with TemporaryDirectory(prefix='p6-source-paid-') as temp:
         folder = Path(temp)
         searches = []
         for budget, timeout_s in ((30, 420), (300, 720)):
-            report, error = _execute(root, ['--budget', str(budget)],
+            report, error = _execute(root, ['--budget', str(budget), *checkpoint_args],
                                      folder / f'cold-{budget}.json', timeout_s)
             if error:
                 return {'status': 'FAIL', 'reasons': [f'P6_{budget}S_' + error],
@@ -64,7 +67,8 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
             searches.append(report)
         compared, error = _execute(root, [
             '--compare-30', str(folder / 'cold-30.json'),
-            '--compare-300', str(folder / 'cold-300.json')],
+            '--compare-300', str(folder / 'cold-300.json'),
+            *checkpoint_args],
             folder / 'comparison.json', 240, allowed_codes=(0, 1))
         if error:
             return {'status': 'FAIL', 'reasons': ['P6_COMPARE_' + error],
