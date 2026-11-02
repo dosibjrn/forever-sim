@@ -7,6 +7,7 @@ full build from its saved source gear, talents, APL and recovery configuration.
 from __future__ import annotations
 
 from math import isfinite
+from time import monotonic
 
 
 _COMMON = ('class_key', 'level', 'source_db_sha256', 'enemy', 'pack_size',
@@ -231,16 +232,26 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
     results = []
     for budget, saved, winner in ((30, search30, winner30),
                                   (300, search300, winner300)):
-        replay = replay_joint_shortlist_100mob({
-            'search_only': True, 'validation_shortlist': [winner],
-            'complete_100mob_candidates': 0, 'wall_s': saved['wall_s'],
-            'bonus_talent_points': saved['bonus_talent_points'],
-            'spec_constraint': saved.get('spec_constraint')},
-            source_ir=source_ir, seed_stage=seed_stage,
-            class_key=class_key, level=level,
-            bonus_talent_points=bonus_talent_points,
-            pack_size=int(saved['pack_size']),
-            max_per_candidate_wall_s=max_per_candidate_wall_s)
+        replay_start = monotonic()
+        try:
+            replay = replay_joint_shortlist_100mob({
+                'search_only': True, 'validation_shortlist': [winner],
+                'complete_100mob_candidates': 0, 'wall_s': saved['wall_s'],
+                'bonus_talent_points': saved['bonus_talent_points'],
+                'spec_constraint': saved.get('spec_constraint')},
+                source_ir=source_ir, seed_stage=seed_stage,
+                class_key=class_key, level=level,
+                bonus_talent_points=bonus_talent_points,
+                pack_size=int(saved['pack_size']),
+                max_per_candidate_wall_s=max_per_candidate_wall_s)
+        except Exception as exc:
+            # Candidate preparation and the retained runtime may throw before
+            # producing a row. Preserve that first real FAIL and independently
+            # execute the other cold winner; do not fabricate paid kills.
+            replay = {'rows': [{
+                'status': 'PAID_REPLAY_EXECUTOR_EXCEPTION', 'count': 0,
+                'reason': type(exc).__name__ + ': ' + str(exc)[:320]}],
+                'wall_s_outside_search_budget': monotonic() - replay_start}
         results.append(_summarize_independent_paid_replay(replay, budget=budget))
     complete = all(r['status'] == 'COMPLETE' and r['count'] == 100
                    and r['mob_completed'] == 100
