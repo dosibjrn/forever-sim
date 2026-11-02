@@ -16,6 +16,40 @@ _COMMON = ('class_key', 'level', 'source_db_sha256', 'enemy', 'pack_size',
 
 
 
+def verify_saved_source_replay(report, *, class_key, level, spec,
+                               source_hash, gear_snapshot,
+                               spec_tree=None, min_spec_points=None):
+    """Bind a saved finalist to the source and product profile being replayed.
+
+    The ability SQLite hash alone does not pin the separately sourced item
+    catalogue/effects. A saved Balance finalist also must not be replayed as
+    unrestricted (or another profile) just because class and level match.
+    This is a production replay preflight, not a gate or source whitelist.
+    """
+    if (report.get('source_db_sha256') != source_hash
+            or report.get('class_key') != class_key
+            or report.get('level') != level):
+        raise ValueError('REPLAY_SOURCE_CHECKPOINT_MISMATCH')
+    if report.get('source_gear_catalogue_snapshot') != gear_snapshot:
+        raise ValueError('REPLAY_SOURCE_GEAR_SNAPSHOT_MISMATCH')
+    space = report.get('source_search_space')
+    if (not isinstance(space, dict)
+            or space.get('class_key') != class_key
+            or space.get('level') != level
+            or space.get('checkpoint_spec', 'unrestricted') != spec):
+        raise ValueError('REPLAY_SOURCE_SPEC_MISMATCH')
+    constraint = report.get('spec_constraint')
+    if (not isinstance(constraint, dict)
+            or constraint.get('tree_key') != spec_tree
+            or constraint.get('minimum_points') != (
+                min_spec_points if spec_tree is not None else None)
+            or constraint.get('required_combat_mode') is not None
+            or (spec_tree is not None
+                and (space.get('spec_tree') != spec_tree
+                     or space.get('min_spec_points') != min_spec_points))):
+        raise ValueError('REPLAY_SOURCE_SPEC_CONSTRAINT_MISMATCH')
+
+
 def source_gear_catalogue_snapshot(class_key, level):
     """Pin the actual gear source separately from the ability/talent SQLite.
 
