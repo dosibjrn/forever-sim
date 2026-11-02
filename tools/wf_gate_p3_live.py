@@ -76,7 +76,8 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
-    from src.v2.source_budgeted_gear import run_source_budgeted_gear
+    from src.v2.source_budgeted_gear import (run_source_budgeted_gear,
+        paid_source_policy_stat_witness)
     from src.v2.source_stateful_budgeted import _make_policy
     from src.game.model import PolicyCondition
 
@@ -122,12 +123,43 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         guarded_action=record.get("guarded_action"),
         guarded_conditions=tuple(PolicyCondition(**x)
                                  for x in record.get("guarded_conditions", ())))
-    weights = sensitivity["values"]
+    weights = dict(sensitivity["values"])
     if not all(type(v) in (int, float) and isfinite(v) for v in weights.values()):
         return {"status": "FAIL", "reasons": ["P3_REAL_PRODUCTION_WEIGHTS_NONFINITE"]}
     item_check = fast_p3_smoke_for_policy(
         source_ir=ir, policy=policy, class_key=class_key, level=level,
         weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT")
+    # One narrowly chosen 12-evaluation winner is not proof that an ordinary
+    # stat has no causal value to this build. The same source-legal full-point
+    # IR may carry alternative executable policies. When the first policy
+    # measured exactly ZERO for a required axis, seek a positive *paid* witness
+    # with the source-authored policies and the same combat+recovery scorer.
+    # Do not erase observed negative weights, waive missing stats, fabricate an
+    # epsilon, or change P4/P5 search. The only extra work is paid from the
+    # source search's remaining bounded budget.
+    extra_evaluations = 0
+    source_policy_stat_witnesses = []
+    for blocker in item_check["blockers"]:
+        if not blocker.startswith("NONPOSITIVE_RELEVANT_WEIGHT:"):
+            continue
+        axis = blocker.split(":", 1)[1]
+        if weights.get(axis) != 0.0:
+            continue
+        remaining = max(0, 44 - int(result.get("attempted", 0)) - extra_evaluations)
+        if remaining < 2:
+            break
+        witness = paid_source_policy_stat_witness(
+            ir, stat=axis, level=level, probe_deltas=(5., 20.),
+            max_evaluations=remaining, schedule_incoming_attacks=True)
+        extra_evaluations += int(witness["paid_evaluations"])
+        source_policy_stat_witnesses.append(witness)
+        if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
+            weights[axis] = witness["weight_s_saved_per_mob_per_unit"]
+    if any(w["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
+           for w in source_policy_stat_witnesses):
+        item_check = fast_p3_smoke_for_policy(
+            source_ir=ir, policy=policy, class_key=class_key, level=level,
+            weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT")
     reasons = list(item_check["blockers"])
     # The same source-legal selected IR was used for actual CombatRuntime
     # sensitivity and the real item scorer. Never fake a positive stat weight.
@@ -148,7 +180,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "production_engine": "gsim_CombatRuntime",
         "source_profile_production_build": profile_context,
         "real_source_search_attempts": result.get("attempted", 0),
-        "real_source_search_evaluated": result.get("evaluated", 0),
+        "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
+        "source_policy_stat_witnesses": source_policy_stat_witnesses,
+        "real_measured_stat_weights": dict(sorted(weights.items())),
         "real_catalogue_legal_items": item_check["legal_item_count"],
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
         "real_catalogue_slots_scored": item_check["slot_count"],
@@ -158,7 +192,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         # conditions may still fail P3; this fraction is NOT a gate PASS.
         "reachability_count": item_check["tested_stat_assertions"],
         "pass_count": item_check["verified_stat_assertions"],
-        "behavior_probes_executed": result.get("evaluated", 0),
+        "behavior_probes_executed": result.get("evaluated", 0) + extra_evaluations,
         "partial_scope": "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS",
         "coverage_basis": "executed_behavior_assertions",
         "coverage_scope_complete": False,
