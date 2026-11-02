@@ -120,3 +120,30 @@ def test_paid_cold_joint_production_is_still_fail_not_holdout(monkeypatch, tmp_p
     assert "holdout_mean_dps" not in result
     assert "strongest_accepted_compatible_prior_dps" not in result
     assert "P7_5_STRONGEST_ACCEPTED_COMPATIBLE_PRIOR_NOT_AVAILABLE" in result["reasons"]
+
+
+def test_cli_handoff_exposes_real_joint_dps_without_inventing_m1(capsys, monkeypatch):
+    from tools import wf_gate
+    monkeypatch.setattr(wf_gate, "_run_live_gate",
+                        lambda *a: {
+                            "status": "FAIL",
+                            "reasons": ["P7_5_FROZEN_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED"],
+                            "production_engine": "pinned_mythicsim_rust_gsim_2d",
+                            "winner_live_dps": 730.0,
+                            "external_only_floor_dps": 720.9117,
+                            "external_only_dps_proximity_percent": 100.0,
+                            "external_only_not_p7_5_accepted_prior_comparison": True,
+                            "source_legal_cold_candidates_paid": 3,
+                            "world_damage_events": 10,
+                            "world_boundaries": 20,
+                        })
+    code = wf_gate.main([
+        "--class", "druid", "--level", "60", "--spec", "balance",
+        "--gate", "P7.5"])
+    report = json.loads(capsys.readouterr().out)
+    row = report["results"][0]
+    assert code == 1 and row["status"] == "FAIL"
+    assert row["winner_live_dps"] == 730.0
+    assert row["source_legal_cold_candidates_paid"] == 3
+    assert row["external_only_not_p7_5_accepted_prior_comparison"] is True
+    assert "dps_objective_gate_pass" not in row
