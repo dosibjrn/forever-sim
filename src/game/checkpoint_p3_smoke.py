@@ -21,6 +21,9 @@ POSITIVE_WHEN_PRESENT = frozenset({
     'attack_power', 'spell_power', 'crit', 'hit', 'dodge', 'parry',
     'mp5', 'health_regeneration_per_5s', 'ranged_attack_power',
 })
+DEFENSIVE_STAT_AXES = frozenset({
+    'armor', 'stamina', 'dodge', 'parry', 'health_regeneration_per_5s',
+})
 SOURCE_CONTEXT_WEIGHT_KINDS = frozenset({'MEASURED_SOURCE_CONTEXT', 'SOURCE_FORMULA_CONTEXT'})
 
 
@@ -152,6 +155,7 @@ def _weight_value(value):
 def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                   weight_evidence_kind: str, weapon_damage_dependent: bool,
                   equipped_weapon_dps_relevant: bool | None = None,
+                  defensive_positive_required: bool = True,
                   required_level_policy: str = 'catalogue') -> dict:
     """Measure the current source catalogue's fast P3 score coverage.
 
@@ -161,6 +165,12 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     """
     if not class_key or not 1 <= int(level) <= 60:
         raise ValueError('P3_INVALID_CHECKPOINT')
+    if not isinstance(defensive_positive_required, bool):
+        raise ValueError('P3_DEFENSIVE_APPLICABILITY_NOT_BOOLEAN')
+    # All ordinary weights are nonnegative. Outside Warrior/Bear, defensive
+    # zeros are meaningful measurements rather than artificial P3 blockers.
+    strictly_positive_axes = (POSITIVE_WHEN_PRESENT if defensive_positive_required
+                              else POSITIVE_WHEN_PRESENT - DEFENSIVE_STAT_AXES)
     rows = available_items(class_key, level, required_level_policy=required_level_policy)
     if not rows:
         raise ValueError('P3_NO_LEGAL_ITEMS_IN_CURRENT_DB')
@@ -215,14 +225,16 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                 if weight < 0:
                     blockers.add('NEGATIVE_WEIGHT:' + axis)
                     continue
-                if weight <= 0 and axis in POSITIVE_WHEN_PRESENT:
+                if weight <= 0 and axis in strictly_positive_axes:
                     blockers.add('NONPOSITIVE_RELEVANT_WEIGHT:' + axis)
                 contribution = weight * amount
                 if not isfinite(contribution):
                     blockers.add('NONFINITE_CONTRIBUTION:' + axis)
                     continue
                 parts[axis] = contribution
-                if required_axis and weight > 0:
+                if required_axis and (weight > 0 or
+                        (weight == 0 and axis in DEFENSIVE_STAT_AXES
+                         and not defensive_positive_required)):
                     item_valid_weight_checks += 1
             # Check the ACTUAL selector scorer; do not certify a parallel
             # dot-product that the optimizer itself never uses.
@@ -268,21 +280,50 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
             'tested_stat_assertions': tested_stat_assertions,
             'verified_stat_assertions': verified_stat_assertions,
             'weight_evidence_kind': weight_evidence_kind,
+            'defensive_positive_required': defensive_positive_required,
             'weapon_damage_dependent': bool(weapon_damage_dependent),
             'equipped_weapon_dps_relevant': bool(equipped_weapon_dps_relevant),
             'blockers': sorted(blockers), 'p3_pass': not blockers,
             'scope': 'PROCESS_V2_FAST_P3_SMOKE_NOT_GLOBAL_BIS'}
 
 
+def _policy_uses_bear_form(ir, policy) -> bool:
+    """Require positive defensive weights only for a selected Bear-form policy.
+
+    Merely having a legal Bear spell or autoattack in the full source IR does
+    not make a caster or Cat policy a Bear policy.
+    """
+    if any(str(mode.id) == 'bear' and bool(mode.initial)
+           for mode in getattr(ir, 'modes', ())):
+        return True
+    by_id = {action.id: action for action in ir.actions}
+    for rule in policy.rules:
+        action = by_id.get(rule.action_id)
+        if action is None:
+            raise ValueError('P3_POLICY_ACTION_NOT_IN_SOURCE_IR:' + str(rule.action_id))
+        if any(req.get('kind') == 'mode_is' and str(req.get('value')) == 'bear'
+               for req in action.requirements):
+            return True
+        if any(getattr(effect, 'effect_type', None) == 'mode_change'
+               and str(effect.target_mode_id) == 'bear'
+               for effect in action.effects):
+            return True
+    return False
+
+
 def fast_p3_smoke_for_policy(*, source_ir, policy, **kwargs) -> dict:
     """Bind P3's mean-hit condition to the *actual* source-IR policy actions."""
-    if 'weapon_damage_dependent' in kwargs or 'equipped_weapon_dps_relevant' in kwargs:
-        raise ValueError('P3_MANUAL_WEAPON_DAMAGE_OVERRIDE_FORBIDDEN')
+    if ('weapon_damage_dependent' in kwargs or 'equipped_weapon_dps_relevant' in kwargs
+            or 'defensive_positive_required' in kwargs):
+        raise ValueError('P3_MANUAL_POLICY_APPLICABILITY_OVERRIDE_FORBIDDEN')
     has_weapon_effect = policy_uses_weapon_damage(source_ir, policy)
     uses_equipped_weapon, uses_equipped_mean_hit = _policy_equipped_weapon_dependencies(source_ir, policy)
+    defensive_positive_required = (str(kwargs.get('class_key', '')).lower() == 'warrior'
+                                   or _policy_uses_bear_form(source_ir, policy))
     report = fast_p3_smoke(
         weapon_damage_dependent=uses_equipped_mean_hit,
         equipped_weapon_dps_relevant=uses_equipped_weapon,
+        defensive_positive_required=defensive_positive_required,
         **kwargs,
     )
     report['source_policy'] = {
@@ -293,5 +334,6 @@ def fast_p3_smoke_for_policy(*, source_ir, policy, **kwargs) -> dict:
         'equipped_weapon_dependency_derived_from_source_dps_stat_or_canonical_mode_facts': True,
         'equipped_weapon_mean_hit_relevant': bool(uses_equipped_mean_hit),
         'equipped_weapon_damage_relevant': bool(uses_equipped_weapon),
+        'defensive_positive_required': defensive_positive_required,
     }
     return report
