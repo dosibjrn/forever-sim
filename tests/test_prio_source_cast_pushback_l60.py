@@ -19,7 +19,7 @@ CAPTURE = ROOT / 'data/forever/source_captures/secondary_druid_restoration_row1_
 def test_exact_sourced_rank_tooltips_compile_without_talent_name_special_case():
     payload = json.loads(CAPTURE.read_text())
     # Pinned captured ranks, not a test-invented coefficient or level.
-    talents = payload.get('talents', payload.get('records', []))
+    talents = payload['entries']
     rows = next(t['ranks'] for t in talents if t['name'] == "Nature's Focus")
     mods = []
     for row in rows:
@@ -63,3 +63,22 @@ def test_real_p2_cast_pushback_witness_positive_and_wrong_rank_negative():
     assert witness['before_delay_s'] - witness['after_delay_s'] == pytest.approx(.5 * .14)
     assert _cast_pushback_runtime_witness(
         before, after, replace(rank.modifiers[0], value=.20)) is None
+
+
+def test_current_canonical_l60_rank1_has_real_paired_pushback_execution():
+    # Regression for the *currently failing* 84/103 canonical L60 P2 gate,
+    # not just the previously passing L30 staged fixture.
+    compiled, _ = compile_talent_runtime(
+        build_game_ir_slice(class_key='druid', level=60))
+    talent = next(t for t in compiled.talents if t.id == 'natures_focus')
+    rank = next(r for r in talent.ranks if r.rank == 1)
+    assert len(rank.modifiers) == 1
+    mod = rank.modifiers[0]
+    assert mod.kind == 'cast_pushback_avoidance_chance'
+    assert mod.target_id == 'damage_schools:arcane,nature'
+    assert mod.value == pytest.approx(.14)
+    before, _ = apply_talent_selection(compiled, {}, level=60)
+    after, _ = apply_talent_selection(compiled, {'natures_focus': 1}, level=60)
+    witness = _cast_pushback_runtime_witness(before, after, mod)
+    assert witness is not None
+    assert witness['before_delay_s'] > witness['after_delay_s']
