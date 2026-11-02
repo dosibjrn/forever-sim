@@ -12,9 +12,13 @@ import os
 from pathlib import Path
 import re
 import subprocess
-from tools.wf_gate_coverage import measured_live_coverage, pareto_effort_fraction
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+# Also support the documented direct invocation: python tools/m1_progress.py
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tools.wf_gate_coverage import measured_live_coverage, pareto_effort_fraction
 LEDGER = ROOT / "docs/planning/M1_PASSES.tsv"
 GATES = tuple(f"P{n}" for n in range(1, 7)) + tuple(f"P7.{n}" for n in range(1, 6))
 CLASSES = frozenset(("druid", "hunter", "mage", "paladin", "priest",
