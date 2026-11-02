@@ -60,7 +60,7 @@ def test_both_source_critical_resource_clauses_execute_for_each_rank():
             a = ActorState.from_ir(after.actor, after.resources, after.modes)
             a.transition_mode('cat')
             a.stats['melee_crit_chance'] = 1.
-            target = TargetState.with_health('p2_critical_resource_target_1', 1000000.)
+            target = TargetState.with_health('enemy', 1000000.)
             for action in after.actions:
                 if any(isinstance(e, ResourceChangeEffect)
                        and e.resource_id == 'combo_points' for e in action.effects):
@@ -73,10 +73,13 @@ def test_both_source_critical_resource_clauses_execute_for_each_rank():
                     print('DIAG eligible', action_eligibility(action=action, actor=a, target=target))
             claw = next((x for x in after.actions if x.family_key == 'claw'), None)
             if claw:
-                rt = CombatRuntime(actor=a, target=target)
+                rt = CombatRuntime(actor=a, target=target, sampling_seed=1)
+                print('DIAG active', rt.actor.resource_is_active('combo_points'),
+                      'mode', rt.actor.current_mode_id)
                 try:
                     end = rt.schedule_action(claw)
                     rt.advance_to(end + .02)
+                    print('DIAG generated', rt._generated_resource_ids(claw.id))
                     print('DIAG claw trace', [(e.kind, e.payload) for e in rt.trace
                                               if e.kind in ('ResourceEventGain', 'Damage')])
                 except Exception as exc:
