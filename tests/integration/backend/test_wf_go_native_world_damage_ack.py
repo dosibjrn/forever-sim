@@ -200,14 +200,39 @@ def test_native_target_identity_change_rejected_before_gsim_mutation():
     assert rt.targets["m1"].health == previous_health
 
 
-def test_negative_native_event_time_rejected_before_world_mutation():
-    # Go's source journal cannot emit a negative-time combat event.  The
-    # first gsim tick is at t=0, so -1 must not pass an uninitialized clock.
+def test_precombat_negative_native_time_applies_at_first_world_ack():
+    # Genuine native pre-pull effects may precede t=0. The first ACK keeps
+    # their original source timestamps while applying real gsim world damage.
     rt, tick, reply = fixture()
     reply["native_damage_events"][0]["native_time_ns"] = -1
     original_health = rt.targets["m1"].health
+    ack = GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert rt.targets["m1"].health == original_health - 75
+    assert ack["applied_events"][0]["native_time_ns"] == -1
+    assert ack["applied_event_ids"] == ["native-effect-1"]
+    assert ack["world_after_sha256"] == state_hash(snapshot_gsim_world(rt))
+
+
+def test_negative_native_event_time_rejected_after_first_world_ack():
+    # Pre-pull effects can only cross the first t=0 boundary. A subsequent
+    # ACK must never smuggle a negative-time event into an advanced world.
+    rt, tick0, reply0 = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick0, reply0)
+    rt.advance_to(0.1)
+    tick1 = {"sequence": 1, "clock_ms": 100, "native_clock_ns": 100_000_000,
+             "selected_target_id": "m1",
+             "world_sha256": state_hash(snapshot_gsim_world(rt))}
+    reply1 = {"sequence": 1, "native_process_id": 123,
+              "observed_input_world_sha256": tick1["world_sha256"],
+              "native_damage_events": [{
+                  **reply0["native_damage_events"][0],
+                  "event_id": "native-effect-2",
+                  "native_time_ns": -1,
+              }]}
+    original_health = rt.targets["m1"].health
     with pytest.raises(NativeDamageWorldApplicationError, match="SOURCE_EVENT_INVALID"):
-        GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+        applier.apply(tick1, reply1)
     assert rt.targets["m1"].health == original_health
 
 
