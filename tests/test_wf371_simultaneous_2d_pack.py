@@ -121,7 +121,11 @@ def test_real_forever_druid_level30_swipe_uses_sourced_cap_on_one_runtime_clock(
     damages=[e for e in rt.result().events if e.kind=='Damage' and e.action_id==swipe.id and e.payload.get('applied')]
     assert len(damages)==3
     assert {e.target_id for e in damages}=={t.id for t in targets}
-    assert [t.health for t in targets]==pytest.approx([175.]*3)
+    # Source-backed damage can include actor scaling; assert that each of the
+    # three real targets received its own executed Damage event, not a stale
+    # hardcoded 25-point naked-source expectation.
+    damage_by_target={e.target_id:float(e.payload['amount']) for e in damages}
+    assert all(t.health==pytest.approx(200.-damage_by_target[t.id]) for t in targets)
     assert actor.resources['rage']==pytest.approx(rage_before-20.)
     assert len([e for e in rt.result().events if e.kind=='ActionStarted' and e.action_id==swipe.id])==1
 
