@@ -174,12 +174,11 @@ def test_cli_separates_sample_breadth_from_live_dps_proximity(monkeypatch, capsy
         assert key not in row
     assert row["sampled_source_fights"] == 3
     assert row["saved_source_iterations"] == 10000
-    from tools.wf_gate_coverage import p7_required_dps
-    required = p7_required_dps("P7.1", 728.1936126415858)
-    assert row["dps_objective_required"] == round(required, 4)
-    assert row["dps_objective_proximity_percent"] == round(
-        100 * min(1.0, 692.1030471575785 / required), 2)
-    assert row["dps_objective_gate_pass"] is False
+    # 3 sampled fights are not the required 1,000 stochastic final.
+    # Production correctly withholds an acceptance-comparable DPS ratio.
+    for key in ("dps_objective_required", "dps_objective_proximity_percent",
+                "dps_objective_gate_pass"):
+        assert key not in row
 
 
 def test_source_fight_sample_cannot_earn_m1_partial():
