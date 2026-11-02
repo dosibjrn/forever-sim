@@ -103,6 +103,9 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
     try:
         end=rt.schedule_action(action)
         rt.advance_to(end + 0.01)
+        # A target debuff can expire before the final periodic tick. Capture
+        # actual applied state immediately, not merely a queued aura intent.
+        target_stat_modifiers_on_apply=dict(rt.target.active_stat_modifiers)
         if observe_periodic:
             # Observe the actual tick series, not just the aura application.
             duration=max((float(e.duration_s) for e in action.effects if hasattr(e,'tick_interval_s')),default=0.0)
@@ -123,6 +126,7 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
               if observe_controls else [])
     return {'controls':controls,
             'active_controls':(dict(rt.target.active_controls) if observe_controls else {}),
+            'target_stat_modifiers_on_apply':target_stat_modifiers_on_apply,
             'completion_s':float(end), 'gcd_ready_s':float(actor.gcd_ready_s),'spent':{
                 c.resource_id:round(before.get(c.resource_id,0)-actor.resources.get(c.resource_id,0),6)
                 for c in action.costs},
@@ -720,6 +724,64 @@ def _control_proc_runtime_witness(before, after, mod):
     return None
 
 
+def _sourced_granted_action_behavior(before, after, mod):
+    """Execute an exact source-granted action, including each supported effect.
+
+    The action must be absent before the talent, sourced from the same parent
+    spell and actually change combat state. A cast counter or action registration
+    alone cannot satisfy P2; unrecognized effect families remain FAIL.
+    """
+    if mod.target_type != 'source_action':
+        return None
+    parent = str(mod.target_id)
+    level = after.actor.metadata.get('level')
+    if type(level) is not int:
+        return None
+    candidates = []
+    for fact in after.source_facts:
+        if not isinstance(fact, dict) or fact.get('family') != 'talent_granted_action_facts':
+            continue
+        for row in fact.get('actions', ()):
+            if (not isinstance(row, dict)
+                    or str(row.get('grant_parent_spell_id', row.get('spell_id'))) != parent
+                    or type(row.get('required_level')) is not int
+                    or row['required_level'] > level):
+                continue
+            candidates.append(row)
+    if not candidates:
+        return None
+    highest = max(row['required_level'] for row in candidates)
+    best = [row for row in candidates if row['required_level'] == highest]
+    if len(best) != 1:
+        return None
+    row = best[0]
+    action_id = str(row['family_key']) + ':' + str(row['spell_id'])
+    if any(a.id == action_id for a in before.actions):
+        return None
+    action = next((a for a in after.actions if a.id == action_id), None)
+    if action is None or not action.effects:
+        return None
+    observed = _action_runtime_probe(after, action, observe_periodic=True,
+                                     observe_controls=True)
+    if observed is None:
+        return None
+    verified = {
+        'direct_damage': observed['direct_damage'] > 0,
+        'periodic_damage': observed['periodic_damage'] > 0,
+        'direct_heal': observed['direct_heal'] > 0,
+        'periodic_heal': observed['periodic_heal'] > 0,
+        'target_stat_debuff': any(float(value[1]) != 0
+            for value in observed['target_stat_modifiers_on_apply'].values()),
+        'control': any(x.get('applied') is True for x in observed['controls']),
+    }
+    effect_types = [effect.effect_type for effect in action.effects]
+    if not all(verified.get(kind, False) for kind in effect_types):
+        return None
+    return {'probe': 'production_talent_granted_action',
+            'action_id': action_id, 'effect_types': effect_types,
+            'observed': observed}
+
+
 def _behavior_fixtures(before, after, modifiers):
     """Require an observed L2 effect for *each* rank modifier, not just one.
 
@@ -783,6 +845,8 @@ def _behavior_fixtures(before, after, modifiers):
             match=_isolated_crit_witness(before,after,mod)
         elif kind=='action_control_proc':
             match=_control_proc_runtime_witness(before,after,mod)
+        elif kind=='grant_source_action':
+            match=_sourced_granted_action_behavior(before,after,mod)
         elif kind in ('resource_cost_flat','resource_cost_pct'):
             match=_isolated_resource_cost_witness(before,after,mod)
         elif kind in action_kinds:

@@ -87,3 +87,27 @@ def test_real_canonical_l60_source_has_legal_51_point_balance_build():
     assert sum(rank for tid, rank in allocation.items()
                if next(t for t in compiled.talents if t.id == tid).tree_key == 'balance') >= 31
     validate_talent_selection(compiled, allocation, level=60)
+
+
+def test_p2_granted_action_proves_damage_and_target_debuff_not_registration():
+    from tools.wf_gate_p2_live import _behavior_fixtures
+    ir = _stripped_source()
+    compiled, _ = promote_atomic_source_talent_effects(ir)
+    mod = next(t.ranks[0].modifiers[0] for t in compiled.talents
+               if t.id == 'insect_swarm')
+    selected, _ = apply_talent_selection(
+        compiled, {**FILLER, 'insect_swarm': 1},
+        level=30, bonus_talent_points=5)
+    tests, missing = _behavior_fixtures(compiled, selected, [mod])
+    assert not missing
+    assert len(tests) == 1
+    observed = tests[0]['observed']
+    assert observed['periodic_damage'] > 0
+    assert observed['target_stat_modifiers_on_apply']
+    # A source-registered action with no applied effects is not a P2 PASS.
+    silent = replace(selected, actions=tuple(
+        replace(a, effects=()) if a.id == 'insect_swarm:24974' else a
+        for a in selected.actions))
+    tests, missing = _behavior_fixtures(compiled, silent, [mod])
+    assert not tests
+    assert missing == ['0:grant_source_action:5570']
