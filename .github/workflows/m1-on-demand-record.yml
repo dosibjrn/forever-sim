@@ -182,7 +182,12 @@ jobs:
               if isinstance(item.get("verified"), (int, float))
               and isinstance(item.get("applicable"), (int, float))
               else f'{item["dps_objective_actual"]:g}/{item["dps_objective_required"]:g} DPS'
-              if "dps_objective_actual" in item else "not measurable")
+              if "dps_objective_actual" in item
+              else f'{item["joint_cold_world_dps"]:g} DPS (P7.5 prior floor unavailable)'
+              if "joint_cold_world_dps" in item
+              else f'T30/T300 proxy={item["source_replay_Tfirst_Tsecond"]:.5f}'
+              if isinstance(item.get("source_replay_Tfirst_Tsecond"), (float, int))
+              else "not measurable")
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
               f.write(f'| `{sys.argv[2]}` | {d["status"]} | {measure} |\n')
           PY
