@@ -263,3 +263,20 @@ def test_paid_p74_gear_rejects_elite_with_changed_fixed_dimension():
             assert str(exc) == "P74_PAID_ELITE_CHANGED_FIXED_AXES"
         else:
             raise AssertionError("altered fixed axis admitted as a paid elite")
+
+ 
+def test_p74_source_paid_elite_archive_preserves_native_diversity_and_cold_restart():
+    """Only already paid elites, top 15/24; never the saved reference."""
+    paid = [(100.0 - i, {"paid_candidate": i}) for i in range(24)]
+    class Select:
+        def choice(self, options):
+            assert len(options) == 15
+            assert options[0][1] == {"paid_candidate": 0}
+            assert options[-1][1] == {"paid_candidate": 14}
+            return options[-1]
+    chooser = Select()
+    assert gate._paid_gear_elite_choice(paid, chooser, 1) == {"paid_candidate": 14}
+    assert gate._paid_gear_elite_choice(paid, chooser, 4) == {"paid_candidate": 14}
+    assert gate._paid_gear_elite_choice(paid, chooser, 5) is None
+    assert gate._paid_gear_elite_choice([], chooser, 1) is None
+    assert len(paid) == 24  # sampling never mutates the measured archive
