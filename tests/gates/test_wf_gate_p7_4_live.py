@@ -463,5 +463,5 @@ def test_p74_freezes_paid_stochastic_winner_not_noisy_balanced_screen():
     selected = gate._freeze_paid_p74_winner(high_screen, stochastic)
     assert selected[2] == "b"
     assert selected[0] == 730.0 and selected[4] == 800.0
-    assert selected[5] == "paid_24_stochastic_live_native_finalist"
+    assert selected[5] == "paid_2x24_stochastic_live_native_finalist"
     assert gate._freeze_paid_p74_winner(high_screen, [])[2] == "a"
