@@ -170,3 +170,24 @@ def test_p7_5_one_percent_applies_to_both_external_and_best_accepted_prior():
             stochastic=True, strongest_accepted_compatible_prior=prior)
     with pytest.raises(ValueError, match="PRIOR_REQUIRED"):
         p7_required_dps("P7.5", 800.)
+
+
+def test_p7_5_actual_joint_dps_visible_without_forged_prior_fraction(monkeypatch, capsys):
+    import json
+    from tools import wf_gate as runner
+    monkeypatch.setattr(runner, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"],
+        "production_engine": "pinned_mythicsim_rust_gsim_2d",
+        "joint_cold_world_dps": 512.5,
+        "external_reference_only_floor": 720.9117,
+        "final_required_dps": None,
+        "source_legal_joint_candidates_paid": 2,
+    })
+    assert runner.main(["--class", "druid", "--level", "60",
+                        "--spec", "balance", "--gate", "P7.5"]) == 1
+    row = json.loads(capsys.readouterr().out)["results"][0]
+    assert row["joint_cold_world_dps"] == 512.5
+    assert row["source_legal_joint_candidates_paid"] == 2
+    assert "dps_objective_proximity_percent" not in row
+    assert "verified" not in row and "applicable" not in row
