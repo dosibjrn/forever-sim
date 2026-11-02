@@ -400,7 +400,7 @@ def test_refinement_never_spends_a_second_real_screen_past_paid_budget(max_paid_
 
 
 def test_p3_source_weapon_proposals_preserve_complete_equipment_legality():
-    """Real Warrior 1H+offhand must not spend P4 gear moves on a 2H swap.
+    """Real Mage 1H+offhand must not spend P4 gear moves on a 2H swap.
 
     The canonical P3 catalogue includes both weapon families. An atomic
     weapon-package move can still switch them; a single-slot move cannot.
@@ -411,17 +411,23 @@ def test_p3_source_weapon_proposals_preserve_complete_equipment_legality():
     from src.game.data.forever.source_checkpoint_p3 import checkpoint_item_l0
     from src.v2.source_persistent_slot_search import _gear_replace
 
-    class_key, level = "warrior", 30
-    selected = select_gear(class_key, level, "warrior_fury", weights={},
+    from src.rulesets.forever.items.source_equipment_semantics import validate_equipped_item_ids
+
+    class_key, level = "mage", 30
+    source_items = available_items(class_key, level, required_level_policy="observed")
+    selected = select_gear(class_key, level, "mage", weights={},
         required_level_policy="observed", exclude_unknown_item_effects=False)
-    assert selected["weapon"].weapon_hands == 1
-    assert "offhand" in selected
-    base = _cold_source_equipment_payload(
-        class_key=class_key, level=level, gear_role="warrior_fury",
-        selected=selected)
-    twohand = next(item for item in available_items(
-        class_key, level, required_level_policy="observed")
+    onehand = next(item for item in source_items
+        if item.weapon_hands == 1 and item.slot in ("one_hand", "main_hand"))
+    offhand = next(item for item in source_items
+        if item.slot == "off_hand" and item.weapon_hands != 2
+        and item.item_id != onehand.item_id)
+    twohand = next(item for item in source_items
         if item.weapon_hands == 2 and item.slot in ("two_hand", "main_hand", "one_hand"))
+    selected = {**selected, "weapon": onehand, "offhand": offhand}
+    validate_equipped_item_ids(item.item_id for item in selected.values())
+    base = _cold_source_equipment_payload(
+        class_key=class_key, level=level, gear_role="mage", selected=selected)
 
     # RED on the old code: the low-level single-slot stage builder accepted
     # an illegal 2H+offhand package because unique-item validation alone
