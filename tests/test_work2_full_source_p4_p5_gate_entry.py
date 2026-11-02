@@ -268,10 +268,8 @@ def test_source_winner_catalogue_and_equipment_audit(monkeypatch, mode):
     if mode == "untyped_effects":
         assert result["winning_gear_unresolved_effects"]
         assert "P4_WINNER_ITEM_EFFECTS_UNRESOLVED" in result["reasons"]
-    if mode == "membership_attested":
-        assert "P4_SOURCE_CLASS_ITEM_MEMBERSHIP_NOT_ATTESTED" not in result["reasons"]
-    else:
-        assert "P4_SOURCE_CLASS_ITEM_MEMBERSHIP_NOT_ATTESTED" in result["reasons"]
+    # Absence of a full external item scrape is a diagnostic, not a P4 veto.
+    assert "P4_SOURCE_CLASS_ITEM_MEMBERSHIP_NOT_ATTESTED" not in result["reasons"]
 
 
 def test_paid_shortlist_without_full_source_build_never_calls_gear_audit(monkeypatch):
@@ -286,3 +284,73 @@ def test_paid_shortlist_without_full_source_build_never_calls_gear_audit(monkeyp
     assert result["saved_full_source_winner_build"] is False
     assert result["winning_gear_source_legality_verified"] is False
     assert result["winning_gear_audit_error"] == "SAVED_SOURCE_WINNER_INCOMPLETE"
+
+
+@pytest.mark.parametrize("gate", ["P4", "P5"])
+@pytest.mark.parametrize("unlocks_complete", [False, True])
+def test_approved_gsim_paid_gate_uses_actual_predicates_not_extra_catalogue_or_native_veto(
+        monkeypatch, gate, unlocks_complete):
+    """Synthetic receipts test predicate wiring only, never certify a real run.
+
+    A real gsim 2D+CombatRuntime result is permitted by COMMON; absence of
+    native-hybrid or a complete external item scrape is not its failure.
+    Source/legal winner, same paid search, coverage and actual replay still are.
+    """
+    from src.v2 import source_paid_cold_comparison as comparison
+
+    def report_for(budget):
+        report = _production_receipt(budget)
+        report.update({
+            "pack_size": 2,
+            "spatial_mode": "simultaneous_2d_pack",
+            "source_search_space": {
+                "class_key": "druid", "level": 30,
+                "checkpoint_spec": "unrestricted",
+            },
+            "p4_talent_unlock_coverage_pass": unlocks_complete,
+            "source_gear_catalogue_snapshot": {
+                "schema": "source_gear_snapshot_v1",
+                "class_membership_verified": False,
+            },
+            "validation_shortlist": [{
+                "allocation": {}, "equipped_gear": {"slots": {}},
+                "opening_action_ids": [], "policy_ir": {},
+                "policy_signature": "synthetic", "recovery": "normal",
+            }],
+        })
+        return report
+
+    def execute(root, args, output, timeout, **kwargs):
+        if args[0] == "--compare-30":
+            return {
+                "same_source_legal_candidate_space_proven": True,
+                "p5_10x_breadth": True,
+                "N30_unique_paid": 25, "N300_unique_paid": 250,
+                "replays": [
+                    {"status": "COMPLETE", "count": 100,
+                     "mob_completed": 100, "s_per_mob": 12.5},
+                    {"status": "COMPLETE", "count": 100,
+                     "mob_completed": 100, "s_per_mob": 12.0},
+                ],
+            }, None
+        return report_for(int(args[1])), None
+
+    monkeypatch.setattr(executor, "_execute", execute)
+    monkeypatch.setattr(comparison, "source_gear_catalogue_snapshot",
+                        lambda class_key, level: report_for(30)[
+                            "source_gear_catalogue_snapshot"])
+    monkeypatch.setattr(comparison, "_verify_winner_gear_legality",
+                        lambda *a, **kw: {"equipment_legality_complete": True})
+    monkeypatch.setattr(comparison, "_winner_gear_effect_gaps",
+                        lambda *a, **kw: {})
+    result = gates.run_full_paid_source_search(
+        Path("/project"), "druid", 30, spec="unrestricted", gate=gate)
+    assert result["status"] == ("PASS" if unlocks_complete else "FAIL")
+    assert result["source_class_gear_membership_attested"] is False
+    assert result["real_100mob_complete"] is True
+    assert result["selected_production_backend"] == "gsim"
+    assert not any("NATIVE_2D" in reason or "MEMBERSHIP_NOT_ATTESTED" in reason
+                   or "LEGAL_SPACE_COMPLETENESS" in reason
+                   for reason in result["reasons"])
+    if not unlocks_complete:
+        assert gate + "_TALENT_UNLOCK_PAID_EVALUATIONS_INCOMPLETE" in result["reasons"]
