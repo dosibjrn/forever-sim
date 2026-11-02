@@ -1,0 +1,31 @@
+name: Clean PR291 GameIR scoped validation
+on:
+  push:
+    branches:
+      - clean/group-gameir-publication-20261102
+    paths:
+      - .github/workflows/clean-pr291-gameir-validation.yml
+permissions:
+  contents: read
+jobs:
+  scoped:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          lfs: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Compile relocated suite
+        run: python -m compileall -q tests/generic/publication
+      - name: Pytest discovery (120s bound)
+        run: timeout 120s python -u -m pytest --collect-only -q tests/generic/publication/test_game_ir_g04.py tests/generic/publication/test_game_ir_tuning_overlays_g06.py tests/generic/publication/test_player_starting_state_ir_g05.py
+      - name: G06 overlays (300s bound)
+        run: timeout 300s python -u -m pytest -vv -s tests/generic/publication/test_game_ir_tuning_overlays_g06.py
+      - name: G04 source publication (300s bound)
+        run: timeout 300s python -u -m pytest -vv -s tests/generic/publication/test_game_ir_g04.py
+      - name: G05 starting state (300s bound)
+        run: timeout 300s python -u -m pytest -vv -s tests/generic/publication/test_player_starting_state_ir_g05.py
