@@ -75,3 +75,34 @@ def test_weapon_action_without_auto_attacks_remains_an_executable_gear_axis(monk
                         lambda ir_slice, db_path=None: ((fact, None),))
     no_auto = replace(ir, auto_attacks=())
     assert "weapon_dps" in gear.executable_gear_stats(no_auto)
+
+
+def test_real_druid_source_weapon_dps_probe_changes_bear_combat_damage():
+    """No injected facts: the pinned Forever SQLite authorizes Bear/Cat DPS."""
+    ir = build_game_ir_slice(class_key="druid", level=60)
+    assert ir is not None
+    facts = gear._weapon_facts_for_ir(ir)
+    assert any(f.source_stat == "weapon_dps" and mode == "bear"
+               for f, mode in facts)
+    before = next(a for a in ir.auto_attacks if a.required_mode_id == "bear")
+    assert before.damage_source.flat_dps > 0
+    after_ir = gear.apply_stat_delta(ir, "weapon_dps", 5.0)
+    after = next(a for a in after_ir.auto_attacks if a.id == before.id)
+    assert after.damage_source.flat_dps == before.damage_source.flat_dps + 5.0
+    assert after.damage_source.dps_stat_id is None
+    # This is the SAME genuine CombatRuntime used for source gear scoring.
+    def swing_damage(source_ir, attack):
+        actor = ActorState.from_ir(source_ir.actor, source_ir.resources,
+                                   source_ir.modes)
+        actor.transition_mode("bear")
+        target = TargetState.with_health("real_source_bear_target", 100000.,
+                                        armor=0.)
+        runtime = CombatRuntime(actor=actor, target=target,
+                                auto_attacks=(attack,))
+        runtime.advance_to(float(attack.swing_time_s) + 0.01)
+        return 100000. - target.health
+
+    old_damage = swing_damage(ir, before)
+    new_damage = swing_damage(after_ir, after)
+    assert old_damage > 0
+    assert new_damage > old_damage
