@@ -136,7 +136,7 @@ def _source_slot_proposals(*,class_key,level,base,per_slot=2,max_proposals=48,
     axes=[weights,{'strength':1.},{'agility':1.},{'stamina':1.},
           {'intellect':1.},{'spirit':1.},{'weapon_dps':1.},
           {'armor':1.},{'spell_power':1.}]
-    per=[]
+    rankings={}
     for slot,rows in sorted(groups.items()):
         if not rows:continue
         ranked=[];seen=set()
@@ -174,9 +174,19 @@ def _source_slot_proposals(*,class_key,level,base,per_slot=2,max_proposals=48,
                     if item.item_id not in seen:
                         ranked.append(item);seen.add(item.item_id)
             if len(ranked)>=per_slot:break
-        for item in ranked[:per_slot]:
-            per.append((slot,item))
-    return per[:max_proposals],{slot:len(rows) for slot,rows in groups.items()}
+        rankings[slot]=ranked[:per_slot]
+    # The *paid* slot quota is global. Appending two candidates per alphabetic
+    # slot before slicing silently excludes later slots (e.g. Mage wand).
+    # Give each source-legal slot one candidate before a second from any slot.
+    # P3-certified and weighted paths already use this same slot round-robin.
+    proposals=[]
+    for depth in range(per_slot):
+        for slot in sorted(rankings):
+            if depth<len(rankings[slot]):
+                proposals.append((slot,rankings[slot][depth]))
+                if len(proposals)>=max_proposals:
+                    return proposals,{slot:len(rows) for slot,rows in groups.items()}
+    return proposals,{slot:len(rows) for slot,rows in groups.items()}
 
 
 
