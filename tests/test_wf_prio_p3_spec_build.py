@@ -6,6 +6,7 @@ import pytest
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.gear import apply_stat_delta, executable_gear_stats
 from src.game.runtime.state import ActorState
+from src.game.runtime import CombatRuntime, TargetState
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import (
     talented_bonus_for_level, validate_talent_selection,
@@ -62,3 +63,30 @@ def test_p3_hp5_probe_reaches_real_actor_health_regeneration():
     after = ActorState.from_ir(after_ir.actor, after_ir.resources, after_ir.modes)
     assert after.resource_regeneration_per_s["health"] == pytest.approx(
         before.resource_regeneration_per_s["health"] + 2.0)
+
+
+def test_p3_real_source_weapon_dps_marginal_changes_bear_combat_damage():
+    """Pinned Forever Druid source facts and real CombatRuntime, no mock facts."""
+    ir = build_game_ir_slice(class_key="druid", level=60)
+    assert "weapon_dps" in executable_gear_stats(ir)
+    before = next(a for a in ir.auto_attacks if a.required_mode_id == "bear")
+    assert before.damage_source.flat_dps > 0
+    selected = apply_stat_delta(ir, "weapon_dps", 5.0)
+    after = next(a for a in selected.auto_attacks if a.id == before.id)
+    assert after.damage_source.flat_dps == pytest.approx(
+        before.damage_source.flat_dps + 5.0)
+    assert after.damage_source.dps_stat_id is None
+
+    def swing_damage(source_ir, attack):
+        actor = ActorState.from_ir(source_ir.actor, source_ir.resources,
+                                   source_ir.modes)
+        actor.transition_mode("bear")
+        target = TargetState.with_health("source_bear_target", 100000., armor=0.)
+        runtime = CombatRuntime(actor=actor, target=target, auto_attacks=(attack,))
+        runtime.advance_to(float(attack.swing_time_s) + 0.01)
+        return 100000. - target.health
+
+    original = swing_damage(ir, before)
+    improved = swing_damage(selected, after)
+    assert original > 0
+    assert improved > original
