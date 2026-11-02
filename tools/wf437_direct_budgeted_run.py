@@ -3,8 +3,7 @@ import argparse,json,time,hashlib,os
 from pathlib import Path
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.source_bounded_joint_frontier import (source_cold_start_stage,
-    search_bounded_joint_frontier,replay_joint_shortlist_100mob,
-    _SOURCE_GEAR_SAMPLING_VERSION)
+    search_bounded_joint_frontier,replay_joint_shortlist_100mob)
 from src.v2.source_paid_cold_comparison import source_gear_catalogue_snapshot
 
 ap=argparse.ArgumentParser()
@@ -136,7 +135,8 @@ summary['source_search_space']={k:params[k] for k in (
     'max_gear_moves','gear_slot_offset','max_policies','max_recovery_policies',
     'screen_mobs','finalist_mobs','pack_size')}
 summary['source_search_space']['gear_role']='druid_feral'
-summary['source_search_space']['gear_slot_sampling_version']=_SOURCE_GEAR_SAMPLING_VERSION
+# Record what the production search actually ran, not a CLI-local version.
+summary['source_search_space']['gear_slot_sampling_version']=r['source_slot_proposal_coverage']['strategy']
 summary['search_runner_wall_s']=time.monotonic()-start
 summary['validation']=rv
 # Preserve exact source-legal gear, talent ranks, APL, opening and recovery.
