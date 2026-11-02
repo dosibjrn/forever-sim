@@ -1,0 +1,29 @@
+name: Clean path search one-shot regression
+on:
+  push:
+    branches:
+      - clean/group-v2-path-search-20261102
+    paths:
+      - '.github/workflows/clean-path-search-once.yml'
+      - 'tests/generic/search/**'
+permissions:
+  contents: read
+jobs:
+  scoped:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install narrow test requirements
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Compile moved test modules
+        run: python -m compileall -q tests/generic/search/test_class_model_contract_v0114865.py tests/generic/search/test_v2_path_score.py tests/generic/search/test_v2_path_validation_inputs.py
+      - name: Collect moved tests
+        run: python -m pytest --collect-only -q tests/generic/search/test_class_model_contract_v0114865.py tests/generic/search/test_v2_path_score.py tests/generic/search/test_v2_path_validation_inputs.py
+      - name: Execute focused moved tests
+        run: timeout 240s python -m pytest -q tests/generic/search/test_class_model_contract_v0114865.py tests/generic/search/test_v2_path_score.py tests/generic/search/test_v2_path_validation_inputs.py
