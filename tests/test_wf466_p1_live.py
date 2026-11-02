@@ -405,7 +405,7 @@ def test_p1_false_positive_background_regeneration_must_fail(monkeypatch):
     monkeypatch.setitem(sys.modules,'src.game.runtime.simulator',sim)
     ir=N(actor=N(id='actor'),resources=(),modes=())
     assert _runtime_exercise(ir,action(),20)['status']=='invalid'
-    events[1]='AuraApply'  # real sourced effect, not timing/bookkeeping
+    events[1]='AuraApplied'  # confirmed runtime aura, not queued intent
     assert _runtime_exercise(ir,action(),20)['status']=='executed'
 
 
@@ -489,6 +489,14 @@ def test_p1_zero_delta_events_cannot_certify_effect_execution():
         payload={'requested_gain':25.,'gained':10.,'capped':True}))
     assert _p1_effect_observed(N(kind='Damage',payload={'amount':10.}))
     assert _p1_effect_observed(N(kind='Heal',payload={'amount':10.}))
+    assert not _p1_effect_observed(N(kind='AuraApply',payload={}))
+    assert _p1_effect_observed(N(kind='AuraApplied',payload={}))
+    assert not _p1_effect_observed(N(kind='ModeChange',payload={}))
+    assert _p1_effect_observed(N(kind='ModeChanged',payload={}))
+    assert not _p1_effect_observed(N(kind='ControlApplied',
+        payload={'applied':False,'proc_triggered':False}))
+    assert _p1_effect_observed(N(kind='ControlApplied',
+        payload={'applied':True,'proc_triggered':True}))
 
 
 def test_p1_missing_or_nonfinite_effect_payload_fails_closed():
