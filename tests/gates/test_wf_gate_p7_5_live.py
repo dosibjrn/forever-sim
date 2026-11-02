@@ -48,7 +48,7 @@ def test_source_joint_keeps_same_name_distinct_ids_for_real_legality_check(
     from pathlib import Path
 
     monkeypatch.syspath_prepend(str(
-        Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"))
+        Path(__file__).resolve().parents[2] / "integrations/mythicsim-rust"))
     source = importlib.import_module("p75_joint_search")
     base = _base()
     player = source.player(base)
@@ -387,7 +387,7 @@ def test_full_search_sources_enchants_outside_reference_without_invented_rules(m
     import sys
     from pathlib import Path
 
-    path = Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"
+    path = Path(__file__).resolve().parents[2] / "integrations/mythicsim-rust"
     sys.path.insert(0, str(path))
     try:
         spec = importlib.util.spec_from_file_location("source_p75_enchants", path / "p75_joint_search.py")
