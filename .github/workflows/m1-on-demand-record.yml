@@ -1,0 +1,144 @@
+name: M1 - Merge-owned on-demand live gate recorder
+
+# No push, pull_request or schedule trigger: no recurring heavy acceptance CI.
+on:
+  workflow_dispatch:
+    inputs:
+      class_key:
+        description: "Checkpoint class"
+        required: true
+        type: choice
+        options: [druid, hunter, mage, paladin, priest, rogue, shaman, warlock, warrior]
+      level:
+        description: "Checkpoint level"
+        required: true
+        type: choice
+        options: ["20", "30", "40", "60"]
+      spec:
+        description: "Exact canonical checkpoint spec/profile"
+        required: true
+        type: string
+        default: unrestricted
+      gate:
+        description: "One approved PROCESS gate"
+        required: true
+        type: choice
+        options: [P1, P2, P3, P4, P5, P6, P7.1, P7.2, P7.3, P7.4, P7.5]
+      allow_heavy:
+        description: "Explicit opt-in for P5/P6/P7 full production paths; do not use routinely"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: m1-on-demand-ledger
+  cancel-in-progress: false
+
+jobs:
+  live-record:
+    # Only the repository owner may initiate the Merge-delegated recorder.
+    # GitHub actor alone cannot distinguish agent roles: a separate Merge review
+    # of the resulting ledger-only PR remains mandatory.
+    if: github.ref == 'refs/heads/main' && github.actor == 'dosibjrn'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Materialize canonical LFS source data
+        run: git lfs pull
+      - name: Install existing Python gate dependencies
+        run: python -m pip install pytest==8.3.5 beautifulsoup4==4.13.4
+      - name: Run one actual production gate and stage PASS or eligible PARTIAL
+        id: gate
+        env:
+          CLASS_KEY: ${{ inputs.class_key }}
+          CHECKPOINT_LEVEL: ${{ inputs.level }}
+          CHECKPOINT_SPEC: ${{ inputs.spec }}
+          CHECKPOINT_GATE: ${{ inputs.gate }}
+          ALLOW_HEAVY: ${{ inputs.allow_heavy }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$CHECKPOINT_SPEC" =~ ^[a-z][a-z0-9_-]*$ ]]; then
+            echo "Invalid checkpoint spec" >&2; exit 2
+          fi
+          if [[ "$CHECKPOINT_GATE" == P5 || "$CHECKPOINT_GATE" == P6 || "$CHECKPOINT_GATE" == P7.* ]]; then
+            if [[ "$ALLOW_HEAVY" != "true" ]]; then
+              echo "Explicit allow_heavy required; refusing accidental expensive gate run" >&2
+              exit 2
+            fi
+          fi
+          set +e
+          python tools/wf_gate.py \
+            --class "$CLASS_KEY" --level "$CHECKPOINT_LEVEL" \
+            --spec "$CHECKPOINT_SPEC" --gate "$CHECKPOINT_GATE" \
+            --record-progress --out "$RUNNER_TEMP/m1-live-result.json"
+          rc=$?
+          set -e
+          # FAIL is exit 1 by contract and may still have a genuine PARTIAL.
+          if [[ "$rc" -gt 1 || ! -s "$RUNNER_TEMP/m1-live-result.json" ]]; then
+            echo "Gate could not produce a completed source-backed result" >&2
+            exit 2
+          fi
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads((Path(os.environ["RUNNER_TEMP"]) / "m1-live-result.json").read_text())
+          assert report["class"] == os.environ["CLASS_KEY"]
+          assert str(report["level"]) == os.environ["CHECKPOINT_LEVEL"]
+          assert report["spec"] == os.environ["CHECKPOINT_SPEC"]
+          assert report["gate"] == os.environ["CHECKPOINT_GATE"]
+          print("Measured gate result:", report["status"], report["results"][0]["reasons"][:3])
+          PY
+          python tools/m1_progress.py
+          if git diff --quiet -- docs/planning/M1_PASSES.tsv; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No new defensible PASS/PARTIAL; no M1 write PR."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "New live result staged; Merge review required."
+          fi
+      - name: Open ledger-only review PR (never write main directly)
+        if: steps.gate.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLASS_KEY: ${{ inputs.class_key }}
+          CHECKPOINT_LEVEL: ${{ inputs.level }}
+          CHECKPOINT_SPEC: ${{ inputs.spec }}
+          CHECKPOINT_GATE: ${{ inputs.gate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="m1/on-demand-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -- docs/planning/M1_PASSES.tsv
+          git commit -m "chore(m1): stage live $CLASS_KEY L$CHECKPOINT_LEVEL $CHECKPOINT_SPEC $CHECKPOINT_GATE result"
+          git push origin "HEAD:refs/heads/$branch"
+          cat > "$RUNNER_TEMP/m1-review.md" <<EOF
+          Merge-only M1 review candidate generated by the **real production gate runner** with `--record-progress`.
+
+          - Checkpoint: `$CLASS_KEY L$CHECKPOINT_LEVEL $CHECKPOINT_SPEC`
+          - Gate: `$CHECKPOINT_GATE`
+          - Tested source HEAD: `$GITHUB_SHA`
+          - Run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          - Scope: **only** `docs/planning/M1_PASSES.tsv`
+          - The TSV changed because the live runner returned PASS or a recordable FAIL/PARTIAL.
+          - Merge must validate source/ruleset/selected production backend, behavioral denominator, compatibility and invalidation before merging. No CI-green implies certification.
+          - Merge resolves conflicts with any concurrently landed M1 row; do not overwrite other rows.
+          EOF
+          gh pr create --base main --head "$branch" \
+            --title "chore(m1): live $CLASS_KEY L$CHECKPOINT_LEVEL $CHECKPOINT_SPEC $CHECKPOINT_GATE" \
+            --body-file "$RUNNER_TEMP/m1-review.md"
