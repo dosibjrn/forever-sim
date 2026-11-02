@@ -4,6 +4,7 @@ from pathlib import Path
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.source_bounded_joint_frontier import (source_cold_start_stage,
     search_bounded_joint_frontier,replay_joint_shortlist_100mob)
+from src.v2.source_paid_cold_comparison import source_gear_catalogue_snapshot
 
 ap=argparse.ArgumentParser()
 ap.add_argument('--budget',type=int,choices=(30,300))
@@ -27,6 +28,9 @@ db=root/'data/forever/staged_druid_l30_talents_70338.sqlite'
 sourcehash=hashlib.sha256(db.read_bytes()).hexdigest()
 ir=build_game_ir_slice(class_key='druid',level=30,ability_db_path=db)
 stage=source_cold_start_stage(class_key='druid',level=30,source_ir=ir,gear_role='druid_feral')
+# Item catalogue and typed effects live outside the staged ability SQLite.
+# Pin them independently before search and detect any mid-search mutation.
+gear_source_before=source_gear_catalogue_snapshot('druid',30)
 if args.compare_30 is not None:
     from src.v2.source_paid_cold_comparison import compare_saved_cold_winners
     search30=json.loads(Path(args.compare_30).read_text())
@@ -111,6 +115,10 @@ summary={k:v for k,v in r.items() if k not in ('rows','validation_shortlist','ba
 summary['refinement']={k:v for k,v in r['refinement'].items() if k!='rows'}
 summary['source_db_sha256']=sourcehash
 summary['source_db_path']=str(db)
+gear_source_after=source_gear_catalogue_snapshot('druid',30)
+if gear_source_before != gear_source_after:
+    raise ValueError('COLD_SOURCE_GEAR_CATALOGUE_CHANGED_DURING_SEARCH')
+summary['source_gear_catalogue_snapshot']=gear_source_after
 # Explicitly retain the legal proposal-universe limits for later P4/P5
 # same-space verification; budget-specific exploration depth is separate.
 summary['source_search_space']={k:params[k] for k in (
