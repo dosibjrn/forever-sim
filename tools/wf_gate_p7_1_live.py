@@ -27,6 +27,30 @@ def _blocked(reason: str, **details) -> dict:
     return {"status": "BLOCKED", "reasons": [reason], **details}
 
 
+
+def _source_native_world_parity(native: dict, live: dict, iterations: int) -> str | None:
+    """Compare actual production outputs; equal aggregate DPS is insufficient.
+
+    The first stochastic encounter must have the same duration in the
+    independent native control and in the ACK-driven 2D run. Otherwise the
+    source encounter/timing changed, even if aggregate DPS happens to match.
+    """
+    if (live["iterations_done"] != iterations
+            or native["iterations"] != iterations
+            or len(live["per_iteration"]) != iterations
+            or live["native_damage_events"] <= 0
+            or live["native_world_ticks"] <= 0):
+        return "P7_1_NATIVE_WORLD_EXECUTION_INCOMPLETE"
+    if (abs(native["first_duration_s"] - live["sampled_duration_s"]) >= 1e-9
+            or abs(live["per_iteration"][0]["duration_s"]
+                   - live["sampled_duration_s"]) >= 1e-9):
+        return "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED"
+    if (abs(native["native_dps"] - live["native_dps"]) >= 1e-6
+            or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
+        return "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
+    return None
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     if (class_key, level, spec) != ("druid", 60, "balance"):
         return _blocked("P7_1_SAVED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
@@ -100,7 +124,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     live = module.run(binary, request,
                       distance=player["distanceFromTarget"], iterations=run_iterations)
     reference = float(meta["reference_dps"])
+    parity_failure = _source_native_world_parity(native, live, run_iterations)
     actual = {"native_dps": native["native_dps"],
+              "native_first_duration_s": native["first_duration_s"],
+              "world_first_duration_s": live["sampled_duration_s"],
               "live_native_dps": live["native_dps"],
               "world_dps": live["world_mean_dps"],
               "world_damage_events": live["native_damage_events"],
@@ -121,19 +148,17 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
               # for M1 or any gate's partial behavior assertions.
               "sampled_source_fights": live["iterations_done"],
               "saved_source_iterations": source_iterations}
-    if (live["iterations_done"] != run_iterations
-            or native["iterations"] != run_iterations
-            or len(live["per_iteration"]) != run_iterations
-            or live["native_damage_events"] <= 0
-            or (full_validation and not p7_final_stochastic_mean_passes(
-                "P7.1", native["native_dps"], reference,
-                iterations=iterations, stochastic=True))
-            or (full_validation and not p7_final_stochastic_mean_passes(
+    if parity_failure is not None:
+        return {"status": "FAIL", "reasons": [parity_failure],
+                "production_engine": "pinned_mythicsim_rust_gsim_2d", **actual}
+    if full_validation and (not p7_final_stochastic_mean_passes(
+            "P7.1", native["native_dps"], reference,
+            iterations=iterations, stochastic=True)
+            or not p7_final_stochastic_mean_passes(
                 "P7.1", live["world_mean_dps"], reference,
-                iterations=iterations, stochastic=True))
-            or abs(native["native_dps"] - live["native_dps"]) >= 1e-6
-            or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
-        return {"status": "FAIL", "reasons": ["P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"],
+                iterations=iterations, stochastic=True)):
+        return {"status": "FAIL",
+                "reasons": ["P7_1_DPS_BELOW_APPROVED_99_PERCENT_FLOOR"],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d", **actual}
 
     # The real native↔world execution established source/ACK parity, but a
