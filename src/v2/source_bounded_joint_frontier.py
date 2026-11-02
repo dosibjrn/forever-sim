@@ -1571,15 +1571,17 @@ def _source_priority_witness_probes(variants):
     return (*unlock_probes, *composed, *modified_probes)
 
 
-def _source_gear_witness_probes(gear_stages, *, max_probes=20):
-    """Pay for distinct real source slots before repeating gear coordinates.
+def _source_gear_witness_probes(gear_stages, *, max_probes=32):
+    """Give distinct source slots a paid chance, then explore item depth.
 
-    Gear proposals already passed the shared source-equipment legality check.
-    Reserve one actual runtime screen per proposed slot (within the existing
-    paid candidate/time budgets), then source-legal mixed-stat packages.
-    A witness is an ATTEMPT, not a completed paid screen or a gate PASS.
+    The common source slot frontier may propose more than two legal items per
+    slot when the global gear budget permits it. Reserve the first witness
+    for every slot before a second or third from any slot. Mixed-stat packages
+    retain a witness before repeated single-slot moves. Every coordinate
+    still goes through the ordinary paid evaluator and shared wall budget;
+    a proposed witness is not a completed screen or a gate PASS.
     """
-    first_by_slot={}
+    by_slot={}
     mixed=[]
     for i,(label,_) in enumerate(gear_stages):
         if label.startswith('source_stat_package:'):
@@ -1589,8 +1591,13 @@ def _source_gear_witness_probes(gear_stages, *, max_probes=20):
         if label.startswith('package:') or ':' not in label:
             continue
         slot=label.split(':',1)[0]
-        first_by_slot.setdefault(slot,(0,i,0,0))
-    return tuple((*first_by_slot.values(),*mixed)[:max_probes])
+        by_slot.setdefault(slot,[]).append((0,i,0,0))
+    first=[moves[0] for moves in by_slot.values()]
+    deeper=[]
+    for depth in range(1,max((len(moves) for moves in by_slot.values()),default=0)):
+        deeper.extend(moves[depth] for moves in by_slot.values()
+                      if len(moves)>depth)
+    return tuple((*first,*mixed,*deeper)[:max_probes])
 
 
 def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, attempted, *, gear_stages=()):
@@ -2638,7 +2645,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
     stat_package_quota,weapon_package_quota,slot_quota=(
         _joint_gear_move_quotas(max_gear_moves))
     slot_moves,slot_source_counts=_source_slot_proposals(class_key=class_key,
-        level=level,base=base,per_slot=2,max_proposals=slot_quota,
+        level=level,base=base,per_slot=10,max_proposals=slot_quota,
         slot_offset=gear_slot_offset)
     slot_move_labels={f'{slot}:{item.item_id}':slot for slot,item in slot_moves}
     stat_packages,_=_source_stat_package_proposals(class_key=class_key,level=level,

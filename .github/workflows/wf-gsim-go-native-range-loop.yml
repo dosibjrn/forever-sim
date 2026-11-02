@@ -13,6 +13,7 @@ on:
       - work/first-native-source-single-target-20261102
       - work/first-native-terminal-boundary-20261102
       - work/first-native-world-dps-parity-20261102
+      - work/first-native-source-facing-20261102
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
@@ -211,6 +212,12 @@ jobs:
           last_ns=observations[-1]["world_tick"]["native_clock_ns"]
           assert 0 < end_ns-last_ns < 1_000_000,(end_ns,last_ns)  # Real terminal native/world tick
           assert all(row["world_tick"]["distance_yards"]==distance for row in observations)
+          assert all(row["world_tick"]["facing_applied"] for row in observations)
+          assert all(row["world_tick"]["in_front_of_target"] is player.get("inFrontOfTarget",False)
+                     for row in observations)
+          assert all(row["native_range_receipt"]["facing_applied"] for row in observations)
+          assert all(row["native_range_receipt"]["in_front_of_target"] is player.get("inFrontOfTarget",False)
+                     for row in observations)
           assert all(row["world_tick"]["world_target_max_health"]==source_health for row in observations)
           assert observations[0]["world_tick"]["world_target_health_before"]==source_health
           assert all(row["native_actor_state"]["native_clock_ns"]==row["world_tick"]["native_clock_ns"]

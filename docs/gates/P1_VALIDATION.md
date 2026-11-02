@@ -55,9 +55,9 @@ regressions. **Its `2/61` Hunter L20 action count is not native MythicSim P1
 coverage.** A missing gsim GameIR slice at L60 does not mean a native L60
 spell is missing.
 
-## Partial coverage for prioritization (not P1 acceptance)
+## Partial coverage and estimated effort (not P1 acceptance)
 
-[Draft PR #60](https://github.com/dosibjrn/forever-sim/pull/60) explored `observed/checked` and thresholds 50/80/85/88/91/93/95/97/99 %. Reuse **the measured coverage ratio and 80/20 fix ordering** (high-reuse effect families first, then every remaining relevant case), **not** its artificial `effect_probe_progress_naksut` counter, toy-gsim results as native PASS, or extra gate requirements. On the **selected real production engine**, count actually observed effects over the currently classified relevant source-legal ability set. Show unresolved acquisition and conditional-trigger cases separately and mark percentages *provisional* until source scope is complete. Never silently shrink the denominator or equate 80% to P1 PASS.
+[Draft PR #60](https://github.com/dosibjrn/forever-sim/pull/60) explored `observed/checked` and thresholds 50/80/85/88/91/93/95/97/99 %. Keep **the real measured coverage ratio**; optionally show a separate **Pareto-estimated work completed percentage**, under the stated hypothesis that the first 80% of comparable cases cost 20% of work and the last 20% cost 80%. See [the calculation and caveats](../planning/GATE_PROGRESS_80_20.md). **Do not use Pareto to change work ordering,** turn its estimate into a PASS gate, or chase artificial `effect_probe_progress_naksut` ticks. Toy-gsim results are not native PASS. On the **selected real production engine**, count actually observed effects over the currently classified relevant source-legal ability set. Show unresolved acquisition and conditional-trigger cases separately and mark percentages *provisional* until source scope is complete. Never silently shrink the denominator or equate 80% to P1 PASS.
 
 ## Next production task
 

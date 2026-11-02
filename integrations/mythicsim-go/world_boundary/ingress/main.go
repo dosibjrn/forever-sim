@@ -103,9 +103,9 @@ func run(requestRaw []byte, sourceRevision string) error {
             }
         }
         if _,err:=boundary.AdvanceToWorldTick(time.Duration(tick.NativeClockNS),200000);err!=nil {return fmt.Errorf("tick %d native advance: %w",count,err)}
-        receipt,err:=boundary.ApplyWorldDistance(tick.Sequence,tick.NativePlayerIndex,tick.DistanceYards)
+        receipt,err:=boundary.ApplyWorldGeometry(tick.Sequence,tick.NativePlayerIndex,tick.DistanceYards,tick.InFrontOfTarget)
         if err!=nil {return fmt.Errorf("tick %d native range apply: %w",count,err)}
-        if receipt.Sequence!=tick.Sequence || receipt.NativeClockNS!=tick.NativeClockNS || receipt.AppliedYards!=tick.DistanceYards || receipt.PlayerIndex!=tick.NativePlayerIndex {
+        if receipt.Sequence!=tick.Sequence || receipt.NativeClockNS!=tick.NativeClockNS || receipt.AppliedYards!=tick.DistanceYards || receipt.PlayerIndex!=tick.NativePlayerIndex || receipt.FacingApplied!=tick.FacingApplied || (tick.FacingApplied && receipt.InFrontOfTarget!=*tick.InFrontOfTarget) {
             return errors.New("NATIVE_RANGE_RECEIPT_MISMATCH")
         }
         targetCounters,err:=boundary.NativeSingleTargetSpellCounters(tick.NativePlayerIndex)

@@ -29,6 +29,7 @@ type worldTick struct {
     WorldSource string `json:"world_source"`
     RangeOnly bool `json:"range_only"`
     FacingApplied bool `json:"facing_applied"`
+    InFrontOfTarget *bool `json:"in_front_of_target,omitempty"`
     ControlsApplied bool `json:"controls_applied"`
     NativeActionACK bool `json:"native_action_ack"`
     CheckpointCertified bool `json:"checkpoint_certified"`
@@ -59,9 +60,10 @@ func (v *tickValidator) validate(t worldTick) error {
     if v.started && t.NativePlayerIndex != v.playerIndex {
         return errors.New("WORLD_NATIVE_PLAYER_CHANGED_DURING_RETAINED_SESSION")
     }
-    if t.NativePlayerIndex < 0 || t.SelectedTargetID == "" || !t.RangeOnly || t.FacingApplied || t.ControlsApplied || t.NativeActionACK || t.CheckpointCertified {
+    if t.NativePlayerIndex < 0 || t.SelectedTargetID == "" || !t.RangeOnly || t.ControlsApplied || t.NativeActionACK || t.CheckpointCertified {
         return errors.New("WORLD_TICK_UNPROVEN_SEMANTICS")
     }
+    if t.FacingApplied != (t.InFrontOfTarget != nil) {return errors.New("WORLD_TICK_FACING_NOT_ATTESTED")}
     if math.IsNaN(t.DistanceYards) || math.IsInf(t.DistanceYards, 0) || t.DistanceYards < 0 {
         return errors.New("WORLD_TICK_DISTANCE_INVALID")
     }

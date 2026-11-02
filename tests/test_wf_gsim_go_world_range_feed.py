@@ -22,6 +22,7 @@ def test_pure_projection_is_range_only_and_source_hash_bound():
     assert projected["distance_yards"] == 20
     assert projected["range_only"] and not projected["native_action_ack"]
     assert not projected["checkpoint_certified"]
+    assert not projected["facing_applied"]
     world["enemies"]["m1"]["xy_yards"] = [15., 0.]
     changed = _projection_from_snapshot(world, sequence=0, native_player_index=0)
     assert changed["distance_yards"] == 15
@@ -60,7 +61,9 @@ def _runtime():
 def receipt(tick):
     return {"sequence": tick["sequence"], "native_clock_ns": tick["native_clock_ns"],
             "player_index": tick["native_player_index"], "applied_yards": tick["distance_yards"],
-            "native_encounter_damage": 0.0}
+            "native_encounter_damage": 0.0,
+            "facing_applied": tick["facing_applied"],
+            "in_front_of_target": tick.get("in_front_of_target", False)}
 
 
 def test_real_gsim_moving_target_emits_two_serial_range_ticks():
@@ -191,7 +194,7 @@ def test_source_dps_world_has_exactly_one_real_spatial_target():
     from tools.wf_gsim_go_live_range_probe import diagnostic_gsim_world
     runtime = diagnostic_gsim_world(target_spawn_yards=15.,
         enemy_move_speed_yards_s=0., target_health=127393.,
-        source_single_target=True)
+        source_single_target=True, source_in_front_of_target=False)
     world = snapshot_gsim_world(runtime)
     assert set(runtime.targets) == set(world["enemies"]) == {"m1"}
     assert runtime.multi_target and runtime.spatial_context["simultaneous_2d"]
@@ -251,3 +254,25 @@ def test_native_sampled_encounter_end_schedules_last_real_world_boundary():
     assert _terminal_world_tick_ms(end_ns, 111_956) is None
     # Exact-millisecond encounter ends still require the last valid <end tick.
     assert _terminal_world_tick_ms(120_000_000_000, 119_900) == 119_999
+
+
+@pytest.mark.parametrize("front,heading", [(True,(-1.,0.)),(False,(1.,0.))])
+def test_real_gsim_front_back_reaches_native_projection(front,heading):
+    from tools.wf_gsim_go_live_range_probe import diagnostic_gsim_world
+    runtime=diagnostic_gsim_world(target_spawn_yards=15.,enemy_move_speed_yards_s=0.,
+        target_health=127393.,source_single_target=True,source_in_front_of_target=front)
+    assert runtime.targets['m1'].metadata['facing_xy_yards']==heading
+    feed=GsimGoRangeFeed(runtime,native_player_index=0)
+    tick=feed.next_tick()
+    assert tick['facing_applied'] and tick['in_front_of_target'] is front
+    wrong=receipt(tick);wrong['in_front_of_target']=not front
+    with pytest.raises(GoWorldRangeError,match='NATIVE_FACING_RECEIPT_MISMATCH'):
+        feed.accept_range_receipt(wrong)
+    assert feed.accept_range_receipt(receipt(tick))['checkpoint_certified'] is False
+
+
+@pytest.mark.parametrize('heading', [(0.,0.),(math.nan,0.),(0.,1.)])
+def test_unusable_target_facing_is_rejected(heading):
+    world=sample();world['enemies']['m1']['facing_xy_yards']=heading
+    with pytest.raises(GoWorldRangeError,match='FACING'):
+        _projection_from_snapshot(world,sequence=0,native_player_index=0)
