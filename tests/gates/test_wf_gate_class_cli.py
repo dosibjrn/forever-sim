@@ -17,19 +17,27 @@ def write(tmp, cl, lv, gate, **kw):
     return p
 
 
-def test_p2_ignores_forged_evidence_and_runs_live(tmp_path,capsys):
+def test_p2_ignores_forged_evidence_and_calls_provider(tmp_path,monkeypatch,capsys):
     # A superficially perfect imported JSON report must never certify P2.
     write(tmp_path,'druid',20,'P2',structurally_reachable_ranks=42,
           ranks_with_executed_behavior_tests=42,ranks_with_executor_paths=42,
           missing_executor_ranks=[],failed_behavior_ranks=[],talent_paths_legal=True,
           ranks_represented_in_search=42,unlocked_actions_available_to_generated_search=True,
           obsolete_semantic_verification_labels=['partial','unknown'])
+    # Explicitly instrument the live provider: the forged JSON is never a result.
+    from tools import wf_gate_p2_live
+    calls = []
+    def live(*args, **kwargs):
+        calls.append((args, kwargs))
+        return {'status': 'FAIL', 'reasons': ['LIVE_PRODUCTION_REJECTION'],
+                'pass_count': 3, 'reachability_count': 42}
+    monkeypatch.setattr(wf_gate_p2_live, 'run_live', live)
     assert mod.main(['--class','druid','--level','20','--gate','P2',
                      '--evidence-dir',str(tmp_path)]) == 1
     output=json.loads(capsys.readouterr().out)
     assert output['status']=='FAIL'
     assert output['results'][0]['pass_count']<output['results'][0]['reachability_count']
-    assert any('BEHAVIOR_TEST_MISSING' in x for x in output['results'][0]['reasons'])
+    assert calls and output['results'][0]['reasons'] == ['LIVE_PRODUCTION_REJECTION']
 
 
 def test_p2_live_reports_true_missing_behavior(tmp_path,capsys):

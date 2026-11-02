@@ -2,7 +2,6 @@
 from __future__ import annotations
 from copy import deepcopy
 from hashlib import sha256
-from pathlib import Path
 import pytest
 from src.game.checkpoint_gate_cycle import (
     GateCycleError, GATES, validate_cycle, validate_gate_ledger,
@@ -141,11 +140,12 @@ def test_evidence_path_cannot_escape_project(tmp_path):
                              project_root=tmp_path)
 
 
-def test_real_wf402_p3_red_is_verified_from_canonical_evidence():
-    root=Path(__file__).resolve().parents[2]
-    import json
-    ledger=json.loads((root/'evidence/wf403/GATE_CYCLE_EXAMPLE.json').read_text())
-    audit=validate_gate_ledger(ledger,project_root=root)
-    assert audit['gate_phases']['P3']=='RED'
-    assert audit['evidence_sha256_verified']
-    assert not audit['process_evidence_complete']
+def test_missing_historical_red_evidence_cannot_inflate_gate_status(tmp_path):
+    # An old RED-only example without executable evidence must fail closed.
+    cycle = evidence('P3', 'RED')
+    cycle['red']['evidence_file'] = 'missing-red-evidence.json'
+    with pytest.raises(GateCycleError, match='P3_RED_EVIDENCE_FILE_NOT_FOUND'):
+        validate_gate_ledger(
+            {'checkpoint': C, 'source_sha256': H, 'gates': [cycle]},
+            project_root=tmp_path,
+        )
