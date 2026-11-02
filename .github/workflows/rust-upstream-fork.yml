@@ -36,6 +36,26 @@ jobs:
           print("SOURCE_PACKAGING_AND_GIT_SAFETY_GUARDS_PRESENT")
           PY
 
+  check-selected-rust-source:
+    # The PR may not access fork-write secrets. Compile the ACTUAL selected
+    # public engine with this patch, without mutating or repinning either repo.
+    if: github.event_name == 'pull_request'
+    needs: check-script
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply port to selected production Rust source and compile
+        run: |
+          git clone --quiet --filter=blob:none https://github.com/dosibjrn/mythicsim-forever-engine.git /tmp/forever-selected-rust
+          git -C /tmp/forever-selected-rust checkout --quiet 1f170913f0af47f0de455c2b91581d777e713d3a
+          python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
+          git -C /tmp/forever-selected-rust diff --check
+          test "$(git -C /tmp/forever-selected-rust diff --name-only)" = "src/core/fight.rs"
+          python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
+          test "$(git -C /tmp/forever-selected-rust diff --name-only)" = "src/core/fight.rs"
+          cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
+
   sync-fork:
     if: github.event_name == 'workflow_dispatch'
     needs: check-script
