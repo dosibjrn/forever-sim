@@ -2433,6 +2433,24 @@ def _spread_full_point_talent_neighbors(ir, allocation, *, level,
             _spread_candidates(macro,macro_slots,offset))
 
 
+def _refinement_build_identity(row, candidate):
+    """Actual paid build, not the proposal label used to find its equipment.
+
+    Gear moves and stat-weight paths can select identical legal items. Charging
+    the short cold budget twice for the same allocation/equipment/APL/opening/
+    recovery means the later talent neighborhoods never receive that budget.
+    The key includes full source gear identity (with slot names), not merely
+    the unordered item IDs or a coordinate label.
+    """
+    gear=row.get('equipped_gear')
+    if gear is None:
+        gear=candidate.source_stage['gear_policy_result']['winner']['gear']
+    return (_key(row['allocation']),json.dumps(gear,sort_keys=True,default=str),
+            row['policy_signature'],
+            tuple(row.get('opening_action_ids',candidate.opening)),
+            row['recovery'])
+
+
 def _refine_screened_top_n(*, screened, class_key, level, compiled,
                            policies_by_talent, talents, bonus_talent_points,
                            max_top_n, rounds, stat_axes, probe_delta,
@@ -2456,7 +2474,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                           'policy_probes':0,'talent_probes':0,
                           'paid_evaluations':0,'events':0,'worker_cpu_s':0.,'rows':[]}
     top=_select_screen_finalists(screened,max_top_n)
-    seen={(_joint_row_identity(r),tuple(sorted(int(x['item_id']) for x in c.source_stage['gear_policy_result']['winner']['gear']['slots'].values()))) for r,c,_ in screened}
+    seen={_refinement_build_identity(r,c) for r,c,_ in screened}
     completed_rounds=0
     for turn in range(rounds):
         if evaluated >= max_evaluations: break
@@ -2521,8 +2539,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                     'policy':label,'recovery':parent['recovery'],
                                     'policy_signature':signature}
                                 gear=candidate.source_stage['gear_policy_result']['winner']['gear']
-                                key=(_joint_row_identity(trace),tuple(sorted(
-                                    int(v['item_id']) for v in gear['slots'].values())))
+                                key=_refinement_build_identity(trace,fresh)
                                 if key in seen:continue
                                 seen.add(key)
                                 # Charge the call before invocation: a runtime
@@ -2618,7 +2635,7 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                             'gear_move':'refined:'+str(turn+1)+':'+str(identity(gear)),
                             'policy':label,'recovery':parent['recovery'],
                             'policy_signature':policy_identity(fresh.policy)}
-                        key=(_joint_row_identity(trace),tuple(sorted(int(v['item_id']) for v in gear['slots'].values())))
+                        key=_refinement_build_identity(trace,fresh)
                         if key in seen:continue
                         seen.add(key)
                         evaluated+=1;any_attempt=True
