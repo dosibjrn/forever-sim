@@ -156,7 +156,16 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
     legal300 = _verify_winner_gear_legality(winner300, class_key=class_key, level=level)
     gaps30 = _winner_gear_effect_gaps(winner30, class_key=class_key, level=level)
     gaps300 = _winner_gear_effect_gaps(winner300, class_key=class_key, level=level)
-    same_space = bool(gear_pinned and space30 and space30 == space300)
+    # A catalogue SHA pins items, not the *proposal ordering*. The old
+    # standalone WF437 CLI recorded a stale literal sampling version and
+    # could claim same-space evidence after production changed its frontier.
+    # Numeric replay remains diagnostic for legacy reports, but source-space
+    # parity requires the real currently executing paid-search revision.
+    from src.v2.source_bounded_joint_frontier import _SOURCE_GEAR_SAMPLING_VERSION
+    current_sampling = (isinstance(space30, dict) and
+        space30.get('gear_slot_sampling_version') == _SOURCE_GEAR_SAMPLING_VERSION)
+    same_space = bool(gear_pinned and space30 and space30 == space300
+                      and current_sampling)
 
     from src.v2.source_bounded_joint_frontier import replay_joint_shortlist_100mob
     results = []
