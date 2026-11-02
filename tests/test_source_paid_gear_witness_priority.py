@@ -228,3 +228,40 @@ def test_real_source_third_item_executes_through_paid_combat_runtime():
         assert result["status"] == "COMPLETE", (class_key, slot, item.item_id, result)
         assert result["count"] == 1
         assert result["events"] > 0
+
+
+def test_p5_breadth_uses_real_distinct_paid_builds_not_attempted_coordinates():
+    """The P5 N denominator cannot include blocked preparations or alias builds."""
+    from copy import deepcopy
+    from src.v2.source_bounded_joint_frontier import (
+        _unique_paid_full_builds, search_bounded_joint_frontier,
+    )
+
+    ir = build_game_ir_slice(class_key="druid", level=20)
+    seed = source_cold_start_stage(
+        class_key="druid", level=20, source_ir=ir, gear_role="druid_feral")
+    result = search_bounded_joint_frontier(
+        class_key="druid", level=20, source_ir=ir, seed_stage=seed,
+        max_talents=1, max_gear_moves=0, max_policies=1,
+        max_recovery_policies=1, max_paid_builds=3, max_cpu_s=6.,
+        per_candidate_wall_s=1.5, screen_mobs=1, search_only=True,
+        screen_evaluator_backend="direct", refinement_rounds=0)
+    paid = [row for row in result["rows"] if row.get("screen_events", 0) > 0]
+    assert paid, result["status"]
+    assert all(row["equipped_gear"]["slots"] and row["policy_signature"]
+               for row in paid)
+    assert result["unique_full_builds"] == _unique_paid_full_builds(result["rows"])
+    assert result["unique_full_builds"] <= result["paid_candidates"]
+
+    # Negative controls are derived from a genuinely executed source build,
+    # not a fake scorer: the same full build reached by another gear label is
+    # one build, while a distinct coordinate rejected before combat is zero.
+    witness = deepcopy(paid[0])
+    duplicate = deepcopy(witness)
+    duplicate["gear_move"] = "another_source_path_to_same_items"
+    blocked = deepcopy(witness)
+    blocked["gear_move"] = "not_a_paid_screen"
+    blocked["screen_events"] = 0
+    blocked["screen_status"] = "BLOCKED_PREPARATION_OR_EXECUTION"
+    assert _unique_paid_full_builds([witness, duplicate, blocked]) == 1
+    assert _unique_paid_full_builds([blocked]) == 0
