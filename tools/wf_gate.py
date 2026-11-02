@@ -523,7 +523,9 @@ def main(argv=None) -> int:
                 "winning_gear_source_legality_verified",
                 "source_class_gear_membership_attested",
                 "independent_N30_unique_paid", "independent_N300_unique_paid",
-                "independent_p5_10x_breadth",
+                "independent_p5_2x_or_exhaustion_breadth",
+                "independent_p5_breadth_required_unique",
+                "independent_p5_verified_legal_universe_size",
                 "independent_same_source_candidate_space",
                 "independent_100mob_winner_replays_complete")
             boolean_fields = {
@@ -531,7 +533,7 @@ def main(argv=None) -> int:
                 "gear_source_snapshot_matches_current",
                 "winning_gear_source_legality_verified",
                 "source_class_gear_membership_attested",
-                "independent_p5_10x_breadth",
+                "independent_p5_2x_or_exhaustion_breadth",
                 "independent_same_source_candidate_space",
                 "independent_100mob_winner_replays_complete"}
             for key in paid_fields:
