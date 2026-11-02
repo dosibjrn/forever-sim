@@ -24,7 +24,7 @@ def test_worker_is_killed_and_evidence_deleted_if_it_exceeds_budget():
 
 
 def test_source_worker_does_not_import_a_legacy_oracle_module():
-    p=Path(__file__).resolve().parents[1]/'tools/wf299_30s_worker.py'
+    p=Path(__file__).resolve().parents[2]/'tools/wf299_30s_worker.py'
     text=p.read_text()
     for forbidden in ('frozen_heldout', 'wf282_source_role_heldout_benchmark',
                       'wf298_druid_l20_verified_delta', 'fixtures/wf243',
@@ -33,7 +33,7 @@ def test_source_worker_does_not_import_a_legacy_oracle_module():
 
 
 def test_evidence_structure_keeps_known_best_separate_from_certified_optimum():
-    p=Path(__file__).resolve().parents[1]/'WF299_30S_ACCEPTANCE.json'
+    p=Path(__file__).resolve().parents[2]/'WF299_30S_ACCEPTANCE.json'
     if not p.exists():pytest.skip('acceptance evidence not included in working extract')
     result=json.loads(p.read_text())
     assert result['status']=='PASS_BLIND_30S_REPRODUCIBLE_MODEL_BENCHMARK'

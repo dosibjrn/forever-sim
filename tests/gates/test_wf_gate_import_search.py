@@ -1,7 +1,7 @@
 import copy,hashlib,json,sys
 from pathlib import Path
 import pytest
-TOOLS=Path(__file__).resolve().parents[1]/'tools'
+TOOLS=Path(__file__).resolve().parents[2]/'tools'
 sys.path.insert(0,str(TOOLS))
 from wf_gate_import_search import import_search,build_p6
 from wf_gate_engine_fingerprint import runtime_fingerprint,_RUNTIME_MODULES

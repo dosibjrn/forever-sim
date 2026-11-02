@@ -142,7 +142,7 @@ def test_evidence_path_cannot_escape_project(tmp_path):
 
 
 def test_real_wf402_p3_red_is_verified_from_canonical_evidence():
-    root=Path(__file__).resolve().parents[1]
+    root=Path(__file__).resolve().parents[2]
     import json
     ledger=json.loads((root/'evidence/wf403/GATE_CYCLE_EXAMPLE.json').read_text())
     audit=validate_gate_ledger(ledger,project_root=root)

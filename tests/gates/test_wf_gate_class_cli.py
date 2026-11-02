@@ -2,7 +2,7 @@ import importlib.util
 import json
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / 'tools' / 'wf_gate.py'
+SCRIPT = Path(__file__).resolve().parents[2] / 'tools' / 'wf_gate.py'
 spec = importlib.util.spec_from_file_location('wf_gate', SCRIPT)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
