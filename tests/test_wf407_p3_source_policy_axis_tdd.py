@@ -55,3 +55,65 @@ def test_ordinary_extra_weight_can_be_zero_but_named_stamina_must_be_positive(mo
                            weight_evidence_kind='MEASURED_SOURCE_CONTEXT',
                            weapon_damage_dependent=False)
     assert 'NONPOSITIVE_RELEVANT_WEIGHT:stamina' in negative['blockers']
+
+
+def test_non_tank_policy_allows_real_zero_defensive_weights_not_negative_or_missing(monkeypatch):
+    # Contract test for source-policy applicability; synthetic item weights are
+    # not evidence of a full P3 production PASS.
+    item = ItemRecord(304, 'Armor and stamina', 'chest', item_level=20,
+                      required_level=10, armor=70, stamina=5)
+    monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',
+                        lambda *a, **k: (item,))
+    cast = SimpleNamespace(id='wrath', requirements=(), effects=())
+    ir = SimpleNamespace(id='source_druid', actions=(cast,))
+    policy = SimpleNamespace(id='balance', rules=(SimpleNamespace(action_id='wrath'),))
+    kw = dict(class_key='druid', level=20, source_ir=ir, policy=policy,
+              weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
+
+    zero = fast_p3_smoke_for_policy(weights={'armor': 0., 'stamina': 0.}, **kw)
+    assert zero['p3_pass'] is True
+    assert zero['defensive_positive_required'] is False
+    assert zero['tested_stat_assertions'] == 2
+    assert zero['verified_stat_assertions'] == 2
+
+    negative = fast_p3_smoke_for_policy(weights={'armor': -0.1, 'stamina': 0.}, **kw)
+    assert 'NEGATIVE_WEIGHT:armor' in negative['blockers']
+    assert not negative['p3_pass']
+    missing = fast_p3_smoke_for_policy(weights={'stamina': 0.}, **kw)
+    assert 'MISSING_WEIGHT:armor' in missing['blockers']
+    assert not missing['p3_pass']
+
+
+def test_warrior_and_source_bear_policy_still_require_positive_defense(monkeypatch):
+    item = ItemRecord(305, 'Tank armor', 'chest', item_level=20,
+                      required_level=10, armor=70, stamina=5)
+    monkeypatch.setattr('src.game.checkpoint_p3_smoke.available_items',
+                        lambda *a, **k: (item,))
+    source_ir = SimpleNamespace(id='source_ir', actions=(
+        SimpleNamespace(id='slash', requirements=(), effects=()),
+        SimpleNamespace(id='maul', requirements=(
+            {'kind': 'mode_is', 'value': 'bear'},), effects=()),
+    ))
+    for class_key, action_id in (('warrior', 'slash'), ('druid', 'maul')):
+        policy = SimpleNamespace(id=action_id, rules=(
+            SimpleNamespace(action_id=action_id),))
+        report = fast_p3_smoke_for_policy(
+            class_key=class_key, level=20, source_ir=source_ir, policy=policy,
+            weight_evidence_kind='MEASURED_SOURCE_CONTEXT',
+            weights={'armor': 0., 'stamina': 0.},
+        )
+        assert report['defensive_positive_required'] is True
+        assert 'NONPOSITIVE_RELEVANT_WEIGHT:armor' in report['blockers']
+        assert 'NONPOSITIVE_RELEVANT_WEIGHT:stamina' in report['blockers']
+        assert not report['p3_pass']
+
+
+def test_manual_defensive_applicability_override_is_forbidden():
+    ir = SimpleNamespace(id='source_ir', actions=(
+        SimpleNamespace(id='cast', requirements=(), effects=()),))
+    policy = SimpleNamespace(id='policy', rules=(SimpleNamespace(action_id='cast'),))
+    with pytest.raises(ValueError, match='P3_MANUAL_DEFENSIVE_OVERRIDE_FORBIDDEN'):
+        fast_p3_smoke_for_policy(
+            source_ir=ir, policy=policy, class_key='druid', level=20,
+            weights={'armor': 0.}, weight_evidence_kind='MEASURED_SOURCE_CONTEXT',
+            defensive_positive_required=False)
