@@ -41,7 +41,7 @@ def test_unknown_spec_never_falls_back_to_unrestricted_gear_context():
 
 def test_real_p3_balance_paid_gear_evaluates_selected_source_profile():
     result = run_live(ROOT, "druid", 60, spec="balance")
-    assert result["status"] != "PASS", "Other P3 stat weights are still incomplete"
+    assert result["status"] in ("PASS", "FAIL"), result  # Future genuine P3 PASS is valid.
     assert result["real_source_search_evaluated"] > 0, result
     assert result["real_catalogue_top5_items_scored"] > 0, result
     # The real paid source sensitivity must include the HP5 channel exposed
