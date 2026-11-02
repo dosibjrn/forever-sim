@@ -308,6 +308,9 @@ def test_real_p1_probe_rejects_bookkeeping_only_and_accepts_effect_event(monkeyp
     events_holder['events']=[N(kind=k,action_id=a.id) for k in ('ActionStarted','ActionCompleted')]
     result=_runtime_exercise(test_ir,a,20)
     assert result['status']=='invalid' and result['reason']=='ACTION_COMPLETED_WITHOUT_OBSERVABLE_EFFECT'
+    events_holder['events'].append(N(kind='ResourceChanged',action_id=a.id,
+        payload={'before':100.0,'after':100.0}))
+    assert _runtime_exercise(test_ir,a,20)['status']=='invalid'
     events_holder['events'].append(N(kind='Damage',action_id=a.id,payload={'amount':10.0}))
     assert _runtime_exercise(test_ir,a,20)['status']=='executed'
 
