@@ -13,12 +13,13 @@ from src.game.runtime.simulator import CombatRuntime, _direct_damage_crit_probab
 from src.rulesets.forever.items.runtime_selection import available_items, item_vector
 
 
+@pytest.mark.parametrize("class_key,level", (("druid", 60), ("mage", 30)))
 @pytest.mark.parametrize("stat,raw", (("crit", 14.0), ("hit", 10.0)))
-def test_source_chance_points_reach_real_gear_probe_and_named_gear(stat, raw):
-    ir = build_game_ir_slice(class_key="druid", level=60)
+def test_source_chance_points_reach_real_gear_probe_and_named_gear(class_key, level, stat, raw):
+    ir = build_game_ir_slice(class_key=class_key, level=level)
     assert ir is not None
     assert stat in executable_gear_stats(ir)
-    expected = source_item_stat_to_combat(stat, raw, level=60)
+    expected = source_item_stat_to_combat(stat, raw, level=level)
     assert expected["mechanic_status"] == "SOURCE_DISPLAY_MAPPING_AND_EXECUTOR_CHANCE"
 
     probe = apply_stat_delta(ir, stat, raw)
