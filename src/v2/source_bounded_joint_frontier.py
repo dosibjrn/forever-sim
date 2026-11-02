@@ -66,6 +66,11 @@ def _quick_candidate_wall_budget(seconds):
     def expired(_signum, _frame):
         raise _CandidateWallBudgetExpired('BLOCKED_QUICK_CANDIDATE_WALL_BUDGET')
 
+    # A nested direct screen may exhaust the *outer* candidate deadline.
+    # Recognize our own enclosing guard so its expiry is delivered while
+    # still inside the guarded try/except, never as a stray 1us SIGALRM
+    # after the caller has already moved to the next frontier coordinate.
+    expired._quick_candidate_guard = True
     signal.signal(signal.SIGALRM, expired)
     signal.setitimer(signal.ITIMER_REAL,
                      max(0.000001, min(seconds, old_remaining) if old_remaining > 0 else seconds))
@@ -76,7 +81,16 @@ def _quick_candidate_wall_budget(seconds):
         signal.signal(signal.SIGALRM, old_handler)
         if old_remaining > 0:
             remaining = old_remaining - (monotonic() - started)
-            signal.setitimer(signal.ITIMER_REAL, max(0.000001, remaining), old_interval)
+            if remaining > 0:
+                signal.setitimer(signal.ITIMER_REAL, remaining, old_interval)
+            elif getattr(old_handler, '_quick_candidate_guard', False):
+                # The enclosing source-paid guard has expired: report the
+                # failure synchronously rather than arming an alarm that can
+                # escape evaluate_coordinate's exception handler.
+                raise _CandidateWallBudgetExpired('BLOCKED_QUICK_CANDIDATE_WALL_BUDGET')
+            else:
+                # Preserve an unrelated caller's elapsed timer semantics.
+                signal.setitimer(signal.ITIMER_REAL, 0.000001, old_interval)
 
 
 def _key(allocation):

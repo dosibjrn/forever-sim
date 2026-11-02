@@ -691,3 +691,36 @@ def test_refinement_identity_does_not_repay_same_source_build_under_different_ge
             {**alias, "policy_signature": "different_source_apl"}, candidate) != original
         assert _refinement_build_identity(
             {**alias, "opening_action_ids": ["distinct_source_opening"]}, candidate) != original
+
+def test_nested_paid_candidate_expiry_does_not_arm_stray_alarm(monkeypatch):
+    """An exhausted enclosing timer must fail inside the guarded coordinate.
+
+    RED: restoring a 1us SIGALRM after the inner screen exits can interrupt
+    the *next* frontier coordinate outside its exception handler.
+    """
+    import signal
+    import pytest
+    import src.v2.source_bounded_joint_frontier as frontier
+
+    state = {"handler": signal.SIG_DFL, "timer": (0.0, 0.0)}
+    monkeypatch.setattr(frontier.signal, "getsignal", lambda _: state["handler"])
+    def set_handler(_sig, handler):
+        previous = state["handler"]
+        state["handler"] = handler
+        return previous
+    monkeypatch.setattr(frontier.signal, "signal", set_handler)
+    monkeypatch.setattr(frontier.signal, "getitimer", lambda _: state["timer"])
+    def set_timer(_kind, seconds, interval=0.0):
+        previous = state["timer"]
+        state["timer"] = (seconds, interval)
+        return previous
+    monkeypatch.setattr(frontier.signal, "setitimer", set_timer)
+    ticks = iter((0.0, 0.0, 0.02))
+    monkeypatch.setattr(frontier, "monotonic", lambda: next(ticks))
+
+    with pytest.raises(frontier._CandidateWallBudgetExpired):
+        with frontier._quick_candidate_wall_budget(0.01):
+            with frontier._quick_candidate_wall_budget(0.03):
+                pass
+    assert state["timer"] == (0, 0)
+    assert state["handler"] == signal.SIG_DFL
