@@ -1,12 +1,14 @@
 # Generic registry, publication and route-navigation regressions
 
-Seven existing tests were moved **byte-for-byte** from the flat `tests/`
+Ten existing tests were moved **byte-for-byte** from the flat `tests/`
 directory. They exercise:
 
 - G47/G47b: source registry, capabilities and route authority
 - G48/G48a: all-class publication availability and listener coverage
 - G48b/G48c: backend-neutral native route navigation and decisions
 - G48d: product-level generic all-class decision surface
+- G04/G05/G06: pinned source facts, starting-state GameIR and dated tuning
+  overlays flowing through generic backend publication and listener rendering
 
 No moved file imports another `tests.*` module or derives data paths from
 the location of the test file. Source-code inspection uses repository-root
