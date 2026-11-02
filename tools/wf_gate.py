@@ -467,16 +467,13 @@ def main(argv=None) -> int:
                     "real_catalogue_top5_items_scored"):
             if key in report:
                 record[key] = report[key]
-        # Derived directly from real gate probes; not an acceptance score.
-        count, passed = report.get("reachability_count"), report.get("pass_count")
-        if (type(count) is int and count > 0 and type(passed) is int
-                and 0 <= passed <= count):
-            coverage = passed / count
-            effort = (0.25 * coverage if coverage <= 0.8
-                      else 0.20 + 4 * (coverage - 0.8))
-            record["partial_coverage_percent"] = round(100 * coverage, 2)
-            record["pareto_effort_estimate_percent"] = round(100 * effort, 2)
-            record["scope_provisional"] = bool(report.get("unresolved_count"))
+        # One canonical calculation: no percent for BLOCKED, inventories,
+        # or FAIL without an executed production behavior. A bounded component
+        # is explicitly provisional and never substitutes for gate acceptance.
+        from tools.wf_gate_coverage import measured_live_coverage
+        measured = measured_live_coverage(report)
+        if measured is not None:
+            record.update(measured)
         results.append(record)
     statuses = [x["status"] for x in results]
     verdict = ("PASS" if all(x == "PASS" for x in statuses)
