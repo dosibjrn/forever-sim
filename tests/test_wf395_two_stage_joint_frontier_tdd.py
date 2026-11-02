@@ -97,7 +97,6 @@ def test_single_finalist_retains_fastest_real_paid_build_over_slower_control():
     from src.v2.source_persistent_joint_finalists import (
         prepare_candidate, evaluate_persistent_candidate)
     from src.v2.source_bounded_joint_frontier import _select_screen_finalists
-    from src.game.policy_search import policy_identity
 
     ir, seed = _scenario('mage')
     gear = seed['gear_policy_result']['winner']['gear']
