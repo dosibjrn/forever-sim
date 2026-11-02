@@ -25,8 +25,23 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
+def _source_ranked_item_choice(items, rng: random.Random, *, ranked: bool):
+    """Sample *all* admitted source items, while exploiting their stat order.
+
+    candidate_pool sorts the complete pinned source/Rust-admitted item list by
+    spellpower/intellect/hit/crit/spirit. The top-32 preference is a proposal
+    distribution only: every item still has nonzero probability of selection,
+    and periodic wholly-uniform cold restarts keep full-pool exploration.
+    Neither the saved reference loadout nor another gate's winner is a seed.
+    """
+    if ranked and rng.random() < 0.90:
+        return rng.choice(items[:min(32, len(items))])
+    return rng.choice(items)
+
+
 def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
-               pool=None, enchant_pools=None, elite=None):
+               pool=None, enchant_pools=None, elite=None,
+               source_ranked=False):
     """Independent cold discovery or local edits of this run's paid winner.
 
     The saved loadout is never a search seed. An elite is only supplied after
@@ -49,7 +64,8 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
             raise ValueError("P74_PAID_ELITE_CHANGED_GEAR_SLOTS")
     for _ in range(60):
         if paid_items is None:
-            ids = [rng.choice(pool[i]) for i in range(len(reference))]
+            ids = [_source_ranked_item_choice(pool[i], rng, ranked=source_ranked)
+                   for i in range(len(reference))]
             enchants = ([rng.choice(enchant_pools[i]) for i in range(len(reference))]
                         if enchant_pools is not None else list(original_enchants))
         else:
@@ -60,7 +76,8 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
             enchants = [item.get("enchant") for item in paid_items]
             for _step in range(rng.randint(1, min(5, len(reference)))):
                 slot = rng.randrange(len(reference))
-                ids[slot] = rng.choice(pool[slot])
+                ids[slot] = _source_ranked_item_choice(
+                    pool[slot], rng, ranked=source_ranked)
                 if enchant_pools is not None:
                     enchants[slot] = rng.choice(enchant_pools[slot])
         # Reference-equivalent builds may be independently rediscovered, but
@@ -160,7 +177,11 @@ def run_live(root: Path, class_key: str, level: int, *,
                          if full_search else None)
                 candidate = _cold_gear(
                     base, validator, gear_search, rng, pool=pool,
-                    enchant_pools=enchant_pools, elite=elite)
+                    enchant_pools=enchant_pools, elite=elite,
+                    # Four of five proposals exploit legal stat-ranked source
+                    # candidates; every fifth samples the entire source
+                    # universe uniformly. This is not a top-N legality filter.
+                    source_ranked=full_search and proposals % 5 != 0)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
