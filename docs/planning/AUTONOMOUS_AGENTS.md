@@ -51,6 +51,29 @@ Tämä ohje **ei löysennä** OVERALL PLANia, PROCESSia eikä yhtäkään gatea:
 
 **Useful early candidate, not pre-certified:** Druid L20 Feral P1, visible in draft [PR #60](https://github.com/dosibjrn/forever-sim/pull/60), has source-only inventory but **zero proved native effects** in that PR's CI. Prio should check whether direct real selected-engine P1 behavior can be completed cheaply; the test may be easier at L20 but must verify full sourced legality, relevant effects and genuine execution before proposing a PASS. Preserve the first full checkpoint critical path and current owners.
 
+### Work → Merge: on-demand M1 dispatch handoff (no second queue)
+
+**Use the existing owner issue as the inbox.** When Work1, Work2 or Prio has a *concrete* reason for a new real M1 measurement on current/merged production code (including an unrecorded checkpoint/gate likely to PASS), leave **one** top-level issue comment on its currently owned open GitHub issue. Do not open a new queue issue, modify the TSV, start an M1 recorder, or comment `/m1-run` yourself. A normal newly merged production PR's `M1 affected gates:` line remains a separate **automatic** Merge trigger and needs no duplicate issue request.
+
+A request is copyable and unambiguous; use exactly this small format, with concrete evidence rather than a predicted PASS:
+
+```text
+M1-DISPATCH-REQUEST
+Targets: druid:60:balance:P7.1
+Mode: heavy
+Reason: full 1000-stochastic native+2D acceptance has not been executed by M1; previous 3-fight diagnostic is not acceptance
+Evidence: https://github.com/dosibjrn/forever-sim/actions/runs/<existing-run>
+Production: merged main; required PR(s) merged, or list which PR must merge first
+```
+
+- **Targets**: one to twelve exact `class:level:spec:gate` tokens, matching the existing trusted `m1-on-demand-record.yml` parser. `Mode: light` means its normal bounded production test; `Mode: heavy` requires a justified P6 or P7 full acceptance. No exploratory/wildcard scans; never request a known unchanged PASS. For a missing ledger row, state whether it is untested versus known FAIL.
+- **Source of truth**: the request's GitHub issue comment is the durable cross-agent handoff, not a task transcript or a new file. Work may add proof or retract with a follow-up comment. A requested run does **not** award a PASS or override approved gates.
+- **Where Merge looks, every cycle**: search the canonical repository's **open issues/comments** for the exact `M1-DISPATCH-REQUEST` marker (`repo:dosibjrn/forever-sim is:issue is:open in:comments "M1-DISPATCH-REQUEST"`); fetch matching issue comments in full. As a bounded fallback if GitHub search indexing lags, inspect the active owner issues from `WORK_PRIORITY.md` (#7, #19, #131 at time of writing; use current owner links, not these old numbers). The comment URL/ID, not just the gate token, identifies the request.
+- **Merge validation and execution**: check whether the required code is merged into fresh `main`, inspect the exact gate and ledger/current or in-flight M1 run, discard superseded/duplicate requests, and select a minimal defensible batch (max twelve; group light separately from heavy). A failed gate with a plausible real improvement is eligible; guaranteed PASS is *not* a prerequisite. Use the **existing** authenticated `/m1-run [--heavy] ...` comment on an already merged PR, or workflow_dispatch on `main` if no merged PR is suitable. Do not run heavy tests merely to remeasure unchanged outcomes.
+- **ACK is mandatory; no lost requests**: reply **on that same owner issue** with `M1-DISPATCH-ACK`, the original request comment URL/ID, each target and `launched <Actions URL>` / `already covered <Actions URL>` / `deferred: <specific dependency>` / `rejected: <reason>`. When an issued run completes, reply with its actual PASS/FAIL/BLOCKED, ledger effect and next actionable failure (or pending if still running). On subsequent cycles, Merge searches for requests without a corresponding ACK, and for launched ACKs whose verdict is not yet recorded; never silently abandon, relaunch or infer PASS from a green workflow. No extra label/JSON/TSV or comment-only status PR is needed.
+
+This is an **additional cross-cycle dispatch channel for unmerged historical evidence or unrequested real gate reruns**; it does not weaken Merge's existing mandatory post-merge `M1 affected gates` dispatch, the sole-writer rule, or expensive-gate policy.
+
 ### Mandatory PR-to-gate verification on every Merge cycle
 
 For **every newly integrated production-code PR**, Merge reads the PR's `M1 affected gates:` line, performs a quick sanity check against the real diff and deduplicates the applicable **checkpoint × gate pairs**. Merge does **not** manually grade the resulting test evidence or update numbers; the production script owns PASS/FAIL/PARTIAL and M1 bookkeeping. For each affected pair, choose and report exactly one outcome:
