@@ -1182,14 +1182,14 @@ def _critical_resource_gain_runtime_witness(before, after, mod):
             or definition.scope not in ('actor', 'target')):
         return None
 
-    def execute(ir, *, crit, target_id):
+    def execute(ir, *, crit, seed):
         actor = ActorState.from_ir(ir.actor, ir.resources, ir.modes)
         try:
             actor.transition_mode(mode)
         except (ValueError, KeyError, AttributeError):
             return None
         actor.stats['melee_crit_chance'] = crit
-        target = TargetState.with_health(target_id, 1000000.)
+        target = TargetState.with_health('enemy', 1000000.)
         if generator:
             # Discover a real sourced resource-generating melee action, not a
             # class-specific Claw name or a synthetic trigger event.
@@ -1208,7 +1208,7 @@ def _critical_resource_gain_runtime_witness(before, after, mod):
                     break
             else:
                 return None
-            rt = CombatRuntime(actor=actor, target=target)
+            rt = CombatRuntime(actor=actor, target=target, sampling_seed=seed)
             try:
                 end = rt.schedule_action(action)
                 rt.advance_to(end + .02)
@@ -1220,7 +1220,7 @@ def _critical_resource_gain_runtime_witness(before, after, mod):
             actor.resources[resource_id] = min(
                 50., float(actor.resource_capacity[resource_id]) / 2.)
             rt = CombatRuntime(actor=actor, target=target,
-                               auto_attacks=ir.auto_attacks)
+                               auto_attacks=ir.auto_attacks, sampling_seed=seed)
             try:
                 rt.advance_to(4.)
             except (ValueError, KeyError, RuntimeError, TypeError):
@@ -1234,19 +1234,18 @@ def _critical_resource_gain_runtime_witness(before, after, mod):
         return {'gain': sum(float(e.payload['gained']) for e in events),
                 'events': len(events)}
 
-    # The event-keyed production RNG is deterministic for a given target.
-    # Probe distinct legal targets to witness a 0.5 -> 1.0 chance increment,
+    # The event-keyed production RNG is deterministic for a fixed scenario.
+    # Probe genuine encounter seeds to witness a 0.5 -> 1.0 chance increment;
     # never force the proc or manufacture a ResourceEventGain.
     for seed in range(1, 65):
-        target_id = f'p2_critical_resource_target_{seed}'
-        old = execute(before, crit=1., target_id=target_id)
-        new = execute(after, crit=1., target_id=target_id)
+        old = execute(before, crit=1., seed=seed)
+        new = execute(after, crit=1., seed=seed)
         if old is None or new is None:
             return None
         if new['gain'] <= old['gain'] + 1e-8 or new['events'] == 0:
             continue
-        old_zero = execute(before, crit=0., target_id=target_id)
-        new_zero = execute(after, crit=0., target_id=target_id)
+        old_zero = execute(before, crit=0., seed=seed)
+        new_zero = execute(after, crit=0., seed=seed)
         if (old_zero is None or new_zero is None
                 or old_zero['gain'] != 0. or new_zero['gain'] != 0.):
             return None
@@ -1257,7 +1256,7 @@ def _critical_resource_gain_runtime_witness(before, after, mod):
                 'after_probability': new_probability,
                 'before_gain': old['gain'], 'after_gain': new['gain'],
                 'no_crit_control_gain': new_zero['gain'],
-                'target_id': target_id}
+                'sampling_seed': seed}
     return None
 
 
