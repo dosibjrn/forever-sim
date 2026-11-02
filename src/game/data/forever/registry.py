@@ -91,22 +91,10 @@ def _build_game_ir_slice_inner(*, class_key: str, level: int, ability_db_path=No
     from .source_indexed_action_coverage import attach_indexed_ability_coverage
     key = str(class_key).strip().lower()
     if ability_db_path is not None:
-        # Some providers pre-compile source actions from DEFAULT_DB while
-        # constructing their legacy policy references. Replace only actions
-        # marked as canonical-source compiled, without class/spell lists.
-        # Otherwise the compiler would skip their family and silently ignore
-        # the staged SQLite — giving a false-positive repair verification.
-        original_ids = {a.id for a in ir.actions
-                        if a.metadata.get('source_semantic_type') is not None}
-        if original_ids:
-            ir = replace(ir,
-                actions=tuple(a for a in ir.actions if a.id not in original_ids),
-                modes=tuple(replace(mode, enabled_action_ids=(
-                    None if mode.enabled_action_ids is None else
-                    tuple(a for a in mode.enabled_action_ids if a not in original_ids)))
-                    for mode in ir.modes),
-                source_facts=tuple(f for f in ir.source_facts if not (
-                    isinstance(f,dict) and f.get('fact_kind')=='source_indexed_executable_ability')))
+        # The staged source override must replace precompiled default-DB
+        # actions before the scoped source compiler adds staged actions.
+        from .source_stage_isolation import strip_precompiled_source_actions
+        ir = strip_precompiled_source_actions(ir)
     ir = source_ability_actions(ir, class_key=key, level=int(level), db_path=ability_db_path)
     if ability_db_path is not None:
         from pathlib import Path
