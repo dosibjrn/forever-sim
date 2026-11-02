@@ -100,16 +100,40 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
                 ]
                 enchants[slot] = rng.choice(alternatives)
             else:
-                # Single-slot coordinate improvements are less likely to
-                # erase several already-paid good slots than 1-5 random edits.
-                steps = (1 if neighbor_mode == "single" else
-                         rng.randint(1, min(5, len(reference))))
-                for _step in range(steps):
-                    slot = rng.randrange(len(reference))
-                    ids[slot] = _source_ranked_item_choice(
-                        pool[slot], rng, ranked=source_ranked)
-                    if enchant_pools is not None:
-                        enchants[slot] = rng.choice(enchant_pools[slot])
+                # One-slot refinement must select a slot that can actually
+                # change, not retry an immutable slot 60 times while another
+                # source-admitted slot contains alternatives.
+                if neighbor_mode == "single":
+                    moves = []
+                    for slot in range(len(reference)):
+                        if any(item_id != ids[slot] for item_id in pool[slot]):
+                            moves.append(("item", slot))
+                        if (enchant_pools is not None and
+                                any(value != enchants[slot]
+                                    for value in enchant_pools[slot])):
+                            moves.append(("enchant", slot))
+                    if not moves:
+                        raise ValueError("P74_NO_SOURCE_SINGLE_SLOT_ALTERNATIVE")
+                    kind, slot = rng.choice(moves)
+                    if kind == "item":
+                        alternatives = [item_id for item_id in pool[slot]
+                                        if item_id != ids[slot]]
+                        ids[slot] = _source_ranked_item_choice(
+                            alternatives, rng, ranked=source_ranked)
+                        if enchant_pools is not None:
+                            enchants[slot] = rng.choice(enchant_pools[slot])
+                    else:
+                        alternatives = [value for value in enchant_pools[slot]
+                                        if value != enchants[slot]]
+                        enchants[slot] = rng.choice(alternatives)
+                else:
+                    # Retain the independent mixed 1-5-slot exploration.
+                    for _step in range(rng.randint(1, min(5, len(reference)))):
+                        slot = rng.randrange(len(reference))
+                        ids[slot] = _source_ranked_item_choice(
+                            pool[slot], rng, ranked=source_ranked)
+                        if enchant_pools is not None:
+                            enchants[slot] = rng.choice(enchant_pools[slot])
             if (ids == [int(item["id"]) for item in paid_items]
                     and enchants == [item.get("enchant") for item in paid_items]):
                 continue  # unchanged paid elite is not a new discovery
