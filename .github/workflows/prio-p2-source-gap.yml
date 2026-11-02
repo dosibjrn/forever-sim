@@ -1,0 +1,61 @@
+name: Prio P2 one-shot source rank gap
+on:
+  push:
+    branches:
+      - work/prio-p2-source-rank-gap-20261102
+  workflow_dispatch:
+jobs:
+  source-rank-gap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Inspect exact source-compiled executable rank gaps
+        run: |
+          python - <<'PY'
+          from collections import Counter
+          from src.game.data.forever.registry import build_game_ir_slice
+          from src.game.data.forever.sqlite_talents import DEFAULT_DB
+          from src.game.talent_execution_coverage import compile_talent_runtime
+          from src.game.talents import talented_bonus_for_level, available_talent_points
+          from src.v2.source_bounded_joint_frontier import _executable_rank_prefix, _source_unlock_full_point_allocation
+          from tools.wf_gate_p2_live import _source_spec_profile, _load_product_spec_profile
+          from hashlib import sha256
+          from pathlib import Path
+          ir = build_game_ir_slice(class_key='druid', level=60, ability_db_path=DEFAULT_DB)
+          compiled, inventory = compile_talent_runtime(ir)
+          bonus = talented_bonus_for_level(60)
+          budget = available_talent_points(60, bonus_talent_points=bonus)
+          print('P2_DIAG_START budget',budget,'talents',len(compiled.talents),'ranks',sum(len(t.ranks) for t in compiled.talents),flush=True)
+          for tree in sorted({t.tree_key for t in compiled.talents}):
+              talents=[t for t in compiled.talents if t.tree_key==tree]
+              caps={t.id:_executable_rank_prefix(t) for t in talents}
+              print('P2_TREE',tree,'source_max',sum(int(t.max_rank) for t in talents),'executable_capacity',sum(caps.values()),flush=True)
+              for t in talents:
+                  cap=caps[t.id]
+                  if cap<int(t.max_rank):
+                      missing=[{'rank':r.rank,'kinds':[m.kind for m in r.modifiers]} for r in t.ranks if r.rank>cap]
+                      print('P2_RANK_GAP',tree,t.id,'row',t.metadata.get('row'),'max',t.max_rank,'prefix',cap,'missing',missing,flush=True)
+          profile=_load_product_spec_profile(Path('.'),'druid',60,'balance',source_sha256=sha256(DEFAULT_DB.read_bytes()).hexdigest())
+          print('P2_PROFILE',profile,flush=True)
+          for t in compiled.talents:
+              cap=_executable_rank_prefix(t)
+              if cap:
+                  build=_source_unlock_full_point_allocation(compiled,t,level=60,bonus_talent_points=bonus,target_rank=cap,preferred_tree='balance',minimum_tree_points=31)
+                  if build:
+                      print('P2_FOUND_FULL_POINT',t.id,'rank',cap,'allocation',build,flush=True)
+                      break
+          else:
+              print('P2_NO_FULL_POINT_WITNESS_FOUND',flush=True)
+          try:
+              builds, evidence=_source_spec_profile(compiled,'balance',level=60,bonus=bonus,step=5,source_sha256=sha256(DEFAULT_DB.read_bytes()).hexdigest(),profile_rule=profile)
+              print('P2_SOURCE_PROFILE_BUILD_COUNT',len(builds),flush=True)
+          except Exception as exc:
+              print('P2_SOURCE_PROFILE_ERROR',type(exc).__name__,str(exc),flush=True)
+          PY
