@@ -57,7 +57,8 @@ def _effect_change(before, after):
 
 
 def _action_runtime_probe(ir, action, *, observe_periodic=False,
-                          observe_controls=False, target_id='p2_fixture'):
+                          observe_controls=False, target_id='p2_fixture',
+                          target_spell_hit=1.0):
     """Execute real action on a live actor/target; deterministic fixture.
 
     Only differences that are actually observed in runtime count. No event
@@ -77,6 +78,7 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
 
     def fixture_target(*, opposite=False):
         target=TargetState.with_health(target_id,100000.0,armor=0.0)
+        target.metadata['spell_hit'] = float(target_spell_hit)
         if required_position is not None:
             position=({'front':'behind','behind':'front'}[required_position]
                       if opposite else required_position)
@@ -335,6 +337,87 @@ def _isolated_crit_witness(before, after, mod):
                     'crit_delta':float(mod.value)}
     return None
 
+
+
+def _sourced_hit_runtime_witness(before, after, mod):
+    """Prove sourced spell-hit rank deltas in the real CombatRuntime.
+
+    A full-hit target masks the bonus.  Use a controlled sub-100% hit
+    probability and a saturated negative control; require every source-scoped
+    action to receive the exact incremental modifier, not just one lucky spell.
+    This does NOT certify a separate, unimplemented source range effect.
+    """
+    from src.game.model.ir import DamageEffect, PeriodicEffect
+
+    if (mod.kind != 'hit_chance_bonus' or mod.target_type != 'action_filter'
+            or mod.target_id != 'damage_spell'
+            or not 0 < float(mod.value) < 1):
+        return None
+
+    def scoped(action):
+        return (any(isinstance(e, (DamageEffect, PeriodicEffect))
+                    and e.school.lower() != 'physical' for e in action.effects)
+                and any(c.resource_id == 'mana' for c in action.costs))
+
+    old = {action.id: action for action in before.actions}
+    new = {action.id: action for action in after.actions}
+    applicable = [action for action in before.actions if scoped(action)]
+    if not applicable:
+        return None
+    for action in applicable:
+        updated = new.get(action.id)
+        if updated is None or not any(
+                isinstance(p, Mapping) and p.get('stage') == 'talent_modifier'
+                and p.get('kind') == mod.kind
+                for p in updated.provenance):
+            return None
+        delta = (float(updated.metadata.get('outgoing_hit_bonus', 0.))
+                 - float(action.metadata.get('outgoing_hit_bonus', 0.)))
+        if not isclose(delta, float(mod.value), abs_tol=1e-8, rel_tol=1e-6):
+            return None
+    # The modifier must not leak to other, source-ineligible actions.
+    if any(not scoped(action) and action.id in new and not isclose(
+            float(new[action.id].metadata.get('outgoing_hit_bonus', 0.)),
+            float(action.metadata.get('outgoing_hit_bonus', 0.)),
+            abs_tol=1e-8) for action in before.actions):
+        return None
+
+    for action in applicable:
+        updated = new[action.id]
+        previous_bonus = float(action.metadata.get('outgoing_hit_bonus', 0.))
+        current_bonus = float(updated.metadata.get('outgoing_hit_bonus', 0.))
+        # Avoid the 100% cap in the positive control, including a source
+        # bonus from earlier ranks.  Do not invent a source hit coefficient.
+        base_hit = min(.5, .95 - current_bonus)
+        if base_hit <= 0:
+            continue
+        isolated = replace(action, metadata={
+            **dict(action.metadata), 'outgoing_hit_bonus': current_bonus})
+        periodic = any(isinstance(e, PeriodicEffect) for e in action.effects)
+        x = _action_runtime_probe(before, action, observe_periodic=periodic,
+                                  target_spell_hit=base_hit)
+        y = _action_runtime_probe(before, isolated, observe_periodic=periodic,
+                                  target_spell_hit=base_hit)
+        # Negative control: at 100% hit, adding a chance bonus has no
+        # gameplay effect.  This rejects unrelated damage scaling.
+        saturated_x = _action_runtime_probe(
+            before, action, observe_periodic=periodic, target_spell_hit=1.)
+        saturated_y = _action_runtime_probe(
+            before, isolated, observe_periodic=periodic, target_spell_hit=1.)
+        if any(z is None for z in (x, y, saturated_x, saturated_y)):
+            continue
+        if (x['damage'] > 0 and y['damage'] > x['damage'] + 1e-7
+                and isclose(saturated_x['damage'], saturated_y['damage'],
+                            abs_tol=1e-7, rel_tol=1e-6)):
+            return {'probe': 'paired_production_spell_hit_probability',
+                    'action_id': action.id,
+                    'source_scoped_actions_checked': len(applicable),
+                    'controlled_base_hit': base_hit,
+                    'before_amount': x['damage'], 'after_amount': y['damage'],
+                    'saturated_before': saturated_x['damage'],
+                    'saturated_after': saturated_y['damage'],
+                    'rank_hit_bonus_delta': float(mod.value)}
+    return None
 
 
 def _critical_damage_runtime_witness(before, after, mod):
@@ -1001,6 +1084,8 @@ def _behavior_fixtures(before, after, modifiers):
             match=_mode_entry_resource_witness(before,after,mod)
         elif kind=='crit_chance_pct':
             match=_isolated_crit_witness(before,after,mod)
+        elif kind=='hit_chance_bonus':
+            match=_sourced_hit_runtime_witness(before,after,mod)
         elif kind=='critical_damage_bonus_pct':
             match=_critical_damage_runtime_witness(before,after,mod)
         elif kind=='action_control_proc':
@@ -1164,6 +1249,13 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
     result['behavior_tests'].extend(tests)
     if missing:
         result['reasons'].append('BEHAVIOR_TEST_MISSING:'+','.join(missing))
+    # The sourced tooltip contains *two* independent effects: hit chance and
+    # increased offensive range.  Proving hit alone must never turn this rank
+    # GREEN while its real travel/pull-distance behavior is explicitly absent.
+    if any(m.provenance.get('range_status') ==
+           'travel_and_pull_distance_not_yet_modeled' for m in increments):
+        result['reasons'].append(
+            'IMPLEMENTATION_MISSING:source_offensive_range_world_behavior')
     # Ask the ACTUAL generic optimizer's legal-neighbor generator whether
     # it can propose this exact rank-up. A compiler's acceptance is not proof
     # the optimizer can ever reach the rank. The witness may be a partial
