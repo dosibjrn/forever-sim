@@ -121,7 +121,8 @@ def test_full_p72_holds_frozen_candidate_out_of_balanced_search(monkeypatch, tmp
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_world_dps"] == 729.0
-    assert report["status"] == "FAIL"  # source universe / UI still unverified
+    assert report["status"] == "PASS"  # mocked call routing, not a production gate run
+    assert report["reasons"] == []
     assert report["independent_300s_search_completed"] is True
 
 
