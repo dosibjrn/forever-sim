@@ -186,7 +186,10 @@ class GearValidator:
             enchants=[item.get("enchant",0) for item in self.ref_items]
         if len(enchants)!=16:
             raise RejectedGear("enchant_count","Must supply 16 candidate enchant values")
-        entries=[self.item(i,item,enchants[i]) for i,item in enumerate(ids)]
+        # An explicitly provided None means no enchant in the Rust request.
+        # Only omission of the entire vector retains saved-reference enchants.
+        entries=[self.item(i,item,0 if enchants[i] is None else enchants[i])
+                 for i,item in enumerate(ids)]
         categories=[v["limit_category"] for v in entries if v["limit_category"]>0]
         conflicts=[c for c,n in Counter(categories).items() if n>1]
         if conflicts:
