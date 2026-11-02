@@ -123,6 +123,21 @@ def test_real_source_depth_three_enters_joint_paid_witness_prefix():
 
 
 
+def test_pure_source_stat_witness_survives_bounded_package_prefix():
+    # A bounded real paid prefix must not be consumed by mixed-stat and
+    # atomic-weapon families before the first legal pure-stat package.
+    # The previous scheduler dropped this coordinate at max_probes=32.
+    stages = [('incumbent', None)]
+    stages += [(f'slot{i}:item', None) for i in range(12)]
+    stages += [(f'source_stat_package:spell_power+stat{i}', None)
+               for i in range(20)]
+    stages += [(f'package:weapon{i}', None) for i in range(10)]
+    pure_index = len(stages)
+    stages.append(('source_stat_package:spell_power', None))
+    witnesses = _source_gear_witness_probes(stages, max_probes=32)
+    assert (0, pure_index, 0, 0) in witnesses
+
+
 def test_pure_source_stat_package_reaches_real_paid_frontier_before_repeated_slot():
     # Production previously generated legal pure-axis full gear packages, but
     # silently omitted them from the witness prefix (only '+' mixed labels
