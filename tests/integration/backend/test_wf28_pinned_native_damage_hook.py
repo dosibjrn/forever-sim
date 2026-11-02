@@ -5,7 +5,7 @@ import importlib.util
 from pathlib import Path
 import pytest
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[3]
 PATH = ROOT / "integrations/mythicsim-go/world_boundary/patch_native_spell_result.py"
 spec = importlib.util.spec_from_file_location("pinned_go_damage_patcher_testonly", PATH)
 assert spec and spec.loader
