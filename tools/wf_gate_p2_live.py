@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping
-from math import isclose
+from math import isclose, isfinite
 from hashlib import sha256
 import json
 from pathlib import Path
