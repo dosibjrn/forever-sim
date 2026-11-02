@@ -204,7 +204,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     def player(q):
         return q["raid"]["parties"][0]["players"][0]
 
-    def make_candidate(base, pools, rng, item_names=None):
+    def make_candidate(base, pools, rng, item_names=None, enchant_pools=None):
         q = copy.deepcopy(base)
         p = player(q)
         p["equipment"]["items"] = [{"id": 11}, {"id": 21}]
@@ -213,7 +213,9 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
         return q
 
     source = SimpleNamespace(
-        GearValidator=Validator, candidate_pool=pool, make_candidate=make_candidate,
+        GearValidator=Validator, candidate_pool=pool,
+        source_enchant_pools=lambda validator, pools: {0: [None, 123], 1: [None]},
+        make_candidate=make_candidate,
         player=player, RejectedGear=ValueError)
     calls = []
     def native(binary, path, n, *, rng_mode):
@@ -337,7 +339,7 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
         def close(self): pass
 
     seen_elites = []
-    def source_candidate(reference, pools, rng, elite=None, item_names=None):
+    def source_candidate(reference, pools, rng, elite=None, item_names=None, enchant_pools=None):
         assert reference is base
         seen_elites.append(None if elite is None else
                            player(elite)["talentsString"])
@@ -353,6 +355,7 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     source = SimpleNamespace(
         GearValidator=Validator,
         candidate_pool=lambda validator, limit: ({0: [10], 1: [20]}, {}),
+        source_enchant_pools=lambda validator, pools: {0: [None, 123], 1: [None]},
         make_candidate=source_candidate, player=player,
         RejectedGear=ValueError)
     producer = SimpleNamespace(
@@ -373,3 +376,40 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["status"] == "FAIL"  # saved UI and accepted prior not proved
     assert base == original
+
+
+
+def test_full_search_sources_enchants_outside_reference_without_invented_rules(monkeypatch):
+    """Only existing Rust/source item validation admits enchant alternatives."""
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"
+    sys.path.insert(0, str(path))
+    try:
+        spec = importlib.util.spec_from_file_location("source_p75_enchants", path / "p75_joint_search.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.remove(str(path))
+
+    class Validator:
+        enchants = {101: {}, 102: {}, 103: {}}
+        def __init__(self):
+            self.calls = []
+        def item(self, slot, anchor, effect_id):
+            self.calls.append((slot, anchor, effect_id))
+            if slot == 0 and effect_id in (101, 103):
+                return {}
+            if slot != 0 and effect_id == 102:
+                return {}
+            raise module.RejectedGear("enchant_slot", "excluded by source")
+
+    v = Validator()
+    gear_pools = {i: [i + 1000] for i in range(16)}
+    selected = module.source_enchant_pools(v, gear_pools)
+    assert selected[0] == [None, 101, 103]
+    assert all(selected[i] == [None, 102] for i in range(1, 16))
+    assert (0, 1000, 103) in v.calls
+    assert (1, 1001, 101) in v.calls
