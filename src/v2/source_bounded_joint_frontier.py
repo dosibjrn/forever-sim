@@ -2477,13 +2477,21 @@ def _promote_paid_improving_descendant(selected, improved, max_top_n):
     """
     if max_top_n < 2 or len(selected) < 2 or not improved:
         return selected
+    # _select_screen_finalists may reserve the last slot for the measured
+    # incumbent control. Never evict it, or the fastest paid parent.
+    replace_index = next((i for i in range(len(selected)-1, 0, -1)
+                          if not selected[i][0].get('is_control')), None)
+    if replace_index is None:
+        return selected
     chosen = {_refinement_build_identity(row, candidate)
               for row, candidate, _ in selected}
     for entry in sorted(improved, key=lambda e: (
             float(e[0]['screen_s_per_mob']), _key(e[0]['allocation']),
             e[0]['policy_signature'], e[0]['recovery'])):
         if _refinement_build_identity(entry[0], entry[1]) not in chosen:
-            return selected[:-1] + [entry]
+            updated=list(selected)
+            updated[replace_index]=entry
+            return updated
     return selected
 
 
