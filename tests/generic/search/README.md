@@ -1,25 +1,27 @@
-# Generic search, frontier and policy regression tests
+# Generic search, frontier and policy regressions
 
-Seven existing test modules were relocated **byte-for-byte** from the flat
-`tests/` directory. They cover the generic talent/policy search kernel,
-source-backed gear sensitivity and fixed-point selection, level-frontier
-construction, mode-aware policy execution and cross-mode behavior.
+Tests here exercise class-neutral legal candidate enumeration, source-backed
+policy discovery, resource-aware priority selection, bounded search, generic
+talent/gear frontiers and paid evaluation contracts.
 
-The migrated tests import `src.*` modules directly; none imports another
-`tests.*` module or uses `__file__` to locate its fixtures. Some use
-`Path("src/...")` and `Path("data/...")` with the repository **working
-directory**, exactly as before the move.
+The `wf_gen*` and `wf374*` regressions cover real source-driven action,
+resource and pack-policy choices. These are **production-behavior regressions**,
+not formal P1–P7.5 checkpoint certification. New tests belong here when their
+subject is generic search behavior rather than a particular class, service
+endpoint or gate.
 
-Run this group, from repository root:
+Keep tests independent of their directory location: import production code by
+`src.*`, resolve any repository-root files explicitly, and avoid imports from
+other test modules. In particular, **audit `Path(__file__).resolve().parents[...]`
+before moving a test**; a changed nesting level can silently point fixtures
+outside the repository. Migration must also update any explicit CI/tool path.
+
+Run from the repository root:
 
 ```bash
 python -m pytest -q tests/generic/search
 ```
 
-The group remains included in ordinary `python -m pytest -q` discovery,
-unlike the slow opt-in `tests/release/` suite.
-
-No new GitHub Actions workflow is introduced: the existing workflows had
-overly broad old `tests/test_generic_*.py` PR filters, which are narrowed in
-this cleanup. A failure before any runner steps start is **not** a test FAIL
-and neither test collection nor a maintenance move certifies P1–P7.
+The directory is included in normal `pytest` collection
+(`pytest.ini` sets `testpaths = tests`). Formal gate acceptance and M1 progress
+remain owned by their production gate runners and Merge.
