@@ -62,84 +62,66 @@ PR, commit or CI cycle—only when a materially relevant behavior/source/scenari
 change invalidates it. Do not reinterpret a successful native-only subtest as
 a live-2D gate when 2D causality is part of that gate.
 
-## Generic production architecture — 148 passes must mean real product readiness
+## Generic implementation path: gates validate one real product
 
-**Treat each gate as a targeted integration/acceptance test of the ACTUAL product,
-not a separately implemented feature.** Allow the real approved budgets: a
-30-second or 300-second search, a 100-mob continuous run and a stochastic
-holdout are entirely reasonable **on-demand gate executions**. They cannot
-be forced into the few milliseconds normally expected of a unit test.
-Keep fast unit tests for local regressions, **not** as stand-ins for heavy
-acceptance or as a permanently running P1–P7.5 CI matrix.
+**P1–P7.5 are on-demand integration/acceptance tests, NOT 5 ms unit tests.**
+A real 30/300-second search, 100-mob run or ≥1000-fight stochastic holdout
+is a legitimate gate execution. Run once for PASS and retain timestamp;
+repeat only if a relevant production change invalidates it. Keep small,
+focused unit tests for regressions, not as replacement P1–P7 suites or
+permanent expensive CI.
 
-The **one reusable production flow** (not one copy per gate/class/level):
+**One generic production path for all 148 checkpoints:**
 
 ```text
-canonical sourced rules, abilities, talents, gear
-    -> generic class/level/spec legal candidate generator
-    -> real whole-build optimizer and production evaluator
-       -> selected genuine MythicSim Rust/Go combat behavior
-       -> genuine gsim 2D world + persistent actor/recovery where required
-    -> actual combat/score/search results
-    -> thin P1–P7.5 predicate checks on those SAME results/functions
+canonical class/level/spec source + legal abilities/talents/gear
+    -> ONE legal candidate generator / whole-build optimizer
+    -> ONE production evaluator
+       -> selected genuine MythicSim Rust/Go combat
+       -> real persistent gsim 2D world/recovery when applicable
+    -> observed effects, scores and searches
+    -> thin on-demand P1–P7.5 assertions against those same functions
 ```
 
-The required gate configuration may differ (leveling's persistent 100 mobs
-versus saved MythicSim DPS reference), but **combat semantics, legality,
-actual action execution and reusable search/evaluation code must not**.
-Gate-specific code should select a scenario, invoke an existing production
-function and compare observable output with the **approved predicate**.
-No parallel simulator, alternative ability implementation, hardcoded
-class/spec winner, gate-only optimizer, mock scoring or elaborate wrapper
-tree to make a test pass. P1 effects can be checked directly in native
-MythicSim without requiring a second Python GameIR implementation. World
-tests reuse the actual integrated world/native session.
+The leveling 100-mob scenario and P7 saved DPS reference differ in
+configuration, **not** in the core combat/legality engine. Each gate
+selects its actual scenario, invokes existing production functions and
+checks the approved behavioral predicate. P1 native effects need no
+parallel Python GameIR action implementation.
 
-**Implementation path (reusable vertical slice before scaling out):**
+**Code-first order:**
 
-1. **Inventory existing production entry points** for source legality,
-   selected native combat, world/session, gear scorer, paid 100-mob evaluator,
-   whole-build search, saved reference and stochastic holdout. The
-   first-pass invocation must name the **actual function that ran**, or
-   the first genuinely absent one. Do not create a separate interface only
-   because the gate wants a nicer report.
-2. **Complete one cross-cutting production operation at a time.** Example:
-   make an existing native spell produce observable damage/state; then make
-   the real world session consume it; then make the paid 100-mob evaluator
-   use that same execution; then let the existing optimizer propose
-   source-legal alternatives through the same evaluator. Reuse these
-   operations in multiple gate assertions instead of copying code.
-3. **First real attempt of all gates on one checkpoint**, then fix blockers
-   in dependency order using Work1/Work2/Prio's existing owned branches.
-   Do not polish P1's entire tail before discovering that P7's actual
-   reference/session or P4's paid search is still missing.
-4. **Prove genericity by reuse, not by genericity paperwork:** make the
-   accepted production path parameterized by class/level/spec/source,
-   and use the **same implementation** on a deliberately different
-   class or level (particularly a pet/autoattack versus caster, and L20
-   versus L60). No class-named acceptance runner, hardcoded action
-   whitelist, per-checkpoint implementation or separate 148-file evidence
-   tree. When a second checkpoint needs a code change, repair a
-   shared effect family/legality rule/search mechanism.
-5. **148/148 is a strong coverage guarantee only because every accepted
-   checkpoint exercises real behavior end-to-end:** source-valid actions
-   and talents, meaningful gear scoring, persistent combat/recovery,
-   independent timed searches and actual reference comparisons on a
-   compatible selected executor. A schema-green wrapper or fabricated
-   outcome would undermine that guarantee. The accepted set spans all
-   nine classes, four checkpoint levels and specified profiles; it
-   demonstrates broad readiness *for that approved scope*, not perfect
-   coverage of every level 1–60 or every untested game mechanic.
+1. **First-pass all gates** on one selected checkpoint: invoke an existing
+   real function, or name the *first actual missing production dependency*.
+   Do not build mock gate scaffolding to get a GREEN or run 300 seconds
+   when the engine is known not to work.
+2. **Implement the missing shared production capability** in place:
+   source-legal action/talent effects → native combat → actual world feedback
+   → persistent paid 100-mob evaluation → same legal whole-build search →
+   exact saved-reference evaluation and independent searches. Test the
+   smallest real failed behavior and keep existing Work1/Work2 ownership.
+   **Never duplicate combat, search or scorer logic inside gate tooling.**
+3. **Validate first checkpoint vertically**, retaining independently earned
+   PASS+timestamp for each compatible gate. Then run the **same code**
+   at a different class and level (e.g. Hunter with pet/autoattack versus
+   Druid caster; L20 versus L60). Fix common effect families or source
+   rules rather than adding per-class runners, hardcoded whitelists or
+   148 separate implementations.
+4. **Coverage means product readiness**, not paperwork: all accepted
+   checkpoints must actually exercise legal spells/talents, gear scoring,
+   continuous combat/recovery, independent timed search and selected
+   native↔world reference comparisons. The 148 class/level/profile cases
+   then demonstrate broad functioning across the approved scope; they
+   do not claim every level 1–60 or every untested mechanic is perfect.
 
-**Keep implementation lean.** Do not add MD documents, per-ability JSON,
-report bundles, handwritten result matrices, evidence registries, lifecycle
-diagrams, and CI-only gate harnesses as a substitute for improving the
-above functions. This **one living plan** is the routing instruction;
-ongoing problem-solving belongs in [the coordinating issue](https://github.com/dosibjrn/forever-sim/issues/131)
-and real implementation PRs. Accept one successful on-demand production
-execution, persist at most the existing gate PASS+timestamp, and rerun
-only after a material invalidation. Inspect the failed runtime output
-directly for diagnosis rather than copying it into new permanent files.
+**No MD/JSON busywork:** this is the **one updated plan**;
+[issue #131](https://github.com/dosibjrn/forever-sim/issues/131)
+holds decisions, failures and discussion; production PRs hold code.
+No new evidence-document tree, per-spell result JSON, permanent
+status matrix, duplicate gate-only simulator/optimizer, recurring heavy
+test suite or additional checkpoint. Diagnostic numerator/denominator
+comes directly from actual production executions; a real gate PASS needs
+only its existing PASS+timestamp.
 
 ## What 80/20 means — *effort estimate*, NOT work ordering
 
