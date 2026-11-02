@@ -60,7 +60,9 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         corrupt_ack: bool = False, target_health: float = 10_000_000.,
         target_initial_health_fraction: float = 1., pulls: int = 1,
         recovery_s: float = 0.) -> dict:
-    if (ticks < 2 or ticks > 100 or timeout_s <= 0 or pulls not in (1, 2)
+    # 1500 x 100 ms covers the saved 120 s +/- 15 s encounter horizon.
+    # The native server independently limits sessions to 10000 world ticks.
+    if (ticks < 2 or ticks > 1500 or timeout_s <= 0 or pulls not in (1, 2)
             or not math.isfinite(recovery_s) or recovery_s < 0 or recovery_s > 10):
         raise ValueError('INVALID_PROBE_LIMITS')
     binary, request = binary.resolve(), request.resolve()
