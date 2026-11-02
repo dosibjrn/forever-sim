@@ -14,7 +14,8 @@ import subprocess
 import sys
 import tempfile
 
-from tools.wf_gate_p7_1_live import PINNED_RUST, SAVED_BALANCE_RAW_SHA
+from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
+                                     _source_native_world_parity)
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
@@ -72,8 +73,12 @@ def run_live(root: Path, class_key: str, level: int, *,
                 with tempfile.TemporaryDirectory(prefix="forever_p74_live_") as tmp:
                     path = Path(tmp) / "cold-source-gear.json"
                     path.write_text(json.dumps(candidate))
+                    native = production.native_source_control(binary, path, 3)
                     live = production.run(
                         binary, path, distance=player["distanceFromTarget"], iterations=3)
+                    parity_failure = _source_native_world_parity(native, live, 3)
+                    if parity_failure is not None:
+                        raise ValueError("SOURCE_NATIVE_WORLD_PARITY_FAILED:" + parity_failure)
                 if (live.get("iterations_done") != 3
                         or live.get("native_damage_events", 0) <= 0
                         or live.get("native_world_ticks", 0) <= 0):

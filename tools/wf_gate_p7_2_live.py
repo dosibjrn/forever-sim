@@ -16,7 +16,8 @@ import random
 import subprocess
 import tempfile
 
-from tools.wf_gate_p7_1_live import PINNED_RUST, SAVED_BALANCE_RAW_SHA
+from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
+                                     _source_native_world_parity)
 
 
 def _source_module(path: Path, name: str):
@@ -109,8 +110,12 @@ def run_live(root: Path, class_key: str, level: int, *,
             with tempfile.TemporaryDirectory(prefix="forever_p72_live_") as temp:
                 file = Path(temp) / "source-cold-candidate.json"
                 file.write_text(json.dumps(candidate))
+                native = production.native_source_control(binary, file, 3)
                 result = production.run(
                     binary, file, distance=player["distanceFromTarget"], iterations=3)
+                parity_failure = _source_native_world_parity(native, result, 3)
+                if parity_failure is not None:
+                    raise ValueError("SOURCE_NATIVE_WORLD_PARITY_FAILED:" + parity_failure)
             if (result.get("iterations_done") != 3
                     or result.get("native_damage_events", 0) <= 0
                     or result.get("native_world_ticks", 0) <= 0):
