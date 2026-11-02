@@ -64,6 +64,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     iteration = -1
     samples = []
     iteration_damage = 0.
+    iteration_precombat_damage = 0.
     total_ticks = 0
     facing_switch_clock_ns = None
     source_action_events_before = {}
@@ -91,7 +92,11 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                         "iteration_index": iteration,
                         "duration_s": native["native_duration_ns"] / 1e9,
                         "world_applied_damage": iteration_damage,
-                        "world_dps": iteration_damage / (native["native_duration_ns"] / 1e9),
+                        "world_applied_precombat_damage": iteration_precombat_damage,
+                        # Native raidMetrics excludes negative-time pre-pull
+                        # damage, though native encounter total and actual gsim
+                        # target HP include it. Score only in-fight damage.
+                        "world_dps": (iteration_damage - iteration_precombat_damage) / (native["native_duration_ns"] / 1e9),
                     })
                     continue
                 if native.get("type") != "native_rust_world_boundary_request":
@@ -104,6 +109,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     previous_ack_id = ""
                     last_tick = -1
                     iteration_damage = 0.
+                    iteration_precombat_damage = 0.
                 clock_ns = native["native_clock_ns"]
                 if clock_ns % 1_000_000 or clock_ns <= last_tick:
                     raise AssertionError("RUST_CLOCK_NOT_GSIM_MILLISECOND_MONOTONIC")
@@ -151,6 +157,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                         pet_damage_events += 1
                     if event["native_time_ns"] < 0:
                         precombat_damage_events += 1
+                        iteration_precombat_damage += event["damage"]
                     action = event["source_action_id"]
                     action_counter[action] = action_counter.get(action, 0) + 1
                 ack["iteration_index"] = iteration
