@@ -1,0 +1,38 @@
+name: Prio P2 solo threat exact source check
+on:
+  push:
+    branches: [prio/p2-solo-threat-exclusion-20261102]
+  workflow_dispatch:
+jobs:
+  p2-solo-threat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run actual canonical source and P2 tests
+        run: |
+          python -m pip install --disable-pip-version-check pytest==8.3.5 beautifulsoup4==4.13.4
+          git rev-parse HEAD
+          python -m pytest -q tests/test_prio_p2_solo_threat_exclusion.py
+      - name: Run real P2 no-record and show checked exclusions
+        if: always()
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P2 --out /tmp/prio-p2.json || true
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('/tmp/prio-p2.json')
+          if p.exists():
+              data = json.loads(p.read_text())
+              for result in data.get('results', []):
+                  print('PRIO_P2_VERDICT', result.get('status'), result.get('pass_count'),
+                        result.get('reachability_count'), result.get('behavior_probes_executed'))
+                  print('PRIO_P2_REMAINING', result.get('reasons'))
+                  print('PRIO_P2_SUBTLETY', [(r.get('rank_key'), r.get('status'),
+                        r.get('objective_exclusion')) for r in result.get('ranks', [])
+                        if r.get('talent_id') == 'subtlety'])
+          PY
