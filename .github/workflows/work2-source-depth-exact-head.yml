@@ -6,6 +6,8 @@ on:
       - work/work2-source-depth-paid-frontier
     paths:
       - .github/workflows/work2-source-depth-exact-head.yml
+      - tests/test_source_paid_gear_witness_priority.py
+      - src/v2/source_bounded_joint_frontier.py
 
 permissions:
   contents: read
