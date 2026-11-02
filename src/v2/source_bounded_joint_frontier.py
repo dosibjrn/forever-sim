@@ -2987,6 +2987,13 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
                                     r['gear_move'],r['policy'],r['recovery']))
     unlock_coverage,unlock_coverage_complete = _summarize_paid_unlock_coverage(
         attempted,expected_unlocks,unlock_preparation_blockers,frontier)
+    # One canonical paid identity per attempted row; reuse it for all source
+    # coverage and breadth reporting instead of serializing 6k gear sets
+    # repeatedly near the end of a 300s wall-budget search.
+    paid_build_identities=[(row,identity) for row in attempted
+        if (identity := _paid_joint_build_identity(row)) is not None]
+    paid_rows=[row for row,_ in paid_build_identities]
+    unique_paid_builds=len({identity for _,identity in paid_build_identities})
     persist_partial('COMPLETE_SEARCH',finished=True)
     status=('QUICK_SEARCH_ONLY_REQUIRES_EXTERNAL_100MOB_VALIDATION' if search_only and search_winner
             else 'NO_COMPLETE_QUICK_SCREEN_CANDIDATE' if search_only
@@ -3020,7 +3027,7 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
             'eligible_slots':sorted(k for k,v in slot_source_counts.items() if v),
             'proposed_slots':sorted({slot for slot,_ in slot_moves}),
             'paid_slots':sorted({slot_move_labels[row['gear_move']]
-                for row in attempted if _paid_joint_build_identity(row) is not None
+                for row in paid_rows
                 and row.get('gear_move') in slot_move_labels}),
             'unproposed_slots':sorted(set(k for k,v in slot_source_counts.items() if v)
                 -{slot for slot,_ in slot_moves}),
@@ -3050,17 +3057,14 @@ def search_bounded_joint_frontier(*, class_key,level,source_ir,seed_stage,
         # actually paid in the current run. Proposed but never evaluated
         # alternatives do not count as joint search coverage.
         'joint_axis_paid_coverage':{
-            'distinct_talent_allocations':len({_key(row['allocation']) for row in attempted
-                if _paid_joint_build_identity(row) is not None}),
+            'distinct_talent_allocations':len({_key(row['allocation']) for row in paid_rows}),
             'distinct_gear_configs':len({json.dumps(row['equipped_gear'],sort_keys=True,default=str)
-                for row in attempted if _paid_joint_build_identity(row) is not None}),
-            'distinct_policy_signatures':len({row['policy_signature'] for row in attempted
-                if _paid_joint_build_identity(row) is not None}),
-            'distinct_recovery_policies':len({row['recovery'] for row in attempted
-                if _paid_joint_build_identity(row) is not None}),
-            'paid_screens':sum(_paid_joint_build_identity(row) is not None for row in attempted),
+                for row in paid_rows}),
+            'distinct_policy_signatures':len({row['policy_signature'] for row in paid_rows}),
+            'distinct_recovery_policies':len({row['recovery'] for row in paid_rows}),
+            'paid_screens':len(paid_rows),
         },
-        'unique_full_builds':_unique_paid_full_builds(attempted),
+        'unique_full_builds':unique_paid_builds,
         'search_strategy':('quick_screen_top_n_refinement' if search_only else
             'screen_qualify_full' if qualification_mobs is not None
             else 'screen_then_full' if screen_then_finalists else 'immediate_full'),
