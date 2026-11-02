@@ -115,13 +115,16 @@ def test_full_p72_holds_frozen_candidate_out_of_balanced_search(monkeypatch, tmp
     monkeypatch.setattr(p72, "_source_module",
                         lambda path, name: source if "apl_mutation" in str(path)
                         else producer)
-    report = p72.run_live(tmp_path, "druid", 60, spec="balance")
+    from tools.wf_gate import _run_live_gate
+    report = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.2", "")
     assert calls == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_world_dps"] == 729.0
     assert report["status"] == "PASS"  # mocked call routing, not a production gate run
+    assert report["runtime_proof"]["executed"] is True
+    assert report["runtime_proof"]["source_revision"] == report["frozen_request_raw_sha256"]
     assert report["reasons"] == []
     assert report["independent_300s_search_completed"] is True
 
