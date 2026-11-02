@@ -15,6 +15,7 @@ on:
       - work/first-native-world-dps-parity-20261102
       - work/first-native-source-facing-20261102
       - work/first-native-feral-shred-facing-20261102
+      - work/first-native-source-p71-stochastic-20261102
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
@@ -159,6 +160,65 @@ jobs:
           print('REAL_SAVED_DRUID_SOURCE_PAIRED_CAUSAL_ACK_PASS_NOT_P7')
           PY
 
+
+      - name: Reproduce exact saved 728 reference with unchanged source Go and live gsim world (NOT P7)
+        run: |
+          cd project
+          python3 - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import PINNED_GO_REVISION, run
+          from src.game.runtime.go_world_range_feed import GoWorldRangeError
+          binary=Path("../gsim-go-world-ingress").resolve()
+          request=Path("docs/evidence/druid-l60-balance/p7.3/saved_728_request.json").resolve()
+          source=json.loads(request.read_text())
+          witness=json.loads(Path("docs/evidence/wf633/WF633_VALIDATION.json").read_text())
+          assert witness["iterations"]==source["simOptions"]["iterations"]==10000
+          assert int(source["simOptions"]["randomSeed"])==1179706472
+          assert len(source["encounter"]["targets"])==1 and source["encounter"]["targets"][0]["level"]==63
+          players=[p for party in source["raid"]["parties"] for p in party["players"]]
+          assert len(players)==1 and players[0]["class"]=="ClassDruid" and "balanceDruid" in players[0]
+          assert players[0]["talentsString"]=="5532220115501351--505"
+          assert source["raid"]["debuffs"]["curseOfElements"] and source["raid"]["buffs"]["arcaneBrilliance"]
+          assert len(players[0]["equipment"]["items"])==16 and len(players[0]["rotation"]["priorityList"])==10
+          assert source["encounter"]["duration"]==120 and source["encounter"]["durationVariation"]==15
+          # Same file and hash must be passed unchanged to both genuine pinned-Go
+          # modes; native source mode keeps all 10,000 requested iterations.
+          def native(*args):
+              return json.loads(subprocess.check_output([
+                  str(binary),"--request",str(request),
+                  "--source-revision",PINNED_GO_REVISION,*args],text=True,timeout=240))
+          one=native("--native-only-single-fight")
+          stochastic=native("--native-source-replay")
+          hybrid=run(binary,request,ticks=1500,
+                     target_spawn_yards=players[0]["distanceFromTarget"],
+                     enemy_move_speed_yards_s=0.,source_target_health=True,
+                     timeout_s=30.)
+          sourcehash=hashlib.sha256(request.read_bytes()).hexdigest()
+          assert all(x["native_request_sha256"]==sourcehash for x in (one,stochastic,hybrid))
+          assert all(x["native_source_revision"]==PINNED_GO_REVISION for x in (one,stochastic,hybrid))
+          assert one["iterations"]==1 and stochastic["iterations"]==10000
+          assert one["source_random_seed"]==stochastic["source_random_seed"]==int(source["simOptions"]["randomSeed"])
+          assert stochastic["native_dps"]>0 and one["native_dps"]>0
+          assert hybrid["native_encounter_end_reached"] and hybrid["world_target_count"]==1
+          assert hybrid["native_spell_action_ack"] and not hybrid["checkpoint_certified"]
+          assert hybrid["source_sampled_duration_s"]==one["native_duration_s"]
+          assert abs(one["native_dps"]-hybrid["raw_native_dps"])<1e-6
+          assert abs(one["native_dps"]-hybrid["effective_gsim_world_dps"])<1e-6
+          assert all(row["world_tick"]["facing_applied"] and
+                     row["world_tick"]["in_front_of_target"] is players[0].get("inFrontOfTarget",False)
+                     for row in hybrid["observations"])
+          # Backend mismatch is diagnostic, not a coerced gate PASS. Native Go
+          # can be below the saved Rust reference; keep that result visible.
+          delta=stochastic["native_dps"]-witness["reference_dps"]
+          print("SOURCE_P71_GO_10000_NATIVE_DPS",stochastic["native_dps"],
+                "RUST_SAVED_REFERENCE_DPS",witness["reference_dps"],"DELTA",delta,
+                "P71_2_GO_THRESHOLD", "MEETS" if delta>=0 else "BELOW",flush=True)
+          print("SOURCE_P71_GO_SAME_SEED_NATIVE_VS_WORLD_DPS",
+                one["native_dps"],hybrid["raw_native_dps"],hybrid["effective_gsim_world_dps"],
+                one["native_duration_s"],flush=True)
+          print("SOURCE_P71_3_STOCHASTIC_GSIM_UNTESTED_NOT_P7",flush=True)
+          PY
       - name: Same saved Feral source Shred front/back native divergence (NOT P7)
         run: |
           cd project
