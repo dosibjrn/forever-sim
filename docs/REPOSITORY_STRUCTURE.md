@@ -46,7 +46,7 @@ One place for each responsibility. This is a **logical layout**: names marked �
     ├── INDEX.md              # small navigation index
     ├── REPOSITORY_STRUCTURE.md # this maintained vision, no separate design plan
     ├── gates/                 # approved normative gate contracts
-    ├── evidence/              # formal gate evidence, pinned repro inputs/results
+    ├── evidence/              # optional run details; NOT required gate proof files
     ├── planning/
     │   ├── WORK_PRIORITY.md  # one mutable work queue and agent ownership
     │   └── AUTONOMOUS_AGENTS.md # one maintained agent role contract
@@ -62,7 +62,7 @@ One place for each responsibility. This is a **logical layout**: names marked �
 3. **One implementation of shared abstractions.** New reusable gear/talent/policy/recovery behavior belongs in the generic domain, not parallel class-specific optimizers. Class/ruleset adapters provide sourced deltas, not duplicated engines. Old `src/v2/`, `src/classic_mage_leveling_optimizer_v10.py` and legacy state must be assessed by **actual callers, benchmark/held-out challenger obligations and parity tests** before removal; never equate their age with safe obsolescence.
 4. **A predictable entry point.** Python public commands live under `tools/` (especially stable `python tools/wf_gate.py --class ... --level ... --gate ...`), shell/PS wrappers under `scripts/commands/`, root launchers remain stable. Keep long-lived code out of numbered one-off scripts; do not create a third CLI namespace.
 5. **Tests mirror boundaries** and invoke real source/runtime for the behavior under test. Fast tests by default; slow formal gate, 100-mob and holdout runs intentionally scoped. No disabling tests to make layout changes pass.
-6. **Separate data, test fixtures, operational state and proof.** `data/forever/` is source/canonical catalogue; `tests/fixtures/` is immutable test-only input; live-generated transient state should be reproducible and gitignored where safe; `docs/evidence/` holds actual PROCESS-required acceptance evidence. Never merge diagnostic result into a PASS or delete an artifact without confirming no gate/replay depends on it.
+6. **Separate data, test fixtures, operational state and proof.** `data/forever/` is source/canonical catalogue; `tests/fixtures/` is immutable test-only input; live-generated transient state should be reproducible and gitignored where safe; `docs/planning/M1_PASSES.tsv` is the one tiny timestamped on-demand PASS ledger; `docs/evidence/` is optional archival context, **not** a PROCESS requirement. Do not introduce 1,628 individual artifacts. Never merge diagnostic result into a PASS or delete an artifact without confirming no gate/replay depends on it.
 7. **Small stable root and short docs.** Root files are only stable entry points and project governance/config. README links to a small set of maintained canonical docs. Avoid per-folder readmes with duplicated process rules, one-time handoff reports, checklists that only repeat GitHub issues, and parallel “v2-final-new” authority files.
 
 ## Current deviations worth removing
@@ -74,7 +74,7 @@ These are **observed categories** from public main inspection, **not** a claim t
 | `src/` has many flat legacy modules; `src/v2/` is large | Group by concrete domain boundary; converge on one generic production path | Import graph, actual runtime callers, benchmarks and backward compatibility |
 | Very large `tests/` and `tools/` roots | Group tests by behavior and tools by stable responsibility; remove superseded one-off entry points | Pytest collection, invoked workflows, imports, CLI compatibility |
 | `gate_config/`, `gate_sources/`, `gate_evidence/`, `fixtures/` | Consolidate static config, source inputs, formal proof and test fixtures into their intended homes | Search every path consumer and update CLI defaults/tests/evidence references together |
-| `evidence/` and `docs/evidence/` coexist | Retain canonical formal proof; delete/replace redundant historical raw artifacts when no consumers | PROCESS evidence requirements, accepted historical decisions, replay pointers |
+| `evidence/` and `docs/evidence/` coexist | Retain only still-used reference/replay inputs; PASS timestamps live in one TSV | Actual data consumers and accepted historical decisions |
 | `state/`, coverage reports and migration scripts tracked | Keep only required reproducible fixtures/source; ignore generated noise; delete completed migration tooling | Verify no runtime startup, test or required replay depends on tracked artifacts |
 | `docs/archive/` and long historical narrative in guides | Git history is the archive; retain only currently useful explanations | Preserve current normative instructions and valid reference links |
 | Multiple wrappers/engines/optimizer layers | Clarify real ownership and remove redundant duplicate code paths | Source-native behavior, persistent world ACK, paid scoring and independent gate replays |

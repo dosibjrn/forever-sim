@@ -425,6 +425,8 @@ def main(argv=None) -> int:
                         help="Historical source diagnostics, not live acceptance")
     parser.add_argument("--out", type=Path,
                         help="Write the freshly executed results and provenance")
+    parser.add_argument("--record-pass", action="store_true",
+                        help="Stamp actual live PASSes in the flat M1 ledger (not a gate test)")
     a = parser.parse_args(argv)
     for name, value in (("class", a.class_key), ("spec", a.spec)):
         if not re.fullmatch(r"[a-z][a-z0-9_-]*", value):
@@ -447,12 +449,26 @@ def main(argv=None) -> int:
     for gate in targets:
         report = _run_live_gate(ROOT, a.class_key, a.level, a.spec,
                                 gate, a.p1_scenario)
+        if a.record_pass and report["status"] == "PASS":
+            from tools.m1_progress import record_pass
+            record_pass(class_key=a.class_key, level=a.level, spec=a.spec,
+                        gate=gate, report=report)
         record = {"gate": gate, "status": report["status"],
                   "reasons": report.get("reasons", [])}
         for key in ("reachability_count", "pass_count", "unresolved_count",
                     "behavior_probes_executed", "runtime_proof"):
             if key in report:
                 record[key] = report[key]
+        # Derived directly from real gate probes; not an acceptance score.
+        count, passed = report.get("reachability_count"), report.get("pass_count")
+        if (type(count) is int and count > 0 and type(passed) is int
+                and 0 <= passed <= count):
+            coverage = passed / count
+            effort = (0.25 * coverage if coverage <= 0.8
+                      else 0.20 + 4 * (coverage - 0.8))
+            record["partial_coverage_percent"] = round(100 * coverage, 2)
+            record["pareto_effort_estimate_percent"] = round(100 * effort, 2)
+            record["scope_provisional"] = bool(report.get("unresolved_count"))
         results.append(record)
     statuses = [x["status"] for x in results]
     verdict = ("PASS" if all(x == "PASS" for x in statuses)
