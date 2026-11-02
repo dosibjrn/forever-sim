@@ -146,16 +146,20 @@ def test_equal_mean_dps_cannot_hide_wrong_source_encounter_duration():
             "world_mean_dps": 692.1030471575785,
             "sampled_duration_s": 133.0027,
             "native_damage_events": 430, "native_world_ticks": 792,
-            "per_iteration": [{"duration_s": 133.0027}] * 3}
+            "per_iteration": [{"iteration_index": i, "duration_s": 133.0027,
+                               "world_dps": 692.1030471575785,
+                               "world_applied_damage": 100.0} for i in range(3)]}
     assert gate._source_native_world_parity(native, live, 3) is None
     live["sampled_duration_s"] = 132.0027
     assert gate._source_native_world_parity(native, live, 3) == (
         "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED")
     live["sampled_duration_s"] = 133.0027
-    live["per_iteration"][0] = {"duration_s": 132.0027}
+    live["per_iteration"][0] = {
+        **live["per_iteration"][0], "duration_s": 132.0027}
     assert gate._source_native_world_parity(native, live, 3) == (
         "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED")
-    live["per_iteration"][0] = {"duration_s": 133.0027}
+    live["per_iteration"][0] = {
+        **live["per_iteration"][0], "duration_s": 133.0027}
     live["native_world_ticks"] = 0
     assert gate._source_native_world_parity(native, live, 3) == (
         "P7_1_NATIVE_WORLD_EXECUTION_INCOMPLETE")
@@ -171,8 +175,11 @@ def test_dps_floor_failure_is_not_mislabeled_as_native_world_parity():
          "first_duration_s": 120.0},
         {"iterations_done": 1000, "native_dps": 700.0,
          "world_mean_dps": 700.0, "sampled_duration_s": 120.0,
-         "native_damage_events": 1, "native_world_ticks": 1,
-         "per_iteration": [{"duration_s": 120.0}] * 1000},
+         "native_damage_events": 1, "native_world_ticks": 1000,
+         "per_iteration": [{"iteration_index": i, "duration_s": 120.0,
+                            "world_dps": 700.0,
+                            "world_applied_damage": 100.0}
+                           for i in range(1000)]},
         1000) is None
 
 
@@ -194,3 +201,31 @@ def test_m1_action_prepares_exact_source_native_p7_without_heavy_opt_in():
     assert '"$entry" == *:P7.*' in workflow  # future P7.2-.5 use same native binary
     assert '"$gate" == P6' in workflow
     assert '"$gate" == P7.*' in workflow
+
+
+def test_equal_aggregate_dps_cannot_hide_missing_or_reordered_world_fights():
+    """Acceptance RED on prior main: equal means concealed wrong fight ledger."""
+    native = {"iterations": 3, "native_dps": 700.0,
+              "first_duration_s": 120.0}
+    live = {"iterations_done": 3, "native_dps": 700.0,
+            "world_mean_dps": 700.0, "sampled_duration_s": 120.0,
+            "native_damage_events": 6, "native_world_ticks": 9,
+            "source_request_raw_sha256": "source-sha",
+            "per_iteration": [
+                {"iteration_index": i, "duration_s": 120.0,
+                 "world_dps": 700.0, "world_applied_damage": 100.0}
+                for i in range(3)]}
+    check = lambda: gate._source_native_world_parity(
+        native, live, 3, expected_raw_sha="source-sha")
+    assert check() is None
+    live["per_iteration"][1]["iteration_index"] = 0
+    assert check() == "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
+    live["per_iteration"][1]["iteration_index"] = 1
+    live["per_iteration"][1]["world_dps"] = 701.0
+    assert check() == "P7_1_WORLD_FIGHT_MEAN_DIVERGED"
+    live["per_iteration"][1]["world_dps"] = 700.0
+    live["source_request_raw_sha256"] = "different-source"
+    assert check() == "P7_1_LIVE_SOURCE_REQUEST_IDENTITY_DIVERGED"
+    live["source_request_raw_sha256"] = "source-sha"
+    del live["per_iteration"][2]["world_applied_damage"]
+    assert check() == "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"

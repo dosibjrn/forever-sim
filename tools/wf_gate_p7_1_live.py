@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -28,22 +29,45 @@ def _blocked(reason: str, **details) -> dict:
 
 
 
-def _source_native_world_parity(native: dict, live: dict, iterations: int) -> str | None:
-    """Compare actual production outputs; equal aggregate DPS is insufficient.
+def _source_native_world_parity(
+        native: dict, live: dict, iterations: int, *,
+        expected_raw_sha: str | None = None) -> str | None:
+    """Fail closed on source identity and every ACK-scored world fight.
 
-    The first stochastic encounter must have the same duration in the
-    independent native control and in the ACK-driven 2D run. Otherwise the
-    source encounter/timing changed, even if aggregate DPS happens to match.
+    An equal aggregate DPS cannot establish P7.1.3 if the world probe
+    omitted, reordered or duplicated a fight. The real Rust/gsim executor
+    supplies these measurements; this is only an acceptance assertion.
     """
     if (live["iterations_done"] != iterations
             or native["iterations"] != iterations
             or len(live["per_iteration"]) != iterations
             or live["native_damage_events"] <= 0
-            or live["native_world_ticks"] <= 0):
+            or live["native_world_ticks"] < iterations):
         return "P7_1_NATIVE_WORLD_EXECUTION_INCOMPLETE"
+    if expected_raw_sha is not None and (
+            live.get("source_request_raw_sha256") != expected_raw_sha):
+        return "P7_1_LIVE_SOURCE_REQUEST_IDENTITY_DIVERGED"
+    samples = live["per_iteration"]
+    try:
+        if any(
+                type(row["iteration_index"]) is not int
+                or row["iteration_index"] != i
+                or not math.isfinite(row["duration_s"])
+                or row["duration_s"] <= 0
+                or not math.isfinite(row["world_dps"])
+                or row["world_dps"] < 0
+                or not math.isfinite(row["world_applied_damage"])
+                or row["world_applied_damage"] < 0
+                for i, row in enumerate(samples)):
+            return "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
+        independent_world_mean = math.fsum(
+            row["world_dps"] for row in samples) / iterations
+        if abs(independent_world_mean - live["world_mean_dps"]) >= 1e-5:
+            return "P7_1_WORLD_FIGHT_MEAN_DIVERGED"
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
     if (abs(native["first_duration_s"] - live["sampled_duration_s"]) >= 1e-9
-            or abs(live["per_iteration"][0]["duration_s"]
-                   - live["sampled_duration_s"]) >= 1e-9):
+            or abs(samples[0]["duration_s"] - live["sampled_duration_s"]) >= 1e-9):
         return "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED"
     if (abs(native["native_dps"] - live["native_dps"]) >= 1e-6
             or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
@@ -124,7 +148,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     live = module.run(binary, request,
                       distance=player["distanceFromTarget"], iterations=run_iterations)
     reference = float(meta["reference_dps"])
-    parity_failure = _source_native_world_parity(native, live, run_iterations)
+    parity_failure = _source_native_world_parity(
+        native, live, run_iterations, expected_raw_sha=raw_sha)
     actual = {"native_dps": native["native_dps"],
               "native_first_duration_s": native["first_duration_s"],
               "world_first_duration_s": live["sampled_duration_s"],
@@ -133,6 +158,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
               "world_damage_events": live["native_damage_events"],
               "world_boundaries": live["native_world_ticks"],
               "source_request_raw_sha256": raw_sha,
+              "live_request_raw_sha256": live.get("source_request_raw_sha256"),
               "native_source_revision": PINNED_RUST,
               "iterations": live["iterations_done"],
               "source_original_iterations": source_iterations,
