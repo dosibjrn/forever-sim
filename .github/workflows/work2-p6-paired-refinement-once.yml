@@ -1,0 +1,60 @@
+name: Work2 one-shot independent source-paid P6 paired no-record
+on:
+  push:
+    branches:
+      - work/work2-30s-refinement-depth-20261103
+    paths:
+      - '.github/workflows/work2-p6-paired-refinement-once.yml'
+permissions:
+  contents: read
+jobs:
+  source-paid-paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Independent cold 30s and 300s on identical pinned source / engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          mkdir -p work2-paired
+          python -m tools.wf437_direct_budgeted_run --budget 30 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output work2-paired/t30.json
+          python -m tools.wf437_direct_budgeted_run --budget 300 --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output work2-paired/t300.json
+          python -m tools.wf437_direct_budgeted_run --compare-30 work2-paired/t30.json --compare-300 work2-paired/t300.json --checkpoint-class druid --checkpoint-level 60 --checkpoint-spec balance --output work2-paired/comparison.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('work2-paired/t30.json').read_text())
+          b=json.loads(Path('work2-paired/t300.json').read_text())
+          c=json.loads(Path('work2-paired/comparison.json').read_text())
+          assert a['source_db_sha256']==b['source_db_sha256']=='047204bab4b477420437c2680480312fbe2a1cd9f48085ef3ce70d00c955f2f9'
+          assert a['source_search_space']==b['source_search_space'], 'P6 mismatched legal search universe'
+          assert 0<a['wall_s']<=30 and 0<b['wall_s']<=300
+          assert a['validation']['complete_100mob_replays']>0 and b['validation']['complete_100mob_replays']>0
+          print('WORK2_P6_PAIRED_NO_RECORD='+json.dumps({
+            'source_sha256':a['source_db_sha256'],
+            'cold_30_wall_s':a['wall_s'], 'cold_300_wall_s':b['wall_s'],
+            'n30':a['unique_full_builds'],'n300':b['unique_full_builds'],
+            'replay30':a['validation']['complete_100mob_replays'],
+            'replay300':b['validation']['complete_100mob_replays'],
+            'T30_s_per_mob':c.get('T30_s_per_mob'),
+            'T300_s_per_mob':c.get('T300_s_per_mob'),
+            'ratio':c.get('ratio_T30_T300'),
+            'status':c.get('status')},sort_keys=True),flush=True)
+          PY
+      - name: Preserve actual paid source reports, including failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-p6-paired-refinement-no-record
+          path: work2-paired/
+          if-no-files-found: warn
+          retention-days: 7
