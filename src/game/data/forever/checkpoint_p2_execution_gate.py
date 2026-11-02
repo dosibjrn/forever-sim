@@ -32,8 +32,6 @@ def _source_partial_semantics(rank):
             result.add('DISCRETE_CRIT_PROC_DISTRIBUTION_NOT_CERTIFIED')
         if provenance.get('unsupported_source_mode_scope'):
             result.add('SOURCE_CRITICAL_RESOURCE_MODE_SCOPE_NOT_EXECUTED')
-        if provenance.get('unsupported_unpinned_resource_amount_source_build'):
-            result.add('RESOURCE_AMOUNT_SOURCE_BUILD_NOT_PINNED')
         if provenance.get('unsupported_heal_school_binding'):
             result.add('SOURCE_NATURE_HEAL_ACTION_SCHOOL_NOT_VERIFIED')
         if provenance.get('unsupported_future_action_scope'):
