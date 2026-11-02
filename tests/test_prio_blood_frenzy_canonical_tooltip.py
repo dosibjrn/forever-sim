@@ -59,6 +59,16 @@ def test_full_source_mode_availability_does_not_leave_mode_gap():
     assert not _source_partial_semantics(SimpleNamespace(modifiers=modifiers))
 
 
+
+def test_two_bear_form_aliases_cannot_double_grant_the_same_rage_proc():
+    modifiers, missing, reason = _parse_rank_tooltip(
+        text(100), action_families={"claw"},
+        mode_labels={**MODES, "dire_bear_form": "bear"}, source=SOURCE)
+    assert len(modifiers) == 2
+    assert [m.target_id for m in modifiers] == ["rage", "combo_points"]
+    assert not missing and reason is None
+
+
 def test_partial_source_clause_fails_closed_without_invented_resource():
     broken = text(50).replace("Combo Points", "Combo Pearls")
     bad, _, reason = _parse_rank_tooltip(
