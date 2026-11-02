@@ -139,8 +139,15 @@ def measured_p7_dps_proximity(gate: str, report: dict) -> dict | None:
     # must never be published as proximity to the P7 acceptance DPS floor.
     # A completed final uses the existing live provider's actual field names.
     if gate == "P7.1":
-        # A bounded coupled-world P7.1 diagnostic is independently meaningful
-        # as a *provisional* DPS observation, never a full gate PASS.
+        # Three-fight live probes are valuable diagnostics, but do not imply
+        # 96%+ of an accepted 1,000-fight DPS result. Only a genuine completed
+        # final has comparable arithmetic-mean DPS for M1 proximity.
+        if (type(report.get("iterations")) is not int
+                or report["iterations"] != P7_FINAL_STOCHASTIC_ITERATIONS
+                or report.get("selected_validation")
+                != "1000_native_and_live_stochastic_fights"
+                or report.get("stochastic_rng") is not True):
+            return None
         actual = report.get("world_dps")
         required = p7_required_dps(gate, float(reference))
     else:
