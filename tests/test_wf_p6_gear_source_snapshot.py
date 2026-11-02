@@ -240,6 +240,7 @@ def test_independent_paid_p6_replay_receipts_fail_closed_without_losing_other_le
     ([], 0),
     ([{'status': 'BLOCKED_ACTOR_DIED', 'count': 42,
        'failed_pull_index': 21, 'events': 987}], 42),
+    ('RAISE', 0),
 ])
 def test_p6_independent_comparison_keeps_both_paid_legs_on_first_failure(
         monkeypatch, first_rows, expected_mobs):
@@ -269,6 +270,8 @@ def test_p6_independent_comparison_keeps_both_paid_legs_on_first_failure(
     def paid_replay(search_report, **kwargs):
         calls.append((search_report, kwargs))
         if len(calls) == 1:
+            if first_rows == 'RAISE':
+                raise RuntimeError('source preparation failed before paid combat')
             return {'rows': first_rows, 'wall_s_outside_search_budget': 1.0}
         return {'rows': [{'status': 'COMPLETE', 'count': 100,
                           'full_s_per_mob': 12.5, 'events': 5000}],
@@ -284,6 +287,10 @@ def test_p6_independent_comparison_keeps_both_paid_legs_on_first_failure(
     assert [r['budget_s'] for r in result['replays']] == [30, 300]
     assert result['status'] == 'INCOMPLETE_INDEPENDENT_100MOB_REPLAY'
     assert result['replays'][0]['mob_completed'] == expected_mobs
+    if first_rows == 'RAISE':
+        assert result['replays'][0]['status'] == 'PAID_REPLAY_EXECUTOR_EXCEPTION'
+        assert 'RuntimeError: source preparation failed' in result['replays'][0]['reason']
+        assert result['replays'][0]['replay_wall_s'] >= 0
     assert result['replays'][1]['status'] == 'COMPLETE'
     assert result['replays'][1]['mob_completed'] == 100
     assert result['replays'][1]['s_per_mob'] == 12.5
