@@ -58,7 +58,10 @@ def main() -> None:
                     self.config.distance = distance;
                     self.changed(reads::CASTS);
                 }
-                self.config.melee.in_front_of_target = front;
+                if self.config.melee.in_front_of_target != front {
+                    self.config.melee.in_front_of_target = front;
+                    self.changed(reads::CASTS);
+                }
                 return true;
             }
         }
