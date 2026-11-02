@@ -121,17 +121,18 @@ def test_real_source_depth_three_enters_joint_paid_witness_prefix():
 
 
 def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
-    """A v1 top-two journal must not be reused with v2 top-ten coordinates."""
+    """Older paid journals cannot resume after candidate-order or event schema changes."""
     class_key, level = "mage", 30
     source_ir = build_game_ir_slice(class_key=class_key, level=level)
     seed = source_cold_start_stage(
         class_key=class_key, level=level, source_ir=source_ir, gear_role=class_key)
-    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v3_paid_axis_balance"
+    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v4_paid_events_identity"
     new_options = {"gear_slot_sampling_version": _SOURCE_GEAR_SAMPLING_VERSION}
     new_hash = search_context_sha256(
         class_key=class_key, level=level, source_ir=source_ir,
         seed_stage=seed, options=new_options)
-    for old_version in ("stratified_source_slots_v1", "stratified_source_slots_v2_depth10"):
+    for old_version in ("stratified_source_slots_v1", "stratified_source_slots_v2_depth10",
+                        "stratified_source_slots_v3_paid_axis_balance"):
         old_hash = search_context_sha256(
             class_key=class_key, level=level, source_ir=source_ir,
             seed_stage=seed, options={"gear_slot_sampling_version": old_version})
