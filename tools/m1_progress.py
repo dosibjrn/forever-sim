@@ -93,6 +93,16 @@ def scoreboard(path=LEDGER):
     for row in rows.values():
         key = (row["class"], row["level"], row["spec"])
         by_checkpoint.setdefault(key, []).append(row)
+    # OVERALL PLAN: one unrestricted plus four Druid profiles / three others
+    # at each of the four levels. No new profile may inflate the 1,628 total.
+    if len(by_checkpoint) > 148:
+        raise ValueError("More than 148 distinct M1 checkpoint identities")
+    for class_key in CLASSES:
+        for level in LEVELS:
+            specs = {spec for (c, lev, spec) in by_checkpoint
+                     if c == class_key and int(lev) == level}
+            if len(specs) > (5 if class_key == "druid" else 4):
+                raise ValueError("Too many M1 profiles for a class/level")
     complete = [group for group in by_checkpoint.values()
                 if {r["gate"] for r in group} == set(GATES)]
     compatible = sum(bool(group[0]["compatibility_id"]) and
