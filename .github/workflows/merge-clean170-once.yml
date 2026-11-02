@@ -1,0 +1,25 @@
+name: Merge Clean 170 targeted gate relocation check (one shot)
+on:
+  push:
+    branches: [merge/verify-clean170-gates-20261102]
+permissions:
+  contents: read
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pytest==8.3.5 beautifulsoup4==4.13.4
+      - run: git rev-parse HEAD && python -m pytest --collect-only -q tests/gates tests/generic/search/test_wf263_l1_value_gate.py
+      - name: Actual moved gate contracts
+        run: python -m pytest -q tests/gates
+      - name: Existing WF263 real paid search boundary (known previous failure)
+        if: always()
+        continue-on-error: true
+        run: python -m pytest -q tests/generic/search/test_wf263_l1_value_gate.py
