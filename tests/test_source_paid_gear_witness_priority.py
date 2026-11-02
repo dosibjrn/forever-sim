@@ -413,7 +413,7 @@ def test_p3_source_weapon_proposals_preserve_complete_equipment_legality():
 
     class_key, level = "warrior", 30
     selected = select_gear(class_key, level, "warrior_fury", weights={},
-        required_level_policy="observed", exclude_unknown_item_effects=True)
+        required_level_policy="observed", exclude_unknown_item_effects=False)
     assert selected["weapon"].weapon_hands == 1
     assert "offhand" in selected
     base = _cold_source_equipment_payload(
