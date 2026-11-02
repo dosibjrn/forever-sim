@@ -3,7 +3,7 @@
 
 Uses real native spell-result events, world-applied target HP, verified ACKs,
 and world-derived 2D range/facing before the next Rust scheduler decision.
-This is a bounded multi-fight vertical diagnostic, NOT P7.1.3 or 1/148.
+A sub-1000-fight run is diagnostic; a full run needs the P7 gate predicates.
 """
 from __future__ import annotations
 import argparse
@@ -23,6 +23,7 @@ from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
 from tools.wf_gsim_go_live_range_probe import (
     diagnostic_gsim_world, source_target_health_from_request,
 )
+from tools.wf_gate_coverage import P7_FINAL_STOCHASTIC_ITERATIONS, p7_required_dps
 
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
@@ -35,8 +36,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
     assert len(players) == 1 and len(source["encounter"]["targets"]) == 1
     assert source["encounter"]["targets"][0]["level"] == 63
-    if not 1 <= iterations <= source["simOptions"]["iterations"]:
-        raise ValueError("RUST_WORLD_ITERATIONS_OUT_OF_SOURCE_RANGE")
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("RUST_WORLD_ITERATIONS_INVALID")
     if facing_switch_at_s is not None and (
             not math.isfinite(facing_switch_at_s) or facing_switch_at_s <= 0 or iterations != 1):
         raise ValueError("RUST_WORLD_FACING_SWITCH_INVALID")
@@ -237,7 +238,9 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_NATIVE_CONTROL_RNG_MODE_INVALID")
     source = json.loads(request.read_text())
-    assert 1 <= iterations <= source["simOptions"]["iterations"]
+    if type(iterations) is not int or iterations < 1:
+        raise ValueError("RUST_NATIVE_CONTROL_ITERATIONS_INVALID")
+    # Original report iteration count is not a cap on a new accepted final.
     source["simOptions"]["iterations"] = iterations
     with tempfile.TemporaryDirectory() as folder:
         reduced = Path(folder) / "native_source_control.json"
@@ -275,7 +278,6 @@ def main() -> None:
         assert player["class"] == "ClassDruid" and "balanceDruid" in player
         assert len(source["encounter"]["targets"]) == 1
         assert source["encounter"]["targets"][0]["level"] == 63
-        assert args.reference_iterations <= source["simOptions"]["iterations"]
         baseline = native_source_control(args.binary, args.request, args.reference_iterations)
         coupled = run(args.binary, args.request,
                       distance=player["distanceFromTarget"],
@@ -286,10 +288,11 @@ def main() -> None:
         assert abs(coupled["sampled_duration_s"] - baseline["first_duration_s"]) < 1e-9
         # This is the original saved MythicSim reference, not an optimizer
         # candidate; source-native-vs-live parity alone is not a gate PASS.
-        if args.reference_iterations == source["simOptions"]["iterations"]:
+        if args.reference_iterations == P7_FINAL_STOCHASTIC_ITERATIONS:
             witness = json.loads((ROOT / "docs/evidence/wf633/WF633_VALIDATION.json").read_text())
-            assert coupled["native_dps"] >= witness["reference_dps"], (
-                "LIVE_RUST_BELOW_SAVED_REFERENCE", coupled["native_dps"], witness["reference_dps"])
+            floor = p7_required_dps("P7.1", float(witness["reference_dps"]))
+            assert coupled["native_dps"] >= floor and coupled["world_mean_dps"] >= floor, (
+                "LIVE_RUST_BELOW_99_PERCENT_REFERENCE", coupled["native_dps"], coupled["world_mean_dps"], floor)
         print("REAL_RUST_LIVE_SOURCE_STOCHASTIC", json.dumps({
             "iterations": coupled["iterations_done"],
             "native_dps": baseline["native_dps"],
@@ -299,7 +302,7 @@ def main() -> None:
             "source_sha256": coupled["source_request_raw_sha256"],
             "world_damage_events": coupled["native_damage_events"],
             "saved_reference_threshold_checked":
-                args.reference_iterations == source["simOptions"]["iterations"],
+                args.reference_iterations == P7_FINAL_STOCHASTIC_ITERATIONS,
             "checkpoint_certified": False,
         }, sort_keys=True), flush=True)
         return
