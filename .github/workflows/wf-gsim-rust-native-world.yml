@@ -2,7 +2,7 @@ name: Live pinned MythicSim Rust fight to real gsim world (NOT P7)
 on:
   workflow_dispatch:
   push:
-    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/work1-selected-rust-balanced-rng-20261102]
+    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102]
     paths:
       - .github/workflows/wf-gsim-rust-native-world.yml
       - integrations/mythicsim-rust/patch_world_ingress.py
@@ -23,6 +23,9 @@ jobs:
           repository: sage3648/mythicsim-forever-engine
           ref: 666fe17a42682068a3c8497d88d5fa3732cbdfb9
           path: upstream
+      - name: Hydrate only the P7 source item catalogue from Git LFS
+        working-directory: project
+        run: git lfs pull --include="data/forever/catalogue/items_2026-09-29.sqlite" --exclude=""
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -40,7 +43,7 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: "off"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: cargo build --release --locked
-      - name: Work1 one-time exact-source selected Rust balanced versus stochastic native and 2D probe
+      - name: Verify pinned Rust RNG mode changes real native and 2D world combat
         working-directory: project
         run: |
           python3 - <<'PY'
