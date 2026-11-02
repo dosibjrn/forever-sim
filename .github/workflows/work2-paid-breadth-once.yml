@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/work2-paid-breadth-once.yml
       - src/v2/source_bounded_joint_frontier.py
+      - tests/test_source_paid_gear_witness_priority.py
 permissions:
   contents: read
 jobs:
