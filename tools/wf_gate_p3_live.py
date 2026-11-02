@@ -152,6 +152,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_catalogue_legal_items": item_check["legal_item_count"],
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
         "real_catalogue_slots_scored": item_check["slot_count"],
+        # Comparable measured unit: one source-legal top-ilvl item x
+        # applicable ordinary stat requirement, checked in the real selector.
+        # Runtime-paid stat sensitivities establish causal context. Global
+        # conditions may still fail P3; this fraction is NOT a gate PASS.
+        "reachability_count": item_check["tested_stat_assertions"],
+        "pass_count": item_check["verified_stat_assertions"],
+        "behavior_probes_executed": result.get("evaluated", 0),
+        "partial_scope": "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS",
+        "coverage_basis": "executed_behavior_assertions",
+        "coverage_scope_complete": False,
         "real_item_score_checked": item_check["source"] == "CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS",
         "real_measured_stat_weight_axes": sorted(weights),
         "actual_search_result_status": result.get("status"),

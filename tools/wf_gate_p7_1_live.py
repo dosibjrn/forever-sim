@@ -1,8 +1,9 @@
 """On-demand P7.1 entry into the existing pinned MythicSim Rust/gsim 2D path.
 
 No new engine or score implementation: live_world_probe runs the native
-baseline and the genuine world-ACKed fight. The recovered original saved request cannot, by itself, certify the
-P7.1.1 saved-report interactive Settings UI field inventory.
+baseline and the genuine world-ACKed fight. A bounded sample measures real
+native/world DPS, NOT any fraction of a gate's functioning assertions.
+The original request alone does not certify the P7.1.1 interactive UI audit.
 """
 from __future__ import annotations
 
@@ -45,8 +46,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             or target[0]["level"] != 63):
         return _blocked("P7_1_SAVED_REFERENCE_SCENARIO_MISMATCH")
 
-    # Explicit bounded diagnostic: the same real Rust/gsim production code,
-    # but NOT a reference acceptance run. Default remains the full 10k.
+    # Bounded run uses the exact same Rust/gsim production executor. Default
+    # matches THIS saved source's iteration count, not a universal 10k rule.
     requested = os.environ.get("FOREVER_P7_LIVE_PROBE_ITERATIONS")
     if requested is None:
         run_iterations = iterations
@@ -75,8 +76,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     if not (upstream / "src/core/fight/world_bridge.rs").is_file():
         return _blocked("P7_1_LIVE_WORLD_INGRESS_NOT_BUILT")
 
-    # These are the actual production functions already used by the
-    # source-backed live 10k-fight integration, not gate-specific simulators.
+    # Reuse the existing source-backed production executor, not a gate-only engine.
     path = root / "integrations/mythicsim-rust/live_world_probe.py"
     module_spec = importlib.util.spec_from_file_location("forever_p7_live_world", path)
     if module_spec is None or module_spec.loader is None:
@@ -97,12 +97,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
               "iterations": live["iterations_done"],
               "saved_reference_dps": reference,
               "source_report_url": "https://api.mythicsim.com/api/forever/ranking-sims/d9d85974-a1f7-4700-ab22-2335d767a944/report",
-              "coverage_component": "P7.1.3 source-native ↔ gsim per-fight damage/ACK parity (source requires 10000 fights)",
               "behavior_probes_executed": len(live["per_iteration"]),
-              # A stochastic fight sample is NOT the fraction of the entire
-              # P7.1 gate; UI configuration and scenario causality remain open.
-              "scope_provisional": True,
-              "coverage_scope_complete": False}
+              # Sample breadth is not verified/applicable live functionality.
+              "sampled_source_fights": live["iterations_done"],
+              "saved_source_iterations": iterations}
     if (live["iterations_done"] != run_iterations
             or len(live["per_iteration"]) != run_iterations
             or live["native_damage_events"] <= 0
@@ -113,19 +111,12 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return {"status": "FAIL", "reasons": ["P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d", **actual}
 
-    # Each counted fight was independently checked by the real production
-    # bridge for source-native damage == gsim applied HP damage and ACK IDs.
-    # This denominator is ONLY the executed comparable fight sample, not the
-    # full P7.1 gate or a certifying fractional M1 value.
-    actual.update(verified=run_iterations, applicable=iterations,
-                  pass_count=run_iterations, reachability_count=iterations,
-                  # A provisional component sample is NOT a P7.1 PASS.
-                  # Its 10k denominator is the original source's actual
-                  # stochastic iterations, not an invented TODO percentage.
-                  coverage_scope_complete=False)
+    # Genuine coupled damage/ACK observation, but not a defensible
+    # functioning-assertion success fraction. The canonical CLI computes
+    # only the *separate* live DPS objective proximity from this result.
     if not full_reference_run:
         return {"status": "FAIL",
-                "reasons": ["P7_1_INCOMPLETE_SOURCE_STOCHASTIC_ITERATIONS"],
+                "reasons": ["P7_1_BOUNDED_DIAGNOSTIC_NOT_FULL_SAVED_REFERENCE"],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d",
                 "p7_1_2_native_reproduced": False,
                 "p7_1_3_live_reproduced": False, **actual}

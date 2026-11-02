@@ -126,7 +126,7 @@ def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
     source_ir = build_game_ir_slice(class_key=class_key, level=level)
     seed = source_cold_start_stage(
         class_key=class_key, level=level, source_ir=source_ir, gear_role=class_key)
-    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v8_skip_absent_source_apl"
+    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v9_atomic_weapon_paid_witness"
     new_options = {"gear_slot_sampling_version": _SOURCE_GEAR_SAMPLING_VERSION}
     new_hash = search_context_sha256(
         class_key=class_key, level=level, source_ir=source_ir,
@@ -136,7 +136,8 @@ def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
                         "stratified_source_slots_v4_paid_events_identity",
                         "stratified_source_slots_v5_real_paid_budget",
                         "stratified_source_slots_v6_mandatory_unlock_axis",
-                        "stratified_source_slots_v7_all_required_unlocks"):
+                        "stratified_source_slots_v7_all_required_unlocks",
+                        "stratified_source_slots_v8_skip_absent_source_apl"):
         old_hash = search_context_sha256(
             class_key=class_key, level=level, source_ir=source_ir,
             seed_stage=seed, options={"gear_slot_sampling_version": old_version})
@@ -194,6 +195,69 @@ def test_compound_apl_gets_a_paid_coordinate_before_second_item_in_same_slot():
                 gear_stages[a[1]][0].split(":", 1)[0]
                 for a in scheduled[:i] if pure_slot(a)})
         assert scheduled.index(compound) < first_repeat, (class_key, scheduled[:first_repeat+1])
+
+
+def test_source_legal_atomic_weapon_package_is_paid_before_second_slot_item():
+    # The actual Mage L30 SQLite catalogue has source-legal 1H/offhand and
+    # 2H alternatives. An atomic switch cannot be scored by a single-slot
+    # move, so it must enter the SAME production paid coordinate scheduler.
+    from src.v2.source_persistent_slot_search import _source_weapon_package_proposals
+
+    class_key, level = "mage", 30
+    ir = build_game_ir_slice(class_key=class_key, level=level)
+    seed = source_cold_start_stage(
+        class_key=class_key, level=level, source_ir=ir, gear_role=class_key)
+    base = seed["gear_policy_result"]["winner"]["gear"]
+    packages, counts = _source_weapon_package_proposals(
+        class_key=class_key, level=level, base=base, max_packages=4)
+    assert packages, counts
+    moves, _ = _source_slot_proposals(
+        class_key=class_key, level=level, base=base,
+        per_slot=10, max_proposals=48)
+    stages = [("incumbent", seed)]
+    for slot, item in moves:
+        try:
+            variant = substituted_multi_stage(
+                stage=seed, class_key=class_key, level=level,
+                swaps={slot: int(item.item_id)})
+        except (ValueError, KeyError):
+            continue
+        stages.append((f"{slot}:{item.item_id}", variant))
+    for swaps in packages:
+        variant = substituted_multi_stage(
+            stage=seed, class_key=class_key, level=level, swaps=swaps)
+        stages.append(("package:" + repr(sorted(swaps.items())), variant))
+
+    witnesses = _source_gear_witness_probes(stages)
+    labels = [stages[c[1]][0] for c in witnesses]
+    assert any(label.startswith("package:") for label in labels), labels
+    first_package = next(i for i, label in enumerate(labels)
+                         if label.startswith("package:"))
+    first_repeated_slot = next(
+        (i for i, label in enumerate(labels)
+         if ":" in label and not label.startswith(("package:", "source_stat_package:"))
+         and label.split(":", 1)[0] in {
+             previous.split(":", 1)[0] for previous in labels[:i]
+             if ":" in previous and not previous.startswith(("package:", "source_stat_package:"))}),
+        len(labels))
+    assert first_package < first_repeated_slot, labels
+
+    variants = ((("incumbent", None),),)
+    scheduled = list(islice(_source_witness_first_coordinates(
+        (1, len(stages), 1, 1), variants, "diagonal", [],
+        gear_stages=stages), len(witnesses)))
+    assert scheduled == list(witnesses)
+
+    # Actual source candidate preparation, not a mock weapon package.
+    paid_candidate = prepare_candidate(
+        class_key=class_key, level=level, stage=stages[
+            witnesses[first_package][1]][1], source_ir=ir,
+        allow_partial_gear_stats=True)
+    result = _quick_joint_evaluation(
+        paid_candidate, level=level, mobs=1, recovery_policy=None,
+        timeout_s=8., pack_size=1, backend="direct")
+    assert result["status"] == "COMPLETE", result
+    assert result["count"] == 1 and result["events"] > 0
 
 
 def test_real_source_third_item_executes_through_paid_combat_runtime():

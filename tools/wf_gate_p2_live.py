@@ -1550,6 +1550,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
         fail=[r for r in result['ranks'] if r['status']!='PASS']
         result['reachability_count']=len(result['ranks'])
         result['pass_count']=len(result['ranks'])-len(fail)
+        # Each numerator unit is a reached source rank whose actual
+        # CombatRuntime behavior assertions passed, NOT a compiled modifier,
+        # source row, or merely an attempted test.
+        result['coverage_basis']='executed_behavior_assertions'
+        result['partial_scope']='SOURCE_REACHABLE_RANK_RUNTIME_BEHAVIOR'
         result['fail_count']=len(fail)
         result['unresolved_count']=len(result['unresolved'])
         result['unreachable_count']=len(result['unreachable'])

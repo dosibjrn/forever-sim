@@ -1574,7 +1574,7 @@ def _source_priority_witness_probes(variants):
 
 
 # Journal identity changes with source gear ordering or paid-row evidence schema.
-_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v8_skip_absent_source_apl'
+_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v9_atomic_weapon_paid_witness'
 
 
 def _source_gear_witness_probes(gear_stages, *, max_probes=32):
@@ -1589,12 +1589,19 @@ def _source_gear_witness_probes(gear_stages, *, max_probes=32):
     """
     by_slot={}
     mixed=[]
+    weapon_packages=[]
     for i,(label,_) in enumerate(gear_stages):
         if label.startswith('source_stat_package:'):
             if '+' in label:
                 mixed.append((0,i,0,0))
             continue
-        if label.startswith('package:') or ':' not in label:
+        if label.startswith('package:'):
+            # Atomic 1H+offhand <-> 2H transitions cannot be represented by
+            # single-slot moves. Give the real source-legal package a paid
+            # witness before depth-two slot substitutions consume the budget.
+            weapon_packages.append((0,i,0,0))
+            continue
+        if ':' not in label:
             continue
         slot=label.split(':',1)[0]
         by_slot.setdefault(slot,[]).append((0,i,0,0))
@@ -1603,7 +1610,7 @@ def _source_gear_witness_probes(gear_stages, *, max_probes=32):
     for depth in range(1,max((len(moves) for moves in by_slot.values()),default=0)):
         deeper.extend(moves[depth] for moves in by_slot.values()
                       if len(moves)>depth)
-    return tuple((*first,*mixed,*deeper)[:max_probes])
+    return tuple((*first,*mixed,*weapon_packages,*deeper)[:max_probes])
 
 
 def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, attempted, *, gear_stages=()):

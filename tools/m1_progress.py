@@ -12,8 +12,13 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+# Also support the documented direct invocation: python tools/m1_progress.py
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tools.wf_gate_coverage import measured_live_coverage, pareto_effort_fraction
 LEDGER = ROOT / "docs/planning/M1_PASSES.tsv"
 GATES = tuple(f"P{n}" for n in range(1, 7)) + tuple(f"P7.{n}" for n in range(1, 6))
 CLASSES = frozenset(("druid", "hunter", "mage", "paladin", "priest",
@@ -117,7 +122,8 @@ def record_partial(*, class_key, level, spec, gate, report, root=ROOT, path=LEDG
     n, d = report.get("pass_count"), report.get("reachability_count")
     probes = report.get("behavior_probes_executed", 0)
     proof = report.get("runtime_proof") or {}
-    if (report.get("status") != "FAIL" or type(n) is not int
+    if (measured_live_coverage(report) is None
+            or report.get("status") != "FAIL" or type(n) is not int
             or type(d) is not int or not (0 <= n < d and d > 0)
             or not (type(probes) is int and probes > 0
                     or proof.get("executed") is True)
@@ -149,7 +155,7 @@ def scoreboard(path=LEDGER):
         if row["status"] == "PARTIAL":
             n, d = int(row["verified"]), int(row["applicable"])
             c = n / d
-            effort = .25 * c if c <= .8 else .2 + 4 * (c - .8)
+            effort = pareto_effort_fraction(c)
             partials.append({"class": row["class"], "level": row["level"],
                              "spec": row["spec"], "gate": row["gate"],
                              "verified": n, "applicable": d, "coverage": c,
