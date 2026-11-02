@@ -2459,7 +2459,11 @@ def _refinement_build_identity(row, candidate):
     gear=row.get('equipped_gear')
     if gear is None:
         gear=candidate.source_stage['gear_policy_result']['winner']['gear']
-    return (_key(row['allocation']),json.dumps(gear,sort_keys=True,default=str),
+    # Selection weights describe *how* the same sourced equipment was found,
+    # not its actual combat stats. Otherwise two source-weight searches that
+    # equip identical items pay twice for one physical build in a cold budget.
+    equipped={k:v for k,v in gear.items() if k != 'selection_weights'}
+    return (_key(row['allocation']),json.dumps(equipped,sort_keys=True,default=str),
             row['policy_signature'],
             tuple(row.get('opening_action_ids',candidate.opening)),
             row['recovery'])
