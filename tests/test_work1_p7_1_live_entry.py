@@ -72,3 +72,26 @@ def test_bounded_probe_still_requires_real_pinned_native(tmp_path, monkeypatch):
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report["status"] == "BLOCKED"
     assert report["reasons"] == ["P7_1_PINNED_RUST_BINARY_MISSING"]
+
+
+def test_cli_keeps_real_partial_scope_provisional(monkeypatch, capsys):
+    # Presentation-only contract: never a substitute for the source-Rust run.
+    from tools import wf_gate as cli
+    monkeypatch.setattr(cli, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_1_INCOMPLETE_SOURCE_STOCHASTIC_ITERATIONS"],
+        "pass_count": 3, "reachability_count": 10000,
+        "verified": 3, "applicable": 10000,
+        "behavior_probes_executed": 3,
+        "coverage_component": "P7.1.3 real source fights",
+        "scope_provisional": True, "coverage_scope_complete": False,
+    })
+    assert cli.main(["--class", "druid", "--level", "60", "--spec", "balance",
+                     "--gate", "P7.1"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    row = report["results"][0]
+    assert report["status"] == row["status"] == "FAIL"
+    assert row["verified"] == 3 and row["applicable"] == 10000
+    assert row["partial_coverage_percent"] == 0.03
+    assert row["scope_provisional"] is True
+    assert row["coverage_scope_complete"] is False
