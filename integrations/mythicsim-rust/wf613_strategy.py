@@ -100,13 +100,16 @@ class WF613Controller:
         for operator in OPERATORS:
             tries = self.tries[operator]
             reward = self.gains[operator] / max(1, tries)
-            weight = 0.03 + 0.6 * reward
+            weight = 0.6 * reward
             if operator in ("fresh", "destroy_repair", "structural_repair"):
                 weight += min(0.9, self.stagnation / 100.0)
             else:
                 weight += 0.25
             weights.append(weight)
-        operator = rng.choices(OPERATORS, weights=weights)[0]
+        # 27% uniformly exploratory guarantees a >=3% per-operator floor.
+        # Other 73% adapts to stagnation and actually paid improvements.
+        operator = (rng.choice(OPERATORS) if rng.random() < 0.27
+                    else rng.choices(OPERATORS, weights=weights)[0])
         if operator == "fresh":
             self.tries[operator] += 1
             return None, None, operator
@@ -129,7 +132,6 @@ class WF613Controller:
             raise ValueError("WF613_UNKNOWN_OPERATOR")
         if type(world_dps) not in (float, int) or not math.isfinite(world_dps) or world_dps < 0:
             raise ValueError("WF613_UNPAID_OR_INVALID_SCORE")
-        before = self.best
         if world_dps > self.best:
             self.best = world_dps
             self.gains[operator] += 1
