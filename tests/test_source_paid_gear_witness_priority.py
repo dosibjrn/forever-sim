@@ -171,9 +171,11 @@ def test_pure_source_stat_package_reaches_real_paid_frontier_before_repeated_slo
     pure = [i for i, (label, _) in enumerate(stages)
             if label.startswith("source_stat_package:") and "+" not in label]
     assert pure, stat_packages
-    witnesses = _source_gear_witness_probes(stages, max_probes=64)
+    # Exercise the exact production cap, not a larger test-only prefix.
+    witnesses = _source_gear_witness_probes(stages)
     scheduled_indices = [c[1] for c in witnesses]
-    assert set(pure).issubset(scheduled_indices)
+    assert len(witnesses) <= 32
+    assert pure[0] in scheduled_indices
     first_pure = min(scheduled_indices.index(i) for i in pure)
     def slot_key(index):
         label = stages[index][0]
@@ -199,6 +201,28 @@ def test_pure_source_stat_package_reaches_real_paid_frontier_before_repeated_slo
         timeout_s=8., pack_size=1, backend="direct")
     assert real_paid["status"] == "COMPLETE", real_paid
     assert real_paid["count"] == 1 and real_paid["events"] > 0
+
+def test_package_families_survive_real_32_coordinate_cap_under_pressure():
+    # No fake combat: exercise the production scheduler's fixed 32-coordinate
+    # bound with more source-labelled mixed/weapon proposals than can fit.
+    # The separate canonical Mage test proves a legal pure-stat stage can
+    # actually reach CombatRuntime's paid one-mob evaluation.
+    stages = [('incumbent', None)]
+    stages.extend((f'slot{n}:item{n}', None) for n in range(16))
+    stages.extend((f'source_stat_package:mixed{n}+mixed{n}', None)
+                  for n in range(24))
+    stages.extend((f'package:weapon{n}', None) for n in range(24))
+    stages.append(('source_stat_package:stamina', None))
+    indices = [coordinates[1] for coordinates in
+               _source_gear_witness_probes(stages)]
+    labels = [stages[i][0] for i in indices]
+    assert len(indices) == 32
+    assert 'source_stat_package:stamina' in labels
+    assert any(label.startswith('package:') for label in labels)
+    assert any('+' in label for label in labels)
+    assert len({label.split(':', 1)[0] for label in labels
+                if label.startswith('slot')}) == 16
+
 
 def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
     """Older paid journals cannot resume after candidate-order or event schema changes."""
