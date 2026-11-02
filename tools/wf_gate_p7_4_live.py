@@ -83,8 +83,22 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
                 # changed enchants only as a side effect of swapping gear.
                 if enchant_pools is None:
                     raise ValueError("P74_ENCHANT_NEIGHBOR_REQUIRES_SOURCE_POOLS")
-                slot = rng.randrange(len(reference))
-                enchants[slot] = rng.choice(enchant_pools[slot])
+                # A random slot may have no alternative enchant at all.
+                # Choosing it repeatedly wastes the entire 60-attempt
+                # proposal even when another legal slot can be changed.
+                mutable = [
+                    slot for slot in range(len(reference))
+                    if any(value != enchants[slot]
+                           for value in enchant_pools[slot])
+                ]
+                if not mutable:
+                    raise ValueError("P74_NO_SOURCE_ENCHANT_ALTERNATIVE")
+                slot = rng.choice(mutable)
+                alternatives = [
+                    value for value in enchant_pools[slot]
+                    if value != enchants[slot]
+                ]
+                enchants[slot] = rng.choice(alternatives)
             else:
                 # Single-slot coordinate improvements are less likely to
                 # erase several already-paid good slots than 1-5 random edits.

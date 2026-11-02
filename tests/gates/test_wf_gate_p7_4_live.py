@@ -465,3 +465,66 @@ def test_p74_freezes_paid_stochastic_winner_not_noisy_balanced_screen():
     assert selected[0] == 730.0 and selected[4] == 800.0
     assert selected[5] == "paid_2x24_stochastic_live_native_finalist"
     assert gate._freeze_paid_p74_winner(high_screen, [])[2] == "a"
+
+
+def test_paid_p74_enchant_only_skips_immutable_slots_even_with_adversarial_rng():
+    """Old code retried the first immutable slot 60 times and raised, despite
+    a legal alternative in another paid slot. No simulated DPS is asserted."""
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 10}, {"id": 20}, {"id": 30}]},
+        "talentsString": "fixed", "rotation": {"priorityList": []},
+    }]}]}}
+    elite = copy.deepcopy(base)
+    paid_items = elite["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    for item, item_id in zip(paid_items, [11, 21, 31]):
+        item["id"] = item_id
+    checked = []
+    class AlwaysFirstSlot:
+        def randrange(self, length):
+            return 0  # Pre-fix this always chose immutable slot zero.
+        def choice(self, choices):
+            return choices[-1]
+
+    def validate(ids, enchants):
+        checked.append((ids[:], enchants[:]))
+        assert ids == [11, 21, 31]
+        assert enchants == [None, 202, None]
+
+    def swap(request, ids):
+        result = copy.deepcopy(request)
+        items = result["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+        for item, item_id in zip(items, ids):
+            item["id"] = item_id
+        return result
+
+    source = SimpleNamespace(_swap=swap, preflight=lambda *a: True,
+                             RejectedGear=ValueError)
+    result = gate._cold_gear(
+        base, SimpleNamespace(validate=validate), source, AlwaysFirstSlot(),
+        pool={0: [11], 1: [21], 2: [31]},
+        enchant_pools={0: [None], 1: [None, 202], 2: [None]},
+        elite=elite, neighbor_mode="enchant")
+    actual = result["raid"]["parties"][0]["players"][0]
+    assert [i.get("enchant") for i in actual["equipment"]["items"]] == (
+        [None, 202, None])
+    assert checked == [([11, 21, 31], [None, 202, None])]
+    assert "enchant" not in paid_items[1]  # The paid parent is immutable.
+
+
+def test_paid_p74_enchant_neighbor_has_no_alternative_fails_explicitly():
+    base = {"raid": {"parties": [{"players": [{
+        "equipment": {"items": [{"id": 10}]},
+        "talentsString": "fixed", "rotation": {"priorityList": []},
+    }]}]}}
+    elite = copy.deepcopy(base)
+    elite["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] = 11
+    source = SimpleNamespace(RejectedGear=ValueError)
+    try:
+        gate._cold_gear(
+            base, SimpleNamespace(), source, random.Random(1),
+            pool={0: [11]}, enchant_pools={0: [None]},
+            elite=elite, neighbor_mode="enchant")
+    except ValueError as error:
+        assert str(error) == "P74_NO_SOURCE_ENCHANT_ALTERNATIVE"
+    else:
+        raise AssertionError("An immutable paid enchant slot was treated as a proposal")
