@@ -108,7 +108,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
         corrupt_ack: bool = False, target_health: float = 10_000_000.,
         target_initial_health_fraction: float = 1., pulls: int = 1,
-        recovery_s: float = 0., source_target_health: bool = False) -> dict:
+        recovery_s: float = 0., source_target_health: bool = False,
+        world_facing_override: bool | None = None) -> dict:
     # 1500 x 100 ms covers the saved 120 s +/- 15 s encounter horizon.
     # The native server independently limits sessions to 10000 world ticks.
     if (ticks < 2 or ticks > 1500 or timeout_s <= 0 or pulls not in (1, 2)
@@ -118,6 +119,11 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     raw = request.read_bytes()
     request_sha = hashlib.sha256(raw).hexdigest()
     binary_sha = hashlib.sha256(binary.read_bytes()).hexdigest()
+    # Controlled gsim-world intervention: do not edit the canonical source
+    # request or its RNG seed merely to make a front/back comparison.
+    if world_facing_override is not None and (
+            type(world_facing_override) is not bool or not source_target_health):
+        raise ValueError('WORLD_FACING_OVERRIDE_REQUIRES_SOURCE_BOOLEAN')
     source_facing = None
     if source_target_health:
         if pulls != 1:
@@ -132,6 +138,8 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
         source_facing = players[0].get('inFrontOfTarget', False)
         if type(source_facing) is not bool:
             raise ValueError('SOURCE_FACING_NOT_BOOLEAN')
+        if world_facing_override is not None:
+            source_facing = world_facing_override
     runtime = diagnostic_gsim_world(target_spawn_yards=target_spawn_yards,
         enemy_move_speed_yards_s=enemy_move_speed_yards_s, target_health=target_health,
         target_initial_health_fraction=target_initial_health_fraction,

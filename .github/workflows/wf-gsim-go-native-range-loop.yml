@@ -14,6 +14,7 @@ on:
       - work/first-native-terminal-boundary-20261102
       - work/first-native-world-dps-parity-20261102
       - work/first-native-source-facing-20261102
+      - work/first-native-feral-shred-facing-20261102
     paths:
       - .github/workflows/wf-gsim-go-native-range-loop.yml
       - tools/wf_gsim_go_live_range_probe.py
@@ -156,6 +157,55 @@ jobs:
               assert scenario['native_process_reused'] and scenario['gsim_runtime_real']
               assert all(row['native_world_ack_confirmation']['ack_id'] for row in scenario['observations'])
           print('REAL_SAVED_DRUID_SOURCE_PAIRED_CAUSAL_ACK_PASS_NOT_P7')
+          PY
+
+      - name: Same saved Feral source Shred front/back native divergence (NOT P7)
+        run: |
+          cd project
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from tools.wf_gsim_go_live_range_probe import run
+          request = Path("docs/evidence/druid-l60-feral/p7.1/saved_811_request.json")
+          source = json.loads(request.read_text())
+          players = [p for party in source["raid"]["parties"] for p in party["players"]]
+          assert len(players)==1 and players[0]["class"]=="ClassDruid"
+          assert "feralCatDruid" in players[0] and not players[0]["feralCatDruid"]["options"].get("cannotShredTarget",False)
+          assert len(source["encounter"]["targets"])==1 and source["encounter"]["targets"][0]["level"]==63
+          apl = players[0]["rotation"]["priorityList"]
+          assert any(a.get("action",{}).get("castSpell",{}).get("spellId",{}).get("spellId")==9830 for a in apl)
+          binary = Path("../gsim-go-world-ingress")
+          # Identical unmodified 811-DPS source request, seed, target, gear,
+          # talents and APL. Only actual 2D gsim target heading is perturbed.
+          back = run(binary,request,ticks=200,target_spawn_yards=3.,
+                     enemy_move_speed_yards_s=0.,source_target_health=True,
+                     world_facing_override=False,timeout_s=30.)
+          front = run(binary,request,ticks=200,target_spawn_yards=3.,
+                      enemy_move_speed_yards_s=0.,source_target_health=True,
+                      world_facing_override=True,timeout_s=30.)
+          def casts(result, spell_id):
+              return sum(delta["casts"] for row in result["observations"]
+                  for delta in row["native_spell_counter_deltas"]
+                  if delta["action_id"].split("/")[0] == f"SpellID:{spell_id}")
+          for result, expected in ((back,False),(front,True)):
+              assert result["native_process_reused"] and result["gsim_runtime_real"]
+              assert result["native_spell_action_ack"] and not result["checkpoint_certified"]
+              assert all(row["world_tick"]["facing_applied"] and
+                         row["world_tick"]["in_front_of_target"] is expected and
+                         row["native_range_receipt"]["facing_applied"] and
+                         row["native_range_receipt"]["in_front_of_target"] is expected
+                         for row in result["observations"])
+              assert all(row["native_world_ack_confirmation"]["native_world_health_applied"]
+                         for row in result["observations"])
+          assert front["native_request_sha256"] == back["native_request_sha256"]
+          assert front["native_binary_sha256"] == back["native_binary_sha256"]
+          assert front["native_encounter_end_ns"] == back["native_encounter_end_ns"]
+          back_shred,front_shred=casts(back,9830),casts(front,9830)
+          front_claw=casts(front,9850)
+          assert back_shred>0 and front_shred==0 and front_claw>0, (back_shred,front_shred,front_claw)
+          print("REAL_SOURCE_FERAL_SHRED_POSITIONAL_NATIVE_DIVERGENCE_NOT_P7",
+                "back_shred",back_shred,"front_shred",front_shred,
+                "front_claw",front_claw)
           PY
       - name: Prove gsim HP changes the next pinned Go execute decision (near/far)
         run: |
