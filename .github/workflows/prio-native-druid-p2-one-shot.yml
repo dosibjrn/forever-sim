@@ -57,6 +57,26 @@ jobs:
               deltas = {rank: reports[4]["casts_ns"][rank] - reports[5]["casts_ns"][rank]
                         for rank in reports[5]["casts_ns"]}
               assert all(value > 0 for value in deltas.values()), ("native improved_wrath effect absent", deltas)
+              reach = {}
+              for rank in (2, 1):
+                  candidate = copy.deepcopy(request)
+                  candidate["raid"]["parties"][0]["players"][0]["talentsString"] = talents[:5] + str(rank) + talents[6:]
+                  req = pathlib.Path(tmp) / f"reach{rank}.json"
+                  prepared = pathlib.Path(tmp) / f"reach{rank}.prepared.json"
+                  req.write_text(json.dumps(candidate))
+                  subprocess.run([str(binary), "prepare", "--request", str(req),
+                                  "--scenario", "prio-druid-native-p2",
+                                  "--outfile", str(prepared)], check=True)
+                  data = json.loads(prepared.read_text())
+                  wrath = [s for s in data["player"]["spells"] if s.get("class_spell") == "wrath"]
+                  assert wrath
+                  reach[rank] = {s["rank"]: s["max_range"] for s in wrath}
+              reach_delta = {r: reach[2][r] - reach[1][r] for r in reach[2]}
+              assert all(v > 0 for v in reach_delta.values()), ("native natures_reach range effect absent", reach_delta)
+              print("NATIVE_DRUID_P2_NATURES_REACH", json.dumps({
+                  "rank_2_yards": reach[2], "rank_1_yards": reach[1],
+                  "range_delta_yards": reach_delta, "gate_pass": False
+              }, sort_keys=True))
               invalid = copy.deepcopy(request)
               invalid["raid"]["parties"][0]["players"][0]["talentsString"] = "9" + talents[1:]
               bad_path = pathlib.Path(tmp) / "invalid.json"
