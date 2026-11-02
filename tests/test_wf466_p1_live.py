@@ -522,7 +522,10 @@ def test_p1_real_production_heal_requires_restored_health_not_overheal():
 
     ir = build_game_ir_slice(class_key='druid', level=20,
                              ability_db_path=DEFAULT_DB)
-    action = next(a for a in ir.actions if a.id == 'source_spell:5188')
+    from src.game.model.ir import HealEffect
+    # Select an actually compiled source action, not an index-only rank hint.
+    action = next(a for a in ir.actions
+                  if any(isinstance(effect, HealEffect) for effect in a.effects))
 
     def real_cast(health_fraction):
         actor = ActorState.from_ir(ir.actor, ir.resources, ir.modes)
