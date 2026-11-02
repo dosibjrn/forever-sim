@@ -187,11 +187,48 @@ func run(requestRaw []byte, sourceRevision string) error {
     return nil
 }
 
+// runNativeBaseline uses the SAME pinned Go engine and original source request,
+// with a single seeded fight. It is a diagnostic comparator, not a P7.1.2 PASS:
+// full reference iterations, saved-report provenance and stochastic scoring
+// must be established separately.
+func runNativeBaseline(raw []byte, sourceRevision string) error {
+    if sourceRevision != pinnedGoRevision {return errors.New("PINNED_GO_SOURCE_REVISION_REQUIRED")}
+    request:=&proto.RaidSimRequest{}
+    if err:=(protojson.UnmarshalOptions{DiscardUnknown:false}).Unmarshal(raw,request);err!=nil{return err}
+    if request.Raid==nil || request.SimOptions==nil || request.Encounter==nil {
+        return errors.New("NATIVE_BASELINE_MISSING_SIM_COMPONENTS")
+    }
+    // One source-seeded fight, not a costly 4000-iteration acceptance run.
+    request.SimOptions.Iterations=1
+    sim.RegisterAll()
+    result:=core.RunSim(request,nil,simsignals.CreateSignals())
+    if result==nil || result.Error!=nil || result.RaidMetrics==nil || result.RaidMetrics.Dps==nil {
+        return errors.New("NATIVE_BASELINE_SIMULATION_FAILED")
+    }
+    digest:=sha256.Sum256(raw)
+    baseline:=struct {
+        Type string `json:"type"`
+        SourceRevision string `json:"native_source_revision"`
+        RequestSHA256 string `json:"native_request_sha256"`
+        Seed int64 `json:"source_random_seed"`
+        Iterations int32 `json:"iterations"`
+        DPS float64 `json:"native_dps"`
+        DurationSeconds float64 `json:"native_duration_s"`
+        CheckpointCertified bool `json:"checkpoint_certified"`
+    }{"native_go_single_fight_baseline_not_p7",sourceRevision,hex.EncodeToString(digest[:]),
+        request.SimOptions.RandomSeed,result.IterationsDone,result.RaidMetrics.Dps.Avg,
+        result.FirstIterationDuration,false}
+    return json.NewEncoder(os.Stdout).Encode(baseline)
+}
+
 func main() {
     requestPath:=flag.String("request","","pinned upstream RaidSimRequest JSON")
     sourceRevision:=flag.String("source-revision","","pinned Go source SHA")
+    nativeOnly:=flag.Bool("native-only-single-fight",false,"one real seeded native fight; diagnostic, NOT P7")
     flag.Parse()
     raw,err:=os.ReadFile(*requestPath)
-    if err==nil {err=run(raw,*sourceRevision)}
+    if err==nil {
+        if *nativeOnly {err=runNativeBaseline(raw,*sourceRevision)} else {err=run(raw,*sourceRevision)}
+    }
     if err!=nil {fmt.Fprintln(os.Stderr,err);os.Exit(1)}
 }
