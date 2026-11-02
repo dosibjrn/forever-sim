@@ -86,6 +86,15 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
     raise ValueError("NO_SOURCE_LEGAL_COLD_GEAR_OR_ENCHANT_ALTERNATIVE")
 
 
+def _paid_gear_elite_choice(elites, rng, proposal_index):
+    """Explore genuinely paid source-legal gear elites; cold restart every fifth."""
+    if proposal_index % 5 == 0 or not elites:
+        return None
+    # Preserve the native P7.4 optimizer's diversity: sample the top 15 of
+    # at most 24 paid elites, never saved reference or unscored candidates.
+    return rng.choice(elites[:min(15, len(elites))])[1]
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.4")
@@ -121,6 +130,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     player = base["raid"]["parties"][0]["players"][0]
     executed = 0
     best = None
+    elites = []  # top 24 source-legal loadouts actually scored by native+2D
     failures = []
     seen = set()
     proposals = 0
@@ -146,8 +156,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 # Local exploitation uses only a winner already paid in THIS
                 # cold run; every fifth draw is independently cold. The saved
                 # gear and other gates' winners are never injected as elites.
-                elite = (best[3] if full_search and best is not None
-                         and proposals % 5 != 0 else None)
+                elite = (_paid_gear_elite_choice(elites, rng, proposals)
+                         if full_search else None)
                 candidate = _cold_gear(
                     base, validator, gear_search, rng, pool=pool,
                     enchant_pools=enchant_pools, elite=elite)
@@ -175,6 +185,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 if not 0 <= score < float("inf"):
                     raise ValueError("SOURCE_GEAR_INVALID_WORLD_DPS")
                 executed += 1
+                elites.append((score, candidate))
+                elites.sort(key=lambda item: item[0], reverse=True)
+                del elites[24:]
                 if best is None or score > best[0]:
                     best = (score, live, candidate_sha, candidate)
             except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
