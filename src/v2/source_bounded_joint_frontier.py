@@ -1571,8 +1571,8 @@ def _source_priority_witness_probes(variants):
     return (*unlock_probes, *composed, *modified_probes)
 
 
-# Journal identity must change whenever the paid source gear frontier changes.
-_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v3_paid_axis_balance'
+# Journal identity changes with source gear ordering or paid-row evidence schema.
+_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v4_paid_events_identity'
 
 
 def _source_gear_witness_probes(gear_stages, *, max_probes=32):
