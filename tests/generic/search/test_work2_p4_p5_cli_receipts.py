@@ -66,8 +66,8 @@ def test_p5_numbers_are_bounded_and_false_stays_false(monkeypatch, capsys):
         "real_100mob_complete": False,
         "real_100mob_count": float("nan"),
         "independent_N30_unique_paid": 30,
-        "independent_N300_unique_paid": 300,
-        "independent_p5_10x_breadth": False,
+        "independent_N300_unique_paid": 45,
+        "independent_p5_2x_or_exhaustion_breadth": False,
         "independent_same_source_candidate_space": False,
         "independent_100mob_winner_replays_complete": False,
         "extra_arbitrary_diagnostics": "not exported",
@@ -80,8 +80,8 @@ def test_p5_numbers_are_bounded_and_false_stays_false(monkeypatch, capsys):
     assert "real_paid_unique_full_builds" not in row
     assert row["real_100mob_complete"] is False
     assert row["independent_N30_unique_paid"] == 30
-    assert row["independent_N300_unique_paid"] == 300
-    assert row["independent_p5_10x_breadth"] is False
+    assert row["independent_N300_unique_paid"] == 45
+    assert row["independent_p5_2x_or_exhaustion_breadth"] is False
     assert "real_search_wall_s" not in row
     assert "real_100mob_count" not in row
     assert "extra_arbitrary_diagnostics" not in row
