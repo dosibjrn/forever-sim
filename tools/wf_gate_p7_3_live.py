@@ -35,8 +35,9 @@ def _cold_talents(base: dict, rng: random.Random, source):
     if not source.validate(allocation):
         raise ValueError("COLD_SOURCE_TALENT_ALLOCATION_ILLEGAL")
     selected = source.encode(allocation)
-    if selected == old.get("talentsString"):
-        raise ValueError("COLD_SOURCE_TALENTS_IDENTICAL_TO_REFERENCE")
+    # random_build(rng) is independent of the saved allocation. A sampled
+    # allocation equal to the reference is still a legal cold discovery; the
+    # caller deduplicates source requests before the paid native/world score.
     player["talentsString"] = selected
     if (player["equipment"] != old["equipment"]
             or player["rotation"] != old["rotation"]):

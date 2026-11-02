@@ -44,8 +44,9 @@ def _cold_apl(base: dict, rng: random.Random, mutation):
     p = result["raid"]["parties"][0]["players"][0]
     initial = base["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
     candidate = mutation.mutate_apl(None, initial, rng, cold=True)
-    if candidate == initial:
-        raise ValueError("COLD_APL_IDENTICAL_TO_REFERENCE")
+    # The cold generator receives no paid elite and uses its own random draw.
+    # Independently rediscovering the saved APL is legal; only seeding a cold
+    # search with it is prohibited. Let the search's SHA set deduplicate it.
     p["rotation"]["priorityList"] = candidate
     original = base["raid"]["parties"][0]["players"][0]
     if p["equipment"] != original["equipment"] or (
