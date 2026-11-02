@@ -8,7 +8,7 @@ import json
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 RAW = ROOT / "docs/evidence/druid-p7/recovered/raw/WF612"
 SHA256 = {
     "wf613_repair.py": "06f0820ccfb4d9cebb9cbdf3c700293a1057677af2ad8ef6d59d3ea0605094d6",

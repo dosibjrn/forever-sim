@@ -12,6 +12,9 @@ MODULES = (
     "test_sqlite_sidecar_git_hygiene.py",
     "test_manual_exact_pr_head_workflow.py",
     "test_wf_coverage_sample_wrappers.py",
+    "test_import_feral_p7_archives.py",
+    "test_audit_feral_p7_holdout.py",
+    "test_recovered_feral_p7_raw.py",
 )
 
 class MaintenanceTestLayout(unittest.TestCase):
