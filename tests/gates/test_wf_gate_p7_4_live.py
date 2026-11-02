@@ -417,3 +417,44 @@ def test_paid_p74_single_slot_neighbor_preserves_other_paid_slots():
     assert player["talentsString"] == "fixed"
     assert player["rotation"] == {"priorityList": []}
     assert elite == old
+
+
+def test_p74_stochastic_paid_finalist_uses_separate_seed_and_real_pair(monkeypatch, tmp_path):
+    """Finalist reranking is paid by both production evaluators, not 1k holdout."""
+    base = {"simOptions": {"randomSeed": "667"}, "raid": {"parties": [
+        {"players": [{"equipment": {"items": [{"id": 123}]}}]}]}}
+    untouched = copy.deepcopy(base)
+    calls = []
+    def native(binary, path, iterations, *, rng_mode):
+        req = __import__("json").loads(path.read_text())
+        calls.append(("native", iterations, rng_mode, req))
+        return {"native_dps": 721.0}
+    def world(binary, path, distance, iterations, *, rng_mode):
+        req = __import__("json").loads(path.read_text())
+        calls.append(("world", iterations, rng_mode, req))
+        assert distance == 15
+        return {"world_mean_dps": 721.0, "iterations_done": 24,
+                "native_damage_events": 5, "native_world_ticks": 10}
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda native, world, n: None)
+    production = SimpleNamespace(native_source_control=native, run=world)
+    dps, live = gate._paid_gear_stochastic_finalist(
+        production, tmp_path/"native", base, 15)
+    assert dps == 721.0
+    assert live["iterations_done"] == 24
+    assert [r[:3] for r in calls] == [
+        ("native", 24, "stochastic"), ("world", 24, "stochastic")]
+    assert all(r[3]["simOptions"]["randomSeed"] == "1947004" for r in calls)
+    assert base == untouched
+
+
+def test_p74_freezes_paid_stochastic_winner_not_noisy_balanced_screen():
+    high_screen = (850.0, {"world_mean_dps": 850.0}, "a", {"gear": 1})
+    stochastic = [
+        (710.0, {"world_mean_dps": 710.0}, "a", {"gear": 1}, 850.0),
+        (730.0, {"world_mean_dps": 730.0}, "b", {"gear": 2}, 800.0)]
+    selected = gate._freeze_paid_p74_winner(high_screen, stochastic)
+    assert selected[2] == "b"
+    assert selected[0] == 730.0 and selected[4] == 800.0
+    assert selected[5] == "paid_24_stochastic_live_native_finalist"
+    assert gate._freeze_paid_p74_winner(high_screen, [])[2] == "a"
