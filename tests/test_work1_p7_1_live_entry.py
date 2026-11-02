@@ -174,3 +174,22 @@ def test_dps_floor_failure_is_not_mislabeled_as_native_world_parity():
          "native_damage_events": 1, "native_world_ticks": 1,
          "per_iteration": [{"duration_s": 120.0}] * 1000},
         1000) is None
+
+
+def test_m1_action_prepares_exact_source_native_p7_without_heavy_opt_in():
+    """The Actions wrapper must make the REAL P7 producer runnable.
+
+    A three-fight source-backed diagnostic is not 3/1000 gate completion.
+    Full stochastic acceptance remains explicit, and P6/P7.2+ stay heavy.
+    """
+    from tools.wf_gate import ROOT
+    workflow = (ROOT / ".github/workflows/m1-on-demand-record.yml").read_text()
+    assert "repository: sage3648/mythicsim-forever-engine" in workflow
+    assert gate.PINNED_RUST in workflow
+    assert "patch_world_ingress.py upstream" in workflow
+    assert "cargo build --release --locked" in workflow
+    assert "FOREVER_MYTHICSIM_RUST_BIN:" in workflow
+    assert "FOREVER_P7_LIVE_PROBE_ITERATIONS=3" in workflow
+    assert '"$gate" != P7.1' in workflow
+    assert '"$gate" == P6' in workflow
+    assert '"$gate" == P7.*' in workflow
