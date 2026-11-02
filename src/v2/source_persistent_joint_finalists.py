@@ -135,7 +135,8 @@ def _evaluate_concurrent_source_packs(candidate, *, level, mobs, pack_size,
             recovery_mana_fraction=(recovery_policy.mana_fraction if recovery_policy else .1),
             source_maintenance_upkeep=True,
             source_between_pack_policy=recovery_policy,
-            max_cpu_s=max_cpu_s, max_wall_s=max_wall_s)
+            max_cpu_s=max_cpu_s, max_wall_s=max_wall_s,
+            max_total_events=max_total_events)
     except (EventTransitionBudgetExceeded, ComputeDeadlineExceeded) as exc:
         # Actual 2D pack execution now obeys the candidate's deadline during
         # combat, upkeep and recovery, not only after all 100 mobs. An
