@@ -15,6 +15,14 @@
 - **Autonomy:** make ordinary technical decisions, fix manageable failures, commit/push/open PRs and safely merge within role without requesting constant approval. Ask only when genuinely blocked by external authority/permissions or a change to approved scope.
 - **Reports:** one short factual result: behavioral/structural change, commit or PR, actual validation, and the next technical blocker. No forced '+1' metrics, shadow registers, mandatory inventory reports or timestamp-only commits. Notify the owner when the certified checkpoint count first changes from zero to one, not on every unchanged 0/148 run.
 
+## M1 progress: single writer = Merge
+
+**Only Merge writes, invalidates, commits or integrates the accepted M1 ledger** `docs/planning/M1_PASSES.tsv` and publishes the official `N/1628` and `C/148` values from `python tools/m1_progress.py`. A gate PASS is earned only through an actual selected production executor and an accepted PROCESS predicate, once per checkpoint-gate unless materially invalidated. This is **not** permission to turn untested source inventories, passing unit tests, toy probes, diagnostics, partial fractions or incompatible engine runs into PASS. Merge checks the actual live output, relevant source/ruleset/backend/run identity and PR HEAD, then runs `wf_gate.py --record-pass` where a truthful passing execution is available; if the acceptance run is expensive, reuse existing genuinely compatible proof under PROCESS rather than repeating it routinely. Persist **one** gate row per real PASS through the normal review/merge path; never create per-gate evidence documents. A missing trustworthy compatibility identity cannot certify a full 11/11 checkpoint.
+
+**Prio, Work1, Work2 and Clean are NOT ledger writers.** They may run real validation without `--record-pass`, report the invocation, exact result (including partial `passed/relevant`), run/commit/engine provenance and remaining defects in their existing issue/PR, and implement code. Do not edit `M1_PASSES.tsv`, inflate the official count, open a separate PR for a timestamp or hold implementation waiting on bookkeeping. Merge handles all accepted-progress publication. **Prio** continues directing the shortest critical path, including opportunistic inexpensive *real* gate PASSes if they fit it; **Work1** and **Work2** keep their existing owned code tasks; **Clean** removes redundancy without invalidating accepted behavior. The optional Pareto work fraction remains an estimate, not a priority or acceptance gate.
+
+**Useful early candidate, not pre-certified:** Druid L20 Feral P1, visible in draft [PR #60](https://github.com/dosibjrn/forever-sim/pull/60), has source-only inventory but **zero proved native effects** in that PR's CI. Prio should check whether direct real selected-engine P1 behavior can be completed cheaply; the test may be easier at L20 but must verify full sourced legality, relevant effects and genuine execution before proposing a PASS. Preserve the first full checkpoint critical path and current owners.
+
 ## Responsibilities and ownership
 
 | Agent | Stable ownership | Successful run | Do not do |
@@ -22,7 +30,7 @@
 | **Prio** | Critical path and route to first certified checkpoint; owns assignments and priority ordering | Verified shortest next dependency; only necessary reassignment; its own non-overlapping technical contribution | Treat priority docs as the deliverable; thrash work assignments |
 | **Work1** | **#1 executable critical-path item**, as assigned by Prio | Continue its owned issue/branch from last unfinished behavior; tested production improvement / PR | Work2's #2+, replan the portfolio every hour |
 | **Work2** | **#2 executable independent item**, or next highest independent #2+ | Continue its owned issue/branch; tested production improvement / PR | Take over Work1's #1 or duplicate its edits |
-| **Merge** | PR delivery, safe integration and integration blockers | Merge a safe exact-HEAD-verified PR, or fix a concrete merge/integration blocker | Leave safe PRs idling; waive new regressions |
+| **Merge** | PR delivery, safe integration and **sole M1 ledger writer** | Merge verified code; stamp/invalidate only real accepted gate PASSes in main and publish 1628/148 counts | Count diagnostics or let other agents modify M1 ledger |
 | **Clean** | **Repository architecture and structural cleanliness**, plus build/CI friction | One safe step toward the maintained ideal architecture, or fix a blocking hygiene failure | Become a generic third feature worker; create more document/archive clutter |
 
 ### Prio: accountable for 0/148 → 1/148
@@ -43,7 +51,7 @@ Read Work2's current issue/branch/PR from the top of WORK_PRIORITY. Stay on the 
 
 ### Merge: integrate, don't queue paperwork
 
-Review relevant PR heads and **affected fast regressions** against current main. Merge safe, correctly scoped changes promptly; do not demand a repeat of previously accepted expensive P1–P7.5 runs without a material invalidation. A pre-existing independent red main test is not automatically a reason to refuse an unrelated proven-safe PR, but a newly introduced regression always blocks. Resolve actionable conflicts/short integration defects in a separately owned branch when needed. Do not rerun CI blindly or declare a whole checkpoint certified from a green unit test.
+Review relevant PR heads and **affected fast regressions** against current main. Be the **only** agent who integrates formal M1 `PASS` timestamps into `docs/planning/M1_PASSES.tsv`, after genuine gate execution or verifiably reusable compatible proof. Use `python tools/m1_progress.py` to publish exact current `N/1628` and `C/148` (never hand-edit totals). Merge safe, correctly scoped changes promptly; do not demand a repeat of previously accepted expensive P1–P7.5 runs without a material invalidation. A pre-existing independent red main test is not automatically a reason to refuse an unrelated proven-safe PR, but a newly introduced regression always blocks. Resolve actionable conflicts/short integration defects in a separately owned branch when needed. Do not rerun CI blindly or declare a whole checkpoint certified from a green unit test.
 
 ### Clean: architecture owner, not ad-hoc garbage collection
 
