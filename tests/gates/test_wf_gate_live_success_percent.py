@@ -191,3 +191,47 @@ def test_p7_5_actual_joint_dps_visible_without_forged_prior_fraction(monkeypatch
     assert row["source_legal_joint_candidates_paid"] == 2
     assert "dps_objective_proximity_percent" not in row
     assert "verified" not in row and "applicable" not in row
+
+
+def test_p7_5_cli_receipt_exposes_real_stochastic_final_without_prior_pass(monkeypatch, capsys):
+    """RED in actual WF613 run: provider final DPS was hidden by CLI output.
+
+    A frozen final score is a diagnostic fact; it cannot create a P7.5 PASS
+    when the accepted-compatible prior is missing.
+    """
+    import json
+    from tools import wf_gate as runner
+
+    monkeypatch.setattr(runner, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR",
+                    "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR"],
+        "production_engine": "pinned_mythicsim_rust_gsim_2d",
+        "source_request_raw_sha256": "pinned-report",
+        "native_source_revision": "pinned-rust",
+        "joint_cold_world_dps": 607.9683,
+        "external_reference_only_floor": 720.9117,
+        "source_legal_joint_candidates_paid": 1584,
+        "search_wall_s": 300.12,
+        "independent_300s_search_completed": True,
+        "search_strategy": "wf613",
+        "frozen_request_raw_sha256": "frozen-request",
+        "frozen_stochastic_iterations": 1000,
+        "frozen_stochastic_native_dps": 610.0,
+        "frozen_stochastic_world_dps": 600.0,
+        "frozen_stochastic_world_damage_events": 17,
+        "frozen_stochastic_world_boundaries": 50,
+        "frozen_stochastic_external_only_floor_met": False,
+    })
+    assert runner.main(["--class", "druid", "--level", "60",
+                        "--spec", "balance", "--gate", "P7.5"]) == 1
+    row = json.loads(capsys.readouterr().out)["results"][0]
+    assert row["frozen_stochastic_iterations"] == 1000
+    assert row["frozen_stochastic_world_dps"] == 600.0
+    assert row["frozen_stochastic_native_dps"] == 610.0
+    assert row["search_wall_s"] == 300.12
+    assert row["search_strategy"] == "wf613"
+    assert row["frozen_stochastic_external_only_floor_met"] is False
+    assert row["status"] == "FAIL"
+    assert "dps_objective_proximity_percent" not in row
+    assert "verified" not in row and "applicable" not in row
