@@ -96,3 +96,35 @@ def test_legacy_p7_json_is_never_current_p7_acceptance(tmp_path,capsys):
     output=json.loads(capsys.readouterr().out)
     assert output['status']=='BLOCKED'
     assert [r['gate'] for r in output['results']]==[f'P7.{i}' for i in range(1,6)]
+
+
+def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(
+        monkeypatch, capsys):
+    """A real provider FAIL must retain its winner receipt, not become PASS."""
+    from tools import wf_gate_p7_4_live
+    monkeypatch.setattr(wf_gate_p7_4_live, "run_live", lambda *a, **k: {
+        "status": "FAIL",
+        "reasons": ["P7_4_FROZEN_STOCHASTIC_DPS_BELOW_REFERENCE_FLOOR"],
+        "production_engine": "pinned_mythicsim_rust_gsim_2d",
+        "cold_winner_gear": [
+            {"slot": 0, "item_id": 112, "enchant_id": None},
+            {"slot": 1, "item_id": 225, "enchant_id": 201}],
+        "winner_live_dps": 717.5,
+        "winner_screen_dps": 720.0,
+        "winner_selection": "paid_2x24_stochastic_live_native_finalist",
+        "paid_stochastic_finalists": 4,
+        "frozen_stochastic_world_dps": 717.5,
+        "frozen_stochastic_iterations": 1000,
+    })
+    assert mod.main(["--class", "druid", "--level", "60",
+                     "--spec", "balance", "--gate", "P7.4"]) == 1
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "FAIL"
+    receipt = result["results"][0]
+    assert receipt["cold_winner_gear"] == [
+        {"slot": 0, "item_id": 112, "enchant_id": None},
+        {"slot": 1, "item_id": 225, "enchant_id": 201}]
+    assert receipt["winner_live_dps"] == 717.5
+    assert receipt["winner_screen_dps"] == 720.0
+    assert receipt["winner_selection"] == "paid_2x24_stochastic_live_native_finalist"
+    assert receipt["paid_stochastic_finalists"] == 4
