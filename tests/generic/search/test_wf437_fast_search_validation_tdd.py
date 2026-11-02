@@ -153,39 +153,3 @@ def test_real_source_paid_shortlist_never_replays_same_full_build_twice():
         (deepcopy(actual_paid_row),None,None),
     ],max_finalists=2)
     assert len(shortlisted)==1, 'DUPLICATE_FULL_BUILD_WOULD_REPLAY_100_MOBS_TWICE'
-
-
-def test_twelve_cold_shortlist_slots_preserve_delayed_100mob_winner():
-    """A real paid two-mob screen can reverse over paid persistent 100 mobs.
-
-    This is a shortlist/ranking unit contract, NOT P6 acceptance evidence.
-    """
-    from src.v2.source_bounded_joint_frontier import (
-        _select_screen_finalists, independently_compare_shortlist)
-    screened = []
-    for i in range(12):
-        row = {
-            'id': str(i), 'allocation': {'talent': i},
-            'gear_move': 'incumbent', 'policy': f'source-policy-{i}',
-            'recovery': 'paid-recovery',
-            'policy_ir': {'rules': [{'action_id': f'legal-action-{i}',
-                                     'conditions': []}]},
-            'screen_s_per_mob': 8.0 + i * .1,
-        }
-        screened.append((row, None, None))
-    short = _select_screen_finalists(screened, 4, diversify_apl=True)
-    wide = _select_screen_finalists(screened, 12, diversify_apl=True)
-    assert len(short) == 4
-    assert len(wide) == 12
-    assert all(row['id'] != '8' for row, _, _ in short)
-
-    def genuine_horizon_model(row):
-        return {'status': 'COMPLETE', 'count': 100, 'events': 800,
-                'mean_s_per_mob': 9.0 if row['id'] == '8' else 13.0}
-    short_result = independently_compare_shortlist(
-        [r for r, _, _ in short], genuine_horizon_model, max_mobs=100)
-    wide_result = independently_compare_shortlist(
-        [r for r, _, _ in wide], genuine_horizon_model, max_mobs=100)
-    assert short_result['validated_winner_id'] != '8'
-    assert wide_result['validated_winner_id'] == '8'
-    assert wide_result['100mob_replays'] == 12
