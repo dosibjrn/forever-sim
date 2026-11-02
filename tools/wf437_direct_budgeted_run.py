@@ -7,7 +7,8 @@ from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.talents import talented_bonus_for_level
 from src.v2.source_bounded_joint_frontier import (source_cold_start_stage,
     search_bounded_joint_frontier,replay_joint_shortlist_100mob)
-from src.v2.source_paid_cold_comparison import source_gear_catalogue_snapshot
+from src.v2.source_paid_cold_comparison import (source_gear_catalogue_snapshot,
+    verify_saved_source_replay)
 
 ap=argparse.ArgumentParser()
 ap.add_argument('--budget',type=int,choices=(30,300))
@@ -79,6 +80,10 @@ if args.compare_30 is not None:
     from src.v2.source_paid_cold_comparison import compare_saved_cold_winners
     search30=json.loads(Path(args.compare_30).read_text())
     search300=json.loads(Path(args.compare_300).read_text())
+    for saved in (search30, search300):
+        verify_saved_source_replay(saved, class_key=class_key, level=level,
+            spec=spec, source_hash=sourcehash,
+            gear_snapshot=gear_source_before, **spec_params)
     comparison=compare_saved_cold_winners(search30,search300,
         source_ir=ir,seed_stage=stage,class_key=class_key,level=level,
         source_hash=sourcehash,bonus_talent_points=bonus)
@@ -91,10 +96,9 @@ if args.compare_30 is not None:
     raise SystemExit(0 if comparison['status'].startswith('PAID_COMPARISON_COMPLETE') else 1)
 if args.replay_from is not None:
     saved=json.loads(Path(args.replay_from).read_text())
-    if (saved.get('source_db_sha256') != sourcehash
-            or saved.get('class_key') != class_key
-            or saved.get('level') != level):
-        raise ValueError('REPLAY_SOURCE_CHECKPOINT_MISMATCH')
+    verify_saved_source_replay(saved, class_key=class_key, level=level,
+        spec=spec, source_hash=sourcehash,
+        gear_snapshot=gear_source_before, **spec_params)
     rows=saved.get('validation_shortlist')
     if not isinstance(rows,list) or not rows:
         raise ValueError('REPLAY_REQUIRES_SAVED_FULL_SOURCE_SHORTLIST')
