@@ -1574,7 +1574,7 @@ def _source_priority_witness_probes(variants):
 
 
 # Journal identity changes with source gear ordering or paid-row evidence schema.
-_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v7_all_required_unlocks'
+_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v8_skip_absent_source_apl'
 
 
 def _source_gear_witness_probes(gear_stages, *, max_probes=32):
@@ -1616,6 +1616,12 @@ def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, a
     if not dimensions or any(d <= 0 for d in dimensions):
         return
     priority = _source_priority_witness_probes(variants)
+    def executable_policy(coords):
+        # Rectangular talent/APL axes contain explicit padding for builds with
+        # fewer real source policies. These are not legal evaluations, so do
+        # not journal or serialize them as attempted candidate coordinates.
+        return variants[coords[0]][coords[2]][0] != '__no_distinct_source_policy__'
+
     # First preserve source-unlocked ability executions. Then give distinct
     # source-legal gear slots a paid chance before generic talent/APL variants
     # exhaust a short cold budget. Every candidate uses the SAME runtime.
@@ -1645,7 +1651,7 @@ def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, a
     coord_index = {}
     for coords in (*unlocks, *first_slot_probes, *other_priority,
                    *deeper_slot_probes, (0, 0, 0, 0)):
-        if coords not in seen:
+        if coords not in seen and executable_policy(coords):
             coord_index[coords] = len(coord_index)
             seen.add(coords)
             yield coords
@@ -1655,6 +1661,12 @@ def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, a
         anchor_count = 1 + sum(size - 1 for size in dimensions)
         for _ in range(anchor_count):
             anchor = next(original)
+            if not executable_policy(anchor):
+                # An absent source APL has no paid result. The marginal
+                # heuristic correctly gives it infinite cost without
+                # fabricating a runtime observation or persistent row.
+                pilot_rows.append({'screen_status':'SOURCE_POLICY_ABSENT'})
+                continue
             if anchor not in seen:
                 coord_index[anchor] = len(coord_index)
                 seen.add(anchor)
@@ -1663,7 +1675,7 @@ def _source_witness_first_coordinates(dimensions, variants, proposal_strategy, a
     else:
         original = _diagonal_coordinates(dimensions)
     for coords in original:
-        if coords not in seen:
+        if coords not in seen and executable_policy(coords):
             seen.add(coords)
             yield coords
 
@@ -2033,8 +2045,13 @@ def _select_screen_finalists(screened, max_finalists, *, score_key="screen_s_per
             if len(finalists)==max_finalists:break
     # Do not pad the shortlist with duplicate paid configurations: every
     # slot below is an independently executed 100-mob replay.
-    if controls and not any(configuration(x[0])==configuration(controls[0][0])
-                            for x in finalists):
+    # A single full-horizon slot must go to the fastest measured screen.
+    # Reserving the control there silently replaces the winner with a slower
+    # incumbent, defeating the actual paid gear/talent/APL optimization.
+    # When multiple slots exist, keep the independent control comparator.
+    if max_finalists > 1 and controls and not any(
+            configuration(x[0])==configuration(controls[0][0])
+            for x in finalists):
         finalists=finalists[:max_finalists-1]+[controls[0]]
     return finalists
 

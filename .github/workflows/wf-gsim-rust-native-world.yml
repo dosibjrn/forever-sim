@@ -2,7 +2,7 @@ name: Live pinned MythicSim Rust fight to real gsim world (NOT P7)
 on:
   workflow_dispatch:
   push:
-    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/first-rust-live-facing-switch-20261102, work/first-rust-mage-live-world-20261102, work/first-rust-pet-caster-world-20261102]
+    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102]
     paths:
       - .github/workflows/wf-gsim-rust-native-world.yml
       - integrations/mythicsim-rust/patch_world_ingress.py
