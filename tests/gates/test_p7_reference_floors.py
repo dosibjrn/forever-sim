@@ -5,9 +5,9 @@ import pytest
 from src.game.p7_reference_floors import minimum_dps, p75_holdout_mean_meets_floor
 
 
-def test_p71_keeps_exact_external_reference():
+def test_p71_accepts_one_percent_below_saved_reference():
     ref = 728.1936126415858
-    assert minimum_dps("P7.1", ref) == ref
+    assert minimum_dps("P7.1", ref) == pytest.approx(720.9116765151699)
 
 
 @pytest.mark.parametrize("gate", ["P7.2", "P7.3", "P7.4"])
@@ -16,8 +16,9 @@ def test_single_dimension_gates_accept_one_percent_below_reference(gate):
     assert minimum_dps(gate, ref) == pytest.approx(720.9116765151699)
 
 
-def test_p75_keeps_full_external_floor_even_when_prior_is_lower():
-    assert minimum_dps("P7.5", 811.023726, strongest_prior_stochastic_dps=805) == 811.023726
+def test_p75_uses_99_percent_of_external_when_prior_is_lower():
+    assert minimum_dps("P7.5", 811.023726, strongest_prior_stochastic_dps=805) == pytest.approx(
+        811.023726 * .99)
 
 
 def test_p75_also_retains_ninety_nine_percent_of_stronger_prior():
@@ -54,8 +55,11 @@ def test_p75_mean_passes_between_old_ci_limit_and_numeric_floor():
     )
 
 
-def test_p75_mean_must_reach_both_external_and_prior_floor():
+def test_p75_mean_must_reach_99_percent_of_larger_external_or_prior():
     assert not p75_holdout_mean_meets_floor(
+        802.0, 811.023726, strongest_accepted_compatible_prior_mean_dps=805,
+    )
+    assert p75_holdout_mean_meets_floor(
         809.9, 811.023726, strongest_accepted_compatible_prior_mean_dps=805,
     )
     assert not p75_holdout_mean_meets_floor(
@@ -80,3 +84,13 @@ def test_p75_mean_requires_explicit_prior_and_rejects_invalid_scores():
             850.0, 811.0,
             strongest_accepted_compatible_prior_mean_dps=float("inf"),
         )
+
+def test_p75_external_threshold_equality_is_accepted_not_only_full_reference():
+    external = 811.023726
+    prior = 805.0
+    assert p75_holdout_mean_meets_floor(
+        .99 * external, external,
+        strongest_accepted_compatible_prior_mean_dps=prior)
+    assert not p75_holdout_mean_meets_floor(
+        .99 * external - 0.001, external,
+        strongest_accepted_compatible_prior_mean_dps=prior)
