@@ -57,14 +57,12 @@ def probe_gate(class_key: str, level: int, spec: str, gate: str,
     reasons = result.get("reasons") or []
     response = {"gate": gate, "status": status, "elapsed_s": elapsed,
                 "reason": str(reasons[0]) if reasons else ""}
-    verified = result.get("pass_count")
-    applicable = result.get("reachability_count")
-    if (type(verified) is int and type(applicable) is int and applicable > 0
-            and 0 <= verified <= applicable):
-        # Comparable executed production rank probes, not a gate PASS.
-        response["verified"] = verified
-        response["applicable"] = applicable
-    for key in ("production_engine", "engine_id", "source_id",
+    # Read the SAME calculated values as the production gate CLI.
+    # No duplicate success/Pareto calculation and no unexecuted inventory.
+    for key in ("verified", "applicable", "partial_coverage_percent",
+                "pareto_effort_estimate_percent", "coverage_component",
+                "scope_provisional", "behavior_probes_executed",
+                "production_engine", "engine_id", "source_id",
                 "source_context_sha256", "real_source_search_evaluated",
                 "real_catalogue_top5_items_scored"):
         if key in result:
@@ -106,15 +104,22 @@ def main(argv=None) -> int:
     head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
                           capture_output=True, text=True, check=False)
     print("Live production gate probe | HEAD", head.stdout.strip() if head.returncode == 0 else "UNKNOWN")
-    print("Only measured verified/applicable is partial coverage; BLOCKED/TIMEOUT is never PASS.")
-    print("GATE    RESULT   REAL MEASURED    BACKEND            FIRST BLOCKER")
+    print("Verified success% and per-gate Pareto% are reported ONLY after executed production tests.")
+    print("A * means provisional SUBCOMPONENT coverage, not total gate completion.")
+    print("GATE    RESULT   VERIFIED     SUCCESS%   80/20%     ENGINE             COMPONENT / FIRST BLOCKER")
     for row in probe_all(args.class_key, args.level, args.spec,
                          per_gate_s=args.gate_seconds, total_s=args.total_seconds):
-        measured = (f"{row['verified']}/{row['applicable']}" if "verified" in row
-                    else f"{row['real_catalogue_top5_items_scored']} scored items"
-                    if "real_catalogue_top5_items_scored" in row else "-")
+        measured = (f"{row['verified']}/{row['applicable']}" if "verified" in row else "-")
+        mark = "*" if row.get("scope_provisional") else ""
+        success = (f"{row['partial_coverage_percent']:.2f}%{mark}"
+                   if "partial_coverage_percent" in row else "-")
+        pareto = (f"{row['pareto_effort_estimate_percent']:.2f}%{mark}"
+                  if "pareto_effort_estimate_percent" in row else "-")
         engine = str(row.get("production_engine") or row.get("engine_id") or "-")[:18]
-        print(f"{row['gate']:<7} {row['status']:<8} {measured:<16} {engine:<18} {str(row.get('reason', ''))[:110]}")
+        detail = str(row.get("coverage_component") or row.get("reason") or "-")
+        if row.get("coverage_component") and row.get("reason"):
+            detail += " | " + str(row["reason"])
+        print(f"{row['gate']:<7} {row['status']:<8} {measured:<12} {success:<10} {pareto:<10} {engine:<18} {detail[:110]}")
     print("Read-only diagnostic. Only Merge may record accepted PASS/PARTIAL in M1.")
     return 0
 
