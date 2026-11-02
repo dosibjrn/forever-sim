@@ -509,6 +509,31 @@ def main(argv=None) -> int:
                     "cold_winner_request_sha256", "cold_candidate_failures"):
             if key in report:
                 record[key] = report[key]
+        if gate.startswith("P7."):
+            # Real P7 providers report the frozen 1,000-stochastic outcome,
+            # but the public CLI previously dropped it. Keep this bounded
+            # receipt available for diagnosing a failed paid search. These
+            # values never modify the provider verdict or create M1 credit.
+            for key in ("search_wall_s", "cold_unique_source_requests",
+                        "source_legal_cold_candidates_paid",
+                        "frozen_stochastic_iterations",
+                        "frozen_stochastic_native_dps",
+                        "frozen_stochastic_world_dps",
+                        "frozen_stochastic_world_damage_events",
+                        "frozen_stochastic_world_boundaries"):
+                value = report.get(key)
+                if type(value) in (int, float) and math.isfinite(value):
+                    record[key] = value
+            for key in ("independent_300s_search_completed",
+                        "frozen_stochastic_reference_floor_met",
+                        "frozen_stochastic_external_only_floor_met"):
+                if type(report.get(key)) is bool:
+                    record[key] = report[key]
+            for key in ("frozen_request_raw_sha256",
+                        "frozen_stochastic_failure", "search_strategy"):
+                value = report.get(key)
+                if isinstance(value, str) and len(value) <= 256:
+                    record[key] = value
         if gate in ("P4", "P5"):
             # Real 30/300s search and 100-mob finalist measurements are already
             # present in the live provider. Keep them visible when the gate is
