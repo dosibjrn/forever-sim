@@ -2,8 +2,14 @@ import ast
 from pathlib import Path
 
 
+ROOT = Path(__file__).resolve().parents[2]
+
+
 def _imports(path):
-    tree=ast.parse(Path(path).read_text(encoding='utf-8'))
+    source = Path(path)
+    if not source.is_absolute():
+        source = ROOT / source
+    tree=ast.parse(source.read_text(encoding='utf-8'))
     out=[]
     for n in ast.walk(tree):
         if isinstance(n, ast.Import):
@@ -30,7 +36,9 @@ def test_fast_compute_core_does_not_depend_on_legacy_persistent_mc_modules():
 
 
 def _python_files(root):
-    return sorted(Path(root).rglob('*.py'))
+    files = sorted((ROOT / root).rglob('*.py'))
+    assert files, f"Missing or empty architecture boundary: {root}"
+    return files
 
 
 def test_generic_shared_layer_has_no_ruleset_or_class_engine_dependency():
@@ -52,7 +60,7 @@ def test_forever_shared_layer_has_no_class_dependency():
 
 def test_forever_classes_do_not_import_sibling_class_backends():
     offenders={}
-    base=Path('src/rulesets/forever/classes')
+    base=ROOT / 'src/rulesets/forever/classes'
     for class_dir in (x for x in base.iterdir() if x.is_dir() and not x.name.startswith('__')):
         sibling_prefixes=tuple(
             f'src.rulesets.forever.classes.{other.name}'
@@ -65,15 +73,38 @@ def test_forever_classes_do_not_import_sibling_class_backends():
     assert offenders == {}
 
 
+def test_architecture_scans_use_the_repository_not_process_cwd(monkeypatch, tmp_path):
+    """Do not let an unrelated cwd silently return zero scanned modules."""
+    monkeypatch.chdir(tmp_path)
+    assert any(p.name == 'events.py' for p in _python_files('src/shared'))
+    assert any(p.name == 'mobs.py' for p in _python_files('src/rulesets/forever/shared'))
+    assert 'ast' in _imports('tests/maintenance/test_architecture_boundaries.py')
+
+
 def test_engine_registry_points_at_ruleset_owned_packages_except_frozen_classic_legacy():
     import src.engine_registry as registry
-    assert registry._ENGINE_MODULES
-    assert registry._ENGINE_MODULES[('classic','mage')] == 'src.classic_mage_leveling_optimizer_v10'
-    assert all(
-        module.startswith('src.rulesets.')
-        for key,module in registry._ENGINE_MODULES.items()
-        if key != ('classic','mage')
-    )
+    from src.class_registry import definitions
+
+    # Registry entries are derived from the class definitions, not a second list.
+    defined = {(d.ruleset, d.class_name): d.engine_module for d in definitions()}
+    assert registry._ENGINE_MODULES == defined
+    assert defined[('classic', 'mage')] == 'src.classic_mage_leveling_optimizer_v10'
+
+    for definition in definitions():
+        key = (definition.ruleset, definition.class_name)
+        if key == ('classic', 'mage'):
+            continue
+        if definition.engine_module.startswith('src.rulesets.'):
+            continue
+
+        # Non-UI generic source proofs have no legacy ruleset facade. These
+        # are intentional source-backed proof modules, not hidden class engines.
+        assert (
+            definition.ruleset == 'forever'
+            and definition.proof_only
+            and not definition.ui_visible
+            and definition.engine_module == f'src.game.data.forever.{definition.class_name}'
+        ), f"Unexpected engine location for {definition.key}: {definition.engine_module}"
 
 def test_fast_validator_targets_exist():
     """Fast-suite entries must survive responsibility-based test moves."""

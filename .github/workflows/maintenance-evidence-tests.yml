@@ -31,6 +31,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance/test_maintenance_layout.py
+          tests/maintenance/test_architecture_boundaries.py
           tests/maintenance/test_import_feral_p7_archives.py
           tests/maintenance/test_audit_feral_p7_holdout.py
           tests/maintenance/test_recovered_feral_p7_raw.py
