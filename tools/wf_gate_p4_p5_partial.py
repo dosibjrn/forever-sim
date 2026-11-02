@@ -178,15 +178,21 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
 
     # The actual cold run embeds independent 100-mob finalist replay OUTSIDE
     # the 30/300s search budget. A successful subprocess alone proves neither.
-    validation = report.get("validation") or {}
+    validation = report.get("validation")
+    validation = validation if isinstance(validation, dict) else {}
     rows = validation.get("rows") or []
     winner_id = validation.get("validated_winner_id")
+    shortlist = report.get("validation_shortlist")
+    shortlist = shortlist if isinstance(shortlist, list) else []
+    winner_index = (int(str(winner_id)) if winner_id is not None
+                    and str(winner_id).isdigit() else -1)
     witnesses = ([r for r in rows if isinstance(r, dict)
                   and str(r.get("id")) == str(winner_id)]
-                 if winner_id is not None and isinstance(rows, list) else [])
+                 if isinstance(rows, list) else [])
     row = witnesses[0] if len(witnesses) == 1 else {}
     seconds = row.get("full_s_per_mob")
-    complete = (row.get("status") == "COMPLETE"
+    complete = (0 <= winner_index < len(shortlist)
+                and row.get("status") == "COMPLETE"
                 and type(row.get("count")) is int and row["count"] == 100
                 and type(seconds) in (int, float)
                 and isfinite(seconds) and seconds > 0)
