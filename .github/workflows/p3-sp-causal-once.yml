@@ -1,0 +1,97 @@
+name: One-shot P3 Balance SP causal audit
+on:
+  push:
+    branches:
+      - diagnostic/p3-balance-sp-causal-20261102
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - name: Inspect actual P3 selected actions and paid SP derivatives (no M1 recording)
+        run: |
+          python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from src.game.data.forever.registry import build_game_ir_slice
+          from src.game.gear import apply_stat_delta
+          from src.game.model import PolicyCondition
+          from src.game.model.ir import DamageEffect, PeriodicEffect
+          from src.v2.source_budgeted_gear import run_source_budgeted_gear
+          from src.v2.source_stateful_budgeted import _make_policy
+          from src.v2.generic_backend import _policy_combat_evaluation
+          from tools.wf_gate_p3_live import _source_profile_build_ir
+
+          ir, ctx = _source_profile_build_ir(Path.cwd(), build_game_ir_slice(class_key='druid',level=60),'druid',60,'balance')
+          print('BALANCE_SELECTED_BUILD',json.dumps({'profile':ctx['profile'],'points':sum(ctx['full_point_source_allocation'].values()),'actions':len(ir.actions)},sort_keys=True),flush=True)
+          print('SOURCE_SP_ACTIONS',json.dumps([
+              {'id':a.id,'name':a.name,'family':a.family_key,'sp_coefficients':[
+                  float(getattr(e,'spell_power_coefficient',getattr(e,'spell_power_coefficient_per_tick',0.)))
+                  for e in a.effects
+                  if isinstance(e,(DamageEffect, PeriodicEffect))]}
+              for a in ir.actions
+              if any(isinstance(e,(DamageEffect, PeriodicEffect))
+                  and (getattr(e,'spell_power_coefficient',0.) > 0 or getattr(e,'spell_power_coefficient_per_tick',0.) > 0)
+                  for e in a.effects)
+          ],sort_keys=True),flush=True)
+          result = run_source_budgeted_gear(
+              class_key='druid', level=60, ir_slice=ir,
+              max_evaluations=44, initial_search=12, search_per_gear=3,
+              max_gear_states=1, probe_deltas=(5.,20.),
+              probe_stats=('armor','stamina','strength','agility','intellect',
+                           'spirit','spell_power','attack_power','mp5',
+                           'crit','hit','dodge','parry',
+                           'health_regeneration_per_5s','weapon_dps'),
+              schedule_incoming_attacks=True)
+          naked=next(x for x in result.get('stages',()) if x.get('stage')=='source_naked')
+          rec=naked['winner']
+          row=next(x for x in result.get('sensitivity_history',()) if x.get('stage')=='source_naked')
+          weights=row['values']
+          print('P3_ACTUAL_WINNER',json.dumps(rec,sort_keys=True,default=str),flush=True)
+          print('P3_SP_WEIGHT',json.dumps({
+              'value':weights.get('spell_power'),
+              'ranked':[x for x in row.get('ranked',()) if x['stat']=='spell_power'],
+              'attempted':result.get('attempted'),'evaluated':result.get('evaluated')
+          },sort_keys=True,default=str),flush=True)
+          p=_make_policy(ir,rec['fallback'],guarded_action=rec.get('guarded_action'),
+                         guarded_conditions=tuple(PolicyCondition(**x) for x in rec.get('guarded_conditions',())))
+          for delta in (0.,5.,20.):
+              modified=ir if delta==0 else apply_stat_delta(ir,'spell_power',delta)
+              evaluation, execution, details=_policy_combat_evaluation(
+                  modified,level=60,policy_override=p,opening_action_ids=tuple(rec['prefix']),
+                  schedule_incoming_attacks=True)
+              damage=[]
+              if execution is not None:
+                  for event in execution.timeline.events:
+                      if event.kind=='Damage' and event.actor_id==modified.actor.id and event.payload.get('applied',True):
+                          damage.append({'action':event.action_id,'amount':event.payload.get('amount'),
+                              'sp_coeff':event.payload.get('spell_power_coefficient'),
+                              'carried_sp':event.payload.get('carried_spell_power'),
+                              'spell_power':event.payload.get('spell_power')})
+              print('P3_REPLAY_DELTA',json.dumps({'delta':delta,'seconds_per_mob':(
+                  evaluation.seconds_per_mob if evaluation is not None else None),
+                  'reason':details.get('stop_reason') if details else None,
+                  'selected_actions':execution.selected_actions if execution else [],
+                  'damage_events':damage[:25]},sort_keys=True,default=str),flush=True)
+          # Independently check a source-legal canonical caster policy; not a fake P3 PASS.
+          policy=ir.policies[0]
+          for delta in (0.,20.):
+              modified=ir if delta==0 else apply_stat_delta(ir,'spell_power',delta)
+              evaluation,execution,details=_policy_combat_evaluation(
+                  modified,level=60,policy_override=policy,schedule_incoming_attacks=True)
+              print('CANONICAL_CASTER_SP',json.dumps({'delta':delta,
+                  'seconds_per_mob':evaluation.seconds_per_mob if evaluation else None,
+                  'reason':details.get('stop_reason') if details else None,
+                  'selected_actions':execution.selected_actions[:12] if execution else []},
+                  sort_keys=True,default=str),flush=True)
+          PY
