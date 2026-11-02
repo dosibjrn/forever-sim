@@ -63,6 +63,27 @@ def test_missing_gear_snapshot_cannot_be_compared_to_attested_report():
             bonus_talent_points=0)
 
 
+def test_different_source_slot_offsets_fail_before_any_paid_replay():
+    # The 30s and 300s source candidate universes must be identical, even
+    # when both use the same real source SQLite and equipment catalogue.
+    snapshot = source_gear_catalogue_snapshot('druid', 30)
+    thirty, three_hundred = _saved_report(30, snapshot), _saved_report(300, snapshot)
+    common = {'gear_slot_sampling_version': 'stratified_source_slots_v1',
+              'max_gear_moves': 16, 'gear_slot_offset': 0}
+    thirty['source_search_space'] = common
+    three_hundred['source_search_space'] = {**common, 'gear_slot_offset': 1}
+    with pytest.raises(ValueError, match='COLD_COMPARISON_DIFFERENT_SOURCE_SEARCH_SPACE'):
+        compare_saved_cold_winners(thirty, three_hundred,
+            source_ir=None, seed_stage=None, class_key='druid', level=30,
+            source_hash='pinned-ability-source', bonus_talent_points=0)
+    # A missing space attestation must also fail closed, not replay at cost.
+    del three_hundred['source_search_space']
+    with pytest.raises(ValueError, match='COLD_COMPARISON_DIFFERENT_SOURCE_SEARCH_SPACE'):
+        compare_saved_cold_winners(thirty, three_hundred,
+            source_ir=None, seed_stage=None, class_key='druid', level=30,
+            source_hash='pinned-ability-source', bonus_talent_points=0)
+
+
 def test_equipped_source_item_unresolved_effects_are_not_silent():
     from src.rulesets.forever.items.runtime_selection import available_items
     from src.game.data.forever.source_checkpoint_p3 import source_item_l0

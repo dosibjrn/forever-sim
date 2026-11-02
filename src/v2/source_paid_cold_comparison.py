@@ -131,6 +131,13 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
         source_hash=source_hash, class_key=class_key, level=level)
     winner300 = _saved_winner(search300, expected_budget=300,
         source_hash=source_hash, class_key=class_key, level=level)
+    # A stratified slot offset changes the actual cold gear candidate set.
+    # Never pay two expensive 100-mob replays on mismatched source universes.
+    # Legacy reports with neither field remain diagnostics, not same-space proof.
+    space30, space300 = search30.get('source_search_space'), search300.get('source_search_space')
+    if (space30 is not None or space300 is not None) and (
+            not space30 or space30 != space300):
+        raise ValueError('COLD_COMPARISON_DIFFERENT_SOURCE_SEARCH_SPACE')
     # The ability/talent SQLite hash does NOT pin the separate item catalogue
     # or its typed equipment-effects ledger. Recheck both source snapshots
     # against the current runtime before paying for an independent replay.
@@ -149,7 +156,6 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
     legal300 = _verify_winner_gear_legality(winner300, class_key=class_key, level=level)
     gaps30 = _winner_gear_effect_gaps(winner30, class_key=class_key, level=level)
     gaps300 = _winner_gear_effect_gaps(winner300, class_key=class_key, level=level)
-    space30, space300 = search30.get('source_search_space'), search300.get('source_search_space')
     same_space = bool(gear_pinned and space30 and space30 == space300)
 
     from src.v2.source_bounded_joint_frontier import replay_joint_shortlist_100mob

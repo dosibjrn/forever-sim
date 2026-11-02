@@ -49,6 +49,20 @@ def source_target_health_from_request(raw: bytes) -> float:
     return float(health)
 
 
+def _terminal_world_tick_ms(native_end_ns: int, last_clock_ms: int) -> int | None:
+    """Last valid millisecond world boundary before the sampled native end.
+
+    A fixed 100ms grid silently discards up to 100ms of real native combat.
+    The existing gsim/Go wire clock is millisecond-quantized, so schedule the
+    final representable boundary STRICTLY before native end, never after it.
+    """
+    if (type(native_end_ns) is not int or native_end_ns <= 0
+            or type(last_clock_ms) is not int or last_clock_ms < 0):
+        raise ValueError('INVALID_NATIVE_TERMINAL_BOUNDARY')
+    final_ms = (native_end_ns - 1) // 1_000_000
+    return final_ms if final_ms > last_clock_ms else None
+
+
 def diagnostic_gsim_world(*, target_spawn_yards: float = 20., enemy_move_speed_yards_s: float = 5.,
                           target_health: float = 10_000_000.,
                           target_initial_health_fraction: float = 1.,
@@ -149,9 +163,15 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
     last_committed_target_id = None
     native_encounter_end_ns = None
     native_encounter_end_reached = False
+    terminal_tick_ms = None
     try:
         for idx in range(ticks):
-            runtime.advance_to(idx / 10. + recovery_offset_s)
+            # Once the next 100ms tick would overrun the sampled encounter,
+            # execute its final real gsim/native boundary instead of dropping
+            # the remaining (potentially spell-bearing) partial interval.
+            clock_s = (terminal_tick_ms / 1000. if terminal_tick_ms is not None
+                       else idx / 10. + recovery_offset_s)
+            runtime.advance_to(clock_s)
             tick = feed.next_tick()
             tick['previous_world_ack_id'] = previous_ack_id
             proc.stdin.write(json.dumps(tick, sort_keys=True, allow_nan=False) + '\n')
@@ -271,13 +291,19 @@ def run(binary: Path, request: Path, *, ticks: int = 20, timeout_s: float = 15.,
                 # This is paid wall-clock recovery in the real gsim controller;
                 # the retained native scheduler advances through the same gap.
                 recovery_offset_s += recovery_s
-            # End the same retained session at the actual source-sampled
-            # native encounter boundary, without submitting an illegal tick.
-            # A sub-tick remainder (<100ms) is intentionally not simulated.
-            next_tick_ns = round(((idx + 1) / 10. + recovery_offset_s) * 1e9)
-            if next_tick_ns >= native_encounter_end_ns:
+            # The final partial interval is a genuine native event step and
+            # a real gsim world ACK. Only the unrepresentable <1ms remainder
+            # is left unsimulated by this millisecond-clock protocol.
+            if terminal_tick_ms is not None:
                 native_encounter_end_reached = True
                 break
+            next_tick_ns = round(((idx + 1) / 10. + recovery_offset_s) * 1e9)
+            if next_tick_ns >= native_encounter_end_ns:
+                terminal_tick_ms = _terminal_world_tick_ms(
+                    native_encounter_end_ns, tick['clock_ms'])
+                if terminal_tick_ms is None:
+                    native_encounter_end_reached = True
+                    break
         proc.stdin.close()
         if proc.wait(timeout=timeout_s) != 0:
             raise RuntimeError('NATIVE_GO_RANGE_SESSION_FAILED_ON_CLOSE: ' + native_failure_details())

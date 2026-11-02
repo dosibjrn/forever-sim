@@ -8,12 +8,19 @@ from src.v2.source_paid_cold_comparison import source_gear_catalogue_snapshot
 
 ap=argparse.ArgumentParser()
 ap.add_argument('--budget',type=int,choices=(30,300))
+ap.add_argument('--gear-slot-offset',type=int,default=0,
+    help='Nonnegative source-slot rotation; use the SAME value for paired 30s/300s searches')
 ap.add_argument('--replay-from',help='Saved source search report containing full validation_shortlist')
 ap.add_argument('--replay-row',type=int,help='Zero-based finalist row to independently replay')
 ap.add_argument('--compare-30',help='Saved independent 30s cold source report')
 ap.add_argument('--compare-300',help='Saved independent 300s cold source report')
 ap.add_argument('--output',required=True)
 args=ap.parse_args()
+if args.gear_slot_offset<0:
+    ap.error('--gear-slot-offset must be nonnegative')
+if args.gear_slot_offset and (args.compare_30 is not None or args.compare_300 is not None
+                              or args.replay_from is not None):
+    ap.error('--gear-slot-offset applies only to a new cold search')
 if args.compare_30 is not None or args.compare_300 is not None:
     if (not args.compare_30 or not args.compare_300 or args.budget is not None
             or args.replay_from is not None or args.replay_row is not None):
@@ -88,6 +95,7 @@ params=dict(class_key='druid',level=30,source_ir=ir,seed_stage=stage,
     # candidate universe. Time and paid-candidate caps may differ, but a
     # 300s-only expansion would invalidate the same-space P4/P5 comparison.
     max_gear_moves=16,
+    gear_slot_offset=args.gear_slot_offset,
     max_policies=8,
     max_recovery_policies=2,
     max_paid_builds=(1000 if args.budget==30 else 20000),
@@ -123,9 +131,10 @@ summary['source_gear_catalogue_snapshot']=gear_source_after
 # same-space verification; budget-specific exploration depth is separate.
 summary['source_search_space']={k:params[k] for k in (
     'class_key','level','bonus_talent_points','max_talents',
-    'max_gear_moves','max_policies','max_recovery_policies',
+    'max_gear_moves','gear_slot_offset','max_policies','max_recovery_policies',
     'screen_mobs','finalist_mobs','pack_size')}
 summary['source_search_space']['gear_role']='druid_feral'
+summary['source_search_space']['gear_slot_sampling_version']='stratified_source_slots_v1'
 summary['search_runner_wall_s']=time.monotonic()-start
 summary['validation']=rv
 # Preserve exact source-legal gear, talent ranks, APL, opening and recovery.

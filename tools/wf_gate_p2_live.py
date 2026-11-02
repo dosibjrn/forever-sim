@@ -1242,15 +1242,20 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                 if witness is None:
                     result['unresolved'].append({'rank_key':key,'reason':'REACHABILITY_UNRESOLVED:NO_LEGAL_WITNESS'})
                     continue
-                if population is not None:
-                    witness=_source_spec_rank_witness(population,talent.id,int(rank.rank))
-                    if witness is None:
-                        # Do not reduce the denominator just because a bounded
-                        # spec-constrained search has not found this rank.
-                        result['unresolved'].append({
-                            'rank_key':key,
-                            'reason':'SPEC_PROFILE_EXACT_RANK_FULL_POINT_WITNESS_NOT_FOUND'})
-                        continue
+                # P2 covers every source-legal reachable rank, not only ranks
+                # appearing in a full-point *spec* optimizer candidate. For
+                # example, a 31-point Balance floor with exactly 31 executable
+                # Balance ranks forces all five ranks of a filler talent; its
+                # rank-one effect is still legal and must be behavior-tested.
+                # A full-point profile witness is used when available; otherwise
+                # use the independently legal partial witness and the actual
+                # source-neighbor reachability check in _rank_probe. P4/P5
+                # continue to require full-point spec-legal candidates.
+                profile_full = (_source_spec_rank_witness(
+                    population,talent.id,int(rank.rank))
+                    if population is not None else None)
+                if profile_full is not None:
+                    witness=profile_full
                 try:
                     check_structural_allocation(compiled,witness,checkpoint,
                                                bonus_talent_points=bonus)
@@ -1259,7 +1264,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                     continue
                 tested=_rank_probe(compiled,talent,int(rank.rank),witness,
                                    level=level,bonus=bonus,
-                                   profile_tree=(spec if population is not None else None))
+                                   profile_tree=(spec if profile_full is not None else None))
+                if population is not None:
+                    tested['spec_full_point_exact_rank_witness']=profile_full is not None
                 result['ranks'].append(tested)
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
         fail=[r for r in result['ranks'] if r['status']!='PASS']
