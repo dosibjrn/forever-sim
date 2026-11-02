@@ -165,6 +165,7 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
         replay = replay_joint_shortlist_100mob({
             'search_only': True, 'validation_shortlist': [winner],
             'complete_100mob_candidates': 0, 'wall_s': saved['wall_s'],
+            'bonus_talent_points': saved['bonus_talent_points'],
             'spec_constraint': saved.get('spec_constraint')},
             source_ir=source_ir, seed_stage=seed_stage,
             class_key=class_key, level=level,

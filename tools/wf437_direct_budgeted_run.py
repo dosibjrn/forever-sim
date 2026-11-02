@@ -68,6 +68,7 @@ if args.replay_from is not None:
         raise ValueError('REPLAY_INCOMPLETE_SAVED_SOURCE_BUILD')
     replay_search={'search_only':True,'validation_shortlist':[selected],
                    'complete_100mob_candidates':0,'wall_s':saved['wall_s'],
+                   'bonus_talent_points':saved['bonus_talent_points'],
                    'spec_constraint':saved.get('spec_constraint')}
     replay=replay_joint_shortlist_100mob(
         replay_search,source_ir=ir,seed_stage=stage,
