@@ -50,6 +50,23 @@ def test_druid_l60_gift_of_nature_rank_two_has_legal_paired_runtime_control():
             assert abs(witness["observed_excess_rank_armor_delta"]
                        - witness["expected_excess_rank_armor_delta"]) < 1e-6
 
+    # Source-declared rear-position requirements are exercised through real
+    # CombatRuntime action eligibility, including the opposite-position
+    # negative control. A missing position must not silently waive Shred.
+    for talent, ranks in (("savage_fury", (1, 2)),
+                          ("shredding_attacks", (1, 2, 3))):
+        for rank in ranks:
+            positioned=rows[f"{talent}:{rank}"]
+            assert positioned["status"] == "PASS", positioned["reasons"]
+            shred=[test for test in positioned["behavior_tests"]
+                   if test["target"] == "shred"]
+            assert len(shred) == 1
+            assert shred[0]["actually_executed"] and shred[0]["passed"]
+            assert shred[0]["probe"] in {
+                "paired_production_resource_spend",
+                "isolated_production_combat_runtime_effect",
+            }
+
     # No rank disappears from the canonical P2 denominator to obtain GREEN.
     assert (report["pass_count"] + report["fail_count"]
             + report["unresolved_count"] + report["unreachable_count"]
