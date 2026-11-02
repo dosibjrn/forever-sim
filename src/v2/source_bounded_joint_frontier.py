@@ -512,16 +512,18 @@ def source_gear_seed_stage(*, gear, ir, source_evidence):
 
 def _cold_source_equipment_payload(*, class_key, level, gear_role, selected):
     """Convert sourced item records to the one canonical persistent gear schema."""
-    from src.rulesets.forever.items.runtime_selection import item_payload, effective_level
+    from src.rulesets.forever.items.runtime_selection import item_payload, effective_level, item_vector
     slots = {slot: item_payload(item, display_slot=slot,
                 effective_level=effective_level(item))
              for slot, item in selected.items()}
+    # The independent replay's source audit compares the COMPLETE canonical
+    # item vector, including raw crit/hit/dodge chance fields. A hand-maintained
+    # subset silently omits sourced stats and makes a legal starting build
+    # fail before it ever reaches the paid CombatRuntime.
     aggregate = {}
-    for item in slots.values():
-        for axis in ('strength', 'agility', 'stamina', 'intellect', 'spirit',
-                     'attack_power', 'spell_power', 'healing', 'mp5', 'armor',
-                     'weapon_dps', 'wand_dps'):
-            aggregate[axis] = aggregate.get(axis, 0.) + float(item.get(axis, 0.) or 0.)
+    for item in selected.values():
+        for axis, amount in item_vector(item).items():
+            aggregate[axis] = aggregate.get(axis, 0.) + float(amount)
     gear = {'class_key':class_key, 'level':level, 'role':gear_role,
             'item_count':len(slots), 'slots':slots, 'aggregate_stats':aggregate,
             'selection_weights':{}, 'source':'canonical_sqlite_cold_source_bootstrap'}

@@ -115,6 +115,31 @@ def _actual_source_winner():
     return {'equipped_gear': gear}
 
 
+def test_cold_bootstrap_retains_full_pinned_item_vector_for_paid_replay():
+    """Real Druid item SQLite must agree with the source gear audit before combat.
+
+    This caught the previous hand-written aggregate dropping crit/hit/dodge.
+    Neither missing stats nor forged extra stats may bypass the source audit.
+    """
+    from src.game.data.forever.registry import build_game_ir_slice
+    from src.v2.source_bounded_joint_frontier import source_cold_start_stage
+    from src.game.data.forever.source_named_gear_proof import audit_named_gear_source
+
+    for level in (20, 30):
+        ir = build_game_ir_slice(class_key="druid", level=level)
+        stage = source_cold_start_stage(
+            class_key="druid", level=level, source_ir=ir, gear_role="druid_feral")
+        gear = stage["gear_policy_result"]["winner"]["gear"]
+        assert {"crit", "hit", "dodge"} <= set(gear["aggregate_stats"])
+        audit = audit_named_gear_source(class_key="druid", level=level, gear=gear)
+        assert audit["equipment_legality_complete"], audit
+        altered = deepcopy(gear)
+        altered["aggregate_stats"]["crit"] += 5.0
+        assert not audit_named_gear_source(
+            class_key="druid", level=level, gear=altered
+        )["equipment_legality_complete"]
+
+
 def test_real_sourced_cold_finalist_has_full_equipment_legality():
     winner = _actual_source_winner()
     audit = _verify_winner_gear_legality(winner, class_key='druid', level=30)

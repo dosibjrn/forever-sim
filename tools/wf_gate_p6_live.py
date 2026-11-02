@@ -9,6 +9,7 @@ No saved search reports, independent simulator, synthetic mobs or fake PASS.
 from __future__ import annotations
 
 from pathlib import Path
+from math import isfinite
 
 
 def _mob_kills(row: dict) -> int:
@@ -40,7 +41,25 @@ def _replay_first_paid_winner(search, *, source_ir, seed_stage, class_key, level
     rows = replay.get("rows") or []
     if not rows:
         return {"status": "NO_COMPLETED_REPLAY", "mob_completed": 0}
+    if (not isinstance(rows, (list, tuple)) or len(rows) != 1
+            or not isinstance(rows[0], dict)):
+        # A single shortlisted build must produce exactly one replay receipt.
+        # Taking rows[0] silently masks a malformed/duplicated paid evaluation.
+        return {"status": "AMBIGUOUS_SOURCE_PAID_REPLAY",
+                "mob_completed": 0, "reason": "EXPECTED_ONE_PAID_RESULT_ROW"}
     row = rows[0]
+    if row.get("status") == "COMPLETE":
+        seconds = row.get("full_s_per_mob")
+        if (type(row.get("count")) is not int or row["count"] != 100
+                or _mob_kills(row) != 100
+                or type(seconds) not in (int, float)
+                or not isfinite(seconds) or seconds <= 0):
+            # Real complete 100-mob paid scores must be positive and finite;
+            # an invalid receipt never contributes saturation or verified mobs.
+            return {"status": "INVALID_COMPLETE_PAID_REPLAY",
+                    "mob_completed": 0, "count": row.get("count"),
+                    "mean_s_per_mob": None,
+                    "reason": "EXPECTED_100_KILLS_AND_FINITE_POSITIVE_TIME"}
     return {
         "status": row.get("status", "UNKNOWN"),
         "mob_completed": _mob_kills(row),
@@ -49,6 +68,17 @@ def _replay_first_paid_winner(search, *, source_ir, seed_stage, class_key, level
         "events": row.get("events", 0),
         "reason": row.get("reason"),
     }
+
+
+def _complete_finite_paid_replay(row: dict) -> bool:
+    """Only one valid completed, timed 100-mob run can enter P6's ratio."""
+    seconds = row.get("mean_s_per_mob") if isinstance(row, dict) else None
+    return bool(isinstance(row, dict)
+        and row.get("status") == "COMPLETE"
+        and type(row.get("count")) is int and row["count"] == 100
+        and _mob_kills(row) == 100
+        and type(seconds) in (int, float)
+        and isfinite(seconds) and seconds > 0)
 
 
 def run_live(root: Path, class_key: str, level: int, *,
@@ -101,9 +131,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         results.append({"cold_search_budget_s": budget,
                         "paid_screens": paid, **row})
     verified = sum(_mob_kills(row) for row in results)
-    both = all(row["status"] == "COMPLETE" and row["mob_completed"] == 100
-               and isinstance(row.get("mean_s_per_mob"), (int, float))
-               and row["mean_s_per_mob"] > 0 for row in results)
+    both = all(_complete_finite_paid_replay(row) for row in results)
     ratio = (results[0]["mean_s_per_mob"] / results[1]["mean_s_per_mob"]
              if both else None)
     reasons = ["P6_FULL_INDEPENDENT_30S_300S_WINNERS_NOT_EXECUTED",
