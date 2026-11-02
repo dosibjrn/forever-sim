@@ -1550,7 +1550,7 @@ def _source_priority_witness_probes(variants):
     # a tight budget also contains modified-action probes. Deduplicate the
     # same unlocked action across alternative full-point allocations.
     unlock_probes = [(i, gear, policy, recovery) for i, gear, policy, recovery, _
-        in sorted(unlocks.values(), key=lambda row: (-row[4], row[0], row[2]))[:8]]
+        in sorted(unlocks.values(), key=lambda row: (-row[4], row[0], row[2]))]
     # Give every admitted talent allocation at least ONE actually paid
     # compound policy before spending thousands of screens on nearby single
     # action/gear edits. These are generated from source effects; the prefix
@@ -1574,7 +1574,7 @@ def _source_priority_witness_probes(variants):
 
 
 # Journal identity changes with source gear ordering or paid-row evidence schema.
-_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v6_mandatory_unlock_axis'
+_SOURCE_GEAR_SAMPLING_VERSION = 'stratified_source_slots_v7_all_required_unlocks'
 
 
 def _source_gear_witness_probes(gear_stages, *, max_probes=32):

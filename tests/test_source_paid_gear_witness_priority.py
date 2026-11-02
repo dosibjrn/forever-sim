@@ -126,7 +126,7 @@ def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
     source_ir = build_game_ir_slice(class_key=class_key, level=level)
     seed = source_cold_start_stage(
         class_key=class_key, level=level, source_ir=source_ir, gear_role=class_key)
-    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v6_mandatory_unlock_axis"
+    assert _SOURCE_GEAR_SAMPLING_VERSION == "stratified_source_slots_v7_all_required_unlocks"
     new_options = {"gear_slot_sampling_version": _SOURCE_GEAR_SAMPLING_VERSION}
     new_hash = search_context_sha256(
         class_key=class_key, level=level, source_ir=source_ir,
@@ -134,7 +134,8 @@ def test_deeper_source_frontier_cannot_resume_old_paid_search_journal(tmp_path):
     for old_version in ("stratified_source_slots_v1", "stratified_source_slots_v2_depth10",
                         "stratified_source_slots_v3_paid_axis_balance",
                         "stratified_source_slots_v4_paid_events_identity",
-                        "stratified_source_slots_v5_real_paid_budget"):
+                        "stratified_source_slots_v5_real_paid_budget",
+                        "stratified_source_slots_v6_mandatory_unlock_axis"):
         old_hash = search_context_sha256(
             class_key=class_key, level=level, source_ir=source_ir,
             seed_stage=seed, options={"gear_slot_sampling_version": old_version})
