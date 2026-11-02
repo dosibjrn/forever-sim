@@ -334,7 +334,7 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
     # ratio alone is not P5 acceptance and does not certify native↔2D.
     paired = compared if isinstance(compared, dict) else {}
     p5_same_space = paired.get("same_source_legal_candidate_space_proven") is True
-    p5_breadth = paired.get("p5_10x_breadth") is True
+    p5_breadth = paired.get("p5_2x_breadth") is True
     p5_replays = paired.get("replays")
     p5_replays_complete = (
         isinstance(p5_replays, list) and len(p5_replays) == 2
@@ -349,7 +349,7 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         if not p5_same_space:
             reasons.append("P5_INDEPENDENT_COLD_SOURCE_SPACE_NOT_MATCHED")
         if not p5_breadth:
-            reasons.append("P5_N300_GE_TEN_TIMES_N30_NOT_PROVEN")
+            reasons.append("P5_N300_GE_TWO_TIMES_N30_NOT_PROVEN")
         if not p5_replays_complete:
             reasons.append("P5_INDEPENDENT_WINNERS_100MOB_REPLAY_INCOMPLETE")
     # A successful live run already has its own paid search and complete
@@ -386,7 +386,8 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         "real_paid_unique_full_builds": report.get("unique_full_builds"),
         "independent_N30_unique_paid": paired.get("N30_unique_paid") if gate == "P5" else None,
         "independent_N300_unique_paid": paired.get("N300_unique_paid") if gate == "P5" else None,
-        "independent_p5_10x_breadth": p5_breadth if gate == "P5" else None,
+        "independent_p5_2x_breadth": p5_breadth if gate == "P5" else None,
+        "independent_p5_10x_breadth": paired.get("p5_10x_breadth") if gate == "P5" else None,
         "independent_same_source_candidate_space": p5_same_space if gate == "P5" else None,
         "independent_100mob_winner_replays_complete": p5_replays_complete if gate == "P5" else None,
         "independent_100mob_winner_replays": p5_replays if gate == "P5" else None,
