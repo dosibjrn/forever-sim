@@ -712,6 +712,45 @@ def _capture_ledger_sources(capture: dict):
     return ([], [])
 
 
+def _verified_source_rank_one_action_grant(talent, rank, *, source_facts, level):
+    """Promote an exact verified SQLite talent action grant without a staged catalogue.
+
+    A source index tooltip or class/level label alone never grants an action.
+    The same canonical source must identify the parent talent spell, family,
+    level-legal granted rank, and the real action payload.
+    """
+    parent = talent.metadata.get('sqlite_spell_id')
+    if (int(rank.rank) != 1 or type(parent) is not int or
+            type(level) is not int or level < 1):
+        return None
+    matched = []
+    for fact in source_facts:
+        if (not isinstance(fact, dict) or
+                fact.get('family') != 'talent_granted_action_facts' or
+                fact.get('authority') != 'canonical_sqlite_verified_source'):
+            continue
+        for row in fact.get('actions', ()):
+            if (not isinstance(row, dict) or row.get('family_key') != talent.id
+                    or str(row.get('grant_parent_spell_id', row.get('spell_id'))) != str(parent)
+                    or type(row.get('required_level')) is not int
+                    or row['required_level'] > level
+                    or not str(row.get('source_url', '')).startswith('https://')):
+                continue
+            try:
+                spell_id = int(row['spell_id'])
+            except (TypeError, ValueError, KeyError):
+                continue
+            matched.append((spell_id, row))
+    if not matched or len({sid for sid, _ in matched}) != len(matched):
+        return None
+    return TalentModifier(kind='grant_source_action', target_type='source_action',
+        target_id=str(parent), value=1.0, provenance={
+            'authority': 'canonical_sqlite_verified_source_rank_grant',
+            'source_url': matched[0][1]['source_url'],
+            'source_parent_spell_id': parent,
+            'source_granted_action_ids': [sid for sid, _ in matched]})
+
+
 def promote_atomic_source_talent_effects(ir):
     """Compile only *complete* L0 rank effects; ledger includes uncovered ranks.
 
@@ -849,6 +888,15 @@ def promote_atomic_source_talent_effects(ir):
                     reason = 'COMPLETE_STAGED_FRACTION_CLAUSE_EXECUTABLE'
                 else:
                     reason = 'UNSUPPORTED_OR_COMPOUND_STAGED_FRACTION'
+            # Exact verified action grants need no duplicate L30-style talent
+            # stage. Incomplete typed effect clauses still fail closed.
+            if not mods and not capture:
+                grant = _verified_source_rank_one_action_grant(
+                    talent, rank, source_facts=ir.source_facts,
+                    level=ir.actor.metadata.get('level'))
+                if grant is not None:
+                    mods = [grant]
+                    reason = 'VERIFIED_SQLITE_TALENT_ACTION_GRANT'
             domains, source_urls = _capture_ledger_sources(capture)
             if mods:
                 rank_rows.append(replace(rank, modifiers=tuple(mods)))
