@@ -51,12 +51,24 @@ def _projection_from_snapshot(world: Mapping, *, sequence: int, native_player_in
         raise GoWorldRangeError("WORLD_DISTANCE_OVERFLOW")
     if not isinstance(target.get("controls"), Mapping):
         raise GoWorldRangeError("WORLD_CONTROLS_MISSING")
+    # Source-facing comes from gsim's actual heading and coordinates.
+    heading = target.get("facing_xy_yards")
+    in_front = None
+    if heading is not None:
+        facing = _coordinates(heading, "TARGET_FACING")
+        norm = hypot(*facing)
+        if not isfinite(norm) or norm <= 0 or distance <= 0:
+            raise GoWorldRangeError("WORLD_TARGET_FACING_UNDEFINED")
+        dot = facing[0]*(player[0]-xy[0]) + facing[1]*(player[1]-xy[1])
+        if not isfinite(dot) or abs(dot) <= 1e-9*norm*distance:
+            raise GoWorldRangeError("WORLD_TARGET_FACING_PERPENDICULAR")
+        in_front = dot > 0
     # Same canonical JSON hashing as native_step_protocol.state_hash.
     try:
         raw = json.dumps(world, sort_keys=True, separators=(",", ":"), allow_nan=False)
     except (TypeError, ValueError) as exc:
         raise GoWorldRangeError("INVALID_WORLD_SNAPSHOT_JSON") from exc
-    return {
+    projection = {
         "type": "gsim_world_range_tick", "protocol": "gsim-go-range-v1",
         "sequence": sequence, "clock_ms": clock,
         "native_clock_ns": clock * 1_000_000,
@@ -67,9 +79,13 @@ def _projection_from_snapshot(world: Mapping, *, sequence: int, native_player_in
         "world_source": "gsim.CombatRuntime",
         # PR #47 only applies Unit.DistanceFromTarget. Unimplemented semantics
         # must never silently be presented as applied world controls/actions.
-        "range_only": True, "facing_applied": False, "controls_applied": False,
+        "range_only": True, "facing_applied": in_front is not None,
+        "controls_applied": False,
         "native_action_ack": False, "checkpoint_certified": False,
     }
+    if in_front is not None:
+        projection["in_front_of_target"] = in_front
+    return projection
 
 
 class GsimGoRangeFeed:
@@ -127,6 +143,10 @@ class GsimGoRangeFeed:
         damage = _finite(receipt.get("native_encounter_damage"), "NATIVE_DAMAGE")
         if abs(applied - pending["distance_yards"]) > 1e-6 or damage < 0:
             raise GoWorldRangeError("NATIVE_RANGE_RECEIPT_VALUES_MISMATCH")
+        if (receipt.get("facing_applied") is not pending["facing_applied"]
+                or (pending["facing_applied"] and
+                    receipt.get("in_front_of_target") is not pending["in_front_of_target"])):
+            raise GoWorldRangeError("NATIVE_FACING_RECEIPT_MISMATCH")
         # The gsim world must not advance while a native receipt is in flight.
         current = _projection_from_snapshot(self._snapshot(self._runtime),
             sequence=self._sequence, native_player_index=self._native_player_index)
