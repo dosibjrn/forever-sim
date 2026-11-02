@@ -25,5 +25,15 @@ jobs:
           assert r.get("real_catalogue_top5_items_scored",0) > 0, "Real scorer was not reached"
           assert r.get("real_source_search_evaluated",0) > 0
           PY
+      - name: Second class same real P3 provider Hunter L20 (genericity smoke)
+        run: |
+          python - <<'PY'
+          from tools.wf_gate import _run_live_gate, ROOT
+          r = _run_live_gate(ROOT, 'hunter', 20, 'unrestricted', 'P3', '')
+          print("P3_SECOND_CLASS_HUNTER_L20:",r)
+          assert r["status"] != "PASS"
+          assert r.get("production_component") == "src.game.checkpoint_p3_smoke.fast_p3_smoke_for_policy", r
+          assert r.get("real_catalogue_top5_items_scored",0) > 0, r
+          PY
       - name: Fast original source gear production scorer regressions
         run: python -m pytest -q tests/test_wf408_unified_production_item_score_p3_tdd.py tests/test_wf_gate_p3_approved.py
