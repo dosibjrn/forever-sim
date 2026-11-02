@@ -530,7 +530,8 @@ def main(argv=None) -> int:
                 if type(report.get(key)) is bool:
                     record[key] = report[key]
             for key in ("frozen_request_raw_sha256",
-                        "frozen_stochastic_failure", "search_strategy"):
+                        "frozen_stochastic_failure", "search_strategy",
+                        "source_original_talents", "cold_winner_talents"):
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 256:
                     record[key] = value
