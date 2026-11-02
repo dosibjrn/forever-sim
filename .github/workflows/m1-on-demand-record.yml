@@ -91,7 +91,7 @@ jobs:
           printf 'heavy=%s\n' "$heavy" >> "$GITHUB_OUTPUT"
           p7_needed=false
           for entry in "${unique[@]}"; do
-            if [[ "$entry" == *:P7.1 ]]; then p7_needed=true; fi
+            if [[ "$entry" == *:P7.* ]]; then p7_needed=true; fi
           done
           printf 'p7_needed=%s\n' "$p7_needed" >> "$GITHUB_OUTPUT"
           echo "Accepted ${#unique[@]} production targets"
@@ -109,10 +109,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      # A P7 gate cannot run without the selected exact-source native engine.
+      # Any executable P7 gate needs the identical pinned production engine.
       # This is the same upstream + world ingress build as the established
       # Rust/gsim production integration workflow, not a gate-only simulator.
-      - name: Checkout pinned production Rust engine for P7.1
+      - name: Checkout pinned production Rust engine for selected P7 gate
         if: steps.targets.outputs.p7_needed == 'true'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -121,11 +121,11 @@ jobs:
           path: upstream
           persist-credentials: false
 
-      - name: Patch production world ingress for P7.1
+      - name: Patch production world ingress for selected P7 gate
         if: steps.targets.outputs.p7_needed == 'true'
         run: python integrations/mythicsim-rust/patch_world_ingress.py upstream
 
-      - name: Build pinned production Rust engine for P7.1
+      - name: Build pinned production Rust engine for selected P7 gate
         if: steps.targets.outputs.p7_needed == 'true'
         working-directory: upstream
         env:
