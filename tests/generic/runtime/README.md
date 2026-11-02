@@ -1,9 +1,9 @@
 # Generic combat runtime test suite
 
-Twelve pre-existing test modules moved **byte-for-byte** from the flat test
-directory. Coverage includes event scheduling, autoattacks, energy/rage/combo
-points, healing/recovery and mitigation, multi-actor combat, timed summons,
-totems, and talent modifiers.
+Existing source-backed runtime test modules are grouped by behavior.
+Coverage includes action readiness, periodic effects, multi-action caster
+policy, event scheduling, autoattacks, energy/rage/combo points, healing and
+recovery, mitigation, multi-actor combat, timed summons, totems, and talents.
 
 The tests import from `src.*` and have **no test-file-relative fixtures**.
 Several use `Path("src/game/...")` to inspect production source; these are
