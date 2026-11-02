@@ -20,6 +20,9 @@ def _physical_slot(slot,item):
     if slot in ('trinket1','trinket2'):return item.slot=='trinket'
     if slot=='weapon':return item.slot in ('one_hand','main_hand','two_hand')
     if slot=='offhand':return item.slot=='off_hand' and item.weapon_hands!=2
+    # Mage wands are source slot "ranged", but are published as "wand".
+    # Match the canonical whole-equipment legality audit, not the raw name.
+    if slot=='wand':return item.slot=='ranged' and item.weapon_type=='wand'
     return item.slot==slot
 
 
@@ -137,8 +140,17 @@ def _source_slot_proposals(*,class_key,level,base,per_slot=2,max_proposals=48,
     for slot,rows in sorted(groups.items()):
         if not rows:continue
         ranked=[];seen=set()
+        # Weapon throughput has its own source stat for wands and ranged
+        # weapons. Under per_slot=2 the generic strength axis otherwise
+        # consumes the only alternative to the incumbent, even when the
+        # slot's actual throughput axis has a distinct legal source winner.
+        # This changes only proposal order, never the paid objective.
+        throughput_axis={'wand':'wand_dps','ranged':'ranged_weapon_dps',
+                         'weapon':'weapon_dps'}.get(slot)
+        slot_axes=([weights,{throughput_axis:1.},*axes[1:]]
+                   if throughput_axis else axes)
         axis_rankings=[sorted(rows,key=lambda x:(item_score(x,axis),int(x.item_level or 0),-int(x.item_id)),reverse=True)
-                       for axis in axes]
+                       for axis in slot_axes]
         # Include source-typed numeric extra axes in the actual paid shortlist.
         # A physical build's primary-stat heuristic alone can miss equipment
         # that shortens recovery (HP5) without increasing immediate damage.
