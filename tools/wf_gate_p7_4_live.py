@@ -280,7 +280,12 @@ def run_live(root: Path, class_key: str, level: int, *,
             # whereas the live gate so far froze only the three-fight screen.
             # Use an independent ranking seed, not the final holdout, and
             # charge the same 300s budget. Do not seed from saved reference.
-            if (full_search and 240.0 <= time.monotonic() - search_start < 295.0):
+            # Keep paid stochastic reranking active through the actual search
+            # deadline. Previously the 295-300s tail admitted *new* paid
+            # screen candidates but never reranked them; once any previous
+            # finalist had been reranked, these late candidates were
+            # categorically excluded from the frozen winner decision.
+            if full_search and time.monotonic() - search_start >= 240.0:
                 pending = next((
                     (screen_score, candidate,
                      hashlib.sha256(json.dumps(candidate, sort_keys=True).encode()).hexdigest())
