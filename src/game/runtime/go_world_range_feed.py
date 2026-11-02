@@ -143,7 +143,7 @@ class GsimGoRangeFeed:
         damage = _finite(receipt.get("native_encounter_damage"), "NATIVE_DAMAGE")
         if abs(applied - pending["distance_yards"]) > 1e-6 or damage < 0:
             raise GoWorldRangeError("NATIVE_RANGE_RECEIPT_VALUES_MISMATCH")
-        if (receipt.get("facing_applied") is not pending["facing_applied"]
+        if (receipt.get("facing_applied", False) is not pending["facing_applied"]
                 or (pending["facing_applied"] and
                     receipt.get("in_front_of_target") is not pending["in_front_of_target"])):
             raise GoWorldRangeError("NATIVE_FACING_RECEIPT_MISMATCH")
