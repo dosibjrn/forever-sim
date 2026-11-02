@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from datetime import datetime, timezone
 import os
 from pathlib import Path
@@ -18,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 # Also support the documented direct invocation: python tools/m1_progress.py
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from tools.wf_gate_coverage import measured_live_coverage, pareto_effort_fraction
+from tools.wf_gate_coverage import (measured_live_coverage,
+                                    measured_p7_dps_proximity, pareto_effort_fraction)
 LEDGER = ROOT / "docs/planning/M1_PASSES.tsv"
 GATES = tuple(f"P{n}" for n in range(1, 7)) + tuple(f"P7.{n}" for n in range(1, 6))
 CLASSES = frozenset(("druid", "hunter", "mage", "paladin", "priest",
@@ -59,8 +61,17 @@ def _rows(path=LEDGER):
             if row["status"] == "PASS" and not row["passed_at_utc"]:
                 raise ValueError("PASS requires a real acceptance timestamp")
             if row["status"] == "PARTIAL":
-                n, d = int(row["verified"]), int(row["applicable"])
-                if not (0 <= n < d and d > 0 and not row["passed_at_utc"]
+                # P1-P6 record actually passed behaviors. P7 records actual
+                # coupled live DPS / required DPS (not fabricated test counts).
+                if row["gate"].startswith("P7."):
+                    n, d = float(row["verified"]), float(row["applicable"])
+                    numeric_ok = math.isfinite(n) and math.isfinite(d)
+                else:
+                    n, d = int(row["verified"]), int(row["applicable"])
+                    numeric_ok = True
+                # 100% of a measured subcomponent can remain a gate FAIL.
+                if not (numeric_ok and 0 < n <= d and d > 0
+                        and not row["passed_at_utc"]
                         and row["scope_provisional"] in ("0", "1")):
                     raise ValueError("PARTIAL must have genuine bounded coverage")
             rows[_key(row)] = row  # latest verified measurement per gate
@@ -90,8 +101,11 @@ def record_pass(*, class_key, level, spec, gate, report, root=ROOT, path=LEDGER)
     row.update(status="PASS", passed_at_utc=row["measured_at_utc"],
                verified="", applicable="", scope_provisional="")
     rows = _rows(path)
+    if rows.get(_key(row), {}).get("status") == "PASS":
+        return False  # An old compatible PASS is not retimestamped every run.
     rows[_key(row)] = row
     _write(rows, path)
+    return True
 
 
 def _provenance(class_key, level, spec, gate, report, root):
@@ -114,34 +128,58 @@ def _provenance(class_key, level, spec, gate, report, root):
 
 
 def record_partial(*, class_key, level, spec, gate, report, root=ROOT, path=LEDGER):
-    """Store only observed source/runtime subtests, without ever claiming gate PASS.
+    """Record the best genuinely measured fraction, never exploration or samples.
 
-    Fail-closed: no BLOCKED, no mock/data-only counts, no bogus denominator.
-    The production gate must genuinely execute behavior probes.
+    The authoritative gate runner makes this decision without agent grading.
+    An observed 100% subcomponent may remain FAIL due to other gate clauses.
+    Preserve historical best PARTIAL on a weaker run (and log regression).
+    Invalidation handles a materially changed source/measurement contract.
     """
-    n, d = report.get("pass_count"), report.get("reachability_count")
-    probes = report.get("behavior_probes_executed", 0)
-    proof = report.get("runtime_proof") or {}
-    if (measured_live_coverage(report) is None
-            or report.get("status") != "FAIL" or type(n) is not int
-            or type(d) is not int or not (0 <= n < d and d > 0)
-            or not (type(probes) is int and probes > 0
-                    or proof.get("executed") is True)
-            or class_key not in CLASSES or level not in LEVELS
-            or gate not in GATES
+    if (class_key not in CLASSES or level not in LEVELS or gate not in GATES
             or not re.fullmatch(r"[a-z][a-z0-9_-]*", spec)):
         return False
+
+    if gate.startswith("P7."):
+        # P7 is a numerical objective, not count-based sample coverage.
+        # Include a genuine executed BLOCKED-with-UI-audit-missing result.
+        score = measured_p7_dps_proximity(gate, report)
+        if score is None or report.get("status") not in ("FAIL", "BLOCKED"):
+            return False
+        n = min(float(score["dps_objective_actual"]),
+                float(score["dps_objective_required"]))
+        d = float(score["dps_objective_required"])
+        provisional = True  # Numerical DPS proximity never certifies the gate.
+    else:
+        measured = measured_live_coverage(report)
+        if measured is None or report.get("status") != "FAIL":
+            return False
+        n, d = report.get("pass_count"), report.get("reachability_count")
+        if not (type(n) is int and type(d) is int and 0 < n <= d):
+            return False
+        provisional = measured["scope_provisional"]
+
     rows = _rows(path)
     row = _provenance(class_key, level, spec, gate, report, root)
-    # Never replace an actual accepted PASS with an incomplete diagnostic.
-    if rows.get(_key(row), {}).get("status") == "PASS":
+    old = rows.get(_key(row))
+    if old and old["status"] == "PASS":
         return False
-    provisional = bool(report.get("unresolved_count")
-                       or report.get("source_spec_profile_verified") is False
-                       or report.get("coverage_scope_complete") is not True)
+    if old and old["status"] == "PARTIAL":
+        old_ratio = float(old["verified"]) / float(old["applicable"])
+        new_ratio = n / d
+        if new_ratio <= old_ratio + 1e-12:
+            # A failed new probe is visible in its Actions log, but cannot
+            # silently erase a previously proven M1 high-water mark.
+            if new_ratio < old_ratio - 1e-12:
+                print(f"M1_REGRESSION_OR_SCOPE_CHANGE: {_key(row)} "
+                      f"observed={new_ratio:.4f} best={old_ratio:.4f}")
+            return False
+        # A broadened source universe changes the denominator; retain the
+        # provisional caveat until a full compatible PASS supersedes it.
+        if old["applicable"] != str(d):
+            provisional = True
+
     row.update(status="PARTIAL", verified=str(n), applicable=str(d),
                scope_provisional=str(int(provisional)))
-    # Avoid accidental bogus key "class_" in a flat on-disk schema.
     rows[_key(row)] = row
     _write(rows, path)
     return True
@@ -153,7 +191,9 @@ def scoreboard(path=LEDGER):
     partials = []
     for row in rows.values():
         if row["status"] == "PARTIAL":
-            n, d = int(row["verified"]), int(row["applicable"])
+            n, d = ((float(row["verified"]), float(row["applicable"]))
+                    if row["gate"].startswith("P7.")
+                    else (int(row["verified"]), int(row["applicable"])))
             c = n / d
             effort = pareto_effort_fraction(c)
             partials.append({"class": row["class"], "level": row["level"],
@@ -213,9 +253,10 @@ def main(argv=None):
           f"({result['measured_percent']:.4f}%, provisional where noted)")
     for p in result["partial_gates"]:
         tentative = " [provisional scope]" if p["provisional"] else ""
+        unit = "DPS objective" if p["gate"].startswith("P7.") else "verified"
         print(f"  {p['class']} L{p['level']} {p['spec']} {p['gate']}: "
-              f"{p['verified']}/{p['applicable']} "
-              f"({100 * p['coverage']:.1f}% verified, "
+              f"{p['verified']:g}/{p['applicable']:g} "
+              f"({100 * p['coverage']:.1f}% {unit}, "
               f"{100 * p['pareto_effort']:.1f}% Pareto-modeled work){tentative}")
     print(f"Whole checkpoints: {result['certified_checkpoints']}/148; "
           f"11/11 gate candidates: {result['complete_candidates']}")
