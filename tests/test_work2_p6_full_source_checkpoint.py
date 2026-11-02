@@ -14,20 +14,23 @@ def _cold(budget, *, level=60):
         "wall_s": budget - 0.1,
         "source_db_sha256": "a" * 64,
         "source_gear_catalogue_snapshot": {"schema": "source_gear_snapshot_v1"},
+        "p4_talent_unlock_coverage_pass": True,
     }
 
 
 def _comparison():
     return {
         "replays": [
-            {"status": "COMPLETE", "count": 100, "s_per_mob": 13.0},
-            {"status": "COMPLETE", "count": 100, "s_per_mob": 12.5},
+            {"status": "COMPLETE", "count": 100, "mob_completed": 100, "s_per_mob": 13.0},
+            {"status": "COMPLETE", "count": 100, "mob_completed": 100, "s_per_mob": 12.5},
         ],
         "T30_s_per_mob": 13.0, "T300_s_per_mob": 12.5,
         "ratio_T30_T300": 1.04,
         "numeric_p6_within_1pct": False,
         "N30_unique_paid": 24, "N300_unique_paid": 240,
         "same_source_legal_candidate_space_proven": True,
+        "winning_gear_source_legality_verified": True,
+        "p5_2x_breadth": True,
     }
 
 
@@ -61,7 +64,7 @@ def test_p6_independent_full_cold_search_and_comparison_share_checkpoint(
     else:
         assert len(calls[2][0]) == 4
     assert calls[2][2:] == (240, {"allowed_codes": (0, 1)})
-    assert report["status"] == "FAIL"  # gsim receipt is not a hybrid P6 PASS
+    assert report["status"] == "FAIL"  # actual 1.04 saturation exceeds 1.01
     assert report["source_replay_T30_T300"] == 1.04
     assert report["search_wall_s"] == [29.9, 299.9]
     assert "P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT" in report["reasons"]
