@@ -18,6 +18,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: project
+          # P7.4/P7.5 source item legality reads a real SQLite catalogue.
+          # Without Git LFS this is a tiny pointer and sqlite3 crashes.
+          lfs: true
       - uses: actions/checkout@v4
         with:
           repository: sage3648/mythicsim-forever-engine
