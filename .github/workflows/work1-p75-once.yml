@@ -2,7 +2,7 @@ name: One-shot Work1 P7.5 pinned Rust gsim proof
 on:
   push:
     branches: [work/work1-p75-source-joint-native-world-first-20261102]
-    paths: [.github/workflows/work1-p75-once.yml]
+    paths: [.github/workflows/work1-p75-once.yml, tools/wf_gate_p7_2_live.py, tools/wf_gate_p7_5_live.py, tests/test_wf_gate_p7_5_live.py]
 permissions:
   contents: read
 jobs:
