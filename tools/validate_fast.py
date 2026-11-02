@@ -56,7 +56,7 @@ TESTS = [
     "tests/test_item_catalogue_i2_v0114827.py",
     "tests/test_item_catalogue_i3_v0114828.py",
     "tests/test_item_catalogue_i4_v0114829.py",
-    "tests/test_wowhead_capture_i5prep_v0114830.py",
+    "tests/integration/source/test_wowhead_capture_i5prep_v0114830.py",
     "tests/test_master_optimizer_external_state_v011484.py",
     "tests/maintenance/test_architecture_boundaries.py",
     "tests/integration/service/test_listener_semantics.py",

@@ -29,6 +29,34 @@ class MaintenanceTestLayout(unittest.TestCase):
                 self.assertIn("ROOT = Path(__file__).resolve().parents[2]", source)
                 ast.parse(source, filename=str(new))
 
+    def test_source_capture_and_audit_regressions_are_grouped(self):
+        """Preserve direct-CLI repo root and fast-suite entry after relocation."""
+        names = (
+            "test_wowhead_capture_i5prep_v0114830.py",
+            "test_wowhead_capture_entrypoint_v0114831.py",
+            "test_wowhead_capture_import_v0114837.py",
+            "test_wowhead_abilities_capture_g39.py",
+            "test_audit_source_acquisition_cli.py",
+        )
+        target = ROOT / "tests" / "integration" / "source"
+        for name in names:
+            with self.subTest(name=name):
+                self.assertFalse((ROOT / "tests" / name).exists())
+                moved = target / name
+                self.assertTrue(moved.is_file(), f"missing source integration test: {moved}")
+                ast.parse(moved.read_text(encoding="utf-8"), filename=str(moved))
+        for name in (
+            "test_wowhead_capture_entrypoint_v0114831.py",
+            "test_audit_source_acquisition_cli.py",
+        ):
+            source = (target / name).read_text(encoding="utf-8")
+            self.assertIn("Path(__file__).resolve().parents[3]", source)
+        from tools.validate_fast import TESTS
+        self.assertIn(
+            "tests/integration/source/test_wowhead_capture_i5prep_v0114830.py", TESTS
+        )
+        self.assertNotIn("tests/test_wowhead_capture_i5prep_v0114830.py", TESTS)
+
     def test_wf243_heldout_fixture_lives_in_test_fixtures(self):
         old = ROOT / "fixtures" / "wf243_heldout_feral_l20.json"
         new = ROOT / "tests" / "fixtures" / "wf243_heldout_feral_l20.json"

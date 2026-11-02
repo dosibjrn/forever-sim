@@ -14,7 +14,7 @@ from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from tools.audit_source_acquisition_gate import audit
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 CLI = ROOT / "tools" / "audit_source_acquisition_gate.py"
 
 

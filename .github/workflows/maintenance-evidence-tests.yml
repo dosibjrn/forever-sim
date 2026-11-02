@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'tests/maintenance/**'
+      - 'tests/integration/source/**'
       - 'tests/mechanics/**'
       - 'tools/audit_feral_p7_holdout.py'
       - 'tools/import_feral_p7_archives.py'
