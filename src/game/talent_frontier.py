@@ -10,7 +10,6 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Mapping
 
-from src.game.talents import validate_talent_selection, available_talent_points
 from src.game.source_objective_relevance import solo_threat_exclusion
 
 
@@ -36,6 +35,10 @@ def source_legal_talent_neighbors(ir, allocation: Mapping[str, int], *, level: i
     transition. Each proposed allocation is validated against the full
     source-derived rank, prerequisite, tree row and total-point rules.
     """
+    # Preserve the existing legacy legality check only when that old search
+    # executes; importing the generic frontier identity must not load GameIR.
+    from src.game.talents import validate_talent_selection, available_talent_points
+
     validate_talent_selection(ir, allocation, level=level, bonus_talent_points=bonus_talent_points)
     roster = tuple(ir.talents)
     current = dict(allocation_key(allocation))
