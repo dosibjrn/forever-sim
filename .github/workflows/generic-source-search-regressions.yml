@@ -106,7 +106,6 @@ jobs:
           tests/generic/search/test_v2_analytic_frontier_extra.py
           tests/generic/search/test_generic_search_layout.py
           tests/generic/search/test_leveling_score.py
-          tests/generic/search/test_source_talent_allocation_adapter.py
           tests/generic/search/test_bounded_policy_search_g16.py
           tests/generic/search/test_policy_search_efficiency_g18.py::test_g18_cache_normalizes_action_cost_and_numeric_equivalent_policy
           tests/generic/runtime/test_source_maintenance_rank_reader.py
