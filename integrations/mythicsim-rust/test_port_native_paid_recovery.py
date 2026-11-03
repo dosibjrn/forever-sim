@@ -289,7 +289,7 @@ combined_prepared = two_world_cli.insert(
     two_world_cli.PREPARED_MARKER, two_world_cli.PREPARED_METHOD,
 )
 assert "pub fn native_two_pull_windows(prepared: &PreparedV2)" in combined_prepared
-assert "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode:" in combined_prepared
+assert "fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode:" in combined_prepared
 assert combined_prepared.index("pub fn native_two_pull_windows") < combined_prepared.index("pub fn native_two_world_targets")
 assert combined_prepared.count(two_world_cli.PREPARED_ANCHOR) == 1
 assert two_pull_cli.port_prepared(combined_prepared) == combined_prepared
