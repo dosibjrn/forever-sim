@@ -1,5 +1,6 @@
 """P7.5 source-legal cold joint fixed-value mutation, not a fake PASS."""
 import copy
+import inspect
 import random
 from types import SimpleNamespace
 
@@ -499,19 +500,17 @@ def test_paid_p75_gear_apl_crossover_uses_distinct_paid_donors():
     gear_donor = build([5, 6, 7, 8], [11, 12], "paid-gear")
     apl_donor = build([1, 2, 3, 4], [21, 22], "paid-apl")
     candidate = copy.deepcopy(parent)
-    source = SimpleNamespace(player=player, RejectedGear=ValueError)
-    validated = []
-
-    class Validator:
-        def validate(self, ids, enchants):
-            validated.append((list(ids), list(enchants)))
-
+    source = SimpleNamespace(player=player)
     snapshot = copy.deepcopy((parent, gear_donor, apl_donor))
+    # The composite helper has no Python gear validator parameter. The caller
+    # sends the complete request to selected Rust sim --gate before 2D scoring.
+    assert "validator" not in inspect.signature(
+        gate._paid_p75_gear_apl_crossover).parameters
     changed = gate._paid_p75_gear_apl_crossover(
         candidate, parent, [],
         [(720., "gear-donor-sha", gear_donor),
          (710., "apl-donor-sha", apl_donor)],
-        source, Validator(), random.Random(23))
+        source, random.Random(23))
     assert changed is True
     result = player(candidate)
     parent_items = player(parent)["equipment"]["items"]
@@ -523,7 +522,6 @@ def test_paid_p75_gear_apl_crossover_uses_distinct_paid_donors():
                for i in changed_slots)
     assert result["rotation"] == player(apl_donor)["rotation"]
     assert result["talentsString"] == player(parent)["talentsString"]
-    assert validated, "candidate gear block was checked by the source validator"
     assert (parent, gear_donor, apl_donor) == snapshot, "paid parents must be immutable"
 
 
@@ -542,12 +540,11 @@ def test_paid_p75_gear_apl_crossover_refuses_to_reuse_one_donor():
     parent = build([1, 2, 3, 4], [11, 12])
     only_donor = build([5, 6, 7, 8], [21, 22])
     candidate = copy.deepcopy(parent)
-    source = SimpleNamespace(player=player, RejectedGear=ValueError)
-    validator = SimpleNamespace(validate=lambda ids, enchants: None)
+    source = SimpleNamespace(player=player)
 
     assert not gate._paid_p75_gear_apl_crossover(
         candidate, parent, [], [(700., "single-donor-sha", only_donor)],
-        source, validator, random.Random(23))
+        source, random.Random(23))
     assert candidate == parent
 
 
@@ -566,10 +563,9 @@ def test_paid_p75_gear_apl_crossover_rolls_back_when_distinct_apl_donor_is_missi
     parent = build([1, 2, 3, 4])
     gear_donor = build([5, 6, 7, 8])
     candidate = copy.deepcopy(parent)
-    source = SimpleNamespace(player=player, RejectedGear=ValueError)
-    validator = SimpleNamespace(validate=lambda ids, enchants: None)
+    source = SimpleNamespace(player=player)
 
     assert not gate._paid_p75_gear_apl_crossover(
         candidate, parent, [], [(700., "gear-only-sha", gear_donor)],
-        source, validator, random.Random(23))
+        source, random.Random(23))
     assert candidate == parent
