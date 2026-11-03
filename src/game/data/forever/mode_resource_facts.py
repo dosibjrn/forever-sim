@@ -4,7 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 import sqlite3
 from src.game.model.ir import ModeDefinition, ModeResourceRule
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 
 
 def apply_mode_resource_facts(class_key: str, modes: tuple[ModeDefinition,...], *, db_path: Path | None = None):
