@@ -2,8 +2,7 @@
 
 - [README](../README.md) — live M1 progress chart, current execution policy, native ownership/migration status and project entry points.
 - [PROCESS](../PROCESS.md) — **current approved**, concise governance, engineering workflow and acceptance policy.
-- [Gate contracts](gates/README.md) — exact approved P1–P7.5 predicates, runtime/source constraints, and live CLI authority.
-- [P1 native validation guide](gates/P1_VALIDATION.md) — selected MythicSim combat behavior without requiring duplicate Python GameIR.
+- [Gate contracts](gates/README.md) — active approved P3–P7.5 predicates, runtime/source constraints, and live CLI authority.
 - [OVERALL PLAN](../OVERALL_PLAN.md) — **canonical approved v5**, product scope and finish line.
 - [Large assets / Git LFS](LARGE_ASSETS_LFS.md) — current 14-asset hydrated baseline, tracking rules, and verification for future additions.
 - [Ideal repository architecture](REPOSITORY_STRUCTURE.md) — Clean-owned maintained target structure, dependency boundaries, observed deviations and safe convergence plan.
