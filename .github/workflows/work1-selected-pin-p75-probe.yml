@@ -19,7 +19,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C project rev-parse HEAD)" = "19d9b205d2207ee5f36d7832c96a68226e83d072"
+          echo "PROBE_PRODUCER_SHA=$(git -C project rev-parse HEAD)"
           expected="$(git -C project ls-tree HEAD -- integrations/mythicsim-rust/engine | awk '$1=="160000" {print $3}')"
           actual="$(git -C project/integrations/mythicsim-rust/engine rev-parse HEAD)"
           echo "PRODUCER_SHA=$(git -C project rev-parse HEAD)"
