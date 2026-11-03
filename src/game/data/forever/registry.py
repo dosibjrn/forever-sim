@@ -198,16 +198,8 @@ def generic_class_metadata(*, selected_level: int | None = None) -> dict[str, di
                                       and bounds[0] <= int(selected_level) <= bounds[1])
         default_levels = generic_default_ready_levels(key)
         product_caps = dict(_PROVIDER_SUPPORT.get(key, {}).get("product_capabilities") or {})
-        scenario_race = None
-        if bounds is not None:
-            # Probe one representative IR at the provider's declared minimum;
-            # this is a cheap metadata read, not a route/combat evaluation.
-            try:
-                ir = build_game_ir_slice(class_key=key, level=bounds[0])
-                if ir is not None:
-                    scenario_race = ir.actor.metadata.get("race_key")
-            except (ValueError, KeyError, TypeError):
-                pass
+        # Publication metadata must not compile a legacy GameIR merely to
+        # display an unverified scenario race. Keep race selection unknown.
         result[key] = {
             "display_name": display, "tree_names": list(trees),
             "primary_profiles": ["all"], "accent": accent,
@@ -234,8 +226,8 @@ def generic_class_metadata(*, selected_level: int | None = None) -> dict[str, di
             "race_availability": {
                 "status": "not_verified_for_generic",
                 "playable_races": [],
-                "representative_scenario_race": scenario_race,
-                "note": "Representative IR race is not a verified playable-race list.",
+                "representative_scenario_race": None,
+                "note": "Playable race selection is not verified for the generic backend.",
             },
         }
     return result
