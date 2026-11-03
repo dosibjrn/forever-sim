@@ -115,8 +115,8 @@ def prepare_native_request(
                 details = details if isinstance(details, dict) else {}
                 code = details.get("code")
                 status = (
-                    # The Native preparation emits "talents" for
-                    # invalid layout/rank input, not unsupported mechanics.
+                    # The native prepare contract distinguishes invalid
+                    # request/talent payloads from explicit unsupported coverage.
                     "INVALID" if code in {"request", "talents"}
                     else "ERROR" if code == "prepare_fault"
                     else "UNSUPPORTED"
