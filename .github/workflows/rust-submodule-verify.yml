@@ -10,6 +10,12 @@ on:
       - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
       - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
       - src/engine_client/native_p2_rank_probe.py
+      - src/engine_client/native_p1_effect_probe.py
+      - tools/wf_p1_native_effects.py
+      - tools/wf_gate_p1_live.py
+      - tests/gates/test_wf_p1_native_blackbox.py
+      - tests/test_wf466_p1_live.py
+      - integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
       - .github/workflows/m1-on-demand-record.yml
 
 permissions:
@@ -71,3 +77,8 @@ jobs:
         env:
           FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         run: python3 integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
+
+      - name: Exercise selected-Rust P1 Druid Claw PreparedV2 request/response
+        env:
+          FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        run: python3 integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
