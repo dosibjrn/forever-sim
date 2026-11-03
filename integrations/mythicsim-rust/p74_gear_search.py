@@ -6,7 +6,6 @@ import copy
 import hashlib
 import json
 import math
-import os
 from pathlib import Path
 import random
 import sqlite3
@@ -87,6 +86,8 @@ def source_enchant_pools(validator, pools):
 
 
 def simulate(binary, request, mode, iterations, seed, deadline):
+    if mode not in ("balanced", "stochastic"):
+        raise ValueError("RNG_MODE_INVALID")
     remaining=deadline-time.monotonic()
     if remaining<=0.05:raise TimeoutError("native deadline exhausted")
     req=copy.deepcopy(request)
@@ -97,9 +98,9 @@ def simulate(binary, request, mode, iterations, seed, deadline):
         _write(a,req)
         try:
             run=subprocess.run(
-                [str(binary.resolve()),"sim","--request",str(a),"--outfile",str(b),"--gate"],
-                env=dict(os.environ,WOWSIM_RNG_MODE=mode),capture_output=True,text=True,
-                timeout=max(.01,remaining))
+                [str(binary.resolve()),"sim","--request",str(a),"--outfile",str(b),
+                 "--gate","--rng-mode",mode],
+                capture_output=True,text=True,timeout=max(.01,remaining))
         except subprocess.TimeoutExpired as exc:
             raise TimeoutError("strict native simulation deadline exhausted") from exc
         # Rust may report a refusal on stdout, not stderr.
@@ -151,14 +152,15 @@ def main():
     # rediscovered reference loadout remains legal for validation and scoring.
     seen=set()
     elites=[]; paid=[]; failed=[];rejected=[]
-    reranked=[];winner=None;holdout=None;pool={}
+    winner=None;holdout=None;pool={}
     engine_sha=sha256(a.binary)
     # All evidence is flushed even if a native refusal, no results, or deadline blocks.
     try:
         pool,excluded=candidate_pool(validator,a.pool_per_slot)
         rng=random.Random(a.seed)
         search_seed=int(reference["simOptions"]["randomSeed"])
-        screen_end=deadline-min(90,a.seconds*.32)
+        holdout_reserve=min(60.0,max(1.0,a.seconds*.20))
+        screen_end=deadline-holdout_reserve
         while time.monotonic()<screen_end-.1:
             if elites and rng.random()<.8:
                 ids=list(rng.choice(elites[:min(15,len(elites))])[1])
@@ -185,20 +187,10 @@ def main():
             except NativeFailure as exc:
                 failed.append({"ids":ids,"phase":"screen","category":exc.category,
                                "returncode":exc.returncode,"error":str(exc)})
-        finalists=sorted(paid,key=lambda x:-x["screen_dps"])[:20]
-        rerank_end=deadline-min(20,a.seconds*.075)
-        for candidate in finalists:
-            if time.monotonic()>rerank_end-.1:break
-            req=_swap(reference,candidate["ids"])
-            try:
-                score=simulate(a.binary,req,"stochastic",2000,search_seed+555123,rerank_end)
-                reranked.append({**candidate,"rerank_dps":score})
-            except (TimeoutError,subprocess.TimeoutExpired):break
-            except NativeFailure as exc:
-                failed.append({"ids":candidate["ids"],"phase":"rerank",
-                               "category":exc.category,"returncode":exc.returncode,"error":str(exc)})
-        if not reranked:raise RuntimeError("no successful stochastic reranking: see failures.json")
-        winner=max(reranked,key=lambda x:x["rerank_dps"])
+        if not paid:
+            raise RuntimeError("no successful balanced screening candidate: see failures.json")
+        # Freeze the best Balanced-scored candidate before independent stochastic validation.
+        winner=max(paid,key=lambda x:x["screen_dps"])
         audit=validator.audit(winner["ids"])
         req=_swap(reference,winner["ids"])
         _write(a.outdir/"frozen_winner_request.json",req)
@@ -210,9 +202,11 @@ def main():
         _write(a.outdir/"paid_candidates.json",paid)
         _write(a.outdir/"failures.json",failed)
         _write(a.outdir/"rejected_combinations.json",rejected)
-        _write(a.outdir/"reranked.json",reranked)
+        (a.outdir/"reranked.json").unlink(missing_ok=True)
         report={"status":"NATIVE_P74_DIAGNOSTIC_NOT_LIVE_2D",
                 "reference_dps":REFERENCE_DPS, "winner":winner,"holdout_dps":holdout,
+                "winner_selection":"best_balanced_screen" if winner is not None else None,
+                "search_rng_mode":"balanced","paid_stochastic_finalists":0,
                 "point_estimate_ge_99pct_reference":holdout is not None and holdout>=.99*REFERENCE_DPS,
                 "paid":len(paid),"native_failures":len(failed),"legality_rejections":len(rejected),
                 "native_failure_categories":dict(Counter(x["category"] for x in failed)),

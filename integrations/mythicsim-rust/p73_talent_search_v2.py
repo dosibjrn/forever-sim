@@ -5,7 +5,7 @@ This is a native-Rust talent discovery diagnostic. It does not itself establish
 live gsim 2D ↔ Rust causality or certify a PROCESS P7.3 gate.
 """
 from __future__ import annotations
-import argparse, copy, hashlib, json, math, os, random, subprocess, sys, tempfile, time
+import argparse, copy, hashlib, json, math, random, subprocess, sys, tempfile, time
 from pathlib import Path
 from talent_schema_druid import TREES,LOOKUP,parse,encode,points,legal_add,validate
 
@@ -93,11 +93,13 @@ def run(binary,req,iterations,seed,rng_mode,deadline):
     with tempfile.TemporaryDirectory() as d:
         inp=Path(d)/'req.json'; out=Path(d)/'out.json'
         inp.write_text(json.dumps(payload,separators=(',',':')))
-        env=dict(os.environ,WOWSIM_RNG_MODE=rng_mode)
+        if rng_mode not in ("balanced", "stochastic"):
+            raise ValueError("RNG_MODE_INVALID")
         st=time.monotonic()
-        res=subprocess.run([str(binary),'sim','--request',str(inp),'--outfile',str(out),'--gate'],
+        res=subprocess.run([str(binary),'sim','--request',str(inp),'--outfile',str(out),
+                            '--gate','--rng-mode',rng_mode],
                            stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,
-                           env=env,timeout=max(0.001,deadline-time.monotonic()))
+                           timeout=max(0.001,deadline-time.monotonic()))
         if res.returncode!=0 or not out.exists():
             raise RuntimeError('native Rust failed: '+res.stderr[-1400:])
         output=json.loads(out.read_text())
@@ -112,8 +114,8 @@ def main():
     pa.add_argument('--screen-iterations',type=int,default=100)
     pa.add_argument('--holdout-iterations',type=int,default=4000)
     pa.add_argument('--seed',type=int,default=647003)
-    pa.add_argument('--rng-mode',choices=('stochastic','balanced'),default='balanced',
-                    help='Balanced search (default) requires verified patched Rust; stochastic is an explicit fallback')
+    pa.add_argument('--rng-mode', choices=('balanced',), required=True,
+                    help='Candidate screening is Balanced only; Stochastic is reserved for the frozen holdout')
     a=pa.parse_args()
     if a.seconds<=0 or a.screen_iterations<=0 or a.holdout_iterations<1000:pa.error('Invalid budgets')
     a.outdir.mkdir(parents=True,exist_ok=True)
@@ -127,20 +129,11 @@ def main():
     rng=random.Random(a.seed)
     start=time.monotonic()
     deadline=start+a.seconds
-    # Reserve a new-seed finalist tournament: 100-fight screens never select final winner.
-    rerank_reserve=min(80.0,max(1.0,a.seconds*0.26))
-    screening_end=deadline-rerank_reserve
+    # Reserve time only for the independent frozen stochastic holdout.
+    holdout_reserve=min(80.0,max(1.0,a.seconds*0.20))
+    screening_end=deadline-holdout_reserve
     search_seed=int(reference['simOptions']['randomSeed'])
-    if a.rng_mode == 'balanced':
-        # A stock engine ignores WOWSIM_RNG_MODE. Refuse silently stochastic searches.
-        probe_end=min(deadline,time.monotonic()+max(0.2,min(20.,a.seconds*0.1)))
-        scores=[]
-        for seed in (search_seed,search_seed+777):
-            score,_,_,_=run(a.binary,reference,40,seed,'balanced',probe_end)
-            scores.append(score)
-        s_score,_,_,_=run(a.binary,reference,40,search_seed,'stochastic',probe_end)
-        if scores[0] != scores[1] or scores[0] == s_score:
-            raise RuntimeError('BALANCED_RNG_NOT_VERIFIED: different seeds must agree and balanced must differ from stochastic; refusing to mislabel Monte Carlo search')
+    holdout_seed=a.seed+1300000007
     holdout_seed=a.seed+1300000007
     seen={reference_talents}
     elites=[]
@@ -186,29 +179,13 @@ def main():
             last_status=time.monotonic()-start
             print(json.dumps({'elapsed':round(last_status,1),'paid':len(records),'best_dps':best['dps'],'best_talents':best['talents']}),flush=True)
     if best is None:raise RuntimeError('No valid candidate paid')
-    # Reference is not seeded. Independent high-precision evaluation of frozen top 40.
-    top_screen=sorted((r for r in records if 'dps' in r),key=lambda r:-r['dps'])[:40]
-    rerank_seed=search_seed + 987654321
-    reranked=[]
-    rerank_end=deadline-min(10.0,max(0.5,a.seconds*0.04))
-    for candidate in top_screen:
-        if time.monotonic()>=rerank_end-0.25:break
-        requested=copy.deepcopy(reference)
-        player(requested)['talentsString']=candidate['talents']
-        try:
-            score,_,duration,request_hash=run(a.binary,requested,10000,rerank_seed,'stochastic',rerank_end)
-        except (TimeoutError,subprocess.TimeoutExpired):break
-        reranked.append({'talents':candidate['talents'],'screen_dps':candidate['dps'],
-                         'rerank_dps':score,'rerank_seed':rerank_seed,
-                         'rerank_iterations':10000,'request_sha256':request_hash,'elapsed_s':duration})
-    if not reranked:raise RuntimeError('No independently re-evaluated finalists')
-    final_best=max(reranked,key=lambda r:r['rerank_dps'])
-    (a.outdir/'reranked_finalists.json').write_text(json.dumps(reranked,indent=2))
+    # Freeze the best balanced-scored cold candidate before the independent
+    # stochastic acceptance holdout. No stochastic score may rank finalists.
     winner=copy.deepcopy(reference)
-    player(winner)['talentsString']=final_best['talents']
+    player(winner)['talentsString']=best['talents']
     winner['simOptions']['iterations']=a.holdout_iterations
     winner['simOptions']['randomSeed']=str(holdout_seed)
-    assert final_best['talents']!=reference_talents
+    assert best['talents']!=reference_talents
     assert sha(player(winner)['equipment'])==fixed_gear
     assert sha(player(winner)['rotation'])==fixed_apl
     # Save the exact frozen winner *before* the independent holdout.
@@ -225,15 +202,16 @@ def main():
       'budget_s':a.seconds,'elapsed_s':elapsed,'candidate_generation_attempts':attempts,
       'paid_count':len(records),'failed_native':failures,'screen_iterations':a.screen_iterations,
       'screen_seed':search_seed,'screen_rng_mode':a.rng_mode,'holdout_iterations':a.holdout_iterations,'holdout_seed':holdout_seed,
-      'best_screen':best,'rerank_seed':rerank_seed,'rerank_finalists':len(reranked),
-      'best_reranked':final_best,'holdout_dps':holdout_dps,'holdout_request_sha256':holdout_hash,
+      'best_screen':best,'winner_selection':'best_balanced_screen',
+      'paid_stochastic_finalists':0,'rerank_finalists':0,'best_reranked':None,
+      'holdout_dps':holdout_dps,'holdout_request_sha256':holdout_hash,
       'holdout_duration_s':holdout_s,'point_estimate_ge_99pct_reference':holdout_dps>=0.99*REFERENCE_DPS,
       'winner_is_source_legal':validate(parse(best['talents'])),
       'native_rust_worked':True,'live_2d_causal_trace_exists':False,
       'limits':['No live 2D↔Rust controller/ACK causal evidence.','Rust talent schema adapted from source build 1.60.1.70170; runtime may use later talent updates.','Statistical confidence of holdout versus reference not computed.'],
     }
     (a.outdir/'report.json').write_text(json.dumps(report,indent=2))
-    print(json.dumps({k:report[k] for k in ('status','elapsed_s','paid_count','failed_native','best_screen','best_reranked','holdout_dps','point_estimate_ge_99pct_reference')},indent=2),flush=True)
+    print(json.dumps({k:report[k] for k in ('status','elapsed_s','paid_count','failed_native','winner_selection','best_screen','holdout_dps','point_estimate_ge_99pct_reference')},indent=2),flush=True)
     if elapsed>a.seconds:raise TimeoutError('End-to-end 300s ceiling violated')
 
 if __name__=='__main__':main()
