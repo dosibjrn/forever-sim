@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import unittest
 
+import port_native_two_pull_cli as two_pull
+
 from port_native_two_world_cli import (
     CLASSES_ANCHOR,
     CLASS_MARKER,
@@ -51,6 +53,35 @@ class TypedRngTwoWorldPortTests(unittest.TestCase):
                 self.assertNotEqual(broken, expected)
                 with self.assertRaisesRegex(ValueError, "TYPED_RNG_DRIFT"):
                     insert(broken, "anchor-absent", marker, replacement)
+
+
+    def test_two_pull_typed_prepared_gateway_composes_without_duplicate_anchor(self):
+        source = two_pull.PREPARED_METHOD_TYPED + two_pull.PREPARED_INSERTION_ANCHOR
+        self.assertEqual(two_pull.port_prepared(source), source)
+        self.assertEqual(source.count(PREPARED_ANCHOR), 1)
+        combined = insert(
+            source, PREPARED_ANCHOR, PREPARED_MARKER, PREPARED_METHOD
+        )
+        self.assertEqual(combined.count(PREPARED_ANCHOR), 1)
+        self.assertIn("pub fn native_two_world_targets(", combined)
+        self.assertEqual(two_pull.port_prepared(combined), combined)
+
+    def test_two_pull_untyped_gateway_inserts_once_and_remains_idempotent(self):
+        source = two_pull.PREPARED_INSERTION_ANCHOR
+        installed = two_pull.port_prepared(source)
+        self.assertIn(two_pull.PREPARED_METHOD_UNTYPED, installed)
+        self.assertEqual(installed.count(PREPARED_ANCHOR), 1)
+        self.assertEqual(two_pull.port_prepared(installed), installed)
+
+    def test_two_pull_typed_gateway_rejects_forged_callsite(self):
+        broken = (
+            two_pull.PREPARED_METHOD_TYPED.replace(
+                two_pull.ENGINE_TYPED_CALL, two_pull.ENGINE_CALL_OLD, 1
+            )
+            + two_pull.PREPARED_INSERTION_ANCHOR
+        )
+        with self.assertRaisesRegex(ValueError, "typed prepared two-pull gateway drift"):
+            two_pull.port_prepared(broken)
 
 
 if __name__ == "__main__":
