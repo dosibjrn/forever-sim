@@ -37,7 +37,7 @@ class TalentSearchContractTests(unittest.TestCase):
         self.assertFalse(validate(r))
 
     def test_stock_rng_cannot_masquerade_as_balanced(self):
-        """The mock ignores WOWSIM_RNG_MODE like the original unpatched Rust CLI."""
+        """The mock ignores the explicit --rng-mode flag like an unpatched Rust CLI."""
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
             binary=root/"fake_engine"
@@ -74,7 +74,11 @@ import json,sys
 argv=sys.argv
 req=json.load(open(argv[argv.index('--request')+1]))
 ranks=req['raid']['parties'][0]['players'][0]['talentsString']
+mode=args[args.index('--rng-mode')+1]
+seed=int(req['simOptions']['randomSeed'])
 value=650+sum(int(v) for v in ranks if v.isdigit())+int(ranks[0])
+if mode == 'stochastic':
+    value += seed % 13
 out={'result':{'raidMetrics':{'dps':{'avg':float(value)}}}}
 json.dump(out,open(argv[argv.index('--outfile')+1],'w'))
 """)
@@ -89,7 +93,7 @@ json.dump(out,open(argv[argv.index('--outfile')+1],'w'))
             output=root/'out'
             done=subprocess.run([sys.executable,str(ROOT/'p73_talent_search_v2.py'),
                 '--binary',str(binary),'--reference',str(inputfile),'--outdir',str(output),
-                '--seconds','6.0','--screen-iterations','2','--holdout-iterations','1000','--rng-mode','stochastic'],
+                '--seconds','6.0','--screen-iterations','2','--holdout-iterations','1000','--rng-mode','balanced'],
                 capture_output=True,text=True,timeout=12)
             self.assertEqual(done.returncode,0,done.stderr)
             report=json.loads((output/'report.json').read_text())
