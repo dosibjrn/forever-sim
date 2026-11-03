@@ -25,6 +25,8 @@ def test_paid_rotation_rebuild_uses_long_cold_source_grammar(monkeypatch):
 
     def spy(actions, source_actions, rng, *, cold=False, min_length=2):
         observed.append((cold, min_length))
+        if min_length == 2:
+            return original(actions, source_actions, rng, cold=cold)
         return original(
             actions, source_actions, rng, cold=cold, min_length=min_length
         )
