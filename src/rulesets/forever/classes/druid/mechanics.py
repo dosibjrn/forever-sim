@@ -12,7 +12,7 @@ from contextvars import ContextVar
 
 from src.shared.leveling import objective as leveling
 from src.shared.leveling.timing import between_pull_travel_s
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.scenarios.spaced_pulls import SpacedPullLayout
 from src.rulesets.forever.data.rules import default_rules
 from src.rulesets.forever.shared.mobs import normal_world_raw_dps, WORLD_MELEE_FAMILIES
 from src.rulesets.forever.shared.recovery import HealOption, solve_recovery, RECOVERY_SOLVER_ID
