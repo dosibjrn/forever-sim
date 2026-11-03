@@ -354,13 +354,14 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
 
 
 def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
-                                 balanced_elites, source, validator, rng):
+                                 balanced_elites, source, rng):
     """Combine gear and APL from two different, genuinely paid candidates.
 
     Both donor identities must come from this independent cold search. The
-    gear donor supplies a validated multi-slot item/enchant block; a second
-    paid candidate supplies a distinct APL. Talents stay on the paid parent.
-    Do not mutate the proposal until both donors exist and gear validates.
+    gear donor supplies a multi-slot item/enchant block; a second paid
+    candidate supplies a distinct APL. Talents stay on the paid parent.
+    This helper does not run Python gear legality: run_live sends the complete
+    composite to selected Rust sim --gate before any live 2D score is paid.
     """
     candidate_player = source.player(candidate)
     items = candidate_player["equipment"]["items"]
@@ -430,12 +431,10 @@ def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
         mixed = copy.deepcopy(items)
         for i in selected:
             mixed[i] = copy.deepcopy(other[i])
-        try:
-            validator.validate(
-                [int(item["id"]) for item in mixed],
-                [int(item.get("enchant") or 0) for item in mixed])
-        except (source.RejectedGear, ValueError, KeyError, TypeError):
-            continue
+        # No Python GearValidator veto here. The caller's selected Rust
+        # native_source_control(sim --gate) is the authority for this composite;
+        # a native refusal is recorded as a failed proposal, never retried in
+        # Python or treated as a legal paid candidate.
         candidate_player["equipment"]["items"][:] = mixed
         candidate_player["rotation"] = copy.deepcopy(rotation)
         return True
@@ -683,7 +682,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                     elif gear_apl_crossover:
                         _paid_p75_gear_apl_crossover(
                             candidate, elite, balanced_finalists,
-                            balanced_elites, source, validator, rng)
+                            balanced_elites, source, rng)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
@@ -692,6 +691,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 with tempfile.TemporaryDirectory(prefix="forever_p75_live_") as tmp:
                     path = Path(tmp) / "cold-full-source-build.json"
                     path.write_text(json.dumps(candidate))
+                    # Composite gear+APL candidates reach the selected Rust
+                    # --gate without a second Python legality decision.
                     native = production.native_source_control(
                         binary, path, 3, rng_mode="balanced")
                     live = production.run(
