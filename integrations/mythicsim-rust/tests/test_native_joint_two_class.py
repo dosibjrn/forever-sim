@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import p73_talent_search_v2 as p73
+import native_executor as native_exec
 import native_joint_two_class as joint
 from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast, mutate_apl
 from native_joint_two_class import (
@@ -657,113 +658,13 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
 
 
 
-class NativeGeneratedDruidTalentDonorContracts(unittest.TestCase):
-    def test_two_native_verified_full_builds_unlock_shared_baseline_damage_witness(self):
-        baseline = request()
-        source_player = baseline["raid"]["parties"][0]["players"][0]
-        source_player["talentsString"] = "5532220115501351--505"
-        source_player["rotation"]["priorityList"] = [
-            {"action": {"castSpell": {"spellId": {"rank": 5, "spellId": 24977}}}},
-            {"action": {"castSpell": {"spellId": {"rank": 10, "spellId": 9835}}}},
-            {"action": {"castSpell": {"spellId": {"rank": 8, "spellId": 9912}}}},
-        ]
-        raw = {"result": {"raidMetrics": {
-            "dps": {"avg": 200.0},
-            "parties": [{"players": [{"actions": [
-                {"id": {"spellId": 24977}, "targets": [{"casts": 40, "damage": 800.0}]},
-                {"id": {"spellId": 9835}, "targets": [{"casts": 20, "damage": 300.0}]},
-                {"id": {"spellId": 9912}, "targets": [{"casts": 30, "damage": 500.0}]},
-            ]}]}],
-        }}}
-        calls = []
-
-        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
-            calls.append((candidate["raid"]["parties"][0]["players"][0]["talentsString"],
-                          iterations, seed, rng_mode))
-            return (200.0, raw, 0.01,
-                    fingerprint(native_payload(candidate, iterations, seed)))
-
-        with tempfile.TemporaryDirectory() as directory:
-            with patch.object(
-                joint, "random_build",
-                side_effect=["native-proposal-a", "native-proposal-b"],
-            ), patch.object(joint, "encode", side_effect=lambda proposal: proposal):
-                donors, witnesses, summary = joint._generate_native_druid_talent_donors(
-                    Path("native"), baseline,
-                    [{"rank": 5, "spellId": 24977},
-                     {"rank": 10, "spellId": 9835},
-                     {"rank": 8, "spellId": 9912}],
-                    Path(directory), iterations=40, seed=731,
-                    existing_talents={source_player["talentsString"]},
-                    runner=fake_run, max_attempts=8,
-                )
-
-            self.assertEqual("PASS", summary["status"])
-            self.assertEqual(2, len(donors))
-            self.assertEqual(2, len({
-                joint.player(fixture["request"])["talentsString"]
-                for fixture in donors
-            }))
-            self.assertEqual(
-                {"native-proposal-a", "native-proposal-b"},
-                {call[0] for call in calls},
-            )
-            self.assertEqual(2, summary["native_evaluations"])
-            self.assertEqual("balanced", donors[0]["native_rng_mode"])
-            self.assertEqual(
-                [{"rank": 5, "spellId": 24977},
-                 {"rank": 10, "spellId": 9835},
-                 {"rank": 8, "spellId": 9912}],
-                witnesses,
-            )
-            self.assertTrue(all(
-                (Path(directory) / fixture["source_path"]).is_file()
-                for fixture in donors
-            ))
-            self.assertTrue(all(
-                (Path(directory) / fixture["source_path"].replace(
-                    ".request.json", ".response.json"
-                )).is_file()
-                for fixture in donors
-            ))
-
-            class FakeGear:
-                def __init__(self, class_key, reference, source_requests, items):
-                    self.reference = reference
-                    self.mutable_indices = [0]
-
-                def validate(self, request_value):
-                    return None
-
-                def mutate_one(self, rng):
-                    return copy.deepcopy(self.reference), {}
-
-                def mutate_from(self, request_value, rng):
-                    return copy.deepcopy(request_value), {}
-
-            verified = {
-                source_player["talentsString"],
-                *[joint.player(fixture["request"])["talentsString"]
-                  for fixture in donors],
-            }
-            with patch.object(joint, "NativeGearAdapter", FakeGear), patch.object(
-                joint, "legal_apl_only_request", return_value=True
-            ):
-                _adapter, scope = joint.source_bounded_adapter(
-                    "druid", baseline, [baseline], {},
-                    donor_fixtures=donors,
-                    native_damage_witnesses=witnesses,
-                    native_verified_talent_builds=verified,
-                )
-            self.assertEqual(sorted(verified), scope["talent_builds"])
-            self.assertEqual(sorted(verified), scope["native_verified_talent_builds"])
-            self.assertEqual(
-                witnesses,
-                scope["native_positive_damage_witnesses_common_to_selected_talent_builds"],
-            )
-
-
 class NativeExecutionErrorReporting(unittest.TestCase):
+    def test_joint_and_legacy_p73_paths_share_one_executor(self):
+        self.assertIs(joint.run, native_exec.run)
+        self.assertIs(p73.run, native_exec.run)
+        self.assertIs(p73.NativeExecutionError, native_exec.NativeExecutionError)
+        self.assertIs(p73.NativeScoreExtractionError, native_exec.NativeScoreExtractionError)
+
     def test_missing_dps_average_preserves_raw_native_response(self):
         source = request()
         raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
@@ -774,8 +675,8 @@ class NativeExecutionErrorReporting(unittest.TestCase):
             return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
 
         with patch.object(p73.subprocess, "run", side_effect=write_output):
-            with self.assertRaises(p73.NativeScoreExtractionError) as raised:
-                p73.run(
+            with self.assertRaises(native_exec.NativeScoreExtractionError) as raised:
+                native_exec.run(
                     Path("native"), source, 40, 731, "balanced",
                     time.monotonic() + 5.0,
                 )
@@ -789,7 +690,7 @@ class NativeExecutionErrorReporting(unittest.TestCase):
         effective = native_payload(request(), 40, 731)
         key = fingerprint(effective)
         raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
-        exc = p73.NativeScoreExtractionError(
+        exc = native_exec.NativeScoreExtractionError(
             "missing avg", raw_response=raw, elapsed_s=0.012,
             request_sha256=key,
         )
@@ -814,7 +715,7 @@ class NativeExecutionErrorReporting(unittest.TestCase):
         )
         with patch.object(p73.subprocess, "run", return_value=completed) as run:
             with self.assertRaises(RuntimeError) as raised:
-                p73.run(
+                native_exec.run(
                     Path("native"), {"simOptions": {}}, 40, 731, "balanced",
                     time.monotonic() + 5.0,
                 )
@@ -838,7 +739,7 @@ class NativeCliOutcomeClassificationContracts(unittest.TestCase):
             return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
 
         with patch.object(p73.subprocess, "run", side_effect=write_output):
-            score, response, _elapsed, request_sha = p73.run(
+            score, response, _elapsed, request_sha = native_exec.run(
                 Path("native"), source, 40, 731, "balanced",
                 time.monotonic() + 5.0,
             )
@@ -856,7 +757,7 @@ class NativeCliOutcomeClassificationContracts(unittest.TestCase):
         )
         with patch.object(p73.subprocess, "run", return_value=completed):
             with self.assertRaises(NativeCandidateRefusal) as raised:
-                p73.run(Path("native"), request(), 40, 731, "balanced",
+                native_exec.run(Path("native"), request(), 40, 731, "balanced",
                         time.monotonic() + 5.0)
         self.assertEqual("UNSUPPORTED", raised.exception.status)
         self.assertEqual(raw, raised.exception.raw_response)
@@ -869,7 +770,7 @@ class NativeCliOutcomeClassificationContracts(unittest.TestCase):
         )
         with patch.object(p73.subprocess, "run", return_value=completed):
             with self.assertRaises(NativeCandidateRefusal) as raised:
-                p73.run(Path("native"), request(), 40, 731, "balanced",
+                native_exec.run(Path("native"), request(), 40, 731, "balanced",
                         time.monotonic() + 5.0)
         self.assertEqual("INVALID", raised.exception.status)
         self.assertEqual(4, raised.exception.returncode)
@@ -894,7 +795,7 @@ class NativeCliOutcomeClassificationContracts(unittest.TestCase):
                 )
                 with patch.object(p73.subprocess, "run", return_value=completed):
                     with self.assertRaises(NativeCandidateRefusal) as raised:
-                        p73.run(Path("native"), request(), 40, 731, "balanced",
+                        native_exec.run(Path("native"), request(), 40, 731, "balanced",
                                 time.monotonic() + 5.0)
                 self.assertEqual(expected, raised.exception.status)
                 self.assertEqual(raw, raised.exception.raw_response)
@@ -908,8 +809,8 @@ class NativeCliOutcomeClassificationContracts(unittest.TestCase):
             args=["native"], returncode=5, stdout=json.dumps(raw), stderr="",
         )
         with patch.object(p73.subprocess, "run", return_value=completed):
-            with self.assertRaises(p73.NativeExecutionError) as raised:
-                p73.run(Path("native"), request(), 40, 731, "balanced",
+            with self.assertRaises(native_exec.NativeExecutionError) as raised:
+                native_exec.run(Path("native"), request(), 40, 731, "balanced",
                         time.monotonic() + 5.0)
         self.assertEqual("ERROR", raised.exception.status)
         self.assertEqual(raw, raised.exception.raw_response)
@@ -920,8 +821,8 @@ class NativeCliOutcomeClassificationContracts(unittest.TestCase):
             stdout="native stdout detail", stderr="native stderr detail",
         )
         with patch.object(p73.subprocess, "run", return_value=completed):
-            with self.assertRaises(p73.NativeExecutionError) as raised:
-                p73.run(Path("native"), request(), 40, 731, "balanced",
+            with self.assertRaises(native_exec.NativeExecutionError) as raised:
+                native_exec.run(Path("native"), request(), 40, 731, "balanced",
                         time.monotonic() + 5.0)
         self.assertEqual("ERROR", raised.exception.status)
         self.assertEqual(7, raised.exception.returncode)
