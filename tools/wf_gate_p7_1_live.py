@@ -221,9 +221,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return _blocked("P7_1_PRODUCTION_WORLD_MODULE_MISSING")
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
-    native = module.native_source_control(binary, request, run_iterations)
+    native = module.native_source_control(
+        binary, request, run_iterations, rng_mode="stochastic")
     live = module.run(binary, request,
-                      distance=player["distanceFromTarget"], iterations=run_iterations)
+                      distance=player["distanceFromTarget"], iterations=run_iterations,
+                      rng_mode="stochastic")
     reference = float(meta["reference_dps"])
     parity_failure = _source_native_world_parity(
         native, live, run_iterations, expected_raw_sha=raw_sha)

@@ -28,7 +28,7 @@ from tools.wf_gate_coverage import P7_FINAL_STOCHASTIC_ITERATIONS, p7_required_d
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
-        rng_mode: str = "stochastic") -> dict:
+        rng_mode: str) -> dict:
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_WORLD_RNG_MODE_INVALID")
     raw = request.read_bytes()
@@ -76,11 +76,10 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     with tempfile.TemporaryDirectory() as folder:
         output = Path(folder) / "result.json"
         env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1",
-                   FOREVER_GSIM_WORLD_ITERATIONS=str(iterations),
-                   WOWSIM_RNG_MODE=rng_mode)
+                   FOREVER_GSIM_WORLD_ITERATIONS=str(iterations))
         proc = subprocess.Popen(
             [str(binary.resolve()), "sim", "--request", str(request.resolve()),
-             "--outfile", str(output), "--gate"],
+             "--outfile", str(output), "--gate", "--rng-mode", rng_mode],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, bufsize=1, env=env,
         )
@@ -229,7 +228,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 proc.wait(timeout=5)
 
 def native_source_control(binary: Path, request: Path, iterations: int, *,
-                          rng_mode: str = "stochastic") -> dict:
+                          rng_mode: str) -> dict:
     """Independent real Rust source engine with only iteration count reduced.
 
     Keeps saved gear, talents, rotation, encounter and RNG seed unchanged.
@@ -248,11 +247,10 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
         reduced.write_text(json.dumps(source, sort_keys=True))
         completed = subprocess.run(
             [str(binary.resolve()), "sim", "--request", str(reduced),
-             "--outfile", str(output), "--gate"],
+             "--outfile", str(output), "--gate", "--rng-mode", rng_mode],
             capture_output=True, text=True, timeout=120,
             env={k: v for k, v in os.environ.items()
-                 if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS")}
-                 | {"WOWSIM_RNG_MODE": rng_mode},
+                 if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS")},
         )
         if completed.returncode != 0:
             # A real P7.5 source-paid candidate returned nonzero with empty
