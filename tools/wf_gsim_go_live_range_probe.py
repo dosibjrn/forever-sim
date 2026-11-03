@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Real gsim 2D -> ONE pinned Go simulation -> native range receipt -> gsim tick.
+"""Real gsim 2D <-> one retained pinned Go simulation with source-native damage ACK.
 
-Range-only bridge diagnostic. Neither native spell action identity nor applied
-world-action ACK exists yet; never use this as P7 or 1/148 acceptance.
+The bridge feeds live gsim range/facing and target-health state to one retained
+Go process. Source-native damage events mutate the real gsim target, and a
+hash/event/HP-bound world ACK must be confirmed before the next native tick.
+Diagnostic only: this is not a P7 gate or checkpoint certification.
 """
 from __future__ import annotations
 
