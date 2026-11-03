@@ -20,6 +20,7 @@ from native_joint_two_class import (
     _ensure_native_damage_action, _native_positive_source_casts,
     _write_native_failure, fingerprint, native_payload, native_score_request,
 )
+from native_matrix import NativeCandidateRefusal, next_budget, search_native
 
 
 def request():
@@ -66,6 +67,7 @@ class NativeJointScoringContracts(unittest.TestCase):
         self.assertEqual(40, calls[0][1])
         self.assertEqual(731, calls[0][2])
         self.assertEqual(123.5, record["score"])
+        self.assertEqual("VALID", record["native_status"])
         self.assertEqual("balanced", record["rng_mode"])
         self.assertEqual(fingerprint(native_payload(source, 40, 731)),
                          record["effective_request_sha256"])
@@ -83,11 +85,10 @@ class NativeJointScoringContracts(unittest.TestCase):
             "status": "INVALID",
             "error": "MythicSim rejected this talent proposal",
         }
-        refusal = p73.NativeScoreExtractionError(
-            "native request returned no score after refusal",
-            raw_response=raw,
-            elapsed_s=0.012,
-            request_sha256=fingerprint(effective),
+        refusal = NativeCandidateRefusal(
+            "INVALID", raw_response=raw,
+            reason=raw["error"], returncode=5,
+            request_sha256=fingerprint(effective), elapsed_s=0.012,
         )
         seen_talent_payloads = []
 
@@ -97,7 +98,7 @@ class NativeJointScoringContracts(unittest.TestCase):
             )
             raise refusal
 
-        with self.assertRaises(p73.NativeScoreExtractionError) as raised:
+        with self.assertRaises(NativeCandidateRefusal) as raised:
             native_score_request(
                 Path("forever-engine"), source, 40, 731, "balanced",
                 time.monotonic() + 5.0, runner=fake_run,
@@ -131,7 +132,7 @@ class NativeJointScoringContracts(unittest.TestCase):
             seen_presence.append("talentsString" in candidate_player)
             raise refusal
 
-        with self.assertRaises(p73.NativeScoreExtractionError) as raised:
+        with self.assertRaises(NativeCandidateRefusal) as raised:
             native_score_request(
                 Path("forever-engine"), source, 40, 731, "balanced",
                 time.monotonic() + 5.0, runner=fake_run,
@@ -822,6 +823,177 @@ class NativeExecutionErrorReporting(unittest.TestCase):
         self.assertIn("native stderr detail", message)
         self.assertIs(run.call_args.kwargs["stdout"], subprocess.PIPE)
         self.assertIs(run.call_args.kwargs["stderr"], subprocess.PIPE)
+
+
+
+class NativeCliOutcomeClassificationContracts(unittest.TestCase):
+    def test_successful_native_report_is_valid(self):
+        source = request()
+        raw = {"status": "VALID", "result": {"raidMetrics": {"dps": {"avg": 123.0}}}}
+
+        def write_output(args, **kwargs):
+            Path(args[args.index("--outfile") + 1]).write_text(json.dumps(raw))
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        with patch.object(p73.subprocess, "run", side_effect=write_output):
+            score, response, _elapsed, request_sha = p73.run(
+                Path("native"), source, 40, 731, "balanced",
+                time.monotonic() + 5.0,
+            )
+        self.assertEqual(123.0, score)
+        self.assertEqual(raw, response)
+        self.assertTrue(request_sha)
+
+    def test_gate_exit_three_is_native_unsupported(self):
+        raw = {
+            "supported": False,
+            "refusals": [{"code": "rotation_unsupported", "reason": "unsupported action"}],
+        }
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=3, stdout=json.dumps(raw), stderr="",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(NativeCandidateRefusal) as raised:
+                p73.run(Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0)
+        self.assertEqual("UNSUPPORTED", raised.exception.status)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertEqual(3, raised.exception.returncode)
+
+    def test_gate_exit_four_is_native_invalid(self):
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=4, stdout="",
+            stderr="invalid prepared request: malformed talent payload",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(NativeCandidateRefusal) as raised:
+                p73.run(Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0)
+        self.assertEqual("INVALID", raised.exception.status)
+        self.assertEqual(4, raised.exception.returncode)
+        self.assertIn("malformed talent payload", raised.exception.reason)
+        self.assertEqual(completed.stderr,
+                         raised.exception.raw_response["stderr"])
+
+    def test_prepare_exit_five_maps_native_refusal_codes(self):
+        cases = (
+            ("request", "INVALID"),
+            ("talents", "INVALID"),
+            ("rotation_unsupported", "UNSUPPORTED"),
+        )
+        for code, expected in cases:
+            with self.subTest(code=code):
+                raw = {"prepared": False, "refusal": {
+                    "code": code, "reason": "native refusal reason",
+                }}
+                completed = subprocess.CompletedProcess(
+                    args=["native"], returncode=5,
+                    stdout=json.dumps(raw), stderr="",
+                )
+                with patch.object(p73.subprocess, "run", return_value=completed):
+                    with self.assertRaises(NativeCandidateRefusal) as raised:
+                        p73.run(Path("native"), request(), 40, 731, "balanced",
+                                time.monotonic() + 5.0)
+                self.assertEqual(expected, raised.exception.status)
+                self.assertEqual(raw, raised.exception.raw_response)
+                self.assertEqual(5, raised.exception.returncode)
+
+    def test_prepare_fault_is_execution_error_not_candidate_refusal(self):
+        raw = {"prepared": False, "refusal": {
+            "code": "prepare_fault", "reason": "native prepare fault",
+        }}
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=5, stdout=json.dumps(raw), stderr="",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(p73.NativeExecutionError) as raised:
+                p73.run(Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0)
+        self.assertEqual("ERROR", raised.exception.status)
+        self.assertEqual(raw, raised.exception.raw_response)
+
+    def test_exit_seven_remains_execution_error(self):
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=7,
+            stdout="native stdout detail", stderr="native stderr detail",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(p73.NativeExecutionError) as raised:
+                p73.run(Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0)
+        self.assertEqual("ERROR", raised.exception.status)
+        self.assertEqual(7, raised.exception.returncode)
+        self.assertIn("native stderr detail", str(raised.exception))
+
+    def test_native_matrix_counts_refusals_separately_from_execution_errors(self):
+        class Clock:
+            def __init__(self, step):
+                self.value = 0.0
+                self.step = step
+            def __call__(self):
+                value = self.value
+                self.value += self.step
+                return value
+
+        counter = [0]
+        def propose(_rng):
+            counter[0] += 1
+            return {"candidate": counter[0]}
+        def mutate(_elite, _rng):
+            counter[0] += 1
+            return {"candidate": counter[0]}
+        def refuse(_candidate, **_kwargs):
+            raise NativeCandidateRefusal(
+                "UNSUPPORTED", raw_response={"supported": False},
+                reason="native coverage refusal", returncode=3,
+            )
+
+        result = search_native(
+            profile_id="mage/fire", reference=request(), propose=propose,
+            mutate=mutate, legal=lambda _candidate: True, evaluate=refuse,
+            seconds=1.0, iterations=1, seed=1, clock=Clock(0.1),
+        )
+        self.assertEqual("BLOCKED_NATIVE_REFUSALS", result["status"])
+        self.assertGreater(result["native_refusals"], 0)
+        self.assertEqual(result["native_refusals"], result["native_unsupported"])
+        self.assertEqual(0, result["engine_errors"])
+        self.assertIsNone(next_budget(5, result))
+
+    def test_native_refusal_does_not_block_promotion_after_paid_native_score(self):
+        class Clock:
+            def __init__(self, step):
+                self.value = 0.0
+                self.step = step
+            def __call__(self):
+                value = self.value
+                self.value += self.step
+                return value
+
+        counter = [0]
+        def propose(_rng):
+            counter[0] += 1
+            return {"candidate": counter[0]}
+        def mutate(_elite, _rng):
+            counter[0] += 1
+            return {"candidate": counter[0]}
+        def evaluate(candidate, **_kwargs):
+            if candidate["candidate"] == 1:
+                raise NativeCandidateRefusal(
+                    "INVALID", raw_response={"status": "INVALID"},
+                    reason="native talent refusal", returncode=5,
+                )
+            return float(candidate["candidate"])
+
+        result = search_native(
+            profile_id="mage/fire", reference=request(), propose=propose,
+            mutate=mutate, legal=lambda _candidate: True, evaluate=evaluate,
+            seconds=0.35, iterations=1, seed=1, clock=Clock(0.05),
+        )
+        self.assertEqual("RAN", result["status"])
+        self.assertEqual(1, result["native_invalid"])
+        self.assertGreater(result["paid_candidates"], 0)
+        self.assertEqual(0, result["engine_errors"])
+        self.assertEqual(30, next_budget(5, result))
 
 
 class APLPredicateCompatibilityContracts(unittest.TestCase):
