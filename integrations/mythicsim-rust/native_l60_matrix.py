@@ -257,14 +257,16 @@ def apply_current_client_talent_override(profile: str, request: dict):
     effective = copy.deepcopy(request)
     target = player(effective)
     if target.get("class") != override["class_name"]:
+        raise ValueError(
             f"{profile}: current-client talent preset class mismatch: "
             f"{target.get('class')!r} != {override['class_name']!r}"
+        )
     original = target.get("talentsString")
     if not isinstance(original, str) or not original:
         raise ValueError(f"{profile}: missing legacy source talentsString")
     replacement = override["talents_string"]
-        raise ValueError(
-        )
+    if not isinstance(replacement, str) or not replacement:
+        raise ValueError(f"{profile}: missing upstream current-client talent preset")
     if replacement == original:
         raise ValueError(f"{profile}: current-client preset unexpectedly equals legacy string")
 
