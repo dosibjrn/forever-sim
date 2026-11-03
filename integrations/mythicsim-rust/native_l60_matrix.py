@@ -198,36 +198,17 @@ def player(request):
     return request["raid"]["parties"][0]["players"][0]
 
 
-def legal_apl_only_request(reference: dict, candidate: dict) -> bool:
-    """Freeze every non-APL native field and source-bound cast identities.
+def apl_only_candidate_scope(reference: dict, candidate: dict) -> bool:
+    """Limit this diagnostic to APL changes, not Warcraft action legality.
 
-    The APL grammar may reorder, insert source-backed casts and tune source
-    predicates. It may not introduce another spell/item/other oneof, change an
-    opaque native non-cast action, or silently mutate raid/encounter/talents/
-    gear/simOptions. This is a legality guard, not a JOINT search adapter.
+    Only the rotation priority list may change. Native MythicSim validates
+    spell IDs, cast actions and other game semantics on the submitted request.
     """
     try:
         original = player(reference)["rotation"]["priorityList"]
         actions = player(candidate)["rotation"]["priorityList"]
         if not isinstance(original, list) or not original or not isinstance(actions, list) or not actions:
             return False
-        def key(obj):
-            return json.dumps(obj, sort_keys=True, separators=(",", ":"))
-        casts = {
-            key(a["action"]["castSpell"]["spellId"])
-            for a in original if "castSpell" in a.get("action", {})
-        }
-        opaque = {
-            key(a["action"]) for a in original
-            if "castSpell" not in a.get("action", {})
-        }
-        for a in actions:
-            action = a["action"]
-            if "castSpell" in action:
-                if key(action["castSpell"]["spellId"]) not in casts:
-                    return False
-            elif key(action) not in opaque:
-                return False
         masked = copy.deepcopy(candidate)
         player(masked)["rotation"]["priorityList"] = copy.deepcopy(original)
         return masked == reference
@@ -535,7 +516,7 @@ def execute_row(row, reference, *, binary, budget, iterations, seed, outdir):
         return out
 
     def legal(req):
-        return legal_apl_only_request(reference, req)
+        return apl_only_candidate_scope(reference, req)
 
     def evaluate(req, *, iterations, seed, rng_mode):
         try:

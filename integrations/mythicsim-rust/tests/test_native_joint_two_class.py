@@ -643,7 +643,79 @@ class NativeObjectiveDonorProbeContracts(unittest.TestCase):
                 "raw_response_sha256": fingerprint(raw),
             }, raw)
 
-        witnesses, receipts = joint._probe_native_objective_donor_witnesses(
+        witnesses, receipts, positive_apls = joint._probe_native_objective_donor_witnesses(
+            Path("forever-engine"),
+            baseline,
+            [{"request": donor, "source_path": "fixtures/druid-healer.request.json"}],
+            [baseline_cast["action"]["castSpell"]],
+            iterations=40,
+            seed=731,
+            objective="HPS",
+            baseline_apl_source_path="profiles/druid/restoration.request.json",
+            score_request=fake_score_request,
+        )
+
+        self.assertEqual(1, len(seen))
+        self.assertEqual(
+            [baseline_cast],
+            seen[0]["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"],
+        )
+        self.assertEqual(1, len(receipts))
+        self.assertEqual("VALID", receipts[0]["status"])
+        self.assertEqual("REFERENCE_APL_CROSS_BUILD", receipts[0]["probe_kind"])
+        self.assertEqual("profiles/druid/restoration.request.json", receipts[0]["apl_source_path"])
+        self.assertEqual("fixtures/druid-healer.request.json", receipts[0]["source_path"])
+        self.assertEqual(42.0, receipts[0]["score"])
+        self.assertEqual(
+            [baseline_cast["action"]["castSpell"]],
+            witnesses["restoration-build-a"],
+        )
+        self.assertEqual(
+            [baseline_cast["action"]["castSpell"]],
+            witnesses["restoration-build-b"],
+        )
+        self.assertEqual(
+            {"restoration-build-b": [[baseline_cast]]},
+            positive_apls,
+        )
+        self.assertEqual(original, baseline, "Donor probing mutated the reference request")
+        self.assertEqual("restoration-build-b", donor_player["talentsString"])
+
+    def test_donor_apl_remains_fallback_when_reference_apl_has_no_positive_hps(self):
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassDruid"
+        baseline_player["talentsString"] = "restoration-build-a"
+        baseline_cast = self.cast(5185)
+        baseline_player["rotation"]["priorityList"] = [copy.deepcopy(baseline_cast)]
+
+        donor = copy.deepcopy(baseline)
+        donor_player = donor["raid"]["parties"][0]["players"][0]
+        donor_player["talentsString"] = "restoration-build-b"
+        donor_cast = self.cast(774)
+        donor_player["rotation"]["priorityList"] = [copy.deepcopy(donor_cast)]
+        seen = []
+
+        def fake_score_request(
+            binary, candidate, iterations, seed, rng_mode, deadline, *, objective
+        ):
+            candidate_player = candidate["raid"]["parties"][0]["players"][0]
+            spell_id = candidate_player["rotation"]["priorityList"][0]["action"][
+                "castSpell"
+            ]["spellId"]["spellId"]
+            seen.append(spell_id)
+            raw = (
+                {"result": {"raidMetrics": {"parties": [{"players": [{"actions": []}]}]}}}
+                if spell_id == 5185 else self.native_heal_response(spell_id)
+            )
+            effective = native_payload(candidate, iterations, seed)
+            return ({
+                "score": 42.0,
+                "effective_request_sha256": fingerprint(effective),
+                "raw_response_sha256": fingerprint(raw),
+            }, raw)
+
+        witnesses, receipts, positive_apls = joint._probe_native_objective_donor_witnesses(
             Path("forever-engine"),
             baseline,
             [{"request": donor, "source_path": "fixtures/druid-healer.request.json"}],
@@ -654,21 +726,99 @@ class NativeObjectiveDonorProbeContracts(unittest.TestCase):
             score_request=fake_score_request,
         )
 
-        self.assertEqual(1, len(seen))
-        self.assertEqual(1, len(receipts))
-        self.assertEqual("VALID", receipts[0]["status"])
-        self.assertEqual("fixtures/druid-healer.request.json", receipts[0]["source_path"])
-        self.assertEqual(42.0, receipts[0]["score"])
+        self.assertEqual([5185, 774], seen)
         self.assertEqual(
-            [baseline_cast["action"]["castSpell"]],
-            witnesses["restoration-build-a"],
+            ["REFERENCE_APL_CROSS_BUILD", "SOURCE_DONOR_APL"],
+            [receipt["probe_kind"] for receipt in receipts],
         )
         self.assertEqual(
             [donor_cast["action"]["castSpell"]],
             witnesses["restoration-build-b"],
         )
-        self.assertEqual(original, baseline, "Donor probing mutated the reference request")
-        self.assertEqual("restoration-build-b", donor_player["talentsString"])
+        self.assertEqual(
+            {"restoration-build-b": [[donor_cast]]},
+            positive_apls,
+        )
+
+
+    def test_hps_fallback_budget_covers_twelve_cross_build_misses(self):
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassDruid"
+        baseline_player["talentsString"] = "restoration-build-a"
+        baseline_cast = self.cast(5185)
+        baseline_player["rotation"]["priorityList"] = [copy.deepcopy(baseline_cast)]
+
+        donors = []
+        expected_casts = {}
+        for index in range(12):
+            talent = f"restoration-build-{index + 1:02d}"
+            donor = copy.deepcopy(baseline)
+            donor_player = donor["raid"]["parties"][0]["players"][0]
+            donor_player["talentsString"] = talent
+            donor_cast = self.cast(6000 + index)
+            donor_player["rotation"]["priorityList"] = [copy.deepcopy(donor_cast)]
+            expected_casts[talent] = donor_cast
+            donors.append({
+                "request": donor,
+                "source_path": f"fixtures/druid-healer-{index + 1:02d}.request.json",
+            })
+
+        seen = []
+
+        def fake_score_request(
+            binary, candidate, iterations, seed, rng_mode, deadline, *, objective
+        ):
+            candidate_player = candidate["raid"]["parties"][0]["players"][0]
+            talent = candidate_player["talentsString"]
+            spell_id = candidate_player["rotation"]["priorityList"][0]["action"][
+                "castSpell"
+            ]["spellId"]["spellId"]
+            seen.append((talent, spell_id))
+            raw = (
+                {"result": {"raidMetrics": {"parties": [{"players": [{"actions": []}]}]}}}
+                if spell_id == 5185 else self.native_heal_response(spell_id)
+            )
+            effective = native_payload(candidate, iterations, seed)
+            return ({
+                "score": 42.0,
+                "effective_request_sha256": fingerprint(effective),
+                "raw_response_sha256": fingerprint(raw),
+            }, raw)
+
+        witnesses, receipts, positive_apls = joint._probe_native_objective_donor_witnesses(
+            Path("forever-engine"),
+            baseline,
+            donors,
+            [baseline_cast["action"]["castSpell"]],
+            iterations=40,
+            seed=731,
+            objective="HPS",
+            score_request=fake_score_request,
+        )
+
+        self.assertEqual(24, len(seen))
+        self.assertEqual(24, len(receipts))
+        self.assertEqual(
+            12,
+            sum(receipt["probe_kind"] == "REFERENCE_APL_CROSS_BUILD" for receipt in receipts),
+        )
+        self.assertEqual(
+            12,
+            sum(receipt["probe_kind"] == "SOURCE_DONOR_APL" for receipt in receipts),
+        )
+        self.assertEqual(12, len(positive_apls))
+        for talent, donor_cast in expected_casts.items():
+            talent_receipts = [
+                receipt for receipt in receipts
+                if receipt["talentsString"] == talent
+            ]
+            self.assertEqual(
+                ["REFERENCE_APL_CROSS_BUILD", "SOURCE_DONOR_APL"],
+                [receipt["probe_kind"] for receipt in talent_receipts],
+            )
+            self.assertEqual([[donor_cast]], positive_apls[talent])
+            self.assertTrue(witnesses[talent])
 
 
 class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
@@ -755,6 +905,70 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
             copy.deepcopy(baseline_cast)
         ]
         self.assertFalse(adapter.legal(candidate))
+
+
+    def test_native_verified_cross_build_apl_enters_selected_talent_domain(self):
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassDruid"
+        baseline_player["talentsString"] = "restoration-build-a"
+        baseline_cast = self.cast(5185)
+        baseline_player["rotation"]["priorityList"] = [copy.deepcopy(baseline_cast)]
+
+        donor = copy.deepcopy(baseline)
+        donor_player = donor["raid"]["parties"][0]["players"][0]
+        donor_player["talentsString"] = "restoration-build-b"
+        donor_cast = self.cast(774)
+        donor_player["rotation"]["priorityList"] = [copy.deepcopy(donor_cast)]
+
+        class FakeGear:
+            def __init__(self, class_key, reference, source_requests):
+                self.reference = reference
+                self.mutable_indices = [0]
+
+            def validate(self, request_value):
+                return None
+
+            def mutate_one(self, rng):
+                return copy.deepcopy(self.reference), {}
+
+            def mutate_from(self, request_value, rng):
+                return copy.deepcopy(request_value), {}
+
+        witness = baseline_cast["action"]["castSpell"]
+        with patch.object(joint, "NativeGearAdapter", FakeGear):
+            adapter, scope = joint.source_bounded_adapter(
+                "druid",
+                baseline,
+                [baseline, donor],
+                native_objective_witnesses=[witness],
+                native_objective_witnesses_by_talentsString={
+                    "restoration-build-a": [witness],
+                    "restoration-build-b": [witness],
+                },
+                native_objective_source_apls_by_talentsString={
+                    "restoration-build-b": [[baseline_cast]],
+                },
+                objective="HPS",
+            )
+
+        candidate = copy.deepcopy(donor)
+        self.assertFalse(adapter.legal(candidate))
+        with patch.object(joint, "mutate_apl", return_value=[]):
+            generated = adapter.adapters["apl"].cold(random.Random(23), candidate)
+        self.assertEqual([baseline_cast], generated)
+        candidate["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] = generated
+        self.assertTrue(adapter.legal(candidate))
+        self.assertEqual(
+            2,
+            scope["source_apl_action_counts_by_talentsString"]["restoration-build-b"],
+        )
+        self.assertEqual(
+            [fingerprint([baseline_cast])],
+            scope["native_positive_objective_source_apl_sha256_by_talentsString"][
+                "restoration-build-b"
+            ],
+        )
 
 
 class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
