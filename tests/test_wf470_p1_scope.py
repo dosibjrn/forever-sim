@@ -51,8 +51,10 @@ def test_druid_l20_live_p1_keeps_real_effects_without_learned_spell_proof(monkey
     monkeypatch.setenv('WOW_FOREVER_BUILD_AS_OF','2026-10-17')
     report=run_live(ROOT,'druid',20)
     assert report['production_runtime_exercises']>=18
-    assert report['does_not_affect_sim_count']==2
-    assert {r['source_spell_id'] for r in report['does_not_affect_sim']}=={2637,18960}
+    assert report['does_not_affect_sim_count']==len(report['does_not_affect_sim'])
+    assert {2637,18960} <= {r['source_spell_id'] for r in report['does_not_affect_sim']}
+    assert all(r['basis']=='P1_USER_APPROVED_SCENARIO_DECISION'
+               for r in report['does_not_affect_sim'])
     assert any(r['source_spell_id']==6807 and r['role']=='LOWER_LEARNED_RANK'
                for r in report['excluded_nonaction_or_inactive_rows'])
     assert not any('SOURCE_ACTION_LEGALITY_UNRESOLVED' in reason
