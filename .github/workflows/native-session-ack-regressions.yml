@@ -61,6 +61,15 @@ jobs:
           ! grep -Fq 'WOWSIM_RNG_MODE' integrations/mythicsim-rust/engine/src/core/rng.rs
           grep -Fq 'SimRng::new(rng_mode,' integrations/mythicsim-rust/engine/src/core/fight.rs
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+          binary=integrations/mythicsim-rust/engine/target/debug/forever-engine
+          fixture=integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json
+          if "$binary" sim --infile "$fixture" >/tmp/rng-mode-missing.log 2>&1; then
+            echo "Native CLI accepted missing --rng-mode" >&2; exit 1
+          fi
+          if "$binary" sim --rng-mode bogus --infile "$fixture" >/tmp/rng-mode-invalid.log 2>&1; then
+            echo "Native CLI accepted invalid --rng-mode" >&2; exit 1
+          fi
+          echo "RUST_NATIVE_CLI_REJECTS_MISSING_AND_INVALID_RNG_MODE"
       - name: Verify explicit Balanced and Stochastic modes in real native and gsim 2D combat (not gate)
         run: |
           python3 - <<'PY'
