@@ -254,7 +254,8 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
     def score(request, n, rng_mode):
         label = player(request)["talentsString"]
         if rng_mode == "balanced":
-            return {"A": 900.0, "B": 800.0}[label]
+            return ({"A": 900.0, "B": 800.0} if n == 3 else
+                    {"A": 720.0, "B": 800.0})[label]
         return {"A": 650.0, "B": 770.0}[label]
     def native(binary, path, n, *, rng_mode):
         req = json.loads(path.read_text())
@@ -268,9 +269,9 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
                 "native_damage_events": 10, "native_world_ticks": 20}
     production = SimpleNamespace(native_source_control=native, run=world)
     def paid_finalist(production, binary, request, distance, *, seeds):
-        calls.append(("stochastic_paid", 48, "stochastic",
+        calls.append(("balanced_paid", 48, "balanced",
                       player(request)["talentsString"]))
-        return score(request, 48, "stochastic"), {
+        return score(request, 48, "balanced"), {
             "native_damage_events": 10, "native_world_ticks": 20}
 
     monkeypatch.setattr(gate, "_source_module",
@@ -285,7 +286,7 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
                         lambda *a, **kw: {"dps": 749.5392,
                                           "compatible_gates": ["P7.3"],
                                           "run_urls": ["https://example.test/accepted"]})
-    # Start, two balanced-paid builds, two early stochastic reranks,
+    # Start, two balanced-paid builds, two early balanced reranks,
     # then finish the same 300s clock. The budget helper also reads clock.
     clock = iter((0.0, 0.0, 0.0, 120.0, 120.0,
                   140.0, 140.0, 300.0, 300.0, 300.0))
