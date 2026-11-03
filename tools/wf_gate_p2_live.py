@@ -26,7 +26,7 @@ from src.game.talents import apply_talent_selection, talented_bonus_for_level, a
 from src.game.talent_frontier import source_legal_talent_neighbors
 from src.optimization.talent_frontier import allocation_key
 from src.game.source_objective_relevance import solo_threat_exclusion
-from src.game.native_p2_rank_probe import run_native_rank_pair
+from src.game.native_p2_rank_probe import NativeRngMode, run_native_rank_pair
 
 
 def _runtime_actor_state_delta(before, after):
