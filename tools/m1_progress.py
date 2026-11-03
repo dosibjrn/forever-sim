@@ -411,7 +411,7 @@ def main(argv=None):
     result = scoreboard(args.ledger)
     print(f"M1 measured progress: {result['measured_percent']:.4f}% "
           f"(float={result['measured_fraction']:.10f}; diagnostic, NOT PASS)")
-    print(f"M1: {result['passed_gates']}/{TOTAL} accepted gate runs 
+    print(f"M1: {result['passed_gates']}/{TOTAL} accepted gate runs "
           f"({result['gate_percent']:.2f}%)")
     print(f"Best-observed fractional gate coverage (NOT PASS): "
           f"{result['measured_gate_equivalents']:.3f}/{TOTAL} "
