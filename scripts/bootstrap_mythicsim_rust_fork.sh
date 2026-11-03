@@ -115,6 +115,14 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): prepare source-native Entangling Roots damage and talent ranks"
 fi
 
+# Publish the typed Druid layout metadata from the native FOREVER_TREES source.
+# This is a wire-layout export only; native prepare still decides legality.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_druid_talent_layout_export.py" "$PWD"
+git add src/classes/druid/prepare.rs src/lib.rs src/main.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): expose native Druid talent layout JSON"
+fi
+
 # Preserve native scheduler events beyond a pull boundary on the fork itself.
 # A future stateful two-target session must be able to resume queued events
 # instead of silently consuming them at the previous target's deadline.
