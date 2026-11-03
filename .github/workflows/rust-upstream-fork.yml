@@ -106,37 +106,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install selected-source HTML parser dependency
         run: python3 -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Hydrate canonical staged Druid source catalogue
-        shell: bash
-        run: |
-          set -euo pipefail
-          source_db="data/forever/staged_druid_l30_talents_70338.sqlite"
-          git lfs install --local
-          git lfs fetch --include="$source_db" origin HEAD
-          git lfs checkout "$source_db"
-          python3 - "$source_db" <<'PY'
-          import sqlite3
-          import sys
-          from pathlib import Path
-
-          path = Path(sys.argv[1])
-          raw = path.read_bytes()
-          if raw.startswith(b"version https://git-lfs.github.com/spec/v1"):
-              raise SystemExit("STAGED_DRUID_SOURCE_LFS_POINTER_NOT_HYDRATED")
-          if len(raw) < 1_000_000:
-              raise SystemExit(f"STAGED_DRUID_SOURCE_DB_UNEXPECTED_SIZE:{len(raw)}")
-          with sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True) as db:
-              db.execute("SELECT count(*) FROM talent_tree_row_facts WHERE class_key='druid'").fetchone()
-              db.execute("SELECT count(*) FROM checkpoint_talent_source_catalogue WHERE class_key='druid' AND min_level<=60").fetchone()
-          print(f"STAGED_DRUID_SOURCE_SQLITE_HYDRATED:{len(raw)}")
-          PY
-          source_db_sha256="$(sha256sum "$source_db" | awk '{print $1}')"
-          {
-            printf 'FOREVER_P2_HYDRATED_SOURCE_DB_PATH=%s/%s\n' "$PWD" "$source_db"
-            printf 'FOREVER_P2_HYDRATED_SOURCE_DB_SHA256=%s\n' "$source_db_sha256"
-          } >> "$GITHUB_ENV"
-      - name: Install source HTML parser used by combat-fact verification
-        run: python3 -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
       - name: Apply port to selected production Rust source and compile
         run: |
           git clone --quiet --filter=blob:none https://github.com/dosibjrn/mythicsim-forever-engine.git /tmp/forever-selected-rust
