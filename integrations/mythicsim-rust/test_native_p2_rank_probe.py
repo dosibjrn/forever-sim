@@ -164,7 +164,30 @@ def main() -> int:
         "predatory_strikes:3",
     }
     native_receipts = p2_report.get("native_rank_probe_results", [])
-    if {row.get("rank_key") for row in native_receipts} != expected_rank_keys:
+    actual_rank_keys = sorted(
+        str(row.get("rank_key")) for row in native_receipts
+        if isinstance(row, dict) and row.get("rank_key")
+    )
+    if set(actual_rank_keys) != expected_rank_keys:
+        print(json.dumps({
+            "expected_rank_keys": sorted(expected_rank_keys),
+            "actual_rank_keys": actual_rank_keys,
+            "p2_gate_status": p2_report.get("status"),
+            "p2_gate_reasons": p2_report.get("reasons"),
+            "source_db_kind": p2_report.get("source_db_kind"),
+            "source_id": p2_report.get("source_id"),
+            "reachability_count": p2_report.get("reachability_count"),
+            "reachable_rank_keys": sorted(
+                str(row.get("rank_key")) for row in p2_report.get("ranks", [])
+                if isinstance(row, dict) and row.get("rank_key")
+            ),
+            "native_rank_probe_results": [
+                {"rank_key": row.get("rank_key"), "status": row.get("status"),
+                 "reason": row.get("reason")}
+                for row in native_receipts if isinstance(row, dict)
+            ],
+            "native_rank_probe_summary": p2_report.get("native_rank_probe_summary"),
+        }, sort_keys=True, indent=2))
         raise SystemExit("NATIVE_P2_LIVE_GATE_SOURCE_RANK_RECEIPTS_INCOMPLETE")
     if any(row.get("status") != "PROBE_PASS" for row in native_receipts):
         raise SystemExit("NATIVE_P2_LIVE_GATE_SOURCE_RANK_RECEIPT_FAILED")
