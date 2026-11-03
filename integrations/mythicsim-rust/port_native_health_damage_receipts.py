@@ -36,6 +36,11 @@ AFTER_WINDOW = """            previous_health_damage = health_damage;
 
 def port(source: str) -> str:
     if source.count(METHOD) != 1:
+        from port_native_paid_recovery import (
+            FIGHT_SIGNATURE_NEW, is_composed_paid_recovery_source,
+        )
+        if FIGHT_SIGNATURE_NEW in source and is_composed_paid_recovery_source(source):
+            return source
         raise ValueError("RUST_NATIVE_HEALTH_RECEIPT_METHOD_MISSING_OR_DUPLICATE")
     start = source.index(METHOD)
     end = source.find(END, start)
