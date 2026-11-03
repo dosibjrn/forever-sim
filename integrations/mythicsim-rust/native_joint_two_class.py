@@ -714,7 +714,7 @@ def source_bounded_adapter(
         return filtered
 
     def cold_apl(rng, candidate_context):
-        _talent_string, source_actions = source_apl_for_candidate(candidate_context)
+        talent_string, source_actions = source_apl_for_candidate(candidate_context)
         current_apl = player(candidate_context)["rotation"]["priorityList"]
         for _ in range(8):
             actions = _ensure_native_objective_action(
