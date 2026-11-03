@@ -6,6 +6,7 @@ P7.1–P7.4 winner exists; nor is a bounded 3-fight probe a frozen holdout.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -124,6 +125,33 @@ def _p75_paid_rebuild_axes(proposal_index: int):
         return None
     axes = ("gear_rebuild", "talents_rebuild", "rotation_rebuild")
     return (axes[(proposal_index // 11 - 1) % len(axes)],)
+
+
+def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, rng):
+    """Pair paid gear with another paid candidate's coherent talent + APL.
+
+    No reference/prior winner enters the donor pool. Both parents must have
+    passed actual native+2D scoring in THIS independent cold search; the
+    source generator already validated the new gear and the donor's legal
+    talent/APL pair. The resulting combination is a NEW candidate and must
+    still pass the normal selected Rust source/2D paid scorer.
+    """
+    # Prefer stronger paid stochastic evidence when it exists; otherwise use
+    # distinct actually paid balanced-screen candidates, never raw proposals.
+    donors = [row[3] for row in sorted(
+        finalists, key=lambda row: row[0], reverse=True)[:3]
+        if row[3] != parent]
+    if not donors:
+        donors = [row[2] for row in sorted(
+            balanced_elites, key=lambda row: row[0], reverse=True)[:6]
+            if row[2] != parent]
+    if not donors:
+        return False
+    donor = source.player(rng.choice(donors))
+    player = source.player(candidate)
+    player["talentsString"] = donor["talentsString"]
+    player["rotation"] = copy.deepcopy(donor["rotation"])
+    return True
 
 
 def run_live(root: Path, class_key: str, level: int, *,
@@ -306,7 +334,15 @@ def run_live(root: Path, class_key: str, level: int, *,
                     # A real paid elite may need coordinated gear/talent/APL
                     # edits to escape a single-axis local basin. Do not pass
                     # repair axes to independent cold restarts.
-                    repair_axes = (_p75_paid_joint_axes(proposals)
+                    # Every thirteenth paid-parent proposal recombines
+                    # independently PAID axes. Mutate source-legal gear from
+                    # one paid parent, then copy the coherent talent+APL pair
+                    # from a different paid parent (if one exists). This can
+                    # explore combinations unavailable to single-axis edits.
+                    crossover = (elite is not None and full_search
+                                 and proposals % 13 == 0)
+                    repair_axes = (("gear",) if crossover else
+                                   _p75_paid_joint_axes(proposals)
                                    if elite is not None and full_search else None)
                     if (repair_axes is None and elite is not None
                             and full_search):
@@ -315,6 +351,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                         base, source, validator, pools, rng,
                         elite=elite, enchant_pools=enchant_pools,
                         repair_axes=repair_axes)
+                    if crossover:
+                        _paid_p75_crossover(
+                            candidate, elite, stochastic_finalists,
+                            balanced_elites, source, rng)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
