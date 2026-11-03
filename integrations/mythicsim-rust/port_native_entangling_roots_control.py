@@ -158,6 +158,48 @@ WORLD_BRIDGE_PATCHES = [
         "NEXT_TARGET_PENDING",
     ),
     (
+        "        let boundary = if bridge.next_tick_ns == i64::MAX {\n"
+        "            if next_native_ns < 0 || next_native_ns > end_ns {\n"
+        "                return None;\n"
+        "            }\n"
+        "            (next_native_ns / 1_000_000) * 1_000_000\n"
+        "        } else {\n"
+        "            bridge.next_tick_ns\n"
+        "        };\n"
+        "        (boundary >= 0 && boundary > bridge.last_tick_ns\n"
+        "            && boundary <= next_native_ns && boundary <= end_ns)\n"
+        "            .then_some(boundary)",
+        "        let pending_control_time = bridge.pending_controls.iter()\n"
+        "            .map(|event| event.native_time_ns).min();\n"
+        "        let boundary = if let Some(control_time) = pending_control_time {\n"
+        "            if control_time < bridge.last_tick_ns {\n"
+        "                panic!(\"RUST_WORLD_CONTROL_EVENT_BEFORE_LAST_ACK\");\n"
+        "            }\n"
+        "            if control_time <= next_native_ns { control_time } else { return None; }\n"
+        "        } else if bridge.next_tick_ns == i64::MAX {\n"
+        "            if next_native_ns < 0 || next_native_ns > end_ns {\n"
+        "                return None;\n"
+        "            }\n"
+        "            (next_native_ns / 1_000_000) * 1_000_000\n"
+        "        } else {\n"
+        "            bridge.next_tick_ns\n"
+        "        };\n"
+        "        let same_clock_control = pending_control_time.is_some()\n"
+        "            && boundary == bridge.last_tick_ns;\n"
+        "        (boundary >= 0 && (boundary > bridge.last_tick_ns || same_clock_control)\n"
+        "            && boundary <= next_native_ns && boundary <= end_ns)\n"
+        "            .then_some(boundary)",
+        "DUE_CONTROL_BOUNDARY",
+    ),
+    (
+        "    assert!(clock_ns > bridge.last_tick_ns && clock_ns >= 0,\n"
+        "        \"RUST_WORLD_CLOCK_NOT_MONOTONIC\");",
+        "    assert!(clock_ns >= 0 && (clock_ns > bridge.last_tick_ns\n"
+        "        || (!bridge.pending_controls.is_empty() && clock_ns == bridge.last_tick_ns)),\n"
+        "        \"RUST_WORLD_CLOCK_NOT_MONOTONIC\");",
+        "EXCHANGE_SAME_CLOCK",
+    ),
+    (
         "            event_ordinal: 9, pending: Vec::new(),",
         "            event_ordinal: 9, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(),",
         "TEST_INIT_9",
@@ -213,8 +255,23 @@ WORLD_BRIDGE_PATCHES = [
         "    let events = std::mem::take(&mut bridge.pending);\n"
         "    let event_ids: Vec<String> = events.iter().map(|event| event.event_id.clone()).collect();\n"
         "    let control_events = std::mem::take(&mut bridge.pending_controls);\n"
-        "    let control_event_ids: Vec<String> = control_events.iter().map(|event| event.event_id.clone()).collect();",
+        "    let control_event_ids: Vec<String> = control_events.iter().map(|event| event.event_id.clone()).collect();\n"
+        "    let same_clock_control_boundary = !control_events.is_empty() && clock_ns == bridge.last_tick_ns;",
         "DRAIN",
+    ),
+    (
+        "        \"type\": \"native_rust_world_boundary_request\",\n"
+        "        \"iteration_index\": bridge.iteration,\n"
+        "        \"sequence\": bridge.sequence, \"native_clock_ns\": clock_ns,\n"
+        "        \"native_encounter_end_ns\": duration_ns,\n"
+        "        \"native_process_id\": pid, \"native_request_sha256\": bridge.source_hash,\n",
+        "        \"type\": \"native_rust_world_boundary_request\",\n"
+        "        \"iteration_index\": bridge.iteration,\n"
+        "        \"sequence\": bridge.sequence, \"native_clock_ns\": clock_ns,\n"
+        "        \"native_encounter_end_ns\": duration_ns,\n"
+        "        \"native_process_id\": pid, \"native_request_sha256\": bridge.source_hash,\n"
+        "        \"same_clock_control_boundary\": same_clock_control_boundary,\n",
+        "SAME_CLOCK_REQUEST",
     ),
     (
         "        \"native_damage_events\": events,\n"
