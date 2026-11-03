@@ -480,3 +480,62 @@ def test_full_search_sources_enchants_outside_reference_without_invented_rules(m
     assert all(selected[i] == [None, 102] for i in range(1, 16))
     assert (0, 1000, 103) in v.calls
     assert (1, 1001, 101) in v.calls
+
+
+def test_paid_p75_gear_apl_crossover_recombines_only_paid_build_axes():
+    """Two source-paid axis donors may combine; no reference/winner seeding."""
+    def player(request):
+        return request["player"]
+
+    def build(ids, rotation, talents):
+        return {"player": {
+            "equipment": {"items": [{"id": item} for item in ids]},
+            "rotation": {"priorityList": list(rotation)},
+            "talentsString": talents,
+        }}
+    parent = build([1, 2, 3, 4], [11, 12], "paid-parent")
+    donor = build([5, 6, 7, 8], [21, 22], "paid-other")
+    candidate = copy.deepcopy(parent)
+    source = SimpleNamespace(player=player, RejectedGear=ValueError)
+    validated = []
+
+    class Validator:
+        def validate(self, ids, enchants):
+            validated.append((list(ids), list(enchants)))
+
+    snapshot = copy.deepcopy((parent, donor))
+    changed = gate._paid_p75_gear_apl_crossover(
+        candidate, parent, [],
+        [(720., "paid-donor-sha", donor)], source, Validator(),
+        random.Random(23))
+    assert changed is True
+    result = player(candidate)
+    assert sum(a != b for a, b in zip(
+        result["equipment"]["items"], player(parent)["equipment"]["items"])) >= 2
+    assert result["rotation"] == player(donor)["rotation"]
+    assert result["talentsString"] == player(parent)["talentsString"]
+    assert validated, "candidate gear block was checked by the source validator"
+    assert (parent, donor) == snapshot, "paid parents must remain immutable"
+
+
+def test_paid_p75_gear_apl_crossover_rolls_back_when_apl_donor_is_missing():
+    """An unsuccessful composite cannot leak a half-mutated gear candidate."""
+    def player(request):
+        return request["player"]
+
+    def build(ids):
+        return {"player": {
+            "equipment": {"items": [{"id": item} for item in ids]},
+            "rotation": {"priorityList": [1, 2]},
+            "talentsString": "paid",
+        }}
+    parent = build([1, 2, 3, 4])
+    donor = build([5, 6, 7, 8])  # different gear, identical APL
+    candidate = copy.deepcopy(parent)
+    source = SimpleNamespace(player=player, RejectedGear=ValueError)
+    validator = SimpleNamespace(validate=lambda ids, enchants: None)
+
+    assert not gate._paid_p75_gear_apl_crossover(
+        candidate, parent, [], [(700., "paid-donor", donor)],
+        source, validator, random.Random(23))
+    assert candidate == parent
