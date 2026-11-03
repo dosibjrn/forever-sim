@@ -303,8 +303,12 @@ PREPARED_SIGNATURE_TYPED_NEW = PREPARED_SIGNATURE_TYPED_OLD.replace(
     "rng_mode: crate::core::rng::RngMode)",
     "rng_mode: crate::core::rng::RngMode, recovery_ns: i64)",
 )
-PREPARED_CALL_TYPED_OLD = PREPARED_CALL_OLD + ", rng_mode"
-PREPARED_CALL_TYPED_NEW = PREPARED_CALL_TYPED_OLD + ", recovery_ns"
+PREPARED_CALL_TYPED_OLD = PREPARED_CALL_OLD.replace(
+    "target_count)", "target_count, rng_mode)"
+)
+PREPARED_CALL_TYPED_NEW = PREPARED_CALL_TYPED_OLD.replace(
+    "rng_mode)", "rng_mode, recovery_ns)"
+)
 
 CLI_TYPED_OLD = CLI_OLD.replace(
     'args.len() != 5 || args[1] != "--infile" || args[3] != "--targets"',
