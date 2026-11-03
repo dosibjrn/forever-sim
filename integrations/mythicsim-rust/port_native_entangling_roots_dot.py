@@ -12,7 +12,9 @@ import sys
 
 
 def replace_once(source: str, old: str, new: str, label: str) -> str:
-    if source.count(new) == 1 and source.count(old) == 0:
+    # The replacement may intentionally retain the old anchor (e.g. adding a
+    # line after a declaration); recognizing the whole replacement is idempotent.
+    if source.count(new) == 1:
         return source
     if source.count(old) != 1 or new in source:
         raise ValueError("NATIVE_ROOTS_" + label + "_SOURCE_DRIFT")
