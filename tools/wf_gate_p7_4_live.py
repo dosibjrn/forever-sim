@@ -168,7 +168,8 @@ def _paid_gear_elite_choice(elites, rng, proposal_index):
     return rng.choice(elites[:min(15, len(elites))])[1]
 
 
-def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: float):
+def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: float, *,
+                                    seeds=("1947004", "1947047")):
     """Paid independent stochastic seed pairs reduce 24-fight winner's curse.
 
     The old single 24-fight seed selected a 671.34 DPS frozen winner in the
@@ -179,7 +180,7 @@ def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: 
     """
     scores = []
     final_live = None
-    for rerank_seed in ("1947004", "1947047"):
+    for rerank_seed in seeds:
         rerank_request = copy.deepcopy(request)
         rerank_request["simOptions"]["randomSeed"] = rerank_seed
         with tempfile.TemporaryDirectory(prefix="forever_p74_rerank_") as tmp:
@@ -217,13 +218,32 @@ def _paid_step_has_budget(search_start: float, observed_max_s: float) -> bool:
     return time.monotonic() + reserve_s < search_start + 300.0
 
 
-def _freeze_paid_p74_winner(screen_best, reranked):
+def _next_p74_confirmation(reranked, attempted, elapsed_s):
+    """Choose the best unconfirmed *paid* finalist during the bounded search.
+
+    Do not cap confirmations at three: a later better paid finalist must
+    remain confirmable without using the frozen 1,000-fight holdout. Reserve
+    295–300s for the existing newly paid screen/rerank path.
+    """
+    if len(reranked) < 3 or not 260.0 <= elapsed_s < 295.0:
+        return None
+    return next((
+        (index, row)
+        for index, row in sorted(enumerate(reranked),
+                                 key=lambda item: item[1][0], reverse=True)
+        if row[2] not in attempted
+    ), None)
+
+
+def _freeze_paid_p74_winner(screen_best, reranked, confirmed=()):
     """Freeze genuinely paid stochastic winner; never use the 1k holdout to rank."""
     if reranked:
         score, live, sha, request, screen_score = max(
             reranked, key=lambda row: row[0])
         return (score, live, sha, request, screen_score,
-                "paid_2x24_stochastic_live_native_finalist")
+                ("paid_4x24_stochastic_live_native_confirmed_finalist"
+                 if sha in confirmed else
+                 "paid_2x24_stochastic_live_native_finalist"))
     score, live, sha, request = screen_best
     return (score, live, sha, request, score,
             "three_balanced_live_screen_only")
@@ -267,6 +287,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     elites = []  # top 24 source-legal loadouts actually scored by native+2D
     reranked = []  # separate paid 24-fight stochastic native+2D finalists
     rerank_seen = set()
+    confirmed = set()  # successful independent 24+24 confirmations
+    confirmation_attempted = set()  # avoid retrying a failed paid candidate
     rerank_failures = []
     failures = []
     seen = set()
@@ -275,6 +297,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     search_start = time.monotonic()
     worst_screen_s = 0.0
     worst_finalist_s = 0.0
+    worst_confirmation_s = 0.0
     try:
         # The existing source+Rust item validator enumerates the pool once;
         # re-querying SQLite for every candidate would waste the 300s budget.
@@ -299,7 +322,46 @@ def run_live(root: Path, class_key: str, level: int, *,
             # screen candidates but never reranked them; once any previous
             # finalist had been reranked, these late candidates were
             # categorically excluded from the frozen winner decision.
+            # Last two full 1,000-fight holdouts were below the floor even
+            # though the selected 48-fight finalist was above it. The first
+            # three paid confirmations do not protect a subsequently reranked
+            # higher unconfirmed finalist. From 260–295s, keep confirming the
+            # strongest yet-unconfirmed paid contender, subject to the SAME
+            # measured 300s call budget. Preserve 295–300s for late genuinely
+            # paid screens/reranks (which remain eligible to win).
             if full_search and time.monotonic() - search_start >= 240.0:
+                next_confirmation = (
+                    _next_p74_confirmation(
+                        reranked, confirmation_attempted,
+                        time.monotonic() - search_start)
+                    if len(reranked) >= 3 else None)
+                if next_confirmation is not None:
+                    if _paid_step_has_budget(
+                            search_start, max(worst_finalist_s,
+                                              worst_confirmation_s)):
+                        index, row = next_confirmation
+                        confirmation_attempted.add(row[2])
+                        paid_start = time.perf_counter()
+                        try:
+                            second_score, second_live = _paid_gear_stochastic_finalist(
+                                production, binary, row[3],
+                                player["distanceFromTarget"],
+                                seeds=("1947113", "1947139"))
+                            # Each seed pair ran the same 24+24 independent
+                            # native/world fights: equal-weight average of 96
+                            # genuinely paid non-holdout stochastic fights.
+                            reranked[index] = ((row[0] + second_score) / 2,
+                                               second_live, *row[2:])
+                            confirmed.add(row[2])
+                        except (ValueError, RuntimeError, OSError, KeyError,
+                                TimeoutError, TypeError, AssertionError,
+                                subprocess.SubprocessError) as exc:
+                            rerank_failures.append(
+                                "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:170])
+                        finally:
+                            worst_confirmation_s = max(
+                                worst_confirmation_s, time.perf_counter() - paid_start)
+                        continue
                 pending = next((
                     (screen_score, candidate,
                      hashlib.sha256(json.dumps(candidate, sort_keys=True).encode()).hexdigest())
@@ -404,7 +466,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "source_candidate_failures": failures[:4]}
 
     (score, live, candidate_sha, frozen_winner,
-     winner_screen_dps, winner_selection) = _freeze_paid_p74_winner(best, reranked)
+     winner_screen_dps, winner_selection) = _freeze_paid_p74_winner(
+         best, reranked, confirmed)
     complete_search = full_search and 300.0 <= search_wall_s <= 301.0
     final = {}
     if complete_search:
@@ -489,6 +552,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "winner_screen_dps": winner_screen_dps,
         "winner_selection": winner_selection,
         "paid_stochastic_finalists": len(reranked),
+        "paid_stochastic_confirmed_finalists": len(confirmed),
         "paid_stochastic_finalist_failures": rerank_failures[:4],
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,

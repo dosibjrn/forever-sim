@@ -791,3 +791,130 @@ def test_p74_paid_step_guard_prevents_observed_302s_overrun(monkeypatch):
     assert gate._paid_step_has_budget(0.0, 0.10)
     clock.now = 299.95
     assert not gate._paid_step_has_budget(0.0, 0.10)
+
+
+def test_paid_p74_fourth_late_leader_is_still_confirmable():
+    """Previously the first three attempts permanently exhausted confirmation.
+
+    A fourth newly reranked paid contender must be eligible in the same 300s
+    cold search, without relaxing the 295–300s fresh-candidate tail.
+    """
+    rows = [(float(800 - i), None, f"sha-{i}", {"candidate": i}, 850.)
+            for i in range(6)]
+    first_three = {"sha-0", "sha-1", "sha-2"}
+    assert gate._next_p74_confirmation(rows, first_three, 259.99) is None
+    choice = gate._next_p74_confirmation(rows, first_three, 290.)
+    assert choice[0] == 3
+    assert choice[1][2] == "sha-3"
+    assert gate._next_p74_confirmation(rows, first_three, 295.) is None
+    assert gate._next_p74_confirmation(rows, set(), 280.)[0] == 0
+    assert gate._next_p74_confirmation(rows[:2], set(), 280.) is None
+
+
+def test_paid_p74_confirmation_reverses_noisy_first_round_within_300s(
+        monkeypatch, tmp_path):
+    """Routing RED->GREEN: 48-fight high outlier loses after paid confirmation.
+
+    All scores below are mocked selected-engine responses, NOT gate acceptance.
+    Confirmations must use separate non-holdout seeds, preserve the 300s
+    boundary, and allow the only final 1000-fight test after freezing.
+    """
+    import json
+
+    base = {"simOptions": {"randomSeed": "667"}, "raid": {"parties": [
+        {"players": [{
+            "class": "ClassDruid", "distanceFromTarget": 15,
+            "talentsString": "fixed", "rotation": {"priorityList": []},
+            "equipment": {"items": [{"id": 10}, {"id": 20}]},
+        }]}]}}
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("mock never executed")
+    (binary.parents[2] / "data").mkdir()
+    (binary.parents[2] / "data/items.jsonl").write_text("")
+    (binary.parents[2] / "data/enchants.jsonl").write_text("")
+    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
+    catalogue.parent.mkdir(parents=True)
+    catalogue.write_text("mock")
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    clock = SimpleNamespace(now=0.0)
+    monkeypatch.setattr(gate.time, "monotonic", lambda: clock.now)
+    monkeypatch.setattr(gate.time, "perf_counter", lambda: 0.0)
+    monkeypatch.setattr(gate.time, "sleep",
+                        lambda duration: setattr(clock, "now", clock.now + duration))
+    monkeypatch.setattr(gate, "_pinned_source_runtime",
+                        lambda *args: (base, {"reference_dps": 728.19}, binary))
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *args, **kwargs: None)
+
+    class Validator:
+        @staticmethod
+        def require_sqlite_catalogue(path):
+            assert path == catalogue
+
+        def __init__(self, *args):
+            pass
+
+        def close(self):
+            pass
+
+    gear = SimpleNamespace(
+        GearValidator=Validator,
+        candidate_pool=lambda *args, **kwargs: ({0: [11, 12, 13], 1: [20]}, {}),
+        source_enchant_pools=lambda *args: {0: [None], 1: [None]},
+        RejectedGear=ValueError)
+    ids = iter([11, 12, 13, 13])
+    def cold_gear(request, *args, **kwargs):
+        item_id = next(ids)
+        if item_id == 13 and clock.now >= 281.0:
+            clock.now = 300.0
+        candidate = copy.deepcopy(request)
+        candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] = item_id
+        return candidate
+    monkeypatch.setattr(gate, "_cold_gear", cold_gear)
+
+    calls = []
+    def score(path, count, mode):
+        request = json.loads(path.read_text())
+        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
+        seed = request["simOptions"]["randomSeed"]
+        calls.append((item_id, count, mode, seed))
+        if count == 3:
+            clock.now = {11: 1.0, 12: 2.0, 13: 240.0}[item_id]
+            return {11: 900.0, 12: 800.0, 13: 700.0}[item_id]
+        if count == 24:
+            if item_id == 13 and seed == "1947047":
+                clock.now = 281.0
+            if seed in ("1947113", "1947139"):
+                return {11: 690.0, 12: 750.0, 13: 710.0}[item_id]
+            return {11: 740.0, 12: 730.0, 13: 710.0}[item_id]
+        assert count == 1000 and mode == "stochastic"
+        return {11: 695.0, 12: 732.0, 13: 710.0}[item_id]
+    def native(binary, path, n, *, rng_mode):
+        return {"native_dps": score(path, n, rng_mode)}
+    def world(binary, path, distance, iterations, *, rng_mode):
+        assert distance == 15
+        return {"world_mean_dps": score(path, iterations, rng_mode),
+                "iterations_done": iterations, "native_damage_events": 10,
+                "native_world_ticks": 20}
+    production = SimpleNamespace(native_source_control=native, run=world)
+    monkeypatch.setattr(gate, "_source_module",
+                        lambda path, name: gear if "p74_gear_search" in str(path)
+                        else production)
+
+    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert report["status"] == "PASS"  # mocked routing only, NOT a gate PASS
+    assert report["search_wall_s"] == 300.0
+    assert report["source_legal_cold_candidates_paid"] == 3
+    assert report["paid_stochastic_finalists"] == 3
+    assert report["paid_stochastic_confirmed_finalists"] == 3
+    assert report["cold_winner_gear"][0]["item_id"] == 12
+    assert report["winner_selection"] == (
+        "paid_4x24_stochastic_live_native_confirmed_finalist")
+    assert report["frozen_stochastic_world_dps"] == 732.0
+    assert {(iid, seed) for iid, n, _, seed in calls
+            if n == 24 and seed in ("1947113", "1947139")} == {
+                (iid, seed) for iid in (11, 12, 13)
+                for seed in ("1947113", "1947139")}
+    assert [c[:2] for c in calls if c[1] == 1000] == [(12, 1000), (12, 1000)]
+    assert base["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] == 10
