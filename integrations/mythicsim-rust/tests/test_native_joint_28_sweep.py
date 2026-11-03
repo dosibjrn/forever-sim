@@ -9,6 +9,10 @@ import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report
+from native_l60_matrix import (
+    CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
+    apply_current_client_talent_override,
+)
 
 
 def inventory():
@@ -144,6 +148,70 @@ class SourceBlockerClassification(unittest.TestCase):
             "SOURCE_TALENT_ENCODING_INVALID": 1,
             "INVESTIGATE_SOURCE_LEGALITY": 1,
         }, categories)
+
+
+
+class CurrentClientTalentOverrideContracts(unittest.TestCase):
+    def test_five_stale_smoke_rows_use_pinned_51_point_current_client_presets(self):
+        expected = {
+            "druid/feral_cat": "ClassDruid",
+            "mage/arcane": "ClassMage",
+            "mage/fire": "ClassMage",
+            "mage/frost": "ClassMage",
+            "paladin/retribution": "ClassPaladin",
+        }
+        self.assertEqual(set(expected), set(CURRENT_CLIENT_TALENT_OVERRIDES))
+        for profile, class_name in expected.items():
+            with self.subTest(profile=profile):
+                request = {
+                    "raid": {"parties": [{"players": [{
+                        "class": class_name,
+                        "talentsString": "legacy-source-string",
+                    }]}]}
+                }
+                effective, metadata = apply_current_client_talent_override(profile, request)
+                talents = effective["raid"]["parties"][0]["players"][0]["talentsString"]
+                self.assertEqual(51, sum(int(char) for char in talents if char.isdigit()))
+                self.assertNotEqual("legacy-source-string", talents)
+                self.assertEqual("legacy-source-string",
+                                 request["raid"]["parties"][0]["players"][0]["talentsString"])
+                self.assertEqual("APPLIED", metadata["status"])
+                self.assertEqual("1.60.1.70707", metadata["client_build"])
+                self.assertEqual(CURRENT_CLIENT_BUILD, metadata["client_build"])
+                self.assertEqual(CURRENT_ENGINE_PIN, metadata["engine_pin"])
+                self.assertEqual("wowsims/forever", metadata["source_repo"])
+                self.assertTrue(metadata["source_commit"])
+                self.assertTrue(metadata["source_blob_sha"])
+                self.assertTrue(metadata["source_url"].startswith(
+                    "https://github.com/wowsims/forever/blob/"
+                ))
+
+    def test_unlisted_profile_is_left_untouched(self):
+        request = {"raid": {"parties": [{"players": [{
+            "class": "ClassMage", "talentsString": "unchanged",
+        }]}]}}
+        effective, metadata = apply_current_client_talent_override("mage/shadow", request)
+        self.assertIs(request, effective)
+        self.assertIsNone(metadata)
+        self.assertEqual("unchanged", request["raid"]["parties"][0]["players"][0]["talentsString"])
+
+    def test_profile_class_mismatch_fails_closed(self):
+        request = {"raid": {"parties": [{"players": [{
+            "class": "ClassPaladin", "talentsString": "legacy",
+        }]}]}}
+        with self.assertRaisesRegex(ValueError, "class mismatch"):
+            apply_current_client_talent_override("mage/fire", request)
+
+    def test_override_provenance_survives_matrix_row_build(self):
+        rows = inventory()
+        rows[0][0]["talent_override"] = {"source_commit": "fixture-commit"}
+        results = build_matrix(
+            rows, stage=5,
+            run=lambda _: {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+                           "native_paid": 1, "three_axis_paid": 0,
+                           "full_source_legality_certified": False},
+        )
+        self.assertEqual({"source_commit": "fixture-commit"}, results[0]["talent_override"])
 
 
 if __name__ == "__main__":
