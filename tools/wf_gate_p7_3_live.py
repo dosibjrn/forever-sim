@@ -255,7 +255,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     if reranked:
         score, live, candidate_sha, frozen_winner, screen_score = max(
             reranked, key=lambda item: item[0])
-        winner_selection = "paid_24_stochastic_live_native_finalist"
+        winner_selection = "paid_24_balanced_live_native_finalist"
     else:
         score, live, candidate_sha, frozen_winner = best
         screen_score = score
