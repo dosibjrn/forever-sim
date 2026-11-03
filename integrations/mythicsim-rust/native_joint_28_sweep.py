@@ -37,11 +37,11 @@ def preflight(profile: str, source: dict, request: dict | None, stage: int,
     if stage != 5:
         if previous is None:
             return ("BLOCKED_PRIOR_STAGE", "Missing completed prior-stage exact profile row")
-        if (previous.get("native_paid", 0) < 1
+        if (previous.get("three_axis_paid", 0) < 1
                 or not previous.get("replay_matches")
                 or previous.get("native_errors", 0) != 0):
             return ("BLOCKED_PRIOR_STAGE",
-                    "Prior stage lacks a native-paid candidate with exact replay and zero execution errors")
+                    "Prior stage lacks a three-axis native-paid candidate with exact replay and zero execution errors")
     return None
 
 
