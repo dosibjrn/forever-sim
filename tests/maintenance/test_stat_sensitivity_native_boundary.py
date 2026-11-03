@@ -134,3 +134,58 @@ for module in legacy_modules:
         capture_output=True, text=True, timeout=30, check=False,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_optimizer_stat_sensitivity_is_game_independent_and_legacy_api_is_preserved():
+    code = """
+from dataclasses import dataclass, replace
+import sys
+
+from src.optimization import stat_sensitivity as optimizer
+
+for module in ("src.game", "src.game.model.ir", "src.game.gear",
+               "src.game.runtime.simulator", "src.rulesets"):
+    assert module not in sys.modules, module
+
+@dataclass(frozen=True)
+class NativeRequest:
+    engine_sha: str
+    delta: float = 0.0
+
+request = NativeRequest("selected-engine-sha")
+def mutate(state, stat, amount):
+    assert stat == "agility"
+    return replace(state, delta=amount)
+
+def score(state):
+    return {0.0: 10.0, 1.0: 11.0, 2.0: 8.0}[state.delta]
+
+result = optimizer.measure_stat_sensitivities(
+    request, stats=("agility",), score=score, apply_delta=mutate,
+    probe_deltas=(1.0, 2.0),
+)
+row = result.rows[0]
+assert row.first_effective_delta == 2.0
+assert row.value == 1.0
+assert [probe["seconds_per_mob"] for probe in row.probes] == [11.0, 8.0]
+assert result.as_dict()["ranked"][0]["stat"] == "agility"
+
+# The optimizer must not silently fall back to a GameIR mutation path.
+try:
+    optimizer.measure_stat_sensitivities(request, stats=("agility",), score=score)
+except TypeError as exc:
+    assert "apply_delta" in str(exc)
+else:
+    raise AssertionError("optimizer unexpectedly accepted an implicit game mutator")
+
+from src.game.stat_sensitivity import StatSensitivity as LegacyStatSensitivity, PROBE_STEPS
+assert LegacyStatSensitivity is optimizer.StatSensitivity
+assert PROBE_STEPS["agility"] == 20.0
+assert "src.game.gear" not in sys.modules
+assert "src.game.model.ir" not in sys.modules
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", code], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
