@@ -14,6 +14,8 @@ RETIRED_TOOLS = (
     "tools/audit_forever_source_coverage.py",
     "tools/audit_forever_source_rules.py",
     "tools/wf318_four_level_frontier.py",
+    "tools/wf318_nine_class_composite_batch.py",
+    "tests/test_wf318_index_composite_batch.py",
     "tools/wf330_druid_l20_queued_swing_evidence.py",
     "tools/wf331_druid20_web_l0_evidence.py",
     "tools/wf332_rune_policy_evidence.py",
@@ -53,6 +55,7 @@ RETIRED_TOOLS = (
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
+    "src/game/data/forever/source_index_composite_l1.py",
     "src/game/data/forever/source_checkpoint_p7_legacy.py",
     "src/game/data/forever/source_acquisition.py",
     "src/game/data/forever/source_acquisition_entities.py",
