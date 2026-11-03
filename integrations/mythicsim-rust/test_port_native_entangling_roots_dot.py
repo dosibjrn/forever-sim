@@ -58,6 +58,7 @@ class NativeRootsDotPortTest(unittest.TestCase):
             self.assertIn("crate::RngMode::Balanced", agent)
             self.assertIn('control_id: Some("root".to_owned())', bridge)
             self.assertIn('"native_control_events": control_events', bridge)
+            self.assertIn('ack["acknowledged_control_event_ids"]', bridge)
             self.assertIn("RUST_WORLD_CONTROL_ACK_EVENTS_MISMATCH", bridge)
 
     def test_missing_native_anchor_is_not_silently_accepted(self):
