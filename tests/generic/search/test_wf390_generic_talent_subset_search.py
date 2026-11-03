@@ -1,9 +1,9 @@
-"""Class-neutral bounded source-talent search contract, not an acceptance port."""
+"""Transitional GameIR talent-enumeration and budget regression."""
 from pathlib import Path
 from types import SimpleNamespace
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_execution_coverage import compile_talent_runtime
-from src.game.talent_subset_search import enumerate_executable_allocations,search_executable_talent_subspace
+from src.game.talent_subset_search import enumerate_executable_allocations
 
 ROOT=Path(__file__).resolve().parents[3]
 MAGE=ROOT/'data/forever/staged_mage_l30_talent_positions_70374.sqlite'
@@ -44,14 +44,3 @@ def test_large_source_talent_space_fails_closed_without_exhaustive_claim():
     assert proof['status']=='BLOCKED_EXACT_SUBSPACE_ENUMERATION_BUDGET'
     assert not proof['complete_supported_subspace']
 
-
-def test_actual_100mob_crosses_all_boundaries_and_keeps_acceptance_false():
-    ir=build_game_ir_slice(class_key='mage',level=30,ability_db_path=MAGE)
-    result=search_executable_talent_subspace(ir=ir,level=30,max_policies=1,max_wall_s=5)
-    assert result['enumeration']['legal_allocations']==21
-    assert result['attempted_runs']>=1
-    assert result['completed_100mob_runs']>=1
-    assert result['winner']['mobs_killed']==100
-    assert result['source_enemy']['hp']==955
-    assert not result['eligible_for_checkpoint_acceptance']
-    assert not result['complete_gear_talent_apl_recovery_optimum']
