@@ -18,5 +18,5 @@ jobs:
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Verify paid parent routing and exact source compilation
         run: |
-          python -m pytest -q tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
+          python -m pytest -q tests/gates/test_wf_gate_p7_5_live.py tests/gates/test_wf_gate_p7_5_stochastic_finalists.py tests/gates/test_wf_gate_p7_5_prior.py
           python -m compileall -q tools/wf_gate_p7_5_live.py tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
