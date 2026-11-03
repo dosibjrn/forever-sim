@@ -198,6 +198,15 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): apply real gsim movement to native cast legality"
 fi
 
+# Source-authoritative RNG mode: explicit enum through all Rust constructors,
+# CLI must require the caller's mode; environment variables are never mode
+# selection. Apply after all signature-sensitive legacy source ports.
+python3 "$PROJECT/integrations/mythicsim-rust/port_typed_rng_mode.py" "$PWD"
+git add src
+if ! git diff --cached --quiet; then
+  git commit -m "fix(forever): require typed explicit native RNG mode at every simulation call"
+fi
+
 # Existing native retarget regressions and new live terminal predicate must
 # pass before publishing this selected Rust integration.
 cargo test --locked --lib persistent_next_target
