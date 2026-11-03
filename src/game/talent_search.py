@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-"""Backend-neutral bounded talent allocation search.
+"""Transitional GameIR adapter for source-backed talent allocation search.
 
-G19 treats Talent IR definitions as the only candidate authority.  Candidate
-construction knows nothing about classes, spells, rotations, or external talent
-scorers: it enumerates legal rank allocations and delegates scoring to the
-caller.  The caller is responsible for applying the allocation and running the
-same policy/runtime/Evaluation stack used by production.
+The generic allocation enumerator, candidate identity and scoring live in
+src.optimization.talent_search. This module adapts current Talent IR definitions
+and supplies the retained source-legality validator until native migration.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping
 
 from src.optimization.talent_search import (
+    TalentAllocationOption,
     TalentCandidateResult,
     TalentEvaluator,
     TalentSearchResult,
+    enumerate_talent_allocations,
     score_talent_allocations,
     talent_candidate_id,
 )
@@ -45,60 +45,76 @@ def enumerate_legal_talent_allocations(
 ) -> tuple[tuple[dict[str, int], ...], bool]:
     if max_candidates < 1:
         raise ValueError('max_candidates must be positive')
-    # Source-backed rows first, ordered by tier, so impossible point budgets
-    # and tier gates are pruned before producing a Cartesian explosion.
-    # No class or talent names are privileged by this search order.
-    definitions = sorted(executable_talent_definitions(ir_slice),
-        key=lambda t: (t.tree_key, t.metadata.get('row') is None,
-                       -1 if t.metadata.get('row') is None else int(t.metadata['row']), t.id))
+    # Preserve the original deterministic source-tree ordering in the adapter;
+    # the optimizer receives an already ordered, game-neutral option sequence.
+    definitions = sorted(
+        executable_talent_definitions(ir_slice),
+        key=lambda talent: (
+            talent.tree_key,
+            talent.metadata.get('row') is None,
+            -1 if talent.metadata.get('row') is None else int(talent.metadata['row']),
+            talent.id,
+        ),
+    )
     if not definitions:
         return ({},), False
-    candidates: list[dict[str,int]] = []
-    # Preserve the existing legacy legality path until a native provider is
-    # migrated; do not duplicate talent point/rank rules in this client.
-    from src.game.talents import available_talent_points, validate_talent_selection
-    budget=available_talent_points(level, bonus_talent_points=bonus_talent_points)
-    points_per_row=int((ir_slice.provenance.get('talent_tree_rules') or {}).get('points_per_row',0))
-    selection: dict[str,int] = {}
-    truncated=False
 
-    def walk(index: int, spent: int) -> None:
-        nonlocal truncated
-        if truncated:
-            return
-        if index == len(definitions):
-            try:
-                validate_talent_selection(ir_slice,selection,level=level,bonus_talent_points=bonus_talent_points)
-            except ValueError:
-                return
-            if len(candidates)>=max_candidates:
-                truncated=True
-                return
-            candidates.append(dict(selection))
-            return
-        talent=definitions[index]
-        row=talent.metadata.get('row')
-        earlier=0
-        if row is not None and int(row)>0:
-            earlier=sum(rank for tid,rank in selection.items()
-                if any(d.id==tid and d.tree_key==talent.tree_key and
-                       d.metadata.get('row') is not None and
-                       int(d.metadata['row'])<int(row) for d in definitions[:index]))
-        for rank in range(0,min(int(talent.max_rank),budget-spent)+1):
-            if rank:
-                if row is not None and int(row)>0 and (
-                    points_per_row<=0 or earlier<int(row)*points_per_row):
-                    continue
-                if not any(r.rank==rank and r.modifiers for r in talent.ranks):
-                    continue
-                selection[talent.id]=rank
-            walk(index+1,spent+rank)
-            if rank:
-                del selection[talent.id]
-            if truncated:
-                break
-    walk(0,0)
-    return tuple(candidates),truncated
+    # All source facts and partial/complete legality decisions remain here until
+    # the corresponding native MythicSim interface is proven and adopted.
+    from src.game.talents import available_talent_points, validate_talent_selection
+
+    options = tuple(
+        TalentAllocationOption(
+            talent_id=definition.id,
+            max_rank=int(definition.max_rank),
+            executable_ranks=frozenset(
+                int(rank.rank) for rank in definition.ranks if rank.modifiers
+            ),
+        )
+        for definition in definitions
+    )
+    budget = available_talent_points(level, bonus_talent_points=bonus_talent_points)
+    points_per_row = int(
+        (ir_slice.provenance.get('talent_tree_rules') or {}).get('points_per_row', 0)
+    )
+    def rank_is_admissible(
+        option: TalentAllocationOption,
+        rank: int,
+        selection: Mapping[str, int],
+        index: int,
+    ) -> bool:
+        definition = definitions[index]
+        row = definition.metadata.get('row')
+        if row is None or int(row) <= 0:
+            return True
+        earlier = sum(
+            selected_rank
+            for selected_id, selected_rank in selection.items()
+            if any(
+                prior.id == selected_id
+                and prior.tree_key == definition.tree_key
+                and prior.metadata.get('row') is not None
+                and int(prior.metadata['row']) < int(row)
+                for prior in definitions[:index]
+            )
+        )
+        return points_per_row > 0 and earlier >= int(row) * points_per_row
+
+    def validate(selection: Mapping[str, int]) -> None:
+        validate_talent_selection(
+            ir_slice,
+            selection,
+            level=level,
+            bonus_talent_points=bonus_talent_points,
+        )
+
+    return enumerate_talent_allocations(
+        options,
+        max_points=budget,
+        rank_is_admissible=rank_is_admissible,
+        validate_selection=validate,
+        max_candidates=max_candidates,
+    )
 
 
 def search_talent_allocations(

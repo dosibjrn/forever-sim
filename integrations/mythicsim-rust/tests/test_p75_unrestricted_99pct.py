@@ -170,6 +170,8 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         self.assertEqual(record["candidate_request"],expected)
         self.assertEqual(record["key"],key("cat",expected))
         self.assertEqual(record["screen_mode"],"balanced")
+        with self.assertRaisesRegex(ValueError,"OPTIMIZER_RNG_MUST_BE_BALANCED"):
+            paid_candidate_record("cat",req,812.5,"stochastic",0.3)
         self.assertEqual(json.loads(json.dumps(record))["candidate_request"],expected)
         req["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]=999
         self.assertEqual(record["candidate_request"],expected,
@@ -255,8 +257,9 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         req["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]=999
         self.assertEqual(record["candidate_request"],expected)
         src=inspect.getsource(main)
-        self.assertIn("rerank_paid.append(paid_rerank_record(",src)
-        self.assertIn('("rerank.json",rerank_paid)',src)
+        self.assertIn("rerank_record=paid_rerank_record(",src)
+        self.assertIn("rerank_paid.append(rerank_record)",src)
+        self.assertIn("persist_paid_search_evidence(a.outdir,paid,rerank_paid",src)
         self.assertIn('"rerank_paid_records":len(rerank_paid)',src)
 
 
