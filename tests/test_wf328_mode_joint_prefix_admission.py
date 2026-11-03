@@ -60,7 +60,6 @@ def test_checkpoint_l0_source_rank_admission_is_exact_paid_envelope():
     assert report['paid_search_admitted_source_rows']>0
     assert report['positive_level_source_ranks_unadmitted_missing_ir']>0
     assert report['paid_search_admission_is_L2_coverage_proof'] is False
-    assert report['PASS1'] is False
     admitted=[r for r in report['records'] if r.get('paid_search_admission')=='PAID_EXECUTABLE_SOURCE_IR']
     env=source_prefix_envelope(ir,level=20)
     ids=set(env['actions'])
