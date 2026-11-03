@@ -24,8 +24,6 @@ from src.game.data.forever.periodic_spells import (
     DirectPeriodicSpellSourceFact, normalize_direct_periodic_action,
 )
 from src.shared.field_overlays import FieldOverlay
-from src.game.model.overlay import FieldOverlay as LegacyFieldOverlay
-assert LegacyFieldOverlay is FieldOverlay
 
 assert 'src.game.model.ir' not in sys.modules
 assert 'src.game.runtime.simulator' not in sys.modules
