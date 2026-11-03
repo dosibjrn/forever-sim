@@ -848,9 +848,13 @@ def _native_p1_canary_probe(root: Path, spell_id: int) -> dict:
         request = json.loads(fixture.read_text(encoding='utf-8'))
         player = request['raid']['parties'][0]['players'][0]
         rows = player['rotation']['priorityList']
+        if player.get('class') != 'ClassDruid' or not isinstance(rows, list) or len(rows) != 1:
+            return {'status':'INVALID','stage':'request',
+                    'reason':'NATIVE_P1_CANARY_FIXTURE_IDENTITY_MISMATCH',
+                    'native_executed':False,'effect_observed':False,
+                    'p1_certified':False}
         fixture_spell_id = rows[0]['action']['castSpell']['spellId']['spellId']
-        if (player.get('class') != 'ClassDruid' or len(rows) != 1
-                or fixture_spell_id != spell_id):
+        if fixture_spell_id != spell_id:
             return {'status':'INVALID','stage':'request',
                     'reason':'NATIVE_P1_CANARY_FIXTURE_IDENTITY_MISMATCH',
                     'native_executed':False,'effect_observed':False,
