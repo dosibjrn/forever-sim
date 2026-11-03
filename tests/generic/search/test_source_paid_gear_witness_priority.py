@@ -773,8 +773,9 @@ def test_work2_paid_parent_lineage_rejects_invalid_or_cyclic_ancestry():
 
 
 def test_p3_druid_l40_unrestricted_spirit_witness_runs_through_live_cli():
-    # A prior production run exhausted its 44-call base budget after proving
-    # Intellect, MP5 and Spell Power; Spirit was never attempted. The separate
+    # The recorded production result was 127/149: its 44-call base budget
+    # proved Intellect, MP5 and Spell Power, then ended before Spirit was tried.
+    # The separate
     # bounded witness budget must now reach and prove Spirit through the same
     # public production CLI, with no M1 write.
     from tools.wf_gate import _run_live_gate, ROOT
