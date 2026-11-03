@@ -92,7 +92,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     original = player.get("talentsString")
     rng = random.Random(647003)
     best = None
-    elites = []  # top source-legal requests scored with balanced RNG
+    elites = []  # top native+2D-paid requests scored with balanced RNG
     executed = 0
     proposals = 0
     seen = set()
