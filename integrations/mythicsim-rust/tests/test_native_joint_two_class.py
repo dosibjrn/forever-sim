@@ -931,7 +931,17 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
                 "condition": copy.deepcopy(condition),
             }
         }
-        utility_entry = {"action": {"autocastOtherCooldowns": {}}}
+        # This is a source-observed non-witness cast. Its condition must
+        # survive exactly like the positive 10463 witness's condition.
+        utility_entry = {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": 8004},
+                    "target": {"type": "Self"},
+                },
+                "condition": copy.deepcopy(condition),
+            }
+        }
         baseline_player["rotation"]["priorityList"] = [
             copy.deepcopy(source_entry), copy.deepcopy(utility_entry)
         ]
@@ -990,6 +1000,18 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
         ]
         self.assertFalse(adapter.legal(candidate))
 
+        stripped_nonwitness = {
+            "action": {
+                "castSpell": copy.deepcopy(utility_entry["action"]["castSpell"])
+            }
+        }
+        candidate_player["rotation"]["priorityList"] = [
+            copy.deepcopy(source_entry), copy.deepcopy(stripped_nonwitness)
+        ]
+        # Before the fix, cast-identity membership plus a valid 10463 witness
+        # incorrectly accepted this stripped guard on the other source cast.
+        self.assertFalse(adapter.legal(candidate))
+
         # The mutation layer may propose a stripped clone; the source-bounded
         # adapter must replace it with the exact source entry and retain the guard.
         generated = adapter.adapters["apl"].cold(random.Random(23), candidate)
@@ -1031,6 +1053,16 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
 
         with patch.object(joint, "mutate_apl", side_effect=preserve_cold):
             mutated = adapter.mutate(candidate, AplOnlyRng())
+            # A malformed non-witness source entry must be discarded before
+            # mutation; with one surviving action, use the guarded cold path.
+            candidate_player["rotation"]["priorityList"] = [
+                copy.deepcopy(source_entry), copy.deepcopy(stripped_nonwitness)
+            ]
+            repaired = adapter.mutate(candidate, AplOnlyRng())
+        repaired_apl = repaired["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+        self.assertIn(utility_entry, repaired_apl)
+        self.assertNotIn(stripped_nonwitness, repaired_apl)
+        self.assertTrue(adapter.legal(repaired))
         mutated_apl = mutated["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
         self.assertIn(source_entry, mutated_apl)
         self.assertEqual(
