@@ -548,9 +548,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
             def mutate_from(self, request_value, rng):
                 return copy.deepcopy(request_value), {}
 
-        with patch.object(joint, "NativeGearAdapter", FakeGear), patch.object(
-            joint, "legal_apl_only_request", return_value=True
-        ):
+        with patch.object(joint, "NativeGearAdapter", FakeGear):
             adapter, scope = joint.source_bounded_adapter(
                 "warlock",
                 baseline,
@@ -654,6 +652,45 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
             and isinstance(entry["action"].get("castSpell"), dict)
         ))
 
+
+
+    def test_source_observed_donor_only_cast_reaches_native_candidate_domain(self):
+        """A donor cast absent from the baseline is for Rust to accept/refuse."""
+        baseline = self.source_request("baseline-build", [11713])
+        donor_request = self.source_request("donor-build", [11713, 17923])
+
+        class FakeGear:
+            def __init__(self, class_key, reference, source_requests):
+                self.mutable_indices = [0]
+
+            def validate(self, candidate):
+                return None
+
+        with patch.object(joint, "NativeGearAdapter", FakeGear):
+            adapter, _scope = joint.source_bounded_adapter(
+                "warlock", baseline, [baseline],
+                donor_fixtures=[{
+                    "class_name": "ClassWarlock",
+                    "request": donor_request,
+                    "source_path": "test/donor-only-cast",
+                    "source_sha256": "d" * 64,
+                    "item_count": 2,
+                }],
+                native_damage_witnesses=[{"spellId": 11713}],
+            )
+
+        candidate = copy.deepcopy(baseline)
+        p = candidate["raid"]["parties"][0]["players"][0]
+        p["talentsString"] = "donor-build"
+        p["rotation"]["priorityList"] = [self.cast(11713), self.cast(17923)]
+        self.assertTrue(
+            adapter.legal(candidate),
+            "Baseline-only Python APL cast proof must not veto a donor-observed cast",
+        )
+
+        # The shared candidate boundary must still freeze non-search fields.
+        candidate["simOptions"]["iterations"] += 1
+        self.assertFalse(adapter.legal(candidate))
 
 
 

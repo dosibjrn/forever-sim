@@ -24,8 +24,7 @@ from native_joint_composition import (
     MISSING_TALENT_STRING, CandidateAxis, JointCandidateAdapter, search_joint,
 )
 from native_l60_matrix import (
-    ROOT, create_inventory, digest, fingerprint, legal_apl_only_request,
-    player,
+    ROOT, create_inventory, digest, fingerprint, player,
 )
 from native_executor import run
 from native_source_donors import load_source_donor_fixtures
@@ -461,9 +460,11 @@ def source_bounded_adapter(
         )
 
     def apl_legal(value):
-        request = copy.deepcopy(reference)
-        player(request)["rotation"]["priorityList"] = copy.deepcopy(value)
-        return legal_apl_only_request(reference, request)
+        # This is a native request-shape check, not a second spell/APL
+        # legality decision. joint_legal already bounds source-observed
+        # cast identities per talent donor, and JointCandidateAdapter
+        # freezes every non-search field. Rust accepts/refuses the APL.
+        return isinstance(value, list) and bool(value)
 
     def joint_legal(candidate):
         candidate_player = player(candidate)
