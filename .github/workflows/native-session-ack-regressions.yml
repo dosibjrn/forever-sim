@@ -5,6 +5,7 @@ on:
       - 'src/game/runtime/native_step_protocol.py'
       - 'src/game/runtime/go_native_world_damage_ack.py'
       - 'integrations/mythicsim-rust/live_two_world_pulls.py'
+      - 'integrations/mythicsim-rust/port_typed_rng_mode.py'
       - 'integrations/mythicsim-rust/engine'
       - 'tests/test_work2_native_health_damage_controls.py'
       - 'tests/test_work2_native_world_elapsed.py'
@@ -43,18 +44,20 @@ jobs:
           python-version: '3.11'
       - name: Install existing world runtime dependency
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Compile the exact selected public Rust fork without runtime source modifications
+      - name: Apply the required typed RNG mode port and compile the selected Rust fork
         run: |
           set -euo pipefail
           selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
           actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
           test "$selected" = "$actual"
           echo "SELECTED_RUST_SHA=$actual"
-          # Fail closed if this actual selected revision lacks native event
-          # accounting. Do NOT stage a Python source patch over the pin:
-          # that would test code different from the selected production SHA.
+          # The selected pin contains the accepted world/health integrations.
+          # Apply only the reviewed typed-mode port so this regression exercises
+          # the same required CLI contract as production callers.
           grep -Fq '"native_health_damage_taken"' integrations/mythicsim-rust/engine/src/core/fight.rs
           grep -Fq '"native_health_damage_events"' integrations/mythicsim-rust/engine/src/core/fight.rs
+          python integrations/mythicsim-rust/port_typed_rng_mode.py integrations/mythicsim-rust/engine
+          git -C integrations/mythicsim-rust/engine diff --check
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
