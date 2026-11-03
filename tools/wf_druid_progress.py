@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print a fail-closed L20/L30 × P1-P7 scoreboard from identical machine gate checks.
+"""Print a fail-closed L20/L30 × P3-P7.5 scoreboard from identical machine gate checks.
 
 No hand-reviewed PASS and no unnecessary 30/300-second rerun. Cached evidence
 must come from source/engine/scenario-identical executions; missing evidence FAILs.
@@ -17,7 +17,7 @@ from wf_gate import main as gate_main, GATES, ROOT
 
 
 def main(argv=None):
-    a=argparse.ArgumentParser(description='Druid L20 and L30 P1-P7 repeatable gate scoreboard')
+    a=argparse.ArgumentParser(description='Druid L20 and L30 P3-P7.5 repeatable gate scoreboard')
     a.add_argument('--evidence-dir', type=Path, default=ROOT/'gate_evidence')
     a.add_argument('--refresh-p2-source-audit',action='store_true')
     a.add_argument('--json',action='store_true',help='Print all detail as JSON')
@@ -40,7 +40,7 @@ def main(argv=None):
         print(json.dumps({'class':'druid','levels':[20,30],'status':status,
                           'results':entries},ensure_ascii=False,indent=2))
     else:
-        print('Druid L20/L30 P1-P7 — machine-checked evidence')
+        print('Druid L20/L30 P3-P7.5 — machine-checked evidence')
         for e in entries:
             print(f"L{e['level']:02d} {e['gate']}: {e['status']} | {e['reason']}")
         print('Accepted: '+str(sum(all(x['status']=='PASS' for x in entries if x['level']==lv)
