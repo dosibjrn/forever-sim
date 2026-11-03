@@ -53,3 +53,12 @@ def test_real_unrestricted_l40_p3_reuses_baseline_to_measure_spirit():
     assert spirit["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", result
     assert spirit["baseline_reused"] is True, result
     assert result["behavior_probes_executed"] <= 44, result
+
+def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
+    """Exercise the active P3 production path on a different class and level."""
+    result = run_live(ROOT, "mage", 20, spec="unrestricted")
+    assert result["status"] == "PASS", result
+    assert result["pass_count"] == result["reachability_count"], result
+    assert result["behavior_probes_executed"] > 0, result
+    assert result["production_engine"] == "gsim_CombatRuntime", result
+    assert result["real_catalogue_slots_scored"] > 0, result
