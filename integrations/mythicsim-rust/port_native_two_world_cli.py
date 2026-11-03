@@ -56,12 +56,19 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
     if source.count(replacement) == 1:
         return source
-    # The maintained two-world method may already have the separately
-    # source-validated native health-damage receipts. Preserve that exact
-    # extension on repeated fork/source-port runs; do not accept drift.
-    if marker == METHOD_MARKER and '"native_health_damage_taken"' in source:
-        from port_native_health_damage_receipts import port as port_health
-        if source.count(port_health(replacement)) == 1:
+    # The maintained two-world method may already have separately
+    # source-validated native health-damage and mana-regeneration receipts.
+    # Preserve those exact composable extensions on repeated source-port runs;
+    # do not accept drift in either downstream extension.
+    if marker == METHOD_MARKER:
+        expected = replacement
+        if '"native_health_damage_taken"' in source:
+            from port_native_health_damage_receipts import port as port_health
+            expected = port_health(expected)
+        if '"native_combat_mana_regen_actual_gain"' in source:
+            from port_native_mana_regen_receipts import port as port_mana
+            expected = port_mana(expected)
+        if source.count(expected) == 1:
             return source
     if source.count(replacement) > 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_DUPLICATE_{marker}")
