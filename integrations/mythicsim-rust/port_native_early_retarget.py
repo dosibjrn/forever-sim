@@ -60,14 +60,27 @@ TEST_ANCHOR = "    fn native_persistent_next_target_retains_actor_and_native_que
 
 
 def _paid_recovery_descendant(source: str) -> bool:
+    """Recognize the exact early-retarget + paid-recovery source composition."""
     try:
         from port_native_persistent_target import FIGHT_TEST
-        from port_native_paid_recovery import is_composed_paid_recovery_source
-        return (
-            source.count(TEST_MARKER) == 1
-            and source.count(FIGHT_TEST.rstrip("\n")) == 1
-            and is_composed_paid_recovery_source(source)
+        from port_native_paid_recovery import (
+            FIGHT_CLOCK_OLD, FIGHT_CLOCK_NEW,
+            FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW,
+            FIGHT_CLOCK_COMMENT_NEW, FIGHT_NEXT_COMMENT_NEW,
+            FIGHT_SIGNATURE_NEW, FIGHT_HELPER_MARKER, port_fight,
         )
+        if (HELPER.count(FIGHT_CLOCK_OLD) != 1
+                or TEST.count(FIGHT_CLOCK_TEST_OLD) != 1):
+            return False
+        paid_helper = HELPER.replace(FIGHT_CLOCK_OLD, FIGHT_CLOCK_NEW, 1)
+        paid_test = TEST.replace(FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW, 1)
+        required = (
+            paid_helper, NEW_GUARD, paid_test, FIGHT_TEST.rstrip("\n"),
+            FIGHT_SIGNATURE_NEW, FIGHT_HELPER_MARKER, FIGHT_CLOCK_NEW.strip(),
+            FIGHT_CLOCK_COMMENT_NEW.strip(), FIGHT_CLOCK_TEST_NEW,
+            FIGHT_NEXT_COMMENT_NEW.strip(),
+        )
+        return all(source.count(marker) == 1 for marker in required) and port_fight(source) == source
     except (ImportError, ValueError):
         return False
 
