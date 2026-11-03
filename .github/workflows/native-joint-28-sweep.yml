@@ -114,6 +114,7 @@ jobs:
         working-directory: project
         run: |
           python integrations/mythicsim-rust/tests/test_native_joint_two_class.py
+          python integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
           python integrations/mythicsim-rust/tests/test_native_joint_composition.py
           python integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py
           python integrations/mythicsim-rust/tests/test_native_gear_adapter.py
