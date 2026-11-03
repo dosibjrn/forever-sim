@@ -22,6 +22,7 @@ from src.engine_client.native_p2_rank_probe import (  # noqa: E402
     encode_native_druid_talents,
     prepare_native_request,
     parse_native_druid_layout,
+    load_native_druid_layout,
     run_native_prepare_pair,
     run_native_rank_pair,
 )
@@ -37,6 +38,97 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
         self.assertEqual(layout["feral"][10]["field"], "predatory_strikes")
         self.assertEqual(layout["balance"][15]["field"], "moonkin_form")
         self.assertNotIn("max_rank", layout["balance"][15])
+        self.assertIs(type(layout["balance"][15]["max_ranks"]), int)
+        self.assertIs(type(layout["balance"][15]["in_proto"]), bool)
+
+
+    def test_native_layout_cli_is_preferred_and_identity_bound(self):
+        payload = {
+            "schema_version": 1,
+            "class": "druid",
+            "source_revision": "selected-native-revision",
+            "client_build": "selected-native-build",
+            "trees": [
+                {"tree_index": index, "tree_key": key, "talents": [
+                    {"position": 0, "field": f"{key}_talent", "name": "Talent",
+                     "max_ranks": 5, "in_proto": True}
+                ]}
+                for index, key in enumerate(("balance", "feral", "restoration"))
+            ],
+        }
+        with tempfile.TemporaryDirectory(prefix="native-p2-layout-cli-") as directory:
+            binary = Path(directory) / "forever-engine"
+            binary.touch()
+            with patch(
+                "src.engine_client.native_p2_rank_probe.subprocess.run",
+                return_value=subprocess.CompletedProcess(
+                    args=[str(binary), "talent-layout", "--class", "druid"],
+                    returncode=0,
+                    stdout=json.dumps(payload),
+                    stderr="",
+                ),
+            ) as native_cli:
+                layout, metadata = load_native_druid_layout(ENGINE_ROOT, binary=binary)
+        self.assertEqual(metadata["source"], "native_cli")
+        self.assertEqual(metadata["source_revision"], "selected-native-revision")
+        self.assertEqual(metadata["client_build"], "selected-native-build")
+        self.assertEqual(layout["feral"][0]["field"], "feral_talent")
+        self.assertEqual(native_cli.call_args.args[0][1:], ["talent-layout", "--class", "druid"])
+
+    def test_missing_layout_command_uses_only_selected_source_compatibility(self):
+        source = """
+const FOREVER_BALANCE: &[LayoutTalent] = &[
+    talent("balance_talent", "Balance Talent", 5),
+];
+const FOREVER_FERAL_COMBAT: &[LayoutTalent] = &[
+    talent("feral_talent", "Feral Talent", 3),
+];
+const FOREVER_RESTORATION: &[LayoutTalent] = &[
+    new_talent("restoration_talent", "Restoration Talent", 1),
+];
+pub(crate) const FOREVER_TREES: [&[LayoutTalent]; 3] = [
+    FOREVER_BALANCE, FOREVER_FERAL_COMBAT, FOREVER_RESTORATION
+];
+"""
+        with tempfile.TemporaryDirectory(prefix="native-p2-layout-fallback-") as directory:
+            root = Path(directory)
+            source_path = root / "src/classes/druid/prepare.rs"
+            source_path.parent.mkdir(parents=True)
+            source_path.write_text(source, encoding="utf-8")
+            binary = root / "forever-engine"
+            binary.touch()
+            with patch(
+                "src.engine_client.native_p2_rank_probe.subprocess.run",
+                return_value=subprocess.CompletedProcess(
+                    args=[str(binary), "talent-layout", "--class", "druid"],
+                    returncode=1,
+                    stdout="",
+                    stderr="expected sim, prepare, bench, check or version",
+                ),
+            ):
+                layout, metadata = load_native_druid_layout(root, binary=binary)
+        self.assertEqual(metadata["source"], "selected_rust_source_compatibility")
+        self.assertIsNone(metadata["source_revision"])
+        self.assertEqual(layout["balance"][0]["field"], "balance_talent")
+        self.assertEqual(layout["restoration"][0]["in_proto"], False)
+
+    def test_unexpected_layout_cli_error_fails_closed(self):
+        with tempfile.TemporaryDirectory(prefix="native-p2-layout-error-") as directory:
+            binary = Path(directory) / "forever-engine"
+            binary.touch()
+            with patch(
+                "src.engine_client.native_p2_rank_probe.subprocess.run",
+                return_value=subprocess.CompletedProcess(
+                    args=[str(binary), "talent-layout", "--class", "druid"],
+                    returncode=1,
+                    stdout="",
+                    stderr="native panic",
+                ),
+            ):
+                with self.assertRaisesRegex(
+                    NativeP2ProbeError, "NATIVE_DRUID_TALENT_LAYOUT_CLI_FAILED"
+                ):
+                    load_native_druid_layout(ENGINE_ROOT, binary=binary)
 
     def test_predatory_strikes_rank_pair_uses_native_prepare_cli(self):
         binary = Path(os.environ.get("FOREVER_ENGINE_BINARY", ""))
@@ -227,6 +319,12 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
                         for status in (before_status, after_status)
                     ]
                     with patch(
+                        "src.engine_client.native_p2_rank_probe.load_native_druid_layout",
+                        return_value=(
+                            {"balance": [], "feral": [], "restoration": []},
+                            {"source": "selected_rust_source_compatibility"},
+                        ),
+                    ), patch(
                         "src.engine_client.native_p2_rank_probe.encode_native_druid_talents",
                         side_effect=["0", "1"],
                     ), patch(

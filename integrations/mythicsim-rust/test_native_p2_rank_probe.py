@@ -21,7 +21,7 @@ from src.engine_client.native_p2_rank_probe import (
     NativeP2ProbeError,
     NativeRngMode,
     encode_native_druid_talents,
-    parse_native_druid_layout,
+    load_native_druid_layout,
     run_native_rank_pair,
 )
 
@@ -55,7 +55,17 @@ def main() -> int:
     parser.add_argument("--binary", required=True, type=Path)
     args = parser.parse_args()
 
-    layout = parse_native_druid_layout(args.engine_root)
+    layout, layout_metadata = load_native_druid_layout(
+        args.engine_root, binary=args.binary
+    )
+    if (
+        os.environ.get("FOREVER_EXPECT_NATIVE_TALENT_LAYOUT_API") == "1"
+        and layout_metadata.get("source") != "native_cli"
+    ):
+        raise SystemExit(
+            "NATIVE_DRUID_TALENT_LAYOUT_API_REQUIRED:"
+            + str(layout_metadata.get("source"))
+        )
     assert [len(layout[k]) for k in ("balance", "feral", "restoration")] == [16, 20, 16]
     assert layout["balance"][15]["field"] == "moonkin_form"
     assert layout["feral"][10]["field"] == "predatory_strikes"
@@ -64,7 +74,7 @@ def main() -> int:
     for scenario in ("balance",):
         fixture = _fixture_request(args.engine_root, scenario)
         selection = _decode_fixture_talents(fixture, layout)
-        encoded = encode_native_druid_talents(selection, args.engine_root)
+        encoded = encode_native_druid_talents(selection, args.engine_root, layout=layout)
         roundtrip = _fixture_request(args.engine_root, scenario)
         roundtrip["raid"]["parties"][0]["players"][0]["talentsString"] = encoded
         assert _decode_fixture_talents(roundtrip, layout) == selection
@@ -73,7 +83,7 @@ def main() -> int:
     for invalid_rank in (True, 1.5, "1"):
         try:
             encode_native_druid_talents(
-                {"predatory_strikes": invalid_rank}, args.engine_root
+                {"predatory_strikes": invalid_rank}, args.engine_root, layout=layout
             )
         except NativeP2ProbeError:
             pass
@@ -89,7 +99,7 @@ def main() -> int:
     assert moonkin_after.get("moonkin_form") == 1
     moonkin_before = dict(moonkin_after)
     moonkin_before.pop("moonkin_form")
-    assert encode_native_druid_talents(moonkin_before, args.engine_root).split("-")[0][-1] == "0"
+    assert encode_native_druid_talents(moonkin_before, args.engine_root, layout=layout).split("-")[0][-1] == "0"
 
     # Construct a focused 15-point Feral control, then add only
     # Predatory Strikes rank 1. The adapter forwards the pair to the selected
@@ -103,10 +113,10 @@ def main() -> int:
     predatory_after = {**predatory_before, "predatory_strikes": 1}
     predatory_request = _fixture_request(args.engine_root, "cat")
     predatory_request["raid"]["parties"][0]["players"][0]["talentsString"] = (
-        encode_native_druid_talents(predatory_after, args.engine_root)
+        encode_native_druid_talents(predatory_after, args.engine_root, layout=layout)
     )
     assert _decode_fixture_talents(predatory_request, layout) == predatory_after
-    assert encode_native_druid_talents(predatory_before, args.engine_root).split("-")[1][10] == "0"
+    assert encode_native_druid_talents(predatory_before, args.engine_root, layout=layout).split("-")[1][10] == "0"
 
     results = {
         "moonkin_form": run_native_rank_pair(

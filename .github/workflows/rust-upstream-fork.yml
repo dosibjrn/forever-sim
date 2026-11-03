@@ -195,6 +195,7 @@ jobs:
             --binary /tmp/forever-selected-rust/target/debug/forever-engine
           FOREVER_ENGINE_ROOT=/tmp/forever-selected-rust \
             FOREVER_ENGINE_BINARY=/tmp/forever-selected-rust/target/debug/forever-engine \
+            FOREVER_EXPECT_NATIVE_TALENT_LAYOUT_API=1 \
             python3 integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
           FOREVER_ENGINE_ROOT=/tmp/forever-selected-rust \
             FOREVER_ENGINE_BINARY=/tmp/forever-selected-rust/target/debug/forever-engine \

@@ -41,12 +41,14 @@ _TREE_ARRAYS = (
     ("restoration", "FOREVER_RESTORATION"),
 )
 _ENTRY = re.compile(
-    r'(?:new_talent|talent)\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*\d+\s*\)\s*,?'
+    r'(?P<kind>new_talent|talent)\(\s*"(?P<field>[^"]+)"\s*,\s*"(?P<name>[^"]+)"'
+    r'\s*,\s*(?P<max_ranks>\d+)\s*\)\s*,?'
 )
+_NATIVE_LAYOUT_COMMAND_MISSING = "expected sim, prepare, bench, check or version"
 
 
 def parse_native_druid_layout(engine_root: str | Path) -> dict[str, list[dict[str, object]]]:
-    """Read only native talent field order/IDs; never copy rank caps into Python."""
+    """Read native layout metadata for wire encoding only; never decide legality."""
     root = Path(engine_root)
     source_path = root / "src" / "classes" / "druid" / "prepare.rs"
     if not source_path.is_file():
@@ -91,14 +93,21 @@ def parse_native_druid_layout(engine_root: str | Path) -> dict[str, list[dict[st
                 f"NATIVE_DRUID_TALENT_ARRAY_PARSE_INCOMPLETE:{array_name}:{residue[:80]}"
             )
         parsed: list[dict[str, object]] = []
-        for entry in entries:
-            field, name = entry.groups()
+        for position, entry in enumerate(entries):
+            kind = entry.group("kind")
+            field = entry.group("field")
+            name = entry.group("name")
+            max_ranks = int(entry.group("max_ranks"))
             if field in all_fields:
                 raise NativeP2ProbeError(f"NATIVE_DRUID_DUPLICATE_TALENT_FIELD:{field}")
             all_fields.add(field)
-            parsed.append(
-                {"field": field, "name": name}
-            )
+            parsed.append({
+                "position": position,
+                "field": field,
+                "name": name,
+                "max_ranks": max_ranks,
+                "in_proto": kind == "talent",
+            })
         if not parsed:
             raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_ARRAY_EMPTY:{array_name}")
         layout[tree_key] = parsed
@@ -106,12 +115,17 @@ def parse_native_druid_layout(engine_root: str | Path) -> dict[str, list[dict[st
 
 
 def encode_native_druid_talents(
-    selection: Mapping[str, int], engine_root: str | Path
+    selection: Mapping[str, int],
+    engine_root: str | Path,
+    *,
+    layout: dict[str, list[dict[str, object]]] | None = None,
+    binary: str | Path | None = None,
 ) -> str:
-    """Encode source talent IDs using the selected Rust engine's field order."""
+    """Encode candidate IDs using native layout metadata; native prepare decides legality."""
     if not isinstance(selection, Mapping):
         raise NativeP2ProbeError("SOURCE_TALENT_SELECTION_NOT_A_MAPPING")
-    layout = parse_native_druid_layout(engine_root)
+    if layout is None:
+        layout, _ = load_native_druid_layout(engine_root, binary=binary)
     # This is only a wire encoder. The selected Rust prepare path, not
     # Python, owns the talent rank ceiling and game-legality decision.
     fields: dict[str, tuple[int, int]] = {}
@@ -176,6 +190,126 @@ def _json_object(raw: str) -> dict | None:
     except (TypeError, ValueError):
         return None
     return value if isinstance(value, dict) else None
+
+
+def _native_layout_payload(
+    payload: dict,
+) -> tuple[dict[str, list[dict[str, object]]], dict[str, str]]:
+    if type(payload.get("schema_version")) is not int or payload.get("schema_version") != 1:
+        raise NativeP2ProbeError("NATIVE_DRUID_TALENT_LAYOUT_SCHEMA_VERSION_INVALID")
+    if payload.get("class") != "druid":
+        raise NativeP2ProbeError("NATIVE_DRUID_TALENT_LAYOUT_CLASS_MISMATCH")
+    source_revision = payload.get("source_revision")
+    client_build = payload.get("client_build")
+    if not isinstance(source_revision, str) or not source_revision.strip():
+        raise NativeP2ProbeError("NATIVE_DRUID_TALENT_LAYOUT_SOURCE_REVISION_MISSING")
+    if not isinstance(client_build, str) or not client_build.strip():
+        raise NativeP2ProbeError("NATIVE_DRUID_TALENT_LAYOUT_CLIENT_BUILD_MISSING")
+    trees = payload.get("trees")
+    if not isinstance(trees, list) or len(trees) != len(_TREE_ARRAYS):
+        raise NativeP2ProbeError("NATIVE_DRUID_TALENT_LAYOUT_TREE_COUNT_INVALID")
+
+    layout: dict[str, list[dict[str, object]]] = {}
+    all_fields: set[str] = set()
+    for tree_index, (tree_key, _array_name) in enumerate(_TREE_ARRAYS):
+        tree = trees[tree_index]
+        if not isinstance(tree, dict):
+            raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_TREE_INVALID:{tree_index}")
+        if tree.get("tree_index") != tree_index or tree.get("tree_key") != tree_key:
+            raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_TREE_ORDER_INVALID:{tree_index}")
+        entries = tree.get("talents")
+        if not isinstance(entries, list) or not entries:
+            raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_TREE_EMPTY:{tree_key}")
+        parsed: list[dict[str, object]] = []
+        for position, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_ENTRY_INVALID:{tree_key}:{position}")
+            field = entry.get("field")
+            name = entry.get("name")
+            max_ranks = entry.get("max_ranks")
+            in_proto = entry.get("in_proto")
+            if type(entry.get("position")) is not int or entry.get("position") != position:
+                raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_POSITION_INVALID:{tree_key}:{position}")
+            if not isinstance(field, str) or not field.strip():
+                raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_FIELD_MISSING:{tree_key}:{position}")
+            if not isinstance(name, str) or not name.strip():
+                raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_NAME_MISSING:{tree_key}:{position}")
+            if type(max_ranks) is not int:
+                raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_MAX_RANKS_TYPE_INVALID:{field}")
+            if type(in_proto) is not bool:
+                raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_PROTO_FLAG_INVALID:{field}")
+            if field in all_fields:
+                raise NativeP2ProbeError(f"NATIVE_DRUID_DUPLICATE_TALENT_FIELD:{field}")
+            all_fields.add(field)
+            parsed.append({
+                "position": position,
+                "field": field,
+                "name": name,
+                "max_ranks": max_ranks,
+                "in_proto": in_proto,
+            })
+        layout[tree_key] = parsed
+    return layout, {
+        "source_revision": source_revision,
+        "client_build": client_build,
+    }
+
+
+def load_native_druid_layout(
+    engine_root: str | Path,
+    *,
+    binary: str | Path | None = None,
+    timeout_seconds: float = 10.0,
+) -> tuple[dict[str, list[dict[str, object]]], dict[str, str | None]]:
+    """Prefer the selected binary's typed layout API; source parsing is legacy-only.
+
+    The compatibility fallback is used only when the selected binary predates
+    the read-only CLI command. It never decides rank legality; native prepare
+    still receives and classifies every representable candidate.
+    """
+    root = Path(engine_root).resolve()
+    if binary is None:
+        return parse_native_druid_layout(root), {
+            "source": "selected_rust_source_compatibility",
+            "source_revision": None,
+            "client_build": None,
+        }
+    binary_path = Path(binary).resolve()
+    if not binary_path.is_file():
+        return parse_native_druid_layout(root), {
+            "source": "selected_rust_source_compatibility",
+            "source_revision": None,
+            "client_build": None,
+        }
+    try:
+        completed = subprocess.run(
+            [str(binary_path), "talent-layout", "--class", "druid"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise NativeP2ProbeError("NATIVE_DRUID_TALENT_LAYOUT_CLI_TIMEOUT") from exc
+    except OSError as exc:
+        raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_LAYOUT_CLI_EXEC_FAILED:{exc}") from exc
+    if completed.returncode != 0:
+        output = f"{completed.stdout or ''}\n{completed.stderr or ''}"
+        if _NATIVE_LAYOUT_COMMAND_MISSING in output:
+            return parse_native_druid_layout(root), {
+                "source": "selected_rust_source_compatibility",
+                "source_revision": None,
+                "client_build": None,
+            }
+        raise NativeP2ProbeError(
+            f"NATIVE_DRUID_TALENT_LAYOUT_CLI_FAILED:{completed.returncode}:{output[-500:]}"
+        )
+    payload = _json_object(completed.stdout or "")
+    if payload is None:
+        raise NativeP2ProbeError("NATIVE_DRUID_TALENT_LAYOUT_CLI_INVALID_JSON")
+    layout, metadata = _native_layout_payload(payload)
+    metadata["source"] = "native_cli"
+    return layout, metadata
 
 
 def prepare_native_request(
@@ -307,7 +441,8 @@ def _compact_prepare_receipt(result: dict) -> dict[str, object]:
     keys = (
         "status", "stage", "reason", "engine_identity", "request_sha256",
         "prepared_sha256", "elapsed_seconds", "refusal", "returncode",
-        "stdout_tail", "stderr_tail",
+        "stdout_tail", "stderr_tail", "talent_layout_source",
+        "talent_layout_source_revision", "talent_layout_client_build",
     )
     return {key: result[key] for key in keys if key in result}
 
@@ -363,8 +498,18 @@ def run_native_prepare_pair(
                 "accepted_for_p2": False}
     base_request = json.loads(request_path.read_text(encoding="utf-8"))
     _druid_player(base_request)
-    before_string = encode_native_druid_talents(before_selection, root)
-    after_string = encode_native_druid_talents(after_selection, root)
+    layout, layout_metadata = load_native_druid_layout(root, binary=binary_path)
+    layout_receipt = {
+        "talent_layout_source": layout_metadata.get("source"),
+        "talent_layout_source_revision": layout_metadata.get("source_revision"),
+        "talent_layout_client_build": layout_metadata.get("client_build"),
+    }
+    before_string = encode_native_druid_talents(
+        before_selection, root, layout=layout
+    )
+    after_string = encode_native_druid_talents(
+        after_selection, root, layout=layout
+    )
     if before_string == after_string:
         raise NativeP2ProbeError("NATIVE_P2_TALENT_STRINGS_IDENTICAL")
 
@@ -389,6 +534,8 @@ def run_native_prepare_pair(
         scenario=f"native-p2-{scenario}-{target_talent_id}-{target_rank}-candidate",
         deadline=deadline,
     )
+    before.update(layout_receipt)
+    after.update(layout_receipt)
     if before.get("status") != "PREPARED" or after.get("status") != "PREPARED":
         # Native refusals are authoritative: never turn an INVALID talent
         # request or UNSUPPORTED mechanic into a generic missing-evidence
@@ -457,6 +604,7 @@ def run_native_prepare_pair(
         "source_layout_sha256": hashlib.sha256(
             (root / "src" / "classes" / "druid" / "prepare.rs").read_bytes()
         ).hexdigest(),
+        **layout_receipt,
         "accepted_for_p2": False,
     }
 
