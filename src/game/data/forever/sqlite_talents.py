@@ -19,8 +19,7 @@ from src.game.data.forever.talent_modifiers import normalize_talent_definition
 from src.rulesets.forever.data.schema import TalentRecord
 
 
-DEFAULT_DB = Path(__file__).resolve().parents[4] / 'data/forever/catalogue/forever_abilities.sqlite'
-from .source_db_scope import active_ability_db
+from .source_db_scope import DEFAULT_DB, active_ability_db
 
 
 def _slug(value: str) -> str:

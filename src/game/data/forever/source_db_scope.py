@@ -12,6 +12,10 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
 
+# Transitional source snapshot path, shared without importing the legacy
+# GameIR/talent compiler. Native MythicSim remains the target game authority.
+DEFAULT_DB = Path(__file__).resolve().parents[4] / 'data/forever/catalogue/forever_abilities.sqlite'
+
 _active_ability_source: ContextVar[Path | None] = ContextVar(
     "forever_ability_source_sqlite", default=None
 )
