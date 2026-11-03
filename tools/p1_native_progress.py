@@ -35,25 +35,23 @@ def _positive_ids(rows, *, field="spell_id"):
     return seen
 
 
-def milestone_progress(verified: int, total: int, *, unknown: int = 0) -> dict:
+def milestone_progress(verified: int, total: int) -> dict:
     """Generic diagnostic partial-credit series, never an acceptance decision.
 
-    Unknown source eligibility is included conservatively in the denominator
-    rather than silently shrinking the scope. No invented integer denominator
-    is inferred when the real total is unknown.
+    The denominator is the supplied candidate scope; it is not a legal-spell
+    verdict or a formal P1 acceptance denominator.
     """
-    if any(type(x) is not int or x < 0 for x in (verified, total, unknown)):
+    if any(type(x) is not int or x < 0 for x in (verified, total)):
         raise ValueError("INVALID_PROGRESS_COUNTS")
     if verified > total:
         raise ValueError("MORE_SUCCESSES_THAN_SCOPED_ITEMS")
-    denominator = total + unknown
+    denominator = total
     ratio = verified / denominator if denominator else 0.
     reached = [x for x in THRESHOLDS if denominator > 0
                and 100 * verified >= x * denominator]
     return {
         "verified": verified,
         "scope_count": total,
-        "source_unknown_count": unknown,
         "conservative_denominator": denominator,
         "effect_coverage_fraction": ratio if denominator else None,
         "milestones_reached": reached,
@@ -67,9 +65,9 @@ def milestone_progress(verified: int, total: int, *, unknown: int = 0) -> dict:
 def native_p1_progress(scope: dict, runtime_results=()) -> dict:
     """Summarize only source-scoped direct native tests, not gsim/APL proxies.
 
-    `scope` comes from p1_native_source_inventory.inventory and records
-    unverified acquisition. `runtime_results` are in-memory, not a historical
-    JSON status ledger. This helper DOES NOT validate source legality itself.
+    `scope` comes from p1_native_source_inventory.inventory and is only a
+    diagnostic candidate scope. `runtime_results` are in-memory, not a
+    historical JSON status ledger. MythicSim owns spell/rank validity.
     A native APL/DPS delta cannot be promoted to a direct per-spell effect.
     """
     if scope.get("source_only") is not True or scope.get("game_ir_required") is not False:
@@ -80,12 +78,8 @@ def native_p1_progress(scope: dict, runtime_results=()) -> dict:
         raise ValueError("P1_CANDIDATES_OVERLAP_SEPARATE")
     waived = {int(row["spell_id"]) for row in scope["separate"]
               if row["status"] == "NOT_RELEVANT_TO_SIMULATION"}
-    unresolved = {int(row["spell_id"]) for row in scope["separate"]
-                  if row["status"] == "ACQUISITION_UNRESOLVED"}
     native_channels = {int(row["spell_id"]) for row in scope["separate"]
                        if row["status"] in ("NATIVE_AUTO_ATTACK", "PET_ACTION")}
-    if waived & unresolved:
-        raise ValueError("P1_APPLICABILITY_OVERLAPS_UNKNOWN")
     relevant = candidates | native_channels
     known = candidates | separate
     counted = set()
@@ -115,10 +109,9 @@ def native_p1_progress(scope: dict, runtime_results=()) -> dict:
             # In particular this includes native APL removal and gsim-only
             # observables, which never count as native P1 progress.
             diagnostic_only.add(sid)
-    # ALL source-index candidates are still potential until independently
-    # checked for actual learning. This is a conservative *diagnostic* scope,
-    # NOT a certified legal denominator.
-    result = milestone_progress(len(counted), len(relevant), unknown=len(unresolved))
+    # Candidate IDs are diagnostic inputs only. MythicSim native
+    # prepare/validation is the authority for spell/rank validity.
+    result = milestone_progress(len(counted), len(relevant))
     result.update({
         "kind": "P1_NATIVE_REAL_BEHAVIOR_PROGRESS_ONLY",
         "class": scope["class"],
@@ -129,14 +122,9 @@ def native_p1_progress(scope: dict, runtime_results=()) -> dict:
         "not_relevant_spell_ids": sorted(waived),
         "not_relevant_count": len(waived),
         "source_candidate_count": len(candidates),
-        "source_acquisition_unverified_count": sum(
-            row.get("status") == "POTENTIALLY_AVAILABLE_AT_LEVEL_NOT_PROVEN_LEARNED"
-            for row in scope["candidates"]),
         "native_auto_or_pet_count": len(native_channels),
-        "source_legality_confirmed": False,
-        "other_channel_spell_ids": sorted(
-            separate - waived - unresolved - native_channels),
-        "note": "Raw spell-index candidates are not confirmed acquired/learned. "
+        "other_channel_spell_ids": sorted(separate - waived - native_channels),
+        "note": "Candidate scope is diagnostic only; MythicSim owns spell/rank validity. "
                 "Only direct measured native effect outcomes may earn diagnostic ticks.",
     })
     return result
