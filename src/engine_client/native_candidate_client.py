@@ -115,8 +115,8 @@ def prepare_native_request(
                 details = details if isinstance(details, dict) else {}
                 code = details.get("code")
                 status = (
-                    # The Druid Rust preparation emits "talents" for
-                    # invalid layout/rank input, not unsupported mechanics.
+                    # The native prepare contract distinguishes invalid
+                    # request/talent payloads from explicit unsupported coverage.
                     "INVALID" if code in {"request", "talents"}
                     else "ERROR" if code == "prepare_fault"
                     else "UNSUPPORTED"
@@ -152,7 +152,8 @@ def prepare_native_request(
                     "elapsed_seconds": elapsed}
         if (not isinstance(prepared, dict)
                 or prepared.get("schema_version") != 2
-                or prepared.get("contract") != "forever-prepared"):
+                or prepared.get("contract") != "forever-prepared"
+                or prepared.get("scenario_id") != scenario):
             return {"status": "ERROR", "stage": "prepare",
                     "reason": "NATIVE_PREPARE_OUTPUT_CONTRACT_MISMATCH",
                     "elapsed_seconds": elapsed}
