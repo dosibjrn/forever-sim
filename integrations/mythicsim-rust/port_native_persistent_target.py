@@ -176,8 +176,8 @@ def port_fight(source: str) -> str:
     )
     source = replace_once(
         source,
-        "    /// Go \`Simulation.reset\` and \`Environment.reset\`.\n",
-        FIGHT_METHOD + "    /// Go \`Simulation.reset\` and \`Environment.reset\`.\n",
+        "    /// Go `Simulation.reset` and `Environment.reset`.\n",
+        FIGHT_METHOD + "    /// Go `Simulation.reset` and `Environment.reset`.\n",
         "    pub(crate) fn begin_next_target(&mut self",
     )
     source = replace_once(
