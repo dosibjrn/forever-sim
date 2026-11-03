@@ -89,7 +89,7 @@ def _run(binary: Path, req: dict, *, timeout_s: float) -> dict:
         output_path = Path(directory) / "result.json"
         request_path.write_text(json.dumps(req, sort_keys=True, allow_nan=False))
         cp = subprocess.run([str(binary), "sim", "--request", str(request_path),
-                             "--outfile", str(output_path), "--gate"],
+                             "--outfile", str(output_path), "--gate", "--rng-mode", "stochastic"],
                             capture_output=True, text=True, timeout=timeout_s)
         if cp.returncode == 5:
             # Rust prepare_request prints the structured refusal to stdout and

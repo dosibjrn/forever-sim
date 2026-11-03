@@ -5,7 +5,7 @@ This is a native-Rust talent discovery diagnostic. It does not itself establish
 live gsim 2D ↔ Rust causality or certify a PROCESS P7.3 gate.
 """
 from __future__ import annotations
-import argparse, copy, hashlib, json, math, os, random, subprocess, sys, tempfile, time
+import argparse, copy, hashlib, json, math, random, subprocess, sys, tempfile, time
 from pathlib import Path
 from talent_schema_druid import TREES,LOOKUP,parse,encode,points,legal_add,validate
 
@@ -93,11 +93,10 @@ def run(binary,req,iterations,seed,rng_mode,deadline):
     with tempfile.TemporaryDirectory() as d:
         inp=Path(d)/'req.json'; out=Path(d)/'out.json'
         inp.write_text(json.dumps(payload,separators=(',',':')))
-        env=dict(os.environ,WOWSIM_RNG_MODE=rng_mode)
         st=time.monotonic()
-        res=subprocess.run([str(binary),'sim','--request',str(inp),'--outfile',str(out),'--gate'],
+        res=subprocess.run([str(binary),'sim','--request',str(inp),'--outfile',str(out),'--gate','--rng-mode',rng_mode],
                            stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,
-                           env=env,timeout=max(0.001,deadline-time.monotonic()))
+                           timeout=max(0.001,deadline-time.monotonic()))
         if res.returncode!=0 or not out.exists():
             raise RuntimeError('native Rust failed: '+res.stderr[-1400:])
         output=json.loads(out.read_text())
@@ -112,8 +111,8 @@ def main():
     pa.add_argument('--screen-iterations',type=int,default=100)
     pa.add_argument('--holdout-iterations',type=int,default=4000)
     pa.add_argument('--seed',type=int,default=647003)
-    pa.add_argument('--rng-mode',choices=('stochastic','balanced'),default='balanced',
-                    help='Balanced search (default) requires verified patched Rust; stochastic is an explicit fallback')
+    pa.add_argument('--rng-mode',choices=('balanced',),required=True,
+                    help='Candidate screening and reranking are always balanced; stochastic is reserved for the frozen holdout')
     a=pa.parse_args()
     if a.seconds<=0 or a.screen_iterations<=0 or a.holdout_iterations<1000:pa.error('Invalid budgets')
     a.outdir.mkdir(parents=True,exist_ok=True)
@@ -132,7 +131,7 @@ def main():
     screening_end=deadline-rerank_reserve
     search_seed=int(reference['simOptions']['randomSeed'])
     if a.rng_mode == 'balanced':
-        # A stock engine ignores WOWSIM_RNG_MODE. Refuse silently stochastic searches.
+        # Prove the selected native binary honors the explicit balanced CLI mode.
         probe_end=min(deadline,time.monotonic()+max(0.2,min(20.,a.seconds*0.1)))
         scores=[]
         for seed in (search_seed,search_seed+777):
@@ -196,7 +195,7 @@ def main():
         requested=copy.deepcopy(reference)
         player(requested)['talentsString']=candidate['talents']
         try:
-            score,_,duration,request_hash=run(a.binary,requested,10000,rerank_seed,'stochastic',rerank_end)
+            score,_,duration,request_hash=run(a.binary,requested,10000,rerank_seed,'balanced',rerank_end)
         except (TimeoutError,subprocess.TimeoutExpired):break
         reranked.append({'talents':candidate['talents'],'screen_dps':candidate['dps'],
                          'rerank_dps':score,'rerank_seed':rerank_seed,

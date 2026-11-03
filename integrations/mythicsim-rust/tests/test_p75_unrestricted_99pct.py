@@ -166,10 +166,10 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
                  "rotation":{"priorityList":[{"action":"cast","spellId":42}]},
              }]}]}}
         expected=copy.deepcopy(req)
-        record=paid_candidate_record("cat",req,812.5,"stochastic_fallback",0.3)
+        record=paid_candidate_record("cat",req,812.5,"balanced",0.3)
         self.assertEqual(record["candidate_request"],expected)
         self.assertEqual(record["key"],key("cat",expected))
-        self.assertEqual(record["screen_mode"],"stochastic_fallback")
+        self.assertEqual(record["screen_mode"],"balanced")
         self.assertEqual(json.loads(json.dumps(record))["candidate_request"],expected)
         req["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]=999
         self.assertEqual(record["candidate_request"],expected,
@@ -177,29 +177,29 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         src=inspect.getsource(main)
         self.assertIn("record=paid_candidate_record(spec,q,dps,screen_mode,elapsed)",src)
         self.assertIn('"candidate_request":copy.deepcopy(q)',src)
-        for field in ("search_rng_seed","screen_rng_seed","stochastic_probe_seed",
+        for field in ("search_rng_seed","screen_rng_seed","balanced_probe_seed",
                       "rerank_seed","holdout_seed","screen_iterations",
-                      "stochastic_probe_iterations","rerank_iterations"):
+                      "balanced_probe_iterations","rerank_iterations"):
             self.assertIn('"'+field+'":',src)
 
-    def test_paid_screen_survives_failed_stochastic_probe(self):
+    def test_paid_screen_survives_failed_balanced_probe(self):
         # Every completed native screen evaluation is paid evidence even if
-        # its optional follow-up stochastic probe throws or times out.
+        # its optional follow-up balanced probe throws or times out.
         # The ledger append must precede that probe (not be skipped by the
         # enclosing exception handler). This is a fail-closed wiring check
         # on the actual production entry point, not a helper-only test.
         src=inspect.getsource(main)
         screen=src.index("record=paid_candidate_record(spec,q,dps,screen_mode,elapsed)")
         append=src.index("paid.append(record)")
-        probe=src.index('run(a.binary,q,140,seed+554433,"stochastic",end_screen)')
+        probe=src.index('run(a.binary,q,140,seed+554433,"balanced",end_screen)')
         self.assertLess(screen,append)
         self.assertLess(append,probe,
-                        "A failed paid stochastic probe must not erase a completed screen result")
+                        "A failed paid balanced probe must not erase a completed screen result")
         self.assertEqual(src.count("paid.append(record)"),1)
 
     def test_paid_evidence_is_persisted_before_holdout(self):
         # A failed/expired holdout must not erase hundreds of paid screen
-        # evaluations and stochastic finalist reranks from the artifact.
+        # evaluations and balanced finalist reranks from the artifact.
         import json
         import tempfile
         from p75_unrestricted_search import persist_paid_search_evidence
@@ -231,7 +231,7 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         self.assertIn('"HOLDOUT_COMPLETE"',src)
 
     def test_paid_rerank_ledger_replays_all_finalist_evaluations(self):
-        # The previous paid.json only recorded screen/probe DPS; stochastic
+        # The previous paid.json only recorded screen/probe DPS; balanced
         # finalist rerank scores that actually selected the winner vanished.
         # A rerank is another paid native evaluation, not free metadata.
         import copy
@@ -248,7 +248,7 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         self.assertEqual(record["candidate_request"],expected)
         self.assertEqual(record["key"],key("cat",expected))
         self.assertEqual(record["rerank_dps"],812.75)
-        self.assertEqual(record["rng_mode"],"stochastic")
+        self.assertEqual(record["rng_mode"],"balanced")
         self.assertEqual(record["seed"],105123)
         self.assertEqual(record["iterations"],1800)
         self.assertEqual(json.loads(json.dumps(record))["candidate_request"],expected)
@@ -258,6 +258,16 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         self.assertIn("rerank_paid.append(paid_rerank_record(",src)
         self.assertIn('("rerank.json",rerank_paid)',src)
         self.assertIn('"rerank_paid_records":len(rerank_paid)',src)
+
+
+    def test_all_unrestricted_candidate_selection_stays_balanced(self):
+        src=inspect.getsource(main)
+        self.assertIn('run(a.binary,q,a.screen_iterations,seed,"balanced",end_screen)',src)
+        self.assertIn('run(a.binary,q,140,seed+554433,"balanced",end_screen)',src)
+        self.assertIn('run(a.binary,q,1800,seed+100005,"balanced",end_rerank)',src)
+        self.assertIn('run(a.binary,winner,a.holdout_iterations,a.seed+1300000007,"stochastic",deadline)',src)
+        self.assertNotIn('stochastic_fallback',src)
+        self.assertNotIn('balanced_crit_stochastic_fallbacks',src)
 
     def test_gear_swaps_do_not_carry_old_item_enchants(self):
         # A legal new item may not accept the enchant from the old item.
@@ -420,7 +430,12 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         cat={"winner_dps":820.0,"winner_spec":"cat","searched_specs":["cat"],
              "elapsed_s":270.0,"holdout_iterations":4000,"paid_per_spec":{"cat":1},
              "feral_saved_reference_dps":811.0237260012982}
-        free=dict(cat,winner_dps=830.0,searched_specs=["cat","balance","bear","resto"],\n                  paid_per_spec={"cat":1,"balance":1,"bear":1,"resto":1})
+        free = dict(
+            cat,
+            winner_dps=830.0,
+            searched_specs=["cat", "balance", "bear", "resto"],
+            paid_per_spec={"cat": 1, "balance": 1, "bear": 1, "resto": 1},
+        )
         for field in ("feral_saved_reference_sha256","reference_encounter_sha256",
                       "catalogue_sha256","pinned_rust_items_sha256",
                       "pinned_rust_enchants_sha256","engine_binary_sha256",
@@ -449,7 +464,10 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             tmp=Path(d)
             self.assertEqual(execute(tmp).returncode,0,"Matching native reports should compare successfully")
-            free["paid_per_spec"]["resto"]=0\n            self.assertNotEqual(execute(tmp).returncode,0,"Must reject advertised but unscored Resto")\n            free["paid_per_spec"]["resto"]=1\n            p=winners["unrestricted"]["raid"]["parties"][0]["players"][0]
+            free["paid_per_spec"]["resto"]=0
+            self.assertNotEqual(execute(tmp).returncode,0,"Must reject advertised but unscored Resto")
+            free["paid_per_spec"]["resto"]=1
+            p=winners["unrestricted"]["raid"]["parties"][0]["players"][0]
             p["buffs"]["mark"]=False
             self.assertNotEqual(execute(tmp).returncode,0,"Must reject changed player buffs")
             p["buffs"]["mark"]=True

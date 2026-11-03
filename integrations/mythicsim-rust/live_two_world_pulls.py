@@ -378,10 +378,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     native_moving_ticks = 0
     native_moving_receipts = 0
     native_report = None
-    env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1", WOWSIM_RNG_MODE="stochastic")
+    env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1")
     proc = subprocess.Popen(
         [str(binary.resolve()), "native-world-pulls", "--infile",
-         str(prepared.resolve()), "--targets", str(target_count)],
+         str(prepared.resolve()), "--targets", str(target_count),
+         "--rng-mode", "stochastic"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )

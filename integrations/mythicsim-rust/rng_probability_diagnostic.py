@@ -92,12 +92,12 @@ def replay_failed_gear_requests(gear_dir: Path, outdir: Path, binary,
                 output_file = tmpdir / "native_output.json"
                 request_file.write_text(json.dumps(payload, separators=(",", ":")))
                 cmd = [str(binary), "sim", "--request", str(request_file),
-                       "--outfile", str(output_file), "--gate"]
+                       "--outfile", str(output_file), "--gate", "--rng-mode", "balanced"]
                 try:
                     completed = native_runner(
                         cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
                         text=True, timeout=20.0,
-                        env=dict(os.environ, WOWSIM_RNG_MODE="balanced", RUST_BACKTRACE="0"))
+                        env={k: v for k, v in os.environ.items() if k != "WOWSIM_RNG_MODE"} | {"RUST_BACKTRACE": "0"})
                     stderr = completed.stderr or ""
                     exit_code = completed.returncode
                 except subprocess.TimeoutExpired as exc:
