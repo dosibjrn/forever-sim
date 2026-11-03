@@ -632,3 +632,36 @@ def test_paid_p75_gear_crossover_uses_fourth_multi_slot_paid_donor():
     assert validated == [([71, 72], [801, 802])]
     assert parent == before_parent
     assert meaningful == before_donor
+
+
+def test_p75_native_control_nonzero_exit_preserves_actionable_binary_diagnostic(
+        monkeypatch, tmp_path):
+    """Regression: the real source-control subprocess failed with blank stderr.
+
+    This tests failure reporting, not source legality or a gate PASS.
+    """
+    import importlib.util
+    import subprocess
+    import pytest
+
+    script = (Path(__file__).resolve().parents[2]
+              / "integrations/mythicsim-rust/live_world_probe.py")
+    spec = importlib.util.spec_from_file_location("native_control_failure_probe", script)
+    probe = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(probe)
+
+    request = tmp_path / "paid-source-candidate.json"
+    request.write_text(json.dumps({"simOptions": {"iterations": 1}}))
+
+    def rejected_source(command, **kwargs):
+        assert command[1] == "sim"
+        assert kwargs["env"]["WOWSIM_RNG_MODE"] == "balanced"
+        return subprocess.CompletedProcess(
+            command, -9, stdout="native candidate crashed at source prepare", stderr="")
+
+    monkeypatch.setattr(probe.subprocess, "run", rejected_source)
+    with pytest.raises(RuntimeError, match="NATIVE_SOURCE_CONTROL_FAILED exit=-9") as err:
+        probe.native_source_control(
+            tmp_path / "selected-rust", request, 3, rng_mode="balanced")
+    assert "request_sha256=" in str(err.value)
+    assert "native candidate crashed at source prepare" in str(err.value)
