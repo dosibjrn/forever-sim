@@ -7,7 +7,8 @@ limits stay with the result; a bounded diagnostic is never a certified optimum.
 from __future__ import annotations
 
 from src.game.talents import available_talent_points, talented_bonus_for_level
-from src.game.talent_frontier import Neighbor, source_legal_talent_neighbors
+from src.optimization.talent_frontier import Neighbor
+from src.game.talent_frontier import source_legal_talent_neighbors
 from collections import defaultdict, deque
 from itertools import chain
 from dataclasses import replace

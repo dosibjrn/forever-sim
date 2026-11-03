@@ -8,7 +8,8 @@ This is a stage of the existing joint optimizer, not a second combat engine.
 from __future__ import annotations
 from time import process_time_ns
 from math import isfinite
-from src.game.talent_frontier import source_legal_talent_neighbors, allocation_key
+from src.game.talent_frontier import source_legal_talent_neighbors
+from src.optimization.talent_frontier import allocation_key
 from src.game.talents import apply_talent_selection
 from src.game.gear import apply_gear_selection
 from src.v2.source_budgeted_gear import _fixed_opening_score
