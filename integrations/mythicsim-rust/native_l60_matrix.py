@@ -181,6 +181,21 @@ CURRENT_CLIENT_TALENT_DONOR_PRESETS = {
     "mage/frost": MAGE_ALTERNATE_CURRENT_CLIENT_TALENT_PRESETS,
 }
 
+CURRENT_CLIENT_TALENT_DONOR_SOURCE_OVERRIDES = {
+    "fixtures/mage/prepared-v2/holy-paladin-blessing-of-light-oom.request.json": {
+        "profile_id": "paladin/holy",
+        "original_talents_string": "05321013025131251-503210302",
+    },
+    "fixtures/mage/prepared-v2/holy-paladin-fused-bonus-healing.request.json": {
+        "profile_id": "paladin/holy",
+        "original_talents_string": "01021011005121251-503000301",
+    },
+    "fixtures/mage/prepared-v2/holy-paladin-healing.request.json": {
+        "profile_id": "paladin/holy",
+        "original_talents_string": "25320213225131051-50323",
+    },
+}
+
 HEAL = {"druid/restoration", "shaman/restoration", "priest/discipline", "priest/holy", "paladin/holy"}
 TANK = {"druid/feral_bear", "warrior/protection", "paladin/protection"}
 
@@ -403,6 +418,59 @@ def current_client_talent_donor_fixtures(inventory):
             })
     return donors
 
+
+
+def apply_current_client_talent_donor_source_overrides(fixtures: list[dict]) -> list[dict]:
+    """Compose stale pinned donor fixtures with the exact current-client talent preset.
+
+    Only talentsString changes. Source fixture gear, encounter and APL remain
+    untouched; the original fixture hash and exact upstream preset provenance
+    are retained in each composed donor record.
+    """
+    composed_fixtures = []
+    for fixture in fixtures:
+        spec = CURRENT_CLIENT_TALENT_DONOR_SOURCE_OVERRIDES.get(
+            fixture.get("source_path")
+        )
+        if spec is None:
+            composed_fixtures.append(fixture)
+            continue
+
+        request = fixture.get("request")
+        if not isinstance(request, dict):
+            raise ValueError(
+                f"{fixture.get('source_path')}: donor source request is missing"
+            )
+        original = player(request).get("talentsString")
+        if original != spec["original_talents_string"]:
+            raise ValueError(
+                f"{fixture['source_path']}: pinned source donor talent string "
+                f"mismatch: {original!r} != {spec['original_talents_string']!r}"
+            )
+
+        profile = spec["profile_id"]
+        effective, metadata = apply_current_client_talent_override(profile, request)
+        if metadata is None or metadata.get("status") != "APPLIED":
+            raise ValueError(
+                f"{fixture['source_path']}: current-client donor preset was not applied"
+            )
+
+        composed = copy.deepcopy(fixture)
+        composed["request"] = effective
+        composed["source_type"] = "COMPOSED_SMOKE_FIXTURE_CURRENT_CLIENT_TALENT_PRESET"
+        composed["talent_source_repository"] = metadata["source_repo"]
+        composed["talent_source_pull_request"] = metadata["source_pull_request"]
+        composed["talent_source_commit"] = metadata["source_commit"]
+        composed["talent_source_path"] = metadata["source_path"]
+        composed["talent_source_blob_sha"] = metadata["source_blob_sha"]
+        composed["talent_source_url"] = metadata["source_url"]
+        composed["talent_preset_name"] = metadata["preset_name"]
+        composed["composed_over_profile"] = profile
+        composed["original_talents_string"] = metadata["original_talents_string"]
+        composed["replacement_talents_string"] = metadata["replacement_talents_string"]
+        composed_fixtures.append(composed)
+
+    return composed_fixtures
 
 def create_inventory(registry_path, engine_src):
     # Do not parse items.jsonl or preflight item identities here. Source
