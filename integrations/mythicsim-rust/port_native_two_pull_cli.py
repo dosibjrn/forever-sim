@@ -20,7 +20,8 @@ ENGINE_TYPED_MARKER = ENGINE_MARKER.replace(
 )
 ENGINE_CALL_OLD = "crate::classes::native_two_pull_windows(prepared).map_err(PreparedError::Invalid)"
 ENGINE_TYPED_CALL = "crate::classes::native_two_pull_windows(prepared, rng_mode).map_err(PreparedError::Invalid)"
-PREPARED_ANCHOR = "/// What gating a prepared v2 input and simulating it when supported came to."
+PREPARED_ANCHOR = "/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery."
+PREPARED_INSERTION_ANCHOR = "/// What gating a prepared v2 input and simulating it when supported came to."
 
 
 
@@ -149,7 +150,10 @@ pub fn native_two_pull_windows(prepared: &PreparedV2)
 }
 
 '''
-    return replace_once(source, PREPARED_ANCHOR, code + PREPARED_ANCHOR, "prepared gateway")
+    return replace_once(
+        source, PREPARED_INSERTION_ANCHOR,
+        code + PREPARED_INSERTION_ANCHOR, "prepared gateway",
+    )
 
 def port_lib(source: str) -> str:
     marker = "    check as check_prepared, coverage as prepared_coverage, refusals as prepared_refusals,"
