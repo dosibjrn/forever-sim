@@ -17,40 +17,6 @@ def write(tmp, cl, lv, gate, **kw):
     return p
 
 
-def test_p2_ignores_forged_evidence_and_calls_provider(tmp_path,monkeypatch,capsys):
-    # A superficially perfect imported JSON report must never certify P2.
-    write(tmp_path,'druid',20,'P2',structurally_reachable_ranks=42,
-          ranks_with_executed_behavior_tests=42,ranks_with_executor_paths=42,
-          missing_executor_ranks=[],failed_behavior_ranks=[],talent_paths_legal=True,
-          ranks_represented_in_search=42,unlocked_actions_available_to_generated_search=True,
-          obsolete_semantic_verification_labels=['partial','unknown'])
-    # Explicitly instrument the live provider: the forged JSON is never a result.
-    from tools import wf_gate_p2_live
-    calls = []
-    def live(*args, **kwargs):
-        calls.append((args, kwargs))
-        return {'status': 'FAIL', 'reasons': ['LIVE_PRODUCTION_REJECTION'],
-                'pass_count': 3, 'reachability_count': 42}
-    monkeypatch.setattr(wf_gate_p2_live, 'run_live', live)
-    assert mod.main(['--class','druid','--level','20','--gate','P2',
-                     '--evidence-dir',str(tmp_path)]) == 1
-    output=json.loads(capsys.readouterr().out)
-    assert output['status']=='FAIL'
-    assert output['results'][0]['pass_count']<output['results'][0]['reachability_count']
-    assert calls and output['results'][0]['reasons'] == ['LIVE_PRODUCTION_REJECTION']
-
-
-def test_p2_live_reports_true_missing_behavior(tmp_path,capsys):
-    write(tmp_path,'druid',30,'P2',structurally_reachable_ranks=129,
-          ranks_with_executed_behavior_tests=129,ranks_with_executor_paths=129,
-          missing_executor_ranks=[],failed_behavior_ranks=[],talent_paths_legal=True)
-    assert mod.main(['--class','druid','--level','30','--gate','P2',
-                     '--evidence-dir',str(tmp_path)]) == 1
-    reasons=json.loads(capsys.readouterr().out)['results'][0]['reasons']
-    assert any('IMPLEMENTATION_MISSING' in x for x in reasons)
-    assert not any('SEMANTICS_UNVERIFIED' in x for x in reasons)
-
-
 def test_json_can_be_diagnosed_but_never_certifies_live_p4_p5_p6(tmp_path,capsys):
     common=dict(unlock_coverage_pass=True,talent_gear_apl_jointly_searched=True,
                 full_legal_builds=True,complete_100mob_replays=4,mob_count=100)
@@ -72,18 +38,25 @@ def test_json_can_be_diagnosed_but_never_certifies_live_p4_p5_p6(tmp_path,capsys
     assert result['results'][0]['reasons'][0].startswith('LIVE_GATE_RUNNER_MISSING')
 
 
-def test_all_reports_real_gate_names_and_missing_live_providers(tmp_path,monkeypatch,capsys):
+def test_all_reports_only_active_gate_names_and_missing_live_providers(tmp_path,monkeypatch,capsys):
     # Do not run expensive real source probes when testing only group dispatch.
     monkeypatch.setattr(mod,'_run_live_gate',
-        lambda root,cl,lv,sp,g,scenario: {
+        lambda root,cl,lv,sp,g: {
             'status':'BLOCKED','reasons':['LIVE_GATE_RUNNER_MISSING:'+g]})
     assert mod.main(['--class','warlock','--level','20','--gate','all',
                      '--evidence-dir',str(tmp_path)]) == 1
     data=json.loads(capsys.readouterr().out)
-    assert len(data['results'])==11
+    assert len(data['results'])==9
     assert [x['gate'] for x in data['results']]==list(mod.GATES)
     assert data['status']=='BLOCKED'
 
+
+
+def test_retired_p1_p2_gate_names_are_rejected():
+    import pytest
+    for retired in ("P1", "P2"):
+        with pytest.raises(SystemExit):
+            mod.main(["--class", "druid", "--level", "20", "--gate", retired])
 
 def test_legacy_p7_json_is_never_current_p7_acceptance(tmp_path,capsys):
     common=dict(legacy_winner_full_configuration_replayed_in_new_engine=True,
