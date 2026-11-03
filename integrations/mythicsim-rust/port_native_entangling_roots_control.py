@@ -24,11 +24,12 @@ use crate::core::fight::{Agent, Fight, Outcome, Side, SpellId};
 
 pub(crate) fn apply<A: Agent>(fight: &mut Fight<A>, spell: SpellId, target: Side) {
     let result = fight.calc_outcome(spell, target, Outcome::MagicHit);
-    let action = format!("{:?}", fight.spells[spell].id);
+    let rank_spell_id = fight.spells[spell].id.spell_id;
+    let action = format!("spell:{}", rank_spell_id);
     let target_index = target.target_position()
         .expect("Entangling Roots must target an encounter enemy") as u32;
     crate::core::fight::world_bridge::record_control_attempt(
-        fight.now, result.landed(), action, target_index, format!("{:?}", target),
+        fight.now, result.landed(), action, rank_spell_id, target_index, format!("{:?}", target),
     );
     if result.landed() {
         let dot = fight.spells[spell].dot.expect("Entangling Roots has a DoT");
@@ -120,6 +121,7 @@ WORLD_BRIDGE_PATCHES = [
         "    landed: Option<bool>,\n"
         "    expires_at_ns: Option<i64>,\n"
         "    source_action_id: String,\n"
+        "    source_rank_spell_id: i32,\n"
         "    native_target_index: u32,\n"
         "    native_target_unit_index: u32,\n"
         "    native_target_label: String,\n"
@@ -130,7 +132,8 @@ WORLD_BRIDGE_PATCHES = [
         "    pending: Vec<DamageEvent>,",
         "    pending: Vec<DamageEvent>,\n"
         "    control_event_ordinal: u64,\n"
-        "    pending_controls: Vec<ControlEvent>,",
+        "    pending_controls: Vec<ControlEvent>,\n"
+        "    root_expires_at_ns: Option<i64>,",
         "STATE",
     ),
     (
@@ -138,7 +141,7 @@ WORLD_BRIDGE_PATCHES = [
         "        pending: Vec::new(),",
         "        source_hash: source_hash.to_owned(), event_ordinal: 0,\n"
         "        pending: Vec::new(), control_event_ordinal: 0,\n"
-        "        pending_controls: Vec::new(),",
+        "        pending_controls: Vec::new(), root_expires_at_ns: None,",
         "INIT",
     ),
     (
@@ -150,7 +153,8 @@ WORLD_BRIDGE_PATCHES = [
     (
         "        bridge.event_ordinal = 0;",
         "        bridge.event_ordinal = 0;\n"
-        "        bridge.control_event_ordinal = 0;",
+        "        bridge.control_event_ordinal = 0;\n"
+        "        bridge.root_expires_at_ns = None;",
         "ITERATION_ORDINAL",
     ),
     (
@@ -162,7 +166,8 @@ WORLD_BRIDGE_PATCHES = [
         "        }\n"
         "        if !bridge.pending_controls.is_empty() {\n"
         "            return Err(\"RUST_WORLD_UNACKNOWLEDGED_CONTROLS\");\n"
-        "        }",
+        "        }\n"
+        "        bridge.root_expires_at_ns = None;",
         "NEXT_TARGET_PENDING",
     ),
     (
@@ -252,17 +257,17 @@ WORLD_BRIDGE_PATCHES = [
     ),
     (
         "            event_ordinal: 9, pending: Vec::new(),",
-        "            event_ordinal: 9, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(),",
+        "            event_ordinal: 9, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(), root_expires_at_ns: None,",
         "TEST_INIT_9",
     ),
     (
         "            event_ordinal: 3, pending: Vec::new(),",
-        "            event_ordinal: 3, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(),",
+        "            event_ordinal: 3, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(), root_expires_at_ns: None,",
         "TEST_INIT_3",
     ),
     (
         "            event_ordinal: 1, pending: Vec::new(),",
-        "            event_ordinal: 1, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(),",
+        "            event_ordinal: 1, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(), root_expires_at_ns: None,",
         "TEST_INIT_1",
     ),
     (
