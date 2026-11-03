@@ -55,6 +55,17 @@ TEST = """    #[test]
     }
 
 """
+# The typed-RNG port rewrites the test-only DruidAgent::fight constructor.
+# Keep the same early-clock proof idempotent on both pre- and post-migration pins.
+def _typed_rng_variant(source: str) -> str:
+    return source.replace(
+        "crate::classes::druid::agent::DruidAgent::fight(&prepared)",
+        "crate::classes::druid::agent::DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)",
+    )
+
+
+TEST_TYPED = _typed_rng_variant(TEST)
+
 METHOD_MARKER = "    pub(crate) fn begin_next_target(&mut self, at_ns: i64, next_end_ns: i64)"
 TEST_ANCHOR = "    fn native_persistent_next_target_retains_actor_and_native_queue()"
 
@@ -62,20 +73,23 @@ TEST_ANCHOR = "    fn native_persistent_next_target_retains_actor_and_native_que
 def _paid_recovery_descendant(source: str) -> bool:
     """Recognize the exact early-retarget + paid-recovery source composition."""
     try:
-        from port_native_persistent_target import FIGHT_TEST
+        from port_native_persistent_target import FIGHT_TEST, FIGHT_TEST_TYPED
         from port_native_paid_recovery import (
             FIGHT_CLOCK_OLD, FIGHT_CLOCK_NEW,
             FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW,
             FIGHT_CLOCK_COMMENT_NEW, FIGHT_NEXT_COMMENT_NEW,
             FIGHT_SIGNATURE_NEW, FIGHT_HELPER_MARKER, port_fight,
         )
+        typed_rng = "crate::classes::druid::agent::DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)" in source
+        test_template = TEST_TYPED if typed_rng else TEST
+        fight_test = FIGHT_TEST_TYPED if typed_rng else FIGHT_TEST
         if (HELPER.count(FIGHT_CLOCK_OLD) != 1
-                or TEST.count(FIGHT_CLOCK_TEST_OLD) != 1):
+                or test_template.count(FIGHT_CLOCK_TEST_OLD) != 1):
             return False
         paid_helper = HELPER.replace(FIGHT_CLOCK_OLD, FIGHT_CLOCK_NEW, 1)
-        paid_test = TEST.replace(FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW, 1)
+        paid_test = test_template.replace(FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW, 1)
         required = (
-            paid_helper, NEW_GUARD, paid_test, FIGHT_TEST.rstrip("\n"),
+            paid_helper, NEW_GUARD, paid_test, fight_test.rstrip("\n"),
             FIGHT_SIGNATURE_NEW, FIGHT_HELPER_MARKER, FIGHT_CLOCK_NEW.strip(),
             FIGHT_CLOCK_COMMENT_NEW.strip(), FIGHT_CLOCK_TEST_NEW,
             FIGHT_NEXT_COMMENT_NEW.strip(),
@@ -93,7 +107,8 @@ def port_source(source: str) -> str:
             raise ValueError("Rust early-target port partially applied")
         # Paid recovery deliberately transforms both HELPER and TEST. Check
         # the exact composed descendant before requiring the unmodified forms.
-        if source.count(HELPER) == 1 and source.count(TEST) == 1:
+        if (source.count(HELPER) == 1
+                and (source.count(TEST) == 1 or source.count(TEST_TYPED) == 1)):
             return source
         if _paid_recovery_descendant(source):
             return source

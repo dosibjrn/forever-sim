@@ -133,12 +133,26 @@ assert persistent_target.replace_once(
     source, method_anchor, method_new, method_marker
 ) == source
 
+# The production pin already uses explicit typed RNG in both injected tests.
+typed_source = source.replace(
+    "crate::classes::druid::agent::DruidAgent::fight(&prepared)",
+    "crate::classes::druid::agent::DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)",
+)
+assert typed_source.count("crate::core::rng::RngMode::Stochastic") == 2
+assert early_retarget.port_source(typed_source) == typed_source
+assert persistent_target.replace_once(
+    typed_source, method_anchor, method_new, method_marker
+) == typed_source
+
 test_anchor = "mod tests {\n    use super::{Mp5Path, Side, DEFENDERS, MAX_TARGETS};"
 test_new = test_anchor + "\n\n" + persistent_target.FIGHT_TEST.rstrip("\n")
 test_marker = "    fn native_persistent_next_target_retains_actor_and_native_queue()"
 assert persistent_target.replace_once(
     source, test_anchor, test_new, test_marker
 ) == source
+assert persistent_target.replace_once(
+    typed_source, test_anchor, test_new, test_marker
+) == typed_source
 
 broken = source.replace(port.FIGHT_CLOCK_TEST_NEW, "        assert!(true);", 1)
 try:
