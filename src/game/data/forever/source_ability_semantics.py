@@ -10,9 +10,6 @@ import json
 from pathlib import Path
 import re
 import sqlite3
-from src.game.model.ir import (ActionDefinition, DamageEffect, PeriodicEffect,
-    ResourceChangeEffect, ResourceCost, WeaponDamageEffect, ControlEffect, HealEffect,
-    PeriodicHealEffect, ResourceScaledPeriodicEffect)
 from src.shared.identifiers import source_slug as _slug
 from .source_db_scope import DEFAULT_DB, active_ability_db
 
@@ -100,6 +97,9 @@ class SourceActionRef:
 
     @property
     def costs(self):
+        # Only legacy policy-building consumers need the GameIR cost object.
+        # Plain source references and ingest operators must stay independent.
+        from src.game.model.ir import ResourceCost
         return (ResourceCost(resource_id=self.cost_resource, amount=self.cost_amount),)
 
 
@@ -156,6 +156,11 @@ def _source_periodic_spell_flags(conn):
 
 def source_ability_actions(ir, *,class_key:str,level:int,db_path:Path|None=None):
     """Return IR with new source actions/mode permissions and coverage ledger."""
+    # Keep transitional executable compilation separate from source-only
+    # reference lookup, strict tooltip parsing and ingestion.
+    from src.game.model.ir import (ActionDefinition, DamageEffect, PeriodicEffect,
+        ResourceChangeEffect, ResourceCost, WeaponDamageEffect, ControlEffect,
+        HealEffect, PeriodicHealEffect, ResourceScaledPeriodicEffect)
     db=Path(db_path or active_ability_db(DEFAULT_DB))
     conn=sqlite3.connect(f'file:{db}?mode=ro',uri=True)
     conn.row_factory=sqlite3.Row
