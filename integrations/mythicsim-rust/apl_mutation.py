@@ -130,9 +130,8 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
         # actions; an identical policy can still arise by chance and is legal.
         opaque = [entry for entry in source_actions
                   if "castSpell" not in entry.get("action", {})]
-        # The saved request is a source vocabulary, not an APL length prior.
-        # Keep the full native action-list budget available to cold search:
-        # a 10-action source grammar must still admit 19-action legal policies.
+        # The saved APL is a source grammar, not a policy-length ceiling.
+        # Keep the full native-supported 2..20 action space reachable from cold starts.
         length = rng.randint(2, 20)
         result = []
         for _ in range(length):
