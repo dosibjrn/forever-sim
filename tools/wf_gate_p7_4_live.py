@@ -330,9 +330,11 @@ def run_live(root: Path, class_key: str, level: int, *,
             # measured 300s call budget. Preserve 295–300s for late genuinely
             # paid screens/reranks (which remain eligible to win).
             if full_search and time.monotonic() - search_start >= 240.0:
-                next_confirmation = _next_p74_confirmation(
-                    reranked, confirmation_attempted,
-                    time.monotonic() - search_start)
+                next_confirmation = (
+                    _next_p74_confirmation(
+                        reranked, confirmation_attempted,
+                        time.monotonic() - search_start)
+                    if len(reranked) >= 3 else None)
                 if next_confirmation is not None:
                     if _paid_step_has_budget(
                             search_start, max(worst_finalist_s,
