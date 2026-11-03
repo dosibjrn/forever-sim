@@ -10,10 +10,12 @@ same policy/runtime/Evaluation stack used by production.
 """
 
 from dataclasses import dataclass
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, TYPE_CHECKING
 
-from src.game.model.ir import GameIRSlice, TalentDefinition
-from src.game.talents import validate_talent_selection
+# Candidate identity and score/result formatting are generic optimizer logic.
+# Only the legacy IR talent enumerator requires these Python game-model types.
+if TYPE_CHECKING:
+    from src.game.model.ir import GameIRSlice, TalentDefinition
 
 
 TalentEvaluator = Callable[[Mapping[str, int]], tuple[float | None, Mapping[str, Any]]]
@@ -57,7 +59,9 @@ def enumerate_legal_talent_allocations(
     if not definitions:
         return ({},), False
     candidates: list[dict[str,int]] = []
-    from src.game.talents import available_talent_points
+    # Preserve the existing legacy legality path until a native provider is
+    # migrated; do not duplicate talent point/rank rules in this client.
+    from src.game.talents import available_talent_points, validate_talent_selection
     budget=available_talent_points(level, bonus_talent_points=bonus_talent_points)
     points_per_row=int((ir_slice.provenance.get('talent_tree_rules') or {}).get('points_per_row',0))
     selection: dict[str,int] = {}
