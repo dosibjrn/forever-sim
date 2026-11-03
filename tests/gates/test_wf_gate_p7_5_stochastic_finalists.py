@@ -49,6 +49,51 @@ def test_p75_crossover_combines_two_distinct_paid_source_builds():
     assert child == original_child
 
 
+
+def test_p75_gear_block_crossover_preserves_paid_enchants_and_source_validation():
+    """Copy intact slots from another PAID build; reject illegal new loadouts."""
+    parent, donor, child = (_candidate(x) for x in ("parent", "donor", "child"))
+    items = child["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    paid_items = donor["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    paid_items[:] = [{"id": 71, "enchant": 801},
+                     {"id": 72, "enchant": 802}]
+    original_donor = copy.deepcopy(donor)
+    source = SimpleNamespace(
+        player=lambda q: q["raid"]["parties"][0]["players"][0],
+        RejectedGear=ValueError)
+
+    class Validator:
+        def __init__(self, reject=False):
+            self.calls = []
+            self.reject = reject
+        def validate(self, ids, enchants):
+            self.calls.append((ids, enchants))
+            if self.reject:
+                raise ValueError("source gear uniqueness")
+
+    valid = Validator()
+    assert gate._paid_p75_gear_block_crossover(
+        child, parent, [(771.0, {}, "paid-donor", donor, 800.0)],
+        [(900.0, "paid-parent", parent)], source, valid, random.Random(5))
+    assert items == paid_items
+    assert valid.calls == [([71, 72], [801, 802])]
+    items[0]["id"] = 999
+    assert donor == original_donor  # no mutation of existing paid parent
+
+    rejected = _candidate("illegal")
+    before = copy.deepcopy(rejected)
+    invalid = Validator(reject=True)
+    assert not gate._paid_p75_gear_block_crossover(
+        rejected, parent, [(771.0, {}, "paid-donor", donor, 800.0)],
+        [], source, invalid, random.Random(5))
+    assert rejected == before
+    assert len(invalid.calls) == 4
+    assert not gate._paid_p75_gear_block_crossover(
+        rejected, parent, [], [(900.0, "paid-parent", parent)],
+        source, valid, random.Random(5))
+    assert rejected == before
+
+
 def test_p75_paid_stochastic_parent_and_independent_cold_restarts():
     a, b = _candidate("balanced"), _candidate("stochastic")
     balanced = (900.0, {}, "sha-a", a)
@@ -316,6 +361,12 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
     monkeypatch.setattr(gate, "_paid_gear_stochastic_finalist", paid_finalist)
     monkeypatch.setattr(gate, "_source_native_world_parity",
                         lambda *args, **kwargs: None)
+    gear_block_calls = []
+    def observe_gear_block(*args):
+        gear_block_calls.append(requests[0])
+        return False
+    monkeypatch.setattr(gate, "_paid_p75_gear_block_crossover",
+                        observe_gear_block)
     monkeypatch.setattr(gate, "strongest_accepted_prior",
                         lambda *args, **kwargs: {
                             "dps": 749.5, "compatible_gates": ["P7.3"],
@@ -336,7 +387,10 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
     assert (7, ("gear", "talents")) in paid_repairs
     assert (14, ("gear", "rotation")) in paid_repairs
     assert (21, ("talents", "rotation")) in paid_repairs
-    assert (13, ("gear",)) in paid_repairs  # source-paid crossover\n    assert (11, ("gear_rebuild",)) in paid_repairs
+    assert (13, ("gear",)) in paid_repairs  # source-paid crossover
+    assert (17, ("gear",)) in paid_repairs  # paid source-validated gear block
+    assert 17 in gear_block_calls
+    assert (11, ("gear_rebuild",)) in paid_repairs
     assert (22, ("talents_rebuild",)) in paid_repairs
     # The virtual budget can finish before proposal 33; its rotation-rebuild
     # schedule is covered by the pure scheduling assertion above.
