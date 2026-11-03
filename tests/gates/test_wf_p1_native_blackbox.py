@@ -21,6 +21,31 @@ from tools.wf_p1_native_effects import native_single_action_pair, run_native
 
 
 
+def _simulate_prepared_report(monkeypatch, tmp_path, report, *, allow_zero):
+    """Exercise the actual Forever report adapter with a synthetic native CLI reply.
+
+    The fake executable only writes the supplied response envelope; it does
+    not assert or emulate MythicSim's Warcraft mechanics.
+    """
+    from src.engine_client import native_p2_rank_probe as adapter
+
+    def fake_run(argv, **kwargs):
+        output = Path(argv[argv.index("--outfile") + 1])
+        output.write_text(json.dumps(report), encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(adapter.subprocess, "run", fake_run)
+    return _simulate_prepared(
+        binary_path=tmp_path / "forever-engine",
+        prepared={"sim": {"iterations": 10, "seed": 647003}},
+        rng_mode=NativeRngMode.BALANCED,
+        iterations=10,
+        seed=647003,
+        deadline=time.monotonic() + 5,
+        allow_zero_dps_if_avg_absent=allow_zero,
+    )
+
+
 def _sample_request():
     return {
         "raid": {"parties": [{"players": [{
@@ -161,10 +186,9 @@ def test_native_prepare_refusal_is_preserved_without_fallback(monkeypatch, tmp_p
     )
     assert result["status"] == "UNSUPPORTED"
     assert result["reason"] == "native_action_not_supported"
-    assert calls == [
-        "p1-druid-l60-single-action-14282-with-action",
-        "p1-druid-l60-single-action-14282-no-action",
-    ]
+    # Native refusal of the selected action is final: do not prepare a
+    # redundant no-action control or execute either side.
+    assert calls == ["p1-druid-l60-single-action-14282-with-action"]
     assert result["p1_certified"] is False
 
 
