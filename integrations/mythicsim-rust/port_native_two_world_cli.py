@@ -62,6 +62,22 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
             if is_composed_paid_recovery_source(source):
                 return source
             raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_DESCENDANT_DRIFT")
+    # Paid recovery changes the class/prepared/CLI signatures as well as the
+    # fight method. Reapplying the original source port must recognize only
+    # the exact composed descendant, never add duplicate entry points.
+    if marker in (CLASS_MARKER, PREPARED_MARKER, CLI_MARKER):
+        from port_native_paid_recovery import port_classes, port_prepared, port_main
+        transform = {
+            CLASS_MARKER: port_classes,
+            PREPARED_MARKER: port_prepared,
+            CLI_MARKER: port_main,
+        }[marker]
+        try:
+            expected = transform(replacement)
+            if source.count(expected) == 1 and transform(source) == source:
+                return source
+        except ValueError:
+            pass
     if source.count(replacement) == 1:
         return source
     # The maintained two-world method may already have separately
