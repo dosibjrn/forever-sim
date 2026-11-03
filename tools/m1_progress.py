@@ -62,8 +62,8 @@ def _rows(path=LEDGER):
             if row["status"] == "PASS" and not row["passed_at_utc"]:
                 raise ValueError("PASS requires a real acceptance timestamp")
             if row["status"] == "PARTIAL":
-                # Retired P1/P2 rows remain parseable history. Active P3-P6 record actual
-                # coupled live DPS / required DPS (not fabricated test counts).
+                # Retired P1/P2 rows remain parseable history. Active P3-P6
+                # record executed behavior; P7 records coupled live DPS / required DPS.
                 if row["gate"].startswith("P7."):
                     n, d = float(row["verified"]), float(row["applicable"])
                     numeric_ok = math.isfinite(n) and math.isfinite(d)
