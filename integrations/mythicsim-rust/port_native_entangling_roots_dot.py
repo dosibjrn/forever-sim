@@ -115,7 +115,21 @@ AGENT_PATCHES = [
      "            }", "DOT_TICK"),
 ]
 
+CONTRACT_PATCHES = [
+    ("    InsectSwarm {\n        rank: FireballRank,\n        debuff_aura: String,\n    },\n    /// Innervate's cast",
+     "    InsectSwarm {\n        rank: FireballRank,\n        debuff_aura: String,\n    },\n    /// Source-native Forever Entangling Roots: timed periodic combat occurs in the Druid agent.\n    EntanglingRoots {},\n    /// Innervate's cast", "VARIANT"),
+    ("            Effect::InsectSwarm { .. } => \"insect_swarm\",\n            Effect::Innervate",
+     "            Effect::InsectSwarm { .. } => \"insect_swarm\",\n            Effect::EntanglingRoots {} => \"entangling_roots\",\n            Effect::Innervate", "KIND"),
+]
+
+EXPORT_PATCHES = [
+    ("        let target = env.encounter.targets[0];\n        if self.tal.insect_swarm {",
+     "        // A real, registered Forever-only native Druid spell; this typed\n        // capability authorizes the existing Rust cast/DoT handler.\n        if sim.rules == crate::prepare::sim::Rules::Forever {\n            effects.push(json!({\"kind\": \"entangling_roots\"}));\n        }\n        let target = env.encounter.targets[0];\n        if self.tal.insect_swarm {", "EXPORT"),
+]
+
 COVERAGE_PATCHES = [
+    ("    \"enrage\",\n    \"faerie_fire\",",
+     "    \"enrage\",\n    \"entangling_roots\",\n    \"faerie_fire\",", "CAPABILITY"),
     ('        "insect_swarm" if spell.dot.is_some() => Some("insect_swarm"),',
      '        "insect_swarm" if spell.dot.is_some() => Some("insect_swarm"),\n'
      '        "entangling_roots" if spell.dot.is_some() => Some("entangling_roots"),', "COVERAGE"),
@@ -206,6 +220,8 @@ def port_text(path: str, contents: str) -> str:
         "src/classes/druid/prepare/balance.rs": PREP_PATCHES,
         "src/classes/druid/agent.rs": AGENT_PATCHES,
         "src/classes/druid/prepared/coverage.rs": COVERAGE_PATCHES,
+        "src/contracts/prepared_v2.rs": CONTRACT_PATCHES,
+        "src/classes/druid/prepare/export.rs": EXPORT_PATCHES,
     }
     if path in patches:
         for old, new, label in patches[path]:
@@ -229,6 +245,8 @@ PATHS = [
     "src/classes/druid/prepare/balance.rs",
     "src/classes/druid/agent.rs",
     "src/classes/druid/prepared/coverage.rs",
+    "src/contracts/prepared_v2.rs",
+    "src/classes/druid/prepare/export.rs",
     "tests/classes/druid/prepare.rs",
 ]
 
