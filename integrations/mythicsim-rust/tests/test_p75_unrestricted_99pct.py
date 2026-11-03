@@ -191,7 +191,7 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         src=inspect.getsource(main)
         screen=src.index("record=paid_candidate_record(spec,q,dps,screen_mode,elapsed)")
         append=src.index("paid.append(record)")
-        probe=src.index('run(a.binary,q,140,seed+554433,"stochastic",end_screen)')
+        probe=src.index('run(a.binary,q,24,seed+554433,"balanced",end_screen)')
         self.assertLess(screen,append)
         self.assertLess(append,probe,
                         "A failed paid stochastic probe must not erase a completed screen result")
