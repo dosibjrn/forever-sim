@@ -112,7 +112,7 @@ def main():
     pa.add_argument('--screen-iterations',type=int,default=100)
     pa.add_argument('--holdout-iterations',type=int,default=4000)
     pa.add_argument('--seed',type=int,default=647003)
-    pa.add_argument('--rng-mode',choices=('stochastic','balanced'),default='balanced',
+    pa.add_argument('--rng-mode',choices=('balanced',),default='balanced',
                     help='Balanced search (default) requires verified patched Rust; stochastic is an explicit fallback')
     a=pa.parse_args()
     if a.seconds<=0 or a.screen_iterations<=0 or a.holdout_iterations<1000:pa.error('Invalid budgets')
