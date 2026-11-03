@@ -110,6 +110,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Hydrate canonical staged Druid source catalogue
+        run: git lfs pull --include="data/forever/staged_druid_l30_talents_70338.sqlite"
       - name: Apply port to selected production Rust source and compile
         run: |
           git clone --quiet --filter=blob:none https://github.com/dosibjrn/mythicsim-forever-engine.git /tmp/forever-selected-rust
