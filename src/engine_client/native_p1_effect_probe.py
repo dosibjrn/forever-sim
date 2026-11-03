@@ -214,6 +214,19 @@ def run_native_p1_direct_effect_probe(
             scenario=scenario + "-with-action",
             deadline=deadline,
         )
+        # A native refusal of the selected action is already conclusive.
+        # Do not run an unrelated control prepare after that refusal.
+        if positive_prepare.get("status") != "PREPARED":
+            return {
+                "status": positive_prepare.get("status", "ERROR"),
+                "stage": positive_prepare.get("stage", "prepare"),
+                "reason": positive_prepare.get(
+                    "reason", "NATIVE_P1_POSITIVE_PREPARE_NOT_READY"
+                ),
+                "positive_prepare": _compact(positive_prepare),
+                "native_executed": False, "effect_observed": False,
+                "p1_certified": False,
+            }
         control_prepare = prepare_native_request(
             binary=binary_path,
             request=control_request,
