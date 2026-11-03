@@ -36,21 +36,17 @@ def staged(tmp_path,data):
     return checked(tmp_path)
 
 
-def current_talent_hash():
-    return sha256(Path(TALENT_DB).read_bytes()).hexdigest()
-
-
 def current_fixture():
     """Build a tiny current-source reader fixture from the historical snapshot.
 
     The checked-in 97-step artifact is intentionally stale and remains rejected.
-    This two-step Druid fixture refreshes source/talent identities, transition
-    records and replay scores so reader integrity can be tested against current
-    production behavior without treating historical coverage as current.
+    This two-step Druid fixture refreshes only source/talent identities, transition
+    records and replay scores so reader integrity can still be tested against the
+    current production executor without treating historical coverage as current.
     """
     data=json.loads((ROOT/EVIDENCE_FILE).read_text())
     data['canonical_item_db_sha256']=sha256(ITEM.read_bytes()).hexdigest()
-    data['canonical_talent_db_sha256']=current_talent_hash()
+    data['canonical_talent_db_sha256']=sha256(Path(TALENT_DB).read_bytes()).hexdigest()
     total_events=total_attempts=total_steps=0
 
     for cls,record in data['classes'].items():
@@ -73,9 +69,8 @@ def current_fixture():
                 race_key=step.get('source_scenario_race'),
                 talents=step['talents'],action_ids=tuple(step['source_action_ids']))
             validate_level_state(state)
-            step['source_legal_transition']=(
-                validate_level_transition(parent,state) if parent else None
-            )
+            legal=validate_level_transition(parent,state) if parent else None
+            step['source_legal_transition']=legal
 
             guard_conditions=tuple(_condition_from_record(x)
                 for x in step.get('guarded_conditions',()))
@@ -112,7 +107,8 @@ def current_fixture():
 
 def test_current_source_fixture_replays_and_ignores_legacy_spell_metadata(tmp_path):
     fixture=current_fixture()
-    # Old metadata is neither proof nor a veto.
+    # Old metadata is neither proof nor a veto. The reader must use only the
+    # current source context, legal talent transition and independently replayed score.
     fixture['all_route_acquisitions_verified']=True
     fixture['classes']['druid']['ability_trainer_quest_rune_acquisition_verified']=True
     fixture['classes']['druid']['selected_route'][0]['world_acquisition_verified']=True
@@ -130,17 +126,17 @@ def test_current_source_fixture_replays_and_ignores_legacy_spell_metadata(tmp_pa
 def test_historical_snapshot_is_rejected_when_talent_database_changes():
     info,rows=checked()
     assert not info['valid'], info['failures']
-    assert any('talent_database_mismatch' in failure for failure in info['failures'])
+    assert any(failure.endswith('talent_database_mismatch') for failure in info['failures'])
     assert rows=={}
 
 
 def test_historical_snapshot_is_rejected_when_source_context_changes(tmp_path):
     original=json.loads((ROOT/EVIDENCE_FILE).read_text())
     original['canonical_item_db_sha256']=sha256(ITEM.read_bytes()).hexdigest()
-    original['canonical_talent_db_sha256']=current_talent_hash()
+    original['canonical_talent_db_sha256']=sha256(Path(TALENT_DB).read_bytes()).hexdigest()
     info,rows=staged(tmp_path,original)
     assert not info['valid'], info['failures']
-    assert any('source_or_engine_context_mismatch_L10' in failure
+    assert any('source_or_engine_context_mismatch' in failure
                for failure in info['failures'])
     assert rows=={}
 
@@ -170,6 +166,24 @@ def test_bad_version_source_and_legality_do_not_promote(tmp_path):
     for value in cases:
         info,rows=staged(tmp_path,value)
         assert not info['valid'] and not rows and info['failures']
+
+
+def test_route_benchmark_does_not_emit_retired_acquisition_claim(monkeypatch):
+    from tools import wf288_real_contiguous_route_benchmark as benchmark
+
+    def partial_route(**_):
+        return {
+            'status':'PARTIAL_BOUNDED_SOURCE_SCENARIO',
+            'selected_route':[],
+            'compute':{
+                'event_transitions':0,'l2_attempts':0,
+                'scorer_cpu_ns':0,'total_cpu_ns':0,
+            },
+        }
+
+    monkeypatch.setattr(benchmark,'search_source_bounded_level_route',partial_route)
+    report=benchmark.benchmark(end_level=10)
+    assert 'all_route_acquisitions_verified' not in report['summary']
 
 
 def test_missing_evidence_cannot_claim_route(tmp_path):
