@@ -205,14 +205,15 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
     (out / "gaps.json").write_text(json.dumps(gap_summary(rows), indent=2) + "\n")
     lines = ["# Native Rust L60 source-bounded JOINT " + str(stage) + "s",
              "", "Not full legal JOINT, not stochastic holdout, not PROCESS P7.",
-             "", "| Profile | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Gap |",
-             "|---|---|---:|---:|---:|---:|---:|---|"]
+             "", "| Profile | Status | Baseline balanced | Best search candidate | Selected best | Winner | Search paid | Baseline paid | 3-axis paid | Gap |",
+             "|---|---|---:|---:|---:|---|---:|---:|---:|---|"]
     for r in rows:
         def esc(value):
             return str(value if value is not None else "—").replace("|", "\\|").replace("\n", " ")
         lines.append("| " + " | ".join(map(esc, (
             r["profile_id"], r["status"], r.get("baseline_balanced_score"),
-            r.get("best_balanced_screen"), r["native_paid"], r.get("baseline_paid", 0),
+            r.get("best_search_balanced_screen"), r.get("best_balanced_screen"),
+            r.get("selected_winner_source"), r["native_paid"], r.get("baseline_paid", 0),
             r["three_axis_paid"], r.get("blocker") or r.get("promotion_blocker"),
         ))) + " |")
     (out / "matrix.md").write_text("\n".join(lines) + "\n")
