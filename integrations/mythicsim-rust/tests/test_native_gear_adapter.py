@@ -33,8 +33,8 @@ class NativeGearAdapterTests(unittest.TestCase):
         adapter = NativeGearAdapter("mage", self.fire,
             [self.fire, self.frost, self.warrior], self.items)
         self.assertEqual((0, 1), adapter.mutable_indices)
-        self.assertEqual({11}, set(adapter.pools[0]))
-        self.assertEqual({21}, set(adapter.pools[1]))
+        self.assertEqual({10, 11}, set(adapter.pools[0]))
+        self.assertEqual({20, 21}, set(adapter.pools[1]))
         self.assertNotIn(2, adapter.pools)  # baseline weapon is not an alternate; no other weapon ID is admitted
         self.assertNotIn(2, adapter.mutable_indices)  # no same-ID variant in this fixture
 
