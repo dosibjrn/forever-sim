@@ -40,13 +40,14 @@ jobs:
           python-version: '3.11'
       - name: Install existing world runtime dependency
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Compile exact selected public Rust fork
+      - name: Compile exact selected public Rust fork plus reviewed native health receipt source port
         run: |
           set -euo pipefail
           selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
           actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
           test "$selected" = "$actual"
           echo "SELECTED_RUST_SHA=$actual"
+          python integrations/mythicsim-rust/port_native_health_damage_receipts.py integrations/mythicsim-rust/engine
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
@@ -54,3 +55,9 @@ jobs:
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
             --classic-mob-level 60 --targets 2 --require-native-moving
+      - name: Real source-native incoming health damage on retained gsim 2D actor (not gate)
+        run: |
+          python integrations/mythicsim-rust/live_two_world_pulls.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/feral-bear-druid-defensives.prepared.json \
+            --mob-health 1200 --targets 2 --require-native-health-damage
