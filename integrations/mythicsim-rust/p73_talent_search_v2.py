@@ -19,13 +19,13 @@ def player(req): return req['raid']['parties'][0]['players'][0]
 
 def initial_ranks():return [[0]*len(t) for t in TREES]
 
-def random_build(rng, target=None):
-    """Source-legal random full allocation with independent tree split discovery.
+def random_build(rng, target=None, *, native_authoritative=False):
+    """Generate a full talent allocation proposal.
 
-    This macro operator samples all feasible tree budgets, then spends points
-    within each tree by source tier/cap/prerequisite rules. Existing elites may
-    bias but do not lock the sampled tree split. No saved reference allocation
-    is used for sampling, elite initialization, or scoring.
+    Standalone diagnostics retain the source-legal mode. The live P7.5
+    optimizer sets native_authoritative=True: Python shapes a bounded proposal,
+    while selected MythicSim prepare/sim alone decides whether its rank
+    combination is executable.
     """
     if target is None or rng.random() < 0.35:
         balance_target = rng.randint(31, sum(t.maximum for t in TREES[0]))
@@ -40,17 +40,22 @@ def random_build(rng, target=None):
     for ti,total in enumerate(targets):
         for count in range(total):
             if ti==0 and count==15:
-                assert legal_add(ranks,0,8)
+                if not native_authoritative:
+                    assert legal_add(ranks,0,8)
                 ranks[0][8]+=1
                 continue
             if ti==0 and count==30:
-                assert legal_add(ranks,0,15)
+                if not native_authoritative:
+                    assert legal_add(ranks,0,15)
                 ranks[0][15]+=1
                 continue
             options=[]
             for i,t in enumerate(TREES[ti]):
                 if ti==0 and i in (8,15):continue
-                if not legal_add(ranks,ti,i):continue
+                if native_authoritative:
+                    if ranks[ti][i] >= t.maximum:continue
+                elif not legal_add(ranks,ti,i):
+                    continue
                 w=0.5+rng.random()**2*2.5
                 if target is not None:
                     current=ranks[ti][i]
@@ -58,32 +63,45 @@ def random_build(rng, target=None):
                     w*= (1+10*max(0,wanted-current)) if current<wanted else 0.25
                 options.append((w,i))
             if not options:
-                raise RuntimeError('No legal allocation step for tree '+str(ti))
+                raise RuntimeError('No candidate allocation step for tree '+str(ti))
             u=rng.random()*sum(w for w,_ in options)
             for w,i in options:
                 u-=w
                 if u<=0:break
             ranks[ti][i]+=1
-    if not validate(ranks):
+    if not native_authoritative and not validate(ranks):
         raise RuntimeError('Illegal source-derived random build '+encode(ranks))
     return ranks
 
-def edit_neighbors(elite,rng):
-    """Source-legal 1-point donor→recipient moves, without reference seeding."""
+def edit_neighbors(elite,rng,*,native_authoritative=False):
+    """Propose a one-point donor→recipient move.
+
+    In native-authoritative mode this only preserves the point count and rank
+    encoding bounds. MythicSim decides prerequisites, tier gates and legality.
+    """
     for _ in range(60):
         out=[row[:] for row in elite]
-        donors=[(ti,i) for ti,t in enumerate(out) for i,n in enumerate(t) if n and (ti,i) not in ((0,8),(0,15))]
+        donors=[(ti,i) for ti,t in enumerate(out) for i,n in enumerate(t)
+                if n and (native_authoritative or (ti,i) not in ((0,8),(0,15)))]
         if not donors:break
         ti,i=rng.choice(donors)
         out[ti][i]-=1
-        options=[(tj,j) for tj,tree in enumerate(TREES) for j,_ in enumerate(tree) if legal_add(out,tj,j) and (tj,j) not in ((0,8),(0,15))]
+        options=[]
+        for tj,tree in enumerate(TREES):
+            for j,t in enumerate(tree):
+                if not native_authoritative and (tj,j) in ((0,8),(0,15)):
+                    continue
+                if native_authoritative:
+                    if out[tj][j] >= t.maximum:continue
+                elif not legal_add(out,tj,j):
+                    continue
+                options.append((tj,j))
         if not options:continue
         tj,j=rng.choice(options)
         out[tj][j]+=1
-        if validate(out) and out!=elite:return out
-    return random_build(rng,elite)
-
-
+        if out!=elite and (native_authoritative or validate(out)):
+            return out
+    return random_build(rng,elite,native_authoritative=native_authoritative)
 def main():
     pa=argparse.ArgumentParser()
     pa.add_argument('--binary',type=Path,required=True)
