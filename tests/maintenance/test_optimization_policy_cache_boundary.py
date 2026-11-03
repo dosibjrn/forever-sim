@@ -20,7 +20,10 @@ for forbidden in ("src.game", "src.game.model.ir", "src.game.runtime.simulator",
 calls = []
 
 def prepare(policy):
-    return policy["effective"], policy["pruned"], policy["key"]
+    return policy["effective"], policy["pruned"]
+
+def signature(effective):
+    return effective["key"]
 
 def paid(effective):
     calls.append(effective)
@@ -28,9 +31,9 @@ def paid(effective):
         raise RuntimeError("real evaluator refusal")
     return effective["score"], {"marker": "paid"}
 
-cache = PolicyEvaluationCacheCore(prepare=prepare, expensive_evaluate=paid)
-first = {"effective": {"score": 3.5}, "pruned": ({"rule_id": "later"},), "key": "normalized"}
-second = {"effective": {"score": 99.0}, "pruned": (), "key": "normalized"}
+cache = PolicyEvaluationCacheCore(prune=prepare, signature=signature, expensive_evaluate=paid)
+first = {"effective": {"score": 3.5, "key": "normalized"}, "pruned": ({"rule_id": "later"},), "key": "normalized"}
+second = {"effective": {"score": 99.0, "key": "normalized"}, "pruned": (), "key": "normalized"}
 
 score, detail = cache.evaluate(first)
 assert score == 3.5
@@ -54,7 +57,7 @@ assert cache.as_dict() == {
 }
 
 try:
-    cache.evaluate({"effective": {"raise": True}, "pruned": (), "key": "failed"})
+    cache.evaluate({"effective": {"raise": True, "key": "failed"}, "pruned": (), "key": "failed"})
 except RuntimeError as exc:
     assert str(exc) == "real evaluator refusal"
 else:

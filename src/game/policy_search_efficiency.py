@@ -17,6 +17,7 @@ from typing import Any, Callable, Mapping
 
 from src.game.model import ActionDefinition, PolicyCondition, PolicyDefinition, PolicyRuleDefinition
 from src.optimization.policy_search import PolicyEvaluator
+from src.optimization.policy_evaluation_cache import PolicyEvaluationCacheCore
 
 
 def _condition_value(condition: PolicyCondition, *, action: ActionDefinition) -> Any:
@@ -210,50 +211,48 @@ def executable_policy_signature(policy: PolicyDefinition, *, actions: tuple[Acti
 
 @dataclass
 class PolicyEvaluationCache:
+    """GameIR adapter for the backend-neutral paid evaluation cache.
+
+    GameIR dominance and executable signatures remain source-aware here.
+    Only cache accounting and paid-result reuse live in optimization.
+    """
     actions: tuple[ActionDefinition, ...]
     expensive_evaluate: PolicyEvaluator
-    _cache: dict[str, tuple[float | None, Mapping[str, Any]]] = field(default_factory=dict)
-    requests: int = 0
-    expensive_evaluations: int = 0
-    cache_hits: int = 0
-    dominance_pruned_requests: int = 0
-    dominance_pruned_rule_count: int = 0
+    _core: PolicyEvaluationCacheCore[PolicyDefinition] = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self._core = PolicyEvaluationCacheCore(
+            prune=lambda policy: prune_dominated_rules(policy, actions=self.actions),
+            signature=lambda policy: executable_policy_signature(policy, actions=self.actions),
+            expensive_evaluate=self.expensive_evaluate,
+        )
 
     def evaluate(self, policy: PolicyDefinition) -> tuple[float | None, Mapping[str, Any]]:
-        self.requests += 1
-        effective, pruned = prune_dominated_rules(policy, actions=self.actions)
-        if pruned:
-            self.dominance_pruned_requests += 1
-            self.dominance_pruned_rule_count += len(pruned)
-        key = executable_policy_signature(effective, actions=self.actions)
-        cached = self._cache.get(key)
-        if cached is not None:
-            self.cache_hits += 1
-            score, detail = cached
-            return score, {
-                **dict(detail),
-                "policy_cache_hit": True,
-                "dominance_pruned": bool(pruned),
-                "dominance_pruned_rules": [dict(x) for x in pruned],
-            }
-        self.expensive_evaluations += 1
-        score, detail = self.expensive_evaluate(effective)
-        stored = (score, dict(detail or {}))
-        self._cache[key] = stored
-        return score, {
-            **dict(stored[1]),
-            "policy_cache_hit": False,
-            "dominance_pruned": bool(pruned),
-            "dominance_pruned_rules": [dict(x) for x in pruned],
-        }
+        return self._core.evaluate(policy)
 
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "requests": int(self.requests),
-            "expensive_evaluations": int(self.expensive_evaluations),
-            "cache_hits": int(self.cache_hits),
-            "cache_entries": len(self._cache),
-            "dominance_pruned_requests": int(self.dominance_pruned_requests),
-            "dominance_pruned_rule_count": int(self.dominance_pruned_rule_count),
-            "expensive_evaluations_avoided": int(self.requests - self.expensive_evaluations),
-        }
+    def as_dict(self) -> dict[str, int]:
+        return self._core.as_dict()
+
+    @property
+    def _cache(self) -> dict[str, tuple[float | None, Mapping[str, Any]]]:
+        return self._core._cache
+
+    @property
+    def requests(self) -> int:
+        return self._core.requests
+
+    @property
+    def expensive_evaluations(self) -> int:
+        return self._core.expensive_evaluations
+
+    @property
+    def cache_hits(self) -> int:
+        return self._core.cache_hits
+
+    @property
+    def dominance_pruned_requests(self) -> int:
+        return self._core.dominance_pruned_requests
+
+    @property
+    def dominance_pruned_rule_count(self) -> int:
+        return self._core.dominance_pruned_rule_count
