@@ -5,6 +5,8 @@ on:
       - 'src/game/runtime/native_step_protocol.py'
       - 'src/game/runtime/go_native_world_damage_ack.py'
       - 'integrations/mythicsim-rust/live_two_world_pulls.py'
+      - 'integrations/mythicsim-rust/engine'
+      - 'tests/test_work2_native_health_damage_controls.py'
       - 'tests/test_work2_gsim_world_walk.py'
       - 'tests/test_work2_native_world_clock_ack.py'
       - 'tests/integration/backend/test_wf_go_native_world_damage_ack.py'
@@ -25,7 +27,7 @@ jobs:
       - name: Install bounded test dependency
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Verify native clock and real gsim world lethal ACK (not gate)
-        run: python -m pytest -q tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/integration/backend/test_wf_go_native_world_damage_ack.py
+        run: python -m pytest -q tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/test_work2_native_health_damage_controls.py tests/integration/backend/test_wf_go_native_world_damage_ack.py
 
   source-health-world:
     # One bounded real selected-Rust ↔ gsim 2D source-HP smoke; not P4–P6.
@@ -40,21 +42,25 @@ jobs:
           python-version: '3.11'
       - name: Install existing world runtime dependency
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Compile exact selected public Rust fork plus reviewed native health receipt source port
+      - name: Compile the exact selected public Rust fork without runtime source modifications
         run: |
           set -euo pipefail
           selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
           actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
           test "$selected" = "$actual"
           echo "SELECTED_RUST_SHA=$actual"
-          python integrations/mythicsim-rust/port_native_health_damage_receipts.py integrations/mythicsim-rust/engine
+          # Fail closed if this actual selected revision lacks native event
+          # accounting. Do NOT stage a Python source patch over the pin:
+          # that would test code different from the selected production SHA.
+          grep -Fq '"native_health_damage_taken"' integrations/mythicsim-rust/engine/src/core/fight.rs
+          grep -Fq '"native_health_damage_events"' integrations/mythicsim-rust/engine/src/core/fight.rs
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
-            --classic-mob-level 60 --targets 2 --require-native-moving
+            --classic-mob-level 60 --targets 2 --require-native-moving --require-native-zero-health-damage
       - name: Real source-native incoming health damage on retained gsim 2D actor (not gate)
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
