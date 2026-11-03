@@ -263,10 +263,12 @@ def scoreboard(path=LEDGER):
                      for group in complete)
     accepted = sum(r["status"] == "PASS" for r in rows.values())
     fractional = sum(x["coverage"] for x in partials)
+    measured_fraction = (accepted + fractional) / TOTAL
     return {"passed_gates": accepted, "total_gates": TOTAL,
             "gate_percent": 100 * accepted / TOTAL,
             "measured_gate_equivalents": accepted + fractional,
-            "measured_percent": 100 * (accepted + fractional) / TOTAL,
+            "measured_fraction": measured_fraction,
+            "measured_percent": 100 * measured_fraction,
             "partial_gates": sorted(partials, key=lambda x:
                                     (x["class"], x["level"], x["spec"], x["gate"])),
             "complete_candidates": len(complete),
@@ -407,6 +409,8 @@ def main(argv=None):
     if args.plot_svg:
         render_history_svg(args.plot_svg, args.ledger)
     result = scoreboard(args.ledger)
+    print(f"M1 measured progress: {result['measured_percent']:.4f}% "
+          f"(float={result['measured_fraction']:.10f}; diagnostic, NOT PASS)")
     print(f"M1: {result['passed_gates']}/{TOTAL} accepted gate runs "
           f"({result['gate_percent']:.2f}%)")
     print(f"Best-observed fractional gate coverage (NOT PASS): "
