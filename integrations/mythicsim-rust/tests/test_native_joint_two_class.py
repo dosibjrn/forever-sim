@@ -38,6 +38,55 @@ def request():
     }
 
 
+class SourceCastPayloadPreservation(unittest.TestCase):
+    def test_cold_and_insert_casts_keep_source_healing_targets(self):
+        # Candidate generation must not discard opaque native cast fields.
+        # MythicSim, not this test, decides whether each cast is legal.
+        source = [
+            {"action": {"castSpell": {
+                "spellId": {"spellId": 5185},
+                "target": {"type": "Self"},
+            }}},
+            {"action": {"castSpell": {
+                "spellId": {"spellId": 774},
+                "target": {"type": "CurrentTarget"},
+            }}},
+        ]
+        snapshot = copy.deepcopy(source)
+        source_casts = {
+            json.dumps(entry["action"]["castSpell"], sort_keys=True)
+            for entry in source
+        }
+
+        cold = mutate_apl(None, source, random.Random(7), cold=True)
+        self.assertTrue(cold)
+        self.assertTrue(all(
+            json.dumps(entry["action"]["castSpell"], sort_keys=True)
+            in source_casts for entry in cold
+        ))
+
+        class InsertOnlyRng:
+            def choices(self, _modes, weights=None):
+                return ["insert_cast"]
+
+            def choice(self, values):
+                return values[0]
+
+            def randrange(self, _stop):
+                return 0
+
+            def random(self):
+                return 0.0
+
+        mutated = mutate_apl(source, source, InsertOnlyRng())
+        self.assertEqual(3, len(mutated))
+        self.assertTrue(all(
+            json.dumps(entry["action"]["castSpell"], sort_keys=True)
+            in source_casts for entry in mutated
+        ))
+        self.assertEqual(snapshot, source)
+
+
 class NativeJointScoringContracts(unittest.TestCase):
     def test_native_request_records_explicit_balanced_mode_and_raw_receipt(self):
         calls = []
