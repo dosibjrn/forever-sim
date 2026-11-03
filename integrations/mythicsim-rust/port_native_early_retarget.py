@@ -76,7 +76,7 @@ def port_source(source: str) -> str:
     source = source.replace(OLD_GUARD, NEW_GUARD, 1)
     source = source.replace(METHOD_MARKER, HELPER + METHOD_MARKER, 1)
     # Insert immediately before the already compiled persistent-actor test.
-    anchor = "    #[test]\n    " + TEST_ANCHOR
+    anchor = "    #[test]\n" + TEST_ANCHOR
     if source.count(anchor) != 1:
         raise ValueError("Rust native persistent regression anchor missing")
     return source.replace(anchor, TEST + anchor, 1)
