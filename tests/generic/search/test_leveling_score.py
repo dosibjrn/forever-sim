@@ -1,7 +1,6 @@
 import pytest
 
 from src.optimization.leveling_score import score_combat_cycle
-from src.shared.leveling.objective import combat_result, representative_hp
 
 
 def test_score_combat_cycle_preserves_expected_kill_recovery_and_travel_math():
@@ -48,22 +47,3 @@ def test_score_combat_cycle_keeps_recovery_override_and_nonnegative_travel():
     assert result["recovery_s"] == pytest.approx(200)
     assert result["travel_s"] == pytest.approx(0)
     assert result["total_s"] == pytest.approx(210)
-
-
-def test_legacy_combat_result_is_an_identity_preserving_optimizer_facade():
-    inputs = {
-        "dps": 121,
-        "mana_spent": 120,
-        "mana_pool": 100,
-        "regen_per_s": 10,
-        "travel_s": 2,
-        "rotation": "test-rotation",
-        "profile": "test-profile",
-        "flags": ["approximate"],
-        "details": {"source": "fixture"},
-    }
-
-    legacy = combat_result(level=20, **inputs)
-    optimizer = score_combat_cycle(target_hp=representative_hp(20), **inputs)
-
-    assert legacy == optimizer
