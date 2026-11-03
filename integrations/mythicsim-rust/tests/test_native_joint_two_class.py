@@ -728,6 +728,10 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
         candidate_player = candidate["raid"]["parties"][0]["players"][0]
         candidate_player["talentsString"] = "restoration-build-b"
         self.assertFalse(adapter.legal(candidate))
+        self.assertEqual(
+            "SELECTED_TALENT_SOURCE_APL_WITH_PER_BUILD_NATIVE_POSITIVE_OBJECTIVE_WITNESS",
+            scope["apl_candidate_source"],
+        )
         self.assertEqual([], scope[
             "native_positive_objective_witnesses_common_to_selected_talent_builds"
         ])

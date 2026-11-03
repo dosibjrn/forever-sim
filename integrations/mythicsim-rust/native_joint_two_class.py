@@ -820,7 +820,11 @@ def source_bounded_adapter(
         "native_metric_path": objective_metric_path(objective),
         "talent_candidate_source": "SOURCE_OBSERVED_PROPOSALS_NATIVE_RUST_AUTHORITATIVE",
         "gear_candidate_source": "PINNED_SAME_CLASS_SOURCE_REQUESTS_SAME_POSITION",
-        "apl_candidate_source": "SELECTED_TALENT_SOURCE_APL_WITH_COMMON_NATIVE_POSITIVE_OBJECTIVE_WITNESS",
+        "apl_candidate_source": (
+            "SELECTED_TALENT_SOURCE_APL_WITH_PER_BUILD_NATIVE_POSITIVE_OBJECTIVE_WITNESS"
+            if native_objective_witnesses_by_talentsString is not None
+            else "SELECTED_TALENT_SOURCE_APL_WITH_COMMON_NATIVE_POSITIVE_OBJECTIVE_WITNESS"
+        ),
     }
     if objective == "DPS":
         # Keep the established DPS receipt keys stable for existing consumers.
