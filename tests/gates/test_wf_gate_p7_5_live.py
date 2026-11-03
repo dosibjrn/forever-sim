@@ -450,9 +450,9 @@ def test_p75_crossover_randomness_does_not_advance_candidate_search_rng(
     """Donor-pool random draws must not perturb later cold candidate proposals."""
 
     base = _base()
-    original = copy.deepcopy(base)
     player = lambda q: q["raid"]["parties"][0]["players"][0]
     player(base)["distanceFromTarget"] = 15
+    original = copy.deepcopy(base)
     binary = tmp_path / "upstream/target/release/forever-engine"
     binary.parent.mkdir(parents=True)
     binary.write_text("mock producer: never executed")
