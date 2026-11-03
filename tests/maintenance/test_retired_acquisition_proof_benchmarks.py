@@ -16,6 +16,9 @@ RETIRED_TOOLS = (
     "tools/wf331_druid20_web_l0_evidence.py",
     "tools/wf332_rune_policy_evidence.py",
 )
+RETIRED_SOURCE_PROOF_MODULES = (
+    "src/game/data/forever/source_checkpoint_acquisition.py",
+)
 RETIRED_IMPORT_NAMES = (
     "wf332_druid20_acquisition_evidence",
     "wf291_source_acquisition_route_benchmark",
@@ -24,6 +27,7 @@ RETIRED_IMPORT_NAMES = (
     "wf318_four_level_frontier",
     "wf331_druid20_web_l0_evidence",
     "wf332_rune_policy_evidence",
+    "source_checkpoint_acquisition",
 )
 
 
@@ -45,6 +49,22 @@ def test_no_live_python_imports_retired_source_proof_and_audit_clis():
                 continue
             source = path.read_text(encoding="utf-8")
             assert not any(name in source for name in RETIRED_IMPORT_NAMES), path
+
+
+def test_retired_checkpoint_acquisition_proof_and_l0_verdict_are_gone():
+    for relative in RETIRED_SOURCE_PROOF_MODULES:
+        assert not (ROOT / relative).exists(), relative
+    frontier = (ROOT / "src/game/data/forever/source_checkpoint_l0.py").read_text(encoding="utf-8")
+    for obsolete in (
+        "source_checkpoint_acquisition",
+        "source_acquisition_frontier",
+        "source_acquisition_category",
+        "source_acquisition_evidence_status",
+        "'blocker':",
+        "'PASS1':False",
+        "legal_combat_spell_proven",
+    ):
+        assert obsolete not in frontier, obsolete
 
 
 def test_historical_p1_gameir_admission_toolchain_is_retired():

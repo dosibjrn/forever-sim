@@ -68,7 +68,6 @@ def test_web_observation_is_staged_not_source_or_paid_L2(source_stage):
     assert after['potential_ranks_assessed_by_numeric_ir_or_text_role'] > before['potential_ranks_assessed_by_numeric_ir_or_text_role']
     assert after['paid_search_admitted_source_rows']==before['paid_search_admitted_source_rows']
     assert after['web_indexed_observations_are_L2_or_legality_proof'] is False
-    assert after['PASS1'] is False
     assert hashlib.sha256(DEFAULT_DB.read_bytes()).hexdigest()==canonical_sha
 
 
