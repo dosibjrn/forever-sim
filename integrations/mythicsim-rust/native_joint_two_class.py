@@ -232,11 +232,156 @@ def native_score_request(
     }, raw
 
 
+def _probe_native_objective_donor_witnesses(
+    binary: Path,
+    reference: dict,
+    source_request_records: list[dict],
+    baseline_witnesses: list[dict],
+    *,
+    iterations: int,
+    seed: int,
+    objective: str,
+    outdir: Path | None = None,
+    max_probes: int = 12,
+    max_variants_per_talent: int = 2,
+    score_request=native_score_request,
+) -> tuple[dict, list[dict]]:
+    """Pay exact source-donor APL probes to learn objective-positive casts per build.
+
+    Each probe keeps the reference scenario and gear, replacing only the talent
+    string and APL with an exact same-class source request. MythicSim remains the
+    sole authority for preparation, legality and the measured objective.
+    """
+    objective = str(objective).upper()
+    objective_metric_path(objective)
+    original = player(reference)
+    baseline_talent = original.get("talentsString", MISSING_TALENT_STRING)
+    baseline_apl = original.get("rotation", {}).get("priorityList", [])
+    baseline_apl_sha = fingerprint(baseline_apl)
+    witnesses_by_talent = {
+        baseline_talent: copy.deepcopy(baseline_witnesses or [])
+    }
+    seen = set()
+    attempts_by_talent = {}
+    probes = []
+    probe_dir = None
+    if outdir is not None:
+        probe_dir = Path(outdir) / "donor_probes"
+        probe_dir.mkdir(parents=True, exist_ok=True)
+
+    for source_record in source_request_records:
+        if isinstance(source_record, dict) and isinstance(source_record.get("request"), dict):
+            source_request = source_record["request"]
+            source_path = source_record.get("source_path")
+        else:
+            source_request = source_record
+            source_path = None
+        if not isinstance(source_request, dict):
+            continue
+        try:
+            source_player = player(source_request)
+        except (KeyError, IndexError, TypeError, ValueError):
+            continue
+        if source_player.get("class") != original.get("class"):
+            continue
+        talent = source_player.get("talentsString", MISSING_TALENT_STRING)
+        if not (isinstance(talent, str) or talent is None
+                or talent == MISSING_TALENT_STRING):
+            continue
+        rotation = source_player.get("rotation")
+        source_actions = (
+            rotation.get("priorityList") if isinstance(rotation, dict) else None
+        )
+        if not isinstance(source_actions, list) or not source_actions:
+            continue
+        apl_sha = fingerprint(source_actions)
+        if talent == baseline_talent and apl_sha == baseline_apl_sha:
+            continue
+        probe_key = (talent, apl_sha)
+        if probe_key in seen:
+            continue
+        seen.add(probe_key)
+        if witnesses_by_talent.get(talent):
+            continue
+        if attempts_by_talent.get(talent, 0) >= max_variants_per_talent:
+            continue
+        if len(probes) >= max_probes:
+            break
+        attempts_by_talent[talent] = attempts_by_talent.get(talent, 0) + 1
+
+        probe = copy.deepcopy(reference)
+        probe_player = player(probe)
+        if talent == MISSING_TALENT_STRING:
+            probe_player.pop("talentsString", None)
+        else:
+            probe_player["talentsString"] = copy.deepcopy(talent)
+        probe_player["rotation"]["priorityList"] = copy.deepcopy(source_actions)
+        effective = native_payload(probe, iterations, seed)
+        request_sha = fingerprint(effective)
+        if probe_dir is not None:
+            (probe_dir / (request_sha + ".request.json")).write_text(
+                json.dumps(effective, indent=2) + "\n"
+            )
+        try:
+            record, raw = score_request(
+                binary, probe, iterations, seed, "balanced",
+                time.monotonic() + 30.0, objective=objective,
+            )
+            witnesses = _native_positive_source_casts(
+                source_actions, raw, objective=objective
+            )
+            selected = witnesses_by_talent.setdefault(talent, [])
+            known = {
+                json.dumps(item, sort_keys=True, separators=(",", ":"))
+                for item in selected
+            }
+            for witness in witnesses:
+                key = json.dumps(witness, sort_keys=True, separators=(",", ":"))
+                if key not in known:
+                    selected.append(copy.deepcopy(witness))
+                    known.add(key)
+            if probe_dir is not None:
+                (probe_dir / (request_sha + ".response.json")).write_text(
+                    json.dumps(raw, indent=2) + "\n"
+                )
+            probes.append({
+                "source_path": source_path,
+                "talentsString": (
+                    "<MISSING_TALENT_STRING>"
+                    if talent == MISSING_TALENT_STRING else talent
+                ),
+                "status": "VALID",
+                "objective": objective,
+                "native_metric_path": objective_metric_path(objective),
+                "score": record.get("score"),
+                "effective_request_sha256": record.get("effective_request_sha256"),
+                "raw_response_sha256": record.get("raw_response_sha256"),
+                "positive_witnesses": witnesses,
+            })
+        except Exception as exc:
+            failure = (
+                _write_native_failure(probe_dir, request_sha, effective, exc)
+                if probe_dir is not None else None
+            )
+            probes.append({
+                "source_path": source_path,
+                "talentsString": (
+                    "<MISSING_TALENT_STRING>"
+                    if talent == MISSING_TALENT_STRING else talent
+                ),
+                "status": getattr(exc, "status", "ERROR"),
+                "error": str(exc)[-500:],
+                "failure_receipt": failure,
+            })
+    return witnesses_by_talent, probes
+
+
 def source_bounded_adapter(
     class_key: str, reference: dict, same_class: list[dict], *,
     donor_fixtures: list[dict] | None = None,
     native_objective_witnesses: list[dict] | None = None,
     native_damage_witnesses: list[dict] | None = None,
+    native_objective_witnesses_by_talentsString: dict | None = None,
     objective: str = "DPS",
 ) -> tuple[JointCandidateAdapter, dict]:
     """Use same-class source proposals; Rust owns all build legality."""
@@ -340,63 +485,115 @@ def source_bounded_adapter(
         identity = {"spellId": witness} if objective == "DPS" else witness
         return json.dumps(identity, sort_keys=True, separators=(",", ":"))
 
-    original_source_casts = source_casts_by_talentsString.get(original_talents, set())
-    native_witness_keys = []
-    for witness in native_objective_witnesses:
-        key = witness_key(witness)
-        if key in original_source_casts and key not in native_witness_keys:
-            native_witness_keys.append(key)
-
-    # Select the largest source-observed proposal set sharing a baseline-positive
-    # cast. Native Rust, not this witness search, decides each build's validity.
-    supported_build_sets = []
-    for witness_identity_key in native_witness_keys:
-        builds = [
-            talent for talent in talents
-            if witness_identity_key in source_casts_by_talentsString.get(talent, set())
-        ]
-        if len(builds) >= 2:
-            supported_build_sets.append((len(builds), witness_identity_key, builds))
-    if not supported_build_sets:
-        raise ValueError(
-            f"{witness_code}: no baseline-positive source {witness_label} cast "
-            "is present in the reference and at least two same-class "
-            "source candidate talent strings"
-        )
     candidate_talents = set(talents)
-    _support_count, selected_witness_key, selected_builds = max(
-        supported_build_sets, key=lambda row: row[0]
-    )
-    talents = sorted(selected_builds, key=talent_sort_key)
-    excluded_talents = sorted(
-        candidate_talents - set(talents), key=talent_sort_key
-    )
-    selected_talent_strings = list(dict.fromkeys(
-        [original_talents] + [talent for talent in talents if talent != original_talents]
-    ))
-    common_cast_keys = set(original_source_casts)
-    for talent in selected_talent_strings[1:]:
-        common_cast_keys.intersection_update(
-            source_casts_by_talentsString.get(talent, set())
-        )
-    if not common_cast_keys or selected_witness_key not in common_cast_keys:
-        raise ValueError(
-            "BLOCKED_SOURCE_APL: selected talent builds have no common "
-            "baseline-positive source cast identity"
-        )
-
+    common_cast_keys = set()
     common_witnesses = []
-    seen_common_witnesses = set()
-    for witness in native_objective_witnesses:
-        key = witness_key(witness)
-        if key in common_cast_keys and key not in seen_common_witnesses:
-            common_witnesses.append(copy.deepcopy(witness))
-            seen_common_witnesses.add(key)
-    if not common_witnesses:
-        raise ValueError(
-            f"{witness_code}: selected talent builds have no common "
-            f"baseline-positive source {witness_label} cast"
+    if native_objective_witnesses_by_talentsString is None:
+        original_source_casts = source_casts_by_talentsString.get(original_talents, set())
+        native_witness_keys = []
+        for witness in native_objective_witnesses:
+            key = witness_key(witness)
+            if key in original_source_casts and key not in native_witness_keys:
+                native_witness_keys.append(key)
+
+        supported_build_sets = []
+        for witness_identity_key in native_witness_keys:
+            builds = [
+                talent for talent in talents
+                if witness_identity_key in source_casts_by_talentsString.get(talent, set())
+            ]
+            if len(builds) >= 2:
+                supported_build_sets.append((len(builds), witness_identity_key, builds))
+        if not supported_build_sets:
+            raise ValueError(
+                f"{witness_code}: no baseline-positive source {witness_label} cast "
+                "is present in the reference and at least two same-class "
+                "source candidate talent strings"
+            )
+        _support_count, selected_witness_key, selected_builds = max(
+            supported_build_sets, key=lambda row: row[0]
         )
+        talents = sorted(selected_builds, key=talent_sort_key)
+        excluded_talents = sorted(
+            candidate_talents - set(talents), key=talent_sort_key
+        )
+        selected_talent_strings = list(dict.fromkeys(
+            [original_talents] + [talent for talent in talents if talent != original_talents]
+        ))
+        common_cast_keys = set(original_source_casts)
+        for talent in selected_talent_strings[1:]:
+            common_cast_keys.intersection_update(
+                source_casts_by_talentsString.get(talent, set())
+            )
+        if not common_cast_keys or selected_witness_key not in common_cast_keys:
+            raise ValueError(
+                "BLOCKED_SOURCE_APL: selected talent builds have no common "
+                "baseline-positive source cast identity"
+            )
+
+        seen_common_witnesses = set()
+        for witness in native_objective_witnesses:
+            key = witness_key(witness)
+            if key in common_cast_keys and key not in seen_common_witnesses:
+                common_witnesses.append(copy.deepcopy(witness))
+                seen_common_witnesses.add(key)
+        if not common_witnesses:
+            raise ValueError(
+                f"{witness_code}: selected talent builds have no common "
+                f"baseline-positive source {witness_label} cast"
+            )
+        objective_witnesses_by_talent = {
+            talent: common_witnesses for talent in selected_talent_strings
+        }
+    else:
+        supplied_by_talent = native_objective_witnesses_by_talentsString
+        objective_witnesses_by_talent = {}
+        for talent in talents:
+            source_casts = source_casts_by_talentsString.get(talent, set())
+            selected = []
+            seen_selected = set()
+            for witness in supplied_by_talent.get(talent, []):
+                if not isinstance(witness, dict) or not witness:
+                    continue
+                key = witness_key(witness)
+                if key in source_casts and key not in seen_selected:
+                    selected.append(copy.deepcopy(witness))
+                    seen_selected.add(key)
+            if selected:
+                objective_witnesses_by_talent[talent] = selected
+        if original_talents not in objective_witnesses_by_talent:
+            raise ValueError(
+                f"{witness_code}: baseline talent build has no native-positive "
+                f"source {witness_label} cast"
+            )
+        selected_builds = sorted(
+            objective_witnesses_by_talent, key=talent_sort_key
+        )
+        if len(selected_builds) < 2:
+            raise ValueError(
+                f"{witness_code}: need at least two source talent builds with "
+                f"native-positive {witness_label} casts"
+            )
+        talents = selected_builds
+        excluded_talents = sorted(
+            candidate_talents - set(talents), key=talent_sort_key
+        )
+        selected_talent_strings = list(dict.fromkeys(
+            [original_talents] + [talent for talent in talents if talent != original_talents]
+        ))
+        common_cast_keys = set.intersection(*[
+            set(source_casts_by_talentsString.get(talent, set()))
+            for talent in selected_talent_strings
+        ])
+        common_witness_keys = set.intersection(*[
+            {witness_key(witness) for witness in objective_witnesses_by_talent[talent]}
+            for talent in selected_talent_strings
+        ])
+        first_build_witnesses = objective_witnesses_by_talent[selected_talent_strings[0]]
+        common_witnesses = [
+            copy.deepcopy(witness) for witness in first_build_witnesses
+            if witness_key(witness) in common_witness_keys
+        ]
     alternate = [t for t in talents if t != original_talents]
 
     gear_donor_fixtures_scanned = [
@@ -469,7 +666,6 @@ def source_bounded_adapter(
         # and scored when the candidate reaches the evaluator.
         return value == original["talentsString"] or value in talents
 
-    objective_witnesses = common_witnesses
 
     def cast_identity_key(cast):
         if not isinstance(cast, dict) or not cast:
@@ -523,7 +719,7 @@ def source_bounded_adapter(
         for _ in range(8):
             actions = _ensure_native_objective_action(
                 mutate_apl(None, source_actions, rng, cold=True),
-                objective_witnesses,
+                objective_witnesses_by_talent.get(talent_string, []),
                 rng,
                 objective=objective,
             )
@@ -542,7 +738,10 @@ def source_bounded_adapter(
         else:
             updated = mutate_apl(current, source_actions, rng)
         return _ensure_native_objective_action(
-            updated, objective_witnesses, rng, objective=objective
+            updated,
+            objective_witnesses_by_talent.get(talent_string, []),
+            rng,
+            objective=objective,
         )
 
     def apl_legal(value):
@@ -562,7 +761,8 @@ def source_bounded_adapter(
             return False
 
         eligible_witness_keys = {
-            witness_key(witness) for witness in objective_witnesses
+            witness_key(witness)
+            for witness in objective_witnesses_by_talent.get(talent_string, [])
         }
         has_unconditional_native_witness = any(
             isinstance(entry, dict)
@@ -612,6 +812,10 @@ def source_bounded_adapter(
             json.loads(key) for key in sorted(common_cast_keys)
         ],
         "native_positive_objective_witnesses_common_to_selected_talent_builds": common_witnesses,
+        "native_positive_objective_witnesses_by_talentsString": {
+            talent_label(talent): copy.deepcopy(objective_witnesses_by_talent.get(talent, []))
+            for talent in selected_talent_strings
+        },
         "objective": objective,
         "native_metric_path": objective_metric_path(objective),
         "talent_candidate_source": "SOURCE_OBSERVED_PROPOSALS_NATIVE_RUST_AUTHORITATIVE",
@@ -650,6 +854,9 @@ def execute(profile_id: str, inventory: list, *,
         "objective": objective, "native_metric_path": metric_path,
         "dimensions_requested": ["gear", "talents", "apl"],
         "native_paid": 0, "baseline_paid": 0, "native_paid_total": 0,
+        "native_donor_probe_attempts": 0, "native_donor_probe_paid": 0,
+        "native_donor_probe_positive_builds": 0,
+        "native_donor_probe_receipts": [],
         "baseline_balanced_score": None,
         "baseline_effective_request_sha256": None,
         "baseline_native_duration_s": None,
@@ -724,19 +931,74 @@ def execute(profile_id: str, inventory: list, *,
         json.dumps(baseline_raw, indent=2) + "\n"
     )
 
+    adapter_kwargs = {
+        "donor_fixtures": donor_fixtures,
+        "native_objective_witnesses": native_objective_witnesses,
+        "objective": objective,
+    }
     try:
         adapter, scope = source_bounded_adapter(
-            cls, reference, same_class,
-            donor_fixtures=donor_fixtures,
-            native_objective_witnesses=native_objective_witnesses,
-            objective=objective,
+            cls, reference, same_class, **adapter_kwargs
         )
-    except Exception as exc:
-        row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
-        row["blocker"] = str(exc)[:500]
-        row["native_paid_total"] = row["baseline_paid"]
-        row["native_failures"] = native_failures
-        return row
+    except Exception as initial_exc:
+        witness_block = (
+            "BLOCKED_NATIVE_" + objective + "_WITNESS:"
+        )
+        if objective not in {"HPS", "TPS"} or not str(initial_exc).startswith(witness_block):
+            row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
+            row["blocker"] = str(initial_exc)[:500]
+            row["native_paid_total"] = row["baseline_paid"]
+            row["native_failures"] = native_failures
+            return row
+
+        source_request_records = [
+            {
+                "request": req,
+                "source_path": entry.get("source_path"),
+            }
+            for entry, req in inventory
+            if req is not None
+            and entry["profile_id"].split("/", 1)[0] == cls
+        ]
+        source_request_records.extend(
+            {
+                "request": fixture["request"],
+                "source_path": fixture.get("source_path"),
+            }
+            for fixture in (donor_fixtures or [])
+            if fixture.get("class_name") == player(reference).get("class")
+            and isinstance(fixture.get("request"), dict)
+        )
+        witnesses_by_talent, probe_receipts = _probe_native_objective_donor_witnesses(
+            binary,
+            reference,
+            source_request_records,
+            native_objective_witnesses,
+            iterations=iterations,
+            seed=seed,
+            objective=objective,
+            outdir=outdir,
+        )
+        probe_paid = sum(item.get("status") == "VALID" for item in probe_receipts)
+        row["native_donor_probe_attempts"] = len(probe_receipts)
+        row["native_donor_probe_paid"] = probe_paid
+        row["native_donor_probe_positive_builds"] = sum(
+            bool(witnesses_by_talent.get(talent))
+            for talent in witnesses_by_talent
+            if talent != player(reference).get("talentsString", MISSING_TALENT_STRING)
+        )
+        row["native_donor_probe_receipts"] = probe_receipts
+        adapter_kwargs["native_objective_witnesses_by_talentsString"] = witnesses_by_talent
+        try:
+            adapter, scope = source_bounded_adapter(
+                cls, reference, same_class, **adapter_kwargs
+            )
+        except Exception as exc:
+            row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
+            row["blocker"] = str(exc)[:500]
+            row["native_paid_total"] = row["baseline_paid"] + probe_paid
+            row["native_failures"] = native_failures
+            return row
     row.update(scope)
     deadline = time.monotonic() + seconds
     # One evaluator; no home-made objective, Go scorer or fake score can enter report.
@@ -794,7 +1056,7 @@ def execute(profile_id: str, inventory: list, *,
     row["search_status"] = result["status"]
     row["native_paid"] = len(paid)
     row["native_paid_total"] = (
-        row["baseline_paid"] + row["native_paid"]
+        row["baseline_paid"] + row["native_donor_probe_paid"] + row["native_paid"]
     )
     row["paid_unique"] = result["paid_candidates"]
     row["native_errors"] = result["engine_errors"]
