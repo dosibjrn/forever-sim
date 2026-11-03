@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Source-bounded two-class REAL Rust JOINT smoke using the shared gsim search.
+"""Source-observed two-class REAL Rust JOINT screen using the shared search.
 
-This is an integration proof, not a PROCESS P7.5 PASS: talent choices are
-verified *whole 51-point source builds*, NOT an exhaustive per-rank tree;
-gear options are source-observed native DB items, NOT full equip-law parity.
+The candidate pool is pinned to source fixtures and is not exhaustive.
+MythicSim Rust is the authority for candidate INVALID/UNSUPPORTED/valid outcomes.
+Paid candidates are exact native scores, not a PROCESS P7.5 acceptance claim.
 The class-neutral native_matrix.search_native remains the only search loop.
 No mocked scorer is permitted here.
 """
@@ -22,6 +22,7 @@ from pathlib import Path
 from apl_mutation import mutate_apl
 from native_gear_adapter import GearRejected, NativeGearAdapter
 from native_joint_composition import CandidateAxis, JointCandidateAdapter, search_joint
+from native_matrix import NativeCandidateRejected
 from native_l60_matrix import (
     ROOT, create_inventory, digest, fingerprint, legal_apl_only_request,
     load_native_item_index, player,
@@ -39,6 +40,10 @@ def _write_native_failure(outdir: Path, request_sha256: str,
         "effective_request_sha256": request_sha256,
         "error": str(exc)[-1200:],
     }
+    for attribute in ("status", "code", "reason", "returncode"):
+        value = getattr(exc, attribute, None)
+        if value is not None:
+            record["native_" + attribute] = value
     raw = getattr(exc, "raw_response", None)
     if isinstance(raw, dict):
         response_path = outdir / ("failed_" + request_sha256 + ".response.json")
@@ -741,8 +746,10 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         "baseline_seed": None,
         "baseline_response_sha256": None,
         "three_axis_paid": 0, "process_gate_pass": False,
+        "native_errors": 0, "native_invalid": 0,
+        "native_unsupported": 0, "native_rejections": 0,
+        "native_refusals": [],
         "source_scope": "SMOKE_FIXTURE_OR_PINNED_REFERENCE",
-        "full_source_legality_certified": False,
         "live_gsim_2d_rust_causality": False,
     }
     source = next(((inv, req) for inv, req in inventory
@@ -766,19 +773,34 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     paid_dir.mkdir(exist_ok=True)
     (outdir / "source_request.json").write_text(json.dumps(reference, indent=2) + "\n")
 
-    # The baseline native receipt is the source of truth for damage witnesses.
-    # Run it before constructing the adapter, which uses those witnesses to
-    # restrict talent-build intersections and require a native-positive APL.
+    # The baseline native receipt provides optional positive-damage anchors
+    # for candidate generation. MythicSim still decides each candidate's
+    # build, gear, and APL validity when that exact request is evaluated.
     paid = []
     native_failures = []
+    native_refusals = []
     baseline_effective = native_payload(reference, iterations, seed)
     try:
         baseline_record, baseline_raw = native_score_request(
             binary, reference, iterations, seed, "balanced",
             time.monotonic() + 30.0,
         )
+    except NativeCandidateRejected as exc:
+        row["status"] = "BLOCKED_NATIVE_BASELINE"
+        row["blocker"] = (
+            f"MythicSim {exc.status} baseline ({exc.code}): {exc.reason}"
+        )
+        failure = _write_native_failure(
+            outdir, fingerprint(baseline_effective), baseline_effective, exc
+        )
+        row["native_invalid"] = int(exc.status == "INVALID")
+        row["native_unsupported"] = int(exc.status == "UNSUPPORTED")
+        row["native_rejections"] = 1
+        row["native_refusals"] = [{"stage": "baseline", **failure}]
+        return row
     except Exception as exc:
         row["status"] = "BLOCKED_NATIVE_BASELINE"
+        row["native_errors"] = 1
         row["blocker"] = "Balanced native reference baseline failed: " + str(exc)[-700:]
         failure = _write_native_failure(
             outdir, fingerprint(baseline_effective), baseline_effective, exc
@@ -893,6 +915,13 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
             score = native_record["score"]
             elapsed = native_record["native_duration_s"]
             scored_sha = native_record["effective_request_sha256"]
+        except NativeCandidateRejected as exc:
+            if len(native_refusals) < 12:
+                native_refusals.append({
+                    "stage": "candidate",
+                    **_write_native_failure(outdir, key, effective, exc),
+                })
+            raise
         except (TimeoutError, subprocess.TimeoutExpired):
             raise
         except Exception as exc:
@@ -921,8 +950,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
             "item_ids": [x.get("id", 0) for x in player(candidate)["equipment"]["items"]],
             "talents": player(candidate)["talentsString"],
             "apl_sha256": fingerprint(player(candidate)["rotation"]["priorityList"]),
-            "source_bounded_legality": True,
-            "full_source_legality_certified": False,
+            "candidate_pool_scope": "PINNED_SOURCE_OBSERVED_OPTIONS_NOT_EXHAUSTIVE",
         })
         return score
 
@@ -936,17 +964,21 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     )
     row["paid_unique"] = result["paid_candidates"]
     row["native_errors"] = result["engine_errors"]
+    row["native_invalid"] = result["native_invalid"]
+    row["native_unsupported"] = result["native_unsupported"]
+    row["native_rejections"] = result["native_rejections"]
+    row["native_refusals"] = native_refusals
     row["legal_rejections"] = result["legal_rejections"]
     row["search_elapsed_s"] = result["elapsed_s"]
     row["three_axis_paid"] = sum(all(e["delta_from_reference"].values()) for e in paid)
     row["best_balanced_screen"] = result["best_score"]
     row["source_bounded_joint"] = row["three_axis_paid"] > 0
     row["status"] = (
-        "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY"
+        "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN"
         if row["source_bounded_joint"] else "BLOCKED_NO_PAID_THREE_AXIS_JOINT"
     )
     row["blocker"] = None if row["source_bounded_joint"] else (
-        "No legal source-bounded Rust paid candidate changed gear, talents, and APL")
+        "No native-paid candidate changed gear, talents, and APL")
     row["native_failures"] = native_failures
 
     (outdir / "paid_trace.json").write_text(json.dumps(paid, indent=2) + "\n")
@@ -1025,9 +1057,9 @@ def main() -> None:
                           "source_donor_fixture_count":row.get("source_donor_fixture_count", 0),
                           "replay_matches":row.get("replay_matches")}), flush=True)
     (args.out / "joint_matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
-    # CI must fail if either class did NOT actually score and replay a
-    # three-axis-mutated legal source-bounded candidate on the real Rust.
-    if not all(r["status"] == "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY"
+    # CI fails unless both classes score and exactly replay a three-axis
+    # candidate accepted and scored by the real native Rust engine.
+    if not all(r["status"] == "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN"
                and r.get("replay_matches") and r["native_paid"] >= 1
                for r in rows):
         raise SystemExit("BLOCKED: No completed two-class Rust JOINT proof; see artifacts")
