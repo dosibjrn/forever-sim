@@ -279,7 +279,8 @@ print("RUST_TYPED_RNG_PAID_RECOVERY_COMPOSITION_PASS")
 assert two_world_cli.PREPARED_ANCHOR == (
     "/// What gating a prepared v2 input and simulating it when supported came to."
 )
-assert two_world_cli.PREPARED_ANCHOR == two_pull_cli.PREPARED_ANCHOR
+assert two_pull_cli.PREPARED_INSERTION_ANCHOR == two_world_cli.PREPARED_ANCHOR
+assert two_pull_cli.PREPARED_ANCHOR != two_world_cli.PREPARED_ANCHOR
 two_pull_prepared = two_pull_cli.port_prepared(two_world_cli.PREPARED_ANCHOR)
 assert two_pull_prepared.count(two_world_cli.PREPARED_ANCHOR) == 1
 assert two_pull_cli.PREPARED_ANCHOR in two_pull_prepared
