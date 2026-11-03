@@ -1,4 +1,4 @@
-"""Generic optimizer candidate scoring must not import game mechanics."""
+"""Generic optimizer talent enumeration and scoring must not import game mechanics."""
 
 import subprocess
 import sys
@@ -12,7 +12,10 @@ def test_optimizer_talent_scoring_is_game_model_independent():
     source = """
 import sys
 from src.optimization.talent_search import (
-    score_talent_allocations, talent_candidate_id,
+    TalentAllocationOption,
+    enumerate_talent_allocations,
+    score_talent_allocations,
+    talent_candidate_id,
 )
 
 for module in (
@@ -25,6 +28,42 @@ for module in (
     assert module not in sys.modules, module
 
 assert talent_candidate_id({'z': 1, 'a': 1}) == 'talents:a=1;z=1'
+
+# Pure rank-allocation enumeration receives source-derived options and a
+# required legality callback; it does not import a second game-rules model.
+options = (
+    TalentAllocationOption('first', 2, frozenset({1, 2})),
+    TalentAllocationOption('second', 1, frozenset({1})),
+)
+
+def validate_selection(selection):
+    if selection.get('first') == 2:
+        raise ValueError('test-only rejected allocation')
+
+def rank_is_admissible(option, rank, selection, index):
+    # The adapter owns the source-specific tier rule; this callback is a
+    # generic partial-candidate admission hook.
+    return option.talent_id != 'second' or selection.get('first', 0) >= 1
+
+allocations, truncated = enumerate_talent_allocations(
+    options,
+    max_points=2,
+    rank_is_admissible=rank_is_admissible,
+    validate_selection=validate_selection,
+    max_candidates=10,
+)
+assert allocations == ({}, {'first': 1}, {'first': 1, 'second': 1})
+assert truncated is False
+
+limited, truncated = enumerate_talent_allocations(
+    options,
+    max_points=2,
+    rank_is_admissible=rank_is_admissible,
+    validate_selection=lambda _: None,
+    max_candidates=2,
+)
+assert limited == ({}, {'first': 1})
+assert truncated is True
 
 def evaluate(selection):
     if selection == {'blocked': 1}:
