@@ -22,11 +22,8 @@ from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps,
                                     p7_search_window_completed)
 from tools.wf_gate_p7_5_prior import strongest_accepted_prior
-# Shared native+2D balanced-finalist scheduling helpers from P7.4.
-from tools.wf_gate_p7_4_live import (
-    _paid_step_has_budget,
-    _p74_early_rerank_due, _next_p74_confirmation,
-    _next_p74_deep_confirmation)
+# Reuse the bounded paid-step guard for the 300s candidate-search window.
+from tools.wf_gate_p7_4_live import _paid_step_has_budget
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
                                      _executed_p7_runtime_proof,
                                      _source_native_world_parity)
@@ -124,60 +121,6 @@ def _p75_paid_rebuild_axes(proposal_index: int):
     axes = ("gear_rebuild", "talents_rebuild", "rotation_rebuild")
     return (axes[(proposal_index // 11 - 1) % len(axes)],)
 
-
-
-def _paid_p75_balanced_finalist(production, binary, request, distance, *,
-                                seeds=("1955004", "1955047")):
-    """Rank paid P7.5 candidates only with deterministic balanced RNG.
-
-    Keep a small, reproducible three-fight screen for each independent seed.
-    The 1,000 independent stochastic iterations are strictly the *final*
-    holdout, after a source-legal winner has been frozen. Both candidate
-    scores come from the same selected Rust and real gsim-2D boundary.
-    """
-    scores = []
-    latest_live = None
-    for seed in seeds:
-        candidate = copy.deepcopy(request)
-        candidate["simOptions"]["randomSeed"] = str(seed)
-        with tempfile.TemporaryDirectory(prefix="forever_p75_balanced_") as tmp:
-            path = Path(tmp) / "paid-balanced-finalist.json"
-            path.write_text(json.dumps(candidate))
-            native = production.native_source_control(
-                binary, path, 3, rng_mode="balanced")
-            live = production.run(
-                binary, path, distance=distance, iterations=3,
-                rng_mode="balanced")
-            mismatch = _source_native_world_parity(native, live, 3)
-            if mismatch is not None:
-                raise ValueError("P75_BALANCED_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
-        if (live.get("iterations_done") != 3
-                or live.get("native_damage_events", 0) <= 0
-                or live.get("native_world_ticks", 0) <= 0):
-            raise ValueError("P75_BALANCED_FINALIST_WORLD_INCOMPLETE")
-        score = float(live["world_mean_dps"])
-        if not 0 <= score < float("inf"):
-            raise ValueError("P75_BALANCED_FINALIST_DPS_INVALID")
-        scores.append(score)
-        latest_live = live
-    return sum(scores) / len(scores), latest_live
-
-
-def _freeze_paid_p75_balanced_winner(screen_best, reranked, confirmed=(),
-                                     deep_confirmed=()):
-    """Freeze the best genuinely paid balanced finalist, never holdout rank."""
-    if reranked:
-        deep_rows = [row for row in reranked if row[2] in deep_confirmed]
-        confirmed_rows = [row for row in reranked if row[2] in confirmed]
-        score, live, sha, request, screen_score = max(
-            deep_rows or confirmed_rows or reranked, key=lambda row: row[0])
-        label = ("paid_6x3_balanced_live_native_deep_confirmed_finalist"
-                 if deep_rows else
-                 "paid_4x3_balanced_live_native_confirmed_finalist"
-                 if confirmed_rows else "paid_2x3_balanced_live_native_finalist")
-        return score, live, sha, request, screen_score, label
-    score, live, sha, request = screen_best
-    return score, live, sha, request, score, "three_balanced_live_screen_only"
 
 
 def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, rng):
@@ -455,18 +398,13 @@ def run_live(root: Path, class_key: str, level: int, *,
         return {"status": "BLOCKED", "reasons": ["P7_5_" + str(exc)]}
     validator = source.GearValidator(catalogue, items, enchants, base)
     rng = random.Random(670)
-    best = None  # three-fight balanced top result, only a diagnostic
+    best = None  # best unique three-fight balanced candidate; frozen before holdout
     balanced_elites = []  # 24 distinct source-legal paid joint candidates
-    balanced_finalists = []  # 2x3 balanced paid native+2D screens
-    rerank_seen = set()
-    confirmed = set()
-    confirmation_attempted = set()
-    deep_confirmation_attempted = set()
-    deep_confirmed = set()
-    rerank_failures = []
+    # Intentionally empty: pinned BalancedRng ignores randomSeed, so re-ranks
+    # of the same request would repeat its exact three-fight screen.
+    balanced_finalists = []
     balanced_parent_proposals = 0
-    worst_finalist_s = 0.0
-    worst_confirmation_s = 0.0
+    worst_candidate_s = 0.0
     executed = 0
     proposals = 0
     seen = set()
@@ -491,89 +429,20 @@ def run_live(root: Path, class_key: str, level: int, *,
             if (full_search and elapsed >= 300.0
                     or not full_search and proposals >= 3):
                 break
-            # Real P7.5 #41565060685 screened 820.66 balanced DPS but
-            # froze only 697.32 stochastic DPS. Spend part of the SAME
-            # 300s budget on independent balanced native+2D finalist scores.
-            if full_search and (elapsed >= 240.0 or
-                                _p74_early_rerank_due(
-                                    elapsed, len(balanced_finalists))):
-                # P7.4 already confirms the strongest paid finalist
-                # with 144 independent non-holdout fights. P7.5 formerly
-                # stopped at 96, even after a measured 716.30 paid finalist
-                # fell to 702.79 in its 1,000-fight frozen holdout.
-                # Reuse its bounded two-deep-confirmation schedule with 3-fight
-                # balanced paid screens; never select with the frozen holdout.
-                next_deep = _next_p74_deep_confirmation(
-                    balanced_finalists, confirmed,
-                    deep_confirmation_attempted, elapsed)
-                confirmation = next_deep or _next_p74_confirmation(
-                    balanced_finalists, confirmation_attempted, elapsed)
-                if confirmation is not None and _paid_step_has_budget(
-                        search_start, max(worst_finalist_s,
-                                          worst_confirmation_s)):
-                    index, row = confirmation
-                    is_deep = next_deep is not None
-                    if is_deep:
-                        deep_confirmation_attempted.add(row[2])
-                    else:
-                        confirmation_attempted.add(row[2])
-                    started = time.perf_counter()
-                    try:
-                        second_score, second_live = _paid_p75_balanced_finalist(
-                            production, binary, row[3], distance,
-                            seeds=(("1955181", "1955207") if is_deep
-                                   else ("1955113", "1955139")))
-                        # Initial 6, confirmed 12, deep-confirmed 18
-                        # genuine paid balanced fights: weight old 12-fight
-                        # mean twice when incorporating the last 6.
-                        new_score = ((2 * row[0] + second_score) / 3
-                                     if is_deep else
-                                     (row[0] + second_score) / 2)
-                        balanced_finalists[index] = (
-                            new_score, second_live, *row[2:])
-                        if is_deep:
-                            deep_confirmed.add(row[2])
-                        else:
-                            confirmed.add(row[2])
-                    except (ValueError, RuntimeError, OSError, KeyError,
-                            TimeoutError, TypeError, AssertionError,
-                            subprocess.SubprocessError) as exc:
-                        rerank_failures.append(
-                            "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:160])
-                    finally:
-                        worst_confirmation_s = max(
-                            worst_confirmation_s, time.perf_counter() - started)
-                    continue
-                pending = next((
-                    row for row in balanced_elites
-                    if row[1] not in rerank_seen), None)
-                if pending is not None and _paid_step_has_budget(
-                        search_start, worst_finalist_s):
-                    screen_score, candidate_sha, candidate = pending
-                    rerank_seen.add(candidate_sha)
-                    started = time.perf_counter()
-                    try:
-                        balanced_score, balanced_live = _paid_p75_balanced_finalist(
-                            production, binary, candidate, distance,
-                            seeds=("1955004", "1955047"))
-                        balanced_finalists.append((
-                            balanced_score, balanced_live, candidate_sha,
-                            candidate, screen_score))
-                    except (ValueError, RuntimeError, OSError, KeyError,
-                            TimeoutError, TypeError, AssertionError,
-                            subprocess.SubprocessError) as exc:
-                        rerank_failures.append(
-                            type(exc).__name__ + ":" + str(exc)[:160])
-                    finally:
-                        worst_finalist_s = max(
-                            worst_finalist_s, time.perf_counter() - started)
-                    continue
+            # The pinned Rust BalancedRng is seed-independent: SimRng::new
+            # creates a fresh BalancedRng without using randomSeed, and reseed()
+            # is a no-op. Re-running the same request under other seed strings
+            # repeats its exact three-fight score; it is not independent evidence.
+            # Keep one paid screen per unique candidate and spend the full 300s
+            # on new candidates. The separate 1,000-fight stochastic holdout
+            # remains the only independent final evaluation.
             # Do not start an indivisible native+2D paid call in the tail
             # when measured subprocess cost would overrun the 300s search.
             if full_search and elapsed >= 290.0 and not _paid_step_has_budget(
-                    search_start, worst_finalist_s):
+                    search_start, worst_candidate_s):
                 break
             proposals += 1
+            candidate_started = time.perf_counter()
             try:
                 # Only a winner already evaluated in THIS live 2D cold search
                 # can be an elite. Never seed the saved report or P7.1-P7.4.
@@ -588,7 +457,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                         best, balanced_finalists, proposals, rng,
                         balanced_elites=balanced_elites)
                         if full_search else None)
-                    if elite is not None and balanced_finalists and proposals % 3 != 0:
+                    if (elite is not None and full_search
+                            and proposals % 3 == 0 and balanced_elites):
                         balanced_parent_proposals += 1
                     # A real paid elite may need coordinated gear/talent/APL
                     # edits to escape a single-axis local basin. Do not pass
@@ -691,6 +561,9 @@ def run_live(root: Path, class_key: str, level: int, *,
             except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
                     TypeError, AssertionError, subprocess.SubprocessError) as exc:
                 failures.append(type(exc).__name__ + ":" + str(exc)[:180])
+            finally:
+                worst_candidate_s = max(
+                    worst_candidate_s, time.perf_counter() - candidate_started)
     finally:
         validator.close()
     if full_search and elapsed < 300.0:
@@ -709,9 +582,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "search_wall_s": search_wall_s,
                 "cold_candidate_failures": failures[:4]}
 
-    (score, live, candidate_sha, frozen_winner,
-     selected_balanced_score, selected_validation) = _freeze_paid_p75_balanced_winner(
-        best, balanced_finalists, confirmed, deep_confirmed)
+    score, live, candidate_sha, frozen_winner = best
+    selected_balanced_score = score
+    selected_validation = "three_balanced_live_screen_only"
     complete_search = search_window_met
     final = {}
     if complete_search:
@@ -822,11 +695,11 @@ def run_live(root: Path, class_key: str, level: int, *,
         "joint_cold_world_dps": score,
         "cold_balanced_screen_best_dps": best[0],
         "selected_balanced_screen_dps": selected_balanced_score,
-        "paid_joint_balanced_finalists": len(balanced_finalists),
-        "paid_joint_balanced_confirmed": len(confirmed),
-        "paid_joint_balanced_deep_confirmed": len(deep_confirmed),
+        "paid_joint_balanced_finalists": 0,
+        "paid_joint_balanced_confirmed": 0,
+        "paid_joint_balanced_deep_confirmed": 0,
         "balanced_parent_proposals": balanced_parent_proposals,
-        "balanced_finalist_failures": rerank_failures[:4],
+        "balanced_finalist_failures": [],
         "external_reference_only_floor": (P7_5_FINAL_DPS_FLOOR_FRACTION
                                           * float(meta["reference_dps"])),
         "final_required_dps": required,
@@ -835,10 +708,9 @@ def run_live(root: Path, class_key: str, level: int, *,
             prior["compatible_gates"] if prior is not None else []),
         "accepted_compatible_prior_run_urls": (
             prior["run_urls"] if prior is not None else []),
-        # The best cold three-fight screen and the selected paid balanced
-        # finalist can be different builds. Both fingerprints use canonical
-        # JSON; frozen_request_raw_sha256 separately hashes the exact 1,000-
-        # fight request bytes for native↔world provenance.
+        # The selected build is the best paid three-fight balanced screen.
+        # Preserve its canonical candidate fingerprint and the exact frozen
+        # request hash; the stochastic holdout never feeds back into selection.
         "cold_winner_request_sha256": best[2],
         "selected_balanced_request_sha256": candidate_sha,
         "frozen_source_build": frozen_source_build,
