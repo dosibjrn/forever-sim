@@ -5,6 +5,8 @@ on:
       - 'src/game/runtime/native_step_protocol.py'
       - 'src/game/runtime/go_native_world_damage_ack.py'
       - 'integrations/mythicsim-rust/live_two_world_pulls.py'
+      - 'integrations/mythicsim-rust/apl_mutation.py'
+      - 'integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py'
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
       - 'integrations/mythicsim-rust/engine'
       - 'docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json'
@@ -101,14 +103,14 @@ jobs:
               "BALANCED_TYPED_RNG_MODE_IGNORED_BY_SELECTED_RUST", outputs)
           print("REAL_SELECTED_RUST_BALANCED_STOCHASTIC_NATIVE_2D_SMOKE_GREEN_NOT_GATE", flush=True)
           PY
-      - name: Download exact failed no-record P7.5 winner report (read-only)
+      - name: Download latest no-record P7.5 diagnostic report (read-only; pre-Work2 composition)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/p75-search-failure"
-          gh run download 41629505680 --repo "$GITHUB_REPOSITORY" \
-            --name "work1-p75-no-record-2e9eb7d5b4c945f01a7555919f914d4e5dff0782" \
+          gh run download 41638882114 --repo "$GITHUB_REPOSITORY" \
+            --name "work1-p75-no-record-5db0100bec67aa78c4c099dca5f96f015c191080" \
             --dir "$RUNNER_TEMP/p75-search-failure"
           test -s "$RUNNER_TEMP/p75-search-failure/p75.json"
       - name: Ablate historical WF678 gear, talents and APL against failed P7.5 search winner (diagnostic, not gate)
