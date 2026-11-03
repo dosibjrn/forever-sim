@@ -41,10 +41,8 @@ class NativeRootsDotPortTest(unittest.TestCase):
 
     def test_typed_rng_source_uses_explicit_mode_and_is_idempotent(self):
         typed_source = (
-            "// typed RNG API already present in the selected engine
-"
-            "let report = forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic);
-"
+            "// typed RNG API already present in the selected engine" + chr(10)
+            + "let report = forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic);" + chr(10)
         )
         first = port.port_text("tests/classes/druid/prepare.rs", typed_source)
         self.assertIn(port.RUST_RUNTIME_TEST_TYPED, first)
