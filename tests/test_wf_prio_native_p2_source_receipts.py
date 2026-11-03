@@ -261,3 +261,61 @@ def test_incoming_world_reads_the_explicit_selected_sqlite(tmp_path):
         actor=SimpleNamespace(metadata={"level": 60}),
     )
     assert source_enrich_incoming_world(ir, db_path=selected_db) is ir
+
+
+def test_druid_talent_overlay_uses_the_selected_source_database(monkeypatch, tmp_path):
+    import importlib
+    from types import SimpleNamespace
+
+    from src.game.data.forever import druid
+    from src.game.model.ir import GameIRSlice
+
+    calls = {}
+
+    mode_resource_facts = importlib.import_module(
+        "src.game.data.forever.mode_resource_facts"
+    )
+    ability_semantics = importlib.import_module(
+        "src.game.data.forever.source_ability_semantics"
+    )
+
+    def apply_modes(class_key, modes, *, db_path=None):
+        calls["mode_resource_facts"] = db_path
+        return modes
+
+    def apply_actions(ir, *, class_key, level, db_path=None):
+        calls["source_ability_actions"] = db_path
+        return ir
+
+    def load_talents(class_key, *, db_path=None, **kwargs):
+        calls["load_sqlite_talents"] = db_path
+        return SimpleNamespace(
+            talents=(),
+            tree_rule={"points_per_row": 5},
+            captured_count=0,
+            expected_count=0,
+            batch_id="fixture",
+            complete=True,
+            blockers=(),
+        )
+
+    monkeypatch.setattr(mode_resource_facts, "apply_mode_resource_facts", apply_modes)
+    monkeypatch.setattr(ability_semantics, "source_ability_actions", apply_actions)
+    monkeypatch.setattr(druid, "load_sqlite_talents", load_talents)
+
+    selected_db = tmp_path / "selected.sqlite"
+    ir = GameIRSlice(
+        id="test:druid:60",
+        ruleset="forever",
+        actor=SimpleNamespace(metadata={"class_key": "druid", "level": 60}),
+        resources=(),
+        actions=(),
+    )
+    result = druid._with_sqlite_talents(ir, ability_db_path=selected_db)
+
+    assert result is not ir
+    assert calls == {
+        "mode_resource_facts": selected_db,
+        "source_ability_actions": selected_db,
+        "load_sqlite_talents": selected_db,
+    }
