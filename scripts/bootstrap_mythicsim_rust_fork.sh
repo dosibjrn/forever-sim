@@ -180,6 +180,15 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): expose retained Rust actor to two real gsim world kills"
 fi
 
+# Expose actual Rust health damage resource deltas per target, including
+# incoming source-native attacks when the prepared scenario enables them.
+# Reporting does not add mechanics, fake survival or claim paid recovery.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_health_damage_receipts.py" "$PWD"
+git add src/core/fight.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): retain source-native damage receipts across 2D kills"
+fi
+
 # Publish gsim's actually observed world movement into the retained native
 # actor's existing Rust casting rules. Keep the world as movement authority;
 # do not duplicate spell legality in the Python 2D driver.

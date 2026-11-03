@@ -16,6 +16,8 @@ on:
       - integrations/mythicsim-rust/port_native_world_lethal_terminal.py
       - integrations/mythicsim-rust/port_native_two_world_cli.py
       - integrations/mythicsim-rust/port_native_gsim_moving.py
+      - integrations/mythicsim-rust/port_native_health_damage_receipts.py
+      - integrations/mythicsim-rust/test_port_native_health_damage_receipts.py
       - integrations/mythicsim-rust/test_port_native_world_lethal_terminal.py
       - tests/test_work2_rust_gsim_moving_port.py
       - integrations/mythicsim-rust/port_native_improved_roots_rank.py
@@ -57,6 +59,8 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_world_lethal_terminal.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_two_world_cli.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_gsim_moving.py
+          python3 -m py_compile integrations/mythicsim-rust/port_native_health_damage_receipts.py
+          python3 integrations/mythicsim-rust/test_port_native_health_damage_receipts.py
           python3 integrations/mythicsim-rust/test_port_native_improved_roots_rank.py
           python3 integrations/mythicsim-rust/test_port_native_entangling_roots_dot.py
           python3 integrations/mythicsim-rust/test_port_native_pull_queue.py
@@ -109,6 +113,7 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_two_world_cli.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_gsim_moving.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_health_damage_receipts.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
           first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
@@ -120,6 +125,7 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_two_world_cli.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_gsim_moving.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_health_damage_receipts.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_improved_roots_rank.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_entangling_roots_dot.py /tmp/forever-selected-rust
           second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
@@ -167,6 +173,11 @@ jobs:
           assert actual["actual_2d_ack"] and actual["continuous_native_actor"]
           assert actual["native_movement_cast_legal"]
           assert actual["native_gsim_moving_ticks"] > 0
+          # The prepared Balance DPS reference has no enemy attacker. Read
+          # actual native damage accounting: no synthetic incoming attack.
+          assert all(w["native_health_damage_taken"] == 0
+                     and w["native_health_damage_events"] == 0
+                     for w in actual["native_windows"])
           assert not actual["paid_recovery"] and not actual["checkpoint_certified"]
           assert forged["forged_ack_rejected"]
           print("SELECTED_RUST_THREE_REAL_WORLD_TARGETS_MOVING_ACK_PASS_NOT_GATE")
