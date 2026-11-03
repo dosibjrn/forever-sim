@@ -14,7 +14,10 @@ on:
       - integrations/mythicsim-rust/port_native_world_lethal_ack.py
       - integrations/mythicsim-rust/port_native_early_retarget.py
       - integrations/mythicsim-rust/port_native_world_lethal_terminal.py
+      - integrations/mythicsim-rust/port_native_two_world_cli.py
+      - integrations/mythicsim-rust/port_native_gsim_moving.py
       - integrations/mythicsim-rust/test_port_native_world_lethal_terminal.py
+      - tests/test_work2_rust_gsim_moving_port.py
       - integrations/mythicsim-rust/port_native_improved_roots_rank.py
       - integrations/mythicsim-rust/test_port_native_improved_roots_rank.py
       - integrations/mythicsim-rust/port_native_entangling_roots_dot.py
@@ -52,12 +55,16 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_world_lethal_ack.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_early_retarget.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_world_lethal_terminal.py
+          python3 -m py_compile integrations/mythicsim-rust/port_native_two_world_cli.py
+          python3 -m py_compile integrations/mythicsim-rust/port_native_gsim_moving.py
           python3 integrations/mythicsim-rust/test_port_native_improved_roots_rank.py
           python3 integrations/mythicsim-rust/test_port_native_entangling_roots_dot.py
           python3 integrations/mythicsim-rust/test_port_native_pull_queue.py
           python3 integrations/mythicsim-rust/test_port_native_world_lethal_ack.py
           python3 integrations/mythicsim-rust/test_port_native_early_retarget.py
           python3 integrations/mythicsim-rust/test_port_native_world_lethal_terminal.py
+          python3 -m pip install --disable-pip-version-check 'pytest==8.3.5'
+          python3 -m pytest -q tests/test_work2_rust_gsim_moving_port.py
           python3 - <<'PY'
           from pathlib import Path
           s = Path("scripts/bootstrap_mythicsim_rust_fork.sh").read_text()
@@ -100,6 +107,8 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_world_lethal_ack.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_early_retarget.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_two_world_cli.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_gsim_moving.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
           first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
@@ -109,6 +118,8 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_world_lethal_ack.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_early_retarget.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_two_world_cli.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_gsim_moving.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_improved_roots_rank.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_entangling_roots_dot.py /tmp/forever-selected-rust
           second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
@@ -139,6 +150,26 @@ jobs:
             echo "Unsupported 3-target CLI returned false success" >&2
             exit 1
           fi
+          # Real selected-Rust / live gsim boundary smoke, not a paid gate.
+          # The 3-target walk must be acknowledged by Rust (not only gsim).
+          cargo build --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --bin forever-engine
+          python3 integrations/mythicsim-rust/live_two_world_pulls.py \
+            --binary /tmp/forever-selected-rust/target/debug/forever-engine \
+            --prepared /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
+            --mob-health 1200 --targets 3 --require-native-moving > /tmp/forever-rust-moving-3world.jsonl
+          python3 - <<'PY'
+          import json
+          with open("/tmp/forever-rust-moving-3world.jsonl") as f:
+              rows = [json.loads(line.split(" ", 1)[1]) for line in f if line.strip()]
+          actual, forged = rows
+          assert actual["world_targets_killed"] == 3
+          assert actual["actual_2d_ack"] and actual["continuous_native_actor"]
+          assert actual["native_movement_cast_legal"]
+          assert actual["native_gsim_moving_ticks"] > 0
+          assert not actual["paid_recovery"] and not actual["checkpoint_certified"]
+          assert forged["forged_ack_rejected"]
+          print("SELECTED_RUST_THREE_REAL_WORLD_TARGETS_MOVING_ACK_PASS_NOT_GATE")
+          PY
 
   sync-fork:
     if: >-
