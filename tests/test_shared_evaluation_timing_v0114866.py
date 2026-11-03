@@ -1,6 +1,6 @@
 import pytest
 
-from src.shared.leveling.timing import BASE_BETWEEN_PULL_TRAVEL_S, between_pull_travel_s
+from src.scenarios.timing import BASE_BETWEEN_PULL_TRAVEL_S, between_pull_travel_s
 from src.v2.class_model import Evaluation
 
 
