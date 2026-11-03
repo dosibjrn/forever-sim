@@ -157,6 +157,18 @@ def _druid_player(request: dict) -> dict:
         raise NativeP2ProbeError("NATIVE_P2_REQUEST_SIM_OPTIONS_MISSING")
     return player
 
+def _request_player(request: dict) -> dict:
+    """Extract the request player without making a class/game-legality decision."""
+    try:
+        player = request["raid"]["parties"][0]["players"][0]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise NativeP2ProbeError("NATIVE_REQUEST_PLAYER_PATH_MISSING") from exc
+    if not isinstance(player, dict):
+        raise NativeP2ProbeError("NATIVE_REQUEST_PLAYER_INVALID")
+    if not isinstance(request.get("simOptions"), dict):
+        raise NativeP2ProbeError("NATIVE_REQUEST_SIM_OPTIONS_MISSING")
+    return player
+
 
 def _json_object(raw: str) -> dict | None:
     try:
@@ -173,11 +185,11 @@ def prepare_native_request(
     scenario: str,
     deadline: float,
 ) -> dict[str, object]:
-    """Call the selected engine's explicit prepare --request CLI.
+    """Forward any class's candidate request to the selected prepare CLI.
 
-    The result preserves the native PreparedV2 object or its structured
-    refusal. MythicSim alone determines game legality; this client only
-    serializes requests and classifies the selected engine's response.
+    This shared P1/P2 transport validates only the request envelope. It does
+    not whitelist classes or decide game legality; the result preserves the
+    native PreparedV2 object or its structured refusal.
     """
     binary_path = Path(binary)
     if not binary_path.is_file():
@@ -187,7 +199,7 @@ def prepare_native_request(
         raise NativeP2ProbeError("NATIVE_P2_SCENARIO_ID_INVALID")
 
     payload = copy.deepcopy(request)
-    player = _druid_player(payload)
+    player = _request_player(payload)
     options = payload["simOptions"]
     if isinstance(options.get("iterations"), bool) or not isinstance(options.get("iterations"), int) or options["iterations"] < 1:
         raise NativeP2ProbeError("NATIVE_P2_PREPARE_ITERATIONS_INVALID")

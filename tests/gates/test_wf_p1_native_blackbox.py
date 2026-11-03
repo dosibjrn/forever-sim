@@ -67,6 +67,82 @@ def _druid_request():
     return request
 
 
+
+def test_prepare_native_request_forwards_non_druid_candidate_to_selected_engine(
+    monkeypatch, tmp_path
+):
+    from src.engine_client import native_p2_rank_probe as adapter
+
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"placeholder")
+    request = _sample_request()
+    original = deepcopy(request)
+    captured = {}
+
+    def fake_run(argv, **kwargs):
+        request_path = Path(argv[argv.index("--request") + 1])
+        prepared_path = Path(argv[argv.index("--outfile") + 1])
+        captured["request"] = json.loads(request_path.read_text(encoding="utf-8"))
+        prepared_path.write_text(json.dumps({
+            "schema_version": 2,
+            "contract": "forever-prepared",
+            "reference": {"engine_revision": "selected-pin"},
+            "player": {"talents_string": "123", "talents": {}},
+        }), encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(adapter.subprocess, "run", fake_run)
+    result = adapter.prepare_native_request(
+        binary=binary,
+        request=request,
+        scenario="p1-hunter-single-action-14282",
+        deadline=time.monotonic() + 5,
+    )
+
+    assert request == original
+    assert captured["request"]["raid"]["parties"][0]["players"][0]["class"] == "Hunter"
+    assert captured["request"]["simOptions"]["debugFirstIteration"] is False
+    assert result["status"] == "PREPARED"
+    assert result["engine_identity"] == "selected-pin"
+
+
+@pytest.mark.parametrize(
+    ("code", "expected_status"),
+    [
+        ("talents", "INVALID"),
+        ("rotation_unsupported", "UNSUPPORTED"),
+        ("prepare_fault", "ERROR"),
+    ],
+)
+def test_prepare_native_request_preserves_non_druid_native_refusal(
+    monkeypatch, tmp_path, code, expected_status
+):
+    from src.engine_client import native_p2_rank_probe as adapter
+
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"placeholder")
+
+    def fake_run(argv, **kwargs):
+        refusal = {"prepared": False, "refusal": {
+            "code": code, "reason": "native refusal reason",
+        }}
+        return subprocess.CompletedProcess(
+            argv, 1, stdout=json.dumps(refusal), stderr=""
+        )
+
+    monkeypatch.setattr(adapter.subprocess, "run", fake_run)
+    result = adapter.prepare_native_request(
+        binary=binary,
+        request=_sample_request(),
+        scenario="p1-hunter-single-action-14282",
+        deadline=time.monotonic() + 5,
+    )
+
+    assert result["status"] == expected_status
+    assert result["reason"] == "native refusal reason"
+    assert result["refusal"]["code"] == code
+
+
 def test_native_single_action_pair_keeps_every_non_action_field_identical():
     request = _sample_request()
     reference = deepcopy(request)
@@ -202,14 +278,65 @@ def test_native_prepare_refusal_is_preserved_without_fallback(monkeypatch, tmp_p
         lambda *args, **kwargs: pytest.fail("native prepare refusal must not reach the world bridge"),
     )
     result = probe.run_native_p1_direct_effect_probe(
-        binary=binary, engine_root=engine_root, request=_druid_request(),
+        binary=binary, engine_root=engine_root, request=_sample_request(),
         spell_id=1130, timeout_seconds=5,
     )
     assert result["status"] == "UNSUPPORTED"
     assert result["reason"] == "native_action_not_supported"
-    # Native refusal of the selected action is final: do not prepare a
-    # redundant no-action control or execute either side.
-    assert calls == ["p1-druid-l60-single-action-1130-with-action"]
+    # A non-Druid candidate reaches native; its refusal is final. Do not
+    # prepare a redundant no-action control or execute either side.
+    assert calls == ["p1-hunter-single-action-1130-with-action"]
+    assert result["p1_certified"] is False
+
+
+@pytest.mark.parametrize("native_status", ["INVALID", "UNSUPPORTED", "ERROR"])
+def test_native_positive_sim_refusal_skips_control_and_world(
+    monkeypatch, tmp_path, native_status
+):
+    """Native sim refusals are final; no redundant paid control execution."""
+    from src.engine_client import native_p1_effect_probe as probe
+
+    engine_root = tmp_path / "engine"
+    engine_root.mkdir()
+    binary = engine_root / "forever-engine"
+    binary.write_bytes(b"placeholder")
+    sim_calls = []
+
+    def prepare(**kwargs):
+        marker = "with" if kwargs["scenario"].endswith("with-action") else "without"
+        digest = ("a" if marker == "with" else "b") * 64
+        return {
+            "status": "PREPARED", "stage": "prepare",
+            "engine_identity": "selected-pin",
+            "request_sha256": digest,
+            "prepared": {"marker": marker, "request_sha256": digest},
+        }
+
+    def simulate(**kwargs):
+        sim_calls.append(kwargs["prepared"]["marker"])
+        if kwargs["prepared"]["marker"] != "with":
+            pytest.fail("native positive refusal must not run a control sim")
+        return {
+            "status": native_status, "stage": "sim",
+            "reason": "native_owned_sim_refusal",
+        }
+
+    monkeypatch.setattr(probe, "prepare_native_request", prepare)
+    monkeypatch.setattr(probe, "_simulate_prepared", simulate)
+    monkeypatch.setattr(
+        probe, "_run_world_bridge",
+        lambda *args, **kwargs: pytest.fail("native refusal must not reach world"),
+    )
+    result = probe.run_native_p1_direct_effect_probe(
+        binary=binary, engine_root=engine_root, request=_sample_request(),
+        spell_id=14282, timeout_seconds=5, iterations=1,
+    )
+    assert sim_calls == ["with"]
+    assert result["status"] == native_status
+    assert result["reason"] == "native_owned_sim_refusal"
+    assert result["positive_sim"]["status"] == native_status
+    assert "control_sim" not in result
+    assert result["native_executed"] is False
     assert result["p1_certified"] is False
 
 
