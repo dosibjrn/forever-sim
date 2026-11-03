@@ -11,44 +11,61 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.wf_gate_p1_live import run_live
+from src.engine_client.native_p1_effect_probe import run_native_p1_direct_effect_probe
 
 
 def main() -> None:
-    binary_value = os.environ.get("FOREVER_MYTHICSIM_RUST_BIN") or os.environ.get("FOREVER_ENGINE_BINARY")
+    binary_value = os.environ.get("FOREVER_ENGINE_BINARY")
     if not binary_value:
-        raise SystemExit("FOREVER_MYTHICSIM_RUST_BIN or FOREVER_ENGINE_BINARY is required")
+        raise SystemExit("FOREVER_ENGINE_BINARY is required")
+    engine_root = ROOT / "integrations" / "mythicsim-rust" / "engine"
+    fixture = engine_root / "tests" / "classes" / "druid" / "prepare" / "balance.request.json"
+    request = json.loads(fixture.read_text(encoding="utf-8"))
+    player = request["raid"]["parties"][0]["players"][0]
+    if player.get("class") != "ClassDruid":
+        raise AssertionError("Druid Balance fixture class changed")
+    rows = player["rotation"]["priorityList"]
+    if len(rows) != 1:
+        raise AssertionError(f"expected one fixture action, got {len(rows)}")
+    spell = rows[0]["action"]["castSpell"]["spellId"]["spellId"]
+    if spell != 9912:
+        raise AssertionError(f"expected fixture action 9912, got {spell}")
 
-    # Exercise the actual tools/wf_gate.py -> run_live acceptance provider.
-    # The provider selects this one source identity, then delegates validity
-    # and behavior to the exact selected Rust PreparedV2 + live 2D path.
-    report = run_live(ROOT, "druid", 60, spec="balance")
-    probes = report.get("native_effect_probes", [])
-    if len(probes) != 1:
-        raise AssertionError(json.dumps({
-            "gate_status": report.get("status"),
-            "native_effect_probes": probes,
-            "reasons": report.get("reasons"),
-        }, sort_keys=True, allow_nan=False))
-    result = probes[0]
-    assert report["status"] == "FAIL"  # one canary is deliberately not full P1 acceptance
-    assert report["native_migration_scope"] == "druid:60:balance:spell-9912"
-    assert report["pass_count"] == 0 and report["reachability_count"] == 0
+    result = run_native_p1_direct_effect_probe(
+        binary=Path(binary_value),
+        engine_root=engine_root,
+        request=request,
+        spell_id=spell,
+        timeout_seconds=120.0,
+        iterations=10,
+        seed=647003,
+        target_count=2,
+        world_mob_health=1200.0,
+    )
     if result.get("status") != "NATIVE_DIRECT_BEHAVIOR_VERIFIED":
         raise AssertionError(json.dumps(result, sort_keys=True, allow_nan=False))
-    assert result["spell_id"] == 9912
-    assert result["native_executed"] is True
+    world = result["world_bridge"]
+    assert result["positive_action_count"] == 1
+    assert result["control_action_count"] == 0
+    assert result["dps_delta"] > 0
     assert result["effect_observed"] is True
     assert result["controlled_behavior_assertion_passed"] is True
-    assert result["dps_delta"] > 0
-    assert result["world_targets_killed"] == 2
-    assert result["native_damage_events"] > 0
-    assert result["actual_2d_ack"] is True
+    assert world["actual_2d_ack"] is True
+    assert world["continuous_native_actor"] is True
+    assert world["native_damage_events"] > 0
+    assert world["checkpoint_certified"] is False
     assert result["p1_certified"] is False
 
     print(json.dumps({
-        "gate_status": report["status"],
-        "native_probe": result,
+        "status": result["status"],
+        "spell_id": spell,
+        "dps_with_action": result["dps_with_action"],
+        "dps_without_action": result["dps_without_action"],
+        "dps_delta": result["dps_delta"],
+        "world_targets_killed": world["world_targets_killed"],
+        "native_damage_events": world["native_damage_events"],
+        "actual_2d_ack": world["actual_2d_ack"],
+        "engine_identity": result["engine_identity"],
         "p1_certified": False,
     }, sort_keys=True, allow_nan=False))
 
