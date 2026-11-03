@@ -39,6 +39,7 @@ on:
       - 'src/game/talent_search.py'
       - 'src/optimization/**'
       - '.github/workflows/generic-source-search-regressions.yml'
+      - '.github/workflows/wf-gsim-rust-native-world.yml'
 
   push:
     branches:
@@ -81,6 +82,7 @@ on:
       - 'src/game/talent_search.py'
       - 'src/optimization/**'
       - '.github/workflows/generic-source-search-regressions.yml'
+      - '.github/workflows/wf-gsim-rust-native-world.yml'
 
 permissions:
   contents: read
