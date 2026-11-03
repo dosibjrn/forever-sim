@@ -8,8 +8,7 @@ from dataclasses import replace
 from math import isfinite
 from pathlib import Path
 import sqlite3
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
-from src.game.model.ir import ActionDefinition, ResourceCost, TargetStatDebuffEffect
+from .source_db_scope import DEFAULT_DB
 
 
 def load_target_combat_profile(level: int, *, db_path: Path | None = None,
@@ -53,6 +52,8 @@ def physical_outgoing_expected_factors(level: int, *, db_path: Path | None = Non
 
 
 def source_enrich_target_combat(ir, *, db_path: Path | None = None):
+    # Only the legacy action compiler needs GameIR. Scenario profile reads do not.
+    from src.game.model.ir import ActionDefinition, ResourceCost, TargetStatDebuffEffect
     if 'target_combat_profile' in ir.provenance:
         raise ValueError('target combat source applied twice')
     path=Path(db_path or DEFAULT_DB)
