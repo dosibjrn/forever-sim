@@ -1,6 +1,6 @@
 # Current project documents
 
-- [README](../README.md) — current checkpoint count (0/148), accepted engineering/test milestones and next gate.
+- [README](../README.md) — live M1 progress chart, current execution policy, native ownership/migration status and project entry points.
 - [PROCESS](../PROCESS.md) — **current approved**, concise governance, engineering workflow and acceptance policy.
 - [Gate contracts](gates/README.md) — exact approved P1–P7.5 predicates, runtime/source constraints, and live CLI authority.
 - [P1 native validation guide](gates/P1_VALIDATION.md) — selected MythicSim combat behavior without requiring duplicate Python GameIR.
