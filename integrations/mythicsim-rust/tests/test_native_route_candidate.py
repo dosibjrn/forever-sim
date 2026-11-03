@@ -73,6 +73,12 @@ def _world_report(target_count: int = 100) -> dict:
         "native_windows": windows,
         "world_kills": kills,
         "world_elapsed_seconds": float(target_count * 2),
+        "world_seconds_per_target_without_paid_recovery": 2.0,
+        "world_per_target_elapsed_seconds_without_paid_recovery": [2.0] * target_count,
+        "native_actor_mana_after_world_kills": [100.0 - index for index in range(target_count)],
+        "native_actor_mana_delta_between_world_kills": [-1.0] * (target_count - 1),
+        "minimum_native_actor_mana": 1.0,
+        "minimum_native_actor_health": 400.0,
         "paid_recovery": False,
         "world_target_provenance": {
             "kind": "caller_supplied_diagnostic_hp",
@@ -346,6 +352,10 @@ class SelectedRustRouteCandidateIntegrationTests(unittest.TestCase):
         self.assertEqual(world["gsim_route_legs"], 99)
         self.assertEqual(world["gsim_route_paid_receipts"], 99)
         self.assertGreater(world["gsim_route_paid_movement_s"], 0)
+        self.assertEqual(world["world_seconds_per_target_without_paid_recovery"], 2.0)
+        self.assertEqual(len(world["native_actor_mana_after_world_kills"]), 100)
+        self.assertEqual(len(world["native_actor_mana_delta_between_world_kills"]), 99)
+        self.assertGreater(world["minimum_native_actor_health"], 0)
         self.assertFalse(result["cross_level_resource_carry_verified"])
         self.assertFalse(result["route_transition_supported"])
         self.assertFalse(result["checkpoint_certified"])
