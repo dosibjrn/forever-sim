@@ -88,6 +88,7 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
     assert json.loads(calls[0][3]) == json.loads(calls[3][3])
     assert report["cold_unique_source_requests"] == 1
     assert report["winner_selection"] == "best_balanced_live_screen"
+    assert report["search_rng_mode"] == "balanced"
     assert report["paid_stochastic_finalists"] == 0
     assert report["stochastic_parent_proposals"] == 0
     # Real gate receipt exposes which talent build was frozen; a request
