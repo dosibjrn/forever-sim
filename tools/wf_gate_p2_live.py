@@ -1397,46 +1397,12 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
     key=f'{talent.id}:{rank}'
     result={'rank_key':key,'talent_id':talent.id,'rank':rank,
             'witness':dict(witness),'control_witness':None,
-            'source_rank_facts':None,'status':'FAIL','reasons':[],
+            'status':'FAIL','reasons':[],
             'behavior_tests':[], 'search_reachable':False}
     r=next((x for x in talent.ranks if x.rank==rank),None)
     if r is None:
         result['reasons'].append('IMPLEMENTATION_MISSING')
         return result
-    # Carry canonical source facts alongside the legal N-1/N witness. The
-    # native adapter must not infer source identity, effects or prerequisites
-    # from a Rust field name.
-    source_l0=r.provenance.get('checkpoint_source_l0')
-    metadata=talent.metadata if isinstance(talent.metadata,Mapping) else {}
-    source_prerequisite=(source_l0.get('prerequisite')
-                         if isinstance(source_l0,Mapping) else None)
-    if not isinstance(source_prerequisite,Mapping):
-        source_prerequisite=None
-    source_url=(source_l0.get('source_url') if isinstance(source_l0,Mapping) else None)
-    source_url=(source_url or metadata.get('checkpoint_source_url')
-                or r.provenance.get('source_url'))
-    source_build=(source_l0.get('source_build') if isinstance(source_l0,Mapping) else None)
-    source_build=(source_build or metadata.get('checkpoint_source_build')
-                  or r.provenance.get('source_build'))
-    source_row=metadata.get('row')
-    tree_members=[str(t.id) for t in compiled.talents if t.tree_key==talent.tree_key]
-    points_per_row=int((compiled.provenance.get('talent_tree_rules') or {}).get('points_per_row') or 0)
-    result['source_rank_facts']={
-        'class_key':str(compiled.actor.metadata.get('class_key') or ''),
-        'level':int(compiled.actor.metadata.get('level') or 0),
-        'talent_id':str(talent.id),'rank':int(rank),
-        'tree_key':str(talent.tree_key),
-        'tree_row':int(source_row) if source_row is not None else None,
-        'rank_cap':int(talent.max_rank),
-        'tree_members':tree_members,
-        'points_per_row':points_per_row,
-        'source_build':str(source_build or ''),
-        'source_url':str(source_url or ''),
-        'source_sha256':str(metadata.get('checkpoint_source_stage_sha256')
-                             or metadata.get('checkpoint_source_sha256') or ''),
-        'prerequisite':dict(source_prerequisite) if source_prerequisite is not None else None,
-        'checkpoint_source_l0':dict(source_l0) if isinstance(source_l0,Mapping) else None,
-    }
     exclusion = solo_threat_exclusion(compiled, r) if not r.modifiers else None
     if not r.modifiers and exclusion is None:
         result['reasons'].append('IMPLEMENTATION_MISSING')
@@ -1770,8 +1736,6 @@ def _native_p2_candidate_pair(witness, talent_id, rank):
 def _native_p2_rank_diagnostic(binary, talent_id, rank, tested, *,
                                checkpoint_class, checkpoint_level, tree_key):
     """Forward a checkpoint rank pair; source receipts are optional metadata."""
-    source=tested.get('source_rank_facts')
-    source=source if isinstance(source,Mapping) else {}
     # Use the actual checkpoint arguments, not a second source-catalogue
     # certificate, to route this request to the selected native engine.
     # The native prepare result alone determines talent/rank legality.
@@ -1800,15 +1764,6 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested, *,
             before_selection=before, after_selection=after,
             target_talent_id=talent_id, target_rank=int(rank),
             iterations=100, seed=647003, rng_mode=NativeRngMode.BALANCED)
-        # Keep source provenance for diagnosis, but do not emit a parallel
-        # Python legality/prerequisite/tier-validation receipt.
-        result['source_rank_facts']={
-            'talent_id':talent_id,'rank':int(rank),
-            'tree_key':tree_key,
-            'source_build':source.get('source_build'),
-            'source_url':source.get('source_url'),
-            'source_sha256':source.get('source_sha256'),
-        }
         return result
     except Exception as exc:
         return {'status':'ERROR',
@@ -2038,7 +1993,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
         native_probes=result['native_rank_probe_results']
         result['native_rank_probe_summary']={
-            'scope':'druid:60:balance; source-backed predatory_strikes:1-3; moonkin_form remains engine-smoke-only',
+            'scope':'druid:60:balance; selected-native predatory_strikes ranks 1-3',
             'attempted':len(native_probes),
             'pass_count':sum(p.get('status')=='PROBE_PASS' for p in native_probes),
             'fail_count':sum(p.get('status')=='PROBE_FAIL' for p in native_probes),
