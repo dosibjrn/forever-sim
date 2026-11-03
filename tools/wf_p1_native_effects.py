@@ -151,11 +151,17 @@ def run_native(binary: Path, request: dict, *, class_key: str, level: int,
     source = inventory(class_key, level, root=root, db_path=db_path)
     selected = {r["spell_id"]: r for r in source["candidates"]}
     other = {r["spell_id"]: r for r in source["separate"]}
-    if spell_id in other:
-        return {"status": other[spell_id]["status"], "spell_id": spell_id,
+    source_role = other.get(spell_id, {}).get("status")
+    # The source-only inventory cannot decide Warcraft cast legality.
+    # A legacy "not proven castable" role is uncertainty, not a native
+    # refusal: if the requested spell is in the actual APL, let selected
+    # MythicSim prepare/execute it. Keep explicit scenario waivers, native
+    # auto/pet channels and lower-rank P1 scope separate from player casts.
+    if source_role is not None and source_role != "NOT_A_PROVEN_CASTABLE_ACTION":
+        return {"status": source_role, "spell_id": spell_id,
                 "effect_observed": False, "p1_certified": False,
                 "p1_native_progress": native_p1_progress(source)}
-    if spell_id not in selected:
+    if spell_id not in selected and source_role != "NOT_A_PROVEN_CASTABLE_ACTION":
         raise ValueError("SOURCE_SPELL_NOT_IN_P1_CANDIDATES:" + str(spell_id))
     if not binary.is_file():
         raise FileNotFoundError("PINNED_RUST_ENGINE_BINARY_MISSING")

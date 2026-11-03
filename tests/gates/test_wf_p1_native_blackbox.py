@@ -88,6 +88,45 @@ def test_source_only_nonimpact_never_becomes_an_effect_pass():
 
 
 
+
+def test_unproven_python_source_role_does_not_block_a_native_apl_probe(monkeypatch, tmp_path):
+    """Test Forever admission plumbing, not the correctness of Rust game rules.
+
+    The legacy source role is uncertain, but the caller has an explicit native
+    castSpell request. Only MythicSim may decide whether it is supported.
+    This is a mocked adapter test and never earns P1 effect coverage.
+    """
+    from tools import wf_p1_native_effects as native
+
+    source = {
+        "class": "hunter", "level": 20,
+        "scenario": "current_solo_leveling_100mob_v1",
+        "source_only": True, "game_ir_required": False,
+        "candidates": [{"spell_id": 13550}],
+        "separate": [{"spell_id": 14282, "status": "NOT_A_PROVEN_CASTABLE_ACTION"}],
+    }
+    monkeypatch.setattr(native, "inventory", lambda *args, **kwargs: source)
+    calls = []
+
+    def fake_native(binary, request, *, timeout_s):
+        actions = request["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+        calls.append([row["action"]["castSpell"]["spellId"]["spellId"] for row in actions])
+        return {"result": {"raidMetrics": {"dps": {"avg": float(len(actions))}}}}
+
+    monkeypatch.setattr(native, "_run", fake_native)
+    binary = tmp_path / "forever-engine"
+    binary.write_bytes(b"unit-test-placeholder-not-an-engine")
+    result = native.run_native(binary, _sample_request(),
+                               class_key="hunter", level=20, spell_id=14282)
+    assert calls == [[14282, 13550], [13550]]
+    assert result["status"] == "NATIVE_APL_ABLATION_DIFFERENCE"
+    assert result["effect_observed"] is False
+    assert result["p1_certified"] is False
+    assert result["p1_native_progress"]["verified"] == 0
+    assert result["p1_native_progress"]["diagnostic_only_spell_ids"] == [14282]
+
+
+
 def test_native_preparation_refusal_preserves_rust_reason(monkeypatch, tmp_path):
     """The pinned Rust CLI emits a JSON refusal on stdout with exit code 5."""
     from subprocess import CompletedProcess
