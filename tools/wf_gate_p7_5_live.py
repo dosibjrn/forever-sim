@@ -350,6 +350,31 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
     return False
 
 
+
+def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
+                                 balanced_elites, source, validator, rng):
+    """Combine genuinely paid gear and APL axes in a P7.5 proposal.
+
+    The selected native↔2D axis ablation showed that gear and rotation can
+    interact strongly. Keep talents from the current paid parent, and draw
+    both changed axes only from builds already scored in THIS cold search.
+    If either donor operation cannot complete, restore the candidate.
+    Final source legality and DPS are still paid by genuine native+2D.
+    """
+    candidate_player = source.player(candidate)
+    original_items = copy.deepcopy(candidate_player["equipment"]["items"])
+    original_rotation = copy.deepcopy(candidate_player["rotation"])
+    if (_paid_p75_gear_block_crossover(
+            candidate, parent, finalists, balanced_elites, source,
+            validator, rng)
+            and _paid_p75_apl_crossover(
+                candidate, parent, finalists, balanced_elites, source, rng)):
+        return True
+    candidate_player["equipment"]["items"] = original_items
+    candidate_player["rotation"] = original_rotation
+    return False
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.5")
@@ -555,8 +580,18 @@ def run_live(root: Path, class_key: str, level: int, *,
                                      and proposals % 7 != 0
                                      and proposals % 11 != 0
                                      and not crossover and not gear_crossover)
+                    # Every twenty-third eligible paid-parent proposal
+                    # combines a paid gear block and a distinct paid APL.
+                    # No saved reference or previous-gate winner is a donor.
+                    gear_apl_crossover = (
+                        elite is not None and full_search
+                        and proposals % 23 == 0
+                        and proposals % 7 != 0 and proposals % 11 != 0
+                        and not crossover and not gear_crossover
+                        and not apl_crossover)
                     repair_axes = (("rotation",) if apl_crossover
-                                   else ("gear",) if crossover or gear_crossover
+                                   else ("gear",) if (crossover or gear_crossover
+                                                       or gear_apl_crossover)
                                    else _p75_paid_joint_axes(proposals)
                                    if elite is not None and full_search else None)
                     if (repair_axes is None and elite is not None
@@ -576,6 +611,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                             balanced_elites, source, rng)
                     elif gear_crossover:
                         _paid_p75_gear_block_crossover(
+                            candidate, elite, balanced_finalists,
+                            balanced_elites, source, validator, rng)
+                    elif gear_apl_crossover:
+                        _paid_p75_gear_apl_crossover(
                             candidate, elite, balanced_finalists,
                             balanced_elites, source, validator, rng)
                 candidate_sha = hashlib.sha256(json.dumps(
