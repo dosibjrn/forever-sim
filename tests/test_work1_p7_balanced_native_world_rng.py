@@ -113,6 +113,13 @@ def test_selected_rust_build_reuses_historical_full_rng_patch_chain():
     assert patcher.index(migrated) < patcher.index(extremes)
     assert patcher.index(extremes) < patcher.index(audit)
     assert "wf_l60_rng_extreme_tests" in patcher
+    # The explicit required mode is a separate audited port, applied after
+    # the historical RNG repair chain in the fork publisher and production CI.
+    publisher = (Path(__file__).resolve().parents[1] /
+                 "scripts/bootstrap_mythicsim_rust_fork.sh").read_text()
+    selected = (Path(__file__).resolve().parents[1] /
+                ".github/workflows/rust-upstream-fork.yml").read_text()
     typed_mode = "port_native_typed_rng.py"
-    assert typed_mode in patcher
-    assert patcher.index(audit) < patcher.index(typed_mode)
+    assert typed_mode in publisher
+    assert typed_mode in selected
+    assert publisher.index(typed_mode) < publisher.index("cargo test --locked --lib persistent_next_target")

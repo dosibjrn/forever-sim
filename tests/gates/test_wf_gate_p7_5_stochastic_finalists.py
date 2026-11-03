@@ -849,7 +849,7 @@ def test_p75_unrestricted_search_uses_balanced_until_frozen_holdout():
         observed[iterations] = ast.literal_eval(node.args[4])
     assert observed == expected
     assert "stochastic_fallback" not in source
-    assert '"balanced_crit_rejections":balanced_crit_rejections' in source
+    assert '"rerank_evidence_schema":"replayable_native_balanced_reranks_v1"' in source
     assert "WOWSIM_RNG_MODE" not in source
     assert '"rng_mode":"balanced"' in source
     assert '"holdout_mode":"stochastic"' in source

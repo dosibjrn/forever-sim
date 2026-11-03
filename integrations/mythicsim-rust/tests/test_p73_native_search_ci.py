@@ -74,7 +74,7 @@ import json,sys
 argv=sys.argv
 req=json.load(open(argv[argv.index('--request')+1]))
 ranks=req['raid']['parties'][0]['players'][0]['talentsString']
-mode=args[args.index('--rng-mode')+1]
+mode=argv[argv.index('--rng-mode')+1]
 seed=int(req['simOptions']['randomSeed'])
 value=650+sum(int(v) for v in ranks if v.isdigit())+int(ranks[0])
 if mode == 'stochastic':
