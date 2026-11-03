@@ -167,9 +167,9 @@ def test_public_gate_cli_rejects_retired_p1_p2():
 
 def test_retired_history_cannot_be_invalidated(tmp_path):
     path = tmp_path / "old.tsv"
-    path.write_text("\\t".join(m1.PASS_FIELDS) + "\\n" +
-                    "\\t".join(("druid", "60", "balance", "P2",
-                               "2026-11-02T00:00:00+00:00", SHA, "", "")) + "\\n")
+    path.write_text("\t".join(m1.PASS_FIELDS) + "\n" +
+                    "\t".join(("druid", "60", "balance", "P2",
+                               "2026-11-02T00:00:00+00:00", SHA, "", "")) + "\n")
     with pytest.raises(SystemExit):
         m1.main(["--ledger", str(path), "--invalidate",
                  "druid", "60", "balance", "P2"])
