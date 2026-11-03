@@ -226,29 +226,21 @@ def test_native_damage_witness_follows_conditional_opaque_prefix_for_cold_and_el
 
     witnesses = _native_positive_source_casts(source_actions, baseline)
     assert witnesses == [{"spellId": 11713}]
-    source_spells, same_spell, _allowed_casts, compatible, source_aura_keys = _corpus(source_actions)
-    source_spell_keys = {
-        json.dumps(spell, sort_keys=True, separators=(",", ":"))
-        for spell in source_spells
-    }
-    compatible_shapes = {
-        json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
-        for predicate in compatible
-    }
-    same_shapes = {
-        key: {
-            json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
-            for predicate in predicates
-        }
-        for key, predicates in same_spell.items()
-    }
-    item_shape = json.dumps(
-        _predicate_shape(source_actions[-1]["action"]["condition"]),
-        sort_keys=True, separators=(",", ":"),
-    )
-    assert item_shape not in compatible_shapes
+    templates_by_spell = {}
+    noncast_templates = set()
+    for entry in source_actions:
+        action = entry["action"]
+        cast = action.get("castSpell")
+        if isinstance(cast, dict):
+            key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
+            templates_by_spell.setdefault(key, set()).add(
+                json.dumps(action, sort_keys=True, separators=(",", ":"))
+            )
+        else:
+            noncast_templates.add(
+                json.dumps(action, sort_keys=True, separators=(",", ":"))
+            )
 
-    cross_cast_seen = False
     for seed in range(128):
         cold = mutate_apl(None, source_actions, random.Random(seed), cold=True)
         elite = mutate_apl(cold, source_actions, random.Random(seed + 1000))
@@ -280,32 +272,23 @@ def test_native_damage_witness_follows_conditional_opaque_prefix_for_cold_and_el
             ]
             assert witness_actions
             assert all(
-                entry["action"].get("condition")
-                == source_actions[1]["action"]["condition"]
-                for entry in witness_actions
-            )
-            assert all(
-                entry["action"].get("condition")
-                is not None
+                entry["action"] == source_actions[1]["action"]
                 for entry in witness_actions
             )
 
             for entry in anchored:
                 action = entry.get("action", {})
                 cast = action.get("castSpell")
-                condition = action.get("condition")
-                if not isinstance(cast, dict) or condition is None:
-                    continue
-                key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
-                spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
-                assert valid
-                assert set(spell_refs) <= source_spell_keys
-                assert set(aura_refs) <= source_aura_keys
-                shape = json.dumps(
-                    _predicate_shape(condition), sort_keys=True, separators=(",", ":")
-                )
-                assert shape in compatible_shapes
-                if shape not in same_shapes.get(key, set()):
-                    cross_cast_seen = True
+                if isinstance(cast, dict):
+                    key = json.dumps(
+                        cast.get("spellId"), sort_keys=True, separators=(",", ":")
+                    )
+                    assert json.dumps(
+                        action, sort_keys=True, separators=(",", ":")
+                    ) in templates_by_spell[key]
+                else:
+                    assert json.dumps(
+                        action, sort_keys=True, separators=(",", ":")
+                    ) in noncast_templates
         assert source_actions == source_snapshot
     assert cross_cast_seen
