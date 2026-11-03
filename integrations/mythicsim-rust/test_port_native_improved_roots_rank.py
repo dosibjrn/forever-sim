@@ -22,6 +22,8 @@ class ImprovedRootsRankSourcePortTest(unittest.TestCase):
         self.assertIn("pub improved_entangling_roots: i32", changed)
         self.assertIn('improved_entangling_roots: m.i32("improved_entangling_roots")', changed)
         self.assertIn("effect\n/// remains unmodelled", changed)
+        self.assertIn("fn native_improved_roots_rank_intake()", changed)
+        self.assertIn('"0000004"', changed)
 
     def test_missing_source_anchor_fails_closed(self):
         initial = "\n".join((port.COMMENT_OLD, port.FIELD_OLD, port.READ_OLD))
