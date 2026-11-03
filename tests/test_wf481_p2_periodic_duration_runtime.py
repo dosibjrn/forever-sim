@@ -7,7 +7,7 @@ from src.game.data.forever.registry import build_game_ir_slice
 from src.game.model.ir import PeriodicEffect, PeriodicHealEffect
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import apply_talent_selection, talented_bonus_for_level
-from tools import wf_gate_p2_live as gate
+from tools import wf_talent_runtime as talent_runtime
 
 
 @pytest.fixture(scope='module')
@@ -37,7 +37,7 @@ def original_and_modified(source):
 def test_source_exact_duration_and_real_periodic_ticks(original_and_modified, family, expected_delta):
     before, after, modifiers=original_and_modified
     mod=next(m for m in modifiers if m.target_id==family)
-    result=gate._periodic_duration_witness(before,after,mod)
+    result=talent_runtime._periodic_duration_witness(before,after,mod)
     assert result is not None
     assert result['source_duration_delta_s']==expected_delta
     assert result['probe']=='paired_production_periodic_tick_series'
@@ -64,27 +64,27 @@ def test_rejects_wrong_compiled_duration_in_one_rank(original_and_modified):
     mod=next(m for m in mods if m.target_id=='regrowth')
     assert len([a for a in new.actions if a.family_key=='regrowth'])>=2
     altered=_alter_family_action(new,'regrowth',-1,lambda e: replace(e,duration_s=e.duration_s-3))
-    assert gate._periodic_duration_witness(old,altered,mod) is None
+    assert talent_runtime._periodic_duration_witness(old,altered,mod) is None
 
 
 def test_rejects_wrong_source_increment(original_and_modified):
     old,new,mods=original_and_modified
     for mod in mods:
-        assert gate._periodic_duration_witness(old,new,replace(mod,value=mod.value+3)) is None
+        assert talent_runtime._periodic_duration_witness(old,new,replace(mod,value=mod.value+3)) is None
 
 
 def test_rejects_increased_tick_strength(original_and_modified):
     old,new,mods=original_and_modified
     mod=next(m for m in mods if m.target_id=='moonfire')
     altered=_alter_family_action(new,'moonfire',0,lambda e: replace(e,total_base_damage=e.total_base_damage*1.2))
-    assert gate._periodic_duration_witness(old,altered,mod) is None
+    assert talent_runtime._periodic_duration_witness(old,altered,mod) is None
 
 
 def test_rejects_unexecuted_extra_tick(original_and_modified,monkeypatch):
     old,new,mods=original_and_modified
     mod=next(m for m in mods if m.target_id=='rejuvenation')
-    assert gate._periodic_duration_witness(old,new,mod)
-    original=gate._action_runtime_probe
+    assert talent_runtime._periodic_duration_witness(old,new,mod)
+    original=talent_runtime._action_runtime_probe
     count=0
     def miss_last_tick(ir,action,*,observe_periodic=False):
         nonlocal count
@@ -94,12 +94,12 @@ def test_rejects_unexecuted_extra_tick(original_and_modified,monkeypatch):
             result={**result,'events':result['events'][:-1]}
         return result
     monkeypatch.setattr(gate,'_action_runtime_probe',miss_last_tick)
-    assert gate._periodic_duration_witness(old,new,mod) is None
+    assert talent_runtime._periodic_duration_witness(old,new,mod) is None
 
 
 def test_all_target_family_ranks_are_validated(original_and_modified):
     old,new,mods=original_and_modified
     for mod in mods:
-        observed=gate._periodic_duration_witness(old,new,mod)
+        observed=talent_runtime._periodic_duration_witness(old,new,mod)
         assert set(observed['checked_ir_actions'])=={
             a.id for a in new.actions if a.family_key==mod.target_id}
