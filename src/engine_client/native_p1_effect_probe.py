@@ -249,6 +249,9 @@ def _probe_native_prepared_action_candidates(
             unclassified_count += 1
             continue
         flags = spell["flags"]
+        if any(not isinstance(flag, str) for flag in flags):
+            unclassified_count += 1
+            continue
         if "SpellFlagAPL" not in flags:
             non_apl_count += 1
             continue
@@ -315,6 +318,7 @@ def _probe_native_prepared_action_candidates(
         status: sum(row.get("native_status") == status for row in results)
         for status in ("PREPARED", "INVALID", "UNSUPPORTED", "ERROR", "BLOCKED")
     }
+    selected_spell_present = selected_spell_id in seen
     partial_reasons = []
     if deadline_expired:
         partial_reasons.append("NATIVE_P1_CANDIDATE_PREPARE_DEADLINE_EXPIRED")
@@ -322,11 +326,14 @@ def _probe_native_prepared_action_candidates(
         partial_reasons.append("NATIVE_PREPARED_SPELL_FLAGS_INCOMPLETE")
     if unaddressable_count:
         partial_reasons.append("NATIVE_APL_RECORD_UNADDRESSABLE")
+    if not selected_spell_present:
+        partial_reasons.append("NATIVE_SELECTED_ACTION_NOT_IN_APL_CANDIDATES")
     return {
         "status": "PARTIAL" if partial_reasons else "AVAILABLE",
         "reason": ";".join(partial_reasons) if partial_reasons else None,
         "candidate_scope": "NATIVE_PREPARED_APL_SPELLS_ONLY",
         "candidate_count": len(seen),
+        "selected_spell_present": selected_spell_present,
         "attempted_count": len(seen),
         "prepared_count": counts["PREPARED"],
         "invalid_count": counts["INVALID"],
