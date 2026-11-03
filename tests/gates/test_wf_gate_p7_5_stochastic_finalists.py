@@ -156,8 +156,8 @@ def test_p75_crossover_duplicate_paid_axes_do_not_exhaust_distinct_donor_cap():
     assert source.player(child)["talentsString"] == "b2"
 
 
-def test_p75_gear_block_crossover_preserves_paid_enchants_and_source_validation():
-    """Copy intact slots from another PAID build; reject illegal new loadouts."""
+def test_p75_gear_block_crossover_preserves_paid_enchants_without_python_veto():
+    """The paid gear proposal must reach native instead of local legality."""
     parent, donor, child = (_candidate(x) for x in ("parent", "donor", "child"))
     items = child["raid"]["parties"][0]["players"][0]["equipment"]["items"]
     paid_items = donor["raid"]["parties"][0]["players"][0]["equipment"]["items"]
@@ -167,76 +167,50 @@ def test_p75_gear_block_crossover_preserves_paid_enchants_and_source_validation(
     source = SimpleNamespace(
         player=lambda q: q["raid"]["parties"][0]["players"][0],
         RejectedGear=ValueError)
-
-    class Validator:
-        def __init__(self, reject=False):
-            self.calls = []
-            self.reject = reject
-        def validate(self, ids, enchants):
-            self.calls.append((ids, enchants))
-            if self.reject:
-                raise ValueError("source gear uniqueness")
-
-    valid = Validator()
     assert gate._paid_p75_gear_block_crossover(
         child, parent, [(771.0, {}, "paid-donor", donor, 800.0)],
-        [(900.0, "paid-parent", parent)], source, valid, random.Random(5))
+        [(900.0, "paid-parent", parent)], source, random.Random(5))
     assert items == paid_items
-    assert valid.calls == [([71, 72], [801, 802])]
     items[0]["id"] = 999
-    assert donor == original_donor  # no mutation of existing paid parent
+    assert donor == original_donor
 
-    rejected = _candidate("illegal")
-    before = copy.deepcopy(rejected)
-    invalid = Validator(reject=True)
+    unsupported = _candidate("candidate-to-forward")
+    assert gate._paid_p75_gear_block_crossover(
+        unsupported, parent, [(771.0, {}, "paid-donor", donor, 800.0)],
+        [], source, random.Random(5))
+    assert source.player(unsupported)["equipment"]["items"] == paid_items
     assert not gate._paid_p75_gear_block_crossover(
-        rejected, parent, [(771.0, {}, "paid-donor", donor, 800.0)],
-        [], source, invalid, random.Random(5))
-    assert rejected == before
-    assert len(invalid.calls) == 4
-    assert not gate._paid_p75_gear_block_crossover(
-        rejected, parent, [], [(900.0, "paid-parent", parent)],
-        source, valid, random.Random(5))
-    assert rejected == before
+        _candidate("no-donor"), parent, [], [], source, random.Random(5))
 
 
 def test_p75_gear_block_uses_paid_balanced_gear_when_finalist_gear_is_identical():
-    """A talent-only stochastic finalist must not consume a gear crossover."""
+    """Unchanged finalist gear must not suppress a distinct paid donor."""
     parent, finalist, donor, child = (
         _candidate(name) for name in ("parent", "stochastic", "balanced", "child"))
     source = SimpleNamespace(
         player=lambda q: q["raid"]["parties"][0]["players"][0],
         RejectedGear=ValueError)
-    # Source-paid finalist has a distinct talent/APL but unchanged gear.
     assert source.player(finalist)["equipment"] == source.player(child)["equipment"]
     source.player(donor)["equipment"]["items"] = [
         {"id": 71, "enchant": 801}, {"id": 72, "enchant": 802}]
-    validated = []
-    validator = SimpleNamespace(
-        validate=lambda ids, enchants: validated.append((ids, enchants)))
     assert gate._paid_p75_gear_block_crossover(
         child, parent, [(800.0, {}, "paid-finalist", finalist, 900.0)],
         [(900.0, "paid-parent", parent), (780.0, "paid-gear", donor)],
-        source, validator, random.Random(5))
+        source, random.Random(5))
     assert source.player(child)["equipment"] == source.player(donor)["equipment"]
-    assert validated == [([71, 72], [801, 802])]
 
-    # A one-slot-only paid donor is not a multi-slot recombination.
     one_slot = _candidate("one-slot")
     source.player(one_slot)["equipment"]["items"][0]["id"] = 91
     fresh = _candidate("fresh")
     before = copy.deepcopy(fresh)
-    validated.clear()
     assert not gate._paid_p75_gear_block_crossover(
         fresh, parent, [(800.0, {}, "paid-one-slot", one_slot, 900.0)],
-        [], source, validator, random.Random(5))
+        [], source, random.Random(5))
     assert fresh == before
-    assert validated == []
 
 
-
-def test_p75_gear_block_retries_a_different_paid_donor_after_illegal_mix():
-    """One rejected paid finalist must not suppress another legal paid build."""
+def test_p75_gear_block_submits_top_paid_donor_without_local_rules():
+    """Do not reject a gear combination based on a second Python ruleset."""
     parent, finalist, alternative, child = (
         _candidate(name) for name in ("parent", "paid-finalist", "paid-balanced", "child"))
     player = lambda q: q["raid"]["parties"][0]["players"][0]
@@ -247,36 +221,20 @@ def test_p75_gear_block_retries_a_different_paid_donor_after_illegal_mix():
     source = SimpleNamespace(player=player, RejectedGear=ValueError)
     original_finalist = copy.deepcopy(finalist)
     original_alternative = copy.deepcopy(alternative)
-    attempted = []
-
-    def validate(ids, enchants):
-        attempted.append((ids, enchants))
-        if 91 in ids:
-            raise ValueError("incompatible source-legal gear mix")
 
     class DeterministicRng:
-        # Try the highest-ranked stochastic finalist first; this first
-        # donor fails validation, while the already-paid balanced one passes.
-        def shuffle(self, sequence):
-            pass
-        def choice(self, sequence):
-            return sequence[0]
-        def randint(self, low, high):
-            return low
-        def sample(self, sequence, count):
-            return sequence[:count]
+        def shuffle(self, sequence): pass
+        def randint(self, low, high): return low
+        def sample(self, sequence, count): return sequence[:count]
 
     assert gate._paid_p75_gear_block_crossover(
         child, parent,
         [(900.0, {}, "paid-finalist-sha", finalist, 950.0)],
         [(800.0, "paid-balanced-sha", alternative)],
-        source, SimpleNamespace(validate=validate), DeterministicRng())
-    assert attempted == [([91, 92], [901, 902]),
-                         ([71, 72], [801, 802])]
-    assert player(child)["equipment"] == player(alternative)["equipment"]
+        source, DeterministicRng())
+    assert player(child)["equipment"] == player(finalist)["equipment"]
     assert finalist == original_finalist
     assert alternative == original_alternative
-
 
 
 def test_p75_paid_stochastic_parent_and_independent_cold_restarts():
