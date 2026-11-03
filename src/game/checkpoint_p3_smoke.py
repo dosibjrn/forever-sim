@@ -190,6 +190,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
     tested_stat_assertions = 0
     verified_stat_assertions = 0
     encountered_dps = set()
+    catalogue_stat_axes = set()
     for slot, items in sorted(by_slot.items()):
         # The legal test set is chosen *only* by item level and stable ID.
         selected = sorted(items, key=lambda item:(
@@ -198,6 +199,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         for item in selected:
             tested += 1
             stats = _ordinary_stats(item)
+            catalogue_stat_axes.update(stats)
             if not weapon_damage_dependent:
                 stats.pop('mean_weapon_hit_damage', None)
             dps_axes=('weapon_dps','wand_dps','ranged_weapon_dps')
@@ -277,6 +279,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
             'source': 'CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS',
             'legal_item_count': len(rows), 'tested_item_count': tested,
             'slot_count': len(slots), 'slots': slots,
+            'catalogue_stat_axes': sorted(catalogue_stat_axes),
             'tested_stat_assertions': tested_stat_assertions,
             'verified_stat_assertions': verified_stat_assertions,
             'weight_evidence_kind': weight_evidence_kind,
