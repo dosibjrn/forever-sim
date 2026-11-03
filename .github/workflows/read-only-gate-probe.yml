@@ -1,5 +1,5 @@
 name: Read-only first-contact gate probe
-# One-time first-contact execution against the current main tree; no M1 writes.
+# One-time read-only first-contact run against main 18292867e9d1; no M1 writes.
 
 on:
   workflow_dispatch:
