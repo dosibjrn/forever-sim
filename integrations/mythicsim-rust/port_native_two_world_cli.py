@@ -19,13 +19,61 @@ PREPARED_MARKER = "pub fn native_two_world_targets("
 CLI_MARKER = '    if args[0] == "native-world-pulls" {'
 
 
+# Exact previously published two-target implementation markers. A fork may
+# already carry the tested #447 source before its gitlink is selected on main.
+# Upgrade that source in place; never add duplicate Rust functions/CLI arms.
+LEGACY_PORTS = {
+    METHOD_MARKER: (
+        "    /// Two genuinely distinct gsim world mobs, one selected source-Rust actor.",
+        ("pub(crate) fn native_two_world_targets(&mut self)",
+         'RUST_SECOND_WORLD_TARGET_NOT_NATIVE_LETHAL',
+         'RUST_FIRST_WORLD_TARGET_NOT_NATIVE_LETHAL',
+         '"world_targets_killed": 2'),
+    ),
+    CLASS_MARKER: (
+        "/// Two source-native kills with real gsim world HP/hash ACK and one actor.",
+        ("pub(crate) fn native_two_world_targets(",
+         "native_two_world_targets().map_err(str::to_string)",
+         '"ClassHunter"'),
+    ),
+    PREPARED_MARKER: (
+        "/// Same selected native actor across two real world-lethal ACKs, not a gate.",
+        ("pub fn native_two_world_targets(prepared: &PreparedV2)",
+         "crate::classes::native_two_world_targets(prepared).map_err(PreparedError::Invalid)",
+         "world_bridge::start(&prepared.request_sha256)"),
+    ),
+    CLI_MARKER: (
+        '    if args[0] == "native-world-pulls" {',
+        ('args[4] != "2"',
+         'native_two_world_targets(&prepared)',
+         '"checkpoint_certified": false'),
+    ),
+}
+
+
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
-    if marker in source:
-        if source.count(marker) != 1 or source.count(anchor) != 1:
-            raise ValueError(f"RUST_WORLD_TWO_TARGET_PARTIAL_{marker}")
-        return source
     if source.count(anchor) != 1:
-        raise ValueError(f"RUST_WORLD_TWO_TARGET_ANCHOR_{anchor}")
+        raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
+    if source.count(replacement) == 1:
+        return source
+    if source.count(replacement) > 1:
+        raise ValueError(f"RUST_WORLD_MULTI_TARGET_DUPLICATE_{marker}")
+    # The previously validated two-target CLI and methods already exist in the
+    # maintained public Rust fork on some source lineages. Replace only their
+    # exact identified bounded block, never another function or game mechanic.
+    if marker in LEGACY_PORTS:
+        beginning, required = LEGACY_PORTS[marker]
+        if beginning in source:
+            if source.count(beginning) != 1:
+                raise ValueError(f"RUST_WORLD_MULTI_TARGET_LEGACY_AMBIGUOUS_{marker}")
+            start = source.index(beginning)
+            end = source.index(anchor)
+            older = source[start:end]
+            if start >= end or any(older.count(token) != 1 for token in required):
+                raise ValueError(f"RUST_WORLD_MULTI_TARGET_LEGACY_DRIFT_{marker}")
+            return source[:start] + replacement + source[end:]
+    if marker in source:
+        raise ValueError(f"RUST_WORLD_MULTI_TARGET_PARTIAL_{marker}")
     return source.replace(anchor, replacement + anchor, 1)
 
 
