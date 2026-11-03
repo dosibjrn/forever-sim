@@ -1,7 +1,7 @@
-"""Game-model-independent talent candidate identity, scoring and result types.
+"""Game-model-independent talent allocation, candidate identity and scoring.
 
-Source-backed talent enumeration and legality remain in src.game.talent_search.
-This module owns only stable candidate representation and callback-driven scoring.
+GameIR adaptation and source-legality validation remain in src.game.talent_search.
+This module owns pure candidate enumeration and callback-driven scoring.
 """
 from __future__ import annotations
 
@@ -10,6 +10,77 @@ from typing import Any, Callable, Iterable, Mapping
 
 
 TalentEvaluator = Callable[[Mapping[str, int]], tuple[float | None, Mapping[str, Any]]]
+TalentSelectionValidator = Callable[[Mapping[str, int]], None]
+
+
+@dataclass(frozen=True)
+class TalentAllocationOption:
+    """Minimal candidate identity and executable-rank data for generic search."""
+
+    talent_id: str
+    max_rank: int
+    executable_ranks: frozenset[int]
+
+
+TalentRankAdmission = Callable[
+    [TalentAllocationOption, int, Mapping[str, int], int], bool
+]
+
+
+def enumerate_talent_allocations(
+    options: Iterable[TalentAllocationOption],
+    *,
+    max_points: int,
+    rank_is_admissible: TalentRankAdmission,
+    validate_selection: TalentSelectionValidator,
+    max_candidates: int = 1024,
+) -> tuple[tuple[dict[str, int], ...], bool]:
+    """Enumerate bounded allocations using caller-owned partial/full legality.
+
+    The optimizer only traverses the supplied ordered options and enforces the
+    generic point budget. Callbacks own all game-specific admission decisions.
+    """
+    if max_candidates < 1:
+        raise ValueError("max_candidates must be positive")
+    definitions = tuple(options)
+    if not definitions:
+        return ({},), False
+
+    candidates: list[dict[str, int]] = []
+    selection: dict[str, int] = {}
+    truncated = False
+
+    def walk(index: int, spent: int) -> None:
+        nonlocal truncated
+        if truncated:
+            return
+        if index == len(definitions):
+            try:
+                validate_selection(selection)
+            except ValueError:
+                return
+            if len(candidates) >= max_candidates:
+                truncated = True
+                return
+            candidates.append(dict(selection))
+            return
+
+        talent = definitions[index]
+        for rank in range(0, min(int(talent.max_rank), int(max_points) - spent) + 1):
+            if rank:
+                if rank not in talent.executable_ranks:
+                    continue
+                if not rank_is_admissible(talent, rank, selection, index):
+                    continue
+                selection[talent.talent_id] = rank
+            walk(index + 1, spent + rank)
+            if rank:
+                del selection[talent.talent_id]
+            if truncated:
+                break
+
+    walk(0, 0)
+    return tuple(candidates), truncated
 
 
 def talent_candidate_id(selection: Mapping[str, int]) -> str:
@@ -116,9 +187,13 @@ def score_talent_allocations(
 
 
 __all__ = (
+    "TalentAllocationOption",
     "TalentCandidateResult",
     "TalentEvaluator",
     "TalentSearchResult",
+    "TalentRankAdmission",
+    "TalentSelectionValidator",
+    "enumerate_talent_allocations",
     "score_talent_allocations",
     "talent_candidate_id",
 )
