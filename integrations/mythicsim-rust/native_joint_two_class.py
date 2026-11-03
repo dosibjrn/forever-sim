@@ -27,7 +27,7 @@ from native_l60_matrix import (
     ROOT, create_inventory, digest, fingerprint, legal_apl_only_request,
     load_native_item_index, player,
 )
-from p73_talent_search_v2 import encode, random_build, run
+from native_executor import run
 from native_source_donors import load_source_donor_fixtures
 
 
@@ -202,193 +202,10 @@ def native_score_request(
 
 
 
-def _generate_native_druid_talent_donors(
-    binary: Path, reference: dict, baseline_witnesses: list[dict], outdir: Path,
-    *, iterations: int, seed: int, existing_talents: set[str] | None = None,
-    runner=run, max_attempts: int = 12,
-) -> tuple[list[dict], list[dict], dict]:
-    """Propose Druid talent candidates and let native Rust decide validity.
-
-    Candidates come from the existing source-derived proposal generator. Each
-    exact request is executed through the selected native Rust binary in
-    Balanced mode. A donor is usable only when native execution succeeds and
-    the baseline-positive cast also deals native damage under that build.
-    """
-    source_player = player(reference)
-    if source_player.get("class") != "ClassDruid":
-        return [], [], {"status": "NOT_APPLICABLE", "native_evaluations": 0,
-                        "native_failures": 0}
-    source_actions = source_player.get("rotation", {}).get("priorityList", [])
-    original_talents = source_player.get("talentsString")
-    def witness_key(identity: dict) -> str:
-        return json.dumps({"spellId": identity}, sort_keys=True,
-                          separators=(",", ":"))
-
-    baseline_keys = {witness_key(identity) for identity in baseline_witnesses}
-    if not baseline_keys:
-        return [], [], {
-            "status": "BLOCKED_NO_BASELINE_NATIVE_DAMAGE_WITNESS",
-            "native_evaluations": 0, "native_failures": 0,
-            "attempted_builds": [],
-        }
-
-    donor_dir = Path(outdir) / "generated_talent_donors"
-    donor_dir.mkdir(parents=True, exist_ok=True)
-    seen = set(existing_talents or ())
-    if isinstance(original_talents, str):
-        seen.add(original_talents)
-    by_witness: dict[str, list[dict]] = {}
-    attempted_builds = []
-    native_evaluations = 0
-    native_failures = 0
-
-    for attempt in range(max_attempts):
-        build_seed = seed + 1_000_003 + attempt
-        ranks = random_build(random.Random(build_seed))
-        talents = encode(ranks)
-        if talents in seen:
-            continue
-        seen.add(talents)
-
-        donor_seed = seed + 2_000_003 + attempt
-        candidate = copy.deepcopy(reference)
-        player(candidate)["talentsString"] = talents
-        effective = native_payload(candidate, iterations, donor_seed)
-        request_sha = fingerprint(candidate)
-        prefix = fingerprint(talents)[:16]
-        try:
-            record, raw = native_score_request(
-                binary, candidate, iterations, donor_seed, "balanced",
-                time.monotonic() + 30.0, runner=runner,
-            )
-        except (TimeoutError, subprocess.TimeoutExpired) as exc:
-            native_failures += 1
-            failure = _write_native_failure(
-                donor_dir, fingerprint(effective), effective, exc
-            )
-            attempted_builds.append({
-                "talents": talents, "status": "NATIVE_TIMEOUT", "failure": failure,
-            })
-            break
-        except Exception as exc:
-            native_failures += 1
-            failure = _write_native_failure(
-                donor_dir, fingerprint(effective), effective, exc
-            )
-            attempted_builds.append({
-                "talents": talents, "status": "NATIVE_FAILURE", "failure": failure,
-            })
-            continue
-
-        native_evaluations += 1
-        positive = _native_positive_source_casts(source_actions, raw)
-        positive_keys = {witness_key(identity) for identity in positive}
-        common = [
-            copy.deepcopy(identity) for identity in baseline_witnesses
-            if witness_key(identity) in positive_keys
-        ]
-        request_path = donor_dir / (prefix + ".request.json")
-        effective_path = donor_dir / (prefix + ".effective_request.json")
-        response_path = donor_dir / (prefix + ".response.json")
-        request_path.write_text(json.dumps(candidate, indent=2) + "\n")
-        effective_path.write_text(json.dumps(effective, indent=2) + "\n")
-        response_path.write_text(json.dumps(raw, indent=2) + "\n")
-
-        attempt_record = {
-            "talents": talents,
-            "status": "NATIVE_POSITIVE_WITNESS" if common else "NO_COMMON_POSITIVE_WITNESS",
-            "score": record["score"],
-            "native_response_sha256": record["raw_response_sha256"],
-            "positive_damage_witnesses": positive,
-            "baseline_positive_witnesses_confirmed": common,
-            "request_path": request_path.relative_to(outdir).as_posix(),
-            "effective_request_path": effective_path.relative_to(outdir).as_posix(),
-            "response_path": response_path.relative_to(outdir).as_posix(),
-        }
-        attempted_builds.append(attempt_record)
-        if not common:
-            continue
-
-        fixture = {
-            "class_name": "ClassDruid",
-            "request": candidate,
-            "source_path": request_path.relative_to(outdir).as_posix(),
-            "source_sha256": request_sha,
-            "item_count": len(source_player.get("equipment", {}).get("items", [])),
-            "source_type": "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE",
-            "native_response_sha256": record["raw_response_sha256"],
-            "native_positive_damage_witnesses": common,
-            "native_score": record["score"],
-            "native_iterations": record["iterations"],
-            "native_seed": record["seed"],
-            "native_rng_mode": record["rng_mode"],
-        }
-        for identity in common:
-            by_witness.setdefault(witness_key(identity), []).append(fixture)
-        if any(len(fixtures) >= 2 for fixtures in by_witness.values()):
-            break
-
-    supported = [
-        (len(fixtures), key, fixtures)
-        for key, fixtures in by_witness.items() if len(fixtures) >= 2
-    ]
-    if not supported:
-        summary = {
-            "status": "BLOCKED_NO_TWO_NATIVE_VERIFIED_TALENT_DONORS",
-            "build_provenance": "p73_talent_search_v2.random_build+encode; native Rust Balanced execution is the sole talent-validity authority",
-            "native_iterations": iterations,
-            "native_evaluations": native_evaluations,
-            "native_failures": native_failures,
-            "attempted_builds": attempted_builds,
-            "selected_talent_builds": [],
-            "common_witnesses": [],
-        }
-        (donor_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-        return [], [], summary
-
-    _support, selected_key, candidates = max(
-        supported, key=lambda item: (item[0], item[1])
-    )
-    selected = sorted(
-        candidates, key=lambda fixture: player(fixture["request"])["talentsString"]
-    )[:2]
-    common_keys = set(baseline_keys)
-    for fixture in selected:
-        common_keys.intersection_update({
-            witness_key(identity)
-            for identity in fixture["native_positive_damage_witnesses"]
-        })
-    common_witnesses = [
-        copy.deepcopy(identity) for identity in baseline_witnesses
-        if witness_key(identity) in common_keys
-    ]
-    if selected_key not in common_keys or len(selected) != 2 or not common_witnesses:
-        raise RuntimeError("Generated Druid donors lost their shared native-positive witness")
-
-    summary = {
-        "status": "PASS",
-        "build_provenance": "p73_talent_search_v2.random_build+encode; native Rust Balanced execution is the sole talent-validity authority",
-        "native_iterations": iterations,
-        "native_evaluations": native_evaluations,
-        "native_failures": native_failures,
-        "attempted_builds": attempted_builds,
-        "selected_talent_builds": [
-            player(fixture["request"])["talentsString"] for fixture in selected
-        ],
-        "common_witnesses": common_witnesses,
-        "selected_native_response_sha256": [
-            fixture["native_response_sha256"] for fixture in selected
-        ],
-    }
-    (donor_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    return selected, common_witnesses, summary
-
-
 def source_bounded_adapter(
     class_key: str, reference: dict, same_class: list[dict],
     items: dict[int, dict], *, donor_fixtures: list[dict] | None = None,
     native_damage_witnesses: list[dict] | None = None,
-    native_verified_talent_builds: set[str] | None = None,
 ) -> tuple[JointCandidateAdapter, dict]:
     """Use exact pinned same-class source requests; the scheduler is unchanged."""
     original = player(reference)
@@ -529,7 +346,6 @@ def source_bounded_adapter(
         }
         for fixture in extra_same_class
         if fixture.get("item_count") == len(base_gear)
-        and fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
     ]
     talent_donor_fixtures = []
     for fixture in extra_same_class:
@@ -684,15 +500,7 @@ def source_bounded_adapter(
         "talent_builds_excluded_for_native_damage_witness": [
             talent_label(value) for value in excluded_talents
         ],
-        "source_donor_fixture_count": sum(
-            fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
-            for fixture in extra_same_class
-        ),
-        "native_generated_talent_donor_count": sum(
-            fixture.get("source_type") == "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
-            for fixture in extra_same_class
-        ),
-        "native_verified_talent_builds": sorted(native_verified_talent_builds or set()),
+        "source_donor_fixture_count": len(extra_same_class),
         "gear_donor_fixtures_scanned": gear_donor_fixtures_scanned,
         "talent_donor_fixtures": talent_donor_fixtures,
         "source_casts_by_talentsString": {
@@ -732,7 +540,6 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         "profile_id": profile_id, "status": "BLOCKED_SOURCE",
         "dimensions_requested": ["gear", "talents", "apl"],
         "native_paid": 0, "baseline_paid": 0, "native_paid_total": 0,
-        "native_generated_donor_paid": 0, "native_generated_donor_failures": 0,
         "baseline_balanced_score": None,
         "baseline_effective_request_sha256": None,
         "baseline_native_duration_s": None,
@@ -805,77 +612,15 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     )
 
     try:
-        try:
-            adapter, scope = source_bounded_adapter(
-                cls, reference, same_class, native_items,
-                donor_fixtures=donor_fixtures,
-                native_damage_witnesses=native_damage_witnesses,
-            )
-        except ValueError as exc:
-            can_generate_druid_donors = (
-                cls == "druid"
-                and any(marker in str(exc) for marker in (
-                    "BLOCKED_TALENTS", "BLOCKED_NATIVE_DAMAGE_WITNESS",
-                ))
-            )
-            if not can_generate_druid_donors:
-                raise
-
-            existing_talents = {
-                player(request_value).get("talentsString")
-                for request_value in same_class
-                if isinstance(player(request_value).get("talentsString"), str)
-            }
-            for fixture in donor_fixtures or []:
-                request_value = fixture.get("request")
-                if isinstance(request_value, dict):
-                    value = player(request_value).get("talentsString")
-                    if isinstance(value, str):
-                        existing_talents.add(value)
-
-            generated_donors, generated_witnesses, generated_summary = (
-                _generate_native_druid_talent_donors(
-                    binary, reference, native_damage_witnesses, outdir,
-                    iterations=iterations, seed=seed,
-                    existing_talents=existing_talents,
-                )
-            )
-            row["native_generated_donor_summary"] = generated_summary
-            row["native_generated_donor_paid"] = generated_summary.get(
-                "native_evaluations", 0
-            )
-            row["native_generated_donor_failures"] = generated_summary.get(
-                "native_failures", 0
-            )
-            if len(generated_donors) < 2:
-                raise ValueError(
-                    "BLOCKED_NATIVE_DAMAGE_WITNESS: " +
-                    generated_summary.get("status", "generated donor proof incomplete")
-                ) from exc
-
-            effective_donors = list(donor_fixtures or []) + generated_donors
-            original_talents = player(reference).get("talentsString")
-            verified_builds = {
-                talent for talent in [
-                    original_talents,
-                    *[player(fixture["request"]).get("talentsString")
-                      for fixture in generated_donors],
-                ]
-                if isinstance(talent, str)
-            }
-            adapter, scope = source_bounded_adapter(
-                cls, reference, same_class, native_items,
-                donor_fixtures=effective_donors,
-                native_damage_witnesses=generated_witnesses,
-                native_verified_talent_builds=verified_builds,
-            )
-            scope["native_generated_donor_summary"] = generated_summary
+        adapter, scope = source_bounded_adapter(
+            cls, reference, same_class, native_items,
+            donor_fixtures=donor_fixtures,
+            native_damage_witnesses=native_damage_witnesses,
+        )
     except Exception as exc:
         row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
         row["blocker"] = str(exc)[:500]
-        row["native_paid_total"] = (
-            row["baseline_paid"] + row["native_generated_donor_paid"]
-        )
+        row["native_paid_total"] = row["baseline_paid"]
         row["native_failures"] = native_failures
         return row
     row.update(scope)
@@ -933,7 +678,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     row["search_status"] = result["status"]
     row["native_paid"] = len(paid)
     row["native_paid_total"] = (
-        row["baseline_paid"] + row["native_generated_donor_paid"] + row["native_paid"]
+        row["baseline_paid"] + row["native_paid"]
     )
     row["paid_unique"] = result["paid_candidates"]
     row["native_errors"] = result["engine_errors"]
