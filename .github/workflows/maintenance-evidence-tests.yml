@@ -35,6 +35,7 @@ jobs:
           tests/maintenance/test_architecture_boundaries.py
           tests/maintenance/test_source_rune_world_boundary.py
           tests/maintenance/test_source_acquisition_import_boundary.py
+          tests/maintenance/test_source_fact_readers_boundary.py
           tests/maintenance/test_source_l0_frontier_boundary.py
           tests/maintenance/test_import_feral_p7_archives.py
           tests/maintenance/test_audit_feral_p7_holdout.py
