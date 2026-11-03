@@ -106,6 +106,30 @@ def test_explicit_synthetic_hp_is_not_mislabeled_as_sourced():
             helper(invalid, None)
 
 
+def test_source_melee_attack_range_controls_real_world_approach():
+    module = _world_module()
+    source = {"melee": {"auto_swing_melee": True,
+                        "main_hand": {"max_range": 5.0}}}
+    assert module._source_approach_radius(source) == pytest.approx(4.5)
+    assert module._source_approach_radius(
+        {"melee": {"auto_swing_melee": False}}) == 12.
+    world = _world()
+    leg = module._queue_world_walk(
+        world, "m1", speed_yards_s=7., approach_radius_yards=4.5)
+    assert leg["scheduled_yards"] == pytest.approx(27.5)
+    world.advance_to(leg["arrival_s"])
+    assert world.player_position_yards == pytest.approx((27.5, 0.))
+    assert world.enemy_positions_yards["m1"] == (32., 0.)
+
+
+@pytest.mark.parametrize("range_yards", [0, -1, True, "5", float("nan"), float("inf")])
+def test_source_melee_attack_range_rejects_invalid_input(range_yards):
+    with pytest.raises(ValueError, match="RUST_WORLD_SOURCE_MELEE_RANGE_INVALID"):
+        _world_module()._source_approach_radius(
+            {"melee": {"auto_swing_melee": True,
+                       "main_hand": {"max_range": range_yards}}})
+
+
 def test_native_incoming_health_damage_is_sourced_from_each_rust_window():
     validate = _world_module()._native_health_damage_summary
     windows = [
