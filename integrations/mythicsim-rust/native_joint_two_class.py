@@ -251,7 +251,7 @@ def source_bounded_adapter(
     if original["talentsString"] not in source_talents or len(talents) < 2:
         raise ValueError(
             "BLOCKED_TALENTS: need a source-observed baseline and two "
-            "independent full 51-point same-class source builds"
+            "independent full 51-point same-profile source builds"
         )
     alternate = [t for t in talents if t != original["talentsString"]]
 
