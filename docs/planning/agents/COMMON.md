@@ -6,8 +6,8 @@ This file contains only rules that apply to all five agents. Read it together wi
 
 ## Authority
 
-- [OVERALL_PLAN](../../OVERALL_PLAN.md) defines **what** the project is building.
-- [PROCESS](../../PROCESS.md) and [gate contracts](../../gates/README.md) define **how** work is accepted.
+- [OVERALL_PLAN](../../../OVERALL_PLAN.md) defines **what** the project is building.
+- [PROCESS](../../../PROCESS.md) and [gate contracts](../../gates/README.md) define **how** work is accepted.
 - [WORK_PRIORITY](../WORK_PRIORITY.md) is the live, current-only work allocation and ownership queue.
 - This contract and role files organize work; they do not override approved scope, process or gates.
 - Continue the existing owned issue/branch/PR. Do not rely on stale conversation summaries, fixed historical issue numbers or old task prompts. Do not take another agent's owned branch.
