@@ -12,6 +12,11 @@ from pathlib import Path
 from hashlib import sha256
 from uuid import uuid4
 
+# Separate, bounded budget for alternative source-policy witnesses. The base
+# gear search keeps its 44-evaluation contract; required zero-weight axes must
+# not be starved by consuming that same budget before the witness phase.
+P3_SOURCE_POLICY_WITNESS_BUDGET = 16
+
 
 def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: str):
     """Use the actual P2/source-legal optimizer frontier as the P3 build.
@@ -136,7 +141,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # with the source-authored policies and the same combat+recovery scorer.
     # Do not erase observed negative weights, waive missing stats, fabricate an
     # epsilon, or change P4/P5 search. The only extra work is paid from the
-    # source search's remaining bounded budget.
+    # dedicated 16-evaluation witness budget, separate from the 44-evaluation
+    # base gear-search budget. This ensures each required zero axis gets tried.
     extra_evaluations = 0
     source_policy_stat_witnesses = []
     for blocker in item_check["blockers"]:
@@ -145,7 +151,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
             continue
-        remaining = max(0, 44 - int(result.get("attempted", 0)) - extra_evaluations)
+        remaining = max(0, P3_SOURCE_POLICY_WITNESS_BUDGET - extra_evaluations)
         if remaining < 2:
             break
         witness = paid_source_policy_stat_witness(
