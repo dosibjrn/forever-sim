@@ -61,5 +61,114 @@ class NativeRootsDotPortTest(unittest.TestCase):
             port.port_text(path, initial.replace("    InsectSwarm,", "    Unexpected,"))
 
 
+    @staticmethod
+    def _moving_world():
+        actor = ActorState.from_ir(
+            ActorDefinition("hero", "player", base_stats={}),
+            (ResourceDefinition("health", "Health", "hero",
+                                initial_amount=500, capacity=500),), ())
+        positions = {"m0": (20.0, 0.0), "m1": (20.0, 5.0)}
+        world = CombatRuntime(
+            actor=actor,
+            target=TargetState.with_health("m0", 1000.0),
+            other_targets=(TargetState.with_health("m1", 1000.0),),
+            spatial_positions_yards=positions,
+            enemy_move_speed_yards_s=7.0,
+            melee_radius_yards=5.0,
+        )
+        for target_id, (x, y) in positions.items():
+            world.targets[target_id].metadata["facing_xy_yards"] = (-x, -y)
+        world.engage_target("m0")
+        world.select_target("m0")
+        return world
+
+    @staticmethod
+    def _control_event(duration_ns=1_000_000_000):
+        return {
+            "event_id": "native-effect-1",
+            "effect_kind": "control",
+            "control_id": "root",
+            "duration_ns": duration_ns,
+            "break_semantics_status": "unimplemented",
+            "native_time_ns": 100_000_000,
+            "damage": 0.0,
+            "source_action_id": "SpellID: 9853",
+            "rank": 0,
+            "landed": True,
+            "crit": False,
+            "periodic": False,
+            "native_target_index": 0,
+            "native_target_unit_index": 0,
+            "native_target_label": "Target 1",
+            "native_caster_type": "",
+            "native_caster_unit_index": 0,
+            "native_caster_label": "",
+        }
+
+    def test_native_root_control_freezes_and_resumes_real_2d_enemy_motion(self):
+        world = self._moving_world()
+        world.advance_to(0.1)
+        frozen_position = world._enemy_position_at("m0")
+        snapshot = snapshot_gsim_world(world)
+        digest = state_hash(snapshot)
+        tick = {
+            "sequence": 0,
+            "native_clock_ns": 100_000_000,
+            "clock_ms": 100,
+            "world_sha256": digest,
+            "selected_target_id": "m0",
+        }
+        response = {
+            "sequence": 0,
+            "native_process_id": 12345,
+            "observed_input_world_sha256": digest,
+            "native_damage_events": [],
+            "native_control_events": [self._control_event()],
+        }
+        applier = GsimNativeDamageWorldApplier(world)
+        ack = applier.apply(tick, response)
+        self.assertEqual(ack["applied_event_ids"], ["native-effect-1"])
+        self.assertEqual(ack["applied_control_event_ids"], ["native-effect-1"])
+        self.assertNotEqual(ack["world_before_sha256"], ack["world_after_sha256"])
+        self.assertEqual(ack["root_break_semantics"], "unimplemented")
+        self.assertIn("root", world.targets["m0"].active_controls)
+
+        world.advance_to(0.6)
+        while_rooted = world._enemy_position_at("m0")
+        self.assertAlmostEqual(while_rooted[0], frozen_position[0], places=6)
+        self.assertAlmostEqual(while_rooted[1], frozen_position[1], places=6)
+
+        world.advance_to(1.1)
+        world.advance_to(1.6)
+        after_expiry = world._enemy_position_at("m0")
+        self.assertLess(after_expiry[0], while_rooted[0],
+                        "enemy movement must resume when the native root duration expires")
+
+    def test_invalid_native_root_control_is_rejected_before_world_mutation(self):
+        world = self._moving_world()
+        world.advance_to(0.1)
+        digest = state_hash(snapshot_gsim_world(world))
+        tick = {
+            "sequence": 0,
+            "native_clock_ns": 100_000_000,
+            "clock_ms": 100,
+            "world_sha256": digest,
+            "selected_target_id": "m0",
+        }
+        response = {
+            "sequence": 0,
+            "native_process_id": 12345,
+            "observed_input_world_sha256": digest,
+            "native_damage_events": [],
+            "native_control_events": [self._control_event(duration_ns=0)],
+        }
+        with self.assertRaisesRegex(
+                NativeDamageWorldApplicationError,
+                "WORLD_DAMAGE_ACK_CONTROL_EVENT_INVALID"):
+            GsimNativeDamageWorldApplier(world).apply(tick, response)
+        self.assertNotIn("root", world.targets["m0"].active_controls)
+        self.assertEqual(state_hash(snapshot_gsim_world(world)), digest)
+
+
 if __name__ == "__main__":
     unittest.main()
