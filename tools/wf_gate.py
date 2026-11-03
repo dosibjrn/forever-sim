@@ -486,8 +486,12 @@ def evaluate(evidence_dir: Path, class_key: str, level: int, spec: str, gate: st
 
 
 def _run_live_gate(root: Path, class_key: str, level: int, spec: str,
-                   gate: str) -> dict:
-    """Execute one active production gate; retired P1/P2 are not callable."""
+                   gate: str, scenario_id: str = "") -> dict:
+    """Execute one active production gate; retired P1/P2 are not callable.
+
+    Keep the optional trailing scenario argument for existing P7 callers; it is
+    intentionally ignored because scenario-specific P1 execution is retired.
+    """
     if gate not in GATES:
         return {"status": "BLOCKED", "reasons": ["RETIRED_OR_UNKNOWN_GATE:" + gate]}
     # Explicit provider naming contract for one-gate-sized implementations.
