@@ -117,6 +117,7 @@ def source_bounded_adapter(
 
     base_gear = copy.deepcopy(original["equipment"]["items"])
     base_apl = copy.deepcopy(original["rotation"]["priorityList"])
+    source_talents = set()
     talents = set()
     for request in source_requests:
         try:
@@ -125,12 +126,17 @@ def source_bounded_adapter(
             continue
         if source_player.get("class") != original["class"]:
             continue
-        source_talents = source_player.get("talentsString")
-        if _is_full_51_source_build(source_talents):
-            talents.add(source_talents)
+        source_talent = source_player.get("talentsString")
+        if isinstance(source_talent, str):
+            source_talents.add(source_talent)
+        if _is_full_51_source_build(source_talent):
+            talents.add(source_talent)
     talents = sorted(talents)
-    if original["talentsString"] not in talents or len(talents) < 2:
-        raise ValueError("BLOCKED_TALENTS: need two independent full 51-point same-class source builds")
+    if original["talentsString"] not in source_talents or len(talents) < 2:
+        raise ValueError(
+            "BLOCKED_TALENTS: need a source-observed baseline and two "
+            "independent full 51-point same-class source builds"
+        )
     alternate = [t for t in talents if t != original["talentsString"]]
 
     gear_donor_fixtures_scanned = [
@@ -186,7 +192,11 @@ def source_bounded_adapter(
         return rng.choice(choices)
 
     def talent_legal(value):
-        return value in talents and _is_full_51_source_build(value)
+        # The exact source reference is a legal starting anchor even when it
+        # spends fewer than 51 points. Every mutated/cold talent candidate
+        # must still be one of the pinned full 51-point source builds.
+        return (value == original["talentsString"]
+                or (value in talents and _is_full_51_source_build(value)))
 
     def cold_apl(rng):
         for _ in range(8):
@@ -224,7 +234,7 @@ def source_bounded_adapter(
         "source_donor_fixture_count": len(extra_same_class),
         "gear_donor_fixtures_scanned": gear_donor_fixtures_scanned,
         "talent_donor_fixtures": talent_donor_fixtures,
-        "talent_validation": "51_POINT_WHOLE_BUILDS_OBSERVED_IN_PINNED_SAME_CLASS_REQUESTS_NOT_RANKWISE",
+        "talent_validation": "SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
         "gear_validation": "PINNED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
         "apl_validation": "SOURCE_CAST_IDENTITIES_AND_OPAQUE_ACTION_CORPUS",
     }
