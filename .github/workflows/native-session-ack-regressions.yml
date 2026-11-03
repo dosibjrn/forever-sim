@@ -61,6 +61,32 @@ jobs:
           ! grep -Fq 'WOWSIM_RNG_MODE' integrations/mythicsim-rust/engine/src/core/rng.rs
           grep -Fq 'SimRng::new(rng_mode,' integrations/mythicsim-rust/engine/src/core/fight.rs
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+      - name: Verify explicit Balanced and Stochastic modes in real native and gsim 2D combat (not gate)
+        run: |
+          python3 - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          path = Path("integrations/mythicsim-rust/live_world_probe.py")
+          spec = importlib.util.spec_from_file_location("typed_rng_world_smoke", path)
+          probe = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(probe)
+          binary = Path("integrations/mythicsim-rust/engine/target/debug/forever-engine")
+          request = Path("docs/evidence/druid-l60-balance/p7.3/saved_728_request.json")
+          outputs = {}
+          for mode in ("balanced", "stochastic"):
+              native = probe.native_source_control(binary, request, 5, rng_mode=mode)
+              live = probe.run(binary, request, distance=15.0, iterations=5, rng_mode=mode)
+              assert live["iterations_done"] == 5, (mode, live)
+              assert live["native_damage_events"] > 0, (mode, live)
+              assert live["native_world_ticks"] > 0, (mode, live)
+              assert abs(native["native_dps"] - live["world_mean_dps"]) < 1e-5, (mode, native, live)
+              outputs[mode] = native["native_dps"]
+              print("TYPED_RNG_REAL_NATIVE_2D", mode, "native", native["native_dps"],
+                    "live", live["world_mean_dps"], flush=True)
+          assert abs(outputs["balanced"] - outputs["stochastic"]) > 0.01, (
+              "BALANCED_TYPED_RNG_MODE_IGNORED_BY_SELECTED_RUST", outputs)
+          print("REAL_SELECTED_RUST_BALANCED_STOCHASTIC_NATIVE_2D_SMOKE_GREEN_NOT_GATE", flush=True)
+          PY
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
