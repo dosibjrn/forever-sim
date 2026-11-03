@@ -10,6 +10,7 @@ from __future__ import annotations
 from math import isfinite
 from typing import Mapping
 
+from .events import CombatEvent
 from .go_world_range_feed import GoWorldRangeError
 from .native_step_protocol import snapshot_gsim_world, state_hash
 
@@ -34,6 +35,8 @@ class GsimNativeDamageWorldApplier:
         self._last_native_lethal_target_id = None
         # Damage for a later mob must not be dated before its live world handoff.
         self._target_handoff_ns = None
+        # Exact source-native Roots expiry currently synchronized to the selected gsim mob.
+        self._native_root_expiry_ns = None
 
     def begin_next_world_target(self, next_target_id: str) -> None:
         """Retarget only after an ACKed lethal event, preserving PID/event clocks.
@@ -57,6 +60,7 @@ class GsimNativeDamageWorldApplier:
         self._target_id = next_target_id
         self._target_handoff_ns = handoff_ns
         self._last_native_lethal_target_id = None
+        self._native_root_expiry_ns = None
 
     def apply(self, tick: Mapping, response: Mapping) -> dict:
         if not isinstance(tick, Mapping) or not isinstance(response, Mapping):
@@ -193,13 +197,85 @@ class GsimNativeDamageWorldApplier:
         # the actual gsim world-health delta. Overkill must not block a kill.
         if not isfinite(damage):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_DAMAGE_INVALID")
+
+        # The selected Rust Druid source reports the exact native Roots-dot
+        # expiry separately from damage. Apply that control to the same live
+        # 2D gsim target; do not infer it from spell names or damage events.
+        range_receipt = response.get("native_range_receipt", {})
+        if not isinstance(range_receipt, Mapping):
+            raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_RECEIPT_INVALID")
+        root_expiry_ns = range_receipt.get("native_rooted_until_ns")
+        root_changed_at_ns = range_receipt.get("native_root_control_changed_at_ns")
+        if (root_expiry_ns is not None
+                and (type(root_expiry_ns) is not int or root_expiry_ns <= clock_ns)):
+            raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_EXPIRY_INVALID")
+        if (root_changed_at_ns is not None
+                and (type(root_changed_at_ns) is not int or root_changed_at_ns < 0
+                     or root_changed_at_ns > clock_ns
+                     or clock_ns - root_changed_at_ns > 1_000_000)):
+            raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_CHANGE_TIME_INVALID")
+        root_state_changed = root_expiry_ns != self._native_root_expiry_ns
+        if root_state_changed != (root_changed_at_ns is not None):
+            raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_CHANGE_RECEIPT_MISMATCH")
+
+        root_applied = False
+        if root_state_changed and root_expiry_ns is not None:
+            if (self._native_root_expiry_ns is not None
+                    and root_expiry_ns <= self._native_root_expiry_ns):
+                raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_REFRESH_NOT_EXTENDING")
+            duration_s = (root_expiry_ns - clock_ns) / 1_000_000_000
+            self._runtime.queue.push(CombatEvent(
+                time_s=clock_ns / 1_000_000_000,
+                kind="ControlApplied",
+                actor_id=self._runtime.actor.id,
+                target_id=target_id,
+                action_id="native:entangling-roots",
+                payload={
+                    "control_id": "root",
+                    "duration_s": duration_s,
+                    "proc_chance": 1.0,
+                    # Damage-break is intentionally not claimed until its
+                    # source rank/target rules are ported and independently tested.
+                    "breaks_on_damage": False,
+                    "break_chance_on_damage": None,
+                    "prevents_enemy_actions": False,
+                },
+            ))
+            self._runtime.advance_to(clock_ns / 1_000_000_000)
+            active_until = float(target.active_controls.get("root", 0.0))
+            if abs(active_until - root_expiry_ns / 1_000_000_000) > 1e-6:
+                raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_APPLY_ACK_MISMATCH")
+            root_applied = True
+        elif root_state_changed:
+            # This first source slice supports natural dot expiry only. An
+            # earlier clear (e.g. damage break/dispel) must fail closed until
+            # its native probability and target semantics are implemented.
+            previous_expiry_ns = self._native_root_expiry_ns
+            if previous_expiry_ns is None or root_changed_at_ns is None:
+                raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_CLEAR_WITHOUT_PRIOR_ROOT")
+            if root_changed_at_ns < previous_expiry_ns:
+                raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_EARLY_CLEAR_UNSUPPORTED")
+            if root_changed_at_ns - previous_expiry_ns > 1_000_000:
+                raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_EXPIRY_LATE")
+            if float(target.active_controls.get("root", 0.0)) > clock_ns / 1_000_000_000 + 1e-9:
+                raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_DID_NOT_EXPIRE")
+        elif root_expiry_ns is not None:
+            active_until = float(target.active_controls.get("root", 0.0))
+            if abs(active_until - root_expiry_ns / 1_000_000_000) > 1e-6:
+                raise NativeDamageWorldApplicationError("WORLD_ROOT_CONTROL_STATE_DIVERGED")
+
+        if root_state_changed:
+            self._native_root_expiry_ns = root_expiry_ns
+
         for event in events:
             target.apply_damage(float(event["damage"]))
         applied = old_health - float(target.health)
         if abs(applied - min(damage, old_health)) > 1e-6:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_HEALTH_DELTA_MISMATCH")
         after_hash = state_hash(snapshot_gsim_world(self._runtime))
-        if (damage > 0 and after_hash == digest) or (damage == 0 and after_hash != digest):
+        if ((damage > 0 and after_hash == digest)
+                or (damage == 0 and not root_applied and after_hash != digest)
+                or (root_applied and after_hash == digest)):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_WORLD_NOT_CHANGED_AS_EXPECTED")
         self._target_id = target_id
         # Only THIS native ACK's applied effects may authorize switching mobs.
@@ -226,4 +302,10 @@ class GsimNativeDamageWorldApplier:
             "world_target_health_before": old_health,
             "world_target_health_after": float(target.health),
             "world_target_max_health": max_health,
+            "native_rooted_until_ns": root_expiry_ns,
+            "native_root_control_changed_at_ns": root_changed_at_ns,
+            "world_target_rooted": (
+                float(target.active_controls.get("root", 0.0))
+                > clock_ns / 1_000_000_000 + 1e-9
+            ),
         }
