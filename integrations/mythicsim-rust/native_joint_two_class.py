@@ -90,6 +90,35 @@ def native_score_request(
     }, raw
 
 
+def select_balanced_winner(
+    reference: dict,
+    baseline_record: dict,
+    search_candidate: dict | None,
+    search_score: float | None,
+) -> tuple[dict, float, str]:
+    """Keep a cold search from selecting a result worse than its paid baseline.
+
+    The baseline is a final incumbent only: it is never supplied to the cold
+    proposer or mutation path. All compared scores must come from the same
+    explicit Balanced objective and exact native configuration.
+    """
+    if baseline_record.get("rng_mode") != "balanced":
+        raise ValueError("JOINT_OPTIMIZER_REQUIRES_EXPLICIT_BALANCED_RNG")
+    baseline_score = float(baseline_record["score"])
+    if not math.isfinite(baseline_score):
+        raise ValueError("Non-finite balanced native baseline")
+    if search_candidate is None or search_score is None:
+        return reference, baseline_score, "baseline"
+    candidate_score = float(search_score)
+    if not math.isfinite(candidate_score):
+        raise ValueError("Non-finite balanced native search score")
+    if candidate_score > baseline_score:
+        return search_candidate, candidate_score, "search"
+    # On ties, retain the source reference instead of making an unnecessary
+    # build change. This guarantees selection never degrades the baseline.
+    return reference, baseline_score, "baseline"
+
+
 def source_bounded_adapter(
     class_key: str, reference: dict, same_class: list[dict],
     items: dict[int, dict],
@@ -206,6 +235,10 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         "baseline_iterations": None,
         "baseline_seed": None,
         "baseline_response_sha256": None,
+        "best_search_balanced_screen": None,
+        "best_search_effective_request_sha256": None,
+        "best_balanced_screen": None,
+        "selected_winner_source": None,
         "three_axis_paid": 0, "process_gate_pass": False,
         "source_scope": "SMOKE_FIXTURE_OR_PINNED_REFERENCE",
         "full_source_legality_certified": False,
@@ -324,7 +357,20 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     row["legal_rejections"] = result["legal_rejections"]
     row["search_elapsed_s"] = result["elapsed_s"]
     row["three_axis_paid"] = sum(all(e["delta_from_reference"].values()) for e in paid)
-    row["best_balanced_screen"] = result["best_score"]
+    search_candidate = result["best_candidate"]
+    search_score = result["best_score"]
+    row["best_search_balanced_screen"] = search_score
+    if search_candidate is not None:
+        search_best = native_payload(search_candidate, iterations, seed)
+        row["best_search_effective_request_sha256"] = fingerprint(search_best)
+        (outdir / "best_search_effective_request.json").write_text(
+            json.dumps(search_best, indent=2) + "\n"
+        )
+    selected_candidate, selected_score, selected_source = select_balanced_winner(
+        reference, baseline_record, search_candidate, search_score
+    )
+    row["best_balanced_screen"] = selected_score
+    row["selected_winner_source"] = selected_source
     row["source_bounded_joint"] = row["three_axis_paid"] > 0
     row["status"] = (
         "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY"
@@ -335,14 +381,14 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     row["native_failures"] = native_failures
 
     (outdir / "paid_trace.json").write_text(json.dumps(paid, indent=2) + "\n")
-    if result["best_candidate"] is not None:
-        winner = native_payload(result["best_candidate"], iterations, seed)
+    if selected_candidate is not None:
+        winner = native_payload(selected_candidate, iterations, seed)
         row["best_effective_request_sha256"] = fingerprint(winner)
         (outdir / "best_effective_request.json").write_text(json.dumps(winner, indent=2) + "\n")
         # Independent exact-byte native replay with the same seed and RNG mode.
         try:
             replay_record, replay_raw = native_score_request(
-                binary, result["best_candidate"], iterations, seed,
+                binary, selected_candidate, iterations, seed,
                 "balanced", time.monotonic() + 30.0,
             )
             replay = replay_record["score"]
