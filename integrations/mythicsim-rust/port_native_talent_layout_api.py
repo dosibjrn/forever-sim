@@ -129,6 +129,10 @@ def port_text(path: str, source: str) -> str:
         raise ValueError("NATIVE_TALENT_LAYOUT_UNKNOWN_PATH:" + path)
     for old, new, label in patches:
         source = replace_once(source, old, new, label)
+    if path == "src/lib.rs":
+        # Later selected-source ports also edit lib.rs. Re-run this port last
+        # so the composed file has exactly one final newline, not a blank EOF.
+        source = source.rstrip("\r\n") + "\n"
     return source
 
 
