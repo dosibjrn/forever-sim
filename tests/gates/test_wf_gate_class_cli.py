@@ -26,7 +26,7 @@ def test_retired_gates_are_not_executable_through_acceptance_cli(gate):
     assert error.value.code == 2
 
 
-def test_json_can_be_diagnosed_but_never_certifies_live_p4_p5_p6(tmp_path,capsys):
+def test_json_can_be_diagnosed_but_never_certifies_live_p4_p5_p6(tmp_path,monkeypatch,capsys):
     common=dict(unlock_coverage_pass=True,talent_gear_apl_jointly_searched=True,
                 full_legal_builds=True,complete_100mob_replays=4,mob_count=100)
     write(tmp_path,'druid',30,'P4', search_wall_s=29.8, unique_full_builds=100,
@@ -39,10 +39,16 @@ def test_json_can_be_diagnosed_but_never_certifies_live_p4_p5_p6(tmp_path,capsys
     p4=mod.evaluate(tmp_path,'druid',30,'unrestricted','P4',{})
     p5=mod.evaluate(tmp_path,'druid',30,'unrestricted','P5',{'P4':p4})
     assert p4['status']=='PASS' and p5['status']=='PASS'
-    # Critically: the public acceptance CLI refuses to accept these JSONs.
+    # Critically: the public acceptance CLI invokes only the live provider,
+    # never the stored JSON. Stub that provider so the test stays cheap.
+    called=[]
+    monkeypatch.setattr(mod,'_run_live_gate',
+        lambda root,cl,lv,sp,g: called.append(g) or {
+            'status':'BLOCKED','reasons':['LIVE_GATE_RUNNER_MISSING:'+g]})
     assert mod.main(['--class','druid','--level','30','--gate','P6',
                      '--evidence-dir',str(tmp_path)]) == 1
     result=json.loads(capsys.readouterr().out)
+    assert called==['P6']
     assert result['status']=='BLOCKED'
     assert result['results'][0]['reasons'][0].startswith('LIVE_GATE_RUNNER_MISSING')
 
@@ -50,7 +56,7 @@ def test_json_can_be_diagnosed_but_never_certifies_live_p4_p5_p6(tmp_path,capsys
 def test_all_reports_real_gate_names_and_missing_live_providers(tmp_path,monkeypatch,capsys):
     # Do not run expensive real source probes when testing only group dispatch.
     monkeypatch.setattr(mod,'_run_live_gate',
-        lambda root,cl,lv,sp,g,scenario: {
+        lambda root,cl,lv,sp,g: {
             'status':'BLOCKED','reasons':['LIVE_GATE_RUNNER_MISSING:'+g]})
     assert mod.main(['--class','warlock','--level','20','--gate','all',
                      '--evidence-dir',str(tmp_path)]) == 1
