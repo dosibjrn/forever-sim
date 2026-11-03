@@ -249,6 +249,24 @@ def port_text(path: str, contents: str) -> str:
             if section in contents:
                 continue
             if f"fn {test_name}()" in contents:
+                # The published typed-RNG source already carries the real
+                # rank-effect runtime regression, but rustfmt/source evolution
+                # makes its body differ from this older exact insertion block.
+                # Accept only the same observable native cast + rank-DPS
+                # assertions; any unrelated same-name test still fails closed.
+                compatible_runtime_test = (
+                    test_name == "forever_roots_native_periodic_ticks_change_with_rank"
+                    and all(marker in contents for marker in (
+                        "forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)",
+                        "let (base, base_log) = run(0);",
+                        "let (improved, improved_log) = run(3);",
+                        'base_log.contains("Casting {SpellID: 9853}")',
+                        'improved_log.contains("Casting {SpellID: 9853}")',
+                        "assert!(improved > base",
+                    ))
+                )
+                if compatible_runtime_test:
+                    continue
                 raise ValueError("NATIVE_ROOTS_TEST_SOURCE_DRIFT:" + test_name)
             contents = contents.rstrip() + "\n" + section
         return contents
