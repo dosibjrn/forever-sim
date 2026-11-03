@@ -21,7 +21,7 @@ from src.rulesets.forever.classes.mage.resources import (
     best_mage_water, mana_gem_tier, ooc_mana_regen_per_s,
 )
 from src.rulesets.forever.shared.recovery import solve_recovery, RECOVERY_SOLVER_ID
-from src.shared.leveling.timing import between_pull_travel_s
+from src.scenarios.timing import between_pull_travel_s
 
 EPS = 1e-9
 
