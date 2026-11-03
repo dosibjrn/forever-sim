@@ -1,9 +1,10 @@
-"""PROCESS v2.1 P1: source -> GameIR -> optimizer -> production runtime.
+"""PROCESS v2.1 P1 formal provider: native capability contract.
 
-Class neutral. Never reads a user-written verdict/evidence JSON to award PASS.
-This is a targeted, bounded *availability* smoke, not a P2 semantics test or P4 search.
-This is a source-index effect diagnostic, not an acquisition proof. MythicSim
-owns spell/rank legality; actual applicable effects must still be executed.
+MythicSim owns action/rank legality and effect behavior. Formal P1 acceptance
+requires native-owned candidate/action enumeration and native execution
+observations for damage, buff, debuff and CC in the 100-mob world scenario.
+The legacy GameIR/source-inventory helpers below are retained for historical
+diagnostics only; run_live fails closed and never calls them.
 """
 from __future__ import annotations
 
@@ -816,57 +817,47 @@ def _p1_scope_metadata(root: Path, class_key: str, level: int) -> dict:
                 data.get('contextual_zero_when_solo_land_mob_no_allies_or_debuffs', {}))}
 
 
-def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
-             spec:str='unrestricted',scenario_id:str=P1_DEFAULT_SCENARIO)->dict:
-    report={'class':class_key,'level':level,'spec':spec,'gate':'P1',
-            'status':'FAIL','source':'live_production','reasons':[],
-            'p1_scenario_id':scenario_id}
-    try:
-        sys.path.insert(0,str(root))
-        from src.game.data.forever.registry import build_game_ir_slice
-        from src.game.data.forever.source_action_scope import classify_indexed_ability
-        from src.game.data.forever.source_indexed_action_coverage import _source_spell_ids
-        from src.game.data.forever.sqlite_talents import DEFAULT_DB
-        from src.game.policy_evolution import from_source_rules,scratch_policies
-        from src.game.runtime import ActorState,CombatRuntime,TargetState
-        from src.game.runtime.effect_capabilities import effect_execution_kind
-        source_db=Path(db_override or DEFAULT_DB)
-        if not source_db.is_absolute():source_db=root/source_db
-        if not source_db.is_file():raise P1SetupError('SOURCE_DB_NOT_FOUND:'+str(source_db))
-        rows=_source_rows(source_db,class_key,level)
-        inactive_ids=_source_disabled_rune_ids(source_db,class_key,level)
-        excluded_high_level=[r for r in _source_rows(source_db,class_key,None)
-                              if r["level_hint"] is not None and int(r["level_hint"])>level]
-        ir=build_game_ir_slice(class_key=class_key,level=level,ability_db_path=source_db)
-        if ir is None:raise P1SetupError('CLASS_LEVEL_NOT_SUPPORTED_BY_LIVE_SOURCE_PROVIDER')
-        scope_meta = _p1_scope_metadata(root,class_key,level)
-        report.update(scope_meta)
-        from src.forever_build import metadata as build_metadata
-        report['build_identity'] = build_metadata()
-        report['source_id']=_db_fingerprint(source_db)
-        report['engine_id']=_source_code_fingerprint(root)
-        report['ir_id']=ir.id
-        nonimpact=_load_p1_scenario_nonimpact(root,class_key,level,scenario_id)
-        check=audit_inventory(rows,ir,parser=_source_spell_ids,
-                  source_classifier=classify_indexed_ability,
-                  policy_builder=from_source_rules,scratch_builder=scratch_policies,
-                  executor=lambda i,a:_runtime_exercise(i,a,level),
-                  higher_level_rows=excluded_high_level, effect_checker=effect_execution_kind,
-                  source_inactive_ids=inactive_ids,
-                  scope_facts={**_load_spellbook_observed_scope_facts(root,
-                      scope_meta.get('spellbook_file'),rows),
-                      **_load_source_scope_facts(source_db,class_key)},
-                  context_exclusions=scope_meta.get('scope_context_exclusions',{}),
-                  scenario_nonimpact=nonimpact,scenario_id=scenario_id)
-        report.update(check)
-        report['reasons'] = [
-            f"{issue['code']}:{issue['ability'] or ''}:{issue['detail'] or ''}"
-            for issue in report['problems']
-        ]
-    except (ImportError,ModuleNotFoundError,AttributeError) as exc:
-        report['reasons']=['PRODUCTION_BASELINE_IMPORT_FAILED:'+type(exc).__name__+':'+str(exc)]
-    except (P1SetupError,sqlite3.Error,ValueError,RuntimeError,KeyError) as exc:
-        report['reasons']=['P1_LIVE_SETUP_FAILED:'+type(exc).__name__+':'+str(exc)]
-    finally:
-        if sys.path and sys.path[0]==str(root):sys.path.pop(0)
-    return report
+def run_live(root: Path, class_key: str, level: int, db_override: Path | None = None,
+             spec: str = 'unrestricted',
+             scenario_id: str = P1_DEFAULT_SCENARIO) -> dict:
+    """Fail closed until the selected native engine can prove formal P1 roles.
+
+    Do not use the legacy GameIR/source-index executor as a fallback. The
+    current single-action native probe is useful diagnostics, but it cannot
+    establish complete native candidate enumeration or the four P1 roles over
+    the 100-mob world/ACK scenario.
+    """
+    del root, db_override
+    roles = ('damage', 'buff', 'debuff', 'cc')
+    reasons = [
+        'NATIVE_P1_ACTION_ENUMERATION_UNAVAILABLE',
+        'NATIVE_P1_ROLE_OBSERVATIONS_UNAVAILABLE:damage,buff,debuff,cc',
+        'NATIVE_P1_100MOB_WORLD_ACK_CAUSALITY_UNAVAILABLE',
+        'NATIVE_P1_SINGLE_ACTION_PROBE_INSUFFICIENT_FOR_FORMAL_ACCEPTANCE',
+    ]
+    return {
+        'class': class_key,
+        'level': level,
+        'spec': spec,
+        'gate': 'P1',
+        'status': 'BLOCKED',
+        'source': 'native_capability_contract',
+        'reasons': reasons,
+        'p1_scenario_id': scenario_id,
+        'native_capability_blockers': {
+            'action_enumeration': 'MISSING_NATIVE_CANDIDATE_ACTION_ENUMERATION',
+            'role_observations': {
+                role: 'MISSING_NATIVE_EXECUTION_OBSERVATION' for role in roles
+            },
+            'world_scenario': 'MISSING_NATIVE_100MOB_WORLD_ACK_CAUSALITY',
+        },
+        'diagnostic_single_action_probe': 'NOT_FORMAL_P1_ACCEPTANCE',
+        'gameir_runtime_executed': False,
+        'source_db_read': False,
+        'source_legal_abilities_checked': False,
+        'executed_ability_behavior_tests': 0,
+        'partial_scope': 'NONE',
+        'coverage_basis': 'NATIVE_P1_ROLE_OBSERVATIONS_REQUIRED',
+        'coverage_scope_complete': False,
+        'checkpoint_certified': False,
+    }
