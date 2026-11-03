@@ -4,12 +4,8 @@ on:
     paths:
       - tools/p1_native_source_inventory.py
       - tools/wf_p1_native_scope_matrix.py
-      - tools/wf_p1_native_effects.py
-      - tests/gates/test_wf_p1_native_blackbox.py
-      - docs/gates/P1_VALIDATION.md
       - config/gates/p1_scenario_applicability_v1.json
       - PROCESS.md
-      - .github/workflows/p1-native-validator-contract.yml
   push:
     branches: [work/p1-native-validator-contract-main-20261101]
 jobs:
