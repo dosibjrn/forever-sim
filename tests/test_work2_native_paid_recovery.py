@@ -128,14 +128,44 @@ def test_zero_recovery_rejects_unexpected_native_recovery_windows():
     with pytest.raises(AssertionError, match="RUST_NATIVE_PAID_RECOVERY_WINDOWS_INVALID"):
         _summary([_window(8_000_000_000)], 2, 0)
 
-def test_zero_recovery_omits_recovery_flag_but_passes_required_typed_rng_mode():
-    command = _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0)
+def test_zero_recovery_omits_recovery_flag_and_passes_explicit_balanced_mode():
+    command = _command(
+        Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0,
+        rng_mode="balanced",
+    )
     assert command == [
         "/tmp/forever-engine", "native-world-pulls", "--infile",
-        "/tmp/prepared.json", "--targets", "2", "--rng-mode", "stochastic",
+        "/tmp/prepared.json", "--targets", "2", "--rng-mode", "balanced",
     ]
 
 
+def test_native_world_cli_requires_explicit_valid_rng_mode():
+    with pytest.raises(TypeError):
+        _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0)
+    with pytest.raises(ValueError, match="RUST_NATIVE_WORLD_PULLS_RNG_MODE_INVALID"):
+        _command(
+            Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0,
+            rng_mode="automatic",
+        )
+
+
+def test_stochastic_mode_is_available_only_when_explicitly_requested():
+    command = _command(
+        Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0,
+        rng_mode="stochastic",
+    )
+    assert command[-2:] == ["--rng-mode", "stochastic"]
+
+
 def test_paid_recovery_passes_explicit_nanoseconds_to_native_cli():
-    command = _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 3, GAP_NS)
+    command = _command(
+        Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 3, GAP_NS,
+        rng_mode="balanced",
+    )
     assert command[-2:] == ["--recovery-ns", str(GAP_NS)]
+    assert command[command.index("--rng-mode") + 1] == "balanced"
+
+
+def test_run_requires_explicit_rng_mode_before_starting_native_process():
+    with pytest.raises(TypeError):
+        module.run(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"))
