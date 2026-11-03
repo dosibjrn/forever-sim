@@ -1,6 +1,6 @@
 """P7 source-native and live 2D producers must use the same explicit RNG mode.
 
-These are environment/dispatch tests, not real pinned Rust gate acceptance.
+These are explicit CLI-mode dispatch tests, not real P7 gate acceptance.
 """
 import importlib.util
 import json
@@ -30,7 +30,7 @@ def test_native_source_control_explicit_rng_mode(monkeypatch, tmp_path, mode):
     seen = []
 
     def fake_run(argv, **kwargs):
-        seen.append(kwargs["env"])
+        seen.append((argv, kwargs["env"]))
         source = json.loads(Path(argv[argv.index("--request") + 1]).read_text())
         assert source["simOptions"]["iterations"] == 3
         assert source["simOptions"]["randomSeed"] == "1179706472"
@@ -45,8 +45,9 @@ def test_native_source_control_explicit_rng_mode(monkeypatch, tmp_path, mode):
     result = producer.native_source_control(binary, request, 3, rng_mode=mode)
     assert result["native_dps"] == 730.0
     assert len(seen) == 1
-    assert seen[0]["WOWSIM_RNG_MODE"] == mode
-    assert "FOREVER_GSIM_WORLD_BRIDGE" not in seen[0]
+    assert seen[0][0][seen[0][0].index("--rng-mode") + 1] == mode
+    assert "WOWSIM_RNG_MODE" not in seen[0][1]
+    assert "FOREVER_GSIM_WORLD_BRIDGE" not in seen[0][1]
 
 
 @pytest.mark.parametrize("mode", ("balanced", "stochastic"))
@@ -68,7 +69,7 @@ def test_live_world_process_explicit_rng_mode(monkeypatch, tmp_path, mode):
         return SimpleNamespace(returncode=0)
 
     def fake_popen(argv, **kwargs):
-        seen.append(kwargs["env"])
+        seen.append((argv, kwargs["env"]))
         raise RuntimeError("EXPECTED_NATIVE_WORLD_ENV_CAPTURE")
 
     monkeypatch.setattr(producer.subprocess, "run", fake_prepare)
@@ -76,8 +77,9 @@ def test_live_world_process_explicit_rng_mode(monkeypatch, tmp_path, mode):
     with pytest.raises(RuntimeError, match="EXPECTED_NATIVE_WORLD_ENV_CAPTURE"):
         producer.run(binary, request, distance=15., iterations=3, rng_mode=mode)
     assert len(seen) == 1
-    assert seen[0]["WOWSIM_RNG_MODE"] == mode
-    assert seen[0]["FOREVER_GSIM_WORLD_BRIDGE"] == "1"
+    assert seen[0][0][seen[0][0].index("--rng-mode") + 1] == mode
+    assert "WOWSIM_RNG_MODE" not in seen[0][1]
+    assert seen[0][1]["FOREVER_GSIM_WORLD_BRIDGE"] == "1"
 
 
 def test_invalid_rng_mode_fails_before_source_execution(tmp_path):
@@ -111,3 +113,6 @@ def test_selected_rust_build_reuses_historical_full_rng_patch_chain():
     assert patcher.index(migrated) < patcher.index(extremes)
     assert patcher.index(extremes) < patcher.index(audit)
     assert "wf_l60_rng_extreme_tests" in patcher
+    typed_mode = "port_native_typed_rng.py"
+    assert typed_mode in patcher
+    assert patcher.index(audit) < patcher.index(typed_mode)

@@ -744,7 +744,8 @@ def test_p75_native_control_nonzero_exit_preserves_actionable_binary_diagnostic(
 
     def rejected_source(command, **kwargs):
         assert command[1] == "sim"
-        assert kwargs["env"]["WOWSIM_RNG_MODE"] == "balanced"
+        assert command[command.index("--rng-mode") + 1] == "balanced"
+        assert "WOWSIM_RNG_MODE" not in kwargs["env"]
         return subprocess.CompletedProcess(
             command, -9, stdout="native candidate crashed at source prepare", stderr="")
 

@@ -32,7 +32,7 @@ def main():
         output = pathlib.Path(d) / "result.json"
         completed = subprocess.run(
             [str(args.engine.resolve()), "sim", "--request", str(args.request.resolve()),
-             "--outfile", str(output), "--gate"], capture_output=True, text=True)
+             "--outfile", str(output), "--gate", "--rng-mode", "stochastic"], capture_output=True, text=True)
         if completed.returncode != 0:
             raise SystemExit(f"Rust sim failed (exit {completed.returncode}): {completed.stderr[-2000:]}")
         if not output.is_file():
