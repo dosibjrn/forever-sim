@@ -128,5 +128,24 @@ class MaintenanceTestLayout(unittest.TestCase):
 
 
 
+    def test_maintenance_workflow_collects_every_module(self):
+        """Adding a maintenance test must not require manual CI allowlist edits."""
+        workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text()
+        command = workflow.split("run: >-", 1)[-1]
+        self.assertIn("python -m pytest -q", command)
+        self.assertIn("          tests/maintenance\n", command)
+        self.assertNotIn("tests/maintenance/test_", command)
+        # The cross-directory targeted contracts are deliberately kept.
+        for selected in (
+            "tests/test_prio_discrete_stat_sensitivity.py",
+            "tests/test_wf380_legacy_bonus_talent_budget.py",
+            "tests/mechanics/druid/test_druid_mechanics_layout.py",
+            "tests/mechanics/hunter/test_hunter_mechanics_layout.py",
+            "tests/mechanics/mage/test_mage_extended_layout.py",
+            "tests/mechanics/paladin/test_paladin_mechanics_layout.py",
+        ):
+            self.assertIn(selected, command)
+
+
 if __name__ == "__main__":
     unittest.main()
