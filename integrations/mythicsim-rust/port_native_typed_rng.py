@@ -18,7 +18,7 @@ def edit(root, name, transformations):
         if actual != count:
             raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: expected {count} of {old[:80]!r}, got {actual}")
         src = src.replace(old, new)
-        if src.count(old) != 0:
+        if old not in new and src.count(old) != 0:
             raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: old call sites remain after migration")
     if src != path.read_text():
         path.write_text(src)
@@ -106,7 +106,10 @@ def add_explicit_mode_to_test_calls(source):
         if close_at is None:
             raise RuntimeError("RNG_TEST_CALL_PARSE_FAILED: simulate_prepared")
         if commas == 0:
-            insertions.append(close_at)
+            insert_at = close_at
+            while insert_at > open_at + 1 and source[insert_at - 1].isspace():
+                insert_at -= 1
+            insertions.append(insert_at)
         cursor = close_at + 1
     for position in reversed(insertions):
         source = source[:position] + ", forever_engine::RngMode::Stochastic" + source[position:]
