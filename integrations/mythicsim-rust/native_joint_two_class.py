@@ -426,9 +426,10 @@ def source_bounded_adapter(
                         source_casts.add(json.dumps(
                             cast, sort_keys=True, separators=(",", ":")
                         ))
-        if (isinstance(source_talent, str)
-                and (native_verified_talent_builds is None
-                     or source_talent in native_verified_talent_builds)):
+        if isinstance(source_talent, str):
+            # The source corpus proposes candidates; a prior native receipt is
+            # provenance, not an admission rule. The exact candidate reaches
+            # the selected Rust evaluator, which can accept or refuse it.
             talents.add(source_talent)
     talents = sorted(talents)
     original_talents = original["talentsString"]
@@ -449,8 +450,8 @@ def source_bounded_adapter(
         if key in original_source_casts and key not in native_witness_keys:
             native_witness_keys.append(key)
 
-    # Select the largest deterministic set of full source talent builds that
-    # shares at least one cast proven positive by the baseline native receipt.
+    # Select the largest source-observed proposal set sharing a baseline-positive
+    # cast. Native Rust, not this witness search, decides each build's validity.
     supported_build_sets = []
     for witness_key in native_witness_keys:
         builds = [
