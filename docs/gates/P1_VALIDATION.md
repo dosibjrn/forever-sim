@@ -43,12 +43,11 @@ No backend union of incomplete implementations can be treated as P1 PASS.
 
 ## Current small implementation
 
-| Tool | Purpose | Acceptance authority |
+| Component | Purpose | Acceptance authority |
 | --- | --- | --- |
-| `tools/p1_native_source_inventory.py` | Source-only candidates, role separation, scenario applicability; no GameIR | **None**; candidates may be unverified |
-| `tools/wf_p1_native_scope_matrix.py` | Class/level source inputs for 9 classes × L20/L60 | **None**; no native effects are executed |
-| `tools/wf_p1_native_effects.py` | Run a selected-Rust PreparedV2 single-action/no-action pair and the live 2D world bridge | **Diagnostic only**, not a formal P1 PASS |
-| `tests/gates/test_wf_p1_native_blackbox.py` | Source/schema/regression tests; no mocked native combat PASS | **None** |
+| `src/engine_client/native_p1_effect_probe.py` | Builds a selected-Rust PreparedV2 single-action/no-action pair and returns native outcomes; supports the existing 2D bridge where needed | **Diagnostic only**, not a formal P1 PASS |
+| `tools/wf_p1_native_effects.py` | CLI for the selected-Rust native effect probe | **Diagnostic only** |
+| `tests/gates/test_wf_p1_native_blackbox.py` | Tests Forever-owned request/response and native-refusal handling, not Rust game-rule correctness | **None** |
 | `tools/wf_gate.py --gate P1` | Existing historical selected-gsim provider | Not silently replaced by this experiment |
 
 The existing gsim-specific diagnostic remains useful for gsim backend
@@ -56,18 +55,17 @@ regressions. **Its `2/61` Hunter L20 action count is not native MythicSim P1
 coverage.** A missing gsim GameIR slice at L60 does not mean a native L60
 spell is missing.
 
-## Partial coverage and estimated effort (not P1 acceptance)
+## Progress and acceptance
 
-[Draft PR #60](https://github.com/dosibjrn/forever-sim/pull/60) explored `observed/checked` and thresholds 50/80/85/88/91/93/95/97/99 %. Keep **the real measured coverage ratio**; optionally show a separate **Pareto-estimated work completed percentage**, under the stated hypothesis that the first 80% of comparable cases cost 20% of work and the last 20% cost 80%. See [the calculation and caveats](../planning/GATE_PROGRESS_80_20.md). **Do not use Pareto to change work ordering,** turn its estimate into a PASS gate, or chase artificial `effect_probe_progress_naksut` ticks. Toy-gsim results are not native PASS. On the **selected real production engine**, count actually observed effects over the currently classified relevant source-legal ability set. Show native refusals and conditional-trigger cases separately; mark diagnostic coverage *provisional* until a real native ability inventory and execution are measured. Never silently shrink the denominator or equate 80% to P1 PASS.
+The source-only candidate inventory, 18-case scope matrix and shadow P1 progress sidecar are retired. Do not recreate a Python source denominator or a second P1 progress register. A successful native probe remains diagnostic evidence only; formal P1 acceptance follows the approved gate contract, and only Merge records a genuine compatible PASS in M1.
 
 ## Next production task
 
-Expose/consume genuine spell-by-ID execution or other condition-appropriate
-native mechanism on pinned MythicSim, plus actual event/state observations.
-Run a positive and effect-neutral control through **that** engine. Use selected MythicSim for spell/talent legality; test optimizer admission and actual effects without an independent acquisition proof.
-Only then allow `tools/wf_gate.py` to report native P1 PASS for the selected
-checkpoint. Do not invent missing mechanics in a Python test adapter and do
-not manually update PASS ledgers.
-
-The source-only 18-case matrix can be GREEN while **zero** native abilities
-have been executed. That is correct; P1 itself remains unresolved.
+The selected-Rust PreparedV2 single-action/no-action path now provides the
+native request/response boundary for direct effect probes, with a 2D bridge
+available for world-dependent behavior. Expand the actual Forever caller and
+observation path to the remaining P1 scope without filtering candidate requests
+through a Forever source inventory. Native VALID/INVALID/UNSUPPORTED and
+execution outcomes remain authoritative. The historical selected-gsim
+provider stays unchanged until its approved replacement is complete. Do not
+invent missing mechanics in a Python adapter or manually update PASS ledgers.
