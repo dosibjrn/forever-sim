@@ -860,16 +860,6 @@ def source_bounded_adapter(
             return None
         return json.dumps(cast, sort_keys=True, separators=(",", ":"))
 
-    def apl_cast_identity_keys(actions):
-        return {
-            key
-            for entry in actions if isinstance(entry, dict)
-            for action in [entry.get("action", {})]
-            if isinstance(action, dict)
-            for cast in [action.get("castSpell")]
-            if (key := cast_identity_key(cast)) is not None
-        }
-
     def source_apl_for_candidate(candidate_context):
         candidate_player = player(candidate_context)
         talent_string = candidate_player.get("talentsString", MISSING_TALENT_STRING)
@@ -956,13 +946,10 @@ def source_bounded_adapter(
     def joint_legal(candidate):
         candidate_player = player(candidate)
         talent_string = candidate_player.get("talentsString", MISSING_TALENT_STRING)
-        source_casts = source_casts_by_talentsString.get(talent_string)
-        if source_casts is None:
-            return False
         candidate_apl = candidate_player["rotation"]["priorityList"]
-        candidate_casts = apl_cast_identity_keys(candidate_apl)
-        if not candidate_casts.issubset(source_casts):
-            return False
+        # Do not veto spell identities using source-APL membership. The
+        # optimizer submits the proposal; MythicSim owns spell legality.
+
         if objective != "DPS":
             # Candidate-domain integrity, not a Warcraft legality verdict:
             # preserve the entire action/condition AST for *every* HPS/TPS
