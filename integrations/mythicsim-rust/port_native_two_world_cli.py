@@ -11,7 +11,9 @@ from pathlib import Path
 
 FIGHT_ANCHOR = "    /// Callable two-window source-Rust continuation smoke, NOT a 100-mob/2D gate."
 CLASSES_ANCHOR = "/// Run the same native actor through two source-backed combat windows."
-PREPARED_ANCHOR = "/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery."
+# Keep the original prepared.rs anchor: the preceding two-pull port may already
+# own its diagnostic docstring, so that docstring is not a stable downstream seam.
+PREPARED_ANCHOR = "/// What gating a prepared v2 input and simulating it when supported came to."
 CLI_ANCHOR = '    if args[0] == "native-pulls" {'
 METHOD_MARKER = "pub(crate) fn native_two_world_targets(&mut self, target_count: usize)"
 CLASS_MARKER = "pub(crate) fn native_two_world_targets("
@@ -92,7 +94,7 @@ def _typed_native_world_present(source: str, marker: str) -> bool:
             )
         return common and block.count(".native_two_world_targets(target_count)") == 9
     if marker == PREPARED_MARKER:
-        end = source.find("\n/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery.", start)
+        end = source.find("\n" + PREPARED_ANCHOR, start)
         block = source[start:end] if end >= 0 else source[start:]
         common = "rng_mode: crate::core::rng::RngMode" in block
         if "recovery_ns" in block:
