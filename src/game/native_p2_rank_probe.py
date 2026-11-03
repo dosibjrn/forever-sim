@@ -209,7 +209,7 @@ def prepare_native_request(
             completed = subprocess.run(
                 [
                     str(binary_path), "prepare", "--request", str(request_path),
-                    "--scenario", scenario, "--outfile", str(prepared_path),
+                    "--outfile", str(prepared_path),
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
