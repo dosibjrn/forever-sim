@@ -34,31 +34,31 @@ def fake_engine(tmp_path, *, bad_hash=False):
 
 def test_real_subprocess_boundary_ack_and_second_decision(tmp_path):
     with RustStepSession(fake_engine(tmp_path)) as session:
-        first = {"player_xy":[0,0], "target_xy":[20,0], "target_attacking":False}
+        first = {"clock_ms":0, "player_xy":[0,0], "target_xy":[20,0], "target_attacking":False}
         response = session.boundary(clock_ms=0, world=first)
         assert response["observed_world_sha256"] == state_hash(first)
         ack = session.ack_world_applied(
             action_id=response["action_id"],
-            world_after={"player_xy":[0,0], "target_xy":[19,0], "target_attacking":False})
-        second = session.boundary(clock_ms=100, world={
-            "player_xy":[0,0], "target_xy":[19,0], "target_attacking":False})
+            world_after={"clock_ms":0, "player_xy":[0,0], "target_xy":[19,0], "target_attacking":False})
+        second_world = {"clock_ms":100, "player_xy":[0,0], "target_xy":[19,0], "target_attacking":False}
+        second = session.boundary(clock_ms=100, world=second_world)
         assert second["accepted_ack_id"] == ack["ack_id"]
-        session.ack_world_applied(action_id=second["action_id"], world_after=first)
+        session.ack_world_applied(action_id=second["action_id"], world_after=second_world)
 
 
 def test_missing_ack_prevents_world_from_advancing(tmp_path):
     with RustStepSession(fake_engine(tmp_path)) as session:
-        session.boundary(clock_ms=0, world={"x":1})
+        session.boundary(clock_ms=0, world={"clock_ms":0, "x":1})
         with pytest.raises(NativeProtocolError, match="UNACKNOWLEDGED_NATIVE_ACTION"):
-            session.boundary(clock_ms=1, world={"x":2})
+            session.boundary(clock_ms=1, world={"clock_ms":1, "x":2})
         with pytest.raises(NativeProtocolError, match="WORLD_ACK_ACTION_ID_MISMATCH"):
-            session.ack_world_applied(action_id="not-native-id", world_after={"x":2})
+            session.ack_world_applied(action_id="not-native-id", world_after={"clock_ms":1, "x":2})
 
 
 def test_spoofed_world_hash_rejected(tmp_path):
     with RustStepSession(fake_engine(tmp_path, bad_hash=True)) as session:
         with pytest.raises(NativeProtocolError, match="NATIVE_ACTION_DID_NOT_ACK_BOUNDARY"):
-            session.boundary(clock_ms=0, world={"real_gsim_state":10})
+            session.boundary(clock_ms=0, world={"clock_ms":0, "real_gsim_state":10})
 
 
 def test_nonincremental_engine_fails_closed(tmp_path):
