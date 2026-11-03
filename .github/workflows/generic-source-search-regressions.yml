@@ -58,13 +58,14 @@ on:
       - 'src/optimization/**'
       - 'config/validation/source_spec_profiles.json'
       - 'tools/wf_source_profile.py'
-      - 'tools/wf_gate_p2_live.py'
       - 'tools/wf_gate_p3_live.py'
       - 'tools/wf_gate_p4_p5_partial.py'
       - 'tools/wf_gate_p6_live.py'
       - 'tools/wf437_direct_budgeted_run.py'
       - 'tests/gates/test_wf35_product_spec_profile_contract.py'
-      - 'tests/test_wf35_source_spec_p2_adapter.py'
+      - 'tests/test_source_spec_profile.py'
+      - 'tests/test_source_rank_fullpoint_frontier.py'
+      - 'tests/test_talent_tree_row_ingestion.py'
       - 'tests/test_wf_prio_p4_p5_paid_partials.py'
       - '.github/workflows/generic-source-search-regressions.yml'
 
@@ -100,7 +101,9 @@ jobs:
           tests/generic/search/test_source_wand_paid_slot_proposals.py
           tests/generic/search/test_source_paid_gear_witness_priority.py
           tests/gates/test_wf35_product_spec_profile_contract.py
-          tests/test_wf35_source_spec_p2_adapter.py
+          tests/test_source_spec_profile.py
+          tests/test_source_rank_fullpoint_frontier.py
+          tests/test_talent_tree_row_ingestion.py
           tests/test_wf_prio_p4_p5_paid_partials.py
           tests/generic/search/test_per_level_fixed_point_v0114846.py
           tests/generic/search/test_stat_weight_model.py
