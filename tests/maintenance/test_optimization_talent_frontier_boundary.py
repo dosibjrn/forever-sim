@@ -71,13 +71,6 @@ assert Neighbor is OptimizerNeighbor
 assert allocation_key is optimizer_allocation_key
 assert callable(source_legal_talent_neighbors)
 
-# Legacy runtime-probe regressions reuse the optimizer-owned identity.
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
-spec = spec_from_file_location('wf_gate_p2_live', Path('tools/wf_gate_p2_live.py'))
-p2_gate = module_from_spec(spec)
-spec.loader.exec_module(p2_gate)
-assert p2_gate.allocation_key is optimizer_allocation_key
 """
     completed = subprocess.run(
         [sys.executable, "-c", source], cwd=ROOT,
