@@ -601,7 +601,7 @@ def test_native_prepared_action_inventory_preserves_native_records_without_filte
             "action_id": {"spell_id": 14282},
             "rank": 1,
             "class_spell": "AimedShot",
-            "flags": {"passive": False},
+            "flags": ["APL"],
             "cast_kind": "cast",
         },
         {
@@ -615,7 +615,7 @@ def test_native_prepared_action_inventory_preserves_native_records_without_filte
             "action_id": None,
             "rank": 0,
             "class_spell": "PassiveProc",
-            "flags": {"passive": True},
+            "flags": [],
             "cast_kind": "passive",
         },
     ]
@@ -683,12 +683,41 @@ def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypat
     binary = engine_root / "forever-engine"
     binary.write_bytes(b"placeholder")
     spellbook = [
-        {"action_id": {"spell_id": 14282}, "rank": 1, "class_spell": "AimedShot"},
-        {"action_id": None, "rank": 0, "class_spell": "PassiveProc"},
+        {
+            "action_id": {"spell_id": 14282},
+            "rank": 1,
+            "class_spell": "AimedShot",
+            "flags": ["APL"],
+        },
+        {
+            "action_id": {"spell_id": 13550},
+            "rank": 2,
+            "class_spell": "SerpentSting",
+            "flags": ["APL"],
+        },
+        {
+            "action_id": None,
+            "rank": 0,
+            "class_spell": "PassiveProc",
+            "flags": [],
+        },
     ]
+    cooldowns = [{"action_id": {"spell_id": 3045}}]
+    candidate_calls = []
 
     def prepare(**kwargs):
-        marker = "with" if kwargs["scenario"].endswith("with-action") else "without"
+        scenario = kwargs["scenario"]
+        if scenario.endswith("native-candidate-13550"):
+            candidate_calls.append(kwargs)
+            return {
+                "status": "UNSUPPORTED",
+                "stage": "prepare",
+                "reason": "NATIVE_PREPARED_GATE_REFUSED",
+                "refusal": {"code": "UNSUPPORTED_NATIVE_ACTION"},
+                "engine_identity": "selected-pin",
+                "request_sha256": "c" * 64,
+            }
+        marker = "with" if scenario.endswith("with-action") else "without"
         digest = ("a" if marker == "with" else "b") * 64
         return {
             "status": "PREPARED",
@@ -704,7 +733,7 @@ def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypat
                     "talents_string": "123",
                     "talents": {},
                     "spells": spellbook,
-                    "major_cooldowns": [],
+                    "major_cooldowns": cooldowns,
                 },
             },
         }
@@ -741,6 +770,26 @@ def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypat
     assert result["status"] == "NATIVE_DIRECT_EFFECT_VERIFIED"
     assert inventory["status"] == "AVAILABLE"
     assert inventory["spells"] == spellbook
-    assert inventory["spell_count"] == 2
+    assert inventory["spell_count"] == 3
+    assert inventory["major_cooldown_count"] == 1
     assert inventory["p1_certified"] is False
+    candidate_probe = result["native_action_candidate_probe"]
+    assert candidate_probe["status"] == "AVAILABLE"
+    assert candidate_probe["candidate_scope"] == "NATIVE_PREPARED_APL_SPELLS_ONLY"
+    assert candidate_probe["candidate_count"] == 2
+    assert candidate_probe["prepared_count"] == 1
+    assert candidate_probe["unsupported_count"] == 1
+    assert candidate_probe["non_apl_spell_record_count"] == 1
+    assert candidate_probe["major_cooldowns_probed"] is False
+    assert candidate_probe["candidate_results"][0]["native_status"] == "PREPARED"
+    assert candidate_probe["candidate_results"][0]["reused_selected_prepare"] is True
+    assert candidate_probe["candidate_results"][1]["native_status"] == "UNSUPPORTED"
+    assert candidate_probe["candidate_results"][1]["prepare_receipt"]["refusal"] == {
+        "code": "UNSUPPORTED_NATIVE_ACTION"
+    }
+    assert len(candidate_calls) == 1
+    candidate_player = candidate_calls[0]["request"]["raid"]["parties"][0]["players"][0]
+    assert candidate_player["rotation"]["priorityList"] == [
+        {"action": {"castSpell": {"spellId": {"spellId": 13550}}}}
+    ]
     assert result["p1_certified"] is False
