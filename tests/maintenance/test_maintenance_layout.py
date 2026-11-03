@@ -36,7 +36,6 @@ class MaintenanceTestLayout(unittest.TestCase):
             "test_wowhead_capture_entrypoint_v0114831.py",
             "test_wowhead_capture_import_v0114837.py",
             "test_wowhead_abilities_capture_g39.py",
-            "test_audit_source_acquisition_cli.py",
         )
         target = ROOT / "tests" / "integration" / "source"
         for name in names:
@@ -45,10 +44,7 @@ class MaintenanceTestLayout(unittest.TestCase):
                 moved = target / name
                 self.assertTrue(moved.is_file(), f"missing source integration test: {moved}")
                 ast.parse(moved.read_text(encoding="utf-8"), filename=str(moved))
-        for name in (
-            "test_wowhead_capture_entrypoint_v0114831.py",
-            "test_audit_source_acquisition_cli.py",
-        ):
+        for name in ("test_wowhead_capture_entrypoint_v0114831.py",):
             source = (target / name).read_text(encoding="utf-8")
             self.assertIn("Path(__file__).resolve().parents[3]", source)
         from tools.validate_fast import TESTS
@@ -56,6 +52,12 @@ class MaintenanceTestLayout(unittest.TestCase):
             "tests/integration/source/test_wowhead_capture_i5prep_v0114830.py", TESTS
         )
         self.assertNotIn("tests/test_wowhead_capture_i5prep_v0114830.py", TESTS)
+
+    def test_obsolete_nine_class_acquisition_audit_has_no_live_entrypoint(self):
+        """The retired trainer/learned-spell audit cannot gate production."""
+        self.assertFalse((ROOT / "tools/audit_source_acquisition_gate.py").exists())
+        self.assertFalse((ROOT / "tests/integration/source/test_audit_source_acquisition_cli.py").exists())
+
 
     def test_wf243_heldout_fixture_lives_in_test_fixtures(self):
         old = ROOT / "fixtures" / "wf243_heldout_feral_l20.json"
