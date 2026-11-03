@@ -12,6 +12,8 @@ on:
       - 'tools/import_feral_p7_archives.py'
       - 'tools/wf_gate_coverage.py'
       - 'tools/wf_gate_p1_live.py'
+      - 'tools/wf332_druid20_acquisition_evidence.py'
+      - 'tools/wf291_source_acquisition_route_benchmark.py'
       - 'tests/test_wf469_p1_alignment.py'
       - 'tests/test_wf470_p1_scope.py'
       - 'tests/gates/test_wf34_*acquisition*.py'
