@@ -13,6 +13,7 @@ RETIRED_TOOLS = (
     "tools/audit_forever_source_coverage.py",
     "tools/audit_forever_source_rules.py",
     "tools/wf318_four_level_frontier.py",
+    "tools/wf330_druid_l20_queued_swing_evidence.py",
     "tools/wf331_druid20_web_l0_evidence.py",
     "tools/wf332_rune_policy_evidence.py",
 )
@@ -22,6 +23,7 @@ RETIRED_IMPORT_NAMES = (
     "audit_forever_source_coverage",
     "audit_forever_source_rules",
     "wf318_four_level_frontier",
+    "wf330_druid_l20_queued_swing_evidence",
     "wf331_druid20_web_l0_evidence",
     "wf332_rune_policy_evidence",
 )
