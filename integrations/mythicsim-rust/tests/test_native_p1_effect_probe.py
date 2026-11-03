@@ -31,6 +31,9 @@ def main() -> None:
             "reasons": report.get("reasons"),
         }, sort_keys=True, allow_nan=False))
     result = probes[0]
+    assert report["status"] == "FAIL"  # one canary is deliberately not full P1 acceptance
+    assert report["native_migration_scope"] == "druid:60:balance:spell-9912"
+    assert report["pass_count"] == 0 and report["reachability_count"] == 0
     if result.get("status") != "NATIVE_DIRECT_BEHAVIOR_VERIFIED":
         raise AssertionError(json.dumps(result, sort_keys=True, allow_nan=False))
     assert result["spell_id"] == 9912
