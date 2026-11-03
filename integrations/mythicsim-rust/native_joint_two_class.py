@@ -51,6 +51,77 @@ def _write_native_failure(outdir: Path, request_sha256: str,
     return record
 
 
+def _native_positive_source_casts(source_actions: list[dict],
+                                  native_response: dict) -> list[dict]:
+    """Find source APL casts that actually dealt damage in the paid baseline.
+
+    Native action metrics, not spell-name guesses or source inventories, are
+    the witness. Keep exact source spell identities (including rank). A class
+    whose damage is only white attacks/pets gets no fabricated cast witness.
+    """
+    try:
+        native_actions = native_response["result"]["raidMetrics"]["parties"][0]["players"][0]["actions"]
+    except (KeyError, IndexError, TypeError):
+        return []
+    positive_ids = set()
+    for action in native_actions:
+        identity = action.get("id", {})
+        spell_id = identity.get("spellId") if isinstance(identity, dict) else None
+        if not isinstance(spell_id, int) or isinstance(spell_id, bool):
+            continue
+        if any(
+            isinstance(target.get("damage"), (int, float))
+            and not isinstance(target.get("damage"), bool)
+            and math.isfinite(float(target["damage"]))
+            and target["damage"] > 0
+            for target in action.get("targets", []) if isinstance(target, dict)
+        ):
+            positive_ids.add(spell_id)
+    witnesses = []
+    seen = set()
+    for entry in source_actions:
+        cast = entry.get("action", {}).get("castSpell")
+        identity = cast.get("spellId") if isinstance(cast, dict) else None
+        if not isinstance(identity, dict):
+            continue
+        spell_id = identity.get("spellId")
+        key = json.dumps(identity, sort_keys=True, separators=(",", ":"))
+        if spell_id in positive_ids and key not in seen:
+            witnesses.append(copy.deepcopy(identity))
+            seen.add(key)
+    return witnesses
+
+
+def _ensure_native_damage_action(actions: list[dict],
+                                 witnesses: list[dict], rng) -> list[dict]:
+    """Keep a source-observed native-damaging unconditional first action.
+
+    An arbitrary unconditional cast is not a damage fallback: the seven real
+    zero-DPS receipts showed Rogue Vanish/Stealth and Warlock Life Tap loops.
+    This only changes *proposals*; native evaluation still decides damage,
+    legality and score, and no failed request is credited as paid success.
+    """
+    if not witnesses:
+        return actions
+    actions = copy.deepcopy(actions)
+    allowed = {json.dumps(x, sort_keys=True, separators=(",", ":"))
+               for x in witnesses}
+    for index, entry in enumerate(actions):
+        action = entry.get("action", {})
+        cast = action.get("castSpell")
+        if (isinstance(cast, dict) and "condition" not in action
+                and json.dumps(cast.get("spellId"), sort_keys=True,
+                               separators=(",", ":")) in allowed):
+            if index:
+                actions.insert(0, actions.pop(index))
+            return actions
+    if len(actions) >= 20:
+        actions.pop()
+    actions.insert(0, {"action": {"castSpell": {
+        "spellId": copy.deepcopy(rng.choice(witnesses))}}})
+    return actions
+
+
 def talent_points(talents: str) -> int:
     """Count points in source-native two- or three-tree encodings.
 
@@ -122,6 +193,7 @@ def native_score_request(
 def source_bounded_adapter(
     class_key: str, reference: dict, same_class: list[dict],
     items: dict[int, dict], *, donor_fixtures: list[dict] | None = None,
+    native_damage_witnesses: list[dict] | None = None,
 ) -> tuple[JointCandidateAdapter, dict]:
     """Use exact pinned same-class source requests; the scheduler is unchanged."""
     original = player(reference)
@@ -219,15 +291,19 @@ def source_bounded_adapter(
         return (value == original["talentsString"]
                 or (value in talents and _is_full_51_source_build(value)))
 
+    damage_witnesses = native_damage_witnesses if native_damage_witnesses is not None else []
+
     def cold_apl(rng):
         for _ in range(8):
-            actions = mutate_apl(None, base_apl, rng, cold=True)
+            actions = _ensure_native_damage_action(
+                mutate_apl(None, base_apl, rng, cold=True), damage_witnesses, rng)
             if actions != base_apl:
                 return actions
         raise ValueError("BLOCKED_APL: no different source-corpus action generated")
 
     def mutate_apl_axis(current, rng):
-        return mutate_apl(current, base_apl, rng)
+        return _ensure_native_damage_action(
+            mutate_apl(current, base_apl, rng), damage_witnesses, rng)
 
     def apl_legal(value):
         request = copy.deepcopy(reference)
@@ -306,10 +382,12 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     cls = profile_id.split("/", 1)[0]
     same_class = [req for entry, req in inventory if req is not None
                   and entry["profile_id"].split("/", 1)[0] == cls]
+    native_damage_witnesses = []
     try:
         adapter, scope = source_bounded_adapter(
             cls, reference, same_class, native_items,
             donor_fixtures=donor_fixtures,
+            native_damage_witnesses=native_damage_witnesses,
         )
     except Exception as exc:
         row["status"] = "BLOCKED_SOURCE_LEGALITY"
@@ -337,6 +415,9 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         )
         row["native_failures"] = [{"stage": "baseline", **failure}]
         return row
+    native_damage_witnesses.extend(_native_positive_source_casts(
+        player(reference)["rotation"]["priorityList"], baseline_raw))
+    row["native_positive_damage_apl_witnesses"] = native_damage_witnesses
     row["baseline_paid"] = 1
     row["baseline_balanced_score"] = baseline_record["score"]
     row["baseline_effective_request_sha256"] = baseline_record["effective_request_sha256"]
