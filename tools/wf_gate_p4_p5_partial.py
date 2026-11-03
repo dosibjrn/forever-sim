@@ -81,7 +81,7 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         return {"status": "BLOCKED", "reasons": [
             "SOURCE_COLD_SEARCH_IR_OR_GEAR_ROLE_UNAVAILABLE"]}
     # Named checkpoint specs are explicit product constraints, not inferred
-    # Forever mechanics. Reuse P2's validated canonical profile and the
+    # Forever mechanics. Reuse the shared talent runtime's validated canonical profile and the
     # existing production joint search's source-legal spec frontier.
     search_spec = {}
     if spec != "unrestricted":
