@@ -159,13 +159,22 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
     raise ValueError("NO_SOURCE_LEGAL_COLD_GEAR_OR_ENCHANT_ALTERNATIVE")
 
 
-def _paid_gear_elite_choice(elites, rng, proposal_index):
-    """Explore genuinely paid source-legal gear elites; cold restart every fifth."""
+def _paid_gear_elite_choice(elites, rng, proposal_index, *, focus_top=False):
+    """Favor genuinely paid stochastic leaders without collapsing discovery.
+
+    The official independent P7.4 frozen finals varied from 725.32 DPS PASS
+    to 683.75 DPS FAIL on the same source/engine, so uniform top-15
+    stochastic-parent draws are a poor use of most limited local proposals.
+    Spend three of four *stochastic-guided* exploitation proposals near the
+    strongest three paid stochastic candidates; every fourth retains the
+    entire top-15 archive. Balanced parents still sample top 15, every third
+    parent choice remains balanced, and every fifth proposal is fully cold.
+    The saved reference and holdout are never used to choose a parent.
+    """
     if proposal_index % 5 == 0 or not elites:
         return None
-    # Preserve the native P7.4 optimizer's diversity: sample the top 15 of
-    # at most 24 paid elites, never saved reference or unscored candidates.
-    return rng.choice(elites[:min(15, len(elites))])[1]
+    limit = 3 if focus_top and proposal_index % 4 != 0 else 15
+    return rng.choice(elites[:min(limit, len(elites))])[1]
 
 
 def _p74_paid_parent_pool(balanced_elites, stochastic_finalists, proposal_index):
@@ -447,7 +456,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 # gear and other gates' winners are never injected as elites.
                 paid_parent_pool = (_p74_paid_parent_pool(elites, reranked, proposals)
                                     if full_search else elites)
-                elite = (_paid_gear_elite_choice(paid_parent_pool, rng, proposals)
+                elite = (_paid_gear_elite_choice(
+                    paid_parent_pool, rng, proposals,
+                    focus_top=paid_parent_pool is not elites)
                          if full_search else None)
                 if elite is not None and paid_parent_pool is not elites:
                     stochastic_parent_proposals += 1
