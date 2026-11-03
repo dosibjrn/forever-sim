@@ -87,6 +87,9 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
     assert json.loads(calls[0][3]) == json.loads(calls[3][3])
     assert report["cold_unique_source_requests"] == 1
+    assert report["winner_selection"] == "best_balanced_live_screen"
+    assert report["paid_stochastic_finalists"] == 0
+    assert report["stochastic_parent_proposals"] == 0
     # Real gate receipt exposes which talent build was frozen; a request
     # hash alone cannot distinguish unchanged-effective-rank hypotheses.
     assert report["source_original_talents"] == "old"
@@ -228,86 +231,3 @@ def test_p73_paid_elite_archive_caps_source_pool_to_top_18():
 
     elites = [(float(100-i), {"rank": i}) for i in range(22)]
     assert _paid_elite_choice(elites, PickLast(), 1)["rank"] == 17
-
-
-def test_p73_paid_stochastic_finalist_uses_real_paired_score_and_separate_seed(
-        monkeypatch, tmp_path):
-    """The independent paid re-rank must use native+2D, not screen-only DPS."""
-    source = _reference()
-    source["simOptions"] = {"randomSeed": "42"}
-    original = copy.deepcopy(source)
-    calls = []
-
-    def native(binary, path, n, *, rng_mode):
-        req = __import__("json").loads(path.read_text())
-        calls.append(("native", req, n, rng_mode))
-        return {"native_dps": 735.0}
-
-    def world(binary, path, distance, iterations, *, rng_mode):
-        req = __import__("json").loads(path.read_text())
-        calls.append(("world", req, iterations, rng_mode))
-        return {"world_mean_dps": 734.0,
-                "iterations_done": 24, "native_damage_events": 10,
-                "native_world_ticks": 12}
-
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda native, live, count: None)
-    producer = SimpleNamespace(native_source_control=native, run=world)
-    score, receipt = gate._paid_stochastic_finalist(
-        producer, tmp_path / "engine", source, 15)
-    assert score == 734.0
-    assert receipt["world_mean_dps"] == 734.0
-    assert [k for k, *_ in calls] == ["native", "world"]
-    assert all(n == 24 and mode == "stochastic" for _, _, n, mode in calls)
-    assert all(req["simOptions"]["randomSeed"] == "1947003"
-               for _, req, _, _ in calls)
-    assert all(req["raid"] == original["raid"] for _, req, _, _ in calls)
-    assert source == original  # finalist comparison never mutates original
-
-
-def test_p73_paid_stochastic_finalist_rejects_unpaired_native_world(
-        monkeypatch, tmp_path):
-    source = _reference()
-    source["simOptions"] = {"randomSeed": "42"}
-    producer = SimpleNamespace(
-        native_source_control=lambda *args, **kw: {"native_dps": 1.0},
-        run=lambda *args, **kw: {"world_mean_dps": 2.0,
-                                "iterations_done": 24,
-                                "native_damage_events": 1,
-                                "native_world_ticks": 1})
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *args: "real native/world mismatch")
-    with pytest.raises(ValueError, match="P73_FINALIST_NATIVE_WORLD_PARITY"):
-        gate._paid_stochastic_finalist(producer, tmp_path / "engine", source, 15)
-
-
-def test_p73_early_stochastic_feedback_is_paid_and_preserves_cold_diversity():
-    """Search uses only paid source-native+2D contenders, not reference seeds."""
-    due = gate._p73_early_rerank_due
-    assert not due(119.9, 0)
-    assert due(120.0, 0)
-    assert not due(139.9, 1)
-    assert due(140.0, 1)
-    assert due(220.0, 5)
-    assert not due(220.0, 6)
-    assert not due(240.0, 0)
-
-    balanced_req = {"raid": "balanced paid contender"}
-    stochastic_req = {"raid": "stochastic paid contender"}
-    balanced = [(900.0, balanced_req)]
-    # The second value is a real paid world receipt; the fourth is the
-    # untouched source-legal request, not the seed-mutated rerank request.
-    stochastic = [(750.0, {"world_mean_dps": 750.0}, "source-sha",
-                   stochastic_req, 720.0)]
-    assert gate._p73_paid_parent_pool(balanced, stochastic, 1) == [
-        (750.0, stochastic_req)]
-    assert gate._p73_paid_parent_pool(balanced, stochastic, 3) is balanced
-    assert gate._p73_paid_parent_pool(balanced, [], 1) is balanced
-
-    class PickFirst:
-        @staticmethod
-        def choice(options):
-            return options[0]
-    parent = gate._p73_paid_parent_pool(balanced, stochastic, 1)
-    assert gate._paid_elite_choice(parent, PickFirst(), 1) is stochastic_req
-    assert gate._paid_elite_choice(parent, PickFirst(), 5) is None
