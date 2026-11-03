@@ -391,9 +391,12 @@ def test_full_1000_stochastic_result_not_vetoed_by_ui_or_source_count(
     provider.parent.mkdir(parents=True)
     provider.write_text("""
 import hashlib
-def native_source_control(binary, request, iterations):
+rng_calls = []
+def native_source_control(binary, request, iterations, *, rng_mode):
+    rng_calls.append(("native", rng_mode))
     return {"iterations": iterations, "native_dps": 730.0, "first_duration_s": 120.0}
-def run(binary, request, *, distance, iterations):
+def run(binary, request, *, distance, iterations, rng_mode):
+    rng_calls.append(("world", rng_mode))
     return {"iterations_done": iterations, "native_dps": 730.0,
             "world_mean_dps": 730.0, "sampled_duration_s": 120.0,
             "native_damage_events": iterations, "native_world_ticks": iterations,
@@ -404,6 +407,7 @@ def run(binary, request, *, distance, iterations):
 """)
     from tools.wf_gate import _run_live_gate
     result = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.1", "")
+    assert module.rng_calls == [("native", "stochastic"), ("world", "stochastic")]
     assert result["status"] == "PASS"
     assert result["reasons"] == []
     assert result["p7_1_1_reference_pinned"] is True
