@@ -17,6 +17,9 @@ RETIRED_TOOLS = (
     "tools/wf331_druid20_web_l0_evidence.py",
     "tools/wf332_rune_policy_evidence.py",
     "tools/wf355_p7_preflight.py",
+    "tools/wf336_druid_l20_p2_certificate.py",
+    "tools/wf336_p2_optimizer_pilot.py",
+    "tools/wf349_druid30_p2_diagnostic.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -35,6 +38,9 @@ RETIRED_IMPORT_NAMES = (
     "source_checkpoint_p7_legacy",
     "wf355_p7_preflight",
     "P7_LEGACY_HOLDOUT",
+    "wf336_druid_l20_p2_certificate",
+    "wf336_p2_optimizer_pilot",
+    "wf349_druid30_p2_diagnostic",
 )
 
 
@@ -43,6 +49,9 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
     assert (ROOT / "src/v2/source_budgeted_level_route.py").is_file()
+    # These are the live native P2 interfaces, not the retired L0 proof CLIs.
+    assert (ROOT / "tools/wf_gate_p2_live.py").is_file()
+    assert (ROOT / "src/engine_client/native_p2_rank_probe.py").is_file()
 
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
     for relative in RETIRED_TOOLS:
