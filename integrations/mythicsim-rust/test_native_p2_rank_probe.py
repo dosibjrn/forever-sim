@@ -23,6 +23,29 @@ from src.game.native_p2_rank_probe import (
 )
 
 
+def _decode_fixture_talents(request: dict, layout: dict) -> dict[str, int]:
+    player = request["raid"]["parties"][0]["players"][0]
+    parts = player["talentsString"].split("-")
+    if len(parts) != 3:
+        raise AssertionError("Druid fixture must contain three talent-tree segments")
+    selection = {}
+    for (tree_key, entries), part in zip(layout.items(), parts):
+        if len(part) > len(entries):
+            raise AssertionError(f"{tree_key} fixture segment exceeds native layout")
+        for index, char in enumerate(part):
+            if not char.isdigit():
+                raise AssertionError(f"Invalid talent rank character: {char!r}")
+            rank = int(char)
+            if rank:
+                selection[entries[index]["field"]] = rank
+    return selection
+
+
+def _fixture_request(engine_root: Path, scenario: str) -> dict:
+    path = engine_root / "tests" / "classes" / "druid" / "prepare" / f"{scenario}.request.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--engine-root", required=True, type=Path)
@@ -36,47 +59,24 @@ def main() -> int:
     assert layout["feral"][10]["field"] == "predatory_strikes"
     assert layout["feral"][10]["max_rank"] == 3
 
-    # Native source test witness: 30 prior Balance points unlock Moonkin Form.
-    moonkin_before = {
-        "improved_wrath": 5,
-        "genesis": 5,
-        "moonglow": 3,
-        "improved_moonfire": 2,
-        "natures_majesty": 2,
-        "natures_reach": 2,
-        "improved_entangling_roots": 3,
-        "natures_splendor": 1,
-        "insect_swarm": 1,
-        "vengeance": 5,
-        "improved_starfire": 1,
-    }
-    moonkin_after = {**moonkin_before, "moonkin_form": 1}
-    moonkin_before_string = encode_native_druid_talents(
-        moonkin_before, args.engine_root
+    # Use each selected-Rust fixture's own legal build, changing only the
+    # target rank. This keeps gear, rotation, encounter and all other talents
+    # byte-for-byte equivalent across the paired runs.
+    moonkin_after = _decode_fixture_talents(
+        _fixture_request(args.engine_root, "balance"), layout
     )
-    moonkin_after_string = encode_native_druid_talents(
-        moonkin_after, args.engine_root
-    )
-    assert moonkin_before_string.split("-")[0] == "5532223115100000"
-    assert moonkin_after_string.split("-")[0] == "5532223115100001"
+    assert moonkin_after.get("moonkin_form") == 1
+    moonkin_before = dict(moonkin_after)
+    moonkin_before.pop("moonkin_form")
+    assert encode_native_druid_talents(moonkin_before, args.engine_root).split("-")[0][-1] == "0"
 
-    # Native source test witness: Ferocity 5 + Furor 5 + Feral Swiftness 2
-    # + Feral Instinct 3 = 15 prior Feral points before Predatory Strikes.
-    predatory_before = {
-        "ferocity": 5,
-        "furor": 5,
-        "feral_swiftness": 2,
-        "feral_instinct": 3,
-    }
-    predatory_after = {**predatory_before, "predatory_strikes": 1}
-    predatory_before_string = encode_native_druid_talents(
-        predatory_before, args.engine_root
+    predatory_after = _decode_fixture_talents(
+        _fixture_request(args.engine_root, "cat"), layout
     )
-    predatory_after_string = encode_native_druid_talents(
-        predatory_after, args.engine_root
-    )
-    assert predatory_before_string.split("-")[1].startswith("5523000000")
-    assert predatory_after_string.split("-")[1][10] == "1"
+    assert predatory_after.get("predatory_strikes") == 1
+    predatory_before = dict(predatory_after)
+    predatory_before.pop("predatory_strikes")
+    assert encode_native_druid_talents(predatory_before, args.engine_root).split("-")[1][10] == "0"
 
     results = {
         "moonkin_form": run_native_rank_pair(
