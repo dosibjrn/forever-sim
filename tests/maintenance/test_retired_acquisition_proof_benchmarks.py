@@ -44,6 +44,11 @@ RETIRED_TOOLS = (
     "tests/test_wf472_p1_gate_nonimpact.py",
     "tests/gates/test_wf_p1_native_blackbox.py",
     "integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py",
+    "src/engine_client/native_p2_rank_probe.py",
+    "integrations/mythicsim-rust/test_native_p2_rank_probe.py",
+    "integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py",
+    "tests/maintenance/test_native_p2_client_boundary.py",
+    ".github/workflows/rust-submodule-verify.yml",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -106,9 +111,8 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
     assert (ROOT / "src/v2/source_budgeted_level_route.py").is_file()
-    # These are the live native P2 interfaces, not the retired L0 proof CLIs.
+    # P2 source-profile proposal helpers remain used by the optimizer.
     assert (ROOT / "tools/wf_gate_p2_live.py").is_file()
-    assert (ROOT / "src/engine_client/native_p2_rank_probe.py").is_file()
 
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
     for relative in RETIRED_TOOLS:
@@ -239,3 +243,23 @@ def test_retired_one_off_p3_report_writers_keep_historical_evidence():
     )
     for relative in retained:
         assert (ROOT / relative).is_file(), relative
+
+def test_retired_native_p2_rank_probe_diagnostic_has_no_code_or_actions():
+    """The retired P2 rank-pair adapter must not survive as a hidden workflow."""
+    retired = (
+        "src/engine_client/native_p2_rank_probe.py",
+        "integrations/mythicsim-rust/test_native_p2_rank_probe.py",
+        "integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py",
+        "tests/maintenance/test_native_p2_client_boundary.py",
+        ".github/workflows/rust-submodule-verify.yml",
+    )
+    for relative in retired:
+        assert not (ROOT / relative).exists(), relative
+
+    gate = (ROOT / "tools/wf_gate_p2_live.py").read_text(encoding="utf-8")
+    assert "native_p2_rank_probe" not in gate
+    assert "native_rank_probe" not in gate
+
+    rust_workflow = (ROOT / ".github/workflows/rust-upstream-fork.yml").read_text(encoding="utf-8")
+    assert "native_p2_rank_probe" not in rust_workflow
+    assert "test_native_p2_rank_probe" not in rust_workflow
