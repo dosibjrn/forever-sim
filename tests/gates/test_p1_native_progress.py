@@ -19,7 +19,6 @@ def _scope(n=100):
         "candidates": [{"spell_id": x} for x in range(1, n + 1)],
         "separate": [
             {"spell_id": 10001, "status": "NOT_RELEVANT_TO_SIMULATION"},
-            {"spell_id": 10002, "status": "ACQUISITION_UNRESOLVED"},
             {"spell_id": 10003, "status": "NATIVE_AUTO_ATTACK"},
         ],
     }
@@ -52,12 +51,6 @@ def test_pareto_threshold_boundaries(n, expected):
     assert result["progress_naksut"] <= 9
 
 
-def test_unknowns_conservatively_stay_in_denominator():
-    result = milestone_progress(80, 100, unknown=100)
-    assert result["conservative_denominator"] == 200
-    assert result["progress_naksut"] == 0
-
-
 def test_empty_or_impossible_population_never_auto_green():
     assert milestone_progress(0, 0)["effect_coverage_fraction"] is None
     assert milestone_progress(0, 0)["progress_naksut"] == 0
@@ -84,7 +77,7 @@ def test_gsim_and_native_apl_diagnostic_do_not_grant_any_effect_ticks():
     assert observed["progress_naksut"] == 0
     assert observed["diagnostic_only_spell_ids"] == [1, 2, 3]
     assert observed["not_relevant_spell_ids"] == [10001]
-    assert observed["source_unknown_count"] == 1
+    assert observed["conservative_denominator"] == 4
     assert observed["formal_gate_pass"] is False
 
 
@@ -93,13 +86,41 @@ def test_verifiable_native_direct_effects_count_conservatively_no_formal_pass():
     results = [_real_direct_test(i) for i in range(1, 100)]
     measured = native_p1_progress(scope, results)
     assert measured["verified"] == 99
-    # One explicit autoattack (also relevant) plus one unresolved acquisition
-    # on 100 provisional source candidates: 99 / 102 < 99%.
-    assert measured["conservative_denominator"] == 102
+    # One explicit autoattack is part of the 101-item diagnostic scope.
+    assert measured["conservative_denominator"] == 101
     assert measured["milestones_reached"][-1] == 97
     assert measured["progress_naksut"] == 8
     assert measured["formal_gate_pass"] is False
-    assert measured["source_legality_confirmed"] is False
+    assert "source_legality_confirmed" not in measured
+    assert "source_acquisition_unverified_count" not in measured
+
+
+
+def test_missing_level_hint_is_a_candidate_for_native_validation(tmp_path, monkeypatch):
+    import sqlite3
+    from src.game.data.forever import source_action_scope
+
+    db_path = tmp_path / "candidate.sqlite"
+    with sqlite3.connect(db_path) as db:
+        db.execute(
+            "CREATE TABLE spell_index (spell_id INTEGER, name TEXT, level_hint INTEGER, "
+            "rank_hint INTEGER, source_url TEXT, raw_listview_json TEXT, "
+            "class_key TEXT, kind TEXT)"
+        )
+        db.execute(
+            "INSERT INTO spell_index VALUES (999001, 'Unknown Hint Spell', NULL, 1, "
+            "'https://example.test/spell/999001', '{}', 'mage', 'abilities')"
+        )
+    monkeypatch.setattr(
+        source_action_scope, "classify_indexed_ability",
+        lambda row, raw: {"role": "PLAYER_CAST_ACTION"},
+    )
+    result = inventory("mage", 20, db_path=db_path)
+    assert result["candidate_count"] == 1
+    assert result["candidates"][0]["spell_id"] == 999001
+    assert result["candidates"][0]["status"] == "NATIVE_VALIDATION_PENDING"
+    assert all("ACQUISITION" not in row["status"]
+               for row in result["candidates"] + result["separate"])
 
 
 def test_no_foreign_results_duplicate_green_or_waiver_smuggling():
@@ -119,7 +140,8 @@ def test_real_hunter_inventory_progress_never_counts_raw_index_as_verified():
     assert measured["source_candidate_count"] > 0
     assert measured["verified"] == 0
     assert measured["progress_naksut"] == 0
-    assert measured["source_legality_confirmed"] is False
+    assert "source_legality_confirmed" not in measured
+    assert "source_acquisition_unverified_count" not in measured
     assert measured["formal_gate_pass"] is False
 
 
@@ -138,5 +160,6 @@ def test_real_hunter_auto_shot_is_in_relevant_source_population():
     assert measured["native_auto_or_pet_count"] >= 1
     assert 75 not in measured["other_channel_spell_ids"]
     assert measured["scope_count"] > measured["source_candidate_count"]
-    assert measured["source_acquisition_unverified_count"] > 0
+    assert all("ACQUISITION" not in row["status"]
+               for row in source["candidates"] + source["separate"])
     assert measured["verified"] == 0

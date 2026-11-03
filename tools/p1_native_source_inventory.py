@@ -1,7 +1,7 @@
 """GameIR-independent P1 expected-ability inventory from canonical spell SQLite.
 
 This is a validation INPUT, not a combat implementation and not PASS evidence.
-Sourced level hints are CANDIDATES, not proof a player learned the spell.
+Source level hints are candidate metadata only; MythicSim owns spell/rank validity.
 Ranks, non-combat source entities, pets, autoattacks and explicitly declared
 scenario non-impact are separated without checking any Python combat action.
 """
@@ -104,10 +104,10 @@ def inventory(class_key: str, level: int, *, root: Path = ROOT,
         elif sid in pet_spell_ids:
             separately.append({**rec, "status": "PET_ACTION",
                                "channel": "native_pet_action"})
-        elif level_hint is None:
-            separately.append({**rec, "status": "ACQUISITION_UNRESOLVED"})
         else:
-            qualified.append({**rec, "status": "POTENTIALLY_AVAILABLE_AT_LEVEL_NOT_PROVEN_LEARNED"})
+            # This is only a diagnostic candidate. Native prepare/validation
+            # decides whether the requested spell and rank are available.
+            qualified.append({**rec, "status": "NATIVE_VALIDATION_PENDING"})
     # Highest known source rank within a named family. An equal-level/rank
     # ambiguity stays visible, not artificially collapsed to one spell ID.
     grouped = {}
