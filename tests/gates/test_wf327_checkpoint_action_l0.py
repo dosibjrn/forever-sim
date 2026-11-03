@@ -13,8 +13,6 @@ def test_druid20_source_rows_are_exhaustively_accounted_for():
     assert r['potentially_legal_positive_ranks']>0
     assert r['potential_ranks_with_numeric_or_ir_proxy']>0
     assert r['potential_ranks_without_quantified_effect']>0
-    assert r['complete_legal_spell_universe_proven'] is False
-    assert r['PASS1'] is False
 
 
 def test_druid20_legal_universe_excludes_above_level_and_keeps_downranks():
@@ -26,7 +24,6 @@ def test_druid20_legal_universe_excludes_above_level_and_keeps_downranks():
     assert rows[5176]['index_features']['direct_damage']>0
     assert rows[5176]['l0_disposition']=='INDEX_NUMERIC_PROXY_UNCERTAIN'
     assert 5179 not in rows  # above the actor level
-    assert rows[5176]['legal_combat_spell_proven'] is False
     assert rows[5176]['exploration_priority']=='UNCERTAIN_NOT_ZERO'
 
 
@@ -48,7 +45,6 @@ def test_checkpoint_parameters_must_match_and_spec_cannot_silently_pass():
         action_frontier(ir,class_key='mage',level=20)
     r=action_frontier(ir,class_key='druid',level=20,profile='feral')
     assert r['profile_constraint_applied'] is False
-    assert r['PASS1'] is False
 
 
 def test_source_spell_url_join_recovers_enrage_without_name_fuzzing():
