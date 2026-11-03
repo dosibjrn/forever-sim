@@ -1,7 +1,7 @@
-"""P7 cold searches must not reject a reference build found without seeding.
+"""P7 cold searches may rediscover a reference without a Python legality veto.
 
-The saved reference is a fixed legal comparator, not a forbidden candidate.
-The random cold generator must stay independent of the saved configuration.
+The saved reference is a fixed comparator, not a forbidden candidate. The
+cold talent proposal must stay independent of the saved rank allocation.
 """
 from __future__ import annotations
 
@@ -49,24 +49,19 @@ def test_p73_independent_cold_talents_may_rediscover_saved_allocation():
     base = _saved_request()
     called = []
 
-    class ColdTalentSource:
+    class ColdTalentProposals:
         @staticmethod
-        def random_build(rng):
+        def cold_talent_string(template, rng):
             assert isinstance(rng, random.Random)
-            called.append("independent")
-            return (2, 1)
-
-        @staticmethod
-        def validate(allocation):
-            assert allocation == (2, 1)
-            return True
-
-        @staticmethod
-        def encode(allocation):
+            called.append(template)
             return "reference-allocation"
 
-    discovered = _cold_talents(base, random.Random(37), ColdTalentSource)
-    assert called == ["independent"]
+        @staticmethod
+        def mutate_talent_string(parent, rng):
+            raise AssertionError("cold rediscovery must not use a paid parent")
+
+    discovered = _cold_talents(base, random.Random(37), ColdTalentProposals)
+    assert called == ["reference-allocation"]
     assert _player(discovered) == _player(base)
     assert discovered is not base
 
@@ -74,21 +69,17 @@ def test_p73_independent_cold_talents_may_rediscover_saved_allocation():
 def test_p73_independent_new_talent_still_keeps_reference_gear_apl():
     base = _saved_request()
 
-    class AlternateTalentSource:
+    class AlternateTalentProposals:
         @staticmethod
-        def random_build(rng):
-            return (3, 0)
+        def cold_talent_string(template, rng):
+            return "new-native-proposal"
 
         @staticmethod
-        def validate(allocation):
-            return allocation == (3, 0)
+        def mutate_talent_string(parent, rng):
+            return "mutated-native-proposal"
 
-        @staticmethod
-        def encode(allocation):
-            return "new-legal-allocation"
-
-    discovered = _cold_talents(base, random.Random(41), AlternateTalentSource)
-    assert _player(discovered)["talentsString"] == "new-legal-allocation"
+    discovered = _cold_talents(base, random.Random(41), AlternateTalentProposals)
+    assert _player(discovered)["talentsString"] == "new-native-proposal"
     assert _player(discovered)["equipment"] == _player(base)["equipment"]
     assert _player(discovered)["rotation"] == _player(base)["rotation"]
 
