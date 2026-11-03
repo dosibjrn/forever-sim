@@ -308,7 +308,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         # choices are also selected from the pinned source/Rust validator;
         # unrecorded item-effect semantics are not inferred.
         pool, _ = gear_search.candidate_pool(
-            validator, limit=None if full_search else 15)
+            validator, limit=None if full_search else 15,
+            **({"independent_enchants": True} if full_search else {}))
         enchant_pools = (gear_search.source_enchant_pools(validator, pool)
                          if full_search else None)
         while (time.monotonic() - search_start < 300.0
