@@ -29,8 +29,9 @@ class NativeGearAdapter:
     """Conservative candidate pools from actual same-class native fixtures.
 
     No 16-slot assumptions, no gsim/Wowhead item identity dependency, and
-    no cross-class fixture mixing. Weapon/offhand/ranged positions remain
-    fixed until explicit hand/equip rules have been independently verified.
+    no cross-class fixture mixing. Weapon/ranged item identities and hand
+    rules remain fixed; exact same-ID source-observed enchant variants are
+    allowed because they do not change the equipped item identity.
     """
 
     def __init__(self, class_key: str, reference: dict, fixtures: list[dict], items: dict[int, dict]):
@@ -42,6 +43,9 @@ class NativeGearAdapter:
             raise GearRejected("CLASS_IDENTITY", "Reference belongs to another class")
         self.base = _player(reference)["equipment"]["items"]
         self.pools: dict[int, dict[int, dict]] = {}
+        # Multiple pinned requests may use the same item ID with different
+        # source-observed enchants/effects. ID-only pools lose those choices.
+        self.variants: dict[int, list[dict]] = {}
         for source in fixtures:
             p = _player(source)
             if p.get("class") != self.expected_class:
@@ -58,8 +62,9 @@ class NativeGearAdapter:
                 original = items.get(original_id)
                 if not native or not original or native.get("type") != original.get("type"):
                     continue
-                if native.get("type") in ("ItemTypeWeapon", "ItemTypeRanged"):
-                    continue  # hand, shield, relic and ranged rules are not yet certified
+                is_weapon_or_ranged = native.get("type") in ("ItemTypeWeapon", "ItemTypeRanged")
+                if is_weapon_or_ranged and iid != original_id:
+                    continue  # keep weapon/ranged identity fixed; same-ID observed variants do not alter hand rules
                 # A source donor of the same broad slot type is insufficient:
                 # e.g. a Mage cloth head cannot silently become a plate head.
                 if native.get("armor_type") != original.get("armor_type"):
@@ -70,10 +75,18 @@ class NativeGearAdapter:
                 required_level = native.get("required_level")
                 if required_level is not None and int(required_level) > 60:
                     continue
-                self.pools.setdefault(index, {})[iid] = copy.deepcopy(entry)
-        # No source loadout is ever described as a cold optimizer proposal.
-        self.mutable_indices = tuple(sorted(i for i, pool in self.pools.items()
-                                            if any(k != self.base[i]["id"] for k in pool)))
+                # Keep weapon/ranged entries out of generic item-ID pools.
+                # Their same-ID enchant variants are carried only as exact entries.
+                if not is_weapon_or_ranged:
+                    self.pools.setdefault(index, {})[iid] = copy.deepcopy(entry)
+                variants = self.variants.setdefault(index, [])
+                if entry not in variants:
+                    variants.append(copy.deepcopy(entry))
+        # Full observed item entries, not just item IDs, define mutable gear.
+        self.mutable_indices = tuple(sorted(
+            i for i, variants in self.variants.items()
+            if any(entry != self.base[i] for entry in variants)
+        ))
 
     def validate(self, candidate: dict) -> None:
         p = _player(candidate)
@@ -112,8 +125,8 @@ class NativeGearAdapter:
             level = native.get("required_level")
             if level is not None and int(level) > 60:
                 raise GearRejected("REQUIRED_LEVEL", f"{iid} requires level {level}")
-            if entry != self.base[i] and entry != self.pools.get(i, {}).get(iid):
-                raise GearRejected("SOURCE_SLOT", f"{iid} not observed at position {i}")
+            if entry != self.base[i] and entry not in self.variants.get(i, []):
+                raise GearRejected("SOURCE_SLOT", f"{iid} entry not observed at position {i}")
             used_ids.append(iid)
             cat = native.get("limit_category") or 0
             if int(cat) > 0:
@@ -142,14 +155,15 @@ class NativeGearAdapter:
         for i in indices:
             old_id = current[i]["id"]
             choices = [
-                iid for iid in self.pools[i]
-                if iid != old_id and iid != self.base[i]["id"]
-                and (i, iid) not in excluded
+                entry for entry in self.variants[i]
+                if entry != current[i] and entry != self.base[i]
+                and (i, entry["id"]) not in excluded
             ]
             rng.shuffle(choices)
-            for iid in choices:
+            for entry in choices:
+                iid = entry["id"]
                 out = copy.deepcopy(candidate)
-                _player(out)["equipment"]["items"][i] = copy.deepcopy(self.pools[i][iid])
+                _player(out)["equipment"]["items"][i] = copy.deepcopy(entry)
                 try:
                     self.validate(out)
                 except GearRejected:
@@ -172,12 +186,15 @@ class NativeGearAdapter:
         indices = list(self.mutable_indices)
         rng.shuffle(indices)
         for i in indices:
-            alternatives = [iid for iid in self.pools[i]
-                            if iid != self.base[i]["id"] and (i, iid) not in excluded]
+            alternatives = [
+                entry for entry in self.variants[i]
+                if entry != self.base[i] and (i, entry["id"]) not in excluded
+            ]
             rng.shuffle(alternatives)
-            for iid in alternatives:
+            for entry in alternatives:
+                iid = entry["id"]
                 out = copy.deepcopy(self.reference)
-                _player(out)["equipment"]["items"][i] = copy.deepcopy(self.pools[i][iid])
+                _player(out)["equipment"]["items"][i] = copy.deepcopy(entry)
                 try:
                     self.validate(out)
                 except GearRejected:
