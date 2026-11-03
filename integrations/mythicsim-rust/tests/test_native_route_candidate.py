@@ -134,6 +134,71 @@ class NativeCandidateClientTests(unittest.TestCase):
             self.assertEqual(result["request_sha256"], "a" * 64)
             self.assertEqual(request, original)
 
+    def test_native_prepare_unsupported_is_not_relabelled_invalid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "forever-engine"
+            binary.write_bytes(b"test binary")
+            request = _request()
+            scenario = "native-unsupported-candidate"
+            refusal = {
+                "prepared": False,
+                "refusal": {
+                    "code": "unsupported_mechanic",
+                    "reason": "native mechanic coverage is unavailable",
+                },
+            }
+            with patch.object(
+                native_candidate_client.subprocess,
+                "run",
+                return_value=SimpleNamespace(
+                    returncode=2,
+                    stdout=json.dumps(refusal),
+                    stderr="",
+                ),
+            ) as run:
+                result = native_candidate_client.prepare_native_request(
+                    binary=binary,
+                    request=request,
+                    scenario=scenario,
+                    deadline=time.monotonic() + 30,
+                )
+            self.assertEqual(result["status"], "UNSUPPORTED")
+            self.assertEqual(result["reason"], "native mechanic coverage is unavailable")
+            self.assertEqual(run.call_args.args[0][run.call_args.args[0].index("--scenario") + 1], scenario)
+
+    def test_prepare_rejects_prepared_scenario_identity_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "forever-engine"
+            binary.write_bytes(b"test binary")
+            request = _request()
+            prepared_output = {
+                "schema_version": 2,
+                "contract": "forever-prepared",
+                "scenario_id": "wrong-scenario",
+                "request_sha256": "a" * 64,
+                "reference": {"engine_revision": "selected-rust-sha"},
+                "player": {
+                    "talents_string": request["raid"]["parties"][0]["players"][0]["talentsString"],
+                    "talents": {"balance": {}, "feral": {}, "restoration": {}},
+                },
+            }
+
+            def fake_run(command, **kwargs):
+                Path(command[command.index("--outfile") + 1]).write_text(
+                    json.dumps(prepared_output)
+                )
+                return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+            with patch.object(native_candidate_client.subprocess, "run", side_effect=fake_run):
+                result = native_candidate_client.prepare_native_request(
+                    binary=binary,
+                    request=request,
+                    scenario="expected-scenario",
+                    deadline=time.monotonic() + 30,
+                )
+            self.assertEqual(result["status"], "ERROR")
+            self.assertEqual(result["reason"], "NATIVE_PREPARE_OUTPUT_CONTRACT_MISMATCH")
+
     def test_native_prepare_refusal_is_authoritative_and_never_falls_back(self):
         with tempfile.TemporaryDirectory() as directory:
             engine_root = Path(directory) / "engine"
@@ -360,6 +425,10 @@ class SelectedRustRouteCandidateIntegrationTests(unittest.TestCase):
         self.assertFalse(result["route_transition_supported"])
         self.assertFalse(result["checkpoint_certified"])
         self.assertFalse(result["python_fallback"])
+        self.assertFalse(world["paid_recovery"])
+        self.assertEqual(world["world_target_hp"], 100.0)
+        self.assertEqual(world["target_provenance"]["source_status"], "synthetic_diagnostic")
+        self.assertGreater(world["world_seconds_per_target_without_paid_recovery"], 0)
         self.assertIsInstance(world["target_provenance"], dict)
 
 
