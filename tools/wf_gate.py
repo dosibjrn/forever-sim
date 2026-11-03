@@ -652,6 +652,18 @@ def main(argv=None) -> int:
                         "native_action_candidate_reachable"):
                 if type(report.get(key)) is bool:
                     record[key] = report[key]
+        if gate == "P1":
+            # Preserve the bounded native action receipt from the live P1
+            # provider. This is diagnostic provenance, not a second gate
+            # predicate or M1 credit.
+            native_probe = report.get("native_action_probe")
+            if (isinstance(native_probe, dict)
+                    and len(json.dumps(native_probe, ensure_ascii=False).encode("utf-8")) <= 4096):
+                record["native_action_probe"] = native_probe
+            for key in ("native_action_executor_invoked",
+                        "native_action_candidate_reachable"):
+                if type(report.get(key)) is bool:
+                    record[key] = report[key]
         if gate.startswith("P7."):
             # Real P7 providers report the frozen 1,000-stochastic outcome,
             # but the public CLI previously dropped it. Keep this bounded
