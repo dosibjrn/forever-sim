@@ -240,8 +240,9 @@ mod forever_roots_native_control_tests {
             let controls = crate::core::fight::world_bridge::test_control_events();
             crate::core::fight::world_bridge::end_test_capture();
 
-            let dps = report.result["raidMetrics"]["dps"]["avg"].as_f64()
-                .expect("native real combat DPS");
+            // A zero-DPS report omits the avg field. Preserve the real log so
+            // the first failure distinguishes a missing cast from a landed zero-damage DoT.
+            let dps = report.result["raidMetrics"]["dps"]["avg"].as_f64().unwrap_or(0.0);
             let first_log = report.result["logs"].as_str().unwrap_or("").to_owned();
             (dps, first_log, controls)
         }
@@ -254,7 +255,7 @@ mod forever_roots_native_control_tests {
         assert!(improved_log.contains("Casting {SpellID: 9853}"),
             "rank-3 build must actually cast Roots: {improved_log}");
         assert!(base.is_finite() && base > 0.0 && improved.is_finite(),
-            "native combat must produce finite positive damage: {base}, {improved}");
+            "native combat must produce finite positive damage: {base}, {improved}; log={base_log}");
         assert!(improved > base,
             "same-seed native combat with +75% Roots tick damage should improve DPS: {base} -> {improved}");
         assert!(!landed_controls.is_empty(),
