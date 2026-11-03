@@ -42,12 +42,12 @@ _TREE_ARRAYS = (
     ("restoration", "FOREVER_RESTORATION"),
 )
 _ENTRY = re.compile(
-    r'(?:new_talent|talent)\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*\)\s*,?'
+    r'(?:new_talent|talent)\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*\d+\s*\)\s*,?'
 )
 
 
 def parse_native_druid_layout(engine_root: str | Path) -> dict[str, list[dict[str, object]]]:
-    """Read the talent order/rank caps from the selected Rust source itself."""
+    """Read only native talent field order/IDs; never copy rank caps into Python."""
     root = Path(engine_root)
     source_path = root / "src" / "classes" / "druid" / "prepare.rs"
     if not source_path.is_file():
@@ -93,12 +93,12 @@ def parse_native_druid_layout(engine_root: str | Path) -> dict[str, list[dict[st
             )
         parsed: list[dict[str, object]] = []
         for entry in entries:
-            field, name, max_rank = entry.groups()
+            field, name = entry.groups()
             if field in all_fields:
                 raise NativeP2ProbeError(f"NATIVE_DRUID_DUPLICATE_TALENT_FIELD:{field}")
             all_fields.add(field)
             parsed.append(
-                {"field": field, "name": name, "max_rank": int(max_rank)}
+                {"field": field, "name": name}
             )
         if not parsed:
             raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_ARRAY_EMPTY:{array_name}")
@@ -113,16 +113,14 @@ def encode_native_druid_talents(
     if not isinstance(selection, Mapping):
         raise NativeP2ProbeError("SOURCE_TALENT_SELECTION_NOT_A_MAPPING")
     layout = parse_native_druid_layout(engine_root)
-    fields: dict[str, tuple[int, int, int]] = {}
+    # This is only a wire encoder. The selected Rust prepare path, not
+    # Python, owns the talent rank ceiling and game-legality decision.
+    fields: dict[str, tuple[int, int]] = {}
     arrays: list[list[int]] = []
     for tree_index, (tree_key, entries) in enumerate(layout.items()):
         arrays.append([0] * len(entries))
         for index, entry in enumerate(entries):
-            fields[str(entry["field"])] = (
-                tree_index,
-                index,
-                int(entry["max_rank"]),
-            )
+            fields[str(entry["field"])] = (tree_index, index)
 
     for talent_id, raw_rank in selection.items():
         if type(raw_rank) is not int:
@@ -134,11 +132,14 @@ def encode_native_druid_talents(
             continue
         if talent_id not in fields:
             raise NativeP2ProbeError(f"NATIVE_TALENT_ID_UNMAPPED:{talent_id}")
-        tree_index, index, max_rank = fields[talent_id]
-        if rank > max_rank:
+        # The native talent-string wire format has one decimal digit per
+        # position. Reject only values that cannot be represented on the wire;
+        # a representable but illegal rank must reach native preparation.
+        if rank > 9:
             raise NativeP2ProbeError(
-                f"NATIVE_TALENT_RANK_EXCEEDS_CAP:{talent_id}:{rank}>{max_rank}"
+                f"NATIVE_TALENT_RANK_NOT_SINGLE_DIGIT:{talent_id}:{rank}"
             )
+        tree_index, index = fields[talent_id]
         arrays[tree_index][index] = rank
 
     return "-".join("".join(str(rank) for rank in tree) for tree in arrays)
@@ -228,7 +229,9 @@ def prepare_native_request(
                 details = details if isinstance(details, dict) else {}
                 code = details.get("code")
                 status = (
-                    "INVALID" if code == "request"
+                    # The Druid Rust preparation emits "talents" for
+                    # invalid layout/rank input, not unsupported mechanics.
+                    "INVALID" if code in {"request", "talents"}
                     else "ERROR" if code == "prepare_fault"
                     else "UNSUPPORTED"
                 )
@@ -505,7 +508,18 @@ def _simulate_prepared(
         elapsed = round(time.monotonic() - started, 6)
         if completed.returncode != 0:
             refusal = _json_object(completed.stdout or "")
-            if refusal is not None and "supported" in refusal:
+            # The selected Rust CLI reserves exit 3 for an explicit gate refusal.
+            # A JSON object that merely contains "supported" is not enough:
+            # malformed output, validation errors and faults must remain ERROR.
+            if (
+                completed.returncode == 3
+                and refusal is not None
+                and refusal.get("supported") is False
+                and isinstance(refusal.get("reasons"), list)
+                and bool(refusal["reasons"])
+                and isinstance(refusal.get("refusals"), list)
+                and bool(refusal["refusals"])
+            ):
                 return {
                     "status": "UNSUPPORTED",
                     "stage": "sim",

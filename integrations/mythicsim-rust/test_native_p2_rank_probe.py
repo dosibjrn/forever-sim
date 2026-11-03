@@ -58,9 +58,7 @@ def main() -> int:
     layout = parse_native_druid_layout(args.engine_root)
     assert [len(layout[k]) for k in ("balance", "feral", "restoration")] == [16, 20, 16]
     assert layout["balance"][15]["field"] == "moonkin_form"
-    assert layout["balance"][15]["max_rank"] == 1
     assert layout["feral"][10]["field"] == "predatory_strikes"
-    assert layout["feral"][10]["max_rank"] == 3
 
     # Round-trip each pinned engine fixture through the Rust-derived layout.
     for scenario in ("balance",):
@@ -93,11 +91,9 @@ def main() -> int:
     moonkin_before.pop("moonkin_form")
     assert encode_native_druid_talents(moonkin_before, args.engine_root).split("-")[0][-1] == "0"
 
-    # The checked-in Cat request fixture contains an unrelated
-    # predatory_discipline rank above the selected Rust layout cap. Do not
-    # erase or clamp it: construct a separate legal 15-point Feral control,
-    # then add only Predatory Strikes rank 1. The selected Rust prepare path
-    # validates this exact pair before the simulation is allowed to run.
+    # Construct a focused 15-point Feral control, then add only
+    # Predatory Strikes rank 1. The adapter forwards the pair to the selected
+    # native prepare/sim path; Python does not inspect or enforce rank caps.
     predatory_before = {
         "ferocity": 5,
         "furor": 5,
