@@ -548,3 +548,57 @@ def test_paid_p75_talent_apl_crossover_reports_noop_when_only_gear_differs():
         [], SimpleNamespace(player=player), random.Random(23))
     assert changed is False
     assert candidate == snapshot
+
+
+def test_paid_p75_talent_crossover_uses_fourth_genuine_paid_donor():
+    """Three same-axis paid leaders must not mask the fourth real donor."""
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    parent = _candidate("parent")
+    child = copy.deepcopy(parent)
+    leaders = []
+    for i in range(3):
+        gear_only = copy.deepcopy(parent)
+        player(gear_only)["equipment"]["items"][0]["id"] = 40 + i
+        leaders.append((900.0 - i, {}, f"gear-only-{i}", gear_only))
+    meaningful = _candidate("different-talents")
+    player(meaningful)["rotation"] = {"priorityList": [8, 7, 6]}
+    leaders.append((800.0, {}, "paid-distinct-axes", meaningful))
+    before_parent = copy.deepcopy(parent)
+    before_donor = copy.deepcopy(meaningful)
+
+    assert gate._paid_p75_crossover(
+        child, parent, leaders, [], SimpleNamespace(player=player),
+        random.Random(17))
+    assert player(child)["talentsString"] == "different-talents"
+    assert player(child)["rotation"] == {"priorityList": [8, 7, 6]}
+    assert parent == before_parent
+    assert meaningful == before_donor
+
+
+def test_paid_p75_gear_crossover_uses_fourth_multi_slot_paid_donor():
+    """Three paid one-slot edits cannot hide a legal fourth two-slot donor."""
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    parent = _candidate("parent")
+    child = copy.deepcopy(parent)
+    leaders = []
+    for i in range(3):
+        one_slot = copy.deepcopy(parent)
+        player(one_slot)["equipment"]["items"][0]["id"] = 40 + i
+        leaders.append((900.0 - i, {}, f"one-slot-{i}", one_slot))
+    meaningful = copy.deepcopy(parent)
+    player(meaningful)["equipment"]["items"] = [
+        {"id": 71, "enchant": 801}, {"id": 72, "enchant": 802}]
+    leaders.append((800.0, {}, "paid-multi-slot", meaningful))
+    source = SimpleNamespace(player=player, RejectedGear=ValueError)
+    validated = []
+    validator = SimpleNamespace(
+        validate=lambda ids, enchants: validated.append((ids, enchants)))
+    before_parent = copy.deepcopy(parent)
+    before_donor = copy.deepcopy(meaningful)
+
+    assert gate._paid_p75_gear_block_crossover(
+        child, parent, leaders, [], source, validator, random.Random(17))
+    assert player(child)["equipment"] == player(meaningful)["equipment"]
+    assert validated == [([71, 72], [801, 802])]
+    assert parent == before_parent
+    assert meaningful == before_donor
