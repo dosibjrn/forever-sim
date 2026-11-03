@@ -52,6 +52,33 @@ RETIRED_TOOLS = (
     "tests/maintenance/test_native_p2_client_boundary.py",
     "tests/test_wf_prio_p2_legal_pair.py",
     "tests/test_wf_prio_native_p2_source_receipts.py",
+    "tools/wf_gate_p2_live.py",
+    "src/game/data/forever/checkpoint_p2_execution_gate.py",
+    "tests/test_wf_prio_p2_source_grant.py",
+    "tests/test_p2_source_control_proc_runtime.py",
+    "tests/test_wf475_live_p2_gate_alignment.py",
+    "tests/test_wf478_p2_effect_runtime.py",
+    "tests/test_wf480_p2_mode_entry_runtime.py",
+    "tests/test_wf479_p2_crit_cost_runtime.py",
+    "tests/test_prio_p2_solo_threat_exclusion.py",
+    "tests/test_prio_p2_live_critical_resource_gain.py",
+    "tests/test_prio_source_cast_pushback_l60.py",
+    "tests/test_wf481_p2_periodic_duration_runtime.py",
+    "tests/test_wf482_p2_gcd_and_tree_rows.py",
+    "tests/test_wf_prio_p2_exact_rank_fullpoint.py",
+    "tests/test_wf35_source_spec_p2_adapter.py",
+    "tests/test_wf430_p2_whole_gate_26point_tdd.py",
+    "tests/test_wf440_bash_stun_compound_tdd.py",
+    "tests/test_wf440_next_cast_instant_p2_tdd.py",
+    "tests/test_wf441_source_spatial_charge_p2_tdd.py",
+    "tests/test_wf439_channel_healing_compound_p2_tdd.py",
+    "tests/test_wf437_blood_frenzy_source_proc_p2_tdd.py",
+    "tests/test_wf439_timed_spell_critical_haste_p2_tdd.py",
+    "tests/test_wf436_source_natural_instinct_runtime_tdd.py",
+    "tests/test_wf441_source_active_periodic_full_heal_p2_tdd.py",
+    "tests/test_wf438_source_resource_talent_action_p2_tdd.py",
+    "tests/test_wf442_source_dodge_resource_and_heal_crit_p2_tdd.py",
+    "tests/test_prio_blood_frenzy_canonical_tooltip.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -105,6 +132,8 @@ RETIRED_IMPORT_NAMES = (
     "ingest_source_acquisition_evidence_sqlite",
     "ingest_source_acquisition_entities_sqlite",
     "wf_gate_p1_live",
+    "wf_gate_p2_live",
+    "checkpoint_p2_execution_gate",
     "wf_p1_native_effects",
     "native_p1_effect_probe",
 )
@@ -115,10 +144,7 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
     assert (ROOT / "src/v2/source_budgeted_level_route.py").is_file()
-    # P2 has no provider; the remaining module contains regression helpers only.
-    p2_helpers = ROOT / "tools/wf_gate_p2_live.py"
-    assert p2_helpers.is_file()
-    assert "def run_live(" not in p2_helpers.read_text(encoding="utf-8")
+    assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
 
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
     for relative in RETIRED_TOOLS:
@@ -191,10 +217,9 @@ def test_historical_p1_gameir_admission_toolchain_is_retired():
     for relative in retired:
         assert not (ROOT / relative).exists(), relative
         assert relative not in workflow, f"retired path remains in maintenance workflow: {relative}"
-    # P1/P2 have no live gate provider; retained P2 helpers are regression-only.
+    # P1/P2 have no live gate provider or retained P2 helper module.
     assert not (ROOT / "tools/wf_gate_p1_live.py").exists()
-    p2_helpers = (ROOT / "tools/wf_gate_p2_live.py").read_text(encoding="utf-8")
-    assert "def run_live(" not in p2_helpers
+    assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
 
 
 def test_no_live_python_imports_retired_p1_gameir_admission_toolchain():
@@ -262,13 +287,8 @@ def test_retired_native_p2_rank_probe_diagnostic_has_no_code_or_actions():
     for relative in retired:
         assert not (ROOT / relative).exists(), relative
 
-    gate = (ROOT / "tools/wf_gate_p2_live.py").read_text(encoding="utf-8")
-    assert "native_p2_rank_probe" not in gate
-    assert "native_rank_probe" not in gate
-    assert "def run_live(" not in gate
-    assert "_default_p2_source_db" not in gate
-    assert "_p2_source_db_diagnostics" not in gate
-    assert "_sqlite_connection_path" not in gate
+    assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
+    assert not (ROOT / "src/game/data/forever/checkpoint_p2_execution_gate.py").exists()
 
     gate_cli = (ROOT / "tools/wf_gate.py").read_text(encoding="utf-8")
     assert "native_rank_probe" not in gate_cli
@@ -282,4 +302,8 @@ def test_retired_native_p2_rank_probe_diagnostic_has_no_code_or_actions():
     assert "native_p2_rank_probe" not in submodule_workflow
     assert "test_native_p2_rank_probe" not in submodule_workflow
     assert "submodules: true" in submodule_workflow
+    for relative in (".github/workflows/maintenance-evidence-tests.yml",
+                     ".github/workflows/generic-source-search-regressions.yml"):
+        workflow = (ROOT / relative).read_text(encoding="utf-8")
+        assert "wf_gate_p2_live.py" not in workflow
     assert "cargo build --locked --bin forever-engine" in submodule_workflow
