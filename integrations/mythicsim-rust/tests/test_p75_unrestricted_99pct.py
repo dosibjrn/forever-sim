@@ -422,7 +422,8 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         cat={"winner_dps":820.0,"winner_spec":"cat","searched_specs":["cat"],
              "elapsed_s":270.0,"holdout_iterations":4000,"paid_per_spec":{"cat":1},
              "feral_saved_reference_dps":811.0237260012982}
-        free=dict(cat,winner_dps=830.0,searched_specs=["cat","balance","bear","resto"],\n                  paid_per_spec={"cat":1,"balance":1,"bear":1,"resto":1})
+        free=dict(cat,winner_dps=830.0,searched_specs=["cat","balance","bear","resto"],
+                  paid_per_spec={"cat":1,"balance":1,"bear":1,"resto":1})
         for field in ("feral_saved_reference_sha256","reference_encounter_sha256",
                       "catalogue_sha256","pinned_rust_items_sha256",
                       "pinned_rust_enchants_sha256","engine_binary_sha256",
