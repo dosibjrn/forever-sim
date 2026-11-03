@@ -11,6 +11,7 @@ on:
       - docs/RUST_UPSTREAM_FORK.md
       - integrations/mythicsim-rust/port_native_two_pull_cli.py
       - integrations/mythicsim-rust/port_native_target_ramp_clock.py
+      - integrations/mythicsim-rust/port_native_world_lethal_ack.py
 
 permissions:
   contents: read
@@ -37,6 +38,7 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_persistent_target.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_two_pull_cli.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_target_ramp_clock.py
+          python3 -m py_compile integrations/mythicsim-rust/port_native_world_lethal_ack.py
           python3 integrations/mythicsim-rust/test_port_native_pull_queue.py
           python3 - <<'PY'
           from pathlib import Path
@@ -75,12 +77,14 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_persistent_target.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_two_pull_cli.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_target_ramp_clock.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_world_lethal_ack.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
           first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs | sha256sum)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_persistent_target.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_two_pull_cli.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_target_ramp_clock.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_world_lethal_ack.py /tmp/forever-selected-rust
           second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs | sha256sum)"
           test "$first_hash" = "$second_hash"
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
