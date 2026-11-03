@@ -17,6 +17,38 @@ def _candidate(label):
             }]}]}}
 
 
+def test_p75_crossover_combines_two_distinct_paid_source_builds():
+    """No saved reference seed: gear remains from newly built paid child.
+
+    The second PAID parent contributes a coherent talent/rotation pair, not
+    unrelated unscored talent and APL guesses. Neither parent is mutated.
+    """
+    parent, donor, child = (_candidate(x) for x in ("parent", "donor", "child"))
+    child["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] = 99
+    donor_player = donor["raid"]["parties"][0]["players"][0]
+    donor_player["rotation"]["priorityList"] = [7, 8, 9]
+    original_donor = copy.deepcopy(donor)
+    source = SimpleNamespace(
+        player=lambda q: q["raid"]["parties"][0]["players"][0])
+    assert gate._paid_p75_crossover(
+        child, parent, [(771.0, {}, "paid-donor", donor, 800.0)],
+        [(900.0, "paid-parent", parent)], source, random.Random(5))
+    player = source.player(child)
+    assert player["equipment"]["items"][0]["id"] == 99
+    assert player["talentsString"] == "donor"
+    assert player["rotation"]["priorityList"] == [7, 8, 9]
+    assert donor == original_donor
+    player["rotation"]["priorityList"].append(10)
+    assert source.player(donor)["rotation"]["priorityList"] == [7, 8, 9]
+
+    # A single paid parent must NOT be combined with an unexecuted reference.
+    original_child = copy.deepcopy(child)
+    assert not gate._paid_p75_crossover(
+        child, parent, [], [(900.0, "paid-parent", parent)],
+        source, random.Random(5))
+    assert child == original_child
+
+
 def test_p75_paid_stochastic_parent_and_independent_cold_restarts():
     a, b = _candidate("balanced"), _candidate("stochastic")
     balanced = (900.0, {}, "sha-a", a)
@@ -304,7 +336,7 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
     assert (7, ("gear", "talents")) in paid_repairs
     assert (14, ("gear", "rotation")) in paid_repairs
     assert (21, ("talents", "rotation")) in paid_repairs
-    assert (11, ("gear_rebuild",)) in paid_repairs
+    assert (13, ("gear",)) in paid_repairs  # source-paid crossover\n    assert (11, ("gear_rebuild",)) in paid_repairs
     assert (22, ("talents_rebuild",)) in paid_repairs
     # The virtual budget can finish before proposal 33; its rotation-rebuild
     # schedule is covered by the pure scheduling assertion above.
