@@ -148,9 +148,18 @@ if ! git diff --cached --quiet; then
   git commit -m "fix(forever): allow early live-world target kill clock without native reset"
 fi
 
-# The two-target native state and world ACK regressions must pass before
-# a new fork revision is published; compilation alone is insufficient.
+# Stop real world-coupled native combat only after its committed gsim lethal
+# HP/death/hash ACK; preserve the current native actor for future retargeting.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_world_lethal_terminal.py" "$PWD"
+git add src/core/fight.rs src/core/fight/world_bridge.rs
+if ! git diff --cached --quiet; then
+  git commit -m "fix(forever): end current world pull at confirmed native lethal ACK"
+fi
+
+# Existing native retarget regressions and new live terminal predicate must
+# pass before publishing this selected Rust integration.
 cargo test --locked --lib persistent_next_target
+cargo test --locked --lib world_lethal_terminal
 
 # This is an engine packaging update, not a gate or native reference test.
 check_engine_source
