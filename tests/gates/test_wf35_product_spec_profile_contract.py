@@ -1,7 +1,6 @@
-"""#35: product-defined spec constraints are not invented Forever game rules.
+"""Product-defined spec constraints are not invented Forever game rules.
 
-These focused tests exercise the real P2 provider helpers. They do not assert
-that the entire rank denominator or the live P2 gate has passed.
+These focused tests exercise the shared source-profile helpers, not a gate.
 """
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from tools import wf_gate_p2_live as p2
+from tools import wf_source_profile as profile
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,7 +28,7 @@ def _ir():
 
 
 def test_committed_druid_profile_is_explicit_product_contract():
-    rule = p2._load_product_spec_profile(ROOT, "druid", 60, "balance",
+    rule = profile._load_product_spec_profile(ROOT, "druid", 60, "balance",
                                          source_sha256="a" * 64)
     assert rule["authority_kind"] == "PRODUCT_PROFILE_CONSTRAINT"
     assert rule["constraint_kind"] == "minimum_tree_points"
@@ -42,10 +41,10 @@ def test_committed_druid_profile_is_explicit_product_contract():
 
 
 def test_product_profile_is_legal_full_point_frontier_not_external_url(monkeypatch):
-    monkeypatch.setattr(p2, "available_talent_points",
+    monkeypatch.setattr(profile, "available_talent_points",
                         lambda level, bonus_talent_points: 51)
     observed = []
-    monkeypatch.setattr(p2, "validate_talent_selection",
+    monkeypatch.setattr(profile, "validate_talent_selection",
                         lambda ir, allocation, **kwargs: observed.append(dict(allocation)))
     rule = p2._load_product_spec_profile(ROOT, "druid", 60, "balance",
                                          source_sha256="a" * 64)
@@ -54,13 +53,13 @@ def test_product_profile_is_legal_full_point_frontier_not_external_url(monkeypat
         assert (tree_key, minimum_points, level) == ("balance", 31, 60)
         return ([{"balance_capstone": 31, "restoration_filler": 20}],
                 {"kind": "test_frontier"})
-    builds, evidence = p2._source_spec_profile(
+    builds, evidence = profile._source_spec_profile(
         _ir(), "balance", level=60, bonus=0, step=5,
         source_sha256="a" * 64, frontier_builder=frontier, profile_rule=rule)
     assert len(builds) == len(observed) == 1
     assert evidence["source_spec_profile_verified"] is True
     assert evidence["source_spec_profile_kind"] == "PRODUCT_PROFILE_CONSTRAINT"
-    assert evidence["source_spec_profile_authority"].endswith("p2_spec_profiles.json")
+    assert evidence["source_spec_profile_authority"].endswith("source_spec_profiles.json")
     assert evidence["source_spec_required_points"] == 31
 
 
@@ -75,7 +74,7 @@ def test_wrong_contract_schema_fails_closed(tmp_path, field, value):
     target = tmp_path / "config/validation/p2_spec_profiles.json"
     target.parent.mkdir(parents=True)
     target.write_text(json.dumps(data))
-    with pytest.raises(ValueError, match="P2_PRODUCT_PROFILE_"):
+    with pytest.raises(ValueError, match="SOURCE_PRODUCT_PROFILE_"):
         p2._load_product_spec_profile(tmp_path, "druid", 60, "balance",
                                       source_sha256="a" * 64)
 
