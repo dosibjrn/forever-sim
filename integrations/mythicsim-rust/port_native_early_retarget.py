@@ -63,8 +63,14 @@ def port_source(source: str) -> str:
     if source.count("world_bridge::begin_next_target(at_ns)?;") != 1:
         raise ValueError("Rust early-world-target source anchors missing or ambiguous")
     if NEW_GUARD in source:
+        typed_rng_test = TEST.replace(
+            "DruidAgent::fight(&prepared)",
+            "DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)",
+            1,
+        )
         if (source.count(NEW_GUARD) != 1 or source.count(HELPER) != 1
-                or source.count(TEST) != 1 or OLD_GUARD in source):
+                or sum(source.count(candidate) for candidate in (TEST, typed_rng_test)) != 1
+                or OLD_GUARD in source):
             raise ValueError("Rust early-target port partially applied")
         return source
     if (source.count(OLD_GUARD) != 1 or source.count(METHOD_MARKER) != 1
