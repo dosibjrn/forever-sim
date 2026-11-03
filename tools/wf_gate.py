@@ -627,6 +627,14 @@ def main(argv=None) -> int:
                     "cold_candidate_failures"):
             if key in report:
                 record[key] = report[key]
+        if gate == "P3":
+            # Preserve bounded source-policy witnesses so measured P3 failures
+            # can be repaired from production evidence, not inferred from a zero.
+            for key in ("source_policy_stat_witnesses", "real_measured_stat_weights",
+                        "real_catalogue_legal_items", "real_catalogue_slots_scored",
+                        "actual_search_result_status", "source_profile_production_build"):
+                if key in report:
+                    record[key] = report[key]
         if gate.startswith("P7."):
             # Real P7 providers report the frozen 1,000-stochastic outcome,
             # but the public CLI previously dropped it. Keep this bounded
