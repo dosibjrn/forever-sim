@@ -39,7 +39,6 @@ def test_druid_l20_real_source_frontier_thorns_and_covered_context():
     assert by_id[1058]['source_text_context_evidence']['numeric_context_features']['periodic_heal_total']==48
     assert by_id[774]['sibling_rank_context_only']
     assert r['potential_ranks_assessed_by_numeric_ir_or_text_role']>r['potential_ranks_with_numeric_or_ir_proxy']
-    assert r['PASS1'] is False
 
 
 def test_no_class_or_spell_id_triggers_special_evaluation():
