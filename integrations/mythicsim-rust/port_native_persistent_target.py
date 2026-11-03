@@ -19,14 +19,31 @@ def replace_once(source: str, old: str, new: str, marker: str) -> str:
             # this source method, not a partially applied base migration.
             if marker == "    pub(crate) fn begin_next_target(&mut self":
                 from port_native_early_retarget import HELPER, NEW_GUARD, TEST
+                typed_rng_test = TEST.replace(
+                    "DruidAgent::fight(&prepared)",
+                    "DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)",
+                    1,
+                )
                 if (source.count(HELPER) == 1 and source.count(NEW_GUARD) == 1
-                        and source.count(TEST) == 1):
+                        and sum(source.count(candidate) for candidate in (TEST, typed_rng_test)) == 1):
                     return source
             if marker == "    fn native_persistent_next_target_retains_actor_and_native_queue()":
                 # Early-world clock adds an adjacent Rust test before this
                 # original test. Require both entire tests to be intact.
                 from port_native_early_retarget import TEST
-                if source.count(TEST) == 1 and source.count(FIGHT_TEST.rstrip("\n")) == 1:
+                typed_rng_test = TEST.replace(
+                    "DruidAgent::fight(&prepared)",
+                    "DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)",
+                    1,
+                )
+                typed_rng_fight_test = FIGHT_TEST.replace(
+                    "DruidAgent::fight(&prepared)",
+                    "DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)",
+                    1,
+                ).rstrip("\n")
+                early_test_count = sum(source.count(candidate) for candidate in (TEST, typed_rng_test))
+                fight_test_count = sum(source.count(candidate) for candidate in (FIGHT_TEST.rstrip("\n"), typed_rng_fight_test))
+                if early_test_count == 1 and fight_test_count == 1:
                     return source
             raise ValueError(f"partial or ambiguous already-applied Rust port: {marker}")
         return source
