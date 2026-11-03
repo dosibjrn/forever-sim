@@ -297,6 +297,8 @@ def test_retired_native_p2_rank_probe_diagnostic_has_no_code_or_actions():
     rust_workflow = (ROOT / ".github/workflows/rust-upstream-fork.yml").read_text(encoding="utf-8")
     assert "native_p2_rank_probe" not in rust_workflow
     assert "test_native_p2_rank_probe" not in rust_workflow
+    assert "FOREVER_P2_HYDRATED_SOURCE_DB_PATH" not in rust_workflow
+    assert "FOREVER_P2_HYDRATED_SOURCE_DB_SHA256" not in rust_workflow
 
     submodule_workflow = (ROOT / ".github/workflows/rust-submodule-verify.yml").read_text(encoding="utf-8")
     assert "native_p2_rank_probe" not in submodule_workflow
