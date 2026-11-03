@@ -107,7 +107,7 @@ MAIN_DISPATCH_NEW = '''    if args.first().is_some_and(|arg| arg == "talent-layo
     }
     if args.is_empty() || args == ["--help"] {'''
 MAIN_HELP_OLD = 'forever-engine version");'
-MAIN_HELP_NEW = 'forever-engine talent-layout --class druid\\\\nforever-engine version");'
+MAIN_HELP_NEW = 'forever-engine talent-layout --class druid\\nforever-engine version");'
 
 PREP_PATCHES = [(PREP_OLD, PREP_NEW, "PREP_EXPORT")]
 LIB_PATCHES = [(LIB_OLD, LIB_NEW, "LIB_EXPORT")]
