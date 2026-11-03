@@ -330,6 +330,60 @@ class NativeGenericMatrixContract(unittest.TestCase):
             self.assertFalse(gear[2]["native_db_present"])
 
 
+    def test_create_inventory_does_not_preflight_item_identity_in_python(self):
+        from tempfile import TemporaryDirectory
+        from unittest.mock import patch
+        import native_l60_matrix as matrix
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = root / "engine"
+            engine.mkdir()
+            registry = root / "registry.json"
+            registry.write_text("{}")
+            classes = (
+                "druid", "hunter", "mage", "paladin", "priest",
+                "rogue", "shaman", "warlock", "warrior",
+            )
+            profiles = [(classes[index % len(classes)], f"spec_{index}")
+                        for index in range(28)]
+            sources = {}
+            for index, (class_key, spec) in enumerate(profiles):
+                relative = f"requests/profile-{index}.json"
+                source_path = engine / relative
+                source_path.parent.mkdir(parents=True, exist_ok=True)
+                request = {
+                    "raid": {"parties": [{"players": [{
+                        "class": "Class" + class_key.capitalize(),
+                        "equipment": {"items": [{"id": 999999}]},
+                        "talentsString": "source-observed-build",
+                        "rotation": {"priorityList": []},
+                    }]}]},
+                    "simOptions": {"iterations": 3, "randomSeed": "47"},
+                }
+                source_path.write_text(json.dumps(request))
+                sources[f"{class_key}/{spec}"] = ("engine", relative)
+
+            with patch.object(matrix, "CURRENT_CLIENT_TALENT_OVERRIDES", {}), \\
+                 patch.object(matrix, "enumerate_l60_profiles", return_value=profiles), \\
+                 patch.object(matrix, "SOURCES", sources), \\
+                 patch.object(matrix, "ROOT", root), \\
+                 patch.object(matrix, "load_native_item_index",
+                              side_effect=AssertionError("Python item index must not preflight requests")):
+                rows = matrix.create_inventory(registry, engine)
+
+            self.assertEqual(28, len(rows))
+            for row, request in rows:
+                self.assertIsNotNone(request)
+                self.assertEqual("SMOKE_FIXTURE_ONLY", row["status"])
+                self.assertIsNone(row["blocker"])
+                self.assertEqual(
+                    999999,
+                    request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"],
+                )
+                self.assertNotIn("native_item_inventory", row)
+                self.assertNotIn("native_db_missing_item_ids", row)
+
     def test_subprocess_timeout_is_budget_expiry_not_engine_error(self):
         import subprocess
         attempts = []
