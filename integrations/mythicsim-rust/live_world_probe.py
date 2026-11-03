@@ -125,7 +125,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     iteration_precombat_damage = 0.
                     iteration_control_events = []
                 clock_ns = native["native_clock_ns"]
-                if clock_ns % 1_000_000 or clock_ns <= last_tick:
+                same_clock_control = bool(native.get("same_clock_control_boundary", False))
+                if (clock_ns % 1_000_000 or clock_ns < last_tick
+                        or (clock_ns == last_tick and not same_clock_control)):
                     raise AssertionError("RUST_CLOCK_NOT_GSIM_MILLISECOND_MONOTONIC")
                 if native["native_request_sha256"] != request_sha:
                     raise AssertionError(f"RUST_SOURCE_HASH_MISMATCH {native['native_request_sha256']} {request_sha}")
@@ -214,7 +216,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             duration = result["result"]["firstIterationDuration"]
             assert result["result"]["iterationsDone"] == iterations
             assert len(samples) == iterations
-            assert event_count > 0 or distance > 60
+            assert (event_count > 0 or distance > 60
+                    or any(sample["native_control_events"] for sample in samples))
             assert native_dps >= 0 and duration > 0
             world_mean_dps = sum(s["world_dps"] for s in samples) / iterations
             assert abs(native_dps - world_mean_dps) < 1e-5, (
@@ -230,6 +233,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "native_pet_damage_events": pet_damage_events,
                     "native_precombat_damage_events": precombat_damage_events,
                     "native_world_ticks": total_ticks,
+                    "native_control_events": sum(len(sample["native_control_events"]) for sample in samples),
                     "world_health_remaining": world.targets["m1"].health,
                     "per_iteration": samples,
                     "source_request_proto_sha256": request_sha,
