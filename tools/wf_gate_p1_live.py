@@ -431,6 +431,7 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
     scenario_nonimpact = scenario_nonimpact or {}
     nonimpact: list[dict[str,Any]] = []
     native_probe_reports: list[dict[str,Any]] = []
+    native_row_results: dict[int,dict[str,Any]] = {}
     native_outcomes: dict[str,dict[str,Any]] = {}
     def issue(code, row=None, detail=None):
         if len(problems) < max_errors:
@@ -460,6 +461,30 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
             if indexed.get(sid):
                 issue('INACTIVE_SOURCE_ACTION_ENTERED_GAME_IR',row, reason)
             continue
+        # Probe the selected source identity before asking whether GameIR can
+        # represent it. Native INVALID/UNSUPPORTED remains authoritative.
+        if native_executor is not None:
+            try:
+                native = native_executor(row, None)
+            except Exception as exc:
+                native = {
+                    'outcome': {'status':'native_error','native_status':'ERROR',
+                                'reason':f'{type(exc).__name__}:{exc}'},
+                    'report': {'spell_id':sid,'status':'ERROR',
+                               'reason':f'{type(exc).__name__}:{exc}',
+                               'p1_certified':False},
+                }
+            if native is not None:
+                if not isinstance(native, dict) or not isinstance(native.get('outcome'), dict):
+                    issue('NATIVE_ACTION_PROBE_INVALID',row,'source identity probe')
+                    native_row_results[sid] = {
+                        'outcome': {'status':'native_error','native_status':'ERROR',
+                                    'reason':'INVALID_NATIVE_ACTION_PROBE_RESULT'}}
+                else:
+                    native_row_results[sid] = native
+                    summary = native.get('report')
+                    if isinstance(summary, dict):
+                        native_probe_reports.append(summary)
         try:
             classification = source_classifier(row, row['raw_listview_json'])
         except (TypeError, KeyError, ValueError) as exc:
@@ -533,19 +558,7 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
         if len(matches)>1:
             issue('DUPLICATE_GAME_IR_SOURCE_MATCH',row,','.join(a.id for a in matches))
         for action in matches:
-            native = None
-            if native_executor is not None:
-                try:
-                    native = native_executor(row, action)
-                except Exception as exc:
-                    native = {
-                        'outcome': {'status':'native_error',
-                                    'native_status':'ERROR',
-                                    'reason':f'{type(exc).__name__}:{exc}'},
-                        'report': {'spell_id':sid,'status':'ERROR',
-                                   'reason':f'{type(exc).__name__}:{exc}',
-                                   'p1_certified':False},
-                    }
+            native = native_row_results.get(sid)
             if native is not None:
                 if not isinstance(native, dict) or not isinstance(native.get('outcome'), dict):
                     issue('NATIVE_ACTION_PROBE_INVALID', row, action.id)
@@ -554,9 +567,6 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                         'reason':'INVALID_NATIVE_ACTION_PROBE_RESULT'}
                 else:
                     native_outcomes[action.id] = native['outcome']
-                    summary = native.get('report')
-                    if isinstance(summary, dict):
-                        native_probe_reports.append(summary)
                 # Native prepare/execute owns this action's validity and effects.
                 # Keep only Forever's candidate/policy reachability check here.
                 try:
