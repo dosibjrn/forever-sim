@@ -3,17 +3,12 @@ from __future__ import annotations
 """Forever source facts normalized into reusable self-healing Game IR Actions."""
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
-from src.game.model.ir import (
-    ActionDefinition,
-    ActorDefinition,
-    HealEffect,
-    PeriodicHealEffect,
-    ResourceCost,
-    ResourceDefinition,
-)
 from .direct_spells import DEFAULT_FOREVER_SPELL_GCD_S
+
+if TYPE_CHECKING:
+    from src.game.model.ir import ActionDefinition, ActorDefinition, ResourceDefinition
 
 
 @dataclass(frozen=True)
@@ -62,6 +57,8 @@ def normalize_direct_heal_action(
     *, fact: DirectHealSourceFact, actor: ActorDefinition, mana_resource: ResourceDefinition,
     health_resource: ResourceDefinition,
 ) -> tuple[ActionDefinition, dict[str, Any]]:
+    from src.game.model.ir import ActionDefinition, HealEffect, ResourceCost
+
     if mana_resource.id != fact.resource_id:
         raise ValueError("direct heal resource mismatch")
     if health_resource.owner_actor_id != actor.id:
@@ -113,6 +110,8 @@ def normalize_periodic_heal_action(
     *, fact: PeriodicHealSourceFact, actor: ActorDefinition, mana_resource: ResourceDefinition,
     health_resource: ResourceDefinition,
 ) -> tuple[ActionDefinition, dict[str, Any]]:
+    from src.game.model.ir import ActionDefinition, PeriodicHealEffect, ResourceCost
+
     if mana_resource.id != fact.resource_id:
         raise ValueError("periodic heal resource mismatch")
     source = _source(fact.family_key, fact.rank_level, fact.source_url, fact.provenance)
