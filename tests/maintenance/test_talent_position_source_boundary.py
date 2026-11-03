@@ -114,3 +114,63 @@ def test_staged_talent_compiler_keeps_source_ranks_and_fail_closed_sha():
     )
     with pytest.raises(ValueError, match='STAGED_TALENT_POSITION_SHA_MISMATCH'):
         apply_staged_talent_positions(conn, 'druid', 20, (original,))
+
+
+
+def test_staged_catalogue_source_boundary_and_legacy_compiler():
+    """Missing/invalid source snapshots never construct the legacy GameIR.
+
+    An explicitly valid staged catalogue still reaches the unchanged legacy
+    compiler until its production callers use the selected native Rust API.
+    """
+    code = """
+import hashlib
+import json
+import sqlite3
+import sys
+from src.game.data.forever.source_checkpoint_talent_stage import apply_staged_talent_catalogue
+
+db = sqlite3.connect(':memory:')
+db.row_factory = sqlite3.Row
+assert 'src.game.model.ir' not in sys.modules
+assert apply_staged_talent_catalogue(db, 'druid', 20, ()) == ((), None)
+
+db.execute('CREATE TABLE checkpoint_talent_source_catalogue '
+           '(class_key TEXT, min_level INTEGER, source_build TEXT, '
+           'source_sha256 TEXT, source_json TEXT)')
+assert apply_staged_talent_catalogue(db, 'druid', 20, ()) == ((), None)
+assert 'src.game.model.ir' not in sys.modules
+
+source = {
+    'class_key': 'druid', 'min_level': 20, 'source_build': '70338',
+    'source_url': 'https://example.invalid/staged',
+    'catalogue': [], 'observations': [],
+}
+raw = json.dumps(source, sort_keys=True)
+db.execute(
+    'INSERT INTO checkpoint_talent_source_catalogue VALUES (?, ?, ?, ?, ?)',
+    ('druid', 20, '70338', 'invalid-sha', raw),
+)
+try:
+    apply_staged_talent_catalogue(db, 'druid', 20, ())
+except ValueError as exc:
+    assert str(exc) == 'STAGED_TALENT_SOURCE_HASH_MISMATCH'
+else:
+    raise AssertionError('invalid staged hash was accepted')
+assert 'src.game.model.ir' not in sys.modules
+
+db.execute(
+    'UPDATE checkpoint_talent_source_catalogue SET source_sha256=?',
+    (hashlib.sha256(raw.encode()).hexdigest(),),
+)
+talents, receipt = apply_staged_talent_catalogue(db, 'druid', 20, ())
+assert talents == ()
+assert receipt['catalogue_count'] == 0
+assert receipt['source_sha256'] == hashlib.sha256(raw.encode()).hexdigest()
+assert 'src.game.model.ir' in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
