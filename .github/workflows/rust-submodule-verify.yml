@@ -31,7 +31,18 @@ jobs:
           test -n "$expected" && test "$expected" = "$actual"
           grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
           test -f "$engine/src/core/fight/world_bridge.rs"
+          # #528: selected gitlink itself must contain the typed runtime;
+          # a temporary CI source port is never proof of published production code.
+          grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
+          ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
+          grep -Fq 'pub(crate) fn new(mode: RngMode,' "$engine/src/core/rng.rs"
+          grep -Fq 'SimRng::new(rng_mode,' "$engine/src/core/fight.rs"
           python3 integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
+          # Retain the idempotence check below, but additionally require that
+          # porting the already-published pin changes ZERO tracked Rust files.
+          if ! git -C "$engine" diff --quiet; then
+            echo "PINNED_RUST_REQUIRES_UNPUBLISHED_TYPED_RNG_PATCH" >&2; exit 1
+          fi
           # Fork-sync retries and an already-typed published pin must not
           # duplicate the Rust enum or rewrite migrated test callsites.
           first_port="$(git -C "$engine" diff --binary | sha256sum)"
