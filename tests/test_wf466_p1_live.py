@@ -604,3 +604,29 @@ def test_native_p1_refusal_is_preserved_without_gameir_fallback():
     assert 'NATIVE_ACTION_REFUSED' in codes(result)
     assert result['native_effect_probes'][0]['status'] == 'UNSUPPORTED'
     assert result['pass_count'] == 0
+
+
+def test_native_p1_probe_runs_even_without_a_gameir_action():
+    calls = []
+    result = audit_inventory(
+        [row(9912)], ir_with(), parser=lambda a:set(),
+        source_classifier=lambda r,raw:{'role':'ABILITY'},
+        policy_builder=lambda ir,rules:policy(rules[0][0]),
+        scratch_builder=lambda ir,max_candidates:[],
+        executor=lambda ir,a:(_ for _ in ()).throw(
+            AssertionError('native-selected source identity must not use GameIR')),
+        native_executor=lambda row_value,action_value:(
+            calls.append((row_value['spell_id'],action_value)) or {
+                'outcome': {'status':'executed','effect_observed':True,
+                            'native_status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED'},
+                'report': {'spell_id':9912,'status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED',
+                           'effect_observed':True,'p1_certified':False},
+            }),
+        effect_checker=lambda e:'direct_damage',
+    )
+    assert calls == [(9912, None)]
+    assert result['native_effect_probe_count'] == 1
+    assert result['native_effect_probes'][0]['status'] == 'NATIVE_DIRECT_BEHAVIOR_VERIFIED'
+    assert result['pass_count'] == 0
+    assert result['status'] == 'FAIL'
+    assert 'MISSING_GAME_IR_ACTION' in codes(result)
