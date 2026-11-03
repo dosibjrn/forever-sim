@@ -24,6 +24,8 @@ RETIRED_TOOLS = (
     "tools/wf387_atomic_source_talent_probe.py",
     "tools/wf430_p2_gate_report.py",
     "tools/wf362_warrior_l30_p2_acceptance.py",
+    "tools/wf338_druid_l20_p3_certificate.py",
+    "tools/wf356_legacy_l30_equipment_audit.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -49,6 +51,8 @@ RETIRED_IMPORT_NAMES = (
     "wf387_atomic_source_talent_probe",
     "wf430_p2_gate_report",
     "wf362_warrior_l30_p2_acceptance",
+    "wf338_druid_l20_p3_certificate",
+    "wf356_legacy_l30_equipment_audit",
 )
 
 
