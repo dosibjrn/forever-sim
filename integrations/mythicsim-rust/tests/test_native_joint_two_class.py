@@ -619,6 +619,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         candidate_player["rotation"]["priorityList"] = [self.cast(17923)]
         self.assertFalse(adapter.legal(candidate), "a non-witness-only APL is not promotable")
 
+        # Presence of the condition key is significant, even when the mapping is empty.
         empty_condition_witness = self.cast(11713)
         empty_condition_witness["action"]["condition"] = {}
         candidate_player["rotation"]["priorityList"] = [
