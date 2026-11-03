@@ -111,7 +111,7 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(
             {"slot": 1, "item_id": 225, "enchant_id": 201}],
         "winner_live_dps": 717.5,
         "winner_screen_dps": 720.0,
-        "winner_selection": "paid_2x24_stochastic_live_native_finalist",
+        "winner_selection": "paid_2x24_balanced_live_native_finalist",
         "paid_stochastic_finalists": 4,
         "source_candidate_failures": ["SOURCE_REJECT_" + "x" * 300] * 5,
         "paid_stochastic_finalist_failures": ["NATIVE_TIMEOUT_" + "y" * 300] * 6,
@@ -128,7 +128,7 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(
         {"slot": 1, "item_id": 225, "enchant_id": 201}]
     assert receipt["winner_live_dps"] == 717.5
     assert receipt["winner_screen_dps"] == 720.0
-    assert receipt["winner_selection"] == "paid_2x24_stochastic_live_native_finalist"
+    assert receipt["winner_selection"] == "paid_2x24_balanced_live_native_finalist"
     assert receipt["paid_stochastic_finalists"] == 4
     assert len(receipt["source_candidate_failures"]) == 4
     assert len(receipt["paid_stochastic_finalist_failures"]) == 4
