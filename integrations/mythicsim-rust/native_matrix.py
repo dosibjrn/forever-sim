@@ -80,6 +80,10 @@ def search_native(
         "best_score": None,
         "elapsed_s": 0.0,
         "engine_errors": 0,
+        "native_refusals": 0,
+        "native_invalid": 0,
+        "native_unsupported": 0,
+        "native_refusal_samples": [],
         "legal_rejections": 0,
         "duplicate_proposals": 0,
     }
@@ -129,6 +133,20 @@ def search_native(
             # Reaching a strict native deadline is normal budget exhaustion,
             # not a source/engine error and not a failed paid evaluation.
             break
+        except NativeCandidateRefusal as exc:
+            # Rust's INVALID/UNSUPPORTED responses reject this proposal; they
+            # are authoritative candidate outcomes, not execution failures.
+            result["native_refusals"] += 1
+            key = "native_invalid" if exc.status == "INVALID" else "native_unsupported"
+            result[key] += 1
+            if len(result["native_refusal_samples"]) < 8:
+                sample = {"status": exc.status, "reason": exc.reason}
+                if exc.returncode is not None:
+                    sample["returncode"] = exc.returncode
+                if exc.request_sha256:
+                    sample["request_sha256"] = exc.request_sha256
+                result["native_refusal_samples"].append(sample)
+            continue
         except Exception:
             result["engine_errors"] += 1
             continue
@@ -143,6 +161,8 @@ def search_native(
         result["status"] = "RAN" if not result["engine_errors"] else "RAN_WITH_ENGINE_ERRORS"
     elif result["engine_errors"]:
         result["status"] = "BLOCKED_ENGINE_ERROR"
+    elif result["native_refusals"]:
+        result["status"] = "BLOCKED_NATIVE_REFUSALS"
     elif result["legal_rejections"]:
         result["status"] = "BLOCKED_NO_LEGAL_CANDIDATE"
     return result
