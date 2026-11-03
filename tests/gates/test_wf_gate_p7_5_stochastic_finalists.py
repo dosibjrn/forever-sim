@@ -665,3 +665,42 @@ def test_p75_native_control_nonzero_exit_preserves_actionable_binary_diagnostic(
             tmp_path / "selected-rust", request, 3, rng_mode="balanced")
     assert "request_sha256=" in str(err.value)
     assert "native candidate crashed at source prepare" in str(err.value)
+
+
+def test_p75_cli_exposes_balanced_paid_confirmation_receipt(monkeypatch, capsys):
+    """Observed 750 balanced vs 699 frozen DPS must retain paid-selection
+    evidence in the real gate CLI, without changing PASS/FAIL or M1 credit.
+    """
+    from tools import wf_gate as cli
+
+    monkeypatch.setattr(cli, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR"],
+        "cold_balanced_screen_best_dps": 782.0,
+        "selected_balanced_screen_dps": 748.5,
+        "paid_joint_balanced_finalists": 19,
+        "paid_joint_balanced_confirmed": 9,
+        "paid_joint_balanced_deep_confirmed": 2,
+        "balanced_parent_proposals": 180,
+        "selected_validation": "paid_6x3_balanced_live_native_deep_confirmed_finalist",
+        "balanced_finalist_failures": ["source-exit:" + "x" * 250] * 6,
+        "frozen_stochastic_iterations": 1000,
+        "frozen_stochastic_world_dps": 698.8,
+    })
+    assert cli.main(["--class", "druid", "--level", "60",
+                     "--spec", "balance", "--gate", "P7.5"]) == 1
+    result = json.loads(capsys.readouterr().out)
+    record = result["results"][0]
+    assert result["status"] == "FAIL"
+    assert record["cold_balanced_screen_best_dps"] == 782.0
+    assert record["selected_balanced_screen_dps"] == 748.5
+    assert record["paid_joint_balanced_finalists"] == 19
+    assert record["paid_joint_balanced_confirmed"] == 9
+    assert record["paid_joint_balanced_deep_confirmed"] == 2
+    assert record["balanced_parent_proposals"] == 180
+    assert record["selected_validation"] == (
+        "paid_6x3_balanced_live_native_deep_confirmed_finalist")
+    assert len(record["balanced_finalist_failures"]) == 4
+    assert all(len(e) <= 180 for e in record["balanced_finalist_failures"])
+    assert record["frozen_stochastic_iterations"] == 1000
+    assert record["frozen_stochastic_world_dps"] == 698.8
