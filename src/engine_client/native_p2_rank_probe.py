@@ -42,12 +42,12 @@ _TREE_ARRAYS = (
     ("restoration", "FOREVER_RESTORATION"),
 )
 _ENTRY = re.compile(
-    r'(?:new_talent|talent)\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*\)\s*,?'
+    r'(?:new_talent|talent)\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*\d+\s*\)\s*,?'
 )
 
 
 def parse_native_druid_layout(engine_root: str | Path) -> dict[str, list[dict[str, object]]]:
-    """Read the talent order/rank caps from the selected Rust source itself."""
+    """Read only native talent field order/IDs; never copy rank caps into Python."""
     root = Path(engine_root)
     source_path = root / "src" / "classes" / "druid" / "prepare.rs"
     if not source_path.is_file():
@@ -93,12 +93,12 @@ def parse_native_druid_layout(engine_root: str | Path) -> dict[str, list[dict[st
             )
         parsed: list[dict[str, object]] = []
         for entry in entries:
-            field, name, max_rank = entry.groups()
+            field, name = entry.groups()
             if field in all_fields:
                 raise NativeP2ProbeError(f"NATIVE_DRUID_DUPLICATE_TALENT_FIELD:{field}")
             all_fields.add(field)
             parsed.append(
-                {"field": field, "name": name, "max_rank": int(max_rank)}
+                {"field": field, "name": name}
             )
         if not parsed:
             raise NativeP2ProbeError(f"NATIVE_DRUID_TALENT_ARRAY_EMPTY:{array_name}")
