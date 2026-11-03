@@ -101,6 +101,23 @@ class NativeJointScoringContracts(unittest.TestCase):
         self.assertEqual("HPS", joint.objective_for_profile("priest/holy"))
         self.assertEqual("DPS", joint.objective_for_profile("mage/fire"))
 
+    def test_healer_profile_stays_blocked_before_native_scoring(self):
+        inventory = [({
+            "profile_id": "druid/restoration",
+            "source_sha256": "source-sha",
+            "source_type": "PINNED_SOURCE_FIXTURE",
+            "source_path": "fixtures/healers/restoration-druid.request.json",
+        }, request())]
+        with patch.object(joint, "native_score_request") as score_request:
+            row = joint.execute(
+                "druid/restoration", inventory, Path("unused-engine"),
+                Path("unused-source"), 5.0, 40, 731, Path("unused-output"),
+            )
+        self.assertEqual("HPS", row["objective"])
+        self.assertEqual("BLOCKED_OBJECTIVE", row["status"])
+        self.assertIn("HPS objective", row["blocker"])
+        score_request.assert_not_called()
+
 
     def test_native_refusal_is_propagated_for_the_exact_talent_candidate(self):
         source = request()
