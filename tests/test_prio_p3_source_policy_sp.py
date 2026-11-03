@@ -7,6 +7,7 @@ from pathlib import Path
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.source_budgeted_gear import paid_source_policy_stat_witness
+from tools.wf_gate import _run_live_gate
 from tools.wf_gate_p3_live import _source_profile_build_ir, run_live
 
 
@@ -43,8 +44,11 @@ def test_real_p3_balance_uses_paid_sp_witness_not_epsilon():
 
 
 def test_real_unrestricted_l40_p3_reuses_baseline_to_measure_spirit():
-    result = run_live(ROOT, "druid", 40, spec="unrestricted")
+    # Exercise the public production gate path without the M1 recorder.
+    result = _run_live_gate(ROOT, "druid", 40, "unrestricted", "P3", "")
     assert result["status"] == "PASS", result
+    assert result["pass_count"] == result["reachability_count"] == 149, result
+    assert result["real_source_search_attempts"] <= 44, result
     assert result["real_measured_stat_weights"]["spirit"] > 0, result
     spirit = next(
         witness for witness in result["source_policy_stat_witnesses"]
