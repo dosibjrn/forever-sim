@@ -236,6 +236,12 @@ print("RUST_NATIVE_PAID_RECOVERY_MULTI_TARGET_PORT_CHAIN_IDEMPOTENT")
 
 # The selected Rust pin is already typed-RNG, unlike the legacy source-port
 # fixtures above. Verify the exact native API composition and reject drift.
+assert port.PREPARED_CALL_TYPED_OLD == (
+    "crate::classes::native_two_world_targets(prepared, target_count, rng_mode)"
+)
+assert port.PREPARED_CALL_TYPED_NEW == (
+    "crate::classes::native_two_world_targets(prepared, target_count, rng_mode, recovery_ns)"
+)
 for marker, original, transform, anchor in (
     (two_world.CLASS_MARKER, two_world.CLASS_METHOD, port.port_classes,
      two_world.CLASSES_ANCHOR),
@@ -255,7 +261,7 @@ for marker, original, transform, anchor in (
     damaged = paid.replace(
         {two_world.CLASS_MARKER: port.CLASSES_CALL_NEW,
          two_world.PREPARED_MARKER: port.PREPARED_CALL_TYPED_NEW,
-         two_world.CLI_MARKER: "--recovery-ns"}[marker],
+         two_world.CLI_MARKER: "native_two_world_targets(&prepared, target_count, mode, recovery_ns)"}[marker],
         "FORGED_TYPED_RECOVERY_DRIFT", 1)
     try:
         two_world.insert(damaged, anchor, marker, original)
