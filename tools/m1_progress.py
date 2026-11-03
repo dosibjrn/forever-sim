@@ -22,7 +22,8 @@ if str(ROOT) not in sys.path:
 from tools.wf_gate_coverage import (measured_live_coverage,
                                     measured_p7_dps_proximity, pareto_effort_fraction)
 LEDGER = ROOT / "docs/planning/M1_PASSES.tsv"
-GATES = tuple(f"P{n}" for n in range(1, 7)) + tuple(f"P7.{n}" for n in range(1, 6))
+GATES = tuple(f"P{n}" for n in range(3, 7)) + tuple(f"P7.{n}" for n in range(1, 6))
+RETIRED_GATES = frozenset(("P1", "P2"))
 CLASSES = frozenset(("druid", "hunter", "mage", "paladin", "priest",
                      "rogue", "shaman", "warlock", "warrior"))
 LEVELS = frozenset((20, 30, 40, 60))
@@ -30,7 +31,7 @@ PASS_FIELDS = ("class", "level", "spec", "gate", "passed_at_utc", "commit",
                "run_url", "compatibility_id")
 FIELDS = PASS_FIELDS + ("status", "verified", "applicable", "scope_provisional",
                         "measured_at_utc")
-TOTAL = 148 * len(GATES)  # 1628: historical PASSes, NOT 1628 test implementations
+TOTAL = 148 * len(GATES)  # 1332 active checkpoint-gate pairs; P1/P2 rows are historical only
 
 
 def _key(row):
@@ -53,7 +54,7 @@ def _rows(path=LEDGER):
                            scope_provisional="", measured_at_utc=row["passed_at_utc"])
             if (row["class"] not in CLASSES or int(row["level"]) not in LEVELS
                     or not re.fullmatch(r"[a-z][a-z0-9_-]*", row["spec"])
-                    or row["gate"] not in GATES
+                    or (row["gate"] not in GATES and row["gate"] not in RETIRED_GATES)
                     or not re.fullmatch(r"[0-9a-f]{40}", row["commit"])
                     or row["status"] not in ("PASS", "PARTIAL")
                     or not row["measured_at_utc"]):
@@ -61,7 +62,7 @@ def _rows(path=LEDGER):
             if row["status"] == "PASS" and not row["passed_at_utc"]:
                 raise ValueError("PASS requires a real acceptance timestamp")
             if row["status"] == "PARTIAL":
-                # P1-P6 record actually passed behaviors. P7 records actual
+                # Retired P1/P2 rows remain parseable history. Active P3-P6 record actual
                 # coupled live DPS / required DPS (not fabricated test counts).
                 if row["gate"].startswith("P7."):
                     n, d = float(row["verified"]), float(row["applicable"])
@@ -232,6 +233,8 @@ def scoreboard(path=LEDGER):
     by_checkpoint = {}
     partials = []
     for row in rows.values():
+        if row["gate"] not in GATES:
+            continue  # Preserve retired P1/P2 receipts without counting them.
         if row["status"] == "PARTIAL":
             n, d = ((float(row["verified"]), float(row["applicable"]))
                     if row["gate"].startswith("P7.")
@@ -247,7 +250,7 @@ def scoreboard(path=LEDGER):
             key = (row["class"], row["level"], row["spec"])
             by_checkpoint.setdefault(key, []).append(row)
     # OVERALL PLAN: one unrestricted plus four Druid profiles / three others
-    # at each of the four levels. No new profile may inflate the 1,628 total.
+    # at each of the four levels. No new profile may inflate the 1,332 total.
     if len(by_checkpoint) > 148:
         raise ValueError("More than 148 distinct M1 checkpoint identities")
     for class_key in CLASSES:
@@ -261,7 +264,7 @@ def scoreboard(path=LEDGER):
     compatible = sum(bool(group[0]["compatibility_id"]) and
                      len({r["compatibility_id"] for r in group}) == 1
                      for group in complete)
-    accepted = sum(r["status"] == "PASS" for r in rows.values())
+    accepted = sum(r["status"] == "PASS" and r["gate"] in GATES for r in rows.values())
     fractional = sum(x["coverage"] for x in partials)
     measured_fraction = (accepted + fractional) / TOTAL
     return {"passed_gates": accepted, "total_gates": TOTAL,
@@ -331,9 +334,9 @@ def render_history_svg(output, ledger=LEDGER):
         '<text x="38" y="42" fill="#f9fafb" font-family="Arial,sans-serif" '
         'font-size="25" font-weight="bold">Forever Sim — M1 progress</text>',
         '<text x="38" y="70" fill="#9ca3af" font-family="Arial,sans-serif" '
-        'font-size="15">Git-verified gate results · 1,628 gate targets · 148 checkpoints</text>',
+        f'font-size="15">Git-verified active gate results · {TOTAL:,} gate targets · 148 checkpoints</text>',
         f'<text x="38" y="103" fill="#34d399" font-family="Arial,sans-serif" '
-        f'font-size="19" font-weight="bold">PASS {current["passed_gates"]}/1628 '
+        f'font-size="19" font-weight="bold">PASS {current["passed_gates"]}/{TOTAL} '
         f'({current["gate_percent"]:.4f}%)</text>',
         f'<text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" '
         f'font-size="19" font-weight="bold">Measured {current["measured_percent"]:.4f}%</text>',
@@ -341,7 +344,7 @@ def render_history_svg(output, ledger=LEDGER):
         f'font-size="19" font-weight="bold">Certified {current["certified_checkpoints"]}/148</text>',
         '<line x1="39" y1="130" x2="67" y2="130" stroke="#34d399" stroke-width="3"/>',
         '<text x="75" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">'
-        'Full gate PASS (% of 1628)</text>',
+        f'Full gate PASS (% of {TOTAL})</text>',
         '<line x1="350" y1="130" x2="378" y2="130" stroke="#fbbf24" stroke-width="3"/>',
         '<text x="386" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">'
         'Partial-inclusive diagnostic index (NOT PASS)</text>',
@@ -402,8 +405,10 @@ def main(argv=None):
     if args.invalidate:
         rows = _rows(args.ledger)
         del_key = tuple(args.invalidate)
+        if del_key[-1] in RETIRED_GATES:
+            parser.error("Retired P1/P2 history is immutable")
         if del_key not in rows:
-            parser.error("No such PASS to invalidate")
+            parser.error("No such active PASS to invalidate")
         del rows[del_key]
         _write(rows, args.ledger)
     if args.plot_svg:
@@ -424,7 +429,8 @@ def main(argv=None):
               f"({100 * p['coverage']:.1f}% {unit}, "
               f"{100 * p['pareto_effort']:.1f}% Pareto-modeled work){tentative}")
     print(f"Whole checkpoints: {result['certified_checkpoints']}/148; "
-          f"11/11 gate candidates: {result['complete_candidates']}")
+          f"{len(GATES)} active gates per checkpoint; "
+          f"{result['complete_candidates']} complete candidates")
     print("Unlinked/mismatched compatibility IDs never certify a whole checkpoint.")
     return 0
 
