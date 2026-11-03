@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     # One controlled exact-HEAD Work1 P7.3 regression run. No generic push CI.
-    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/work1-p73-native-world-cold-final-20261102]
+    branches: [work/first-rust-native-world-damage-20261102, work/first-rust-multifight-world-20261102, work/first-rust-event-driven-world-boundaries-20261102, work/work1-p73-native-world-cold-final-20261102, work/work1-528-typed-rust-rng-20261103]
     paths:
       - .github/workflows/wf-gsim-rust-native-world.yml
       - .gitmodules
