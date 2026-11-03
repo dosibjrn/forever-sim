@@ -13,7 +13,7 @@ from src.game.gear import apply_stat_delta, apply_gear_selection
 from src.game.runtime import ActorState
 from src.game.model.ir import DamageEffect
 from src.rulesets.forever.items.runtime_selection import available_items, item_vector
-from tools.wf_gate_p2_live import _action_runtime_probe
+from tools.wf_talent_runtime import _action_runtime_probe
 
 
 def _actual_druid():
