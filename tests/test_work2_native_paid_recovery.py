@@ -11,6 +11,7 @@ spec = spec_from_file_location("work2_paid_recovery", SCRIPT)
 module = module_from_spec(spec)
 spec.loader.exec_module(module)
 _summary = module._native_paid_recovery_summary
+_command = module._native_world_pulls_command
 
 GAP_NS = 5_000_000_000
 
@@ -95,3 +96,15 @@ def test_partial_or_corrupt_native_recovery_receipts_fail_closed(windows):
 def test_zero_recovery_rejects_unexpected_native_recovery_windows():
     with pytest.raises(AssertionError, match="RUST_NATIVE_PAID_RECOVERY_WINDOWS_INVALID"):
         _summary([_window(8_000_000_000)], 2, 0)
+
+def test_zero_recovery_preserves_legacy_native_cli_contract():
+    command = _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0)
+    assert command == [
+        "/tmp/forever-engine", "native-world-pulls", "--infile",
+        "/tmp/prepared.json", "--targets", "2",
+    ]
+
+
+def test_paid_recovery_passes_explicit_nanoseconds_to_native_cli():
+    command = _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 3, GAP_NS)
+    assert command[-2:] == ["--recovery-ns", str(GAP_NS)]
