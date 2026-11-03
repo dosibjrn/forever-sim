@@ -384,6 +384,46 @@ def test_external_world_death_cannot_authorize_native_target_transfer():
 
 
 
+
+def test_next_world_target_cannot_receive_old_native_damage_from_before_handoff():
+    """Native damage at 50 ms cannot hit a world target first engaged at 100 ms."""
+    rt, first_tick, first_reply = fixture()
+    rt.targets["m1"].health = 10.0
+    rt.targets["m1"].max_health = 10.0
+    first_tick["world_sha256"] = state_hash(snapshot_gsim_world(rt))
+    first_reply["observed_input_world_sha256"] = first_tick["world_sha256"]
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(first_tick, first_reply)
+    assert not rt.targets["m1"].alive
+
+    # Paid world time passes before the second distinct gsim target is engaged.
+    rt.advance_to(0.1)
+    rt.engage_target("m0")
+    rt.select_target("m0")
+    applier.begin_next_world_target("m0")
+    rt.advance_to(0.2)
+    second_tick = {
+        "sequence": 1, "clock_ms": 200, "native_clock_ns": 200_000_000,
+        "selected_target_id": "m0",
+        "world_sha256": state_hash(snapshot_gsim_world(rt)),
+    }
+    second_reply = {
+        "sequence": 1, "native_process_id": 123,
+        "observed_input_world_sha256": second_tick["world_sha256"],
+        "native_damage_events": [{
+            **first_reply["native_damage_events"][0],
+            "event_id": "native-effect-2",
+            "native_time_ns": 50_000_000,  # valid old ACK time, not valid new target time
+        }],
+    }
+    before = rt.targets["m0"].health
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="WORLD_DAMAGE_ACK_EVENT_BEFORE_TARGET_HANDOFF"):
+        applier.apply(second_tick, second_reply)
+    assert rt.targets["m0"].health == before
+
+
+
 def test_source_native_damage_cannot_apply_to_unselected_real_gsim_target():
     # The native target slot belongs to the actual gsim selected target.
     # A forged tick may carry the correct world hash, PID, event and time,
