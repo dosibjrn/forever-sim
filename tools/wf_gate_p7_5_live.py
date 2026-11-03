@@ -110,6 +110,22 @@ def _p75_paid_joint_axes(proposal_index: int):
     return pairs[(proposal_index // 7 - 1) % len(pairs)]
 
 
+def _p75_paid_rebuild_axes(proposal_index: int):
+    """Escape a paid search basin by rebuilding ONE axis from source.
+
+    The generator already exposes these source-legal rebuild operations, but
+    the default paid-parent search previously never requested them: only
+    local neighbor edits and simultaneous small axis edits were reachable.
+    Keep independent cold starts and seventh-proposal paired mutations.
+    Rebuild the named axis while retaining the other two paid-parent axes;
+    source/Rust legality and real native+2D payment remain mandatory.
+    """
+    if proposal_index % 11:
+        return None
+    axes = ("gear_rebuild", "talents_rebuild", "rotation_rebuild")
+    return (axes[(proposal_index // 11 - 1) % len(axes)],)
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.5")
@@ -290,12 +306,15 @@ def run_live(root: Path, class_key: str, level: int, *,
                     # A real paid elite may need coordinated gear/talent/APL
                     # edits to escape a single-axis local basin. Do not pass
                     # repair axes to independent cold restarts.
-                    joint_axes = (_p75_paid_joint_axes(proposals)
-                                  if elite is not None and full_search else None)
+                    repair_axes = (_p75_paid_joint_axes(proposals)
+                                   if elite is not None and full_search else None)
+                    if (repair_axes is None and elite is not None
+                            and full_search):
+                        repair_axes = _p75_paid_rebuild_axes(proposals)
                     candidate = _cold_joint(
                         base, source, validator, pools, rng,
                         elite=elite, enchant_pools=enchant_pools,
-                        repair_axes=joint_axes)
+                        repair_axes=repair_axes)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
