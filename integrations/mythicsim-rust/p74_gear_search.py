@@ -60,7 +60,10 @@ def candidate_pool(validator, limit, *, independent_enchants=False,
             good.append((score,iid))
         good.sort(key=lambda x:(-x[0],x[1]))
         ids=[iid for _,iid in good[:limit]]
-        if not ids:raise ValueError(f"No source item proposals: slot={slot}, index={i}")
+        if not ids:
+            if native_authoritative:
+                raise ValueError(f"No source item proposals: slot={slot}, index={i}")
+            raise ValueError(f"No PINNED-RUST legal source candidates: slot={slot}, index={i}, excluded={dict(exclusions)}")
         pool[i]=ids
     return pool,exclusions
 
