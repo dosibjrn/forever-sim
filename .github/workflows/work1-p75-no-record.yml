@@ -2,7 +2,7 @@ name: Work1 P7.5 no-record current-pin diagnostic
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
     paths:
       - ".github/workflows/work1-p75-no-record.yml"
 
@@ -26,6 +26,7 @@ jobs:
       CARGO_PROFILE_RELEASE_LTO: "off"
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
       FOREVER_P7_FULL_SOURCE_SEARCH: "1"
+      FOREVER_P7_SEARCH_STRATEGY: "wf613"
       FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
     steps:
       - name: Checkout exact PR HEAD without write credentials
