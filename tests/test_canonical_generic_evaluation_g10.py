@@ -1,7 +1,8 @@
 import pytest
 
 from src.game.data.forever import build_game_ir_slice
-from src.game.evaluation import Evaluation, evaluation_from_combat_timeline
+from src.optimization.evaluation import Evaluation
+from src.game.evaluation import Evaluation as LegacyGameEvaluation, evaluation_from_combat_timeline
 from src.game.model import DamageEffect, PeriodicEffect
 from src.game.runtime import ActorState, CombatRuntime, TargetState, action_eligibility
 from src.shared.leveling.objective import representative_hp
@@ -33,9 +34,10 @@ def _wrath_evaluation(level=20):
     return ev, timeline
 
 
-def test_evaluation_contract_is_now_game_layer_authority():
+def test_evaluation_contract_is_shared_with_legacy_game_aliases():
+    assert LegacyGameEvaluation is Evaluation
     assert OptimizerEvaluation is Evaluation
-    assert Evaluation.__module__ == "src.game.evaluation"
+    assert Evaluation.__module__ == "src.optimization.evaluation"
 
 
 def test_g10_evaluation_is_derived_from_runtime_events():

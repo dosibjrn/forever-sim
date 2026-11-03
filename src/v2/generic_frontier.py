@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from src.game.evaluation import Evaluation
+from src.optimization.evaluation import Evaluation
 from src.game.data.forever.registry import generic_planning_levels
 from src.version import SOFTWARE_VERSION
 from .class_model import CandidateResult, ClassModel, LevelFrontier, SearchContext
