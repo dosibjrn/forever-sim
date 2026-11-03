@@ -513,7 +513,7 @@ def _run_live_gate(root: Path, class_key: str, level: int, spec: str,
         report = run_live(root, class_key, level, spec=spec)
     except Exception as exc:
         return {"status": "FAIL", "reasons": [
-            "LIVE_GATE_EXECUTION_FAILED:" + type(exc).__name__ + ":" + str(exc)[:240]}]
+            "LIVE_GATE_EXECUTION_FAILED:" + type(exc).__name__ + ":" + str(exc)[:240]]}
     if not isinstance(report, dict) or report.get("status") not in (
             "PASS", "FAIL", "BLOCKED"):
         return {"status": "FAIL", "reasons": ["INVALID_LIVE_GATE_REPORT"]}
