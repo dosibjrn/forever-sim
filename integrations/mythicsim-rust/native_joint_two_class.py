@@ -52,6 +52,44 @@ def native_payload(candidate: dict, iterations: int, seed: int) -> dict:
     return payload
 
 
+def native_score_request(
+    binary: Path,
+    candidate: dict,
+    iterations: int,
+    seed: int,
+    rng_mode: str,
+    deadline: float,
+    *,
+    runner=run,
+) -> tuple[dict, dict]:
+    """Score one exact request with an explicit optimizer RNG mode.
+
+    This joint-search lane is selection, not holdout: every baseline,
+    candidate and exact replay must use the typed balanced backend. Stochastic
+    evaluation is reserved for a separate frozen finalist holdout.
+    """
+    if rng_mode != "balanced":
+        raise ValueError("JOINT_OPTIMIZER_REQUIRES_EXPLICIT_BALANCED_RNG")
+    effective = native_payload(candidate, iterations, seed)
+    expected_sha = fingerprint(effective)
+    score, raw, elapsed, scored_sha = runner(
+        binary, candidate, iterations, seed, rng_mode, deadline
+    )
+    if scored_sha != expected_sha:
+        raise RuntimeError("Native payload/score provenance mismatch")
+    if not math.isfinite(float(score)):
+        raise RuntimeError("Native evaluator returned a non-finite score")
+    return {
+        "effective_request_sha256": expected_sha,
+        "score": float(score),
+        "rng_mode": rng_mode,
+        "iterations": iterations,
+        "seed": seed,
+        "native_duration_s": elapsed,
+        "raw_response_sha256": fingerprint(raw),
+    }, raw
+
+
 def source_bounded_adapter(
     class_key: str, reference: dict, same_class: list[dict],
     items: dict[int, dict],
@@ -160,7 +198,15 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     row = {
         "profile_id": profile_id, "status": "BLOCKED_SOURCE",
         "dimensions_requested": ["gear", "talents", "apl"],
-        "native_paid": 0, "three_axis_paid": 0, "process_gate_pass": False,
+        "native_paid": 0, "baseline_paid": 0, "native_paid_total": 0,
+        "baseline_balanced_score": None,
+        "baseline_effective_request_sha256": None,
+        "baseline_native_duration_s": None,
+        "baseline_rng_mode": None,
+        "baseline_iterations": None,
+        "baseline_seed": None,
+        "baseline_response_sha256": None,
+        "three_axis_paid": 0, "process_gate_pass": False,
         "source_scope": "SMOKE_FIXTURE_OR_PINNED_REFERENCE",
         "full_source_legality_certified": False,
         "live_gsim_2d_rust_causality": False,
@@ -195,6 +241,31 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
 
     paid = []
     native_failures = []
+    baseline_effective = native_payload(reference, iterations, seed)
+    try:
+        baseline_record, baseline_raw = native_score_request(
+            binary, reference, iterations, seed, "balanced",
+            time.monotonic() + 30.0,
+        )
+    except Exception as exc:
+        row["status"] = "BLOCKED_NATIVE_BASELINE"
+        row["blocker"] = "Balanced native reference baseline failed: " + str(exc)[-700:]
+        row["native_failures"] = [{"stage": "baseline", "error": str(exc)[-1200:]}]
+        return row
+    row["baseline_paid"] = 1
+    row["baseline_balanced_score"] = baseline_record["score"]
+    row["baseline_effective_request_sha256"] = baseline_record["effective_request_sha256"]
+    row["baseline_native_duration_s"] = baseline_record["native_duration_s"]
+    row["baseline_rng_mode"] = baseline_record["rng_mode"]
+    row["baseline_iterations"] = baseline_record["iterations"]
+    row["baseline_seed"] = baseline_record["seed"]
+    row["baseline_response_sha256"] = baseline_record["raw_response_sha256"]
+    (outdir / "baseline_effective_request.json").write_text(
+        json.dumps(baseline_effective, indent=2) + "\n"
+    )
+    (outdir / "baseline_response.json").write_text(
+        json.dumps(baseline_raw, indent=2) + "\n"
+    )
     deadline = time.monotonic() + seconds
     # One evaluator; no home-made DPS, Go scorer or fake score can enter report.
     def evaluate(candidate, *, iterations, seed, rng_mode):
@@ -203,8 +274,12 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         if not adapter.legal(candidate):
             raise ValueError("JOINT_LEGALITY_REJECTED_BEFORE_NATIVE")
         try:
-            score, raw, elapsed, scored_sha = run(
-                binary, candidate, iterations, seed, rng_mode, deadline)
+            native_record, raw = native_score_request(
+                binary, candidate, iterations, seed, rng_mode, deadline
+            )
+            score = native_record["score"]
+            elapsed = native_record["native_duration_s"]
+            scored_sha = native_record["effective_request_sha256"]
         except (TimeoutError, subprocess.TimeoutExpired):
             raise
         except Exception as exc:
@@ -220,11 +295,15 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         if not any(delta.values()):
             raise ValueError("Reference-identical search not counted as 3-axis discovery")
         (paid_dir / (key + ".json")).write_text(json.dumps(effective, indent=2) + "\n")
+        (paid_dir / (key + ".response.json")).write_text(
+            json.dumps(raw, indent=2) + "\n"
+        )
         paid.append({
             "effective_request_sha256": key,
             "score": score, "rng_mode": rng_mode,
             "iterations": iterations, "seed": seed,
             "native_duration_s": elapsed,
+            "raw_response_sha256": native_record["raw_response_sha256"],
             "delta_from_reference": delta,
             "item_ids": [x.get("id", 0) for x in player(candidate)["equipment"]["items"]],
             "talents": player(candidate)["talentsString"],
@@ -239,6 +318,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         seconds=seconds, iterations=iterations, seed=seed)
     row["search_status"] = result["status"]
     row["native_paid"] = len(paid)
+    row["native_paid_total"] = row["baseline_paid"] + row["native_paid"]
     row["paid_unique"] = result["paid_candidates"]
     row["native_errors"] = result["engine_errors"]
     row["legal_rejections"] = result["legal_rejections"]
@@ -261,11 +341,19 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         (outdir / "best_effective_request.json").write_text(json.dumps(winner, indent=2) + "\n")
         # Independent exact-byte native replay with the same seed and RNG mode.
         try:
-            replay, _raw, _elapsed, replay_sha = run(
+            replay_record, replay_raw = native_score_request(
                 binary, result["best_candidate"], iterations, seed,
-                "balanced", time.monotonic() + 30.0)
+                "balanced", time.monotonic() + 30.0,
+            )
+            replay = replay_record["score"]
+            replay_sha = replay_record["effective_request_sha256"]
             row["replay_score"] = replay
+            row["replay_rng_mode"] = replay_record["rng_mode"]
+            row["replay_response_sha256"] = replay_record["raw_response_sha256"]
             row["replay_effective_sha256"] = replay_sha
+            (outdir / "best_replay_response.json").write_text(
+                json.dumps(replay_raw, indent=2) + "\n"
+            )
             row["replay_matches"] = (
                 replay_sha == row["best_effective_request_sha256"]
                 and math.isclose(replay, row["best_balanced_screen"], rel_tol=1e-10))
