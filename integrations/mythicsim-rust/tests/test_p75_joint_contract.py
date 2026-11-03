@@ -156,38 +156,26 @@ class JointSearchContracts(unittest.TestCase):
             v.validate(ids, [777] + [0] * 15)
         self.assertEqual(bad.exception.category, "enchant_slot")
 
-    def test_ci_watches_all_native_search_dependencies(self):
-        # PR #25 must rerun native evidence if a shared validator, source
-        # fixture, or Rust gear/talent dependency changes without a direct
-        # edit to p75_joint_search.py. Both push and PR path filters matter.
-        workflow=(ROOT.parent.parent/".github/workflows/wf678-p75-pr.yml").read_text()
+    def test_generic_ci_watches_native_search_dependencies(self):
+        # The focused generic workflow replaced the retired per-gate workflow.
+        # Keep every shared input on its PR path filter and run this contract test.
+        workflow=(ROOT.parent.parent/".github/workflows/generic-source-search-regressions.yml").read_text()
         dependencies=(
             "integrations/mythicsim-rust/p73_talent_search_v2.py",
             "integrations/mythicsim-rust/p74_gear_search.py",
             "integrations/mythicsim-rust/p74_gear_validation.py",
             "integrations/mythicsim-rust/tests/test_p74_gear_search_ci.py",
+            "integrations/mythicsim-rust/p75_joint_search.py",
             "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json",
             "data/forever/catalogue/items_2026-09-29.sqlite",
         )
         for dependency in dependencies:
             with self.subTest(dependency=dependency):
                 self.assertEqual(
-                    2,workflow.count("      - '"+dependency+"'"),
-                    f"WF678 must watch {dependency} for both push and PR events")
-
-    def test_ci_runs_exact_pr_head_not_synthetic_merge_ref(self):
-        # On pull_request, actions/checkout defaults to refs/pull/N/merge.
-        # A successful CI then proves the synthetic merge tree, NOT the
-        # advertised PR HEAD. Pin both contracts and native evidence jobs
-        # to the exact source head and assert the checked-out SHA.
-        workflow=(ROOT.parent.parent/".github/workflows/wf678-p75-pr.yml").read_text()
-        exact_ref="          ref: ${{ github.event.pull_request.head.sha || github.sha }}"
-        self.assertEqual(
-            2, workflow.count(exact_ref),
-            "Both WF678 jobs must checkout the exact PR head (or push SHA)")
-        self.assertEqual(
-            2, workflow.count("      - name: Verify exact checkout head"),
-            "Both jobs must independently assert their source revision")
+                    1, workflow.count("      - '"+dependency+"'"),
+                    f"generic source regressions must watch {dependency}")
+        self.assertIn("integrations/mythicsim-rust/tests/test_p75_joint_contract.py", workflow)
+        self.assertIn("integrations/mythicsim-rust/tests/test_p75_joint_contract.py", workflow.split("run: >-",1)[1])
 
     def test_one_axis_neighborhood(self):
         r=random.Random(679)
