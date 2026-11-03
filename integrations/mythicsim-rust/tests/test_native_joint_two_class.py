@@ -534,7 +534,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
             }
 
         class FakeGear:
-            def __init__(self, class_key, reference, source_requests, items):
+            def __init__(self, class_key, reference, source_requests):
                 self.reference = reference
                 self.mutable_indices = [0]
 
@@ -554,7 +554,6 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
                 "warlock",
                 baseline,
                 [baseline],
-                {},
                 donor_fixtures=[
                     fixture("donor-a", donor_a, "a"),
                     fixture("donor-b", donor_b, "b"),
@@ -571,7 +570,6 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
                     "warlock",
                     baseline,
                     [baseline],
-                    {},
                     donor_fixtures=[
                         fixture("donor-a", donor_a, "a"),
                         fixture("donor-b", donor_b, "b"),
