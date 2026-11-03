@@ -101,69 +101,6 @@ def enumerate_legal_talent_allocations(
     return tuple(candidates),truncated
 
 
-@dataclass(frozen=True)
-class TalentCandidateResult:
-    candidate_id: str
-    selection: Mapping[str, int]
-    spent_points: int
-    seconds_per_mob: float | None
-    valid: bool
-    detail: Mapping[str, Any]
-
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "candidate_id": self.candidate_id,
-            "selection": {str(k): int(v) for k, v in self.selection.items()},
-            "spent_points": int(self.spent_points),
-            "seconds_per_mob": self.seconds_per_mob,
-            "valid": bool(self.valid),
-            "detail": dict(self.detail),
-        }
-
-
-@dataclass(frozen=True)
-class TalentSearchResult:
-    selected_candidate_id: str | None
-    selected_selection: Mapping[str, int]
-    selected_seconds_per_mob: float | None
-    selected_detail: Mapping[str, Any]
-    candidates: tuple[TalentCandidateResult, ...]
-    truncated: bool
-    executable_talent_ids: tuple[str, ...]
-    blocked_talent_ids: tuple[str, ...] = ()
-    complete_source_talent_coverage: bool = False
-
-    @property
-    def candidate_count(self) -> int:
-        return len(self.candidates)
-
-    @property
-    def valid_candidate_count(self) -> int:
-        return sum(1 for x in self.candidates if x.valid)
-
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "search_performed": True,
-            "search_dimensions": [
-                "talent_rank_allocation",
-                "policy_action_inclusion_exclusion",
-                "policy_priority_order",
-                "policy_numeric_condition_thresholds",
-            ],
-            "candidate_count": self.candidate_count,
-            "valid_candidate_count": self.valid_candidate_count,
-            "truncated": bool(self.truncated),
-            "executable_talent_ids": list(self.executable_talent_ids),
-            "blocked_talent_ids": list(self.blocked_talent_ids),
-            "complete_source_talent_coverage": bool(self.complete_source_talent_coverage),
-            "selected_candidate_id": self.selected_candidate_id,
-            "selected_selection": {str(k): int(v) for k, v in self.selected_selection.items()},
-            "selected_seconds_per_mob": self.selected_seconds_per_mob,
-            "selected_detail": dict(self.selected_detail),
-            "candidates": [x.as_dict() for x in self.candidates],
-        }
-
-
 def search_talent_allocations(
     ir_slice: GameIRSlice,
     *,
