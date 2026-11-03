@@ -1293,6 +1293,72 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
 
 
 class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
+    def test_shaman_10463_guard_survives_cold_elite_and_native_hps_witness_anchor(self):
+        guard = {
+            "not": {
+                "auraIsActive": {
+                    "auraId": {"spellId": 10463},
+                },
+            },
+        }
+        heal_cast = {
+            "spellId": {"spellId": 10463},
+            "target": {"type": "Self"},
+        }
+        source_actions = [{
+            "action": {
+                "castSpell": copy.deepcopy(heal_cast),
+                "condition": copy.deepcopy(guard),
+            }
+        }]
+        response = {"result": {"raidMetrics": {"parties": [{"players": [{
+            "actions": [{
+                "id": {"spellId": 10463},
+                "targets": [{"healing": 125.0}],
+            }],
+        }]}]}}}
+        witnesses = _native_positive_source_casts(
+            source_actions, response, objective="HPS"
+        )
+        self.assertEqual([heal_cast], witnesses)
+
+        for seed in range(32):
+            cold = mutate_apl(
+                None, source_actions, random.Random(seed), cold=True
+            )
+            elite = mutate_apl(
+                cold, source_actions, random.Random(seed + 1000), cold=False
+            )
+            for proposal in (cold, elite):
+                for entry in proposal:
+                    action = entry["action"]
+                    cast = action.get("castSpell", {})
+                    if cast.get("spellId", {}).get("spellId") == 10463:
+                        self.assertEqual(guard, action.get("condition"))
+
+                anchored = _ensure_native_damage_action(
+                    proposal, witnesses, random.Random(seed), objective="HPS",
+                    source_actions=source_actions,
+                )
+                guarded = [
+                    entry["action"] for entry in anchored
+                    if entry["action"].get("castSpell", {}).get(
+                        "spellId", {}
+                    ).get("spellId") == 10463
+                ]
+                self.assertTrue(guarded)
+                self.assertTrue(all(action.get("condition") == guard
+                                    for action in guarded))
+
+        # Even a stale/tampered candidate is repaired from the exact source
+        # action rather than receiving an unconditional witness cast.
+        tampered = [{"action": {"castSpell": copy.deepcopy(heal_cast)}}]
+        repaired = _ensure_native_damage_action(
+            tampered, witnesses, random.Random(77), objective="HPS",
+            source_actions=source_actions,
+        )
+        self.assertEqual([source_actions[0]], repaired)
+
     def test_hps_witness_uses_healing_or_shielding_and_preserves_target(self):
         heal_cast = {
             "spellId": {"spellId": 5185},
@@ -1764,7 +1830,7 @@ class APLPredicateCompatibilityContracts(unittest.TestCase):
             self.assertTrue(set(spell_refs) <= source_spell_keys)
             self.assertTrue(set(aura_refs) <= source_aura_keys)
 
-    def test_same_spell_is_preferred_but_compatible_cross_spell_predicates_remain_eligible(self):
+    def test_each_cast_uses_only_its_exact_source_action_condition(self):
         own = self.aura_condition(11689)
         cross = self.aura_condition(1311680)
         source_actions = [
@@ -1772,26 +1838,19 @@ class APLPredicateCompatibilityContracts(unittest.TestCase):
             self.cast(1311680, cross),
         ]
         _spells, same_spell, _allowed, compatible, _source_aura_keys = _corpus(source_actions)
+        templates = _source_action_templates(source_actions)
 
-        same_count = 0
-        cross_count = 0
-        for seed in range(512):
-            generated = _new_cast(
-                [{"spellId": 11689}],
-                same_spell,
-                compatible,
-                random.Random(seed),
+        for seed in range(128):
+            own_action = _new_cast(
+                [{"spellId": 11689}], same_spell, compatible, random.Random(seed),
+                source_action_templates=templates,
             )
-            condition = generated["action"].get("condition")
-            if condition == own:
-                same_count += 1
-            elif condition == cross:
-                cross_count += 1
-            elif condition is not None:
-                self.fail(f"Generated an unobserved predicate: {condition}")
-
-        self.assertGreater(cross_count, 0, "Compatible cross-spell predicates must remain eligible")
-        self.assertGreater(same_count, cross_count, "Same-spell predicates must remain preferred")
+            cross_action = _new_cast(
+                [{"spellId": 1311680}], same_spell, compatible, random.Random(seed),
+                source_action_templates=templates,
+            )
+            self.assertEqual(source_actions[0]["action"], own_action["action"])
+            self.assertEqual(source_actions[1]["action"], cross_action["action"])
 
 
 if __name__ == "__main__":
