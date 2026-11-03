@@ -85,19 +85,26 @@ def test_all_reports_real_gate_names_and_missing_live_providers(tmp_path,monkeyp
     assert data['status']=='BLOCKED'
 
 
-def test_legacy_p7_json_is_never_current_p7_acceptance(tmp_path,capsys):
+def test_legacy_p7_json_is_never_current_p7_acceptance(tmp_path,monkeypatch,capsys):
     common=dict(legacy_winner_full_configuration_replayed_in_new_engine=True,
                 both_configurations_same_100mob_scenario=True,
                 legacy_winner_on_new_engine_s_per_mob=17.2)
     write(tmp_path,'mage',20,'P7',new_winner_on_new_engine_s_per_mob=16.8,**common)
     assert mod.evaluate(tmp_path,'mage',20,'unrestricted','P7',{})['status']=='PASS'
+    # This fixture tests the public CLI's refusal to consume legacy JSON.
+    # Make the missing live-provider condition explicit instead of depending
+    # on whichever P7 providers happen to exist in the repository snapshot.
+    calls=[]
+    def blocked(root,class_key,level,spec,gate,scenario_id):
+        calls.append(gate)
+        return {'status':'BLOCKED','reasons':['LIVE_GATE_RUNNER_MISSING:'+gate]}
+    monkeypatch.setattr(mod,'_run_live_gate',blocked)
     assert mod.main(['--class','mage','--level','20','--gate','P7',
                      '--evidence-dir',str(tmp_path)]) == 1
     output=json.loads(capsys.readouterr().out)
     assert output['status']=='BLOCKED'
+    assert calls==[f'P7.{i}' for i in range(1,6)]
     assert [r['gate'] for r in output['results']]==[f'P7.{i}' for i in range(1,6)]
-
-
 def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(
         monkeypatch, capsys):
     """A real provider FAIL must retain its winner receipt, not become PASS."""
