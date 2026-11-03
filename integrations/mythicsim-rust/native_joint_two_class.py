@@ -207,7 +207,7 @@ def source_bounded_adapter(
     items: dict[int, dict], *, donor_fixtures: list[dict] | None = None,
     native_damage_witnesses: list[dict] | None = None,
 ) -> tuple[JointCandidateAdapter, dict]:
-    """Use exact pinned same-class source requests; the scheduler is unchanged."""
+    """Use exact same-class source requests as proposals; Rust owns gear legality."""
     original = player(reference)
     extra_same_class = [
         fixture for fixture in (donor_fixtures or [])
@@ -218,7 +218,7 @@ def source_bounded_adapter(
     source_requests = same_class + donor_requests
     gear = NativeGearAdapter(class_key, reference, source_requests, items)
     if not gear.mutable_indices:
-        raise ValueError("BLOCKED_GEAR_POOL: no source-bounded legal alternate item")
+        raise ValueError("BLOCKED_GEAR_POOL: no source-observed alternate item")
 
     base_gear = copy.deepcopy(original["equipment"]["items"])
     base_apl = copy.deepcopy(original["rotation"]["priorityList"])
@@ -515,7 +515,7 @@ def source_bounded_adapter(
         ],
         "native_positive_damage_witnesses_common_to_selected_talent_builds": common_witnesses,
         "talent_candidate_source": "SOURCE_OBSERVED_PROPOSALS_NATIVE_RUST_AUTHORITATIVE",
-        "gear_candidate_source": "PINNED_NATIVE_ITEM_DB_SOURCE_OBSERVED",
+        "gear_candidate_source": "PINNED_SAME_CLASS_SOURCE_REQUESTS_SAME_POSITION",
         "apl_candidate_source": "SOURCE_CAST_IDENTITIES_WITH_COMMON_NATIVE_POSITIVE_WITNESS",
     }
 
