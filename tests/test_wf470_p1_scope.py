@@ -44,7 +44,9 @@ def test_unknown_missing_ability_never_dismissed_by_scope():
 def test_real_druid_l20_p1_staged_sourced_action_coverage(monkeypatch):
     monkeypatch.setenv('WOW_FOREVER_BUILD_AS_OF','2026-10-17')
     result=run_live(ROOT,'druid',20)
-    assert result['status']=='PASS', {'reasons': result.get('reasons', [])[:35], 'ignored': result.get('excluded_nonaction_or_inactive_rows', [])[:8], 'checked': result.get('checked_source_abilities')}
+    if result['status']!='PASS':
+        print('P1_L20_REAL_REGRESSION', json.dumps({'reasons':result.get('reasons',[]), 'ignored':result.get('excluded_nonaction_or_inactive_rows',[]), 'checked':result.get('checked_source_abilities')}, ensure_ascii=False), flush=True)
+    assert result['status']=='PASS'
     assert result['effect_scope_policy']=='damage_buff_debuff_cc_highest_rank_only'
     assert result['problem_count']==0
     assert not result['problems']
