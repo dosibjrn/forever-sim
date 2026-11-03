@@ -1,7 +1,7 @@
 """G17 candidate enumeration belongs to optimization, not the GameIR adapter."""
 from __future__ import annotations
 
-import importlib
+import subprocess
 import sys
 
 from src.optimization.threshold_candidates import ThresholdAxis, iter_threshold_candidates
@@ -31,6 +31,6 @@ def test_threshold_frontier_is_game_independent_and_bounded():
 
 
 def test_threshold_core_does_not_import_game_model():
-    assert "src.game" not in sys.modules
-    importlib.import_module("src.optimization.threshold_candidates")
-    assert "src.game" not in sys.modules
+    code = ("import src.optimization.threshold_candidates; import sys; "
+            "assert 'src.game' not in sys.modules")
+    subprocess.run([sys.executable, "-c", code], check=True)
