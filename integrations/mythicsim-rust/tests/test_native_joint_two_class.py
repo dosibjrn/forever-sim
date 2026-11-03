@@ -39,10 +39,17 @@ class NativeJointScoringContracts(unittest.TestCase):
     def test_native_request_records_explicit_balanced_mode_and_raw_receipt(self):
         calls = []
         source = request()
-        raw = {"result": {"raidMetrics": {"dps": {"avg": 123.5}}}}
+        source["raid"]["parties"][0]["players"][0]["talentsString"] = (
+            "native-proposal-without-a-python-point-budget"
+        )
+        seen_talent_payloads = []
+        raw = {"status": "VALID", "result": {"raidMetrics": {"dps": {"avg": 123.5}}}}
 
         def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
             calls.append((binary, iterations, seed, rng_mode, deadline))
+            seen_talent_payloads.append(
+                candidate["raid"]["parties"][0]["players"][0]["talentsString"]
+            )
             return (123.5, raw, 0.0123,
                     fingerprint(native_payload(candidate, iterations, seed)))
 
@@ -51,6 +58,10 @@ class NativeJointScoringContracts(unittest.TestCase):
             time.monotonic() + 5.0, runner=fake_run,
         )
         self.assertEqual(1, len(calls))
+        self.assertEqual(
+            ["native-proposal-without-a-python-point-budget"],
+            seen_talent_payloads,
+        )
         self.assertEqual("balanced", calls[0][3])
         self.assertEqual(40, calls[0][1])
         self.assertEqual(731, calls[0][2])
@@ -60,6 +71,42 @@ class NativeJointScoringContracts(unittest.TestCase):
                          record["effective_request_sha256"])
         self.assertEqual(fingerprint(raw), record["raw_response_sha256"])
         self.assertIs(raw, actual_raw)
+
+
+    def test_native_refusal_is_propagated_for_the_exact_talent_candidate(self):
+        source = request()
+        source["raid"]["parties"][0]["players"][0]["talentsString"] = (
+            "native-refusal-proposal"
+        )
+        effective = native_payload(source, 40, 731)
+        raw = {
+            "status": "INVALID",
+            "error": "MythicSim rejected this talent proposal",
+        }
+        refusal = p73.NativeScoreExtractionError(
+            "native request returned no score after refusal",
+            raw_response=raw,
+            elapsed_s=0.012,
+            request_sha256=fingerprint(effective),
+        )
+        seen_talent_payloads = []
+
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
+            seen_talent_payloads.append(
+                candidate["raid"]["parties"][0]["players"][0]["talentsString"]
+            )
+            raise refusal
+
+        with self.assertRaises(p73.NativeScoreExtractionError) as raised:
+            native_score_request(
+                Path("forever-engine"), source, 40, 731, "balanced",
+                time.monotonic() + 5.0, runner=fake_run,
+            )
+
+        self.assertEqual(["native-refusal-proposal"], seen_talent_payloads)
+        self.assertIs(refusal, raised.exception)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertEqual(fingerprint(effective), raised.exception.request_sha256)
 
     def test_stochastic_mode_is_rejected_before_the_native_runner(self):
         calls = []
@@ -432,9 +479,9 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         baseline = self.source_request(
             "baseline-build", [18932, 11713, 17923, 25309]
         )
-        donor_a_talents = "333333-333333-333330"
-        donor_b_talents = "333333-333330-333333"
-        donor_c_talents = "333330-333333-333333"
+        donor_a_talents = "source-candidate-a"
+        donor_b_talents = "source-candidate-b"
+        donor_c_talents = "source-candidate-c"
         donor_a = self.source_request(donor_a_talents, [11713, 17923])
         donor_b = self.source_request(donor_b_talents, [11713, 17923, 25309])
         donor_c = self.source_request(donor_c_talents, [18932, 25309])
@@ -495,7 +542,10 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
                     native_damage_witnesses=[],
                 )
 
-        self.assertEqual(sorted([donor_a_talents, donor_b_talents]), scope["talent_builds"])
+        self.assertEqual(
+            sorted(["baseline-build", donor_a_talents, donor_b_talents]),
+            scope["talent_builds"],
+        )
         self.assertEqual(
             [donor_c_talents],
             scope["talent_builds_excluded_for_native_damage_witness"],
@@ -597,15 +647,19 @@ class NativeGeneratedDruidTalentDonorContracts(unittest.TestCase):
                     fingerprint(native_payload(candidate, iterations, seed)))
 
         with tempfile.TemporaryDirectory() as directory:
-            donors, witnesses, summary = joint._generate_native_druid_talent_donors(
-                Path("native"), baseline,
-                [{"rank": 5, "spellId": 24977},
-                 {"rank": 10, "spellId": 9835},
-                 {"rank": 8, "spellId": 9912}],
-                Path(directory), iterations=40, seed=731,
-                existing_talents={source_player["talentsString"]},
-                runner=fake_run, max_attempts=8,
-            )
+            with patch.object(
+                joint, "random_build",
+                side_effect=["native-proposal-a", "native-proposal-b"],
+            ), patch.object(joint, "encode", side_effect=lambda proposal: proposal):
+                donors, witnesses, summary = joint._generate_native_druid_talent_donors(
+                    Path("native"), baseline,
+                    [{"rank": 5, "spellId": 24977},
+                     {"rank": 10, "spellId": 9835},
+                     {"rank": 8, "spellId": 9912}],
+                    Path(directory), iterations=40, seed=731,
+                    existing_talents={source_player["talentsString"]},
+                    runner=fake_run, max_attempts=8,
+                )
 
             self.assertEqual("PASS", summary["status"])
             self.assertEqual(2, len(donors))
@@ -613,12 +667,10 @@ class NativeGeneratedDruidTalentDonorContracts(unittest.TestCase):
                 joint.player(fixture["request"])["talentsString"]
                 for fixture in donors
             }))
-            self.assertTrue(all(
-                joint._is_full_51_source_build(
-                    joint.player(fixture["request"])["talentsString"]
-                )
-                for fixture in donors
-            ))
+            self.assertEqual(
+                {"native-proposal-a", "native-proposal-b"},
+                {call[0] for call in calls},
+            )
             self.assertEqual(2, summary["native_evaluations"])
             self.assertEqual("balanced", donors[0]["native_rng_mode"])
             self.assertEqual(

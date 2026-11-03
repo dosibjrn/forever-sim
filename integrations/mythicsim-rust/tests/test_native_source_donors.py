@@ -113,7 +113,7 @@ class SourceDonorInventoryTests(unittest.TestCase):
 
 
 class SourceDonorAdapterTests(unittest.TestCase):
-    def test_same_class_donors_expand_gear_and_51_point_builds_with_provenance(self):
+    def test_same_class_donors_expand_gear_and_source_observed_talent_candidates(self):
         reference = with_source_cast(request(), 11281)
         valid_donor_request = with_source_cast(request(
             item_ids=(1003, 1002),
@@ -123,6 +123,8 @@ class SourceDonorAdapterTests(unittest.TestCase):
             item_ids=(1004, 1002),
             talents="not-a-talent-build",
         )
+        missing_talent_donor_request = request(item_ids=(1006, 1002))
+        missing_talent_donor_request["raid"]["parties"][0]["players"][0].pop("talentsString")
         other_class_request = request(
             class_name="ClassMage",
             item_ids=(1005, 1002),
@@ -133,6 +135,8 @@ class SourceDonorAdapterTests(unittest.TestCase):
                   valid_donor_request),
             donor("fixtures/mage/prepared-v2/druid-gear-only.request.json",
                   invalid_talent_donor_request),
+            donor("fixtures/mage/prepared-v2/druid-missing-talents.request.json",
+                  missing_talent_donor_request),
             donor("fixtures/mage/prepared-v2/mage-must-not-cross.request.json",
                   other_class_request),
         ]
@@ -142,6 +146,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
             1003: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
             1004: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
             1005: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
+            1006: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
         }
 
         adapter, scope = source_bounded_adapter(
@@ -151,25 +156,29 @@ class SourceDonorAdapterTests(unittest.TestCase):
 
         self.assertEqual([0], scope["gear_mutable_slots"])
         self.assertEqual(
-            sorted(["99999-6", "7777777-2"]),
+            sorted(["99999-6", "7777777-2", "not-a-talent-build"]),
             scope["talent_builds"],
         )
-        self.assertEqual(2, scope["source_donor_fixture_count"])
+        self.assertEqual(3, scope["source_donor_fixture_count"])
+        self.assertEqual(
+            [
+                "fixtures/forever-gaps/druid-gear-and-talent.request.json",
+                "fixtures/mage/prepared-v2/druid-gear-only.request.json",
+                "fixtures/mage/prepared-v2/druid-missing-talents.request.json",
+            ],
+            [item["source_path"] for item in scope["gear_donor_fixtures_scanned"]],
+        )
         self.assertEqual(
             [
                 "fixtures/forever-gaps/druid-gear-and-talent.request.json",
                 "fixtures/mage/prepared-v2/druid-gear-only.request.json",
             ],
-            [item["source_path"] for item in scope["gear_donor_fixtures_scanned"]],
-        )
-        self.assertEqual(
-            ["fixtures/forever-gaps/druid-gear-and-talent.request.json"],
             [item["source_path"] for item in scope["talent_donor_fixtures"]],
         )
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))
 
 
-    def test_source_observed_non_51_reference_can_anchor_two_full_51_point_donors(self):
+    def test_source_observed_non_51_reference_can_anchor_source_candidate_donors(self):
         reference = with_source_cast(
             request(item_ids=(1001, 1002), talents="99999-4"), 11281
         )
@@ -201,13 +210,14 @@ class SourceDonorAdapterTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            sorted(["7777777-2", "6666666-9"]), scope["talent_builds"]
+            sorted(["99999-4", "7777777-2", "6666666-9"]),
+            scope["talent_builds"],
         )
         self.assertEqual(
             ["888888-3"], scope["talent_builds_excluded_for_native_damage_witness"]
         )
         self.assertEqual(
-            "SOURCE_OBSERVED_OR_PINNED_NATIVE_VERIFIED_WHOLE_51_POINT_BUILDS_NOT_RANKWISE",
+            "SOURCE_OBSERVED_CANDIDATE_STRINGS_NATIVE_RUST_AUTHORITATIVE",
             scope["talent_validation"],
         )
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))

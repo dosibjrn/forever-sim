@@ -1,8 +1,8 @@
 """Two-class FAKE evaluator contract for the ONE native search core.
 
-Not a native Rust run or P7 certification. Production two-class evidence
-requires pinned engine, per-class verified 51-point talent/gear/APL adapters,
-exact paid-request replay, and independent stochastic holdout.
+Not a native Rust run or P7 certification. These tests protect the shared
+candidate-composition contract only; MythicSim Rust owns build legality and
+native request evaluation.
 """
 from __future__ import annotations
 
@@ -204,34 +204,6 @@ class SameSearchCoreAcrossClasses(unittest.TestCase):
         for key in ("equipment", "talentsString", "rotation"):
             self.assertNotEqual(player(initial)[key], player(updated)[key])
 
-
-class SourceTalentEncodingContracts(unittest.TestCase):
-    """Pinned Rust fixtures use both two-tree and three-tree encodings.
-
-    The point counter must not reject an entire class merely because one
-    legitimate 51-point source fixture omits the final empty tree delimiter.
-    These are source strings, NOT synthesized legal talent allocations.
-    """
-
-    def test_rogue_assassination_two_tree_source_has_51_points(self):
-        from native_joint_two_class import talent_points
-        self.assertEqual(51, talent_points("0053031055110105-30230320201401"))
-
-    def test_holy_priest_two_tree_source_has_51_points(self):
-        from native_joint_two_class import talent_points
-        self.assertEqual(51, talent_points("00520101133-33505003030121531"))
-
-    def test_three_tree_source_and_explicit_empty_middle_tree(self):
-        from native_joint_two_class import talent_points
-        self.assertEqual(51, talent_points("005303105-32030320201515221-002"))
-        self.assertEqual(51, talent_points("025303011030--50052201221302251"))
-
-    def test_invalid_talent_encoding_stays_rejected(self):
-        from native_joint_two_class import talent_points
-        for invalid in ("12345", "1-2-3-4", "1-2-X", "", None):
-            with self.subTest(invalid=invalid):
-                with self.assertRaises(ValueError):
-                    talent_points(invalid)
 
 
 if __name__ == "__main__":

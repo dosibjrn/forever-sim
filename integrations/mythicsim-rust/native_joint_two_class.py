@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Source-bounded two-class REAL Rust JOINT smoke using the shared gsim search.
 
-This is an integration proof, not a PROCESS P7.5 PASS: talent choices are
-verified *whole 51-point source builds*, NOT an exhaustive per-rank tree;
-gear options are source-observed native DB items, NOT full equip-law parity.
-The class-neutral native_matrix.search_native remains the only search loop.
-No mocked scorer is permitted here.
+This is an integration proof, not a PROCESS P7.5 PASS: talent strings are
+source-observed candidate proposals and MythicSim Rust alone decides whether
+they are valid. Gear options are source-observed native DB items, NOT full
+equip-law parity. The class-neutral native_matrix.search_native remains the
+only search loop. No mocked scorer is permitted here.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from native_l60_matrix import (
     ROOT, create_inventory, digest, fingerprint, legal_apl_only_request,
     load_native_item_index, player,
 )
-from p73_talent_search_v2 import encode, random_build, run, validate as validate_druid_talents
+from p73_talent_search_v2 import encode, random_build, run
 from native_source_donors import load_source_donor_fixtures
 
 
@@ -152,29 +152,6 @@ def _ensure_native_damage_action(actions: list[dict],
     # native-positive fallback casts and any remaining utility actions.
     return conditional_or_opaque + existing_witnesses + unconditional
 
-def talent_points(talents: str) -> int:
-    """Count points in source-native two- or three-tree encodings.
-
-    The pinned Rust fixtures include two-tree 51-point strings (Assassination
-    Rogue and Holy Priest). Preserve the exact source bytes for native scoring:
-    accepting their encoding does NOT synthesize a missing tree or certify
-    per-rank talent legality.
-    """
-    if not isinstance(talents, str) or talents.count("-") not in (1, 2):
-        raise ValueError("Not a two- or three-tree source talent allocation")
-    trees = talents.split("-")
-    if any(any(c not in "0123456789" for c in t) for t in trees):
-        raise ValueError("Invalid talent encoding")
-    return sum(int(c) for t in trees for c in t)
-
-
-def _is_full_51_source_build(talents: object) -> bool:
-    try:
-        return talent_points(talents) == 51
-    except (TypeError, ValueError):
-        return False
-
-
 def native_payload(candidate: dict, iterations: int, seed: int) -> dict:
     payload = copy.deepcopy(candidate)
     payload["simOptions"]["iterations"] = iterations
@@ -227,12 +204,12 @@ def _generate_native_druid_talent_donors(
     *, iterations: int, seed: int, existing_talents: set[str] | None = None,
     runner=run, max_attempts: int = 12,
 ) -> tuple[list[dict], list[dict], dict]:
-    """Find two distinct full Druid builds with a shared baseline-positive cast.
+    """Propose Druid talent candidates and let native Rust decide validity.
 
-    Builds come from the pinned source-derived Druid talent schema, then each
+    Candidates come from the existing source-derived proposal generator. Each
     exact request is executed through the selected native Rust binary in
-    Balanced mode. A donor is usable only when the baseline-positive cast also
-    deals native damage under that generated build.
+    Balanced mode. A donor is usable only when native execution succeeds and
+    the baseline-positive cast also deals native damage under that build.
     """
     source_player = player(reference)
     if source_player.get("class") != "ClassDruid":
@@ -265,10 +242,8 @@ def _generate_native_druid_talent_donors(
     for attempt in range(max_attempts):
         build_seed = seed + 1_000_003 + attempt
         ranks = random_build(random.Random(build_seed))
-        if not validate_druid_talents(ranks):
-            raise RuntimeError("Generated Druid talent build failed pinned source validation")
         talents = encode(ranks)
-        if talents in seen or not _is_full_51_source_build(talents):
+        if talents in seen:
             continue
         seen.add(talents)
 
@@ -337,7 +312,7 @@ def _generate_native_druid_talent_donors(
             "source_path": request_path.relative_to(outdir).as_posix(),
             "source_sha256": request_sha,
             "item_count": len(source_player.get("equipment", {}).get("items", [])),
-            "source_type": "NATIVE_VERIFIED_GENERATED_FULL_51_POINT_BUILD",
+            "source_type": "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE",
             "native_response_sha256": record["raw_response_sha256"],
             "native_positive_damage_witnesses": common,
             "native_score": record["score"],
@@ -356,8 +331,8 @@ def _generate_native_druid_talent_donors(
     ]
     if not supported:
         summary = {
-            "status": "BLOCKED_NO_TWO_NATIVE_VERIFIED_FULL_51_POINT_DONORS",
-            "build_provenance": "p73_talent_search_v2.random_build+encode+validate; pinned Rust native Balanced execution",
+            "status": "BLOCKED_NO_TWO_NATIVE_VERIFIED_TALENT_DONORS",
+            "build_provenance": "p73_talent_search_v2.random_build+encode; native Rust Balanced execution is the sole talent-validity authority",
             "native_iterations": iterations,
             "native_evaluations": native_evaluations,
             "native_failures": native_failures,
@@ -389,7 +364,7 @@ def _generate_native_druid_talent_donors(
 
     summary = {
         "status": "PASS",
-        "build_provenance": "p73_talent_search_v2.random_build+encode+validate; pinned Rust native Balanced execution",
+        "build_provenance": "p73_talent_search_v2.random_build+encode; native Rust Balanced execution is the sole talent-validity authority",
         "native_iterations": iterations,
         "native_evaluations": native_evaluations,
         "native_failures": native_failures,
@@ -451,7 +426,7 @@ def source_bounded_adapter(
                         source_casts.add(json.dumps(
                             cast, sort_keys=True, separators=(",", ":")
                         ))
-        if (_is_full_51_source_build(source_talent)
+        if (isinstance(source_talent, str)
                 and (native_verified_talent_builds is None
                      or source_talent in native_verified_talent_builds)):
             talents.add(source_talent)
@@ -460,7 +435,7 @@ def source_bounded_adapter(
     if original_talents not in source_talents or len(talents) < 2:
         raise ValueError(
             "BLOCKED_TALENTS: need a source-observed baseline and two "
-            "independent full 51-point same-class source builds"
+            "same-class candidate talent strings"
         )
 
     native_damage_witnesses = [
@@ -487,18 +462,15 @@ def source_bounded_adapter(
     if not supported_build_sets:
         raise ValueError(
             "BLOCKED_NATIVE_DAMAGE_WITNESS: no baseline-positive source cast "
-            "is present in the reference and at least two full 51-point "
-            "same-class source talent builds"
+            "is present in the reference and at least two same-class "
+            "source candidate talent strings"
         )
+    candidate_talents = set(talents)
     _support_count, selected_witness_key, selected_builds = max(
         supported_build_sets, key=lambda row: row[0]
     )
     talents = sorted(selected_builds)
-    excluded_talents = sorted(
-        set(source_talent for source_talent in source_casts_by_talentsString
-            if _is_full_51_source_build(source_talent))
-        - set(talents)
-    )
+    excluded_talents = sorted(candidate_talents - set(talents))
     selected_talent_strings = list(dict.fromkeys(
         [original_talents] + [talent for talent in talents if talent != original_talents]
     ))
@@ -535,7 +507,7 @@ def source_bounded_adapter(
         }
         for fixture in extra_same_class
         if fixture.get("item_count") == len(base_gear)
-        and fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_FULL_51_POINT_BUILD"
+        and fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
     ]
     talent_donor_fixtures = [
         {
@@ -549,9 +521,7 @@ def source_bounded_adapter(
             "native_positive_damage_witnesses": fixture.get("native_positive_damage_witnesses", []),
         }
         for fixture in extra_same_class
-        if _is_full_51_source_build(
-            player(fixture["request"]).get("talentsString")
-        )
+        if isinstance(player(fixture["request"]).get("talentsString"), str)
     ]
 
     def make_gear(rng):
@@ -584,11 +554,10 @@ def source_bounded_adapter(
         return rng.choice(choices)
 
     def talent_legal(value):
-        # The exact source reference is a legal starting anchor even when it
-        # spends fewer than 51 points. Every mutated/cold talent candidate
-        # must still be one of the pinned full 51-point source builds.
-        return (value == original["talentsString"]
-                or (value in talents and _is_full_51_source_build(value)))
+        # This is only source-corpus membership, not a game-legality verdict.
+        # Native Rust decides whether the exact talent string can be prepared
+        # and scored when the candidate reaches the evaluator.
+        return value == original["talentsString"] or value in talents
 
     damage_witnesses = common_witnesses
 
@@ -689,14 +658,14 @@ def source_bounded_adapter(
         "talent_builds": talents,
         "talent_builds_excluded_for_native_damage_witness": excluded_talents,
         "source_donor_fixture_count": sum(
-            fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_FULL_51_POINT_BUILD"
+            fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
             for fixture in extra_same_class
         ),
         "native_generated_talent_donor_count": sum(
-            fixture.get("source_type") == "NATIVE_VERIFIED_GENERATED_FULL_51_POINT_BUILD"
+            fixture.get("source_type") == "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
             for fixture in extra_same_class
         ),
-        "native_verified_talent_builds": sorted(talents),
+        "native_verified_talent_builds": sorted(native_verified_talent_builds or set()),
         "gear_donor_fixtures_scanned": gear_donor_fixtures_scanned,
         "talent_donor_fixtures": talent_donor_fixtures,
         "source_casts_by_talentsString": {
@@ -709,7 +678,7 @@ def source_bounded_adapter(
             json.loads(key) for key in sorted(common_cast_keys)
         ],
         "native_positive_damage_witnesses_common_to_selected_talent_builds": common_witnesses,
-        "talent_validation": "SOURCE_OBSERVED_OR_PINNED_NATIVE_VERIFIED_WHOLE_51_POINT_BUILDS_NOT_RANKWISE",
+        "talent_validation": "SOURCE_OBSERVED_CANDIDATE_STRINGS_NATIVE_RUST_AUTHORITATIVE",
         "gear_validation": "PINNED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
         "apl_validation": "CAST_IDENTITIES_BOUND_TO_TALENT_STRING_AND_COMMON_NATIVE_POSITIVE_WITNESS",
     }
@@ -861,7 +830,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
                     *[player(fixture["request"]).get("talentsString")
                       for fixture in generated_donors],
                 ]
-                if isinstance(talent, str) and _is_full_51_source_build(talent)
+                if isinstance(talent, str)
             }
             adapter, scope = source_bounded_adapter(
                 cls, reference, same_class, native_items,
