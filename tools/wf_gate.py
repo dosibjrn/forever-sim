@@ -80,14 +80,6 @@ def _require_true(e: dict, errors: list[str], field: str) -> None:
         errors.append(f"FALSE_OR_MISSING:{field}")
 
 
-def _validate_p1(e: dict, _: dict) -> list[str]:
-    errors: list[str] = []
-    _count_at_least(e, errors, "executed_ability_behavior_tests", "legal_abilities")
-    _require_zero(e, errors, "missing_executors")
-    _require_zero(e, errors, "failed_behavior_tests")
-    _require_true(e, errors, "source_legal_abilities_checked")
-    return errors
-
 
 def _validate_p3(e: dict, _: dict) -> list[str]:
     """Approved P3 v2.1: fast ilvl-top5 legal items and contextual scoring.
@@ -243,9 +235,8 @@ def _validate_p7(e: dict, _: dict) -> list[str]:
     return errors
 
 
-# The retired P1 validator remains available only to the legacy JSON diagnostic helper.
-# P2 has no validator; neither retired gate is in GATES, the live CLI or M1.
-VALIDATORS = {"P1": _validate_p1, "P3": _validate_p3,
+# P1 and P2 are retired; historical evidence is not a live validator.
+VALIDATORS = {"P3": _validate_p3,
               "P4": _validate_p4, "P5": _validate_p5, "P6": _validate_p6,
               "P7": _validate_p7}
 
@@ -257,6 +248,9 @@ def evaluate(evidence_dir: Path, class_key: str, level: int, spec: str, gate: st
     filename = evidence_dir / class_key / f"L{level}" / spec / f"{gate}.json"
     result = {"class": class_key, "level": level, "spec": spec, "gate": gate,
               "status": "FAIL", "reasons": [], "evidence_file": str(filename)}
+    if gate not in VALIDATORS:
+        result["reasons"] = ["RETIRED_OR_UNKNOWN_GATE:" + gate]
+        return result
     if not filename.is_file():
         result["reasons"] = ["EVIDENCE_NOT_FOUND"]
         return result
