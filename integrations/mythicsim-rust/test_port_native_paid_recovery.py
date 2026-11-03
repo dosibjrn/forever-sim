@@ -191,7 +191,13 @@ for marker, original, transform in (
     (two_world.PREPARED_MARKER, two_world.PREPARED_METHOD, port.port_prepared),
     (two_world.CLI_MARKER, two_world.CLI_METHOD, port.port_main),
 ):
-    transformed = transform(original)
+    anchor = {
+        two_world.CLASS_MARKER: two_world.CLASSES_ANCHOR,
+        two_world.PREPARED_MARKER: two_world.PREPARED_ANCHOR,
+        two_world.CLI_MARKER: two_world.CLI_ANCHOR,
+    }[marker]
+    # The real source port requires the unchanged downstream insertion anchor.
+    transformed = anchor + "\n" + transform(original)
     assert two_world.insert(transformed, {
         two_world.CLASS_MARKER: two_world.CLASSES_ANCHOR,
         two_world.PREPARED_MARKER: two_world.PREPARED_ANCHOR,
