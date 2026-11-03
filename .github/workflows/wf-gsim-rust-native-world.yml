@@ -52,8 +52,8 @@ jobs:
         run: |
           echo "Focused production gate HEAD: $(git rev-parse HEAD)"
           python -m pytest -q \
-            tests/test_wf_gate_p7_3_live.py \
-            tests/test_wf_gate_p7_2_live.py \
+            tests/gates/test_wf_gate_p7_3_live.py \
+            tests/gates/test_wf_gate_p7_2_live.py \
             tests/test_work1_p7_balanced_native_world_rng.py \
             integrations/mythicsim-rust/tests/test_rng_extreme_probability_fix.py
       - name: Apply typed RNG port to exact pinned fork revision and verify the 2D world seam
