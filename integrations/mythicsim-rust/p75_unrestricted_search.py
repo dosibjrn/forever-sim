@@ -327,6 +327,8 @@ def paid_candidate_record(spec,req,screen_dps,screen_mode,elapsed):
     candidate's gear, enchants, talents, APL and encounter. Copying the
     request also protects the ledger against later in-memory mutations.
     """
+    if screen_mode != "balanced":
+        raise ValueError("OPTIMIZER_RNG_MUST_BE_BALANCED")
     return {"spec":spec,"key":key(spec,req),
             "candidate_request":copy.deepcopy(req),
             "screen_dps":require_finite_native_dps(screen_dps,"screen"),"screen_mode":screen_mode,
