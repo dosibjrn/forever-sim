@@ -452,6 +452,17 @@ def run_live(root: Path, class_key: str, level: int, *,
         "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR",
         "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_ACCEPTED_PRIOR_FLOOR",
     } for reason in reasons)
+    # Preserve the actual independently paid frozen winner in the production
+    # result. A SHA alone cannot reveal which gear/talents/APL caused a measured
+    # failure, and a later heavy rerun must not be needed just to inspect it.
+    # This is diagnostics only: neither candidate selection nor gate predicates
+    # change, and no reference/prior winning build is used as a search seed.
+    selected_player = source.player(frozen_winner)
+    frozen_source_build = {
+        "equipment": selected_player["equipment"],
+        "talentsString": selected_player["talentsString"],
+        "rotation": selected_player["rotation"],
+    }
     return {
         "status": ("FAIL" if failed_execution else
                    "BLOCKED" if reasons else "PASS"),
@@ -478,6 +489,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "accepted_compatible_prior_run_urls": (
             prior["run_urls"] if prior is not None else []),
         "cold_winner_request_sha256": candidate_sha,
+        "frozen_source_build": frozen_source_build,
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
         "independent_300s_search_completed": complete_search,
