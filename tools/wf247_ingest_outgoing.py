@@ -5,7 +5,7 @@ not a verified Forever server armor value. Never silently label it authoritative
 """
 import sqlite3
 from pathlib import Path
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 ARMOR_CLS1 = '8,20,33,68,111,165,230,306,387,463,528,562,596,630,665,700,734,768,802,836,872,906,940,975,1008,1043,1078,1111,1145,1179,1213,1249,1281,1317,1349,1456,1568,1684,1808,1938,2074,2218,2369,2528,2695,2750,2804,2857,2912,2966,3018,3060,3128,3180,3234,3289,3342,3396,3449,3750'
 ARMOR_URL='https://github.com/mangoszero/database/blob/325948a78015794e6cc626212bc19fee70c805b2/World/Setup/FullDB/creature_template_classlevelstats.sql'
