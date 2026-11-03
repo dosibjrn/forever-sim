@@ -124,3 +124,38 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
     assert ("native", 1000, "stochastic", "B") in calls
     assert ("world", 1000, "stochastic", "A") not in calls
     assert result["source_legal_joint_candidates_paid"] == 2
+
+
+def test_p75_archive_parent_escapes_single_balanced_leader():
+    """A third local proposal can mutate another truly paid legal build.
+
+    Before this repair every early local proposal descended from A, so
+    the search had to escape a 3-fight outlier using only 1/5 cold restarts.
+    This is a routing regression, not a simulated P7.5 acceptance.
+    """
+    a, b, c = (_candidate(label) for label in ("a", "b", "c"))
+    best = (900.0, {}, "sha-a", a)
+    archive = [(900.0, "sha-a", a), (899.0, "sha-b", b),
+               (850.0, "sha-c", c)]
+
+    class PickSecond:
+        def choice(self, rows):
+            return rows[1]
+
+    pick = PickSecond()
+    assert gate._paid_p75_parent(
+        best, [], 3, pick, balanced_elites=archive) is b
+    assert gate._paid_p75_parent(
+        best, [], 1, pick, balanced_elites=archive) is a
+    assert gate._paid_p75_parent(
+        best, [], 5, pick, balanced_elites=archive) is None
+
+    # Once real stochastic screens exist they still own most local moves;
+    # balanced archive diversity remains only the every-third branch.
+    stochastic = [(770.0, {}, "sha-c", c, 830.0)]
+    assert gate._paid_p75_parent(
+        best, stochastic, 1, pick, balanced_elites=archive) is c
+    assert gate._paid_p75_parent(
+        best, stochastic, 3, pick, balanced_elites=archive) is b
+    assert gate._paid_p75_parent(
+        best, stochastic, 5, pick, balanced_elites=archive) is None
