@@ -58,8 +58,7 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_entangling_roots_dot.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_typed_rng.py
           python3 -m py_compile src/engine_client/native_p2_rank_probe.py
-          python3 -m py_compile integrations/mythicsim-rust/test_native_p2_rank_probe.py
-          python3 -m py_compile integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
+          python3 -m py_compile           python3 -m py_compile integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
           python3 -m py_compile tools/wf_gate_p2_live.py
           python3 integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_pull_queue.py
