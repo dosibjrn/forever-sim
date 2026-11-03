@@ -16,8 +16,7 @@ from datetime import date
 
 from src.forever_build import current as current_forever_build
 
-from .sqlite_talents import DEFAULT_DB
-from .source_db_scope import active_ability_db
+from .source_db_scope import DEFAULT_DB, active_ability_db
 
 _N = r'(\d+(?:\.\d+)?)'
 _PATTERNS = {
