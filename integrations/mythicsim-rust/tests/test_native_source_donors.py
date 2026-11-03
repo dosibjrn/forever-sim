@@ -20,11 +20,19 @@ def request(class_name="ClassDruid", item_ids=(1001, 1002), talents="99999-6"):
             "class": class_name,
             "equipment": {"items": [{"id": item_id} for item_id in item_ids]},
             "talentsString": talents,
-            "rotation": {"priorityList": [{"action": {"wait": {}}}]},
+            "rotation": {"priorityList": [{"action": {"castSpell": {"spellId": {"spellId": 11281}}}}]},
         }]}]},
         "encounter": {"duration": 180, "targets": 1},
         "simOptions": {"iterations": 3, "randomSeed": "47"},
     }
+
+
+def with_source_cast(source_request, spell_id):
+    source_player = source_request["raid"]["parties"][0]["players"][0]
+    source_player["rotation"]["priorityList"] = [
+        {"action": {"castSpell": {"spellId": {"spellId": spell_id}}}}
+    ]
+    return source_request
 
 
 def donor(source_path, source_request):
@@ -106,11 +114,11 @@ class SourceDonorInventoryTests(unittest.TestCase):
 
 class SourceDonorAdapterTests(unittest.TestCase):
     def test_same_class_donors_expand_gear_and_51_point_builds_with_provenance(self):
-        reference = request()
-        valid_donor_request = request(
+        reference = with_source_cast(request(), 11281)
+        valid_donor_request = with_source_cast(request(
             item_ids=(1003, 1002),
             talents="7777777-2",
-        )
+        ), 11281)
         invalid_talent_donor_request = request(
             item_ids=(1004, 1002),
             talents="not-a-talent-build",
@@ -137,7 +145,8 @@ class SourceDonorAdapterTests(unittest.TestCase):
         }
 
         adapter, scope = source_bounded_adapter(
-            "druid", reference, [reference], items, donor_fixtures=donors
+            "druid", reference, [reference], items, donor_fixtures=donors,
+            native_damage_witnesses=[{"spellId": 11281}],
         )
 
         self.assertEqual([0], scope["gear_mutable_slots"])
@@ -161,33 +170,44 @@ class SourceDonorAdapterTests(unittest.TestCase):
 
 
     def test_source_observed_non_51_reference_can_anchor_two_full_51_point_donors(self):
-        reference = request(item_ids=(1001, 1002), talents="99999-4")
-        donor_one_request = request(
+        reference = with_source_cast(
+            request(item_ids=(1001, 1002), talents="99999-4"), 11281
+        )
+        donor_one_request = with_source_cast(request(
             item_ids=(1003, 1002), talents="7777777-2"
-        )
-        donor_two_request = request(
+        ), 11281)
+        donor_two_request = with_source_cast(request(
             item_ids=(1004, 1002), talents="6666666-9"
-        )
+        ), 11281)
+        incompatible_donor_request = with_source_cast(request(
+            item_ids=(1005, 1002), talents="888888-3"
+        ), 11282)
         donors = [
             donor("fixtures/production/arcane.request.json", donor_one_request),
             donor("fixtures/production/fire.request.json", donor_two_request),
+            donor("fixtures/production/shadow.request.json", incompatible_donor_request),
         ]
         items = {
             1001: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
             1002: {"type": "ItemTypeChest", "armor_type": "ArmorTypeCloth"},
             1003: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
             1004: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
+            1005: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
         }
 
         adapter, scope = source_bounded_adapter(
-            "druid", reference, [reference], items, donor_fixtures=donors
+            "druid", reference, [reference], items, donor_fixtures=donors,
+            native_damage_witnesses=[{"spellId": 11281}],
         )
 
         self.assertEqual(
             sorted(["7777777-2", "6666666-9"]), scope["talent_builds"]
         )
         self.assertEqual(
-            "SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
+            ["888888-3"], scope["talent_builds_excluded_for_native_damage_witness"]
+        )
+        self.assertEqual(
+            "SOURCE_OBSERVED_OR_PINNED_NATIVE_VERIFIED_WHOLE_51_POINT_BUILDS_NOT_RANKWISE",
             scope["talent_validation"],
         )
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))
