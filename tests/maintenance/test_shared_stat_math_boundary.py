@@ -26,12 +26,13 @@ assert converted_stat_amount({
 }, 12.0) == 14.0
 assert converted_stat_amount({'operation': 'linear', 'coefficient': 2.0}, -3.0) == 0.0
 
-try:
-    converted_stat_amount({'operation': 'linear', 'coefficient': 2.0}, math.nan)
-except ValueError as exc:
-    assert str(exc) == 'NONFINITE_SOURCE_STAT_CONVERSION_INPUT'
-else:
-    raise AssertionError('non-finite input was accepted')
+for invalid in (math.nan, math.inf, -math.inf):
+    try:
+        converted_stat_amount({'operation': 'linear', 'coefficient': 2.0}, invalid)
+    except ValueError as exc:
+        assert str(exc) == 'NONFINITE_SOURCE_STAT_CONVERSION_INPUT'
+    else:
+        raise AssertionError(f'non-finite input was accepted: {invalid!r}')
 
 # The historical import path is retained as an identity-preserving re-export.
 from src.game.stat_math import converted_stat_amount as legacy
