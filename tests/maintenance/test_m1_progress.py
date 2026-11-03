@@ -1,4 +1,4 @@
-"""Fast bookkeeping tests only; these are NOT P1–P7 acceptance tests."""
+"""Fast bookkeeping tests only; these are NOT active P3–P7.5 acceptance tests."""
 from pathlib import Path
 
 import pytest
@@ -157,9 +157,9 @@ def test_old_pass_only_ledger_is_backwards_compatible(tmp_path):
 
 def test_retired_history_cannot_be_invalidated(tmp_path):
     path = tmp_path / "old.tsv"
-    path.write_text("\\t".join(m1.PASS_FIELDS) + "\\n" +
-                    "\\t".join(("druid", "60", "balance", "P2",
-                               "2026-11-02T00:00:00+00:00", SHA, "", "")) + "\\n")
+    path.write_text("\t".join(m1.PASS_FIELDS) + "\n" +
+                    "\t".join(("druid", "60", "balance", "P2",
+                               "2026-11-02T00:00:00+00:00", SHA, "", "")) + "\n")
     with pytest.raises(SystemExit):
         m1.main(["--ledger", str(path), "--invalidate",
                  "druid", "60", "balance", "P2"])
