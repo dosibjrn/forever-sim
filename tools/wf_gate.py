@@ -575,6 +575,25 @@ def main(argv=None) -> int:
             if isinstance(failures, list):
                 record["balanced_finalist_failures"] = [
                     str(error)[:180] for error in failures[:4]]
+            # The P7.5 provider exposes WF613's own adaptive-search counters.
+            # Preserve these bounded diagnostics in the CLI receipt: the
+            # default-only balanced_parent_proposals counter is not meaningful
+            # for WF613. They never affect the gate verdict or M1 credit.
+            if report.get("search_strategy") == "wf613":
+                for key in ("operator_attempts", "operator_best_improvements"):
+                    value = report.get(key)
+                    if (isinstance(value, dict) and 0 < len(value) <= 16
+                            and all(isinstance(name, str) and 0 < len(name) <= 64
+                                    and type(count) is int and count >= 0
+                                    for name, count in value.items())):
+                        record[key] = value
+                archive_size = report.get("paid_archive_size")
+                if type(archive_size) is int and 0 <= archive_size <= 48:
+                    record["paid_archive_size"] = archive_size
+                best_paid = report.get("best_paid_balanced_world_dps")
+                if (type(best_paid) in (int, float)
+                        and math.isfinite(best_paid) and best_paid >= 0):
+                    record["best_paid_balanced_world_dps"] = best_paid
         if gate == "P7.4":
             # Forward only bounded, source-executed winner identity. This is
             # diagnostic provenance, never an additional gate predicate.
