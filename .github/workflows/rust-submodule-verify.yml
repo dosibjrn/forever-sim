@@ -32,6 +32,14 @@ jobs:
           grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
           test -f "$engine/src/core/fight/world_bridge.rs"
           python3 integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
+          # Fork-sync retries and an already-typed published pin must not
+          # duplicate the Rust enum or rewrite migrated test callsites.
+          first_port="$(git -C "$engine" diff --binary | sha256sum)"
+          python3 integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
+          second_port="$(git -C "$engine" diff --binary | sha256sum)"
+          if [[ "$first_port" != "$second_port" ]]; then
+            echo "RUST_TYPED_RNG_PORT_NOT_IDEMPOTENT" >&2; exit 1
+          fi
           grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
           if grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"; then
             echo "ENVIRONMENT_SELECTED_RNG_REMAINS_IN_SELECTED_RUST" >&2; exit 1
