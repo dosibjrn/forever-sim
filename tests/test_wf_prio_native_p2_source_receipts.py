@@ -13,6 +13,10 @@ def test_native_rank_diagnostic_requires_checkpoint_source_l0_before_execution()
 
 def test_native_rank_diagnostic_checks_source_prerequisite_on_both_pair_members():
     source_url = "https://example.invalid/druid-talent-source"
+    prerequisite = {
+        "talent_id": "feral_swiftness",
+        "required_rank": 2,
+    }
     source = {
         "class_key": "druid",
         "level": 60,
@@ -23,14 +27,12 @@ def test_native_rank_diagnostic_checks_source_prerequisite_on_both_pair_members(
         "rank_cap": 3,
         "source_build": "1.60.1.70338",
         "source_url": source_url,
+        "prerequisite": prerequisite,
         "tree_members": ["ferocity", "feral_swiftness", "predatory_strikes"],
         "points_per_row": 5,
         "checkpoint_source_l0": {
             "source_url": source_url,
-            "prerequisite": {
-                "talent_id": "feral_swiftness",
-                "required_rank": 2,
-            },
+            "prerequisite": prerequisite,
             "expected_clause_count": 1,
             "effects": [{
                 "domain": "form_melee_attack_power_from_level",
