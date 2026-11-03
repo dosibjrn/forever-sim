@@ -100,6 +100,15 @@ if ! git diff --cached --quiet; then
   git commit -m "fix(forever): route new Paladin proc decisions through typed RNG"
 fi
 
+# Preserve the source-legal three-rank Improved Entangling Roots selection
+# in the real Rust preparer. Executable root/damage/break effects are a later
+# native Rust slice; rank intake alone never awards P1/P2 acceptance.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_improved_roots_rank.py" "$PWD"
+git add src/classes/druid/prepare/talents.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): preserve Improved Entangling Roots rank in native preparer"
+fi
+
 # Preserve native scheduler events beyond a pull boundary on the fork itself.
 # A future stateful two-target session must be able to resume queued events
 # instead of silently consuming them at the previous target's deadline.
