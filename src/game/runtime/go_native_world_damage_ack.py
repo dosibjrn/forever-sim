@@ -153,7 +153,7 @@ class GsimNativeDamageWorldApplier:
             value = event.get("damage", 0.0)
             effect_kind = event.get("effect_kind", kind)
             if (type(timestamp) is not int
-                    or (timestamp < 0 and (not first_precombat_boundary or kind != "damage"))
+                    or (timestamp < 0 and not first_precombat_boundary)
                     or timestamp < last_native_time
                     or (timestamp < self._last_world_tick_ns and not first_precombat_boundary)
                     or timestamp > clock_ns
@@ -219,16 +219,25 @@ class GsimNativeDamageWorldApplier:
         if not isfinite(damage):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_DAMAGE_INVALID")
 
+        acknowledged_control_ids = []
+        acknowledged_control_events = []
         applied_control_ids = []
         applied_control_events = []
         for kind, event in validated:
             if kind == "damage":
                 target.apply_damage(float(event["damage"]))
                 continue
-            # A native event is applied at the current acknowledged gsim
-            # boundary, not retroactively at its earlier Rust timestamp.
-            # This is the causal instant at which the world receives the ACK.
+            # ACK every valid source event, but preserve its absolute source
+            # expiry. If a pre-pull root has already expired before the first
+            # world boundary, consume the event without inventing a live root.
+            acknowledged_control_ids.append(event["event_id"])
+            acknowledged = dict(event)
             world_time_s = float(self._runtime.actor.current_time_s)
+            remaining_ns = int(event["native_time_ns"]) + int(event["duration_ns"]) - clock_ns
+            if remaining_ns <= 0:
+                acknowledged["world_application_status"] = "expired_before_world_ack"
+                acknowledged_control_events.append(acknowledged)
+                continue
             control = CombatEvent(
                 time_s=world_time_s,
                 kind="ControlApplied",
@@ -237,7 +246,7 @@ class GsimNativeDamageWorldApplier:
                 action_id=str(event["source_action_id"]),
                 payload={
                     "control_id": "root",
-                    "duration_s": float(event["duration_ns"]) / 1_000_000_000.0,
+                    "duration_s": float(remaining_ns) / 1_000_000_000.0,
                     "prevents_enemy_actions": False,
                     "breaks_on_damage": False,
                     "break_chance_on_damage": None,
@@ -253,6 +262,8 @@ class GsimNativeDamageWorldApplier:
             if control.payload.get("applied") is not True:
                 raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_CONTROL_NOT_APPLIED")
             applied_control_ids.append(event["event_id"])
+            acknowledged["world_application_status"] = "applied"
+            acknowledged_control_events.append(acknowledged)
             applied_control_events.append(dict(event))
 
         applied = old_health - float(target.health)
@@ -280,6 +291,8 @@ class GsimNativeDamageWorldApplier:
             "world_after_sha256": after_hash,
             "applied_event_ids": ids,
             "applied_damage_event_ids": damage_ids,
+            "acknowledged_control_event_ids": acknowledged_control_ids,
+            "acknowledged_control_events": acknowledged_control_events,
             "applied_control_event_ids": applied_control_ids,
             "applied_events": [dict(event) for _, event in validated],
             "applied_control_events": applied_control_events,
