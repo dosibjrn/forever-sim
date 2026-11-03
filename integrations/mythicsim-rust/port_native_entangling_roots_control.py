@@ -273,8 +273,8 @@ fn send(value: &Value) {""",
     text = replace_once(
         text,
         """assert!(accepted.len() == event_ids.len()
-            && accepted.iter().zip(event_ids.iter()).all(|(a, b)| a.as_str() == Some(b)),
-            "RUST_WORLD_DAMAGE_ACK_EVENTS_MISMATCH");""",
+        && accepted.iter().zip(event_ids.iter()).all(|(a,b)| a.as_str() == Some(b)),
+        "RUST_WORLD_DAMAGE_ACK_EVENTS_MISMATCH");""",
         """assert!(accepted.len() == event_ids.len()
             && accepted.iter().zip(event_ids.iter()).all(|(a, b)| a.as_str() == Some(b)),
             "RUST_WORLD_DAMAGE_ACK_EVENTS_MISMATCH");
@@ -293,8 +293,11 @@ fn send(value: &Value) {""",
     )
     text = replace_once(
         text,
-        "bridge.pending.is_empty()",
-        "bridge.pending.is_empty() && bridge.pending_controls.is_empty()",
+        """bridge.sequence > 0 && bridge.last_health == Some(0.0)
+            && bridge.previous_ack_id.len() == 64 && bridge.pending.is_empty()""",
+        """bridge.sequence > 0 && bridge.last_health == Some(0.0)
+            && bridge.previous_ack_id.len() == 64 && bridge.pending.is_empty()
+            && bridge.pending_controls.is_empty()""",
         "world_bridge_lethal_pending_controls",
     )
     text = replace_once(
