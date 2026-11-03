@@ -43,18 +43,31 @@ def test_native_rank_diagnostic_checks_source_prerequisite_on_both_pair_members(
             }],
         },
     }
-    result = p2._native_p2_rank_diagnostic(
-        None,
-        "predatory_strikes",
-        1,
-        {
-            "source_rank_facts": source,
-            "control_witness": {"ferocity": 5, "feral_swiftness": 1},
-            "witness": {"ferocity": 5, "feral_swiftness": 1, "predatory_strikes": 1},
-        },
+    # Independently reject an invalid control and an invalid candidate. A
+    # single pair where both sides fail would not prove that both are checked.
+    invalid_pairs = (
+        (
+            {"ferocity": 5, "feral_swiftness": 1},
+            {"ferocity": 5, "feral_swiftness": 2, "predatory_strikes": 1},
+        ),
+        (
+            {"ferocity": 5, "feral_swiftness": 2},
+            {"ferocity": 5, "feral_swiftness": 1, "predatory_strikes": 1},
+        ),
     )
-    assert result["status"] == "BLOCKED"
-    assert result["reason"] == "SOURCE_RANK_PAIR_PREREQUISITE_NOT_SATISFIED"
+    for control_witness, witness in invalid_pairs:
+        result = p2._native_p2_rank_diagnostic(
+            None,
+            "predatory_strikes",
+            1,
+            {
+                "source_rank_facts": source,
+                "control_witness": control_witness,
+                "witness": witness,
+            },
+        )
+        assert result["status"] == "BLOCKED"
+        assert result["reason"] == "SOURCE_RANK_PAIR_PREREQUISITE_NOT_SATISFIED"
 
 
 def test_druid_l30_plus_defaults_to_the_staged_source_catalogue(tmp_path):
