@@ -182,8 +182,8 @@ def probe_native_prepared_action_candidates(
     inventory: dict,
     selected_spell_id: int,
     selected_prepare: dict,
-    engine_root: str | Path = ENGINE_ROOT,
     deadline: float,
+    engine_root: str | Path = ENGINE_ROOT,
 ) -> dict[str, object]:
     """Ask native prepare about every addressable APL spell in this prepared build.
 
