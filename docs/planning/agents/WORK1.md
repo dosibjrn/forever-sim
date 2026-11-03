@@ -6,12 +6,14 @@ Read Work1's current issue/branch/PR from the top of WORK_PRIORITY; assignments 
 
 ## Ownership
 
-Work1 owns the **#1 executable critical-path item** assigned by Prio. The owner has reprioritized #357/#359 GameIR/native-ownership migration as the first priority. Hand off any still-owned, bounded P7 PR to Merge before switching to the first executable real Rust-backed GameIR caller migration. Do not continue a historical P7 issue exclusively merely because an old issue or conversation called it #1.
+Work1 owns the highest-impact **real active-gate production repair** delegated by Prio. The owner clarification on 2026-11-04 is that **P1, P2 and GameIR are to be deleted**, not preserved by creating new native-route adapters. Clean owns dead-code retirement; Work1 must not create or extend an adapter solely to migrate retired P1/P2 checks, historical GameIR demos, bounded route evidence or diagnostic-only 100-target routes.
 
-Never preempt or edit Work2's active item/branch. After delivery, take Prio's next #1 assignment.
+Current Work1 lane: finish and hand off the existing Druid L60 Balance P7.5 production candidate-reachability repair (#718), then identify and fix the measured DPS shortfall on the actual P7.5 executor. Hold standalone no-gate route-candidate PRs #715/#716 unless an active P3–P7.5 gate or real optimizer caller demonstrably requires their code. If such a need is proven, reuse the smallest existing selected-MythicSim boundary and delete the displaced GameIR caller rather than adding wrappers, redundant checks or a new diagnostic suite.
+
+Do not edit Work2's active item/branch. Preserve existing accepted M1 evidence.
 
 ## Required cycle result
 
-Deliver a committed/pushed, focused production delta on the assigned GameIR/native migration or another executable #1 slice, with relevant Forever-owned regression/validation and an updated PR handoff. Do not finish with status, review or CI alone. Apply the complete start-of-cycle review, Actions inspection, PR response and no-report-only rules in WORK_COMMON.
+Deliver a committed/pushed, focused production delta on the assigned live gate/optimizer repair or another executable #1 slice, with relevant Forever-owned regression/validation and an updated PR handoff. Do not finish with status, review or CI alone. Apply the complete start-of-cycle review, Actions inspection, PR response and no-report-only rules in WORK_COMMON.
 
 At cycle end, consider and, when justified, launch an asynchronous source/native↔2D regression or acceptance diagnostic on the owned code. Link its exact run/ref and hand off the next check in the existing issue/PR. Do not repeat an unchanged expensive run.

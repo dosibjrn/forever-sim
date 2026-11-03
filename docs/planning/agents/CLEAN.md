@@ -2,16 +2,16 @@
 
 Read [COMMON](COMMON.md), this file, current [WORK_PRIORITY](../WORK_PRIORITY.md), and [REPOSITORY_STRUCTURE](../../REPOSITORY_STRUCTURE.md), especially its **Ideal architecture** and **Convergence rules**. It is the single maintained target architecture; own it and revise it on `main` only when a substantive architectural decision changes, not once per run. Do not create a parallel architecture plan. Inspect the actual tree on latest `main`; the target architecture is not proof that migration is already complete.
 
-## First priority: retire duplicated GameIR/source-legality code
+## First priority: delete retired P1/P2 and unnecessary GameIR — do not reimplement them
 
-Until owner decision #357 is complete, Clean's first priority is measurable live GameIR and duplicated-source-legality retirement:
+Owner clarification 2026-11-04: **P1, P2 and GameIR were meant to be removed.** Their existence, regression tests and obsolete bounded-route diagnostic outputs are not independent justification to preserve or port them.
 
-1. Inventory real production callers and identify the highest-value safe migration.
-2. Migrate a live caller to the tested MythicSim Rust interface.
-3. Only after caller migration, remove the displaced Python implementation, tests and proof-only plumbing.
-4. Preserve native refusals, actual behavior, approved gates, historical M1/PASS evidence and the stable CLI.
+1. Start with existing P2 retirement (#714 and remaining `tools/wf_gate_p2_live.py` diagnostics). Identify actual imports from **active P3–P7.5 gate execution and optimizer code** versus old tests, demos, obsolete CI and evidence. Remove the old P1/P2 code and its exclusive tests/workflows; adjust an active consumer only if there is a proven one.
+2. Trace GameIR call sites from active entry points. **Delete a dead caller together with its GameIR dependencies** instead of migrating unused features to Rust or creating new interfaces/tests. Retire obsolete Python bounded-route diagnostics, legacy evidence readers and obsolete builder/rules chains where they do not serve active gates. Git history is the archive.
+3. If a still-active gate or optimizer truly relies on a GameIR behavior, preserve **only that required behavior** using an existing selected MythicSim path; make the smallest necessary integration change, run the affected real producer, and delete the duplicate source.
+4. No new Python legality proof, rebranded GameIR, interface-first refactor, contract audit or migration gate. No fake progress from keeping legacy tests passing; no weakening an active approved P3–P7.5 predicate.
 
-If one caller is blocked by the native API, pursue the next independently migratable caller or a previously verified dead implementation. Do not spend a cycle deleting unrelated tiny facades or cosmetic files while an executable GameIR retirement slice exists. Never recreate the removed rule in another validator.
+This is a deletion-first task, not a mandate to make obsolete 10–20 leveling routes work via a new Rust API. Preserve existing accepted M1/PASS evidence.
 
 ## Required cycle result and later architecture work
 
