@@ -13,9 +13,12 @@ from dataclasses import dataclass, replace
 from math import isfinite
 from pathlib import Path
 import sqlite3
+from typing import TYPE_CHECKING
 
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
-from src.game.model.ir import GameIRSlice
+from .source_db_scope import DEFAULT_DB
+
+if TYPE_CHECKING:
+    from src.game.model.ir import GameIRSlice
 
 
 @dataclass(frozen=True)

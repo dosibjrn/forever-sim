@@ -435,6 +435,76 @@ def test_armor_source_reader_preserves_explicit_sqlite_and_fail_closed(tmp_path)
         load_armor_rules("druid", db_path=path)
 
 
+def test_primary_stat_source_reader_import_is_independent_of_gameir():
+    """Reading sourced conversion facts must not construct the legacy game model."""
+    code = """
+import sys
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever.primary_stat_conversions import (
+    DEFAULT_DB as PRIMARY_DB, load_primary_stat_conversions,
+    source_enrich_primary_stats, converted_stat_amount,
+)
+assert PRIMARY_DB is DEFAULT_DB
+assert callable(load_primary_stat_conversions)
+assert callable(source_enrich_primary_stats)
+assert converted_stat_amount(
+    {'coefficient': 2.0, 'operation': 'linear'}, 3.0
+) == 6.0
+for name in (
+    'src.game.data.forever.sqlite_talents',
+    'src.game.model.ir',
+    'src.game.runtime.simulator',
+):
+    assert name not in sys.modules, name
+
+from src.game.data.forever.sqlite_talents import DEFAULT_DB as LEGACY_DB
+assert LEGACY_DB is DEFAULT_DB
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_primary_stat_source_reader_retains_staged_db_and_fail_closed(tmp_path):
+    """Import decoupling must not change source identity or coefficient validation."""
+    import pytest
+    from src.game.data.forever.primary_stat_conversions import (
+        load_primary_stat_conversions,
+    )
+
+    path = tmp_path / "primary_stats.sqlite"
+    with sqlite3.connect(path) as db:
+        db.executescript("""
+            CREATE TABLE actor_stat_conversion_source_facts (
+                class_key TEXT, source_stat TEXT, target_type TEXT,
+                target_id TEXT, coefficient REAL, baseline TEXT,
+                operation TEXT, threshold REAL, below_coefficient REAL,
+                authority TEXT, source_url TEXT, source_date TEXT,
+                evidence TEXT, capture_id TEXT
+            );
+        """)
+        db.execute(
+            "INSERT INTO actor_stat_conversion_source_facts VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            ('druid', 'strength', 'stat', 'attack_power', 2.0, 'total',
+             'linear', None, None, 'fixture',
+             'https://example.invalid/primary-stat', '2026-11-03',
+             'explicit source fixture', 'primary-1'),
+        )
+
+    rows = load_primary_stat_conversions("DRUID", db_path=path)
+    assert len(rows) == 1
+    assert (rows[0].source_stat, rows[0].target_id, rows[0].coefficient) == (
+        "strength", "attack_power", 2.0
+    )
+    assert load_primary_stat_conversions("mage", db_path=path) == ()
+
+    with sqlite3.connect(path) as db:
+        db.execute("UPDATE actor_stat_conversion_source_facts SET coefficient=-2.0")
+    with pytest.raises(ValueError, match="invalid or conflicting"):
+        load_primary_stat_conversions("druid", db_path=path)
+
 def test_source_enricher_imports_do_not_load_legacy_talent_compiler():
     """Three live GameIR enrichers need a SQLite path, not the talent compiler."""
     code = """
@@ -508,3 +578,4 @@ def test_source_enricher_sqlite_and_fail_closed_behavior(tmp_path):
     # No health resource => no sourced incoming-attack synthesis or DB read.
     world = SimpleNamespace(incoming_attacks=(), resources=())
     assert source_enrich_incoming_world(world) is world
+
