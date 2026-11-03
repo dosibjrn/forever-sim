@@ -112,6 +112,7 @@ def test_rejects_unverifiable_prior_receipt(tmp_path, monkeypatch, tamper):
         report["frozen_stochastic_world_damage_events"] = 0
     else:
         report["native_source_revision"] = "other-native-revision"
+        report["runtime_proof"]["engine_revision"] = "other-native-revision"
         # Incompatible accepted receipts are excluded, never used in comparison.
         path.write_text(json.dumps({"receipts": receipts}))
         assert _read(tmp_path)["dps"] == 728.0
