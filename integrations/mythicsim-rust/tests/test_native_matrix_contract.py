@@ -411,10 +411,10 @@ class NativeGenericMatrixContract(unittest.TestCase):
 
 
 
-    def test_apl_only_candidate_scope_freezes_entire_native_request(self):
+    def test_apl_only_legal_guard_freezes_entire_native_request(self):
         # APL-only must never turn into a hidden buff, encounter, gear,
         # talent or simOptions search, even if a caller supplies bad mutations.
-        from native_l60_matrix import apl_only_candidate_scope
+        from native_l60_matrix import legal_apl_only_request
         source = {
             "simOptions": {"randomSeed": "2710", "iterations": 10},
             "encounter": {"duration": 120},
@@ -433,12 +433,12 @@ class NativeGenericMatrixContract(unittest.TestCase):
         legal = copy.deepcopy(source)
         actions = legal["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
         actions.reverse()
-        self.assertTrue(apl_only_candidate_scope(source, legal))
+        self.assertTrue(legal_apl_only_request(source, legal))
         for key in ("simOptions", "encounter"):
             with self.subTest(non_apl=key):
                 bad = copy.deepcopy(legal)
                 bad[key]["unexpected"] = 1
-                self.assertFalse(apl_only_candidate_scope(source, bad))
+                self.assertFalse(legal_apl_only_request(source, bad))
         for path in ("buffs", "equipment", "talentsString", "prepullActions"):
             with self.subTest(non_apl=path):
                 bad = copy.deepcopy(legal)
@@ -451,11 +451,11 @@ class NativeGenericMatrixContract(unittest.TestCase):
                     p["talentsString"] = "222"
                 else:
                     p["rotation"]["prepullActions"] = []
-                self.assertFalse(apl_only_candidate_scope(source, bad))
+                self.assertFalse(legal_apl_only_request(source, bad))
         self.assertEqual(source, frozen)
 
-    def test_apl_only_candidate_scope_forwards_unseen_spell_to_native(self):
-        from native_l60_matrix import apl_only_candidate_scope
+    def test_apl_only_legal_guard_rejects_unseen_native_spell_identity(self):
+        from native_l60_matrix import legal_apl_only_request
         source = {"raid": {"parties": [{"players": [{
             "rotation": {"priorityList": [
                 {"action": {"castSpell": {"spellId": {"spellId": 1234}}}},
@@ -464,11 +464,11 @@ class NativeGenericMatrixContract(unittest.TestCase):
         }]}]}}
         legal = copy.deepcopy(source)
         legal["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"].reverse()
-        self.assertTrue(apl_only_candidate_scope(source, legal))
+        self.assertTrue(legal_apl_only_request(source, legal))
         bad = copy.deepcopy(legal)
         bad["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"][0]["action"]["castSpell"]["spellId"] = {"spellId": 999999}
-        self.assertTrue(apl_only_candidate_scope(source, bad))  # MythicSim decides spell legality.
-        self.assertFalse(apl_only_candidate_scope(source, {"raid": {}}))
+        self.assertFalse(legal_apl_only_request(source, bad))
+        self.assertFalse(legal_apl_only_request(source, {"raid": {}}))
 
 
     def test_unscored_native_response_is_separate_and_does_not_block_paid_search(self):

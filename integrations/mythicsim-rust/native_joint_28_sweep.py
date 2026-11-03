@@ -29,6 +29,9 @@ def preflight(profile: str, source: dict, request: dict | None, stage: int,
     """Fail closed before any native invocation; stage promotion is not a score race."""
     if request is None:
         return ("BLOCKED_SOURCE", str(source.get("blocker") or "No exact source request"))
+    if profile == "priest/discipline":
+        return ("BLOCKED_SPEC_IDENTITY",
+                "Smite Priest fixture does not establish a Discipline spec identity")
     if stage != 5:
         if previous is None:
             return ("BLOCKED_PRIOR_STAGE", "Missing completed prior-stage exact profile row")
