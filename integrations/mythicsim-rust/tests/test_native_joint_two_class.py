@@ -76,6 +76,31 @@ class NativeJointScoringContracts(unittest.TestCase):
         self.assertEqual(fingerprint(raw), record["raw_response_sha256"])
         self.assertIs(raw, actual_raw)
 
+    def test_tps_objective_is_forwarded_and_recorded(self):
+        calls = []
+        source = request()
+        raw = {"result": {"raidMetrics": {"parties": [{"players": [{"threat": {"avg": 321.5}}]}]}}}
+
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline, objective="DPS"):
+            calls.append(objective)
+            return (321.5, raw, 0.01,
+                    fingerprint(native_payload(candidate, iterations, seed)))
+
+        record, actual_raw = native_score_request(
+            Path("forever-engine"), source, 40, 731, "balanced",
+            time.monotonic() + 5.0, objective="TPS", runner=fake_run,
+        )
+        self.assertEqual(["TPS"], calls)
+        self.assertEqual("TPS", record["objective"])
+        self.assertEqual(321.5, record["score"])
+        self.assertIs(raw, actual_raw)
+
+    def test_profile_objective_mapping_keeps_healing_explicitly_separate(self):
+        self.assertEqual("TPS", joint.objective_for_profile("warrior/protection"))
+        self.assertEqual("TPS", joint.objective_for_profile("druid/feral_bear"))
+        self.assertEqual("HPS", joint.objective_for_profile("priest/holy"))
+        self.assertEqual("DPS", joint.objective_for_profile("mage/fire"))
+
 
     def test_native_refusal_is_propagated_for_the_exact_talent_candidate(self):
         source = request()
