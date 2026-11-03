@@ -11,6 +11,12 @@ on:
       - 'tools/audit_feral_p7_holdout.py'
       - 'tools/import_feral_p7_archives.py'
       - 'tools/wf_gate_coverage.py'
+      - 'tools/p1_native_source_inventory.py'
+      - 'tools/p1_native_progress.py'
+      - 'tools/wf_p1_native_scope_matrix.py'
+      - 'tools/wf_p1_native_effects.py'
+      - 'tests/gates/test_p1_native_progress.py'
+      - 'tests/gates/test_wf_p1_native_blackbox.py'
       - 'tools/wf_gate_p1_live.py'
       - 'tests/test_wf469_p1_alignment.py'
       - 'tests/test_wf470_p1_scope.py'
@@ -60,6 +66,8 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/gates/test_p1_native_progress.py
+          tests/gates/test_wf_p1_native_blackbox.py
           tests/test_wf469_p1_alignment.py
           tests/test_wf470_p1_scope.py
           tests/test_p7_search_deadline_contract.py
