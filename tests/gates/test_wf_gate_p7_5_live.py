@@ -251,6 +251,39 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert report["reasons"] == ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"]
     assert original == unchanged
 
+    # Same full production gate route with the strongest accepted, compatible
+    # stochastic final supplied by the real M1 receipt resolver. This unit
+    # seam tests gate routing, not a 300-second/native acceptance result.
+    monkeypatch.setattr(gate, "strongest_accepted_prior",
+                        lambda *args, **kwargs: {
+                            "dps": 725.0,
+                            "compatible_gates": ["P7.4"],
+                            "run_urls": ["https://github.com/example/actions/runs/1"]})
+    clock = iter([0.0, 0.0, 300.0, 300.0])
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
+    accepted = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert accepted["status"] == "PASS"
+    assert accepted["reasons"] == []
+    assert accepted["final_required_dps"] == 0.99 * 728.19
+    assert accepted["strongest_accepted_compatible_prior_dps"] == 725.0
+    assert accepted["runtime_proof"]["executed"] is True
+
+    # An accepted stronger prior raises the P7.5 holdout floor; the same
+    # frozen 729-DPS result must now fail, not use the external-only limit.
+    monkeypatch.setattr(gate, "strongest_accepted_prior",
+                        lambda *args, **kwargs: {
+                            "dps": 750.0,
+                            "compatible_gates": ["P7.4"],
+                            "run_urls": ["https://github.com/example/actions/runs/1"]})
+    clock = iter([0.0, 0.0, 300.0, 300.0])
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
+    rejected = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert rejected["status"] == "FAIL"
+    assert "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_ACCEPTED_PRIOR_FLOOR" in rejected["reasons"]
+    assert rejected["final_required_dps"] == 742.5
+    assert "runtime_proof" not in rejected
+    assert original == unchanged
+
 
 def test_p75_rejects_invalid_full_search_mode_before_source_work(monkeypatch, tmp_path):
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "anything")
