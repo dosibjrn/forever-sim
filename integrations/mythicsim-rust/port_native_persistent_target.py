@@ -31,7 +31,7 @@ def _paid_recovery_descendant(source: str) -> bool:
             source.count(paid_helper) == 1
             and source.count(NEW_GUARD) == 1
             and source.count(paid_test) == 1
-            and source.count(FIGHT_TEST.rstrip("\\n")) == 1
+            and source.count(FIGHT_TEST.rstrip("\n")) == 1
             and port_paid_recovery(source) == source
         )
     except (ImportError, ValueError):
