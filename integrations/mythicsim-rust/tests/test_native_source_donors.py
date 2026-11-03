@@ -156,7 +156,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
 
         self.assertEqual([0], scope["gear_mutable_slots"])
         self.assertEqual(
-            sorted(["99999-6", "7777777-2"]),
+            sorted(["99999-6", "7777777-2", "not-a-talent-build"]),
             scope["talent_builds"],
         )
         self.assertEqual(3, scope["source_donor_fixture_count"])
