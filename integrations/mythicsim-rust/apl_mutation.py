@@ -237,7 +237,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
             i, j = rng.sample(range(len(result)), 2)
             result[i], result[j] = result[j], result[i]
         elif mode == "insert_cast" and len(result) < 20:
-            result.insert(rng.randrange(len(result) + 1), _new_cast(spells, predicates_by_spell, rng))
+            result.insert(rng.randrange(len(result) + 1), _new_cast(spells, predicates_by_spell, compatible_predicates, rng))
         elif mode == "drop_action" and len(result) > 3:
             result.pop(rng.randrange(len(result)))
         elif mode == "replace_condition":
