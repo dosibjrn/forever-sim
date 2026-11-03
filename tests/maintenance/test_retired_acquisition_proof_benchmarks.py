@@ -66,6 +66,8 @@ RETIRED_TOOLS = (
     "tests/test_wf381_mage_l30_talent_positions_tdd.py",
     "tests/test_wf382_mage_l30_build_delta_p1_tdd.py",
     "tests/test_talent_tree_row_ingestion.py",
+    "tests/generic/search/test_wf_p2_cross_tree_source_witness.py",
+    "tests/generic/search/test_wf_p2_source_witness_priority.py",
     "evidence/wf336/druid_l20_talent_rank_observations_70338.json",
     "evidence/wf336/WF336_P2_CHECKPOINT_CERTIFICATE.json",
     "evidence/wf349/WF349_P2_DIAGNOSTIC.json",
