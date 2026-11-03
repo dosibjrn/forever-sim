@@ -1058,8 +1058,16 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
             candidate_player["rotation"]["priorityList"] = [
                 copy.deepcopy(source_entry), copy.deepcopy(stripped_nonwitness)
             ]
-            repaired = adapter.mutate(candidate, AplOnlyRng())
-        repaired_apl = repaired["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+            # The full adapter correctly refuses invalid input candidates;
+            # exercise the axis-level source filter directly for recovery.
+            repaired_apl = adapter.adapters["apl"].mutate(
+                candidate_player["rotation"]["priorityList"],
+                random.Random(17), candidate,
+            )
+        repaired = copy.deepcopy(candidate)
+        repaired["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] = (
+            copy.deepcopy(repaired_apl)
+        )
         self.assertIn(utility_entry, repaired_apl)
         self.assertNotIn(stripped_nonwitness, repaired_apl)
         self.assertTrue(adapter.legal(repaired))
