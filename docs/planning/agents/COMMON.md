@@ -6,8 +6,8 @@ This file contains only rules that apply to all five agents. Read it together wi
 
 ## Authority
 
-- [OVERALL_PLAN](../../../OVERALL_PLAN.md) defines **what** the project is building.
-- [PROCESS](../../../PROCESS.md) and [gate contracts](../../gates/README.md) define **how** work is accepted.
+- [OVERALL_PLAN](../../../../OVERALL_PLAN.md) defines **what** the project is building.
+- [PROCESS](../../../../PROCESS.md) and [gate contracts](../../gates/README.md) define **how** work is accepted.
 - [WORK_PRIORITY](../WORK_PRIORITY.md) is the live, current-only work allocation and ownership queue.
 - This contract and role files organize work; they do not override approved scope, process or gates.
 - Continue the existing owned issue/branch/PR. Do not rely on stale conversation summaries, fixed historical issue numbers or old task prompts. Do not take another agent's owned branch.
@@ -57,8 +57,13 @@ Use existing workflows first. Prefer focused, economical runs. Do not repeat unc
 
 ## M1 reporting and ownership
 
-When reporting M1 status, lead with **`M1 measured: X.XXXX% (float=0.XXXXXXXXXX)`**, read from latest `main` using `python tools/m1_progress.py` and its `measured_percent` / `measured_fraction` values. This is partial-inclusive diagnostic coverage, **not** certified checkpoint percentage, acceptance or forecast. Do not derive it from `C/148`, an SVG, CI or a previous conversation. If the live scoreboard is unavailable, say so. Avoid repeating unchanged `0/148` boilerplate.
+When reporting M1 status, lead with **`M1 measured: X.XXXX% (float=0.XXXXXXXXXX)`**, read from latest `main` using `python tools/m1_progress.py` and its `measured_percent` / `measured_fraction` values. This is partial-inclusive diagnostic coverage, **not** certified checkpoint percentage, acceptance or forecast. Do not derive it from `C/148`, an SVG, CI or a previous conversation. If the live scoreboard is unavailable, say so. Avoid repeating unchanged `0/148` boilerplate. The official certified `C/148` checkpoint and `N/1628` PASS-gate counts are separate facts; report them only when they change, the user asks, or a specific gate issue needs them.
 
-**Only Merge** launches the trusted M1 recorder and writes, invalidates or commits `docs/planning/M1_PASSES.tsv`. A true PASS requires an accepted production run and PROCESS predicate; PARTIAL remains diagnostic and never increments the certified gate count. Prio, Work1, Work2 and Clean must not edit the ledger, invoke the recorder or promise a numerical increase.
+**Only Merge** launches the trusted M1 recorder and writes, invalidates or commits `docs/planning/M1_PASSES.tsv`. A true PASS requires an accepted production run and PROCESS predicate; PARTIAL remains diagnostic and never increments the certified gate count. Keep one ledger row per genuine PASS / bounded PARTIAL as defined by the production script: no per-gate evidence documents or secondary registers. A missing trustworthy compatibility identity cannot certify a full 11/11 checkpoint. Prio, Work1, Work2 and Clean must not edit the ledger, invoke the recorder or promise a numerical increase.
 
 Every production-code PR must contain `M1 affected gates: class:level:spec:gate ...` for concrete affected gates, or `M1 affected gates: none` when no gate behavior changed. This is an execution hint, not a manually assigned verdict. Merge's exact dispatch and recording procedure is in [MERGE](MERGE.md).
+
+
+## Incremental progress and reports
+
+Split unfinished gates only into existing, testable production behaviors and never change the approved priority order. For a genuinely comparable count, report measured `passed/known applicable` and coverage `c`; a separate illustrative work-effort heuristic may be shown as `E=0.25*c` for `c<=0.8`, otherwise `E=0.2+4*(c-0.8)`. This encodes an assumed 80/20 effort curve; it is **not** observed engineer-hours, acceptance or a scheduling signal. Mark both figures provisional when source scope is unknown. Do not apply the curve to heterogeneous/small steps, invent denominators, create shadow KPIs or chase PR #60 diagnostic ticks. Report one short factual result: measured M1 headline when available, actual behavior/structural change, commit/PR, real validation and next concrete action.
