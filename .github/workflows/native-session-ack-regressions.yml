@@ -101,8 +101,8 @@ jobs:
           PY
       - name: Replay historical WF678 winner axes on current selected Rust + gsim 2D (diagnostic, not gate)
         run: |
-          python tools/diagnostics/replay_historical_wf678_winner.py \\
-            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \\
+          python tools/diagnostics/replay_historical_wf678_winner.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --iterations 5
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
