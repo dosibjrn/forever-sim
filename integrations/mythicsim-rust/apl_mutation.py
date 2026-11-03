@@ -10,7 +10,6 @@ from __future__ import annotations
 import copy
 import json
 import random
-import re
 
 
 def _spell_key(spell):
@@ -199,45 +198,6 @@ def _corpus(source_actions):
         tuple(compatible_predicates),
         source_aura_keys,
     )
-
-def _condition_literals(node, out):
-    """Only alter literal RHS constants of comparisons, never spell IDs."""
-    if isinstance(node, dict):
-        cmp = node.get("cmp")
-        if isinstance(cmp, dict):
-            rhs = cmp.get("rhs", {})
-            val = rhs.get("const", {}).get("val") if isinstance(rhs, dict) else None
-            if isinstance(val, str) and re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:ms|s)?", val):
-                out.append(rhs["const"])
-        for child in node.values():
-            _condition_literals(child, out)
-    elif isinstance(node, list):
-        for child in node:
-            _condition_literals(child, out)
-
-
-def _tune_literal(condition, rng):
-    candidates = []
-    _condition_literals(condition, candidates)
-    if not candidates:
-        return False
-    entry = rng.choice(candidates)
-    old = entry["val"]
-    match = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?)(ms|s)?", old)
-    if match is None:
-        return False
-    number, unit = float(match.group(1)), match.group(2) or ""
-    # All substitutions keep the input AST's type/unit. A 0 remains 0 or
-    # positive; thresholds are bounded to avoid pathological parser values.
-    scale = rng.choice((0.5, 0.75, 1.25, 1.5, 2.0))
-    next_val = min(100000.0, max(0.0, number * scale))
-    if not unit:
-        entry["val"] = str(int(round(next_val)))
-    else:
-        entry["val"] = (str(int(next_val)) if next_val.is_integer()
-                        else f"{next_val:.2f}".rstrip("0").rstrip(".")) + unit
-    return entry["val"] != old
-
 
 def _source_action_templates(source_actions):
     """Return exact cast action payloads keyed by their source spell identity."""
