@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Port the mandatory typed RNG argument into the selected MythicSim Rust runtime.
+
+This is source code for the canonical Rust fork, NOT a Python RNG implementation.
+No environment-selected mode, implicit stochastic fallback, or gate-only simulator.
+Fail closed on upstream drift; the fork-sync workflow publishes only reviewed code.
+"""
+from pathlib import Path
+import sys
+
+def edit(root, name, transformations):
+    path = root / name
+    src = path.read_text()
+    for old, new, count in transformations:
+        if src.count(new) == count and old not in src:
+            continue
+        actual = src.count(old)
+        if actual != count:
+            raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: expected {count} of {old[:80]!r}, got {actual}")
+        src = src.replace(old, new)
+    if src != path.read_text():
+        path.write_text(src)
+
+def one(root, name, old, new):
+    edit(root, name, [(old, new, 1)])
+
+def migrate(root):
+    one(root, "src/core/rng.rs",
+        "pub(crate) enum RandomRequest { Uniform01, Bernoulli(f64) }",
+        """pub(crate) enum RandomRequest { Uniform01, Bernoulli(f64) }
+
+/// Mandatory native runtime choice; never inferred from process environment.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RngMode { Balanced, Stochastic }
+
+impl RngMode {
+    pub fn parse_cli(text: &str) -> Result<Self, String> {
+        match text {
+            "balanced" => Ok(Self::Balanced),
+            "stochastic" => Ok(Self::Stochastic),
+            _ => Err(format!("invalid --rng-mode {text:?}; expected balanced or stochastic")),
+        }
+    }
+}
+""")
+    one(root, "src/core/rng.rs",
+        """    pub(crate) fn new(labeled: bool, seed: u64) -> Self {
+        match std::env::var("WOWSIM_RNG_MODE").as_deref() {
+            Ok("balanced") => return SimRng::Balanced(BalancedRng::default()),
+            Ok("stochastic") | Err(std::env::VarError::NotPresent) => {},
+            _ => panic!("unknown WOWSIM_RNG_MODE; expected stochastic or balanced"),
+        }
+
+        if labeled {""",
+        """    pub(crate) fn new(mode: RngMode, labeled: bool, seed: u64) -> Self {
+        if mode == RngMode::Balanced {
+            return SimRng::Balanced(BalancedRng::default());
+        }
+        if labeled {""")
+    edit(root, "src/core/rng.rs", [
+        ("SimRng::new(false, 42)", "SimRng::new(RngMode::Stochastic, false, 42)", 1),
+        ("SimRng::new(true, 42)", "SimRng::new(RngMode::Stochastic, true, 42)", 1),
+    ])
+    one(root, "src/core/fight.rs", "rng::SimRng,", "rng::{RngMode, SimRng},")
+    one(root, "src/core/fight.rs",
+        """    pub(crate) fn new(
+        prepared: &PreparedV2,
+        agent: A,""",
+        """    pub(crate) fn new(
+        prepared: &PreparedV2,
+        rng_mode: RngMode,
+        agent: A,""")
+    one(root, "src/core/fight.rs",
+        "rng: SimRng::new(prepared.sim.labeled_rng, prepared.sim.seed as u64),",
+        "rng: SimRng::new(rng_mode, prepared.sim.labeled_rng, prepared.sim.seed as u64),")
+    for cls in ("mage", "druid", "warlock", "shaman", "paladin", "priest", "rogue", "warrior", "hunter"):
+        agent = f"src/classes/{cls}/agent.rs"
+        prepared = f"src/classes/{cls}/prepared.rs"
+        title = cls.title()
+        one(root, agent,
+            f"pub(crate) fn fight(prepared: &PreparedV2) -> Result<Fight<{title}Agent>, String> {{",
+            f"pub(crate) fn fight(prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode) -> Result<Fight<{title}Agent>, String> {{")
+        one(root, agent, "Fight::new(prepared, ", "Fight::new(prepared, rng_mode, ") if "Fight::new(prepared, " in (root / agent).read_text() else one(root, agent, "Fight::new(\n            prepared,\n", "Fight::new(\n            prepared,\n            rng_mode,\n")
+        one(root, prepared,
+            "    prepared: &crate::contracts::prepared_v2::PreparedV2,\n) -> Result<crate::core::fight::FightReport, String> {",
+            "    prepared: &crate::contracts::prepared_v2::PreparedV2,\n    rng_mode: crate::core::rng::RngMode,\n) -> Result<crate::core::fight::FightReport, String> {")
+        one(root, prepared, f"{title}Agent::fight(prepared)?", f"{title}Agent::fight(prepared, rng_mode)?")
+    clsfile = "src/classes.rs"
+    one(root, clsfile,
+        "pub(crate) fn run_prepared(\n    prepared: &crate::contracts::prepared_v2::PreparedV2,\n)",
+        "pub(crate) fn run_prepared(\n    prepared: &crate::contracts::prepared_v2::PreparedV2,\n    rng_mode: crate::core::rng::RngMode,\n)")
+    edit(root, clsfile, [
+        ("::prepared::run_prepared(prepared)", "::prepared::run_prepared(prepared, rng_mode)", 9),
+        ("::fight(prepared)?", "::fight(prepared, rng_mode)?", 18),
+    ])
+    one(root, clsfile,
+        "    target_count: usize,\n) -> Result<serde_json::Value, String> {",
+        "    target_count: usize,\n    rng_mode: crate::core::rng::RngMode,\n) -> Result<serde_json::Value, String> {")
+    one(root, clsfile,
+        "pub(crate) fn native_two_pull_windows(\n    prepared: &crate::contracts::prepared_v2::PreparedV2,\n)",
+        "pub(crate) fn native_two_pull_windows(\n    prepared: &crate::contracts::prepared_v2::PreparedV2,\n    rng_mode: crate::core::rng::RngMode,\n)")
+    eng = "src/engine/prepared.rs"
+    one(root, eng,
+        "pub fn simulate(prepared: &PreparedV2) -> Result<PreparedReport, PreparedError> {",
+        "pub fn simulate(prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode) -> Result<PreparedReport, PreparedError> {")
+    one(root, eng, "    run(prepared)\n}", "    run(prepared, rng_mode)\n}")
+    one(root, eng,
+        "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize)",
+        "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode: crate::core::rng::RngMode)")
+    one(root, eng, "crate::classes::native_two_world_targets(prepared, target_count)",
+        "crate::classes::native_two_world_targets(prepared, target_count, rng_mode)")
+    one(root, eng,
+        "pub fn native_two_pull_windows(prepared: &PreparedV2)",
+        "pub fn native_two_pull_windows(prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode)")
+    one(root, eng, "crate::classes::native_two_pull_windows(prepared)",
+        "crate::classes::native_two_pull_windows(prepared, rng_mode)")
+    one(root, eng,
+        "pub fn simulate_gated(prepared: &PreparedV2) -> Result<Gated, PreparedError> {",
+        "pub fn simulate_gated(prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode) -> Result<Gated, PreparedError> {")
+    one(root, eng, "    run(prepared).map(|report| Gated::Simulated(Box::new(report)))",
+        "    run(prepared, rng_mode).map(|report| Gated::Simulated(Box::new(report)))")
+    one(root, eng, "fn run(prepared: &PreparedV2) -> Result<PreparedReport, PreparedError> {",
+        "fn run(prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode) -> Result<PreparedReport, PreparedError> {")
+    one(root, eng, "classes::run_prepared(prepared)", "classes::run_prepared(prepared, rng_mode)")
+    one(root, "src/lib.rs", "pub mod contracts;", "pub mod contracts;\npub use core::rng::RngMode;")
+    main = "src/main.rs"
+    one(root, main, "PreparedError, Refusal, Request, Rules, SOURCE_REVISION,",
+        "PreparedError, Refusal, Request, RngMode, Rules, SOURCE_REVISION,")
+    one(root, main, "    let mut infile = None;", "    let mut rng_mode: Option<RngMode> = None;\n    let mut infile = None;")
+    one(root, main,
+        '            "--trace" if !trace => trace = true,',
+        '''            "--rng-mode" => {
+                index += 1;
+                let value = args.get(index).ok_or("--rng-mode requires a value")?;
+                if rng_mode.replace(RngMode::parse_cli(value)?).is_some() {
+                    return Err("duplicate --rng-mode".into());
+                }
+            }
+            "--trace" if !trace => trace = true,''')
+    one(root, main,
+        '    let prepared_from_request = match request_file {',
+        '    let rng_mode = rng_mode.ok_or("sim and bench require explicit --rng-mode balanced|stochastic")?;\n    let prepared_from_request = match request_file {')
+    one(root, main, "simulate_prepared_gated(&prepared)", "simulate_prepared_gated(&prepared, rng_mode)")
+    edit(root, main, [
+        ("simulate_prepared(&prepared)", "simulate_prepared(&prepared, rng_mode)", 1),
+        ("simulate_prepared(black_box(&prepared))", "simulate_prepared(black_box(&prepared), rng_mode)", 2),
+    ])
+    # Native world commands must also choose explicitly; no hidden default.
+    one(root, main,
+        'if args.len() != 5 || args[1] != "--infile" || args[3] != "--targets" {',
+        'if args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode" {')
+    one(root, main,
+        'let report = native_two_world_targets(&prepared, target_count)',
+        'let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)')
+    one(root, main,
+        'if args.len() != 5 || args[1] != "--infile"\n            || args[3] != "--targets" || args[4] != "2" {',
+        'if args.len() != 7 || args[1] != "--infile"\n            || args[3] != "--targets" || args[4] != "2" || args[5] != "--rng-mode" {')
+    one(root, main,
+        'let windows = native_two_pull_windows(&prepared)',
+        'let mode = RngMode::parse_cli(&args[6])?;\n        let windows = native_two_pull_windows(&prepared, mode)')
+    # The old v1 frostbolt prototype does not use SimRng; its explicit mode
+    # is nevertheless mandatory at the CLI. No false claim of balanced v1.
+    print("RUST_TYPED_RNG_PORT_APPLIED")
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: port_native_typed_rng.py RUST_CHECKOUT")
+    migrate(Path(sys.argv[1]).resolve())
