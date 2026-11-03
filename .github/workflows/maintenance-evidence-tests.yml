@@ -32,7 +32,11 @@ on:
       - 'src/v2/source_budgeted_gear.py'
       - 'tools/wf_gate_p3_live.py'
       - 'tools/wf_gate_p2_live.py'
-      - 'tests/test_wf_prio_native_p2_source_receipts.py'
+      - 'tests/test_selected_source_plumbing.py'
+      - 'tests/test_prio_p2_solo_threat_exclusion.py'
+      - 'tests/test_wf_prio_p2_exact_rank_fullpoint.py'
+      - 'tests/test_wf475_live_p2_gate_alignment.py'
+      - 'tests/test_wf482_p2_gcd_and_tree_rows.py'
       - 'tests/test_prio_p3_source_policy_sp.py'
       - 'src/v2/source_bounded_route_evidence.py'
       - 'tests/test_wf288_bounded_route_evidence.py'
@@ -75,7 +79,6 @@ jobs:
           tools/wf_gate_p7_3_live.py
           src/engine_client/native_talent_proposals.py
           tools/wf_gate.py
-          tools/wf_gate_p2_live.py
           tools/wf_gate_p7_4_live.py
           tools/wf_gate_p7_5_live.py
           src/v2/source_budgeted_gear.py
@@ -105,7 +108,11 @@ jobs:
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_prio_p3_source_policy_sp.py
-          tests/test_wf_prio_native_p2_source_receipts.py
+          tests/test_selected_source_plumbing.py
+          tests/test_prio_p2_solo_threat_exclusion.py
+          tests/test_wf_prio_p2_exact_rank_fullpoint.py
+          tests/test_wf475_live_p2_gate_alignment.py
+          tests/test_wf482_p2_gcd_and_tree_rows.py
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/mechanics/druid/test_druid_mechanics_layout.py
           tests/mechanics/druid/test_druid_cat_closure_v0114896.py
