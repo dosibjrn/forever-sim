@@ -215,6 +215,15 @@ fn forever_roots_native_periodic_ticks_change_with_rank() {
 """
 
 
+# The typed-RNG migration changes the prepared executor call signature. The
+# same native Roots runtime test must remain source-portable before and after
+# that independent typed-mode port.
+RUST_RUNTIME_TEST_TYPED = RUST_RUNTIME_TEST.replace(
+    "forever_engine::simulate_prepared(&prepared)",
+    "forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)",
+)
+
+
 def port_text(path: str, contents: str) -> str:
     patches = {
         "src/classes/druid/prepare/balance.rs": PREP_PATCHES,
@@ -228,9 +237,14 @@ def port_text(path: str, contents: str) -> str:
             contents = replace_once(contents, old, new, label)
         return contents
     if path == "tests/classes/druid/prepare.rs":
+        runtime_test = (
+            RUST_RUNTIME_TEST_TYPED
+            if "forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)" in contents
+            else RUST_RUNTIME_TEST
+        )
         for test_name, section in (
             ("forever_roots_preparation_uses_native_spell_data_and_improved_rank", RUST_TEST),
-            ("forever_roots_native_periodic_ticks_change_with_rank", RUST_RUNTIME_TEST),
+            ("forever_roots_native_periodic_ticks_change_with_rank", runtime_test),
         ):
             if section in contents:
                 continue
