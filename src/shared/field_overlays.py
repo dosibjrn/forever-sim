@@ -1,11 +1,11 @@
-from __future__ import annotations
-
 """Backend-neutral numeric field overlays.
 
 Callers own raw facts, target paths, and provenance. This module only applies
 explicit numeric operations to normalized fields and preserves a trace of
 how each executable value was derived.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Mapping
