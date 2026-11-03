@@ -12,7 +12,7 @@ from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_rep
 from native_joint_two_class import objective_for_profile
 from native_l60_matrix import (
     CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
-    apply_current_client_talent_override,
+    SOURCES, apply_current_client_talent_override,
     CURRENT_CLIENT_TALENT_DONOR_PRESETS, current_client_talent_donor_fixtures,
     fingerprint,
 )
@@ -38,9 +38,10 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual(28, len(rows))
         self.assertEqual([x[0]["profile_id"] for x in inventory()],
                          [x["profile_id"] for x in rows])
-        self.assertEqual(27, len(calls))
+        self.assertEqual(28, len(calls))
         self.assertEqual("DPS", rows[0]["objective"])
         self.assertEqual("HPS", rows[1]["objective"])
+        self.assertEqual("HPS", rows[2]["objective"])
         self.assertEqual("TPS", rows[3]["objective"])
 
     def test_missing_source_is_isolated_without_running_scorer(self):
@@ -57,6 +58,7 @@ class SweepContracts(unittest.TestCase):
     def test_heal_and_tank_profiles_use_their_native_objectives(self):
         cases = (
             ("druid/restoration", "HPS"),
+            ("priest/discipline", "HPS"),
             ("priest/holy", "HPS"),
             ("warrior/protection", "TPS"),
             ("mage/fire", "DPS"),
@@ -65,10 +67,7 @@ class SweepContracts(unittest.TestCase):
             with self.subTest(profile=profile):
                 self.assertEqual(objective, objective_for_profile(profile))
                 self.assertIsNone(preflight(profile, {}, {}, 5))
-        self.assertEqual(
-            "BLOCKED_SPEC_IDENTITY",
-            preflight("priest/discipline", {}, {}, 5)[0],
-        )
+        self.assertIsNone(preflight("priest/discipline", {}, {}, 5))
 
     def test_native_paid_replay_is_sufficient_for_30_second_stage(self):
         prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 100,
@@ -101,9 +100,9 @@ class SweepContracts(unittest.TestCase):
                                            "native_errors": 0, "native_unscored": 2,
                                            "replay_matches": True})
         gaps = gap_summary(rows)
-        self.assertEqual(1, sum(g["count"] for g in gaps))
+        self.assertEqual([], gaps)
         causes = {g["cause"] for g in gaps}
-        self.assertEqual({"VERIFY_DISCIPLINE_FIXTURE_IDENTITY"}, causes)
+        self.assertNotIn("VERIFY_DISCIPLINE_FIXTURE_IDENTITY", causes)
         self.assertNotIn("NATIVE_SCORE_UNAVAILABLE", causes)
         self.assertTrue(all("score" not in row for row in rows))
 
@@ -230,7 +229,7 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
             self.assertEqual(CURRENT_CLIENT_BUILD, donor["client_build"])
             self.assertEqual(CURRENT_ENGINE_PIN, donor["engine_pin"])
 
-    def test_eight_stale_smoke_rows_use_pinned_upstream_talent_sources(self):
+    def test_nine_stale_smoke_rows_use_pinned_upstream_talent_sources(self):
         expected = {
             "druid/feral_cat": "ClassDruid",
             "druid/feral_bear": "ClassDruid",
@@ -240,6 +239,7 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
             "paladin/holy": "ClassPaladin",
             "paladin/protection": "ClassPaladin",
             "paladin/retribution": "ClassPaladin",
+            "priest/discipline": "ClassPriest",
         }
         self.assertEqual(set(expected), set(CURRENT_CLIENT_TALENT_OVERRIDES))
         for profile, class_name in expected.items():
@@ -274,7 +274,7 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
                     ),
                     metadata["scope"],
                 )
-                self.assertEqual(override["upstream_pr"], metadata["source_pull_request"])
+                self.assertEqual(override.get("upstream_pr"), metadata["source_pull_request"])
                 self.assertEqual(override["source_path"], metadata["source_path"])
                 self.assertEqual(override["source_blob_sha"], metadata["source_blob_sha"])
                 self.assertEqual(override["preset_name"], metadata["preset_name"])
@@ -327,6 +327,56 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
                     self.assertIn("simulator StandardTalents test build", override["scope"])
                 else:
                     self.assertNotIn("source_type", override)
+
+
+    def test_discipline_profile_uses_upstream_disc_preset_over_healer_source(self):
+        self.assertEqual(
+            ("engine", "fixtures/healers/holy-priest.request.json"),
+            SOURCES["priest/discipline"],
+        )
+        self.assertEqual(SOURCES["priest/holy"], SOURCES["priest/discipline"])
+        self.assertEqual("HPS", objective_for_profile("priest/discipline"))
+        self.assertIsNone(preflight("priest/discipline", {}, {"raid": {}}, 5))
+
+        request = {
+            "raid": {"parties": [{"players": [{
+                "class": "ClassPriest",
+                "talentsString": "00520101133-33505003030121531",
+                "healerPriest": {"innerFire": True},
+                "equipment": {"items": [{"id": 123}]},
+                "rotation": {"priorityList": [{
+                    "action": {"castSpell": {
+                        "spellId": {"spellId": 401859},
+                        "target": {"type": "Self"},
+                    }},
+                }]},
+            }]}]},
+            "encounter": {"duration": 180},
+        }
+        effective, metadata = apply_current_client_talent_override(
+            "priest/discipline", request
+        )
+        player = effective["raid"]["parties"][0]["players"][0]
+        self.assertEqual(
+            "005025021330011531-335001030301", player["talentsString"]
+        )
+        self.assertIn("healerPriest", player)
+        self.assertNotIn("dpsPriest", player)
+        self.assertEqual(request["raid"]["parties"][0]["players"][0]["equipment"],
+                         player["equipment"])
+        self.assertEqual(request["raid"]["parties"][0]["players"][0]["rotation"],
+                         player["rotation"])
+        self.assertEqual(request["encounter"], effective["encounter"])
+        self.assertEqual("Disc", metadata["preset_name"])
+        self.assertIsNone(metadata["source_pull_request"])
+        self.assertEqual(
+            "a0ab835726319b558318cce186c88c4bd3a855dd",
+            metadata["source_commit"],
+        )
+        self.assertEqual(
+            "87fe551e2150ead167dbb5c2418f332bed02549c",
+            metadata["source_blob_sha"],
+        )
 
     def test_unlisted_profile_is_left_untouched(self):
         request = {"raid": {"parties": [{"players": [{

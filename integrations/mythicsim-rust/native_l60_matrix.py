@@ -51,8 +51,10 @@ SOURCES = {
     "rogue/assassination": ("engine", W+"assassination-rogue-2-targets.request.json"),
     "rogue/combat": ("engine", W+"combat-rogue-2-targets.request.json"),
     "rogue/subtlety": ("engine", W+"subtlety-rogue-2-targets.request.json"),
-    # Smite Priest may use Discipline points but is NOT a verified Disc profile.
-    "priest/discipline": ("engine", P+"production-smite-priest.request.json"),
+    # The upstream HealerPriest spec exposes separate Disc and Holy presets.
+    # Both rows use the pinned healer request/APL; Discipline replaces only its
+    # talentsString with the source Disc preset below, never the DPS/Smite request.
+    "priest/discipline": ("engine", "fixtures/healers/holy-priest.request.json"),
     "priest/holy": ("engine", "fixtures/healers/holy-priest.request.json"),
     "priest/shadow": ("engine", W+"shadow-priest-2-targets.request.json"),
     "warlock/affliction": ("engine", "validation/2026-10-06-mage-warlock-multi-target-references/affliction-warlock-2-targets.request.json"),
@@ -135,6 +137,16 @@ CURRENT_CLIENT_TALENT_OVERRIDES = {
         "source_path": "ui/specs/paladin/protection/presets.ts",
         "source_blob_sha": "a59c83c7581d2aafb19f3265bfd10298722782bf",
     },
+    "priest/discipline": {
+        "class_name": "ClassPriest",
+        "talents_string": "005025021330011531-335001030301",
+        "preset_name": "Disc",
+        "upstream_pr": None,
+        "source_commit": "a0ab835726319b558318cce186c88c4bd3a855dd",
+        "source_path": "ui/specs/priest/healer/presets.ts",
+        "source_blob_sha": "87fe551e2150ead167dbb5c2418f332bed02549c",
+        "scope": "TALENT_STRING_ONLY; upstream HealerPriest Disc preset applied to the pinned healer request; healerPriest oneof, gear, encounter and APL retained",
+    },
     "paladin/retribution": {
         "class_name": "ClassPaladin",
         "talents_string": "050250002-501-05233011201301351",
@@ -169,7 +181,7 @@ CURRENT_CLIENT_TALENT_DONOR_PRESETS = {
     "mage/frost": MAGE_ALTERNATE_CURRENT_CLIENT_TALENT_PRESETS,
 }
 
-HEAL = {"druid/restoration", "shaman/restoration", "priest/holy", "paladin/holy"}
+HEAL = {"druid/restoration", "shaman/restoration", "priest/discipline", "priest/holy", "paladin/holy"}
 TANK = {"druid/feral_bear", "warrior/protection", "paladin/protection"}
 
 
@@ -337,7 +349,7 @@ def apply_current_client_talent_override(profile: str, request: dict):
         "client_build": CURRENT_CLIENT_BUILD,
         "engine_pin": CURRENT_ENGINE_PIN,
         "source_repo": "wowsims/forever",
-        "source_pull_request": override["upstream_pr"],
+        "source_pull_request": override.get("upstream_pr"),
         "source_commit": source_commit,
         "source_path": source_path,
         "source_blob_sha": override["source_blob_sha"],
@@ -479,10 +491,6 @@ def create_inventory(registry_path, engine_src):
 def execute_row(row, reference, *, binary, budget, iterations, seed, outdir):
     profile = row["profile_id"]
     if reference is None:
-        return row
-    if profile == "priest/discipline":
-        row["status"] = "BLOCKED_SPEC_IDENTITY"
-        row["blocker"] = "Only Smite Priest fixture; no verified Discipline profile identity"
         return row
     if profile in HEAL or profile in TANK:
         row["status"] = "BLOCKED_OBJECTIVE"
