@@ -55,7 +55,8 @@ def _queue_world_walk(world: CombatRuntime, target_id: str, *,
 
 
 def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
-        target_count: int = 2, corrupt_ack: bool = False) -> dict:
+        target_count: int = 2, corrupt_ack: bool = False,
+        require_native_moving: bool = False) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
     if not 0 < mob_health <= 100_000:
         raise ValueError("RUST_MULTI_WORLD_MOB_HEALTH_INVALID")
@@ -100,6 +101,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
     walks = []
     events = 0
     ticks = 0
+    native_moving_ticks = 0
+    native_moving_receipts = 0
     native_report = None
     env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1", WOWSIM_RNG_MODE="stochastic")
     proc = subprocess.Popen(
@@ -137,6 +140,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
                 raise AssertionError("RUST_TWO_WORLD_CLOCK_SOURCE_OR_SEQUENCE_INVALID")
             world.advance_to(clock_ns / 1e9)
             tick = feed.next_tick()
+            # Source of truth: gsim live 2D route, not queued-step inference
+            # or a native movement guess. Rust applies its own cast legality.
+            tick["gsim_player_moving"] = bool(world._player_is_moving())
             if tick["native_clock_ns"] != clock_ns or tick["sequence"] != ticks:
                 raise AssertionError("RUST_TWO_WORLD_RANGE_FEED_MISMATCH")
             tick["iteration_index"] = iteration
@@ -154,6 +160,20 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
                     or receipt["iteration_index"] != iteration
                     or receipt["native_process_id"] != proc.pid):
                 raise AssertionError("RUST_TWO_WORLD_RECEIPT_INVALID")
+            # The selected public fork may not yet contain the reviewed native
+            # movement-ingress port. Keep the old diagnostic usable on that
+            # exact pin; never report native movement-cast legality unless the
+            # real Rust receipt independently acknowledges every moving tick.
+            observed_moving = receipt["native_range_receipt"].get("gsim_player_moving")
+            if observed_moving is None:
+                if require_native_moving:
+                    raise AssertionError("RUST_TWO_WORLD_NATIVE_MOVEMENT_PORT_NOT_SELECTED")
+            elif type(observed_moving) is not bool or observed_moving is not tick["gsim_player_moving"]:
+                raise AssertionError("RUST_TWO_WORLD_MOVING_RECEIPT_MISMATCH")
+            else:
+                native_moving_receipts += 1
+                if observed_moving:
+                    native_moving_ticks += 1
             feed.accept_range_receipt(receipt["native_range_receipt"])
             ack = applier.apply(tick, receipt)
             ack["iteration_index"] = iteration
@@ -207,10 +227,15 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
             raise AssertionError("RUST_TWO_WORLD_NATIVE_RESULT_INVALID")
         if [k["target_id"] for k in kills] != list(targets):
             raise AssertionError("RUST_TWO_WORLD_DISTINCT_TARGET_IDS_INVALID")
+        if require_native_moving and walks and native_moving_ticks == 0:
+            raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
         return {
             "source_sha256": source_hash, "native_pid": proc.pid,
             "native_windows": result["windows"], "world_kills": kills,
             "native_damage_events": events, "world_ticks": ticks,
+            "native_gsim_moving_ticks": native_moving_ticks,
+            "native_moving_receipts": native_moving_receipts,
+            "native_movement_cast_legal": native_moving_receipts == ticks,
             "continuous_native_actor": True, "actual_2d_ack": True,
             "world_targets_killed": target_count,
             "gsim_world_walk_steps": sum(
@@ -230,9 +255,10 @@ def main() -> None:
     parser.add_argument("--prepared", type=Path, required=True)
     parser.add_argument("--mob-health", type=float, default=1200.)
     parser.add_argument("--targets", type=int, default=2)
+    parser.add_argument("--require-native-moving", action="store_true")
     args = parser.parse_args()
     valid = run(args.binary, args.prepared, mob_health=args.mob_health,
-                target_count=args.targets)
+                target_count=args.targets, require_native_moving=args.require_native_moving)
     print("RUST_TWO_REAL_GSIM_WORLD_KILLS", json.dumps(valid, sort_keys=True), flush=True)
     forged = run(args.binary, args.prepared, mob_health=args.mob_health,
                  target_count=args.targets, corrupt_ack=True)
