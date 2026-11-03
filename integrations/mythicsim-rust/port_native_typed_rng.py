@@ -162,6 +162,10 @@ impl RngMode {
     one(root, main,
         'let windows = native_two_pull_windows(&prepared)',
         'let mode = RngMode::parse_cli(&args[6])?;\n        let windows = native_two_pull_windows(&prepared, mode)')
+    edit(root, "tests/classes/mage/prepared_v2.rs", [
+        ("forever_engine::simulate_prepared(&prepared)",
+         "forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)", 3),
+    ])
     # The old v1 frostbolt prototype does not use SimRng; its explicit mode
     # is nevertheless mandatory at the CLI. No false claim of balanced v1.
     print("RUST_TYPED_RNG_PORT_APPLIED")
