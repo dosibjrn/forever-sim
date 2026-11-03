@@ -91,7 +91,8 @@ def _queue_world_walk(world: CombatRuntime, target_id: str, *,
         return {"target_id": target_id, "scheduled_yards": 0.0,
                 "start_s": world.actor.current_time_s,
                 "arrival_s": world.actor.current_time_s,
-                "movement_generation": None, "scheduled_movement_steps": 0}
+                "movement_generation": None, "scheduled_movement_steps": 0,
+                "scheduled_step_positions": []}
     destination = (target[0] - approach_radius_yards * dx / distance,
                    target[1] - approach_radius_yards * dy / distance)
     start_s = float(world.actor.current_time_s)
@@ -101,17 +102,21 @@ def _queue_world_walk(world: CombatRuntime, target_id: str, *,
     # Bind the receipt to the *real* queued gsim movement generation. A single
     # unrelated/stale step must never certify a completed route as paid.
     generation = world._player_move_generation
-    queued_steps = sum(
-        event.kind == "SpatialPlayerMoveStep"
-        and event.payload.get("move_generation") == generation
-        for _, _, event in world.queue._heap)
-    if queued_steps <= 0:
+    queued_steps = sorted(
+        (event for _, _, event in world.queue._heap
+         if event.kind == "SpatialPlayerMoveStep"
+         and event.payload.get("move_generation") == generation),
+        key=lambda event: event.time_s)
+    if not queued_steps:
         raise AssertionError("RUST_WORLD_ROUTE_NO_QUEUED_GSIM_STEPS")
     return {"target_id": target_id,
             "scheduled_yards": distance - approach_radius_yards,
             "start_s": start_s, "arrival_s": arrival_s,
             "movement_generation": generation,
-            "scheduled_movement_steps": queued_steps}
+            "scheduled_movement_steps": len(queued_steps),
+            # Pin the queued *2D path*, not only its length. A repeated or
+            # reordered real step cannot stand in for an unexecuted waypoint.
+            "scheduled_step_positions": [tuple(step.payload["xy"]) for step in queued_steps]}
 
 
 def _target_health_profile(mob_health: float | None, classic_mob_level: int | None) -> tuple[float, dict]:
@@ -268,20 +273,33 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
         paid_s = max(0.0, through_s - start_s) if yards > 0 else 0.0
         generation = leg.get("movement_generation")
         scheduled_steps = leg.get("scheduled_movement_steps")
+        planned_positions = leg.get("scheduled_step_positions")
+        if (not isinstance(planned_positions, list)
+                or len(planned_positions) != scheduled_steps):
+            raise AssertionError("RUST_WORLD_ROUTE_QUEUED_PATH_MISSING")
         if (type(scheduled_steps) is not int
                 or (yards > 0 and (type(generation) is not int
                                     or scheduled_steps <= 0))
                 or (yards == 0 and (generation is not None
                                     or scheduled_steps != 0))):
             raise AssertionError("RUST_WORLD_ROUTE_STEP_SCHEDULE_INVALID")
-        steps = sum(event.kind == "SpatialPlayerMoveStep"
-                    and event.payload.get("move_generation") == generation
-                    and start_s < event.time_s <= next_s + 1e-9
-                    for event in trace) if yards > 0 else 0
+        executed_steps = [
+            event for event in trace
+            if yards > 0 and event.kind == "SpatialPlayerMoveStep"
+            and event.payload.get("move_generation") == generation
+            and start_s < event.time_s <= next_s + 1e-9
+        ]
+        steps = len(executed_steps)
         if yards == 0 and arrival_s != start_s:
             raise AssertionError("RUST_WORLD_ROUTE_ZERO_DISTANCE_CLOCK_INVALID")
         if steps > scheduled_steps:
             raise AssertionError("RUST_WORLD_ROUTE_DUPLICATE_GSIM_STEPS")
+        if (any(not isinstance(event.payload.get("xy"), (tuple, list))
+                or tuple(event.payload["xy"]) != tuple(expected)
+                for event, expected in zip(executed_steps, planned_positions))
+                or any(next_step.time_s <= step.time_s
+                       for step, next_step in zip(executed_steps, executed_steps[1:]))):
+            raise AssertionError("RUST_WORLD_ROUTE_STEPS_NOT_QUEUED_PATH")
         if yards > 0 and next_s >= arrival_s:
             # The real lethal ACK clock alone does not prove arrival. Every
             # scheduled 2D movement step of this leg must have actually run.
