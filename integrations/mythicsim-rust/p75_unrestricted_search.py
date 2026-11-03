@@ -335,12 +335,12 @@ def paid_candidate_record(spec,req,screen_dps,screen_mode,elapsed):
 def paid_rerank_record(spec,req,rerank_dps,seed,iterations):
     """Record each paid finalist re-evaluation with its exact replay inputs.
 
-    The screen ledger alone cannot establish which stochastic rerank score
+    The screen ledger alone cannot establish which balanced rerank score
     selected the winner; keep a separate immutable request and RNG record.
     """
     return {"spec":spec,"key":key(spec,req),
             "candidate_request":copy.deepcopy(req),
-            "rerank_dps":require_finite_native_dps(rerank_dps,"rerank"),"rng_mode":"stochastic",
+            "rerank_dps":require_finite_native_dps(rerank_dps,"rerank"),"rng_mode":"balanced",
             "seed":seed,"iterations":iterations}
 
 def require_paid_spec_coverage(requested_specs,paid):
@@ -434,7 +434,7 @@ def main():
     end_screen=deadline-min(35.,max(10.,a.seconds*.12))
     seed=int(reference["simOptions"]["randomSeed"])
     seen={};elites={s:[] for s in MODES};paid=[];errors=[];counts=Counter()
-    allbest=[];probes=0;legality_rejections=[];balanced_crit_fallbacks=0
+    allbest=[];probes=0;legality_rejections=[]
     while time.monotonic()<end_screen-.1:
         # Equal exploration by spec, with exploitation only after native paid evaluation.
         spec=rng.choice(a.specs)
@@ -454,18 +454,9 @@ def main():
         seen[h]=1;counts[spec]+=1
         try:
             screen_mode="balanced"
-            try:
-                dps,_,elapsed,_=run(a.binary,q,a.screen_iterations,seed,"balanced",end_screen)
-            except RuntimeError as exc:
-                if "balanced RNG: probability must be finite and in [0,1]" not in str(exc):
-                    raise
-                # A source-legal Feral crit chance can reach/exceed 1.0.
-                # The balanced surrogate panics although native stochastic
-                # Rust handles the same request. Never silently discard the
-                # candidate because the *search accelerator* is less robust.
-                screen_mode="stochastic_fallback"
-                dps,_,elapsed,_=run(a.binary,q,a.screen_iterations,seed,"stochastic",end_screen)
-                balanced_crit_fallbacks+=1
+            # Unsupported balanced probability is a failed candidate, never
+            # an excuse to compare incompatible stochastic search scores.
+            dps,_,elapsed,_=run(a.binary,q,a.screen_iterations,seed,"balanced",end_screen)
             record=paid_candidate_record(spec,q,dps,screen_mode,elapsed)
             # The screen was a real paid native evaluation. Persist it BEFORE
             # the optional stochastic probe, which can fail or time out.
@@ -473,7 +464,7 @@ def main():
             paid.append(record)
             current=elites[spec][0][0] if elites[spec] else -math.inf
             if (len(elites[spec])<8 or dps>=current-45 or rng.random()<.05) and time.monotonic()<end_screen-.3:
-                measured,_,_,_=run(a.binary,q,140,seed+554433,"stochastic",end_screen)
+                measured,_,_,_=run(a.binary,q,24,seed+554433,"balanced",end_screen)
                 record["stochastic_probe_dps"]=require_finite_native_dps(measured,"probe");probes+=1
                 elites[spec].append((measured,q))
                 elites[spec].sort(key=lambda x:-x[0]);elites[spec]=elites[spec][:20]
@@ -496,8 +487,8 @@ def main():
     for measured,spec,q in allbest[:30]:
         if time.monotonic()>=end_rerank-.15:break
         try:
-            exact,_,_,_=run(a.binary,q,1800,seed+100005,"stochastic",end_rerank)
-            rerank_record=paid_rerank_record(spec,q,exact,seed+100005,1800)
+            exact,_,_,_=run(a.binary,q,24,seed+100005,"balanced",end_rerank)
+            rerank_record=paid_rerank_record(spec,q,exact,seed+100005,24)
             reranked.append((exact,spec,q))
             rerank_paid.append(rerank_record)
         except (subprocess.TimeoutExpired,TimeoutError):break
@@ -528,15 +519,15 @@ def main():
       "paid_per_spec":paid_per_spec,
       "paid_evidence_schema":"replayable_native_candidate_requests_v1",
       "search_rng_seed":a.seed,"screen_rng_seed":seed,
-      "stochastic_probe_seed":seed+554433,"rerank_seed":seed+100005,
+      "balanced_probe_seed":seed+554433,"rerank_seed":seed+100005,
       "holdout_seed":a.seed+1300000007,"holdout_mode":"stochastic",
       "screen_iterations":a.screen_iterations,
-      "stochastic_probe_iterations":140,"rerank_iterations":1800,
+      "balanced_probe_iterations":24,"rerank_iterations":24,
       "failures":len(errors),"legal_rejections":len(legality_rejections),
-      "stochastic_probes":probes,"reranked":len(reranked),
+      "balanced_probes":probes,"reranked":len(reranked),
       "rerank_paid_records":len(rerank_paid),
-      "rerank_evidence_schema":"replayable_native_stochastic_reranks_v1",
-      "balanced_crit_stochastic_fallbacks":balanced_crit_fallbacks,
+      "rerank_evidence_schema":"replayable_native_balanced_reranks_v1",
+      
       "winner_spec":winner_spec,"winner_dps":holdout,"winner_gear":[x["id"] for x in p["equipment"]["items"]],
       "winner_talents":p["talentsString"],"winner_apl_sha256":sha(p["rotation"]),
        "winner_actual_enchants":winner_enchant_evidence["actual_enchants"],
