@@ -14,7 +14,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 
 
 def _source_spell_ids(action) -> set[int]:
