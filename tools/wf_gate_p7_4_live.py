@@ -222,9 +222,9 @@ def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: 
             path = Path(tmp) / "source-legal-gear-finalist.json"
             path.write_text(json.dumps(rerank_request))
             native = production.native_source_control(
-                binary, path, 24, rng_mode="stochastic")
+                binary, path, 24, rng_mode="balanced")
             live = production.run(binary, path, distance=distance,
-                                  iterations=24, rng_mode="stochastic")
+                                  iterations=24, rng_mode="balanced")
             mismatch = _source_native_world_parity(native, live, 24)
             if mismatch is not None:
                 raise ValueError("P74_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
@@ -673,5 +673,6 @@ def run_live(root: Path, class_key: str, level: int, *,
         "source_fixed_rotation_and_talents": True,
         "selected_validation": "3_native_world_fights_per_cold_gear_candidate",
         "search_rng_mode": "balanced",
+        "finalist_rng_mode": "balanced",
         "coverage_scope_complete": False,
     }
