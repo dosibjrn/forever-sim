@@ -1,0 +1,22 @@
+name: Work1 P7.5 paid parent focused regression
+on:
+  push:
+    branches:
+      - work/work1-p75-paid-archive-diversity-20261103-0456
+permissions:
+  contents: read
+jobs:
+  paid-parent:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install focused test dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Verify paid parent routing and exact source compilation
+        run: |
+          python -m pytest -q tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
+          python -m compileall -q tools/wf_gate_p7_5_live.py tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
