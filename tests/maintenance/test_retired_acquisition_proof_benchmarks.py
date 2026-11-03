@@ -48,7 +48,6 @@ RETIRED_TOOLS = (
     "integrations/mythicsim-rust/test_native_p2_rank_probe.py",
     "integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py",
     "tests/maintenance/test_native_p2_client_boundary.py",
-    ".github/workflows/rust-submodule-verify.yml",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -251,7 +250,6 @@ def test_retired_native_p2_rank_probe_diagnostic_has_no_code_or_actions():
         "integrations/mythicsim-rust/test_native_p2_rank_probe.py",
         "integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py",
         "tests/maintenance/test_native_p2_client_boundary.py",
-        ".github/workflows/rust-submodule-verify.yml",
     )
     for relative in retired:
         assert not (ROOT / relative).exists(), relative
@@ -267,3 +265,9 @@ def test_retired_native_p2_rank_probe_diagnostic_has_no_code_or_actions():
     rust_workflow = (ROOT / ".github/workflows/rust-upstream-fork.yml").read_text(encoding="utf-8")
     assert "native_p2_rank_probe" not in rust_workflow
     assert "test_native_p2_rank_probe" not in rust_workflow
+
+    submodule_workflow = (ROOT / ".github/workflows/rust-submodule-verify.yml").read_text(encoding="utf-8")
+    assert "native_p2_rank_probe" not in submodule_workflow
+    assert "test_native_p2_rank_probe" not in submodule_workflow
+    assert "submodules: true" in submodule_workflow
+    assert "cargo build --locked --bin forever-engine" in submodule_workflow
