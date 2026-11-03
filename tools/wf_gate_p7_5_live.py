@@ -67,14 +67,25 @@ def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pool
     raise ValueError("NO_SOURCE_LEGAL_INDEPENDENT_COLD_JOINT_ALTERNATIVE")
 
 
-def _paid_p75_parent(best, finalists, proposal_index, rng):
-    """Only this cold search's genuinely paid builds guide local edits.
+def _paid_p75_parent(best, finalists, proposal_index, rng, *,
+                     balanced_elites=()):
+    """Mutate paid builds, not one noisy three-fight leader indefinitely.
 
-    Retain independent cold 1/5 restarts and balanced-screen diversity.
+    Full P7.5 searches previously used the single highest balanced-screen
+    build for every pre-finalist non-restart mutation. In a joint gear/talent/
+    rotation search this collapses exploration onto one stochastic outlier.
+    Keep the 1/5 independent cold restarts; on every third local proposal,
+    draw from the six highest *actually executed* balanced candidates.
+    Other local proposals prefer the strongest separately paid stochastic
+    finalists once available. Never draw from saved or prior gate winners.
     """
     if best is None or proposal_index % 5 == 0:
         return None
-    if finalists and proposal_index % 3 != 0:
+    if balanced_elites and proposal_index % 3 == 0:
+        return rng.choice(sorted(
+            balanced_elites, key=lambda row: row[0], reverse=True
+        )[:6])[2]
+    if finalists:
         return rng.choice(sorted(
             finalists, key=lambda row: row[0], reverse=True
         )[:3])[3]
@@ -226,7 +237,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                         enchant_pools=enchant_pools)
                 else:
                     elite = (_paid_p75_parent(
-                        best, stochastic_finalists, proposals, rng)
+                        best, stochastic_finalists, proposals, rng,
+                        balanced_elites=balanced_elites)
                         if full_search else None)
                     if elite is not None and stochastic_finalists and proposals % 3 != 0:
                         stochastic_parent_proposals += 1
