@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.game.native_p2_rank_probe import (
+from src.engine_client.native_p2_rank_probe import (
     NativeP2ProbeError,
     NativeRngMode,
     encode_native_druid_talents,
