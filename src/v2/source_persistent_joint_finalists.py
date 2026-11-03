@@ -27,7 +27,7 @@ from src.optimization.talent_frontier import allocation_key
 from src.game.talent_frontier import source_legal_talent_neighbors
 from src.game.runtime.source_maintenance import _execute_source_maintenance_upkeep
 from src.game.runtime.simulator import EventTransitionBudgetExceeded, ComputeDeadlineExceeded
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.scenarios.spaced_pulls import SpacedPullLayout
 
 
 @dataclass(frozen=True)

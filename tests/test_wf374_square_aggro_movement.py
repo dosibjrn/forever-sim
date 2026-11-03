@@ -3,7 +3,7 @@ from math import hypot, isclose
 from dataclasses import replace
 import pytest
 
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.scenarios.spaced_pulls import SpacedPullLayout
 from src.game.model import ActorDefinition, ResourceDefinition, IncomingAttackDefinition, ActionDefinition, DamageEffect
 from src.game.runtime import ActorState, CombatRuntime, TargetState
 

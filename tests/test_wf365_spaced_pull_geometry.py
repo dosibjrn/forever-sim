@@ -1,7 +1,7 @@
 from __future__ import annotations
 from math import isclose
 import pytest
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.scenarios.spaced_pulls import SpacedPullLayout
 
 
 def test_three_mobs_square_grid_not_prepacked():
@@ -38,3 +38,8 @@ def test_invalid_spaced_pull_layout_fails_closed():
         with pytest.raises(ValueError):SpacedPullLayout(3,v)
     for p in ((float('nan'),1), (1,), (0,float('inf'))):
         with pytest.raises(ValueError):SpacedPullLayout(3).targets_in_melee(p)
+
+
+def test_legacy_shared_leveling_import_is_identity_alias():
+    from src.shared.leveling.spaced_pulls import SpacedPullLayout as LegacySpacedPullLayout
+    assert LegacySpacedPullLayout is SpacedPullLayout

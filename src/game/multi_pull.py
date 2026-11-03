@@ -36,7 +36,7 @@ def _encounter_pack(*, mob_start: int, mob_count: int, target_health: float,
                float(target_health), **target_metadata) for j in range(mob_count)]
     if mob_count == 1:
         return targets, None, incoming_attacks
-    from src.shared.leveling.spaced_pulls import SpacedPullLayout
+    from src.scenarios.spaced_pulls import SpacedPullLayout
     layout = SpacedPullLayout(mob_count, spacing_yards=20.0)
     positions = dict(zip((target.id for target in targets), layout.positions_yards))
     incoming = tuple(replace(attack, id=f'{attack.id}:pack:{mob_start + j}',

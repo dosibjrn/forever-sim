@@ -11,7 +11,7 @@ from src.v2.source_persistent_joint_finalists import prepare_candidate
 from src.game.runtime import ActorState,TargetState,CombatRuntime
 from src.game.policy import execute_priority_policy
 from src.game.multi_pull import evaluate_repeated_pulls
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.scenarios.spaced_pulls import SpacedPullLayout
 from src.shared.leveling.objective import representative_hp
 ROOT=Path(__file__).resolve().parents[1]
 ALLOCATION={'ferocity':5,'heart_of_the_wild':5,'feral_swiftness':2,
