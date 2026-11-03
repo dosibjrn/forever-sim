@@ -175,6 +175,193 @@ def native_prepared_action_inventory(prepare_receipt: dict) -> dict[str, object]
     }
 
 
+def probe_native_prepared_action_candidates(
+    *,
+    binary: str | Path,
+    request: dict,
+    inventory: dict,
+    selected_spell_id: int,
+    selected_prepare: dict,
+    deadline: float,
+    engine_root: str | Path = ENGINE_ROOT,
+) -> dict[str, object]:
+    """Ask native prepare about every addressable APL spell in this prepared build.
+
+    Candidate identity and APL applicability come only from the native
+    PreparedV2 records. Every record remains in the separate raw inventory;
+    passive/non-APL and unaddressable records are not converted into failed
+    cast candidates. This is candidate reachability, not effect coverage or P1
+    certification. Major cooldowns remain a separate, unprobed action channel.
+    """
+    unavailable = {
+        "status": "UNAVAILABLE",
+        "candidate_scope": "NATIVE_PREPARED_APL_SPELLS_ONLY",
+        "candidate_results": [],
+        "p1_certified": False,
+    }
+    if not isinstance(inventory, dict) or inventory.get("status") != "AVAILABLE":
+        return {
+            **unavailable,
+            "reason": (
+                inventory.get("reason", "NATIVE_PREPARED_ACTION_INVENTORY_UNAVAILABLE")
+                if isinstance(inventory, dict)
+                else "NATIVE_PREPARED_ACTION_INVENTORY_INVALID"
+            ),
+        }
+    if not isinstance(request, dict):
+        return {**unavailable, "reason": "NATIVE_P1_CANDIDATE_REQUEST_INVALID"}
+    if (
+        isinstance(deadline, bool)
+        or not isinstance(deadline, (int, float))
+        or not math.isfinite(deadline)
+    ):
+        return {**unavailable, "reason": "NATIVE_P1_CANDIDATE_DEADLINE_INVALID"}
+
+    binary_path = Path(binary)
+    root = Path(engine_root)
+    if not binary_path.is_file():
+        return {**unavailable, "status": "BLOCKED",
+                "reason": "SELECTED_RUST_BINARY_MISSING"}
+    try:
+        binary_path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return {**unavailable, "status": "BLOCKED",
+                "reason": "BINARY_NOT_FROM_SELECTED_ENGINE_ROOT"}
+
+    spells = inventory.get("spells")
+    if not isinstance(spells, list):
+        return {**unavailable, "reason": "NATIVE_PREPARED_SPELLBOOK_MISSING"}
+
+    candidates: list[dict[str, object]] = []
+    by_spell_id: dict[int, int] = {}
+    unaddressable: list[dict[str, object]] = []
+    non_apl_record_count = 0
+    unclassified_record_count = 0
+    duplicate_record_count = 0
+
+    for index, spell in enumerate(spells):
+        if not isinstance(spell, dict):
+            unclassified_record_count += 1
+            continue
+        flags = spell.get("flags")
+        if not isinstance(flags, list) or any(not isinstance(flag, str) for flag in flags):
+            unclassified_record_count += 1
+            continue
+        if "APL" not in flags:
+            non_apl_record_count += 1
+            continue
+        action_id = spell.get("action_id")
+        spell_id = action_id.get("spell_id") if isinstance(action_id, dict) else None
+        if type(spell_id) is not int or spell_id <= 0:
+            unaddressable.append({
+                "inventory_index": index,
+                "action_id": copy.deepcopy(action_id),
+                "class_spell": spell.get("class_spell"),
+                "reason": "NATIVE_APL_RECORD_HAS_NO_ADDRESSABLE_SPELL_ID",
+            })
+            continue
+        if spell_id in by_spell_id:
+            candidates[by_spell_id[spell_id]]["inventory_indices"].append(index)
+            duplicate_record_count += 1
+            continue
+        by_spell_id[spell_id] = len(candidates)
+        candidates.append({
+            "spell_id": spell_id,
+            "action_id": copy.deepcopy(action_id),
+            "inventory_indices": [index],
+        })
+
+    player_class = str(_player(request).get("class") or "unknown").strip()
+    if player_class.startswith("Class"):
+        player_class = player_class[5:]
+    scenario_class = player_class.lower().replace(" ", "-") or "unknown"
+    results: list[dict[str, object]] = []
+    deadline_expired = False
+
+    for candidate in candidates:
+        spell_id = candidate["spell_id"]
+        reused_selected_prepare = (
+            spell_id == selected_spell_id
+            and isinstance(selected_prepare, dict)
+            and selected_prepare.get("status") == "PREPARED"
+        )
+        if reused_selected_prepare:
+            receipt = selected_prepare
+        elif time.monotonic() >= deadline:
+            deadline_expired = True
+            receipt = {
+                "status": "BLOCKED",
+                "stage": "prepare",
+                "reason": "NATIVE_P1_CANDIDATE_PREPARE_DEADLINE_EXPIRED",
+            }
+        else:
+            try:
+                positive_request, _ = native_single_action_pair(
+                    request,
+                    spell_id,
+                    action_row=_minimal_cast_spell_row(spell_id),
+                )
+                receipt = prepare_native_request(
+                    binary=binary_path,
+                    request=positive_request,
+                    scenario=f"p1-{scenario_class}-native-candidate-{spell_id}",
+                    deadline=deadline,
+                )
+            except Exception as exc:
+                receipt = {
+                    "status": "ERROR",
+                    "stage": "request",
+                    "reason": (
+                        "NATIVE_P1_CANDIDATE_REQUEST_FAILED:"
+                        f"{type(exc).__name__}:{exc}"
+                    ),
+                }
+        native_status = receipt.get("status") if isinstance(receipt, dict) else None
+        if not isinstance(native_status, str):
+            native_status = "ERROR"
+        results.append({
+            **candidate,
+            "native_status": native_status,
+            "prepare_receipt": _compact(receipt) if isinstance(receipt, dict) else {
+                "status": "ERROR",
+                "reason": "NATIVE_P1_CANDIDATE_RECEIPT_INVALID",
+            },
+            "reused_selected_prepare": reused_selected_prepare,
+        })
+
+    status_counts: dict[str, int] = {}
+    for result in results:
+        status = result["native_status"]
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    partial_reasons = []
+    if deadline_expired:
+        partial_reasons.append("NATIVE_P1_CANDIDATE_PREPARE_DEADLINE_EXPIRED")
+    if unclassified_record_count:
+        partial_reasons.append("NATIVE_PREPARED_SPELL_FLAGS_INCOMPLETE")
+    return {
+        "status": "PARTIAL" if partial_reasons else "AVAILABLE",
+        "reason": ";".join(partial_reasons) if partial_reasons else None,
+        "candidate_scope": "NATIVE_PREPARED_APL_SPELLS_ONLY",
+        "candidate_count": len(candidates),
+        "attempted_count": len(results),
+        "status_counts": status_counts,
+        "prepared_count": status_counts.get("PREPARED", 0),
+        "invalid_count": status_counts.get("INVALID", 0),
+        "unsupported_count": status_counts.get("UNSUPPORTED", 0),
+        "error_count": status_counts.get("ERROR", 0),
+        "blocked_count": status_counts.get("BLOCKED", 0),
+        "non_apl_spell_record_count": non_apl_record_count,
+        "unclassified_spell_record_count": unclassified_record_count,
+        "duplicate_native_action_record_count": duplicate_record_count,
+        "unaddressable_apl_records": unaddressable,
+        "major_cooldown_count": len(inventory.get("major_cooldowns", [])),
+        "major_cooldowns_probed": False,
+        "candidate_results": results,
+        "p1_certified": False,
+    }
+
+
 def _compact(receipt: dict) -> dict:
     keys = (
         "status", "stage", "reason", "engine_identity", "request_sha256",
@@ -223,6 +410,7 @@ def run_native_p1_direct_effect_probe(
     world_mob_health: float | None = 1200.0,
     action_row: dict | None = None,
     requires_2d_world: bool = True,
+    candidate_prepare_budget_seconds: float = 10.0,
 ) -> dict[str, object]:
     """Run a native action/control pair, with 2D only for world-dependent effects.
 
@@ -238,6 +426,13 @@ def run_native_p1_direct_effect_probe(
         raise ValueError("NATIVE_P1_TIMEOUT_INVALID")
     if type(requires_2d_world) is not bool:
         raise ValueError("NATIVE_P1_WORLD_REQUIREMENT_INVALID")
+    if (
+        isinstance(candidate_prepare_budget_seconds, bool)
+        or not isinstance(candidate_prepare_budget_seconds, (int, float))
+        or not math.isfinite(candidate_prepare_budget_seconds)
+        or candidate_prepare_budget_seconds < 0
+    ):
+        raise ValueError("NATIVE_P1_CANDIDATE_PREPARE_BUDGET_INVALID")
     if requires_2d_world:
         if type(target_count) is not int or not 2 <= target_count <= 100:
             raise ValueError("NATIVE_P1_WORLD_TARGET_COUNT_INVALID")
@@ -356,6 +551,69 @@ def run_native_p1_direct_effect_probe(
             "p1_certified": False,
         }
 
+    action_inventory = native_prepared_action_inventory(positive_prepare)
+    control_inventory = native_prepared_action_inventory(control_prepare)
+    inventory_parity = {
+        "status": "UNAVAILABLE",
+        "positive_spell_records_equal": False,
+        "positive_major_cooldowns_equal": False,
+    }
+    if action_inventory.get("status") == "AVAILABLE" and control_inventory.get("status") == "AVAILABLE":
+        spells_equal = action_inventory.get("spells") == control_inventory.get("spells")
+        cooldowns_equal = (
+            action_inventory.get("major_cooldowns")
+            == control_inventory.get("major_cooldowns")
+        )
+        inventory_parity = {
+            "status": "MATCH" if spells_equal and cooldowns_equal else "MISMATCH",
+            "positive_spell_records_equal": spells_equal,
+            "positive_major_cooldowns_equal": cooldowns_equal,
+            "positive_spell_count": action_inventory.get("spell_count"),
+            "control_spell_count": control_inventory.get("spell_count"),
+            "positive_major_cooldown_count": action_inventory.get("major_cooldown_count"),
+            "control_major_cooldown_count": control_inventory.get("major_cooldown_count"),
+        }
+
+    if candidate_prepare_budget_seconds > 0:
+        now = time.monotonic()
+        candidate_budget = min(
+            float(candidate_prepare_budget_seconds),
+            max(0.1, float(timeout_seconds) * 0.1),
+        )
+        simulation_reserve = min(1.0, float(timeout_seconds) * 0.25)
+        candidate_deadline = min(
+            deadline - simulation_reserve,
+            now + candidate_budget,
+        )
+        try:
+            candidate_probe = probe_native_prepared_action_candidates(
+                binary=binary_path,
+                request=request,
+                inventory=action_inventory,
+                selected_spell_id=spell_id,
+                selected_prepare=positive_prepare,
+                deadline=candidate_deadline,
+                engine_root=root,
+            )
+        except Exception as exc:
+            candidate_probe = {
+                "status": "ERROR",
+                "reason": (
+                    "NATIVE_P1_CANDIDATE_ENUMERATION_FAILED:"
+                    f"{type(exc).__name__}:{exc}"
+                ),
+                "p1_certified": False,
+            }
+    else:
+        candidate_probe = {
+            "status": "DISABLED",
+            "reason": "NATIVE_P1_CANDIDATE_PREPARE_BUDGET_DISABLED",
+            "p1_certified": False,
+        }
+    if inventory_parity["status"] != "MATCH" and candidate_probe.get("status") == "AVAILABLE":
+        candidate_probe["status"] = "PARTIAL"
+        candidate_probe["reason"] = "NATIVE_PREPARED_ACTION_INVENTORY_NOT_STABLE_ACROSS_ACTION_CONTROL"
+
     try:
         positive_sim = _simulate_prepared(
             binary_path=binary_path,
@@ -443,7 +701,9 @@ def run_native_p1_direct_effect_probe(
         "control_request_sha256": _sha256_json(control_request),
         "positive_prepare": _compact(positive_prepare),
         "control_prepare": _compact(control_prepare),
-        "native_prepared_action_inventory": native_prepared_action_inventory(positive_prepare),
+        "native_prepared_action_inventory": action_inventory,
+        "native_action_inventory_parity": inventory_parity,
+        "native_action_candidate_probe": candidate_probe,
         "positive_sim": _compact(positive_sim),
         "control_sim": _compact(control_sim),
         "dps_with_action": positive_dps,
