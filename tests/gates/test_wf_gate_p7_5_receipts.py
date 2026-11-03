@@ -76,7 +76,7 @@ def test_p75_uses_pre_run_snapshot_not_its_own_in_progress_batch(tmp_path):
     # Model P7.1-P7.4 being accepted earlier in this same still-running M1
     # batch: their ledger URLs now point at the current, not-yet-completed run.
     with live_ledger.open(newline="") as file:
-        reader = csv.DictReader(file, delimiter="\\t")
+        reader = csv.DictReader(file, delimiter="\t")
         fieldnames = reader.fieldnames
         rows = list(reader)
     for row in rows:
@@ -85,7 +85,7 @@ def test_p75_uses_pre_run_snapshot_not_its_own_in_progress_batch(tmp_path):
             row["passed_at_utc"] = "2026-11-04T00:16:00Z"
             row["run_url"] = f"https://github.com/{REPO}/actions/runs/2000"
     with live_ledger.open("w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter="\\t")
+        writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter="\t")
         writer.writeheader()
         writer.writerows(rows)
 
