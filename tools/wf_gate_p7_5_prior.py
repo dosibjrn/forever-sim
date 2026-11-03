@@ -12,8 +12,6 @@ import math
 import os
 from pathlib import Path
 
-from tools.wf_gate_coverage import p7_required_dps
-
 _PRIORS = ("P7.1", "P7.2", "P7.3", "P7.4")
 _ENGINE = "pinned_mythicsim_rust_gsim_2d"
 
@@ -176,38 +174,3 @@ def strongest_accepted_prior(root: Path, class_key: str, level: int,
                 "run_urls": [x[2] for x in compatible]}
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
         return None
-
-
-
-def p75_accepted_prior_floor(
-    root: Path,
-    class_key: str,
-    level: int,
-    spec: str,
-    *,
-    engine_revision: str,
-    source_sha256: str,
-    reference_dps: float,
-) -> tuple[dict | None, float | None, float | None]:
-    """Resolve the accepted-compatible-prior floor for light and heavy runs.
-
-    Prior discovery is cheap receipt validation, not the expensive search or
-    stochastic holdout. It must therefore run for bounded probes too, so the
-    live wrapper can calculate an honest objective/PARTIAL without promoting
-    the gate to PASS.
-    """
-    prior = strongest_accepted_prior(
-        root, class_key, level, spec,
-        engine_revision=engine_revision,
-        source_sha256=source_sha256,
-        reference_dps=reference_dps,
-    )
-    prior_dps = prior["dps"] if prior is not None else None
-    required = (
-        p7_required_dps(
-            "P7.5", reference_dps,
-            strongest_accepted_compatible_prior=prior_dps,
-        )
-        if prior_dps is not None else None
-    )
-    return prior, prior_dps, required
