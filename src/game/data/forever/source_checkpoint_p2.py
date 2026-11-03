@@ -14,7 +14,6 @@ import json
 import re
 from typing import Mapping
 
-from src.game.talents import available_talent_points
 
 
 @dataclass(frozen=True)
@@ -218,6 +217,8 @@ def _witness(target,rank,defs,budget:int,points_per_row:int, *,override_rows=Non
 def check_structural_allocation(ir, selection:Mapping[str,int], checkpoint:P2Checkpoint,
                                 *, override_rows:Mapping[str,dict]|None=None,
                                 bonus_talent_points:int=0):
+    # Import the retiring Python legality model only for an actual legacy audit.
+    from src.game.talents import available_talent_points
     if str(ir.actor.metadata.get('class_key','')).lower()!=checkpoint.class_key.lower() or int(ir.actor.metadata.get('level',-1))!=checkpoint.level:
         raise ValueError('P2_CHECKPOINT_IR_MISMATCH')
     definitions={t.id:t for t in ir.talents}
@@ -247,6 +248,8 @@ def check_structural_allocation(ir, selection:Mapping[str,int], checkpoint:P2Che
 
 
 def evaluate_p2(ir,checkpoint:P2Checkpoint,*,source_observations_path:str|Path|None=None, spellbook_path:str|Path|None=None, source_delta_path:str|Path|None=None):
+    # Pure checkpoint metadata and source observations must not load GameIR.
+    from src.game.talents import available_talent_points
     if str(ir.actor.metadata.get('class_key','')).lower()!=checkpoint.class_key.lower() or int(ir.actor.metadata.get('level',-1))!=checkpoint.level:
         raise ValueError('P2_CHECKPOINT_IR_MISMATCH')
     captures=_captures(source_observations_path,checkpoint)
