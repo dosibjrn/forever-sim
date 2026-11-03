@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import p73_talent_search_v2 as p73
+from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast
 from native_joint_two_class import (
     _ensure_native_damage_action, _native_positive_source_casts,
     _write_native_failure, fingerprint, native_payload, native_score_request,
@@ -142,6 +143,33 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
             candidate, [], random.Random(4)))
 
 
+    def test_damage_witness_is_fallback_after_conditions_and_before_utility_casts(self):
+        conditional_damage = self.source(11713, conditional=True)
+        opaque = {
+            "action": {
+                "useItem": {"itemId": 12662},
+                "condition": {"auraIsActive": {"auraId": {"spellId": 12662}}},
+            }
+        }
+        utility = self.source(11689)
+        existing_damage_fallback = self.source(11713)
+        actions = [utility, conditional_damage, opaque, existing_damage_fallback]
+        snapshot = json.loads(json.dumps(actions))
+
+        repaired = _ensure_native_damage_action(
+            actions, [{"spellId": 11713}], random.Random(5)
+        )
+
+        self.assertEqual(snapshot, actions)
+        self.assertEqual(4, len(repaired))
+        self.assertEqual(11713, repaired[0]["action"]["castSpell"]["spellId"]["spellId"])
+        self.assertIn("condition", repaired[0]["action"])
+        self.assertIn("useItem", repaired[1]["action"])
+        self.assertEqual(11713, repaired[2]["action"]["castSpell"]["spellId"]["spellId"])
+        self.assertNotIn("condition", repaired[2]["action"])
+        self.assertEqual(11689, repaired[3]["action"]["castSpell"]["spellId"]["spellId"])
+
+
 class NativeExecutionErrorReporting(unittest.TestCase):
     def test_missing_dps_average_preserves_raw_native_response(self):
         source = request()
@@ -204,6 +232,107 @@ class NativeExecutionErrorReporting(unittest.TestCase):
         self.assertIn("native stderr detail", message)
         self.assertIs(run.call_args.kwargs["stdout"], subprocess.PIPE)
         self.assertIs(run.call_args.kwargs["stderr"], subprocess.PIPE)
+
+
+class APLPredicateCompatibilityContracts(unittest.TestCase):
+    @staticmethod
+    def cast(spell_id, condition):
+        return {
+            "action": {
+                "castSpell": {"spellId": {"spellId": spell_id}},
+                "condition": condition,
+            }
+        }
+
+    @staticmethod
+    def aura_condition(spell_id):
+        return {"auraIsActive": {"auraId": {"spellId": spell_id}}}
+
+    def test_only_compatible_source_cast_predicates_enter_the_shared_pool(self):
+        own = self.aura_condition(11689)
+        cross = {
+            "and": {"vals": [
+                self.aura_condition(1311680),
+                {"dotIsActive": {"spellId": {"spellId": 11689}}},
+            ]}
+        }
+        unknown = {"dotIsActive": {"spellId": {"spellId": 99999}}}
+        item_condition = self.aura_condition(12662)
+        opaque_condition = {"dotIsActive": {"spellId": {"spellId": 12662}}}
+        source_actions = [
+            self.cast(11689, own),
+            self.cast(1311680, cross),
+            self.cast(25311, unknown),
+            {
+                "action": {
+                    "useItem": {"itemId": 12662},
+                    "condition": item_condition,
+                }
+            },
+            {
+                "action": {
+                    "autocastOtherCooldowns": {},
+                    "condition": opaque_condition,
+                }
+            },
+        ]
+
+        spells, same_spell, allowed_casts, compatible, source_aura_keys = _corpus(source_actions)
+        spell_11689 = json.dumps({"spellId": 11689}, sort_keys=True, separators=(",", ":"))
+        spell_1311680 = json.dumps({"spellId": 1311680}, sort_keys=True, separators=(",", ":"))
+        spell_25311 = json.dumps({"spellId": 25311}, sort_keys=True, separators=(",", ":"))
+
+        self.assertEqual(
+            {spell_11689, spell_1311680, spell_25311},
+            {json.dumps(x, sort_keys=True, separators=(",", ":")) for x in spells},
+        )
+        self.assertIn(spell_11689, allowed_casts)
+        self.assertIn(spell_1311680, allowed_casts)
+        self.assertIn(spell_25311, allowed_casts)
+        self.assertEqual((own,), same_spell[spell_11689])
+        self.assertEqual((cross,), same_spell[spell_1311680])
+        self.assertEqual((), same_spell[spell_25311])
+        self.assertEqual((own, cross), compatible)
+        self.assertNotIn(item_condition, compatible)
+        self.assertNotIn(opaque_condition, compatible)
+        self.assertNotIn(unknown, compatible)
+
+        source_spell_keys = {spell_11689, spell_1311680, spell_25311}
+        self.assertEqual({spell_11689, spell_1311680}, set(source_aura_keys))
+        for predicate in compatible:
+            spell_refs, aura_refs, valid = _condition_spell_identity_keys(predicate)
+            self.assertTrue(valid)
+            self.assertTrue(set(spell_refs) <= source_spell_keys)
+            self.assertTrue(set(aura_refs) <= source_aura_keys)
+
+    def test_same_spell_is_preferred_but_compatible_cross_spell_predicates_remain_eligible(self):
+        own = self.aura_condition(11689)
+        cross = self.aura_condition(1311680)
+        source_actions = [
+            self.cast(11689, own),
+            self.cast(1311680, cross),
+        ]
+        _spells, same_spell, _allowed, compatible, _source_aura_keys = _corpus(source_actions)
+
+        same_count = 0
+        cross_count = 0
+        for seed in range(512):
+            generated = _new_cast(
+                [{"spellId": 11689}],
+                same_spell,
+                compatible,
+                random.Random(seed),
+            )
+            condition = generated["action"].get("condition")
+            if condition == own:
+                same_count += 1
+            elif condition == cross:
+                cross_count += 1
+            elif condition is not None:
+                self.fail(f"Generated an unobserved predicate: {condition}")
+
+        self.assertGreater(cross_count, 0, "Compatible cross-spell predicates must remain eligible")
+        self.assertGreater(same_count, cross_count, "Same-spell predicates must remain preferred")
 
 
 if __name__ == "__main__":
