@@ -198,6 +198,16 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): apply real gsim movement to native cast legality"
 fi
 
+# The canonical RNG contract is typed and required at the native boundary.
+# Never publish an environment-selected stochastic optimizer fallback.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_typed_rng.py" "$PWD"
+git add src/core/rng.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs \
+  src/lib.rs src/main.rs src/classes/*/agent.rs src/classes/*/prepared.rs \
+  tests/classes/mage/prepared_v2.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): require typed RNG mode throughout native combat"
+fi
+
 # Existing native retarget regressions and new live terminal predicate must
 # pass before publishing this selected Rust integration.
 cargo test --locked --lib persistent_next_target
