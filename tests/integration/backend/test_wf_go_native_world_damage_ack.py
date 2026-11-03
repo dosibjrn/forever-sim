@@ -84,6 +84,8 @@ def test_simultaneous_lethal_native_hits_remain_atomic_on_gsim_target():
     rt, tick, reply = fixture()
     target = rt.targets["m1"]
     target.health = target.max_health = 10.0
+    tick["world_sha256"] = state_hash(snapshot_gsim_world(rt))
+    reply["observed_input_world_sha256"] = tick["world_sha256"]
     first = reply["native_damage_events"][0]
     reply["native_damage_events"] = [
         first, {**first, "event_id": "native-effect-2"},
