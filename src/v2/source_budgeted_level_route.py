@@ -145,8 +145,8 @@ def search_source_bounded_level_route(*, class_key: str, start_level: int = 10,
                 state = LevelState(class_key=class_key, level=level,
                                    race_key=ir.actor.metadata.get('race_key'),
                                    talents=talents, action_ids=action_ids)
-                # Do not re-audit spell acquisition after the L2 scorer.
-                # This legacy scenario check is not native legality evidence.
+                # Retain only the bounded legacy scenario check here; it is
+                # not native game-legality evidence.
                 validate_level_state(state)
                 transition = (validate_level_transition(parent.state, state)
                               if parent is not None else None)
