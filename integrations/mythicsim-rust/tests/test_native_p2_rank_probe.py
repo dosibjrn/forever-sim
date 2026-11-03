@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.game.native_p2_rank_probe import (  # noqa: E402
+    NativeP2ProbeError,
     parse_native_druid_layout,
     run_native_prepare_pair,
 )
@@ -77,6 +78,33 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
             before_prepared["reference"]["engine_revision"],
             after_prepared["reference"]["engine_revision"],
         )
+
+
+    def test_rank_pair_rejects_changes_outside_the_target_rank_before_execution(self):
+        before = {
+            "ferocity": 5,
+            "feral_swiftness": 2,
+            "feral_instinct": 3,
+            "thick_hide": 5,
+        }
+        # The candidate changes the target rank and an unrelated talent rank.
+        after = {
+            **before,
+            "feral_swiftness": 3,
+            "predatory_strikes": 1,
+        }
+        with self.assertRaisesRegex(
+            NativeP2ProbeError, "NATIVE_P2_PAIR_CHANGES_MORE_THAN_TARGET"
+        ):
+            run_native_prepare_pair(
+                binary=Path("/not-built/forever-engine"),
+                engine_root=ENGINE_ROOT,
+                scenario="cat",
+                before_selection=before,
+                after_selection=after,
+                target_talent_id="predatory_strikes",
+                target_rank=1,
+            )
 
 
 if __name__ == "__main__":
