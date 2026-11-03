@@ -1,4 +1,5 @@
-"""P7.5 paid stochastic finalist selection; injected interfaces, not gate evidence."""
+"""P7.5 paid balanced finalist selection; injected interfaces, not gate evidence."""
+import ast
 import copy
 import hashlib
 import json
@@ -744,7 +745,8 @@ def test_p75_native_control_nonzero_exit_preserves_actionable_binary_diagnostic(
 
     def rejected_source(command, **kwargs):
         assert command[1] == "sim"
-        assert kwargs["env"]["WOWSIM_RNG_MODE"] == "balanced"
+        assert command[command.index("--rng-mode") + 1] == "balanced"
+        assert "WOWSIM_RNG_MODE" not in kwargs["env"]
         return subprocess.CompletedProcess(
             command, -9, stdout="native candidate crashed at source prepare", stderr="")
 
@@ -793,3 +795,98 @@ def test_p75_cli_exposes_balanced_paid_confirmation_receipt(monkeypatch, capsys)
     assert all(len(e) <= 180 for e in record["balanced_finalist_failures"])
     assert record["frozen_stochastic_iterations"] == 1000
     assert record["frozen_stochastic_world_dps"] == 698.8
+
+
+def _run_sibling_gate_policy_regression(filename, test_name, monkeypatch, tmp_path):
+    """Run the P7.3/P7.4 optimizer-policy fixture in this existing CI suite."""
+    from importlib.util import module_from_spec, spec_from_file_location
+    from pathlib import Path
+
+    path = Path(__file__).with_name(filename)
+    spec = spec_from_file_location("_work1_" + filename.removesuffix(".py"), path)
+    assert spec is not None and spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    getattr(module, test_name)(monkeypatch, tmp_path)
+
+
+def test_p73_optimizer_search_is_balanced_before_frozen_stochastic_holdout(
+        monkeypatch, tmp_path):
+    _run_sibling_gate_policy_regression(
+        "test_wf_gate_p7_3_live.py",
+        "test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout",
+        monkeypatch, tmp_path)
+
+
+def test_p74_optimizer_search_is_balanced_before_frozen_stochastic_holdout(
+        monkeypatch, tmp_path):
+    _run_sibling_gate_policy_regression(
+        "test_wf_gate_p7_4_live.py",
+        "test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout",
+        monkeypatch, tmp_path)
+
+
+
+def test_p75_unrestricted_search_uses_balanced_until_frozen_holdout():
+    source_path = Path(__file__).resolve().parents[2] / "integrations/mythicsim-rust/p75_unrestricted_search.py"
+    source = source_path.read_text()
+    tree = ast.parse(source)
+    expected = {
+        "a.screen_iterations": "balanced",
+        "140": "balanced",
+        "1800": "balanced",
+        "a.holdout_iterations": "stochastic",
+    }
+    observed = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+            continue
+        if node.func.id != "run" or len(node.args) < 5:
+            continue
+        if ast.get_source_segment(source, node.args[0]) != "a.binary":
+            continue
+        iterations = ast.get_source_segment(source, node.args[2])
+        observed[iterations] = ast.literal_eval(node.args[4])
+    assert observed == expected
+    assert "stochastic_fallback" not in source
+    assert '"balanced_crit_rejections":balanced_crit_rejections' in source
+    assert "WOWSIM_RNG_MODE" not in source
+    assert '"rng_mode":"balanced"' in source
+    assert '"holdout_mode":"stochastic"' in source
+
+
+def test_p73_p74_stochastic_rng_calls_are_confined_to_frozen_holdout():
+    """Static guard: optimizer calls are balanced; stochastic calls sit under complete_search."""
+    import ast
+    from pathlib import Path
+
+    for filename in ("wf_gate_p7_3_live.py", "wf_gate_p7_4_live.py"):
+        source = Path(__file__).parents[2] / "tools" / filename
+        module = ast.parse(source.read_text())
+        run_live = next(
+            node for node in module.body
+            if isinstance(node, ast.FunctionDef) and node.name == "run_live"
+        )
+        modes = []
+        def visit(node, parents=()):
+            if isinstance(node, ast.Call):
+                mode = next((kw.value.value for kw in node.keywords
+                             if kw.arg == "rng_mode"
+                             and isinstance(kw.value, ast.Constant)), None)
+                if mode is not None:
+                    modes.append(mode)
+                    if mode == "stochastic":
+                        assert any(
+                            isinstance(parent, ast.If)
+                            and isinstance(parent.test, ast.Name)
+                            and parent.test.id == "complete_search"
+                            for parent in parents
+                        )
+                    elif mode == "balanced":
+                        assert any(isinstance(parent, ast.While) for parent in parents)
+            for child in ast.iter_child_nodes(node):
+                visit(child, parents + (node,))
+        visit(run_live)
+        assert modes.count("balanced") == 2
+        assert modes.count("stochastic") == 2
+        assert len(modes) == 4
