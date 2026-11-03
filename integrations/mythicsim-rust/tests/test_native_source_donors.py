@@ -150,7 +150,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
         }
 
         adapter, scope = source_bounded_adapter(
-            "druid", reference, [reference], items, donor_fixtures=donors,
+            "druid", reference, [reference], donor_fixtures=donors,
             native_damage_witnesses=[{"spellId": 11281}],
         )
 
@@ -221,7 +221,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
         }
 
         adapter, scope = source_bounded_adapter(
-            "druid", reference, [reference], items, donor_fixtures=donors,
+            "druid", reference, [reference], donor_fixtures=donors,
             native_damage_witnesses=[{"spellId": 11281}],
         )
 
