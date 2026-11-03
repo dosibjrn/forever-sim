@@ -230,12 +230,15 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
             self.assertEqual(CURRENT_CLIENT_BUILD, donor["client_build"])
             self.assertEqual(CURRENT_ENGINE_PIN, donor["engine_pin"])
 
-    def test_five_stale_smoke_rows_use_pinned_upstream_presets(self):
+    def test_eight_stale_smoke_rows_use_pinned_upstream_talent_sources(self):
         expected = {
             "druid/feral_cat": "ClassDruid",
+            "druid/feral_bear": "ClassDruid",
             "mage/arcane": "ClassMage",
             "mage/fire": "ClassMage",
             "mage/frost": "ClassMage",
+            "paladin/holy": "ClassPaladin",
+            "paladin/protection": "ClassPaladin",
             "paladin/retribution": "ClassPaladin",
         }
         self.assertEqual(set(expected), set(CURRENT_CLIENT_TALENT_OVERRIDES))
@@ -260,6 +263,21 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
                                  player["equipment"])
                 self.assertEqual(original["encounter"], effective["encounter"])
                 self.assertEqual("APPLIED", metadata["status"])
+                self.assertEqual(
+                    override.get("source_type", "PINNED_UPSTREAM_CURRENT_CLIENT_TALENT_PRESET"),
+                    metadata["source_type"],
+                )
+                self.assertEqual(
+                    override.get(
+                        "scope",
+                        "TALENT_PRESET_ONLY; original smoke-fixture gear, encounter and APL retained",
+                    ),
+                    metadata["scope"],
+                )
+                self.assertEqual(override["upstream_pr"], metadata["source_pull_request"])
+                self.assertEqual(override["source_path"], metadata["source_path"])
+                self.assertEqual(override["source_blob_sha"], metadata["source_blob_sha"])
+                self.assertEqual(override["preset_name"], metadata["preset_name"])
                 self.assertEqual(CURRENT_CLIENT_BUILD, metadata["client_build"])
                 self.assertEqual(CURRENT_ENGINE_PIN, metadata["engine_pin"])
                 self.assertEqual("wowsims/forever", metadata["source_repo"])
@@ -268,6 +286,47 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
                 self.assertTrue(metadata["source_url"].startswith(
                     "https://github.com/wowsims/forever/blob/"
                 ))
+
+
+    def test_three_invalid_baselines_use_exact_pinned_current_client_talent_sources(self):
+        expected = {
+            "druid/feral_bear": {
+                "talents_string": "050022-2322030212310212501-055",
+                "source_commit": "c96ec787be9529a934d19a1d9b8156524a176b5e",
+                "source_path": "ui/specs/druid/feralbear/presets.ts",
+                "source_blob_sha": "51e09cf57affbdced3a23cce0629ebaab836f8c6",
+                "preset_name": "Bear",
+            },
+            "paladin/holy": {
+                "talents_string": "55320015022101251-503020005001",
+                "source_commit": "d608072a6db0197d58a073df7e3153c90f20f46c",
+                "source_path": "sim/paladin/holy/holy_test.go",
+                "source_blob_sha": "bff116c8fe0727c96b51d51c97d637c4f189ba5c",
+                "preset_name": "StandardTalents (sim test)",
+            },
+            "paladin/protection": {
+                "talents_string": "050050002-05302102213301531-502",
+                "source_commit": "d608072a6db0197d58a073df7e3153c90f20f46c",
+                "source_path": "ui/specs/paladin/protection/presets.ts",
+                "source_blob_sha": "a59c83c7581d2aafb19f3265bfd10298722782bf",
+                "preset_name": "Default",
+            },
+        }
+        for profile, values in expected.items():
+            with self.subTest(profile=profile):
+                override = CURRENT_CLIENT_TALENT_OVERRIDES[profile]
+                for key, value in values.items():
+                    self.assertEqual(value, override[key])
+                self.assertEqual("ClassDruid" if profile.startswith("druid/") else "ClassPaladin",
+                                 override["class_name"])
+                if profile == "paladin/holy":
+                    self.assertEqual(
+                        "PINNED_UPSTREAM_NATIVE_TEST_TALENT_FIXTURE",
+                        override["source_type"],
+                    )
+                    self.assertIn("simulator StandardTalents test build", override["scope"])
+                else:
+                    self.assertNotIn("source_type", override)
 
     def test_unlisted_profile_is_left_untouched(self):
         request = {"raid": {"parties": [{"players": [{

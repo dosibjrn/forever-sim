@@ -64,9 +64,9 @@ SOURCES = {
 }
 
 # The 2026-10-06 engine smoke fixtures predate the current 1.60.1.70707
-# talent-tree reshuffle. Keep their gear/encounter/APL, but replace only the
-# talent string with an exact current upstream preset. These remain composed
-# smoke fixtures, never saved ranking references.
+# talent-tree reshuffle. Keep their gear/encounter/APL, replacing only the
+# talent string with a pinned upstream UI preset or native test build. These
+# remain composed smoke fixtures, never saved ranking references.
 CURRENT_CLIENT_BUILD = "1.60.1.70707"
 CURRENT_ENGINE_PIN = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
 CURRENT_CLIENT_TALENT_OVERRIDES = {
@@ -105,6 +105,35 @@ CURRENT_CLIENT_TALENT_OVERRIDES = {
         "source_commit": "43df34d7fb8145fab89199654cc49aba72f04f02",
         "source_path": "ui/specs/mage/dps/presets.ts",
         "source_blob_sha": "ef20bfef2ab4dff32b6e387c946c016f5878f183",
+    },
+    "druid/feral_bear": {
+        "class_name": "ClassDruid",
+        "talents_string": "050022-2322030212310212501-055",
+        "preset_name": "Bear",
+        "upstream_pr": 774,
+        "source_commit": "c96ec787be9529a934d19a1d9b8156524a176b5e",
+        "source_path": "ui/specs/druid/feralbear/presets.ts",
+        "source_blob_sha": "51e09cf57affbdced3a23cce0629ebaab836f8c6",
+    },
+    "paladin/holy": {
+        "class_name": "ClassPaladin",
+        "talents_string": "55320015022101251-503020005001",
+        "preset_name": "StandardTalents (sim test)",
+        "upstream_pr": 772,
+        "source_commit": "d608072a6db0197d58a073df7e3153c90f20f46c",
+        "source_path": "sim/paladin/holy/holy_test.go",
+        "source_blob_sha": "bff116c8fe0727c96b51d51c97d637c4f189ba5c",
+        "source_type": "PINNED_UPSTREAM_NATIVE_TEST_TALENT_FIXTURE",
+        "scope": "TALENT_STRING_ONLY; upstream simulator StandardTalents test build; original smoke-fixture gear, encounter and APL retained",
+    },
+    "paladin/protection": {
+        "class_name": "ClassPaladin",
+        "talents_string": "050050002-05302102213301531-502",
+        "preset_name": "Default",
+        "upstream_pr": 772,
+        "source_commit": "d608072a6db0197d58a073df7e3153c90f20f46c",
+        "source_path": "ui/specs/paladin/protection/presets.ts",
+        "source_blob_sha": "a59c83c7581d2aafb19f3265bfd10298722782bf",
     },
     "paladin/retribution": {
         "class_name": "ClassPaladin",
@@ -298,8 +327,13 @@ def apply_current_client_talent_override(profile: str, request: dict):
     source_commit = override["source_commit"]
     metadata = {
         "status": "APPLIED",
-        "source_type": "PINNED_UPSTREAM_CURRENT_CLIENT_TALENT_PRESET",
-        "scope": "TALENT_PRESET_ONLY; original smoke-fixture gear, encounter and APL retained",
+        "source_type": override.get(
+            "source_type", "PINNED_UPSTREAM_CURRENT_CLIENT_TALENT_PRESET"
+        ),
+        "scope": override.get(
+            "scope",
+            "TALENT_PRESET_ONLY; original smoke-fixture gear, encounter and APL retained",
+        ),
         "client_build": CURRENT_CLIENT_BUILD,
         "engine_pin": CURRENT_ENGINE_PIN,
         "source_repo": "wowsims/forever",
