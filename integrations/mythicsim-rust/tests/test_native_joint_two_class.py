@@ -548,9 +548,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
             def mutate_from(self, request_value, rng):
                 return copy.deepcopy(request_value), {}
 
-        with patch.object(joint, "NativeGearAdapter", FakeGear), patch.object(
-            joint, "legal_apl_only_request", return_value=True
-        ):
+        with patch.object(joint, "NativeGearAdapter", FakeGear):
             adapter, scope = joint.source_bounded_adapter(
                 "warlock",
                 baseline,
