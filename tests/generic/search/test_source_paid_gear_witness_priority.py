@@ -5,6 +5,7 @@ catalogue and valid full-equipment substitutions. It does not claim a P4 gate.
 """
 from collections import Counter
 from itertools import islice
+from pathlib import Path
 
 import pytest
 
@@ -769,3 +770,23 @@ def test_work2_paid_parent_lineage_rejects_invalid_or_cyclic_ancestry():
         _paid_refinement_lineages(paid,[{"paid_candidate_index":1}])
     with pytest.raises(ValueError,match="PAID_REFINEMENT_PARENT_CHAIN_INVALID"):
         _paid_refinement_lineages(paid,[{"paid_candidate_index":7}])
+
+
+
+def test_p3_druid_l40_unrestricted_spirit_witness_runs_through_live_cli():
+    # A prior production run exhausted its 44-call base budget after proving
+    # Intellect, MP5 and Spell Power; Spirit was never attempted. The separate
+    # bounded witness budget must now reach and prove Spirit through the same
+    # public production CLI, with no M1 write.
+    from tools.wf_gate import _run_live_gate, ROOT
+
+    report = _run_live_gate(ROOT, "druid", 40, "unrestricted", "P3", "")
+    assert report["status"] == "PASS", report
+    assert report["pass_count"] == report["reachability_count"] == 149, report
+    assert report["real_source_search_attempts"] <= 44, report
+    assert report["behavior_probes_executed"] <= 60, report
+    assert report["real_measured_stat_weights"]["spirit"] > 0, report
+    assert any(w["stat"] == "spirit"
+               and w["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
+               and w["weight_s_saved_per_mob_per_unit"] > 0
+               for w in report["source_policy_stat_witnesses"]), report
