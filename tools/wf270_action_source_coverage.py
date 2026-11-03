@@ -1,7 +1,7 @@
-"""Emit reproducible, source-ranked 9-class IR-coverage evidence.
+"""Emit reproducible source-index-to-IR metadata coverage evidence.
 
-Index candidates are not automatically trained/legal actions.  All missing
-rank/effect rows remain visible with their SQL source IDs and provenance.
+Exact source IDs and index hints are diagnostics only; MythicSim owns spell
+availability and legality. Missing rank/effect rows remain visible.
 """
 from __future__ import annotations
 import json
@@ -28,11 +28,10 @@ def main():
                 'ir_action_blockers':audit['ir_action_blocker_count'],
                 'unrepresented_source_ranks':audit['source_indexed_unrepresented_rank_count'],
                 'source_rank_blockers':audit['source_indexed_rank_blockers'],
-                'source_acquisition_proven':False,
                 'complete_gear_talent_rotation_optimization':False})
     druid27=build_game_ir_slice(class_key='druid',level=27)
     row=next(r for f in druid27.source_facts if f.get('fact_kind')=='canonical_indexed_ability_coverage' for r in f['records'] if r['spell_id']==1822)
-    report={'scope':'index-vs-IR, not final trained or legal skill completeness',
+    report={'scope':'source-index-vs-IR metadata; native engine owns skill availability and legality',
             'classes':entries,'druid_27_rake':row,
             'source_database':'data/forever/catalogue/forever_abilities.sqlite',
             'ruleset':'WoW Forever; source listview 2026-10-08, independently qualified',

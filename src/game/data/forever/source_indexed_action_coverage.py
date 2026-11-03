@@ -1,9 +1,8 @@
-"""Fail-closed inventory of Forever indexed abilities versus executable Game IR.
+"""Metadata-only inventory of source-indexed ranks versus GameIR action IDs.
 
-An index entry is NOT proof a character has learned the button: rune, quest,
-trainer, specialization and item gates need independent sourcing.  Every row is
-retained, including downranks and unlevelled entries. Never infer executable
-coverage from a matching name or a partial tooltip alone.
+MythicSim owns spell/rank availability and game legality. This report preserves
+source-index and exact-ID mapping for diagnostics; it must not read acquisition
+ledgers, infer character spellbooks, or veto native candidates.
 """
 from __future__ import annotations
 
@@ -42,10 +41,11 @@ def _source_spell_ids(action) -> set[int]:
 
 def indexed_ability_coverage(ir, *, class_key: str, level: int,
                              db_path: str | Path | None = None) -> dict:
-    """Map EVERY source-indexed ability rank to an exact action or typed blocker.
+    """Map every indexed ability rank to an exact source-ID action match.
 
-    Includes entries whose acquisition status or training level is uncertain;
-    those are never called legal or quietly dropped. No class/spell whitelist.
+    This is a metadata inventory, not a spellbook or legality decision. Unknown
+    level hints and unmatched IDs remain visible without asserting native
+    availability. No class/spell whitelist.
     """
     path = Path(db_path or DEFAULT_DB)
     if not path.is_file():
@@ -59,7 +59,7 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
         if has_candidates:
             candidates = {(str(r['class_key']),int(r['spell_id'])): dict(r)
                 for r in conn.execute("SELECT class_key,spell_id,semantic_shape,source_payload_sha256,execution_status,"
-                    "missing_fields_json,acquisition_status "
+                    "missing_fields_json "
                     "FROM ability_index_effect_candidates WHERE class_key=?",
                     (class_key.strip().lower(),))}
         from .source_verified_detail_headers import verified_headers_for_class
@@ -83,18 +83,6 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
                     spell_id=int(q['spell_id']),stage=q['stage'])
                 quarantined.setdefault(int(q['spell_id']),[]).append(entry)
         # Partial atoms are NEVER proof of action legality or completeness.
-        acquisition_rows = {}
-        if conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ability_acquisition_evidence'").fetchone():
-            acquisition_rows = {int(r['spell_id']): dict(r) for r in conn.execute(
-                "SELECT e.spell_id,e.index_batch_id,e.source_url,e.source_payload_sha256,"
-                "e.required_level_hint,e.evidence_status,e.methods_observed_json,"
-                "e.detail_html_sha256,s.html_sha256 AS live_detail_sha,"
-                "d.details_verified AS live_detail_verified,b.status AS live_batch_status "
-                "FROM ability_acquisition_evidence e "
-                "LEFT JOIN spell_detail_snapshots s ON s.batch_id=e.index_batch_id AND s.spell_id=e.spell_id "
-                "LEFT JOIN spell_details d ON d.batch_id=e.index_batch_id AND d.spell_id=e.spell_id "
-                "LEFT JOIN capture_batches b ON b.batch_id=e.index_batch_id "
-                "WHERE e.class_key=?", (class_key.strip().lower(),))}
         rows = conn.execute("SELECT i.class_key,i.spell_id,i.name,i.level_hint,i.rank_hint,"
               "i.source_url,i.batch_id,i.raw_listview_json,CASE WHEN s.spell_id IS NULL THEN 0 ELSE 1 END AS verified_semantic_row "
               "FROM spell_index i LEFT JOIN ability_semantic_source_facts s "
@@ -111,7 +99,6 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
         spell_id = int(r['spell_id'])
         level_hint = r['level_hint']
         candidate = candidates.get((str(r['class_key']),spell_id))
-        acquisition = acquisition_rows.get(spell_id)
         header = header_rows.get(spell_id)
         atom_evidence=atom_evidence_by_id.get(spell_id)
         stat_aura=stat_aura_evidence.get(spell_id)
@@ -158,23 +145,6 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
             record['verified_detail_cost'] = ({'resource':header['cost_resource'],
                 'amount':header['cost_amount']} if header['cost_resource'] is not None else None)
             record['verified_detail_sha256'] = header['detail_html_sha256']
-        if acquisition:
-            if (acquisition['source_payload_sha256'] != hashlib.sha256(r['raw_listview_json'].encode()).hexdigest()
-                    or acquisition['index_batch_id'] != r['batch_id']
-                    or acquisition['source_url'] != r['source_url']
-                    or acquisition['required_level_hint'] != level_hint
-                    or (acquisition['detail_html_sha256'] is not None and (
-                        acquisition['detail_html_sha256'] != acquisition['live_detail_sha']
-                        or acquisition['live_detail_verified'] != 1
-                        or acquisition['live_batch_status'] != 'complete'))):
-                record['acquisition_evidence_status'] = 'STALE_SOURCE_REINGEST_REQUIRED'
-            else:
-                record['acquisition_evidence_status'] = acquisition['evidence_status']
-                record['acquisition_methods_observed'] = json.loads(acquisition['methods_observed_json'])
-            record['world_acquisition_verified'] = False
-        else:
-            record['acquisition_evidence_status'] = 'MISSING_ACQUISITION_EVIDENCE'
-            record['world_acquisition_verified'] = False
         if candidate and candidate['source_payload_sha256'] != hashlib.sha256(
                 r['raw_listview_json'].encode()).hexdigest():
             record['typed_index_status'] = 'STALE_SOURCE_CAPTURE_REINGEST_REQUIRED'
@@ -182,17 +152,16 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
         if candidate:
             record['typed_index_shape'] = candidate['semantic_shape']
             record['typed_index_missing_fields'] = json.loads(candidate['missing_fields_json'])
-            record['typed_index_acquisition'] = candidate['acquisition_status']
             record['typed_index_execution_status'] = candidate['execution_status']
         if level_hint is None or int(level_hint) <= 0:
-            record['status'] = 'BLOCKED_UNKNOWN_ACQUISITION_LEVEL'
+            record['status'] = 'UNKNOWN_INDEX_LEVEL_HINT'
         elif int(level_hint) > int(level):
-            outside_window.append({**record, 'status':'INDEXED_ABOVE_SCENARIO_LEVEL'})
+            outside_window.append({**record, 'status':'INDEXED_LEVEL_HINT_ABOVE_SCENARIO'})
             continue
         elif quarantine:
             record['status']='BLOCKED_SOURCE_DETAIL_QUARANTINED'
         elif record['matched_action_ids']:
-            record['status'] = 'SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED'
+            record['status'] = 'SOURCE_ID_MATCHES_IR_ACTION'
         elif r['verified_semantic_row']:
             record['status'] = 'BLOCKED_VERIFIED_SEMANTIC_NOT_IN_IR'
         else:
@@ -206,7 +175,7 @@ def indexed_ability_coverage(ir, *, class_key: str, level: int,
     stat_aura_rank_count=sum('source_stat_aura_candidate' in r for r in indexed)
     atom_count=sum(r.get('source_effect_atom_count',0) for r in indexed)
     return {'class_key':class_key.lower(), 'scenario_level':int(level),
-            'status':'INCOMPLETE' if blocked else 'INDEX_RANKS_MATCH_IR_ACQUISITION_UNVERIFIED',
+            'status':'INCOMPLETE' if blocked else 'INDEX_RANKS_MATCH_IR',
             'not_proof_of_legal_action_coverage':True,
             'indexed_ability_rank_count':len(rows),
             'at_or_unknown_below_level_count':len(indexed),

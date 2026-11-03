@@ -30,6 +30,9 @@ on:
       - 'src/optimization/evaluation.py'
       - 'src/v2/class_model.py'
       - 'src/game/level_legality.py'
+      - 'src/game/data/forever/source_indexed_action_coverage.py'
+      - 'tools/wf270_action_source_coverage.py'
+      - 'tests/test_wf272_source_ranked_periodic_finisher.py'
       - 'src/v2/source_budgeted_level_route.py'
       - 'tests/test_level_legality_p00c.py'
       - 'tests/test_wf290_source_acquisition_batch.py'
@@ -79,7 +82,8 @@ jobs:
           python -m pytest -q
           tests/maintenance
           tests/test_level_legality_p00c.py
-          tests/test_wf290_source_acquisition_batch.py::test_level_state_does_not_require_separate_acquisition_proof
+          tests/test_wf290_source_acquisition_batch.py
+          tests/test_wf272_source_ranked_periodic_finisher.py
           tests/test_wf291_source_world_acquisition.py::test_real_spell_detail_and_npc_id_allow_synthetic_local_purchase
           tests/test_wf291_source_acquisition_route.py::test_local_acquisition_proof_is_not_a_level_state_requirement
           tests/gates/test_wf327_checkpoint_action_l0.py

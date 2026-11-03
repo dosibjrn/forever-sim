@@ -26,9 +26,14 @@ def test_all_nine_class_source_rows_and_hashes():
         ir = build_game_ir_slice(class_key=key,level=20)
         assert ir is not None
         coverage = next(f for f in ir.source_facts if f.get('fact_kind')=='canonical_indexed_ability_coverage')
-        assert all(r['acquisition_evidence_status'] not in
-                   ('MISSING_ACQUISITION_EVIDENCE','STALE_SOURCE_REINGEST_REQUIRED')
-                   for r in coverage['records'])
+        retired_fields = {
+            'acquisition_evidence_status',
+            'acquisition_methods_observed',
+            'world_acquisition_verified',
+            'typed_index_acquisition',
+        }
+        assert all(not retired_fields.intersection(record)
+                   for record in coverage['records'])
 
 
 def test_level_state_does_not_require_separate_acquisition_proof():
