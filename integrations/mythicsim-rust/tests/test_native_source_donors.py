@@ -160,5 +160,42 @@ class SourceDonorAdapterTests(unittest.TestCase):
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))
 
 
+    def test_source_observed_non_51_reference_can_anchor_two_full_51_point_donors(self):
+        reference = request(item_ids=(1001, 1002), talents="99999-4")
+        donor_one_request = request(
+            item_ids=(1003, 1002), talents="7777777-2"
+        )
+        donor_two_request = request(
+            item_ids=(1004, 1002), talents="6666666-9"
+        )
+        donors = [
+            donor("fixtures/production/arcane.request.json", donor_one_request),
+            donor("fixtures/production/fire.request.json", donor_two_request),
+        ]
+        items = {
+            1001: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
+            1002: {"type": "ItemTypeChest", "armor_type": "ArmorTypeCloth"},
+            1003: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
+            1004: {"type": "ItemTypeHead", "armor_type": "ArmorTypeCloth"},
+        }
+
+        adapter, scope = source_bounded_adapter(
+            "druid", reference, [reference], items, donor_fixtures=donors
+        )
+
+        self.assertEqual(
+            sorted(["7777777-2", "6666666-9"]), scope["talent_builds"]
+        )
+        self.assertEqual(
+            "SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
+            scope["talent_validation"],
+        )
+        self.assertTrue(adapter.legal(copy.deepcopy(reference)))
+        for build in scope["talent_builds"]:
+            candidate = copy.deepcopy(reference)
+            candidate["raid"]["parties"][0]["players"][0]["talentsString"] = build
+            self.assertTrue(adapter.legal(candidate))
+
+
 if __name__ == "__main__":
     unittest.main()
