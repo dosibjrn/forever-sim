@@ -1146,9 +1146,12 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
 
         captured = {}
 
-        def fake_mutate(_current, source_actions, _rng, cold=False):
+        def fake_mutate(_current, source_actions, _rng, cold=False,
+                        preserve_source_conditions=False):
             captured["source_actions"] = copy.deepcopy(source_actions)
+            captured["preserve_source_conditions"] = preserve_source_conditions
             self.assertTrue(cold)
+            self.assertTrue(preserve_source_conditions)
             return [
                 {"action": {"castSpell": copy.deepcopy(donor_only_heal)}},
                 {"action": {"castSpell": copy.deepcopy(heal_cast)}},
