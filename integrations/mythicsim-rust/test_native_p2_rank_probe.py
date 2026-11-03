@@ -17,6 +17,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.game.native_p2_rank_probe import (
+    NativeP2ProbeError,
+    NativeRngMode,
     encode_native_druid_talents,
     parse_native_druid_layout,
     run_native_rank_pair,
@@ -59,6 +61,26 @@ def main() -> int:
     assert layout["feral"][10]["field"] == "predatory_strikes"
     assert layout["feral"][10]["max_rank"] == 3
 
+    # Round-trip each pinned engine fixture through the Rust-derived layout.
+    for scenario in ("balance", "cat"):
+        fixture = _fixture_request(args.engine_root, scenario)
+        selection = _decode_fixture_talents(fixture, layout)
+        encoded = encode_native_druid_talents(selection, args.engine_root)
+        roundtrip = _fixture_request(args.engine_root, scenario)
+        roundtrip["raid"]["parties"][0]["players"][0]["talentsString"] = encoded
+        assert _decode_fixture_talents(roundtrip, layout) == selection
+
+    # Reject coercion: source rank facts must be exact integers.
+    for invalid_rank in (True, 1.5, "1"):
+        try:
+            encode_native_druid_talents(
+                {"predatory_strikes": invalid_rank}, args.engine_root
+            )
+        except NativeP2ProbeError:
+            pass
+        else:
+            raise AssertionError(f"Non-integer source rank accepted: {invalid_rank!r}")
+
     # Use each selected-Rust fixture's own legal build, changing only the
     # target rank. This keeps gear, rotation, encounter and all other talents
     # byte-for-byte equivalent across the paired runs.
@@ -89,7 +111,7 @@ def main() -> int:
             target_rank=1,
             iterations=100,
             seed=647003,
-            rng_mode="balanced",
+            rng_mode=NativeRngMode.BALANCED,
         ),
         "predatory_strikes": run_native_rank_pair(
             binary=args.binary,
@@ -104,6 +126,13 @@ def main() -> int:
             rng_mode="balanced",
         ),
     }
+    for name, result in results.items():
+        before = result.get("before", {})
+        after = result.get("after", {})
+        if not before.get("prepared_sha256") or not after.get("prepared_sha256"):
+            raise SystemExit(f"NATIVE_P2_PREPARE_RECEIPT_MISSING:{name}")
+        if before["prepared_sha256"] == after["prepared_sha256"]:
+            raise SystemExit(f"NATIVE_P2_PREPARED_STATE_UNCHANGED:{name}")
     print(json.dumps(results, sort_keys=True, indent=2))
     failed = [name for name, result in results.items() if result.get("status") != "PASS"]
     if failed:
