@@ -88,20 +88,20 @@ def p7_search_deadline_completed(
     full_search: bool,
     search_start: float,
     search_deadline: float,
-    last_paid_step_completed_at: float,
+    last_search_step_completed_at: float,
     observed_at: float,
 ) -> bool:
     """Verify a hard 300s search window without a one-second overrun grace.
 
     observed_at may be slightly later than the deadline because the process
     reads the clock or sleeps after the final paid step. That is not extra
-    search work. A paid step that itself completes after the deadline is an
+    search work. A search step that itself completes after the deadline is an
     overrun and must not be accepted, even when it is within 301s.
     """
     values = (
         search_start,
         search_deadline,
-        last_paid_step_completed_at,
+        last_search_step_completed_at,
         observed_at,
     )
     if (not full_search
@@ -111,7 +111,7 @@ def p7_search_deadline_completed(
     if abs((search_deadline - search_start) - P7_SEARCH_BUDGET_SECONDS) > 1e-6:
         return False
     return bool(
-        search_start < last_paid_step_completed_at <= search_deadline
+        search_start < last_search_step_completed_at <= search_deadline
         and observed_at >= search_deadline
     )
 
