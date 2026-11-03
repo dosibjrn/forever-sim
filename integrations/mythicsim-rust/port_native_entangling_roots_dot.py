@@ -118,8 +118,10 @@ AGENT_PATCHES = [
      "                    fight.apply_dot(dot);\n"
      "                    if target == Side::Target {\n"
      "                        let duration_ns = fight.aura(fight.dots[dot].aura).duration;\n"
+     "                        let rank = u32::try_from(fight.spells[spell].rank)\n"
+     "                            .expect(\"Entangling Roots source rank is invalid\");\n"
      "                        crate::core::fight::world_bridge::record_control(\n"
-     "                            fight.now, duration_ns,\n"
+     "                            fight.now, duration_ns, rank,\n"
      "                            format!(\"{:?}\", fight.spells[spell].id),\n"
      "                            fight.label_of(target),\n"
      "                        );\n"
@@ -159,7 +161,7 @@ WORLD_BRIDGE_PATCHES = [
     ("    let events = std::mem::take(&mut bridge.pending);\n    let event_ids: Vec<String> = events.iter().map(|event| event.event_id.clone()).collect();", "    let events = std::mem::take(&mut bridge.pending);\n    let damage_events: Vec<&DamageEvent> = events.iter()\n        .filter(|event| event.effect_kind == \"damage\").collect();\n    let control_events: Vec<&DamageEvent> = events.iter()\n        .filter(|event| event.effect_kind == \"control\").collect();\n    let control_event_ids: Vec<String> = control_events.iter()\n        .map(|event| event.event_id.clone()).collect();\n    let event_ids: Vec<String> = events.iter().map(|event| event.event_id.clone()).collect();", "SPLIT_EVENTS"),
     ("        \"native_damage_events\": events,", "        \"native_damage_events\": damage_events,\n        \"native_control_events\": control_events,", "CONTROL_RECEIPT"),
     ("        \"RUST_WORLD_DAMAGE_ACK_EVENTS_MISMATCH\");\n    let ack_before = number(&ack, \"world_target_health_before\");", "        \"RUST_WORLD_DAMAGE_ACK_EVENTS_MISMATCH\");\n    let accepted_controls = ack[\"applied_control_event_ids\"].as_array()\n        .expect(\"RUST_WORLD_CONTROL_ACK_EVENT_IDS_MISSING\");\n    assert!(accepted_controls.len() == control_event_ids.len()\n        && accepted_controls.iter().zip(control_event_ids.iter())\n            .all(|(a, b)| a.as_str() == Some(b)),\n        \"RUST_WORLD_CONTROL_ACK_EVENTS_MISMATCH\");\n    let ack_before = number(&ack, \"world_target_health_before\");", "CONTROL_ACK"),
-    ("fn send(value: &Value) {", "pub(crate) fn record_control(time_ns: i64, duration_ns: i64,\n    action: String, target_label: String) {\n    // Production records only while the acknowledged world bridge is live.\n    // Unit tests may install an in-memory capture without a peer process.\n    let test_capture = cfg!(test);\n    if !enabled() && !test_capture { return; }\n    assert!(time_ns >= 0 && duration_ns > 0, \"RUST_WORLD_CONTROL_INVALID\");\n    BRIDGE.with(|state| {\n        let mut state = state.borrow_mut();\n        let bridge = match state.as_mut() {\n            Some(bridge) => bridge,\n            None if test_capture => return,\n            None => panic!(\"RUST_WORLD_NOT_STARTED\"),\n        };\n        bridge.event_ordinal += 1;\n        bridge.pending.push(DamageEvent {\n            event_id: format!(\"native-effect-{}\", bridge.event_ordinal),\n            effect_kind: \"control\".to_owned(),\n            control_id: Some(\"root\".to_owned()),\n            duration_ns: Some(duration_ns),\n            break_semantics_status: Some(\"unimplemented\".to_owned()),\n            native_time_ns: time_ns, damage: 0.0,\n            source_action_id: action, rank: 0, landed: true, crit: false, periodic: false,\n            native_target_index: 0, native_target_unit_index: 0,\n            native_target_label: target_label,\n            native_caster_type: String::new(), native_caster_unit_index: 0,\n            native_caster_label: String::new(),\n        });\n    });\n}\n\n#[cfg(test)]\npub(crate) fn begin_test_capture() {\n    BRIDGE.with(|state| *state.borrow_mut() = Some(Bridge {\n        iteration: 0, sequence: 0, next_tick_ns: 0, last_tick_ns: -1,\n        last_health: None, previous_ack_id: String::new(),\n        source_hash: \"a\".repeat(64), event_ordinal: 0, pending: Vec::new(),\n    }));\n}\n\n#[cfg(test)]\npub(crate) fn test_control_events() -> Vec<(String, i64, String)> {\n    BRIDGE.with(|state| {\n        state.borrow().as_ref().map(|bridge| bridge.pending.iter()\n            .filter(|event| event.effect_kind == \"control\")\n            .map(|event| (\n                event.control_id.clone().unwrap_or_default(),\n                event.duration_ns.unwrap_or_default(),\n                event.source_action_id.clone(),\n            ))\n            .collect()\n        ).unwrap_or_default()\n    })\n}\n\n#[cfg(test)]\npub(crate) fn end_test_capture() {\n    BRIDGE.with(|state| *state.borrow_mut() = None);\n}\n\nfn send(value: &Value) {", "CONTROL_HELPERS"),
+    ("fn send(value: &Value) {", "pub(crate) fn record_control(time_ns: i64, duration_ns: i64, rank: u32,\n    action: String, target_label: String) {\n    // Production records only while the acknowledged world bridge is live.\n    // Unit tests may install an in-memory capture without a peer process.\n    let test_capture = cfg!(test);\n    if !enabled() && !test_capture { return; }\n    assert!(time_ns >= 0 && duration_ns > 0 && rank > 0, \"RUST_WORLD_CONTROL_INVALID\");\n    BRIDGE.with(|state| {\n        let mut state = state.borrow_mut();\n        let bridge = match state.as_mut() {\n            Some(bridge) => bridge,\n            None if test_capture => return,\n            None => panic!(\"RUST_WORLD_NOT_STARTED\"),\n        };\n        bridge.event_ordinal += 1;\n        bridge.pending.push(DamageEvent {\n            event_id: format!(\"native-effect-{}\", bridge.event_ordinal),\n            effect_kind: \"control\".to_owned(),\n            control_id: Some(\"root\".to_owned()),\n            duration_ns: Some(duration_ns),\n            break_semantics_status: Some(\"unimplemented\".to_owned()),\n            native_time_ns: time_ns, damage: 0.0,\n            source_action_id: action, rank, landed: true, crit: false, periodic: false,\n            native_target_index: 0, native_target_unit_index: 0,\n            native_target_label: target_label,\n            native_caster_type: String::new(), native_caster_unit_index: 0,\n            native_caster_label: String::new(),\n        });\n    });\n}\n\n#[cfg(test)]\npub(crate) fn begin_test_capture() {\n    BRIDGE.with(|state| *state.borrow_mut() = Some(Bridge {\n        iteration: 0, sequence: 0, next_tick_ns: 0, last_tick_ns: -1,\n        last_health: None, previous_ack_id: String::new(),\n        source_hash: \"a\".repeat(64), event_ordinal: 0, pending: Vec::new(),\n    }));\n}\n\n#[cfg(test)]\npub(crate) fn test_control_events() -> Vec<(String, i64, String, u32)> {\n    BRIDGE.with(|state| {\n        state.borrow().as_ref().map(|bridge| bridge.pending.iter()\n            .filter(|event| event.effect_kind == \"control\")\n            .map(|event| (\n                event.control_id.clone().unwrap_or_default(),\n                event.duration_ns.unwrap_or_default(),\n                event.source_action_id.clone(),\n                event.rank,\n            ))\n            .collect()\n        ).unwrap_or_default()\n    })\n}\n\n#[cfg(test)]\npub(crate) fn end_test_capture() {\n    BRIDGE.with(|state| *state.borrow_mut() = None);\n}\n\nfn send(value: &Value) {", "CONTROL_HELPERS"),
 ]
 
 RUST_TEST = """
@@ -192,75 +194,76 @@ fn forever_roots_preparation_uses_native_spell_data_and_improved_rank() {
 """
 
 
-OLD_RUST_RUNTIME_TEST = "\n#[test]\nfn forever_roots_native_periodic_ticks_change_with_rank() {\n    // Production Rust executor, not a GameIR/source-catalogue assertion.\n    // Same encounter, seed and rotation; only the legally allocated rank changes.\n    fn run(rank: i32) -> (f64, String) {\n        let mut request: Value = serde_json::from_slice(\n            &fs::read(directory().join(\"balance-every-talent-at-max.request.json\")).unwrap()\n        ).unwrap();\n        let player = &mut request[\"raid\"][\"parties\"][0][\"players\"][0];\n        player[\"talentsString\"] = Value::String(format!(\"000000{rank}\"));\n        player[\"rotation\"][\"priorityList\"] = serde_json::json!([\n            {\"action\": {\n                \"castSpell\": {\"spellId\": {\"spellId\": 9853}},\n                \"condition\": {\"not\": {\"val\": {\n                    \"dotIsActive\": {\"spellId\": {\"spellId\": 9853}}\n                }}}\n            }},\n            {\"action\": {\"castSpell\": {\"spellId\": {\"spellId\": 9912}}}}\n        ]);\n        request[\"simOptions\"][\"iterations\"] = serde_json::json!(32);\n        request[\"encounter\"][\"duration\"] = serde_json::json!(60.0);\n        request[\"encounter\"][\"durationVariation\"] = serde_json::json!(0.0);\n        let prepared = forever_engine::prepare_json(\n            &serde_json::to_vec(&request).unwrap(), \"native-roots-periodic-control\"\n        ).expect(\"Forever source-native request prepares\");\n        let prepared: forever_engine::contracts::prepared_v2::PreparedV2 =\n            serde_json::from_value(prepared).expect(\"native prepared contract\");\n        let report = forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)\n            .expect(\"selected genuine Rust combat executes Roots\");\n        let dps = report.result[\"raidMetrics\"][\"dps\"][\"avg\"].as_f64()\n            .expect(\"native real combat DPS\");\n        let first_log = report.result[\"logs\"].as_str().unwrap_or(\"\").to_owned();\n        (dps, first_log)\n    }\n\n    let (base, base_log) = run(0);\n    let (improved, improved_log) = run(3);\n    assert!(base_log.contains(\"Casting {SpellID: 9853}\"),\n        \"native Roots must actually cast, not merely be prepared: {base_log}\");\n    assert!(improved_log.contains(\"Casting {SpellID: 9853}\"),\n        \"rank-3 build must actually cast Roots: {improved_log}\");\n    assert!(base.is_finite() && base > 0.0 && improved.is_finite(),\n        \"native combat must produce finite positive damage: {base}, {improved}\");\n    assert!(improved > base,\n        \"same-seed native combat with +75% Roots tick damage should improve DPS: {base} -> {improved}\");\n}\n"
+RUST_RUNTIME_TEST = """#[cfg(test)]
+mod forever_roots_native_control_tests {
+    use serde_json::Value;
 
-RUST_RUNTIME_TEST = """#[test]
-fn forever_roots_native_periodic_ticks_change_with_rank() {
-    // Production Rust executor, not a GameIR/source-catalogue assertion.
-    // Same encounter, seed and rotation; only the legally allocated rank changes.
-    // The prepared hit table is overridden solely to make landed/missed
-    // negative/positive controls deterministic in this regression.
-    fn run(rank: i32, force_miss: bool) -> (f64, String, Vec<(String, i64, String)>) {
-        let mut request: Value = serde_json::from_slice(
-            &fs::read(directory().join("balance-every-talent-at-max.request.json")).unwrap()
-        ).unwrap();
-        let player = &mut request["raid"]["parties"][0]["players"][0];
-        player["talentsString"] = Value::String(format!("000000{rank}"));
-        player["rotation"]["priorityList"] = serde_json::json!([
-            {"action": {
-                "castSpell": {"spellId": {"spellId": 9853}},
-                "condition": {"not": {"val": {
-                    "dotIsActive": {"spellId": {"spellId": 9853}}
-                }}}
-            }},
-            {"action": {"castSpell": {"spellId": {"spellId": 9912}}}}
-        ]);
-        request["simOptions"]["iterations"] = serde_json::json!(32);
-        request["encounter"]["duration"] = serde_json::json!(60.0);
-        request["encounter"]["durationVariation"] = serde_json::json!(0.0);
-        let mut prepared = forever_engine::prepare_json(
-            &serde_json::to_vec(&request).unwrap(), "native-roots-periodic-control"
-        ).expect("Forever source-native request prepares");
-        prepared["player"]["stats"]["SpellHitPercent"] = serde_json::json!(0.0);
-        prepared["player"]["attackTable"]["base_spell_miss_chance"] =
-            serde_json::json!(if force_miss { 1.0 } else { 0.0 });
-        prepared["target"]["stats"]["NatureResistance"] = serde_json::json!(0.0);
-        let prepared: forever_engine::contracts::prepared_v2::PreparedV2 =
-            serde_json::from_value(prepared).expect("native prepared contract");
+    #[test]
+    fn forever_roots_native_periodic_ticks_change_with_rank() {
+        // This is an internal Rust unit test: it observes the private native
+        // world bridge emitted by the real Druid spell executor.
+        fn run(rank: i32, force_miss: bool) -> (f64, String, Vec<(String, i64, String, u32)>) {
+            let mut request: Value = serde_json::from_str(include_str!(
+                "../../../tests/classes/druid/prepare/balance-every-talent-at-max.request.json"
+            )).expect("Roots fixture JSON");
+            let player = &mut request["raid"]["parties"][0]["players"][0];
+            player["talentsString"] = Value::String(format!("000000{rank}"));
+            player["rotation"]["priorityList"] = serde_json::json!([
+                {"action": {
+                    "castSpell": {"spellId": {"spellId": 9853}},
+                    "condition": {"not": {"val": {
+                        "dotIsActive": {"spellId": {"spellId": 9853}}
+                    }}}
+                }},
+                {"action": {"castSpell": {"spellId": {"spellId": 9912}}}}
+            ]);
+            request["simOptions"]["iterations"] = serde_json::json!(32);
+            request["encounter"]["duration"] = serde_json::json!(60.0);
+            request["encounter"]["durationVariation"] = serde_json::json!(0.0);
+            let mut prepared = crate::prepare::prepare_json(
+                &serde_json::to_vec(&request).unwrap(), "native-roots-periodic-control"
+            ).expect("Forever source-native request prepares");
+            prepared["player"]["stats"]["SpellHitPercent"] = serde_json::json!(0.0);
+            prepared["player"]["attackTable"]["base_spell_miss_chance"] =
+                serde_json::json!(if force_miss { 1.0 } else { 0.0 });
+            prepared["target"]["stats"]["NatureResistance"] = serde_json::json!(0.0);
+            let prepared: crate::contracts::prepared_v2::PreparedV2 =
+                serde_json::from_value(prepared).expect("native prepared contract");
 
-        crate::core::fight::world_bridge::begin_test_capture();
-        let report = forever_engine::simulate_prepared(&prepared)
-            .expect("selected genuine Rust combat executes Roots");
-        let controls = crate::core::fight::world_bridge::test_control_events();
-        crate::core::fight::world_bridge::end_test_capture();
+            crate::core::fight::world_bridge::begin_test_capture();
+            let report = crate::simulate_prepared(&prepared, crate::RngMode::Balanced)
+                .expect("selected genuine Rust combat executes Roots");
+            let controls = crate::core::fight::world_bridge::test_control_events();
+            crate::core::fight::world_bridge::end_test_capture();
 
-        let dps = report.result["raidMetrics"]["dps"]["avg"].as_f64()
-            .expect("native real combat DPS");
-        let first_log = report.result["logs"].as_str().unwrap_or("").to_owned();
-        (dps, first_log, controls)
+            let dps = report.result["raidMetrics"]["dps"]["avg"].as_f64()
+                .expect("native real combat DPS");
+            let first_log = report.result["logs"].as_str().unwrap_or("").to_owned();
+            (dps, first_log, controls)
+        }
+
+        let (base, base_log, landed_controls) = run(0, false);
+        let (improved, improved_log, _) = run(3, false);
+        let (_, _, missed_controls) = run(0, true);
+        assert!(base_log.contains("Casting {SpellID: 9853}"),
+            "native Roots must actually cast, not merely be prepared: {base_log}");
+        assert!(improved_log.contains("Casting {SpellID: 9853}"),
+            "rank-3 build must actually cast Roots: {improved_log}");
+        assert!(base.is_finite() && base > 0.0 && improved.is_finite(),
+            "native combat must produce finite positive damage: {base}, {improved}");
+        assert!(improved > base,
+            "same-seed native combat with +75% Roots tick damage should improve DPS: {base} -> {improved}");
+        assert!(!landed_controls.is_empty(),
+            "a landed native Roots cast did not emit a world control event");
+        assert!(missed_controls.is_empty(),
+            "a missed native Roots cast emitted a world control event: {missed_controls:?}");
+        assert!(landed_controls.iter().all(|(control, duration, action, rank)|
+            control == "root" && *duration == 27_000_000_000_i64
+                && action.contains("9853") && *rank == 6),
+            "native Roots control must retain source action, Rank 6 and 27s duration: {landed_controls:?}");
     }
-
-    let (base, base_log, landed_controls) = run(0, false);
-    let (improved, improved_log, _) = run(3, false);
-    let (_, _, missed_controls) = run(0, true);
-    assert!(base_log.contains("Casting {SpellID: 9853}"),
-        "native Roots must actually cast, not merely be prepared: {base_log}");
-    assert!(improved_log.contains("Casting {SpellID: 9853}"),
-        "rank-3 build must actually cast Roots: {improved_log}");
-    assert!(base.is_finite() && base > 0.0 && improved.is_finite(),
-        "native combat must produce finite positive damage: {base}, {improved}");
-    assert!(improved > base,
-        "same-seed native combat with +75% Roots tick damage should improve DPS: {base} -> {improved}");
-    assert!(!landed_controls.is_empty(),
-        "a landed native Roots cast did not emit a world control event");
-    assert!(missed_controls.is_empty(),
-        "a missed native Roots cast emitted a world control event: {missed_controls:?}");
-    assert!(landed_controls.iter().all(|(control, duration, action)|
-        control == "root" && *duration == 27_000_000_000_i64 && action.contains("9853")),
-        "native Roots control must retain source action and 27s source DoT duration: {landed_controls:?}");
 }
 """
-
 
 def port_text(path: str, contents: str) -> str:
     patches = {
@@ -274,27 +277,20 @@ def port_text(path: str, contents: str) -> str:
     if path in patches:
         for old, new, label in patches[path]:
             contents = replace_once(contents, old, new, label)
+        if path == "src/classes/druid/agent.rs":
+            if RUST_RUNTIME_TEST not in contents:
+                if "mod forever_roots_native_control_tests" in contents:
+                    raise ValueError("NATIVE_ROOTS_INTERNAL_TEST_SOURCE_DRIFT")
+                contents = contents.rstrip() + "\n\n" + RUST_RUNTIME_TEST
         return contents
     if path == "tests/classes/druid/prepare.rs":
-        for test_name, section in (
-            ("forever_roots_preparation_uses_native_spell_data_and_improved_rank", RUST_TEST),
-            ("forever_roots_native_periodic_ticks_change_with_rank", RUST_RUNTIME_TEST),
-        ):
-            if section in contents:
-                continue
-            if (test_name == "forever_roots_native_periodic_ticks_change_with_rank"
-                    and "a landed native Roots cast did not emit a world control event" in contents):
-                continue
-            if f"fn {test_name}()" in contents:
-                if (test_name == "forever_roots_native_periodic_ticks_change_with_rank"
-                        and contents.count(OLD_RUST_RUNTIME_TEST) == 1):
-                    contents = contents.replace(OLD_RUST_RUNTIME_TEST, section, 1)
-                    continue
-                raise ValueError("NATIVE_ROOTS_TEST_SOURCE_DRIFT:" + test_name)
-            contents = contents.rstrip() + "\n" + section
-        return contents
+        test_name = "forever_roots_preparation_uses_native_spell_data_and_improved_rank"
+        if RUST_TEST in contents:
+            return contents
+        if f"fn {test_name}()" in contents:
+            raise ValueError("NATIVE_ROOTS_TEST_SOURCE_DRIFT:" + test_name)
+        return contents.rstrip() + "\n" + RUST_TEST
     raise ValueError("unsupported port target " + path)
-
 
 PATHS = [
     "src/classes/druid/prepare/balance.rs",
