@@ -20,6 +20,7 @@ from native_executor import objective_metric_path
 from native_source_donors import load_source_donor_fixtures
 from native_l60_matrix import (
     ROOT, create_inventory, current_client_talent_donor_fixtures,
+    apply_current_client_talent_donor_source_overrides,
 )
 
 STAGES = (5, 30, 300)
@@ -220,6 +221,8 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
                 "talent_source_blob_sha": item.get("talent_source_blob_sha"),
                 "talent_preset_name": item.get("talent_preset_name"),
                 "composed_over_profile": item.get("composed_over_profile"),
+                "original_talents_string": item.get("original_talents_string"),
+                "replacement_talents_string": item.get("replacement_talents_string"),
             }
             for item in donor_inventory.get("fixtures", [])
         ]
@@ -232,6 +235,22 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
             "pinned_engine_fixture_count": donor_inventory.get("pinned_engine_fixture_count", len(donor_manifest)),
             "current_client_preset_donor_count": len(donor_inventory.get("current_client_preset_donors", [])),
             "current_client_preset_donors": donor_inventory.get("current_client_preset_donors", []),
+            "current_client_talent_source_override_count": sum(
+                1 for item in donor_inventory.get("fixtures", [])
+                if item.get("composed_over_profile")
+            ),
+            "current_client_talent_source_overrides": [
+                {
+                    key: item.get(key)
+                    for key in (
+                        "source_path", "original_talents_string",
+                        "replacement_talents_string", "talent_source_commit",
+                        "talent_source_blob_sha", "talent_source_url",
+                    )
+                }
+                for item in donor_inventory.get("fixtures", [])
+                if item.get("composed_over_profile")
+            ],
             "skipped_count": len(donor_inventory.get("skipped", [])),
             "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
             "skipped_sources": donor_inventory.get("skipped", []),
@@ -285,6 +304,9 @@ def main() -> None:
                                  args.engine_src)
     donor_inventory = load_source_donor_fixtures(args.engine_src)
     donor_inventory["pinned_engine_fixture_count"] = len(donor_inventory["fixtures"])
+    donor_inventory["fixtures"] = apply_current_client_talent_donor_source_overrides(
+        donor_inventory["fixtures"]
+    )
     preset_donors = current_client_talent_donor_fixtures(inventory)
     donor_inventory["current_client_preset_donors"] = [
         {
