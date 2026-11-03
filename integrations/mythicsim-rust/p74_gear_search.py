@@ -26,13 +26,15 @@ class NativeFailure(RuntimeError):
 def _write(path, value):
     path.write_text(json.dumps(value, indent=2, allow_nan=False)+"\n")
 
-def candidate_pool(validator, limit, *, independent_enchants=False):
-    """Enumerate source/Rust-legal gear for the actual enchant policy.
+def candidate_pool(validator, limit, *, independent_enchants=False,
+                   native_authoritative=False):
+    """Build gear proposals from the source catalogue.
 
-    The historical native-only gear search preserves saved-reference enchants.
-    Full P7.4/P7.5 live cold searches independently select enchants: an item
-    legal with no enchant must not be excluded merely because it cannot use
-    the saved reference's enchant for that slot.
+    The default retains the legacy Python admission behavior. The live P7.4
+    caller sets native_authoritative=True: slot membership and stat columns
+    shape the proposal distribution only; GearValidator.item() is not called.
+    Every complete proposed request is then sent to selected native sim before
+    it can reach the live 2D world. Native INVALID/UNSUPPORTED/errors are final.
     """
     con=validator.connection
     pool={}; exclusions=Counter()
@@ -45,22 +47,22 @@ def candidate_pool(validator, limit, *, independent_enchants=False):
         good=[]
         for row in rows:
             r=dict(row); iid=int(r["item_id"])
-            try:
-                if independent_enchants:
-                    validator.item(i, iid, 0)  # actual unenchanted cold candidate
-                else:
-                    validator.item(i, iid)  # native legacy keeps saved enchants
-            except RejectedGear as exc:
-                exclusions[exc.category]+=1
-                continue
+            if not native_authoritative:
+                try:
+                    if independent_enchants:
+                        validator.item(i, iid, 0)
+                    else:
+                        validator.item(i, iid)
+                except RejectedGear as exc:
+                    exclusions[exc.category]+=1
+                    continue
             score=(r["spell_power"] or 0)+.5*(r["intellect"] or 0)+1.5*(r["hit"] or 0)+1.3*(r["crit"] or 0)+.1*(r["spirit"] or 0)
             good.append((score,iid))
         good.sort(key=lambda x:(-x[0],x[1]))
         ids=[iid for _,iid in good[:limit]]
-        if not ids:raise ValueError(f"No PINNED-RUST legal source candidates: slot={slot}, index={i}, excluded={dict(exclusions)}")
+        if not ids:raise ValueError(f"No source item proposals: slot={slot}, index={i}")
         pool[i]=ids
     return pool,exclusions
-
 
 def source_enchant_pools(validator, pools):
     """Enumerate slot-legal native enchants; never whitelist saved gear only.
