@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Two-class native Rust JOINT diagnostic using the shared search core.
 
-Python supplies a bounded proposal domain from observed requests and native
-item data. It does not certify game legality or P7.5; MythicSim Rust alone
-decides whether each exact candidate is valid and supported. No mocked scorer
-is permitted in this integration path.
+Python supplies a bounded proposal domain from same-class source requests.
+It does not consult a Python item index or certify game legality or P7.5;
+MythicSim Rust alone decides whether each exact candidate is valid and
+supported. No mocked scorer is permitted in this integration path.
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from native_joint_composition import (
 )
 from native_l60_matrix import (
     ROOT, create_inventory, digest, fingerprint, legal_apl_only_request,
-    load_native_item_index, player,
+    player,
 )
 from native_executor import run
 from native_source_donors import load_source_donor_fixtures
@@ -203,8 +203,8 @@ def native_score_request(
 
 
 def source_bounded_adapter(
-    class_key: str, reference: dict, same_class: list[dict],
-    items: dict[int, dict], *, donor_fixtures: list[dict] | None = None,
+    class_key: str, reference: dict, same_class: list[dict], *,
+    donor_fixtures: list[dict] | None = None,
     native_damage_witnesses: list[dict] | None = None,
 ) -> tuple[JointCandidateAdapter, dict]:
     """Use exact same-class source requests as proposals; Rust owns gear legality."""
@@ -216,7 +216,7 @@ def source_bounded_adapter(
     ]
     donor_requests = [fixture["request"] for fixture in extra_same_class]
     source_requests = same_class + donor_requests
-    gear = NativeGearAdapter(class_key, reference, source_requests, items)
+    gear = NativeGearAdapter(class_key, reference, source_requests)
     if not gear.mutable_indices:
         raise ValueError("BLOCKED_GEAR_POOL: no source-observed alternate item")
 
@@ -532,7 +532,7 @@ def axis_delta(reference: dict, candidate: dict) -> dict[str, bool]:
     }
 
 
-def execute(profile_id: str, inventory: list, native_items: dict, *,
+def execute(profile_id: str, inventory: list, *,
             binary: Path, engine_src: Path, seconds: float, iterations: int,
             seed: int, outdir: Path,
             donor_fixtures: list[dict] | None = None) -> dict:
@@ -613,7 +613,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
 
     try:
         adapter, scope = source_bounded_adapter(
-            cls, reference, same_class, native_items,
+            cls, reference, same_class,
             donor_fixtures=donor_fixtures,
             native_damage_witnesses=native_damage_witnesses,
         )
@@ -770,7 +770,6 @@ def main() -> None:
         ap.error("Real pinned native Rust binary missing")
     registry = ROOT / "config/validation/checkpoint_148.json"
     inventory = create_inventory(registry, args.engine_src)
-    items = load_native_item_index(args.engine_src)
     donor_inventory = load_source_donor_fixtures(args.engine_src)
     donor_fixtures = donor_inventory["fixtures"]
     args.out.mkdir(parents=True, exist_ok=True)
@@ -778,7 +777,7 @@ def main() -> None:
     for idx, profile in enumerate(args.profile):
         outdir = args.out / profile.replace("/", "__")
         row = execute(
-            profile, inventory, items,
+            profile, inventory,
             binary=args.binary, engine_src=args.engine_src,
             seconds=args.seconds, iterations=args.iterations,
             seed=args.seed + idx, outdir=outdir,
