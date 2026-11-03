@@ -62,6 +62,60 @@ SOURCES = {
     "paladin/protection": ("engine", V+"paladin-druid-references/protection-paladin-2-targets.request.json"),
     "paladin/retribution": ("engine", V+"paladin-druid-references/retribution-paladin-2-targets.request.json"),
 }
+
+# The 2026-10-06 engine smoke fixtures predate the current 1.60.1.70707
+# talent-tree reshuffle. Keep their gear/encounter/APL, but replace only the
+# talent string with a current upstream preset. These remain composed smoke
+# fixtures, never saved ranking references.
+CURRENT_CLIENT_BUILD = "1.60.1.70707"
+CURRENT_ENGINE_PIN = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
+CURRENT_CLIENT_TALENT_OVERRIDES = {
+    "druid/feral_cat": {
+        "class_name": "ClassDruid",
+        "talents_string": "050022-35200032123010125011-055",
+        "preset_name": "Cat",
+        "upstream_pr": 769,
+        "source_commit": "43df34d7fb8145fab89199654cc49aba72f04f02",
+        "source_path": "ui/specs/druid/feralcat/presets.ts",
+        "source_blob_sha": "e69b4d64406b0a184f56971f3dd1c0fc34f80ee2",
+    },
+    "mage/arcane": {
+        "class_name": "ClassMage",
+        "talents_string": "050205223101311531-5500003-003",
+        "preset_name": "Arcane",
+        "upstream_pr": 769,
+        "source_commit": "43df34d7fb8145fab89199654cc49aba72f04f02",
+        "source_path": "ui/specs/mage/dps/presets.ts",
+        "source_blob_sha": "ef20bfef2ab4dff32b6e387c946c016f5878f183",
+    },
+    "mage/fire": {
+        "class_name": "ClassMage",
+        "talents_string": "0502052001001-55500001230133031-003",
+        "preset_name": "Fire",
+        "upstream_pr": 769,
+        "source_commit": "43df34d7fb8145fab89199654cc49aba72f04f02",
+        "source_path": "ui/specs/mage/dps/presets.ts",
+        "source_blob_sha": "ef20bfef2ab4dff32b6e387c946c016f5878f183",
+    },
+    "mage/frost": {
+        "class_name": "ClassMage",
+        "talents_string": "0502052011003--053500021100331251",
+        "preset_name": "Frost",
+        "upstream_pr": 769,
+        "source_commit": "43df34d7fb8145fab89199654cc49aba72f04f02",
+        "source_path": "ui/specs/mage/dps/presets.ts",
+        "source_blob_sha": "ef20bfef2ab4dff32b6e387c946c016f5878f183",
+    },
+    "paladin/retribution": {
+        "class_name": "ClassPaladin",
+        "talents_string": "050250002-501-05233011201301351",
+        "preset_name": "Unsealed Wrath",
+        "upstream_pr": 772,
+        "source_commit": "d608072a6db0197d58a073df7e3153c90f20f46c",
+        "source_path": "ui/specs/paladin/retribution/presets.ts",
+        "source_blob_sha": "5b592addceab39c25d8a8d1af89b22c8df88b032",
+    },
+}
 HEAL = {"druid/restoration", "shaman/restoration", "priest/holy", "paladin/holy"}
 TANK = {"druid/feral_bear", "warrior/protection", "paladin/protection"}
 
@@ -77,6 +131,58 @@ def fingerprint(obj) -> str:
 
 def player(request):
     return request["raid"]["parties"][0]["players"][0]
+
+
+def apply_current_client_talent_override(profile: str, request: dict):
+    """Compose a smoke request with an exact upstream current-client talent preset.
+
+    Only talentsString changes. The original source fixture remains the source
+    for gear, encounter and APL, so this is not a ranking reference.
+    """
+    override = CURRENT_CLIENT_TALENT_OVERRIDES.get(profile)
+    if override is None:
+        return request, None
+
+    effective = copy.deepcopy(request)
+    target = player(effective)
+    if target.get("class") != override["class_name"]:
+        raise ValueError(
+            f"{profile}: current-client talent preset class mismatch: "
+            f"{target.get('class')!r} != {override['class_name']!r}"
+        )
+    original = target.get("talentsString")
+    if not isinstance(original, str) or not original:
+        raise ValueError(f"{profile}: missing legacy source talentsString")
+    replacement = override["talents_string"]
+    point_count = sum(int(char) for char in replacement if char.isdigit())
+    if point_count != 51:
+        raise ValueError(
+            f"{profile}: upstream current-client preset has {point_count} points, expected 51"
+        )
+    if replacement == original:
+        raise ValueError(f"{profile}: current-client preset unexpectedly equals legacy string")
+
+    target["talentsString"] = replacement
+    source_path = override["source_path"]
+    source_commit = override["source_commit"]
+    metadata = {
+        "status": "APPLIED",
+        "source_type": "PINNED_UPSTREAM_CURRENT_CLIENT_TALENT_PRESET",
+        "scope": "TALENT_PRESET_ONLY; original smoke-fixture gear, encounter and APL retained",
+        "client_build": CURRENT_CLIENT_BUILD,
+        "engine_pin": CURRENT_ENGINE_PIN,
+        "source_repo": "wowsims/forever",
+        "source_pull_request": override["upstream_pr"],
+        "source_commit": source_commit,
+        "source_path": source_path,
+        "source_blob_sha": override["source_blob_sha"],
+        "source_url": f"https://github.com/wowsims/forever/blob/{source_commit}/{source_path}",
+        "preset_name": override["preset_name"],
+        "original_talents_string": original,
+        "replacement_talents_string": replacement,
+        "point_count": point_count,
+    }
+    return effective, metadata
 
 
 def legal_apl_only_request(reference: dict, candidate: dict) -> bool:
@@ -190,6 +296,21 @@ def describe_native_gear(equipment: dict, item_index: dict[int, dict]) -> tuple[
 
 def create_inventory(registry_path, engine_src):
     native_items = load_native_item_index(engine_src)
+    if CURRENT_CLIENT_TALENT_OVERRIDES:
+        try:
+            engine_pin = subprocess.check_output(
+                ["git", "-C", str(engine_src), "rev-parse", "HEAD"],
+                text=True, stderr=subprocess.DEVNULL,
+            ).strip()
+        except (OSError, subprocess.CalledProcessError) as exc:
+            raise ValueError(
+                "Cannot verify the selected Rust pin required by current-client talent presets"
+            ) from exc
+        if engine_pin != CURRENT_ENGINE_PIN:
+            raise ValueError(
+                "Current-client talent presets require Rust pin "
+                f"{CURRENT_ENGINE_PIN}; selected engine is {engine_pin}"
+            )
     registry = json.loads(registry_path.read_text())
     profiles = enumerate_l60_profiles(registry)
     if len(profiles) != 28 or len({cl for cl, _ in profiles}) != 9:
@@ -218,6 +339,13 @@ def create_inventory(registry_path, engine_src):
             if not request.get("simOptions"):
                 raise ValueError("Missing native simOptions")
             row["source_sha256"] = digest(path)
+            row["source_fixture_sha256"] = row["source_sha256"]
+            request, talent_override = apply_current_client_talent_override(profile, request)
+            if talent_override is not None:
+                row["source_type"] = "COMPOSED_SMOKE_FIXTURE_CURRENT_CLIENT_TALENT_PRESET"
+                row["talent_override"] = talent_override
+            row["effective_source_request_fingerprint"] = fingerprint(request)
+            pl = player(request)
             row["item_count"] = len(pl["equipment"]["items"])
             row["native_item_inventory"], missing_ids = describe_native_gear(
                 pl["equipment"], native_items
