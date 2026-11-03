@@ -3,6 +3,7 @@
 MythicSim owns spell/rank acquisition legality and game-source facts.
 The real route and stable production gate entrypoints remain separate live code.
 """
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,10 +29,19 @@ RETIRED_TOOLS = (
     "tools/wf356_legacy_l30_equipment_audit.py",
     "tools/wf344_source_equipment_merged_report.py",
     "tools/wf352_p3_reaudit.py",
+    "tools/ingest_source_acquisition_evidence_sqlite.py",
+    "tools/ingest_source_acquisition_entities_sqlite.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
     "src/game/data/forever/source_checkpoint_p7_legacy.py",
+    "src/game/data/forever/source_acquisition.py",
+    "src/game/data/forever/source_acquisition_entities.py",
+    "src/game/data/forever/source_acquisition_events.py",
+    "src/game/data/forever/source_world_acquisition.py",
+    "tests/test_wf290_source_acquisition_batch.py",
+    "tests/test_wf291_source_world_acquisition.py",
+    "tests/maintenance/test_source_acquisition_import_boundary.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf332_druid20_acquisition_evidence",
@@ -57,6 +67,20 @@ RETIRED_IMPORT_NAMES = (
     "wf356_legacy_l30_equipment_audit",
     "wf344_source_equipment_merged_report",
     "wf352_p3_reaudit",
+    "from src.game.data.forever.source_acquisition import",
+    "from src.game.data.forever import source_acquisition",
+    "import src.game.data.forever.source_acquisition",
+    "from src.game.data.forever.source_acquisition_entities import",
+    "from src.game.data.forever import source_acquisition_entities",
+    "import src.game.data.forever.source_acquisition_entities",
+    "from src.game.data.forever.source_acquisition_events import",
+    "from src.game.data.forever import source_acquisition_events",
+    "import src.game.data.forever.source_acquisition_events",
+    "from src.game.data.forever.source_world_acquisition import",
+    "from src.game.data.forever import source_world_acquisition",
+    "import src.game.data.forever.source_world_acquisition",
+    "ingest_source_acquisition_evidence_sqlite",
+    "ingest_source_acquisition_entities_sqlite",
 )
 
 
@@ -75,12 +99,32 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
 
 
 def test_no_live_python_imports_retired_source_proof_and_audit_clis():
+    # Match actual imports, not incidental metadata keys or historical strings.
+    # An import may name the module directly or import its leaf from a package.
+    retired_modules = {
+        Path(relative).stem
+        for relative in (*RETIRED_TOOLS, *RETIRED_SOURCE_PROOF_MODULES)
+    }
+    retired_modules.update(name for name in RETIRED_IMPORT_NAMES if name.isidentifier())
     for root in (ROOT / "src", ROOT / "tools", ROOT / "tests"):
         for path in root.rglob("*.py"):
             if path == Path(__file__):
                 continue
-            source = path.read_text(encoding="utf-8")
-            assert not any(name in source for name in RETIRED_IMPORT_NAMES), path
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            except SyntaxError:
+                # Non-importable legacy scripts cannot provide live imports.
+                # Their syntax is outside this retired-import boundary check.
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    imported = {part for alias in node.names for part in alias.name.split(".")}
+                elif isinstance(node, ast.ImportFrom):
+                    imported = set((node.module or "").split("."))
+                    imported.update(alias.name for alias in node.names)
+                else:
+                    continue
+                assert not (imported & retired_modules), (path, node.lineno, imported & retired_modules)
 
 
 def test_retired_checkpoint_acquisition_proof_and_l0_verdict_are_gone():
