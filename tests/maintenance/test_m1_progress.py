@@ -1,4 +1,4 @@
-"""Fast bookkeeping tests only; these are NOT P1–P7 acceptance tests."""
+"""Fast bookkeeping tests only; these are NOT active P3–P7.5 acceptance tests."""
 from pathlib import Path
 
 import pytest
@@ -34,7 +34,7 @@ def test_cannot_stamp_fail_or_blocked(monkeypatch, tmp_path):
     for status in ("FAIL", "BLOCKED"):
         with pytest.raises(ValueError):
             m1.record_pass(class_key="druid", level=60, spec="balance",
-                           gate="P2", report={"status": status}, path=path)
+                           gate="P3", report={"status": status}, path=path)
     assert not path.exists()
 
 
@@ -93,7 +93,7 @@ def test_partial_p3_is_visible_but_not_certified(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
     path = tmp_path / "passes.tsv"
     assert m1.record_partial(class_key="druid", level=60, spec="balance",
-                             gate="P2", report=_behavior_partial(), path=path)
+                             gate="P3", report=_behavior_partial(), path=path)
     score = m1.scoreboard(path)
     assert score["passed_gates"] == 0
     assert score["certified_checkpoints"] == 0
@@ -126,7 +126,7 @@ def test_partial_rejects_blocked_or_only_source_data(monkeypatch, tmp_path):
          "behavior_probes_executed": 110},
     ):
         assert not m1.record_partial(class_key="druid", level=60,
-                                     spec="balance", gate="P2",
+                                     spec="balance", gate="P3",
                                      report=report, path=path)
     assert not path.exists()
 
@@ -135,12 +135,12 @@ def test_full_pass_supersedes_partial_and_partial_cannot_erase_it(monkeypatch, t
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
     path = tmp_path / "passes.tsv"
     assert m1.record_partial(class_key="druid", level=60, spec="balance",
-                             gate="P2", report=_p2_partial(), path=path)
+                             gate="P3", report=_behavior_partial(), path=path)
     m1.record_pass(class_key="druid", level=60, spec="balance",
-                   gate="P2", report={"status": "PASS", "reasons": []}, path=path)
+                   gate="P3", report={"status": "PASS", "reasons": []}, path=path)
     assert m1.scoreboard(path)["passed_gates"] == 1
     assert not m1.record_partial(class_key="druid", level=60, spec="balance",
-                                 gate="P2", report=_p2_partial(90), path=path)
+                                 gate="P3", report=_behavior_partial(90), path=path)
     score = m1.scoreboard(path)
     assert not score["partial_gates"]
     assert score["measured_gate_equivalents"] == 1
@@ -160,8 +160,8 @@ def test_partial_watermark_is_monotonic_but_logs_lower_current_measurement(
     path = tmp_path / "m1.tsv"
     def record(n, d=100):
         return m1.record_partial(
-            class_key="druid", level=60, spec="balance", gate="P2",
-            report=_p2_partial(n, d), path=path)
+            class_key="druid", level=60, spec="balance", gate="P3",
+            report=_behavior_partial(n, d), path=path)
     assert record(1)
     assert record(50)
     assert not record(25)
@@ -202,11 +202,11 @@ def test_denominator_shrink_cannot_fake_increased_completion(monkeypatch, tmp_pa
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
     path = tmp_path / "m1.tsv"
     assert m1.record_partial(
-        class_key="druid", level=60, spec="balance", gate="P2",
-        report=_p2_partial(70, 100), path=path)
+        class_key="druid", level=60, spec="balance", gate="P3",
+        report=_behavior_partial(70, 100), path=path)
     assert not m1.record_partial(
-        class_key="druid", level=60, spec="balance", gate="P2",
-        report=_p2_partial(20, 20), path=path)
+        class_key="druid", level=60, spec="balance", gate="P3",
+        report=_behavior_partial(20, 20), path=path)
     saved = m1.scoreboard(path)["partial_gates"][0]
     assert (saved["verified"], saved["applicable"]) == (70, 100)
 
@@ -218,11 +218,11 @@ def test_concurrent_actions_merge_disjoint_real_gate_receipts(monkeypatch, tmp_p
     base, measured, latest, out = (
         tmp_path / x for x in ("base.tsv", "measured.tsv", "latest.tsv", "out.tsv"))
     assert m1.record_partial(class_key="druid", level=60, spec="balance",
-        gate="P2", report=_p2_partial(70, 100), path=base)
+        gate="P3", report=_behavior_partial(70, 100), path=base)
     copyfile(base, measured)
     copyfile(base, latest)
     assert m1.record_partial(class_key="druid", level=60, spec="balance",
-        gate="P2", report=_p2_partial(90, 100), path=measured)
+        gate="P3", report=_behavior_partial(90, 100), path=measured)
     m1.record_pass(class_key="druid", level=60, spec="balance", gate="P4",
         report={"status": "PASS", "reasons": []}, path=latest)
     m1.merge_concurrent_gate_results(base, measured, latest, out)
@@ -238,16 +238,16 @@ def test_concurrent_action_cannot_downgrade_existing_pass_or_better_fraction(
     base, measured, latest, out = (
         tmp_path / x for x in ("base.tsv", "measured.tsv", "latest.tsv", "out.tsv"))
     m1.record_partial(class_key="druid", level=60, spec="balance",
-        gate="P2", report=_p2_partial(10, 100), path=base)
+        gate="P3", report=_behavior_partial(10, 100), path=base)
     copyfile(base, measured)
     copyfile(base, latest)
     m1.record_partial(class_key="druid", level=60, spec="balance",
-        gate="P2", report=_p2_partial(60, 100), path=measured)
+        gate="P3", report=_behavior_partial(60, 100), path=measured)
     m1.record_partial(class_key="druid", level=60, spec="balance",
-        gate="P2", report=_p2_partial(95, 100), path=latest)
+        gate="P3", report=_behavior_partial(95, 100), path=latest)
     m1.merge_concurrent_gate_results(base, measured, latest, out)
     assert m1.scoreboard(out)["partial_gates"][0]["verified"] == 95
-    m1.record_pass(class_key="druid", level=60, spec="balance", gate="P2",
+    m1.record_pass(class_key="druid", level=60, spec="balance", gate="P3",
         report={"status": "PASS", "reasons": []}, path=latest)
     m1.merge_concurrent_gate_results(base, measured, latest, out)
     assert m1.scoreboard(out)["passed_gates"] == 1
