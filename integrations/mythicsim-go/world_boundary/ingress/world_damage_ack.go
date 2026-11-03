@@ -23,6 +23,12 @@ type worldDamageAck struct {
     WorldBeforeSHA256 string `json:"world_before_sha256"`
     WorldAfterSHA256 string `json:"world_after_sha256"`
     AppliedEventIDs []string `json:"applied_event_ids"`
+    AppliedDamageEventIDs []string `json:"applied_damage_event_ids"`
+    AcknowledgedControlEventIDs []string `json:"acknowledged_control_event_ids"`
+    AcknowledgedControlEvents []json.RawMessage `json:"acknowledged_control_events"`
+    AppliedControlEventIDs []string `json:"applied_control_event_ids"`
+    AppliedControlEvents []json.RawMessage `json:"applied_control_events"`
+    RootBreakSemantics string `json:"root_break_semantics"`
     AppliedEvents []sourceNativeEventProof `json:"applied_events"`
     AppliedNativeDamage float64 `json:"applied_native_damage"`
     WorldTargetHealthBefore *float64 `json:"world_target_health_before,omitempty"`
@@ -78,7 +84,21 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
         !validHash(ack.WorldAfterSHA256) {
         return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_ID_OR_HASH_MISMATCH")
     }
-    if len(ack.AppliedEventIDs)!=len(events) || len(ack.AppliedEvents)!=len(events) {
+    // The pinned Go source currently emits damage events only. Accept the
+    // complete Python ACK envelope, but fail closed on Roots/control claims
+    // until the native Go source exposes and validates those events itself.
+    if ack.RootBreakSemantics!="unimplemented" {
+        return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_ROOT_BREAK_SEMANTICS_UNSUPPORTED")
+    }
+    if len(ack.AcknowledgedControlEventIDs)!=0 ||
+        len(ack.AcknowledgedControlEvents)!=0 ||
+        len(ack.AppliedControlEventIDs)!=0 ||
+        len(ack.AppliedControlEvents)!=0 {
+        return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_UNSUPPORTED_CONTROL_EVENTS")
+    }
+    if len(ack.AppliedEventIDs)!=len(events) ||
+        len(ack.AppliedDamageEventIDs)!=len(events) ||
+        len(ack.AppliedEvents)!=len(events) {
         return worldAckAccepted{},errors.New("WORLD_EFFECT_ACK_EVENT_COUNT_MISMATCH")
     }
     applied:=0.0
@@ -88,6 +108,7 @@ func checkWorldEffectACK(raw []byte, tick worldTick, events []sourceNativeEventP
         claim:=ack.AppliedEvents[index]
         if claim!=event || event.EventID=="" ||
             event.EventID!=ack.AppliedEventIDs[index] ||
+            event.EventID!=ack.AppliedDamageEventIDs[index] ||
             event.NativeTimeNS<0 || event.NativeTimeNS>tick.NativeClockNS ||
             event.SourceActionID=="" || event.Rank<0 ||
             event.NativeTargetIndex!=0 || event.NativeTargetUnitIndex<0 ||

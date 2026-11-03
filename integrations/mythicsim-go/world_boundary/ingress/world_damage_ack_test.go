@@ -21,7 +21,10 @@ func ackFixture(tick worldTick, events []sourceNativeEventProof, pid int) []byte
     raw,_:=json.Marshal(worldDamageAck{
         Type:"gsim_native_damage_applied_ack",Sequence:tick.Sequence,
         NativeProcessID:pid,WorldBeforeSHA256:tick.WorldSHA256,
-        WorldAfterSHA256:after,AppliedEventIDs:ids,AppliedEvents:events,AppliedNativeDamage:damage,
+        WorldAfterSHA256:after,AppliedEventIDs:ids,AppliedDamageEventIDs:append([]string{},ids...),
+        AcknowledgedControlEventIDs:[]string{},AcknowledgedControlEvents:[]json.RawMessage{},
+        AppliedControlEventIDs:[]string{},AppliedControlEvents:[]json.RawMessage{},
+        RootBreakSemantics:"unimplemented",AppliedEvents:events,AppliedNativeDamage:damage,
         WorldTargetHealthBefore:&hpBefore,WorldTargetHealthAfter:&hpAfter,WorldTargetMaxHealth:&hpMax,
     })
     return raw
@@ -43,6 +46,35 @@ func TestRealWorldEffectACKAcceptsExactNativeEventProof(t *testing.T) {
     if err!=nil {t.Fatal(err)}
     if accepted.ACKID=="" || !accepted.NativeSpellActionACK || accepted.CheckpointCertified {
         t.Fatalf("missing genuine acknowledgement scope: %+v",accepted)
+    }
+}
+
+func TestWorldEffectACKRejectsDamageIDDriftAndUnsupportedControls(t *testing.T) {
+    tick:=goodTick(0,100)
+    events:=[]sourceNativeEventProof{nativeRealEventProof()}
+    cases:=map[string]func(*worldDamageAck){
+        "damage-id-drift":func(a *worldDamageAck){a.AppliedDamageEventIDs[0]="native-effect-2"},
+        "acknowledged-control-id":func(a *worldDamageAck){a.AcknowledgedControlEventIDs=[]string{"native-effect-2"}},
+        "acknowledged-control-event":func(a *worldDamageAck){a.AcknowledgedControlEvents=[]json.RawMessage{json.RawMessage(`{"control_id":"root"}`)}},
+        "applied-control-id":func(a *worldDamageAck){a.AppliedControlEventIDs=[]string{"native-effect-2"}},
+        "applied-control-event":func(a *worldDamageAck){a.AppliedControlEvents=[]json.RawMessage{json.RawMessage(`{"control_id":"root"}`)}},
+    }
+    for name,mutate:=range cases {
+        var ack worldDamageAck
+        if err:=json.Unmarshal(ackFixture(tick,events,123),&ack);err!=nil {t.Fatal(err)}
+        mutate(&ack)
+        raw,_:=json.Marshal(ack)
+        if _,err:=checkWorldEffectACK(raw,tick,events,123);err==nil {
+            t.Fatalf("accepted unsupported or mismatched ACK field %s",name)
+        }
+    }
+    var ack worldDamageAck
+    if err:=json.Unmarshal(ackFixture(tick,events,123),&ack);err!=nil {t.Fatal(err)}
+    ack.RootBreakSemantics="implemented"
+    raw,_:=json.Marshal(ack)
+    if _,err:=checkWorldEffectACK(raw,tick,events,123);err==nil ||
+        !strings.Contains(err.Error(),"WORLD_EFFECT_ACK_ROOT_BREAK_SEMANTICS_UNSUPPORTED") {
+        t.Fatalf("accepted unsupported root-break semantics: %v",err)
     }
 }
 
