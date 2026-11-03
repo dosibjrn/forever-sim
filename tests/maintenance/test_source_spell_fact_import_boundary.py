@@ -29,7 +29,6 @@ assert LegacyFieldOverlay is FieldOverlay
 
 assert 'src.game.model.ir' not in sys.modules
 assert 'src.game.runtime.simulator' not in sys.modules
-assert 'src.game.model.ir' not in sys.modules
 
 direct = DirectSpellSourceFact(
     family_key='fireball', name='Fireball', source_id=133, required_level=20,
