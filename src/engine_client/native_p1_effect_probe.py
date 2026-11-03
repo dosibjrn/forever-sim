@@ -50,12 +50,21 @@ def _cast_spell_id(row: dict) -> int | None:
     return spell if type(spell) is int and spell > 0 else None
 
 
-def native_single_action_pair(request: dict, spell_id: int) -> tuple[dict, dict]:
+def _minimal_cast_spell_row(spell_id: int) -> dict:
+    """Serialize a candidate spell ID; native prepare owns acceptance/refusal."""
+    return {"action": {"castSpell": {"spellId": {"spellId": spell_id}}}}
+
+
+def native_single_action_pair(
+    request: dict, spell_id: int, *, action_row: dict | None = None
+) -> tuple[dict, dict]:
     """Build one-action and no-action requests without changing scenario data.
 
-    The positive request contains exactly one existing castSpell APL row.
-    The control has an empty priorityList. All non-priorityList input fields
-    are byte-for-byte-equivalent JSON values in the two request objects.
+    Reuse the matching source APL row when present. If the request has no row
+    for this candidate, serialize a minimal castSpell wire request instead;
+    MythicSim alone decides whether the spell/rank is valid or supported.
+    Callers may supply an explicit action_row for a real conditional trigger.
+    The control has an empty priorityList. All other request fields are equal.
     """
     if type(spell_id) is not int or spell_id <= 0:
         raise ValueError("NATIVE_P1_SELECTED_SPELL_ID_INVALID")
@@ -77,12 +86,22 @@ def native_single_action_pair(request: dict, spell_id: int) -> tuple[dict, dict]
         row for row in rotation["priorityList"]
         if _cast_spell_id(row) == spell_id
     ]
-    if len(matches) != 1:
-        raise ValueError("NATIVE_P1_SELECTED_SPELL_NOT_UNIQUE_IN_APL:" + str(spell_id))
+    if action_row is not None:
+        if _cast_spell_id(action_row) != spell_id:
+            raise ValueError("NATIVE_P1_ACTION_ROW_SPELL_ID_MISMATCH:" + str(spell_id))
+        selected_row = copy.deepcopy(action_row)
+    elif len(matches) == 1:
+        selected_row = copy.deepcopy(matches[0])
+    elif not matches:
+        # A source candidate does not need to already exist in a Python-built
+        # APL before native gets to decide its status.
+        selected_row = _minimal_cast_spell_row(spell_id)
+    else:
+        raise ValueError("NATIVE_P1_SELECTED_SPELL_AMBIGUOUS_IN_APL:" + str(spell_id))
 
     positive = copy.deepcopy(original)
     control = copy.deepcopy(original)
-    _player(positive)["rotation"]["priorityList"] = [copy.deepcopy(matches[0])]
+    _player(positive)["rotation"]["priorityList"] = [selected_row]
     _player(control)["rotation"]["priorityList"] = []
 
     positive_normalized = copy.deepcopy(positive)
