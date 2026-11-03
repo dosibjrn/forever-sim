@@ -26,7 +26,7 @@ STAGES = (5, 30, 300)
 
 def preflight(profile: str, source: dict, request: dict | None, stage: int,
               previous: dict | None = None) -> tuple[str, str] | None:
-    """Fail closed before any native invocation; stage promotion is not a score race."""
+    """Fail closed before native execution or promotion from stale stage evidence."""
     if request is None:
         return ("BLOCKED_SOURCE", str(source.get("blocker") or "No exact source request"))
     if profile == "priest/discipline":
@@ -38,6 +38,33 @@ def preflight(profile: str, source: dict, request: dict | None, stage: int,
     if stage != 5:
         if previous is None:
             return ("BLOCKED_PRIOR_STAGE", "Missing completed prior-stage exact profile row")
+        expected_previous_stage = {30: 5, 300: 30}.get(stage)
+        if previous.get("profile_id") != profile:
+            return ("BLOCKED_PRIOR_STAGE", "Prior stage profile_id does not match this profile")
+        if previous.get("stage_seconds") != expected_previous_stage:
+            return (
+                "BLOCKED_PRIOR_STAGE",
+                f"Prior stage stage_seconds must be {expected_previous_stage}, "
+                f"got {previous.get('stage_seconds')!r}",
+            )
+        # Promotion is a fresh cold search, but its eligibility receipt must
+        # describe the same source request and selected native evaluator.
+        # These are provenance comparisons only; MythicSim remains the sole
+        # authority for candidate validity and simulation results.
+        for field in (
+            "source_sha256",
+            "effective_source_request_fingerprint",
+            "engine_git_sha",
+            "native_binary_sha256",
+            "native_db_sha256",
+        ):
+            current_value = source.get(field)
+            prior_value = previous.get(field)
+            if current_value is None or prior_value is None or current_value != prior_value:
+                return (
+                    "BLOCKED_PRIOR_STAGE",
+                    f"Prior stage {field} is missing or mismatched; exact source/evaluator provenance must match",
+                )
         if (previous.get("three_axis_paid", 0) < 1
                 or not previous.get("replay_matches")
                 or previous.get("native_errors", 0) != 0):
@@ -281,6 +308,17 @@ def main() -> None:
         ap.error("30/300s requires prior stage matrix.json")
     inventory = create_inventory(ROOT / "config/validation/checkpoint_148.json",
                                  args.engine_src)
+    if args.stage != 5:
+        current_stage_provenance = {
+            "engine_git_sha": _git_sha(args.engine_src),
+            "native_binary_sha256": _sha(args.binary),
+            "native_db_sha256": {
+                name: _sha(args.engine_src / "data" / (name + ".jsonl"))
+                for name in ("items", "enchants", "spells")
+            },
+        }
+        for row, _request in inventory:
+            row.update(current_stage_provenance)
     donor_inventory = load_source_donor_fixtures(args.engine_src)
     donor_inventory["pinned_engine_fixture_count"] = len(donor_inventory["fixtures"])
     preset_donors = current_client_talent_donor_fixtures(inventory)
