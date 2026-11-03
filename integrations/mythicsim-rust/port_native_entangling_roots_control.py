@@ -158,6 +158,16 @@ WORLD_BRIDGE_PATCHES = [
         "NEXT_TARGET_PENDING",
     ),
     (
+        "            event_ordinal: 9, pending: Vec::new(),",
+        "            event_ordinal: 9, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(),",
+        "TEST_INIT_9",
+    ),
+    (
+        "            event_ordinal: 1, pending: Vec::new(),",
+        "            event_ordinal: 1, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(),",
+        "TEST_INIT_1",
+    ),
+    (
         "fn send(value: &Value) {",
         "fn record_control_event(event_kind: &str, time_ns: i64, landed: Option<bool>,\n"
         "    expires_at_ns: Option<i64>, action: String, target_index: u32, target_label: String) {\n"
@@ -216,8 +226,8 @@ WORLD_BRIDGE_PATCHES = [
     ),
     (
         "    let ack_before = number(&ack, \"world_target_health_before\");",
-        "    let accepted_controls = ack[\"applied_control_event_ids\"].as_array()\n"
-        "        .expect(\"RUST_WORLD_CONTROL_ACK_EVENT_IDS_MISSING\");\n"
+        "    let accepted_controls = ack.get(\"applied_control_event_ids\")\n"
+        "        .and_then(Value::as_array).cloned().unwrap_or_default();\n"
         "    assert!(accepted_controls.len() == control_event_ids.len()\n"
         "        && accepted_controls.iter().zip(control_event_ids.iter())\n"
         "            .all(|(a,b)| a.as_str() == Some(b)),\n"
