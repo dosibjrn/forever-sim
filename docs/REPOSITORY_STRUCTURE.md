@@ -24,6 +24,7 @@ The project is a **scenario and optimization client** of one source-of-truth gam
 │   ├── scenarios/                # our encounter/world/leveling scenario requests [target]
 │   ├── engine_client/            # thin typed native request/result/refusal transport [target]
 │   ├── optimization/             # generic candidate mutation, search, paid scoring [target]
+│   ├── shared/                   # narrowly scoped backend-neutral primitives [target]
 │   └── service/                  # optional user/API presentation
 ├── tools/                         # stable gate/diagnostic CLIs, including wf_gate.py
 ├── scripts/commands/             # shell/PowerShell operator wrappers
@@ -45,6 +46,8 @@ The project is a **scenario and optimization client** of one source-of-truth gam
     │   └── M1_PASSES.tsv         # Merge-only acceptance ledger
     └── reference/                # historical cited sources when needed for evidence
 ```
+
+`src/shared/` is a permanent but intentionally small home for **backend-neutral primitives only**: reusable arithmetic/data structures whose behavior does not encode Warcraft facts, source acquisition, class/spec rules, talent or gear legality, combat/world semantics, or scenario policy. Examples include numeric field transforms, stateless math, pure identifier normalization and stable queue mechanics; callers own the facts, policy and provenance. It is not a catch-all and does not bless every current file beneath the directory. In particular, the live `leveling/` and `talents/` subpackages remain transitional migration inputs, as recorded below.
 
 Game spell, rank, talent, gear, enchant, race/class/level/phase legality, acquisition, buffs, combat effects and **game-world execution** belong to the pinned MythicSim Rust fork, including interfaces required for movement, 2D feedback, chainpull and persistent 100-mob behavior. The client defines *which scenario to evaluate*, proposes candidate configurations, calls native validation/preparation/execution, and scores/optimizes actual native results. It may retain provenance and scenarios, not a second game-facts authority or a renamed GameIR. If native coverage is missing, extend and test the fork; do not infer source absence from an unsupported-native refusal.
 
@@ -68,6 +71,7 @@ These are **observed current paths**, not proof that any one of them is safe to 
 | `src/game/model/ir.py` defines GameIR; `src/game/data/forever/registry.py` and `source_ir_assembly.py` produce and enrich it | Trace every runtime, optimizer, gate, CLI and test caller; expose the actual missing Rust data/behavior and migrate callers to native requests before deleting schema, providers and overlays |
 | `tools/wf_gate_p1_live.py::_source_rows` reads the Forever SQLite `spell_index` directly and filters `level_hint` | Obtain sourced native ability availability and structured invalid/unsupported handling through the Rust API; retain the current code until real native P1 legal/illegal and effect tests replace it |
 | `src/game/runtime/`, `src/v2/`, `src/rulesets/` and flat legacy `src/` execute or reference earlier semantics | Trace active entry points, tests and held-out obligations; migrate one safe real consumer at a time, retaining 2D ACK, 100-mob continuity, source legality and stable CLI behavior |
+| `src/shared/leveling/` mixes a Classic-proxy target HP/hit model, solo-leveling scorer, 2D pull geometry and timing; `src/shared/talents/tree.py` evaluates talent eligibility from Python rule maps | These are live migration inputs, not permanent common primitives. Move scenario-owned target/geometry/timing inputs to `src/scenarios/`, move game-rule facts and talent legality to MythicSim Rust, and move any still-needed pure scoring math to `src/optimization/`; retain each caller until its replacement is exercised with focused regressions |
 | `data/forever/`, `gate_sources/`, `gate_evidence/`, `state/`, `evidence/` hold overlapping source, working-state and proof material | Preserve any required historical gate reference/replay, then remove duplicated live game-data ownership only after native authority is proven; generated transient state can be ignored where safe |
 | Flat `tools/` and `tests/` contain long-lived and numbered one-off code | Group by real responsibility, update direct-entrypoint/CI/pytest references, and prove behavior before deleting or moving; file counts are not a goal |
 
