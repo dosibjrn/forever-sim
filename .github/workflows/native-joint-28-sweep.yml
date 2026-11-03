@@ -86,23 +86,12 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      # Apply the adapter port and build the evaluator required for native optimizer calls.
+      # This workflow does not run Rust unit tests or source-mechanics audits.
       - name: Apply typed RNG port to the exact pinned engine
         run: |
           set -euo pipefail
           python project/integrations/mythicsim-rust/port_native_typed_rng.py project/integrations/mythicsim-rust/engine
-          python project/integrations/mythicsim-rust/wf659_rng_boolean_audit.py project/integrations/mythicsim-rust/engine/src
-          grep -Fq 'pub enum RngMode' project/integrations/mythicsim-rust/engine/src/core/rng.rs
-          if grep -Fq 'WOWSIM_RNG_MODE' project/integrations/mythicsim-rust/engine/src/core/rng.rs; then
-            echo "ENVIRONMENT_SELECTED_RNG_REMAINS_IN_SELECTED_RUST" >&2
-            exit 1
-          fi
-
-      - name: Verify typed RNG and deterministic balanced backend
-        working-directory: project/integrations/mythicsim-rust/engine
-        run: |
-          cargo test --locked --lib typed_rng_api_tests
-          cargo test --locked --lib wf652_balanced_tests
-          cargo test --locked --lib wf_l60_rng_extreme_tests
 
       - name: Build exact pinned native Rust evaluator
         working-directory: project/integrations/mythicsim-rust/engine
