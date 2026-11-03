@@ -22,7 +22,7 @@ def _report(gate, dps, *, engine=ENGINE, source=SOURCE, reference=REFERENCE):
         "native_source_revision": engine,
         "source_request_raw_sha256": source,
         "saved_reference_dps": reference,
-        "runtime_proof": {"executed": True},
+        "runtime_proof": {"executed": True, "engine_revision": engine},
         "world_damage_events": 10, "world_boundaries": 20,
     }
     if gate == "P7.1":
@@ -112,6 +112,7 @@ def test_rejects_unverifiable_prior_receipt(tmp_path, monkeypatch, tamper):
         report["frozen_stochastic_world_damage_events"] = 0
     else:
         report["native_source_revision"] = "other-native-revision"
+        report["runtime_proof"]["engine_revision"] = "other-native-revision"
         # Incompatible accepted receipts are excluded, never used in comparison.
         path.write_text(json.dumps({"receipts": receipts}))
         assert _read(tmp_path)["dps"] == 728.0
@@ -123,4 +124,78 @@ def test_rejects_unverifiable_prior_receipt(tmp_path, monkeypatch, tamper):
 def test_without_accepted_receipt_file_stays_blocked(tmp_path, monkeypatch):
     _fixtures(tmp_path, monkeypatch)
     monkeypatch.delenv("FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS")
+    assert _read(tmp_path) is None
+
+def test_real_m1_projection_from_accepted_1000_fight_runs_is_usable(tmp_path, monkeypatch):
+    """M1 stdout is compact, not the full provider report; still real PASS."""
+    receipts, path = _fixtures(tmp_path, monkeypatch)
+    for receipt in receipts:
+        gate = receipt["gate"]
+        r = receipt["report"]
+        value = r["world_dps"] if gate == "P7.1" else r["frozen_stochastic_world_dps"]
+        r.pop("saved_reference_dps")
+        r["runtime_proof"]["engine_revision"] = ENGINE
+        r["dps_objective_scope"] = "COUPLED_LIVE_REFERENCE_DPS_ONLY"
+        r["dps_objective_provisional"] = True
+        r["dps_objective_gate_pass"] = False
+        r["dps_objective_actual"] = value
+        r["dps_objective_required"] = round(0.99 * REFERENCE, 4)
+        if gate == "P7.1":
+            r["sampled_source_fights"] = 1000
+            r.pop("native_dps")
+            r.pop("world_dps")
+            r.pop("stochastic_rng")
+            r.pop("selected_validation")
+        else:
+            for field in ("frozen_stochastic_iterations",
+                          "frozen_stochastic_native_dps",
+                          "frozen_stochastic_world_dps",
+                          "frozen_stochastic_world_damage_events",
+                          "frozen_stochastic_world_boundaries",
+                          "frozen_request_raw_sha256"):
+                r.pop(field)
+    path.write_text(json.dumps({"receipts": receipts}))
+    assert _read(tmp_path)["dps"] == 731.0
+
+
+@pytest.mark.parametrize("field,bad_value", [
+    ("dps_objective_scope", "BALANCED_SCREEN_ONLY"),
+    ("dps_objective_provisional", False),
+    ("dps_objective_gate_pass", True),
+    ("dps_objective_required", 700.0),
+    ("dps_objective_actual", 0.0),
+])
+def test_m1_projection_rejects_fake_or_unverified_score(
+        tmp_path, monkeypatch, field, bad_value):
+    receipts, path = _fixtures(tmp_path, monkeypatch)
+    r = receipts[1]["report"]
+    r.pop("saved_reference_dps")
+    r["runtime_proof"]["engine_revision"] = ENGINE
+    r.update(dps_objective_scope="COUPLED_LIVE_REFERENCE_DPS_ONLY",
+             dps_objective_provisional=True, dps_objective_gate_pass=False,
+             dps_objective_actual=731.0,
+             dps_objective_required=round(0.99 * REFERENCE, 4))
+    r[field] = bad_value
+    path.write_text(json.dumps({"receipts": receipts}))
+    assert _read(tmp_path) is None
+
+
+def test_m1_projection_rejects_bounded_p71_and_mismatched_engine(
+        tmp_path, monkeypatch):
+    receipts, path = _fixtures(tmp_path, monkeypatch)
+    for receipt in receipts:
+        receipt["report"]["runtime_proof"]["engine_revision"] = ENGINE
+    r = receipts[0]["report"]
+    r.pop("saved_reference_dps")
+    r.update(dps_objective_scope="COUPLED_LIVE_REFERENCE_DPS_ONLY",
+             dps_objective_provisional=True, dps_objective_gate_pass=False,
+             dps_objective_actual=729.0,
+             dps_objective_required=round(0.99 * REFERENCE, 4),
+             sampled_source_fights=3, iterations=3)
+    path.write_text(json.dumps({"receipts": receipts}))
+    assert _read(tmp_path) is None
+    r["sampled_source_fights"] = 1000
+    r["iterations"] = 1000
+    receipts[1]["report"]["runtime_proof"]["engine_revision"] = "wrong-fork"
+    path.write_text(json.dumps({"receipts": receipts}))
     assert _read(tmp_path) is None
