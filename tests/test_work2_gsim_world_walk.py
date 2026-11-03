@@ -265,6 +265,41 @@ def test_paid_world_route_rejects_inconsistent_real_kill_clock(
             kills, [{**leg, **leg_override}], world.trace)
 
 
+
+def test_completed_world_route_rejects_only_partially_executed_2d_steps():
+    module = _world_module()
+    world = _world()
+    leg = module._queue_world_walk(world, "m1", speed_yards_s=7.)
+    assert leg["scheduled_movement_steps"] == 10
+    # A real first gsim step exists, but the remaining 9 are not executed.
+    # The late native kill clock must not turn that partial walk into a paid
+    # *completed* route. The old implementation accepted any nonzero step count.
+    world.advance_to(leg["start_s"] + 2. / 7.)
+    assert len([e for e in world.trace if e.kind == "SpatialPlayerMoveStep"]) == 1
+    with pytest.raises(AssertionError, match="RUST_WORLD_ROUTE_INCOMPLETE_GSIM_STEPS"):
+        module._paid_world_route_receipts(
+            [{"world_kill_clock_ns": 0},
+             {"world_kill_clock_ns": round((leg["arrival_s"] + 1.) * 1e9)}],
+            [leg], world.trace)
+
+
+def test_completed_world_route_rejects_steps_from_a_different_generation():
+    module = _world_module()
+    world = _world()
+    leg = module._queue_world_walk(world, "m1", speed_yards_s=7.)
+    world.advance_to(leg["start_s"] + 2. / 7.)
+    other_route_steps = world.trace.copy()
+    # A real gsim event from another route does not finish this leg.
+    for event in other_route_steps:
+        event.payload["move_generation"] += 100
+    with pytest.raises(AssertionError, match="RUST_WORLD_ROUTE_COMPLETE_WITHOUT_GSIM_STEPS"):
+        module._paid_world_route_receipts(
+            [{"world_kill_clock_ns": 0},
+             {"world_kill_clock_ns": round((leg["arrival_s"] + 1.) * 1e9)}],
+            [leg], other_route_steps)
+
+
+
 def test_world_elapsed_reports_each_real_native_acked_target_delta():
     verify = _world_module()._verified_world_elapsed
     measured = verify(
