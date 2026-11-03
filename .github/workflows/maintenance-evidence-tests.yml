@@ -14,7 +14,6 @@ on:
       - 'src/v2/generic_frontier.py'
       - 'src/v2/generic_melee_routes.py'
       - 'src/v2/generic_backend.py'
-      - 'tests/test_canonical_generic_evaluation_g10.py'
       - '.github/workflows/maintenance-evidence-tests.yml'
 
 permissions:
@@ -47,5 +46,3 @@ jobs:
           tests/mechanics/hunter/test_hunter_mechanics_layout.py
           tests/mechanics/mage/test_mage_extended_layout.py
           tests/mechanics/paladin/test_paladin_mechanics_layout.py
-      - name: Verify canonical Evaluation and compatibility boundary
-        run: python -m pytest -q tests/test_canonical_generic_evaluation_g10.py

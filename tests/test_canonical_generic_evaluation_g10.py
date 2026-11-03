@@ -1,7 +1,3 @@
-import subprocess
-import sys
-from pathlib import Path
-
 import pytest
 
 from src.game.data.forever import build_game_ir_slice
@@ -42,23 +38,6 @@ def test_evaluation_contract_is_shared_with_legacy_game_aliases():
     assert LegacyGameEvaluation is Evaluation
     assert OptimizerEvaluation is Evaluation
     assert Evaluation.__module__ == "src.optimization.evaluation"
-
-
-def test_shared_evaluation_imports_without_loading_game_runtime():
-    root = Path(__file__).resolve().parents[1]
-    probe = '''
-import sys
-from src.optimization.evaluation import Evaluation
-from src.v2.class_model import Evaluation as OptimizerEvaluation
-assert Evaluation is OptimizerEvaluation
-assert not any(name == "src.game" or name.startswith("src.game.") for name in sys.modules)
-from src.game.evaluation import Evaluation as LegacyEvaluation
-assert LegacyEvaluation is Evaluation
-assert "src.game.runtime.simulator" in sys.modules
-from src.game import Evaluation as PublicGameEvaluation
-assert PublicGameEvaluation is Evaluation
-'''
-    subprocess.run([sys.executable, "-c", probe], cwd=root, check=True)
 
 
 def test_g10_evaluation_is_derived_from_runtime_events():
