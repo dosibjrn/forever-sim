@@ -71,7 +71,8 @@ class NativeGearAdapterTests(unittest.TestCase):
         import time
         seen = []
         raw = {"status": "INVALID", "error": "native equipment refusal"}
-        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline):
+        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline, *, objective="DPS"):
+            self.assertEqual("DPS", objective)
             seen.append(copy.deepcopy(request))
             raise NativeCandidateRefusal(
                 "INVALID", raw_response=raw, reason=raw["error"],
@@ -181,7 +182,8 @@ class NativeGearAdapterTests(unittest.TestCase):
         seen = []
         raw = {"status": "INVALID", "reason": "native hand/equipment refusal"}
 
-        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline):
+        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline, *, objective="DPS"):
+            self.assertEqual("DPS", objective)
             seen.append(copy.deepcopy(request))
             raise NativeCandidateRefusal(
                 "INVALID", raw_response=raw, reason=raw["reason"],
@@ -211,7 +213,8 @@ class NativeGearAdapterTests(unittest.TestCase):
         seen = []
         raw = {"status": "INVALID", "reason": "native unknown-item refusal"}
 
-        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline):
+        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline, *, objective="DPS"):
+            self.assertEqual("DPS", objective)
             seen.append(copy.deepcopy(request))
             raise NativeCandidateRefusal(
                 "INVALID", raw_response=raw, reason=raw["reason"],
