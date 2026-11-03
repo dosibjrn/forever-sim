@@ -8,6 +8,7 @@ only in the pinned Rust engine; gsim applies them to real 2D world targets.
 from __future__ import annotations
 
 import argparse
+from enum import Enum
 import json
 from math import hypot, isfinite
 import os
@@ -320,13 +321,20 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
     return receipts, total_paid_s
 
 
-def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
+class RngMode(str, Enum):
+    BALANCED = "balanced"
+    STOCHASTIC = "stochastic"
+
+
+def run(binary: Path, prepared: Path, *, rng_mode: RngMode, mob_health: float | None = None,
         target_count: int = 2, corrupt_ack: bool = False,
         require_native_moving: bool = False,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
         require_native_zero_health_damage: bool = False) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
+    if not isinstance(rng_mode, RngMode):
+        raise TypeError("RUST_WORLD_TYPED_RNG_MODE_REQUIRED")
     if require_native_health_damage and require_native_zero_health_damage:
         raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
@@ -378,10 +386,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     native_moving_ticks = 0
     native_moving_receipts = 0
     native_report = None
-    env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1", WOWSIM_RNG_MODE="stochastic")
+    env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1")
     proc = subprocess.Popen(
         [str(binary.resolve()), "native-world-pulls", "--infile",
-         str(prepared.resolve()), "--targets", str(target_count)],
+         str(prepared.resolve()), "--targets", str(target_count),
+         "--rng-mode", rng_mode.value],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
@@ -546,6 +555,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--rng-mode", choices=[mode.value for mode in RngMode], required=True)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--prepared", type=Path, required=True)
     target = parser.add_mutually_exclusive_group()
@@ -560,13 +570,13 @@ def main() -> None:
     health_controls.add_argument("--require-native-zero-health-damage", action="store_true",
                                  help="require selected Rust receipts with zero incoming damage")
     args = parser.parse_args()
-    valid = run(args.binary, args.prepared, mob_health=args.mob_health,
+    valid = run(args.binary, args.prepared, rng_mode=RngMode(args.rng_mode), mob_health=args.mob_health,
                 target_count=args.targets, require_native_moving=args.require_native_moving,
                 classic_mob_level=args.classic_mob_level,
                 require_native_health_damage=args.require_native_health_damage,
                 require_native_zero_health_damage=args.require_native_zero_health_damage)
     print("RUST_TWO_REAL_GSIM_WORLD_KILLS", json.dumps(valid, sort_keys=True), flush=True)
-    forged = run(args.binary, args.prepared, mob_health=args.mob_health,
+    forged = run(args.binary, args.prepared, rng_mode=RngMode(args.rng_mode), mob_health=args.mob_health,
                  target_count=args.targets, corrupt_ack=True,
                  classic_mob_level=args.classic_mob_level)
     print("RUST_TWO_WORLD_FORGED_ACK_REJECTED", json.dumps(forged, sort_keys=True), flush=True)
