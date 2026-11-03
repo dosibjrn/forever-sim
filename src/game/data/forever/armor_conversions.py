@@ -5,9 +5,12 @@ from pathlib import Path
 import math
 import re
 import sqlite3
+from typing import TYPE_CHECKING
 
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
-from src.game.model.ir import GameIRSlice, ModeStatModifier
+from .source_db_scope import DEFAULT_DB
+
+if TYPE_CHECKING:
+    from src.game.model.ir import GameIRSlice
 
 
 @dataclass(frozen=True)
@@ -61,6 +64,9 @@ def source_enrich_armor(ir: GameIRSlice, *, db_path: Path | None = None) -> Game
     Gear is applied separately; it recalculates actor armor from the source
     actor-agility rule and adds mode item-armor extra only to the sourced mode.
     """
+    # Source fact readers remain independent of the transitional GameIR runtime.
+    from src.game.model.ir import ModeStatModifier
+
     if ir.actor.metadata.get('canonical_armor_source_rules'):
         raise ValueError('armor source facts applied twice')
     key = str(ir.actor.metadata.get('class_key', '')).lower()

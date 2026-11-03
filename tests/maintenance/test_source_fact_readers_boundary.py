@@ -368,3 +368,68 @@ def test_historical_mage_stager_keeps_explicit_db_and_source_identity(tmp_path):
     with pytest.raises(ValueError, match="STAGED_TALENT_SOURCE_DB_MUST_NOT_BE_OVERWRITTEN"):
         stage(source=source, base=base, target=base)
     assert base.read_bytes() == original
+
+
+def test_armor_source_rule_reader_import_does_not_load_gameir():
+    """Source-only armor facts must not import the transitional talent compiler."""
+    code = """
+import sys
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever.armor_conversions import (
+    DEFAULT_DB as ARMOR_DB, load_armor_rules, source_enrich_armor,
+)
+assert ARMOR_DB is DEFAULT_DB
+assert callable(load_armor_rules) and callable(source_enrich_armor)
+for name in (
+    'src.game.data.forever.sqlite_talents',
+    'src.game.model.ir',
+    'src.game.runtime.simulator',
+):
+    assert name not in sys.modules, name
+
+# Existing legacy users must still resolve the same source database.
+from src.game.data.forever.sqlite_talents import DEFAULT_DB as LEGACY_DB
+assert LEGACY_DB is DEFAULT_DB
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_armor_source_reader_preserves_explicit_sqlite_and_fail_closed(tmp_path):
+    """A source-only import change must retain verified schema and value checks."""
+    import pytest
+    from src.game.data.forever.armor_conversions import load_armor_rules
+
+    path = tmp_path / "armor.sqlite"
+    with sqlite3.connect(path) as db:
+        db.executescript("""
+            CREATE TABLE armor_conversion_source_facts (
+                class_key TEXT, scope TEXT, mode_label TEXT, source_stat TEXT,
+                target_stat TEXT, operation TEXT, coefficient REAL,
+                authority TEXT, source_url TEXT, source_date TEXT,
+                evidence TEXT, capture_id TEXT
+            );
+        """)
+        db.execute(
+            "INSERT INTO armor_conversion_source_facts VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            ('druid', 'actor', '', 'agility', 'armor', 'add_stat_scaled', 2.0,
+             'fixture', 'https://example.invalid/armor', '2026-11-03',
+             'explicit source fixture', 'armor-1'),
+        )
+
+    rows = load_armor_rules("DRUID", db_path=path)
+    assert len(rows) == 1
+    assert (rows[0].class_key, rows[0].source_stat, rows[0].coefficient) == (
+        "druid", "agility", 2.0
+    )
+    assert load_armor_rules("mage", db_path=path) == ()
+
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE armor_conversion_source_facts SET coefficient=-1.0"
+        )
+    with pytest.raises(ValueError, match="invalid canonical armor source fact"):
+        load_armor_rules("druid", db_path=path)
