@@ -136,6 +136,9 @@ AGENT_PATCHES = [
      "                }\n"
      "                fight.deal_damage(spell, result, false);\n"
      "            },", "EFFECT"),
+    ("            DruidSpell::EntanglingRoots => insect_swarm::apply(fight, spell, target),\n",
+     "            // Entangling Roots is handled by the source-native control arm above.\n",
+     "REMOVE_OLD_ROOTS_DOT_ARM"),
     ("            DruidSpell::MoonfireDot | DruidSpell::InsectSwarm => fight.snapshot_dot_tick(dot),",
      "            DruidSpell::MoonfireDot | DruidSpell::InsectSwarm | DruidSpell::EntanglingRoots => {\n"
      "                fight.snapshot_dot_tick(dot)\n"
