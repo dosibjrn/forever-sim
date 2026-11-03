@@ -54,7 +54,7 @@ class NativeP2RankProbeTests(unittest.TestCase):
         before_string = serialize_source_allocation(self.source_data, self.layout, before)
         after_string = serialize_source_allocation(self.source_data, self.layout, after)
         self.assertEqual(after_string.split("-")[1][10], "1")
-        self.assertEqual(before_string.split("-")[1][10], "0")
+        self.assertEqual(before_string.split("-")[1].ljust(11, "0")[10], "0")
 
         before, after = build_source_legal_rank_pair(
             self.source_data, "moonkin_form", 1, level=60
@@ -62,7 +62,7 @@ class NativeP2RankProbeTests(unittest.TestCase):
         before_string = serialize_source_allocation(self.source_data, self.layout, before)
         after_string = serialize_source_allocation(self.source_data, self.layout, after)
         self.assertEqual(after_string.split("-")[0][15], "1")
-        self.assertEqual(before_string.split("-")[0][15], "0")
+        self.assertEqual(before_string.split("-")[0].ljust(16, "0")[15], "0")
 
     def test_selected_rust_prepare_emits_four_rank_receipts_without_gate_credit(self) -> None:
         self.assertEqual(self.report["scope"], "NATIVE_P2_RANK_PROBE_DIAGNOSTIC_NOT_GATE")
