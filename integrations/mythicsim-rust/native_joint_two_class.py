@@ -133,7 +133,7 @@ def source_bounded_adapter(
         raise ValueError("BLOCKED_TALENTS: need two independent full 51-point same-class source builds")
     alternate = [t for t in talents if t != original["talentsString"]]
 
-    gear_donor_fixtures = [
+    gear_donor_fixtures_scanned = [
         {
             "source_path": fixture["source_path"],
             "source_sha256": fixture["source_sha256"],
@@ -222,7 +222,7 @@ def source_bounded_adapter(
         "gear_mutable_slots": list(gear.mutable_indices),
         "talent_builds": talents,
         "source_donor_fixture_count": len(extra_same_class),
-        "gear_donor_fixtures": gear_donor_fixtures,
+        "gear_donor_fixtures_scanned": gear_donor_fixtures_scanned,
         "talent_donor_fixtures": talent_donor_fixtures,
         "talent_validation": "51_POINT_WHOLE_BUILDS_OBSERVED_IN_PINNED_SAME_CLASS_REQUESTS_NOT_RANKWISE",
         "gear_validation": "PINNED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
