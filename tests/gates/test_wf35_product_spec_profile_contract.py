@@ -14,7 +14,7 @@ import pytest
 from tools import wf_gate_p2_live as p2
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def _ir():
