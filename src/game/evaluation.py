@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from src.shared.evaluation import Evaluation
+from src.optimization.evaluation import Evaluation
 
 from src.game.runtime.simulator import CombatTimelineResult
 
