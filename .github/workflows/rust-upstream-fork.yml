@@ -136,6 +136,7 @@ jobs:
           python3 integrations/mythicsim-rust/port_typed_rng_mode.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
+          cargo test --no-run --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib native_improved_roots_rank_intake
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml forever_roots_preparation_uses_native_spell_data_and_improved_rank
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml forever_roots_native_periodic_ticks_change_with_rank -- --nocapture

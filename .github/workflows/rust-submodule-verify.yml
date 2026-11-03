@@ -4,6 +4,7 @@ on:
     paths:
       - .gitmodules
       - integrations/mythicsim-rust/engine
+      - integrations/mythicsim-rust/port_typed_rng_mode.py
       - .github/workflows/rust-submodule-verify.yml
       - .github/workflows/wf-gsim-rust-native-world.yml
       - .github/workflows/m1-on-demand-record.yml
@@ -29,7 +30,11 @@ jobs:
           test -n "$expected" && test "$expected" = "$actual"
           grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
           test -f "$engine/src/core/fight/world_bridge.rs"
-          grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
+          python integrations/mythicsim-rust/port_typed_rng_mode.py "$engine"
+          git -C "$engine" diff --check
+          grep -Fq 'pub enum RngMode { Balanced, Stochastic }' "$engine/src/core/rng.rs"
+          grep -Fq 'fn new(labeled: bool, seed: u64, mode: RngMode)' "$engine/src/core/rng.rs"
+          ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
           grep -Fq 'RandomRequest::Bernoulli' "$engine/src/core/rng.rs"
           echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
       - name: Verify packaged Rust source compiles (not simulation validation)
