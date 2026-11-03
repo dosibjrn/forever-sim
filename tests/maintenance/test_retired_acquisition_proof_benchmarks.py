@@ -65,9 +65,11 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
     assert (ROOT / "src/v2/source_budgeted_level_route.py").is_file()
-    # These are the live native P2 interfaces, not the retired L0 proof CLIs.
-    assert (ROOT / "tools/wf_gate_p2_live.py").is_file()
-    assert (ROOT / "src/engine_client/native_p2_rank_probe.py").is_file()
+    # Shared talent/runtime support remains for the active production paths; it is not a gate provider.
+    assert (ROOT / "tools/wf_talent_runtime.py").is_file()
+    assert not (ROOT / "tools/wf_gate_p1_live.py").exists()
+    assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
+    assert not (ROOT / "tools/wf_druid_p2_probe.py").exists()
 
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
     for relative in RETIRED_TOOLS:
@@ -99,8 +101,8 @@ def test_retired_checkpoint_acquisition_proof_and_l0_verdict_are_gone():
         assert obsolete not in frontier, obsolete
 
 
-def test_historical_p1_gameir_admission_toolchain_is_retired():
-    """The current P1 gate is native-facing; old L0 spellbook proof CLIs are not gates."""
+def test_standalone_p1_p2_gate_providers_are_retired():
+    """No standalone P1/P2 acceptance provider or proof path remains."""
     retired = (
         "src/game/data/forever/source_checkpoint_p1_acceptance.py",
         "tools/wf406_druid20_live_p1p2.py",
@@ -120,8 +122,10 @@ def test_historical_p1_gameir_admission_toolchain_is_retired():
     for relative in retired:
         assert not (ROOT / relative).exists(), relative
         assert relative not in workflow, f"retired path remains in maintenance workflow: {relative}"
-    # Keep the actual production P1 entrypoint and the still-live P2 caller.
-    assert (ROOT / "tools/wf_gate_p1_live.py").is_file()
+    # Keep only shared source/talent data needed by active optimizer paths.
+    assert not (ROOT / "tools/wf_gate_p1_live.py").exists()
+    assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
+    assert (ROOT / "tools/wf_talent_runtime.py").is_file()
     assert (ROOT / "src/game/data/forever/source_checkpoint_p2.py").is_file()
 
 
