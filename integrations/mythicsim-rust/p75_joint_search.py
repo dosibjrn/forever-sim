@@ -70,7 +70,7 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
             elif axis=="talents_rebuild":
                 ranks=random_build(rng)
             elif axis=="rotation_rebuild":
-                actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
+                actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True,min_length=14)
             else:
                 candidates=[i for i,options in enchant_choices.items()
                             if any(e != enchants[i] for e in options)]
