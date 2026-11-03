@@ -19,7 +19,7 @@ This is an independent Forever simulation and optimization research project. The
 
 **Credit and scope:** this repository is not the official MythicSim project and is not affiliated with its maintainers. Engine references and pinned versions must remain traceable; upstream licenses and notices govern any adapted code.
 
-**The M1 ledger is authoritative for active checkpoint counts.** The linked SVG is the pre-v2.20 11-gate history until Merge regenerates it. User-accepted P7 subgates are tracked separately; do not mistake them for full active P3–P7.5 checkpoint certification. A green CI job or a standalone reference replay does not certify the active P3–P7.5 checkpoint.
+User-accepted P7 subgates are tracked separately; do not mistake them for full active P3–P7.5 checkpoint certification. A green CI job or a standalone reference replay does not certify the active P3–P7.5 checkpoint.
 
 ## Work queue and the 148-checkpoint matrix
 
