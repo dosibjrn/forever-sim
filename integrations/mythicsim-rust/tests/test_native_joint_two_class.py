@@ -355,6 +355,112 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         ))
 
 
+
+
+class NativeGeneratedDruidTalentDonorContracts(unittest.TestCase):
+    def test_two_native_verified_full_builds_unlock_shared_baseline_damage_witness(self):
+        baseline = request()
+        source_player = baseline["raid"]["parties"][0]["players"][0]
+        source_player["talentsString"] = "5532220115501351--505"
+        source_player["rotation"]["priorityList"] = [
+            {"action": {"castSpell": {"spellId": {"rank": 5, "spellId": 24977}}}},
+            {"action": {"castSpell": {"spellId": {"rank": 10, "spellId": 9835}}}},
+            {"action": {"castSpell": {"spellId": {"rank": 8, "spellId": 9912}}}},
+        ]
+        raw = {"result": {"raidMetrics": {
+            "dps": {"avg": 200.0},
+            "parties": [{"players": [{"actions": [
+                {"id": {"spellId": 24977}, "targets": [{"casts": 40, "damage": 800.0}]},
+                {"id": {"spellId": 9835}, "targets": [{"casts": 20, "damage": 300.0}]},
+                {"id": {"spellId": 9912}, "targets": [{"casts": 30, "damage": 500.0}]},
+            ]}]}],
+        }}}
+        calls = []
+
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
+            calls.append((candidate["raid"]["parties"][0]["players"][0]["talentsString"],
+                          iterations, seed, rng_mode))
+            return (200.0, raw, 0.01,
+                    fingerprint(native_payload(candidate, iterations, seed)))
+
+        with tempfile.TemporaryDirectory() as directory:
+            donors, witnesses, summary = joint._generate_native_druid_talent_donors(
+                Path("native"), baseline,
+                [{"rank": 5, "spellId": 24977},
+                 {"rank": 10, "spellId": 9835},
+                 {"rank": 8, "spellId": 9912}],
+                Path(directory), iterations=40, seed=731,
+                existing_talents={source_player["talentsString"]},
+                runner=fake_run, max_attempts=8,
+            )
+
+            self.assertEqual("PASS", summary["status"])
+            self.assertEqual(2, len(donors))
+            self.assertEqual(2, len({
+                joint.player(fixture["request"])["talentsString"]
+                for fixture in donors
+            }))
+            self.assertTrue(all(
+                joint._is_full_51_source_build(
+                    joint.player(fixture["request"])["talentsString"]
+                )
+                for fixture in donors
+            ))
+            self.assertEqual(2, summary["native_evaluations"])
+            self.assertEqual("balanced", donors[0]["native_rng_mode"])
+            self.assertEqual(
+                [{"rank": 5, "spellId": 24977},
+                 {"rank": 10, "spellId": 9835},
+                 {"rank": 8, "spellId": 9912}],
+                witnesses,
+            )
+            self.assertTrue(all(
+                (Path(directory) / fixture["source_path"]).is_file()
+                for fixture in donors
+            ))
+            self.assertTrue(all(
+                (Path(directory) / fixture["source_path"].replace(
+                    ".request.json", ".response.json"
+                )).is_file()
+                for fixture in donors
+            ))
+
+            class FakeGear:
+                def __init__(self, class_key, reference, source_requests, items):
+                    self.reference = reference
+                    self.mutable_indices = [0]
+
+                def validate(self, request_value):
+                    return None
+
+                def mutate_one(self, rng):
+                    return copy.deepcopy(self.reference), {}
+
+                def mutate_from(self, request_value, rng):
+                    return copy.deepcopy(request_value), {}
+
+            verified = {
+                source_player["talentsString"],
+                *[joint.player(fixture["request"])["talentsString"]
+                  for fixture in donors],
+            }
+            with patch.object(joint, "NativeGearAdapter", FakeGear), patch.object(
+                joint, "legal_apl_only_request", return_value=True
+            ):
+                _adapter, scope = joint.source_bounded_adapter(
+                    "druid", baseline, [baseline], {},
+                    donor_fixtures=donors,
+                    native_damage_witnesses=witnesses,
+                    native_verified_talent_builds=verified,
+                )
+            self.assertEqual(sorted(verified), scope["talent_builds"])
+            self.assertEqual(sorted(verified), scope["native_verified_talent_builds"])
+            self.assertEqual(
+                witnesses,
+                scope["native_positive_damage_witnesses_common_to_selected_talent_builds"],
+            )
+
+
 class NativeExecutionErrorReporting(unittest.TestCase):
     def test_missing_dps_average_preserves_raw_native_response(self):
         source = request()
