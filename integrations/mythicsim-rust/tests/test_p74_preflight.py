@@ -42,6 +42,17 @@ class P74Tests(unittest.TestCase):
         self.assertEqual([None,100,200],options[0])
         self.assertEqual([None,100],options[1])
 
+    def test_native_authoritative_enchants_are_forwarded_without_python_filter(self):
+        class Validator:
+            enchants={100: {},200: {}}
+            def item(self,*args):
+                raise AssertionError("native mode must not run Python enchant legality")
+        pools={i:[i+1000] for i in range(16)}
+        options=source_enchant_pools(
+            Validator(),pools,native_authoritative=True)
+        self.assertEqual([None,100,200],options[0])
+        self.assertEqual([None,100,200],options[15])
+
     def test_freeze_talents_rotation_and_encounter(self):
         for mutation in ["talents","rotation","encounter"]:
             with self.subTest(mutation=mutation):
