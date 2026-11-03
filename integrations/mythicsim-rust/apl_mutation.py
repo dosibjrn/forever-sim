@@ -245,7 +245,7 @@ def _ensure_fallback(actions, source_actions):
         None,
     )
     if source_fallback is not None and not _has_fallback(actions):
-        # A missing unconditional cast is a termination hazard: repair it.
+        # Restore only the exact source fallback; never synthesize an unguarded cast.
         if len(actions) >= 20:
             actions.pop()
         actions.append(source_fallback)
