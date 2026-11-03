@@ -79,6 +79,7 @@ RETIRED_TOOLS = (
     "tests/test_wf350_druid30_staged_talents.py",
     "tests/test_wf362_warrior_l30_p2.py",
     "tests/test_wf381_mage_l30_talent_positions_tdd.py",
+    "tests/test_wf387_atomic_rank_promotion.py",
     "tests/test_wf382_mage_l30_build_delta_p1_tdd.py",
     "tests/test_talent_tree_row_ingestion.py",
     "tests/generic/search/test_wf_p2_cross_tree_source_witness.py",
