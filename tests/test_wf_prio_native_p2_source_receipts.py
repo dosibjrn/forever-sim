@@ -128,3 +128,73 @@ def test_native_rank_diagnostic_requires_source_tree_tier_points_in_both_pair_me
     )
     assert result["status"] == "BLOCKED"
     assert result["reason"] == "SOURCE_RANK_PAIR_TIER_NOT_SATISFIED"
+
+
+def test_native_rank_diagnostic_preserves_bridge_flags_without_gating(tmp_path, monkeypatch):
+    source_url = "https://example.invalid/druid-talent-source"
+    control = {
+        "ferocity": 5,
+        "feral_swiftness": 2,
+        "feral_instinct": 3,
+        "thick_hide": 5,
+    }
+    candidate = {**control, "predatory_strikes": 1}
+    binary = tmp_path / "engine" / "target" / "debug" / "forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"selected-engine-test-double")
+
+    def fake_run_native_rank_pair(**kwargs):
+        assert kwargs["before_selection"] == control
+        assert kwargs["after_selection"] == candidate
+        return {
+            "status": "PROBE_PASS",
+            "reason": "NATIVE_DPS_INCREASE_OBSERVED",
+            "delta_dps": 1.0,
+            "accepted_for_p2": False,
+        }
+
+    monkeypatch.setattr(p2, "run_native_rank_pair", fake_run_native_rank_pair)
+    result = p2._native_p2_rank_diagnostic(
+        str(binary),
+        "predatory_strikes",
+        1,
+        {
+            "source_rank_facts": {
+                "class_key": "druid",
+                "level": 60,
+                "talent_id": "predatory_strikes",
+                "rank": 1,
+                "tree_key": "feral",
+                "tree_row": 3,
+                "rank_cap": 3,
+                "source_build": "1.60.1.70338",
+                "source_url": source_url,
+                "prerequisite": None,
+                "tree_members": [
+                    "ferocity", "feral_swiftness", "feral_instinct",
+                    "thick_hide", "predatory_strikes",
+                ],
+                "points_per_row": 5,
+                "checkpoint_source_l0": {
+                    "source_url": source_url,
+                    "expected_clause_count": 1,
+                    "prerequisite_rank_build_bridge_unverified": True,
+                    "unsupported_prerequisite_rank_bridge_unverified": True,
+                    "effects": [{
+                        "domain": "form_melee_attack_power_from_level",
+                        "target": "attack_power",
+                        "sourced_value": 0.02,
+                        "condition": "cat_form",
+                        "source": source_url,
+                    }],
+                },
+            },
+            "control_witness": control,
+            "witness": candidate,
+        },
+    )
+
+    assert result["status"] == "PROBE_PASS"
+    assert result["accepted_for_p2"] is False
+    assert result["source_rank_facts"]["prerequisite_rank_build_bridge_unverified"] is True
+    assert result["source_rank_facts"]["unsupported_prerequisite_rank_bridge_unverified"] is True
