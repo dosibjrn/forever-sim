@@ -35,7 +35,8 @@ def test_moving_port_rewrites_both_source_runtime_boundaries_once():
     port = _port()
     bridge = port.port_bridge(BRIDGE)
     fight = port.port_fight(FIGHT)
-    assert 'tick["gsim_player_moving"].as_bool()' in bridge
+    assert 'tick.get("gsim_player_moving")' in bridge
+    assert 'RUST_WORLD_PLAYER_MOVEMENT_INVALID' in bridge
     assert '"gsim_player_moving": moving' in bridge
     assert "(distance, front, moving)" in bridge
     assert "self.player.moving = moving;" in fight
