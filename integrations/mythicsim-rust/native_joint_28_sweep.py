@@ -2,9 +2,10 @@
 """28-row native Rust JOINT breadth using the ONE existing search_native kernel.
 
 This runner reuses native_joint_two_class.execute; it does not introduce a new
-optimizer or scorer. A whole-build donor talent and a source-bounded gear swap
-are *partial* legality, not rank-wise 51-point or full equip certification.
-Thus measured 5s rows cannot yet be promoted to 30s/300s or PROCESS P7 PASS.
+optimizer or scorer. The source-observed candidate pool is not exhaustive;
+MythicSim Rust decides whether each paid candidate is valid or unsupported.
+A native-paid, three-axis candidate with exact replay can advance the optimizer
+screen from 5s to 30s to 300s; this never implies PROCESS P7 acceptance.
 """
 from __future__ import annotations
 
@@ -22,7 +23,19 @@ from native_l60_matrix import (
 )
 
 STAGES = (5, 30, 300)
-SOURCE_GAP = "VERIFY_PER_RANK_TALENTS_AND_FULL_EQUIP_RULES"
+
+
+def _native_stage_ready(row: dict) -> bool:
+    """A prior screen advances only on a paid 3-axis native candidate + exact replay."""
+    try:
+        return (
+            int(row.get("native_paid", 0)) >= 1
+            and int(row.get("three_axis_paid", 0)) >= 1
+            and bool(row.get("replay_matches"))
+            and int(row.get("native_errors", 0)) == 0
+        )
+    except (TypeError, ValueError):
+        return False
 
 
 def preflight(profile: str, source: dict, request: dict | None, stage: int,
@@ -39,16 +52,9 @@ def preflight(profile: str, source: dict, request: dict | None, stage: int,
     if stage != 5:
         if previous is None:
             return ("BLOCKED_PRIOR_STAGE", "Missing completed prior-stage exact profile row")
-        if not previous.get("full_source_legality_certified", False) or (
-            previous.get("status") != "FULL_SOURCE_NATIVE_JOINT"
-        ):
-            return ("BLOCKED_FULL_SOURCE_LEGALITY",
-                    "Previous stage is source-bounded, not rank-wise 51-point and full equip legal")
-        if (previous.get("native_paid", 0) < 1
-                or not previous.get("replay_matches")
-                or previous.get("native_errors", 0) != 0):
+        if not _native_stage_ready(previous):
             return ("BLOCKED_PRIOR_STAGE",
-                    "Prior stage lacks paid, independently replayed error-free native evidence")
+                    "Prior stage lacks a native-paid three-axis candidate with exact replay and no execution errors")
     return None
 
 
@@ -80,9 +86,9 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             "native_paid_total": 0,
             "baseline_balanced_score": None,
             "three_axis_paid": 0,
-            "full_source_legality_certified": False,
             "process_gate_pass": False,
             "promotable": False,
+            "next_stage_eligible": False,
         }
         if block:
             base["status"], base["blocker"] = block
@@ -90,17 +96,21 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             rows.append(base)
             continue
         measured = run(profile)
-        if measured.get("process_gate_pass") or measured.get("full_source_legality_certified"):
-            # This source-bounded adapter cannot certify full legal gear/talents.
-            raise ValueError("Unverified full-source legality or P7 certification")
+        if measured.get("process_gate_pass"):
+            raise ValueError("A diagnostic JOINT screen cannot claim PROCESS P7 acceptance")
         base.update(measured)
         base.setdefault("baseline_paid", 0)
         base.setdefault("native_paid_total",
                         base.get("native_paid", 0) + base.get("baseline_paid", 0))
-        base["full_source_legality_certified"] = False
         base["process_gate_pass"] = False
         base["promotable"] = False
-        base["promotion_blocker"] = "BLOCKED_FULL_SOURCE_LEGALITY"
+        base["next_stage_eligible"] = stage in (5, 30) and _native_stage_ready(base)
+        if stage == 300:
+            base["promotion_blocker"] = "FINAL_STAGE_NOT_PROCESS_P7_ACCEPTANCE"
+        elif base["next_stage_eligible"]:
+            base["promotion_blocker"] = None
+        else:
+            base["promotion_blocker"] = "BLOCKED_NO_NATIVE_PAID_THREE_AXIS_REPLAY"
         base["score_scope"] = "BALANCED_NATIVE_SCREEN_ONLY_NOT_HOLDOUT"
         rows.append(base)
     return rows
@@ -108,10 +118,8 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
 
 def _cause(row: dict) -> str:
     status = row["status"]
-    if status == "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY":
-        return SOURCE_GAP
-    if status == "BLOCKED_FULL_SOURCE_LEGALITY":
-        return SOURCE_GAP
+    if status == "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN":
+        return "NATIVE_JOINT_PAID_SCREEN_ONLY"
     if status.startswith("BLOCKED_OBJECTIVE"):
         return "VERIFY_NATIVE_HPS_TPS_OBJECTIVE"
     if status == "BLOCKED_SPEC_IDENTITY":
@@ -126,7 +134,9 @@ def _cause(row: dict) -> str:
             return "SOURCE_TALENT_ENCODING_INVALID"
         return "INVESTIGATE_SOURCE_LEGALITY"
     if status == "BLOCKED_NO_PAID_THREE_AXIS_JOINT":
-        return "VERIFY_SOURCE_GEAR_TALENTS_APL"
+        if row.get("native_invalid", 0) or row.get("native_unsupported", 0):
+            return "NATIVE_REJECTED_ALL_CANDIDATES"
+        return "NO_NATIVE_PAID_THREE_AXIS_CANDIDATE"
     if status == "BLOCKED_SOURCE":
         return "PROVIDE_EXACT_NATIVE_REQUEST"
     if status == "BLOCKED_PRIOR_STAGE":
@@ -194,7 +204,7 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
         "candidate_rng_mode": "balanced",
         "holdout_rng_mode": "stochastic",
         "holdout_status": "NOT_RUN_STAGE_5",
-        "source_scope": "PINNED_NATIVE_SOURCE_BOUNDED_PARTIAL_LEGALITY",
+        "source_scope": "PINNED_SOURCE_OBSERVED_CANDIDATE_POOL_NATIVE_OUTCOME_SCREEN",
         "source_talent_overrides": [
             {"profile_id": row["profile_id"], **row["talent_override"]}
             for row in rows if row.get("talent_override")
@@ -232,8 +242,8 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
     (out / "matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
     (out / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
     (out / "gaps.json").write_text(json.dumps(gap_summary(rows), indent=2) + "\n")
-    lines = ["# Native Rust L60 source-bounded JOINT " + str(stage) + "s",
-             "", "Not full legal JOINT, not stochastic holdout, not PROCESS P7.",
+    lines = ["# Native Rust L60 JOINT screen " + str(stage) + "s",
+             "", "Source-observed candidate pool; MythicSim decides candidate validity. Not exhaustive search, stochastic holdout, or PROCESS P7.",
              "", "| Profile | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Gap |",
              "|---|---|---:|---:|---:|---:|---:|---|"]
     for r in rows:
