@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Class/level/spec-specific active P3-P7 acceptance gates for WoW Forever.
+"""Class/level/spec-specific active P3-P7.5 acceptance gates for WoW Forever.
 
 Runtime-first acceptance: execute the source-backed gate implementation.
 Evidence JSON is OUTPUT ONLY, never an input authority to award PASS. Missing
