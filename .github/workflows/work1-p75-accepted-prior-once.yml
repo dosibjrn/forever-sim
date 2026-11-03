@@ -1,0 +1,20 @@
+name: Work1 P7.5 accepted prior focused RED/GREEN
+on:
+  push:
+    branches:
+      - work/work1-p75-accepted-prior-20261103
+  workflow_dispatch:
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -q pytest
+      - run: python -m pytest -q tests/gates/test_wf_gate_p7_5_prior.py
