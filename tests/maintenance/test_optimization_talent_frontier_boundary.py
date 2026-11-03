@@ -71,7 +71,7 @@ assert Neighbor is OptimizerNeighbor
 assert allocation_key is optimizer_allocation_key
 assert callable(source_legal_talent_neighbors)
 
-# The production P2 entry point also consumes the optimizer-owned identity.
+# Legacy runtime-probe regressions reuse the optimizer-owned identity.
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 spec = spec_from_file_location('wf_gate_p2_live', Path('tools/wf_gate_p2_live.py'))
