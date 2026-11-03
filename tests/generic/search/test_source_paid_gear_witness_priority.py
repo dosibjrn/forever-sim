@@ -5,7 +5,6 @@ catalogue and valid full-equipment substitutions. It does not claim a P4 gate.
 """
 from collections import Counter
 from itertools import islice
-from pathlib import Path
 
 import pytest
 
