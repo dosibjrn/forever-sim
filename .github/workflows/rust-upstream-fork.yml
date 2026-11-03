@@ -31,6 +31,10 @@ on:
       - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
       - integrations/mythicsim-rust/port_native_persistent_target.py
       - integrations/mythicsim-rust/test_port_native_early_retarget.py
+      - integrations/mythicsim-rust/test_native_p2_rank_probe.py
+      - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
+      - src/game/native_p2_rank_probe.py
+      - tools/wf_gate_p2_live.py
 
 permissions:
   contents: read
@@ -56,6 +60,10 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_improved_roots_rank.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_entangling_roots_dot.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_typed_rng.py
+          python3 -m py_compile src/game/native_p2_rank_probe.py
+          python3 -m py_compile integrations/mythicsim-rust/test_native_p2_rank_probe.py
+          python3 -m py_compile integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
+          python3 -m py_compile tools/wf_gate_p2_live.py
           python3 integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_pull_queue.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_persistent_target.py
@@ -102,6 +110,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Hydrate canonical staged Druid source catalogue
+        run: git lfs pull --include="data/forever/staged_druid_l30_talents_70338.sqlite"
       - name: Apply port to selected production Rust source and compile
         run: |
           git clone --quiet --filter=blob:none https://github.com/dosibjrn/mythicsim-forever-engine.git /tmp/forever-selected-rust
@@ -146,6 +156,12 @@ jobs:
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib typed_rng_api_tests
           cargo build --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --bin forever-engine
+          python3 integrations/mythicsim-rust/test_native_p2_rank_probe.py \
+            --engine-root /tmp/forever-selected-rust \
+            --binary /tmp/forever-selected-rust/target/debug/forever-engine
+          FOREVER_ENGINE_ROOT=/tmp/forever-selected-rust \
+            FOREVER_ENGINE_BINARY=/tmp/forever-selected-rust/target/debug/forever-engine \
+            python3 integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
           if /tmp/forever-selected-rust/target/debug/forever-engine sim --infile /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json >/tmp/forever-rng-missing.log 2>&1; then
             echo "Native CLI accepted missing RNG mode" >&2; exit 1
           fi

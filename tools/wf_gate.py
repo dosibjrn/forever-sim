@@ -89,8 +89,111 @@ def _validate_p1(e: dict, _: dict) -> list[str]:
     return errors
 
 
+def _validate_native_p2_diagnostics(e: dict) -> list[str]:
+    """Validate optional native probes without granting any P2 acceptance credit.
+
+    These paired probes are useful diagnostics while the complete selected
+    backend is unfinished. They never populate the accepted per-rank ledger,
+    change production_engine, or contribute to M1 coverage.
+    """
+    fields = ("native_rank_probe_scope", "native_rank_probe_results",
+              "native_rank_probe_summary")
+    if not any(field in e for field in fields):
+        return []
+
+    errors: list[str] = []
+    expected_scope = "DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE"
+    if e.get("native_rank_probe_scope") != expected_scope:
+        errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_SCOPE")
+
+    results = e.get("native_rank_probe_results", [])
+    if not isinstance(results, list):
+        errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_RESULTS")
+        results = []
+
+    summary = e.get("native_rank_probe_summary")
+    if not results and summary is None:
+        return errors
+    if not isinstance(summary, dict):
+        errors.append("MISSING_NATIVE_P2_DIAGNOSTIC_SUMMARY")
+        return errors
+
+    counts = {"PROBE_PASS": 0, "PROBE_FAIL": 0, "BLOCKED": 0}
+    seen: set[str] = set()
+    for row in results:
+        if not isinstance(row, dict):
+            errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_ROW")
+            continue
+        talent = row.get("target_talent_id")
+        rank = row.get("target_rank")
+        key = row.get("rank_key")
+        valid_rank = type(rank) is int and rank > 0
+        expected_key = f"{talent}:{rank}" if isinstance(talent, str) else ""
+        if (not isinstance(talent, str) or not talent
+                or not valid_rank or key != expected_key
+                or key in seen):
+            errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_RANK_KEY:" + str(key))
+        elif isinstance(key, str):
+            seen.add(key)
+
+        status = row.get("status")
+        if not isinstance(status, str) or status not in counts:
+            errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_STATUS:" + str(status))
+            continue
+        counts[status] += 1
+        if row.get("accepted_for_p2") is not False:
+            errors.append("NATIVE_P2_DIAGNOSTIC_ACCEPTANCE_CLAIMED:" + str(key))
+        if row.get("executor") != "selected_mythicsim_rust":
+            errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_EXECUTOR:" + str(key))
+
+        if status == "BLOCKED":
+            if not isinstance(row.get("reason"), str) or not row["reason"]:
+                errors.append("NATIVE_P2_DIAGNOSTIC_BLOCK_REASON_MISSING:" + str(key))
+            continue
+
+        if (row.get("rng_mode") != "balanced"
+                or type(row.get("iterations")) is not int or row["iterations"] < 1
+                or not isinstance(row.get("engine_identity"), str)
+                or not row["engine_identity"].strip()
+                or not isinstance(row.get("scenario"), str) or not row["scenario"]
+                or not isinstance(row.get("source_layout_sha256"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", row["source_layout_sha256"])):
+            errors.append("INCOMPLETE_NATIVE_P2_EXECUTION_RECEIPT:" + str(key))
+        delta = row.get("delta_dps")
+        if type(delta) not in (int, float) or not math.isfinite(delta):
+            errors.append("INVALID_NATIVE_P2_DELTA:" + str(key))
+        elif status == "PROBE_PASS" and delta <= 0:
+            errors.append("NATIVE_P2_PASS_WITHOUT_POSITIVE_EFFECT:" + str(key))
+
+        for side in ("before", "after"):
+            receipt = row.get(side)
+            prepared = receipt.get("prepared") if isinstance(receipt, dict) else None
+            simulation = receipt.get("simulation") if isinstance(receipt, dict) else None
+            if (not isinstance(prepared, dict)
+                    or prepared.get("status") != "PREPARED"
+                    or not prepared.get("prepared_sha256")
+                    or not isinstance(simulation, dict)
+                    or simulation.get("status") != "EXECUTED"
+                    or type(simulation.get("dps")) not in (int, float)
+                    or not math.isfinite(simulation["dps"])):
+                errors.append("INCOMPLETE_NATIVE_P2_PAIRED_RECEIPT:" + str(key) + ":" + side)
+
+    if summary.get("attempted") != len(results):
+        errors.append("NATIVE_P2_DIAGNOSTIC_ATTEMPT_COUNT_MISMATCH")
+    for status, field in (("PROBE_PASS", "pass_count"),
+                          ("PROBE_FAIL", "fail_count"),
+                          ("BLOCKED", "blocked_count")):
+        if summary.get(field) != counts[status]:
+            errors.append("NATIVE_P2_DIAGNOSTIC_SUMMARY_MISMATCH:" + field)
+    if (summary.get("rng_mode") != "balanced"
+            or summary.get("counted_in_p2_acceptance") is not False):
+        errors.append("NATIVE_P2_DIAGNOSTIC_SUMMARY_NOT_FAIL_CLOSED")
+    return errors
+
+
 def _validate_p2(e: dict, _: dict) -> list[str]:
     errors: list[str] = []
+    errors.extend(_validate_native_p2_diagnostics(e))
     production_engine = e.get("production_engine")
     if production_engine not in {"gsim", "msim", "msim+gsim-world"}:
         errors.append("UNAPPROVED_P2_PRODUCTION_ENGINE:" + str(production_engine or "missing"))
