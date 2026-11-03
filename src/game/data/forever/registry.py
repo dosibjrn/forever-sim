@@ -9,26 +9,41 @@ a genuinely new reusable mechanic is required.
 
 from collections.abc import Callable
 from dataclasses import replace
+from importlib import import_module
 
 from src.game.model.ir import GameIRSlice
-from . import druid, warrior, rogue, priest, shaman, warlock, mage
-from .native_source_provider import build_source_slice as build_native_source_slice
 from .source_db_scope import ability_source_scope
 
 
 Provider = Callable[..., GameIRSlice | None]
 
+def _lazy_class_provider(class_key: str) -> Provider:
+    """Keep source-specific GameIR builders off metadata/selection import paths."""
+    def build(level: int, *, ability_db_path=None):
+        provider = import_module(f".{class_key}", package=__package__).build_source_slice
+        if ability_db_path is not None:
+            from inspect import signature
+            if "ability_db_path" in signature(provider).parameters:
+                return provider(int(level), ability_db_path=ability_db_path)
+        return provider(int(level))
+    return build
+
+
+def _lazy_native_provider(class_key: str) -> Provider:
+    """The transitional SQLite provider is needed only for a requested build."""
+    def build(level: int):
+        from .native_source_provider import build_source_slice
+        return build_source_slice(class_key, int(level))
+    return build
+
+
 _PROVIDERS: dict[str, Provider] = {
-    "druid": druid.build_source_slice,
-    "warrior": warrior.build_source_slice,
-    "rogue": rogue.build_source_slice,
-    "priest": priest.build_source_slice,
-    "shaman": shaman.build_source_slice,
-    "warlock": warlock.build_source_slice,
-    "mage": mage.build_source_slice,
-    "hunter": lambda level: build_native_source_slice("hunter", level),
-    "paladin": lambda level: build_native_source_slice("paladin", level),
+    key: _lazy_class_provider(key)
+    for key in ("druid", "warrior", "rogue", "priest", "shaman", "warlock", "mage")
 }
+_PROVIDERS.update({
+    key: _lazy_native_provider(key) for key in ("hunter", "paladin")
+})
 
 
 def build_game_ir_slice(*, class_key: str, level: int, ability_db_path=None,
