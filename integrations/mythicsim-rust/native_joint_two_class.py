@@ -187,6 +187,7 @@ def native_score_request(
     """
     if rng_mode != "balanced":
         raise ValueError("JOINT_OPTIMIZER_REQUIRES_EXPLICIT_BALANCED_RNG")
+    objective = str(objective).upper()
     if objective not in {"DPS", "TPS"}:
         raise ValueError("JOINT_OPTIMIZER_UNSUPPORTED_OBJECTIVE: " + str(objective))
     effective = native_payload(candidate, iterations, seed)
@@ -688,6 +689,7 @@ def execute(profile_id: str, inventory: list, *,
         )
         paid.append({
             "effective_request_sha256": key,
+            "objective": objective,
             "score": score, "rng_mode": rng_mode,
             "iterations": iterations, "seed": seed,
             "native_duration_s": elapsed,
@@ -819,8 +821,8 @@ def main() -> None:
             seed=args.seed + idx, outdir=outdir,
             donor_fixtures=donor_fixtures)
         rows.append(row)
-        print(json.dumps({"profile":profile, "status":row["status"],
-                          "paid":row["native_paid"],
+        print(json.dumps({"profile":profile, "objective":row["objective"],
+                          "status":row["status"], "paid":row["native_paid"],
                           "three_axis_paid":row["three_axis_paid"],
                           "source_donor_fixture_count":row.get("source_donor_fixture_count", 0),
                           "replay_matches":row.get("replay_matches")}), flush=True)
