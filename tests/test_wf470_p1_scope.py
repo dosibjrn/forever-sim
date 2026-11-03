@@ -41,21 +41,26 @@ def test_unknown_missing_ability_never_dismissed_by_scope():
     assert {'MISSING_GAME_IR_ACTION','P1_EFFECT_SCOPE_UNRESOLVED'} <= {p['code'] for p in report['problems']}
 
 
-def test_real_druid_l20_p1_staged_sourced_action_coverage(monkeypatch):
+def test_druid_l20_live_p1_keeps_real_effects_without_learned_spell_proof(monkeypatch):
+    """Removing a speculative admission filter must not manufacture a PASS.
+
+    The historical M1 P1 PASS remains on its original source revision. This
+    legacy GameIR diagnostic now reports extra rune/talent/obsolete source
+    entries as missing executor work until native MythicSim owns admission.
+    """
     monkeypatch.setenv('WOW_FOREVER_BUILD_AS_OF','2026-10-17')
-    result=run_live(ROOT,'druid',20)
-    if result['status']!='PASS':
-        print('P1_L20_REAL_REGRESSION', json.dumps({'reasons':result.get('reasons',[]), 'ignored':result.get('excluded_nonaction_or_inactive_rows',[]), 'checked':result.get('checked_source_abilities')}, ensure_ascii=False), flush=True)
-    assert result['status']=='PASS'
-    assert result['effect_scope_policy']=='damage_buff_debuff_cc_highest_rank_only'
-    assert result['problem_count']==0
-    assert not result['problems']
-    assert result['does_not_affect_sim_count']==2
-    assert {r['source_spell_id'] for r in result['does_not_affect_sim']}=={2637,18960}
-    assert result['matched_source_abilities']==18
-    assert result['production_runtime_exercises']==18  # includes *damage* on queued Maul
-    assert any(r['source_spell_id']==6807 and r['role']=='LOWER_LEARNED_RANK' for r in result['excluded_nonaction_or_inactive_rows'])
-    assert any(r['source_spell_id']==6795 and r['role']=='OUT_OF_P1_EFFECT_SCOPE' for r in result['excluded_nonaction_or_inactive_rows'])
+    report=run_live(ROOT,'druid',20)
+    assert report['production_runtime_exercises']>=18
+    assert report['does_not_affect_sim_count']==2
+    assert {r['source_spell_id'] for r in report['does_not_affect_sim']}=={2637,18960}
+    assert any(r['source_spell_id']==6807 and r['role']=='LOWER_LEARNED_RANK'
+               for r in report['excluded_nonaction_or_inactive_rows'])
+    assert not any('SOURCE_ACTION_LEGALITY_UNRESOLVED' in reason
+                   or 'EXACT_GAME_IR_ACTION_IS_NOT_ACQUISITION_EVIDENCE' in reason
+                   or 'INDEX_LEVEL_HINT_IS_NOT_ACQUISITION' in reason
+                   for reason in report['reasons'])
+    assert report['status']=='FAIL'
+    assert any(reason.startswith('MISSING_GAME_IR_ACTION:') for reason in report['reasons'])
 
 
 def test_role_evidence_is_versioned_and_source_id_bound():
