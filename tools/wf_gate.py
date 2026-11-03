@@ -549,6 +549,27 @@ def main(argv=None) -> int:
                     and len(json.dumps(frozen_build, ensure_ascii=False).encode(
                         "utf-8")) <= 16384):
                 record["frozen_source_build"] = frozen_build
+            # A P7.5 production FAIL may have a high short balanced score
+            # but a low independent frozen 1,000-stochastic result. Forward
+            # the actually paid confirmation tier/counts from this same run
+            # so the next Work1 cycle can diagnose selection without another
+            # heavy 300 s search. These are diagnostics, never gate credit.
+            for key in ("cold_balanced_screen_best_dps",
+                        "selected_balanced_screen_dps",
+                        "paid_joint_balanced_finalists",
+                        "paid_joint_balanced_confirmed",
+                        "paid_joint_balanced_deep_confirmed",
+                        "balanced_parent_proposals"):
+                value = report.get(key)
+                if type(value) in (int, float) and math.isfinite(value):
+                    record[key] = value
+            selected_validation = report.get("selected_validation")
+            if isinstance(selected_validation, str) and len(selected_validation) <= 128:
+                record["selected_validation"] = selected_validation
+            failures = report.get("balanced_finalist_failures")
+            if isinstance(failures, list):
+                record["balanced_finalist_failures"] = [
+                    str(error)[:180] for error in failures[:4]]
         if gate == "P7.4":
             # Forward only bounded, source-executed winner identity. This is
             # diagnostic provenance, never an additional gate predicate.
