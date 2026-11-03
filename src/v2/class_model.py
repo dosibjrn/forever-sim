@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 
-from src.game.evaluation import Evaluation
+from src.shared.evaluation import Evaluation
 
 
 @dataclass(frozen=True)
