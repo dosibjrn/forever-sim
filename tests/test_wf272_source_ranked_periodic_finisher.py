@@ -104,5 +104,5 @@ def test_all_source_rank_ids_survive_in_ir_and_coverage_ledger():
     by_id={x['spell_id']:x for x in records}
     for level,sid,_ in RANKS:
         assert by_id[sid]['matched_action_ids']==[f'rip:{level}']
-        assert by_id[sid]['status']=='SOURCE_ID_MATCHES_IR_ACTION_ACQUISITION_UNVERIFIED'
+        assert by_id[sid]['status']=='SOURCE_ID_MATCHES_IR_ACTION'
     assert not ir.provenance['complete_source_action_coverage']
