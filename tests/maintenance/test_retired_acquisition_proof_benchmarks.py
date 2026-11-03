@@ -73,6 +73,7 @@ RETIRED_TOOLS = (
     "src/game/data/forever/source_checkpoint_p2_optimizer.py",
     "tools/wf351_druid30_p3.py",
     "tools/ingest_talent_tree_rows_sqlite.py",
+    "tests/test_wf_feral01c_source_tree_gates.py",
     "data/forever/staged_druid_l30_talents_70338.sqlite",
     "tests/test_wf337_p2_optimizer_integration.py",
     "tests/test_wf349_druid30_p2_source_integrity.py",
@@ -388,4 +389,7 @@ def test_retired_p2_gate_and_checkpoint_chain_has_no_code_or_actions():
                      ".github/workflows/generic-source-search-regressions.yml"):
         workflow = (ROOT / relative).read_text(encoding="utf-8")
         assert "wf_gate_p2_live.py" not in workflow
+    generic = (ROOT / ".github/workflows/generic-source-search-regressions.yml").read_text(encoding="utf-8")
+    assert "test_wf_p2_cross_tree_source_witness.py" not in generic
+    assert "test_wf_p2_source_witness_priority.py" not in generic
     assert "cargo build --locked --bin forever-engine" in submodule_workflow
