@@ -233,3 +233,34 @@ for marker, original, transform in (
     else:
         raise AssertionError(f"PAID_RECOVERY_COMPOSITION_DRIFT_NOT_REJECTED: {marker}")
 print("RUST_NATIVE_PAID_RECOVERY_MULTI_TARGET_PORT_CHAIN_IDEMPOTENT")
+
+# The selected Rust pin is already typed-RNG, unlike the legacy source-port
+# fixtures above. Verify the exact native API composition and reject drift.
+for marker, original, transform, anchor in (
+    (two_world.CLASS_MARKER, two_world.CLASS_METHOD, port.port_classes,
+     two_world.CLASSES_ANCHOR),
+    (two_world.PREPARED_MARKER, two_world.PREPARED_METHOD, port.port_prepared,
+     two_world.PREPARED_ANCHOR),
+    (two_world.CLI_MARKER, two_world.CLI_METHOD, port.port_main,
+     two_world.CLI_ANCHOR),
+):
+    typed = two_world.typed_rng_variant(marker, original)
+    base = anchor + "\n" + typed
+    assert two_world.insert(base, anchor, marker, original) == base
+    paid = transform(base)
+    assert paid != base
+    assert transform(paid) == paid
+    assert two_world.insert(paid, anchor, marker, original) == paid
+    assert "rng_mode" in paid or "--rng-mode" in paid
+    damaged = paid.replace(
+        {two_world.CLASS_MARKER: port.CLASSES_CALL_NEW,
+         two_world.PREPARED_MARKER: port.PREPARED_CALL_TYPED_NEW,
+         two_world.CLI_MARKER: "--recovery-ns"}[marker],
+        "FORGED_TYPED_RECOVERY_DRIFT", 1)
+    try:
+        two_world.insert(damaged, anchor, marker, original)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f"RUST_TYPED_RECOVERY_DRIFT_NOT_REJECTED: {marker}")
+print("RUST_TYPED_RNG_PAID_RECOVERY_COMPOSITION_PASS")
