@@ -81,12 +81,16 @@ def port_agent(path: Path) -> None:
         text,
         """fn on_dot_expire(fight: &mut Fight<Self>, dot: DotId, behavior: DruidSpell) {
         if behavior == DruidSpell::Heal {
-            let side = fight.dots[dot].side;
-            fight.deactivate_aura(fight.agent.rejuvenation[side]);
+            if let Some(bloom) = fight.agent.bloom.clone() {
+                bloom.on_dot_expire(fight, dot);
+            }
         }
         if behavior == DruidSpell::InsectSwarm {
             let side = fight.dots[dot].side;
             insect_swarm::on_dot_expire(fight, fight.agent.insect_swarm_debuff, side);
+        }
+        if behavior == DruidSpell::EntanglingRoots {
+            crate::core::fight::world_bridge::record_control_expire(fight.now);
         }
     }""",
         """fn on_dot_expire(fight: &mut Fight<Self>, dot: DotId, behavior: DruidSpell) {
@@ -244,6 +248,11 @@ fn send(value: &Value) {""",
         text,
         """let events = std::mem::take(&mut bridge.pending);
         let event_ids: Vec<String> = events.iter().map(|event| event.event_id.clone()).collect();
+        let control_events = std::mem::take(&mut bridge.pending_controls);
+        let control_event_ids: Vec<String> = control_events
+            .iter()
+            .map(|event| event.event_id.clone())
+            .collect();
         let pid = std::process::id();""",
         """let events = std::mem::take(&mut bridge.pending);
         let event_ids: Vec<String> = events.iter().map(|event| event.event_id.clone()).collect();
