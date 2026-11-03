@@ -15,7 +15,9 @@ from src.game.native_p2_rank_probe import (  # noqa: E402
     run_native_prepare_pair,
 )
 
-ENGINE_ROOT = Path(__file__).resolve().parents[1] / "engine"
+ENGINE_ROOT = Path(os.environ.get(
+    "FOREVER_ENGINE_ROOT", str(Path(__file__).resolve().parents[1] / "engine")
+))
 
 
 class NativeP2PrepareAdapterTest(unittest.TestCase):
