@@ -54,3 +54,15 @@ def test_in_range_walk_is_zero_cost_without_world_change():
     assert leg["arrival_s"] == leg["start_s"]
     assert world.player_position_yards == (0., 0.)
     assert not any(event.kind == "SpatialPlayerMoveStep" for _, _, event in world.queue._heap)
+
+def test_native_movement_projection_tracks_gsim_live_route_not_future_queue():
+    world = _world()
+    assert world._player_is_moving() is False
+    leg = _walk_helper()(world, "m1", speed_yards_s=7.)
+    assert world._player_is_moving() is True
+    assert world.player_position_yards == (0., 0.)
+    world.advance_to(leg["start_s"] + (leg["arrival_s"] - leg["start_s"]) / 2)
+    assert world._player_is_moving() is True
+    world.advance_to(leg["arrival_s"])
+    assert world._player_is_moving() is False
+    assert world.player_position_yards == pytest.approx((20., 0.))
