@@ -7,7 +7,7 @@ walks between targets; simultaneous 2/3-target packs are not yet implemented.
 from __future__ import annotations
 import json,sqlite3,tempfile
 from pathlib import Path
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.scenarios.spaced_pulls import SpacedPullLayout
 from src.rulesets.forever.classes.druid import Talents
 from src.rulesets.forever.classes.druid.mechanics import _bear_pack
 from src.game.data.forever.source_db_scope import ability_source_scope
