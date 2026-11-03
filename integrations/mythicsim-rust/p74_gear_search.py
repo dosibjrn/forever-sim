@@ -67,34 +67,31 @@ def candidate_pool(validator, limit, *, independent_enchants=False,
         pool[i]=ids
     return pool,exclusions
 
-def source_enchant_pools(validator, pools):
-    """Enumerate slot-legal native enchants; never whitelist saved gear only.
+def source_enchant_pools(validator, pools, *, native_authoritative=False):
+    """Build enchant proposals from the pinned engine's enchant catalogue.
 
-    The already prepared reference item is the compatibility probe for each
-    slot. Do not use the first candidate-pool item: in native-authoritative
-    mode it is only a proposal and may itself be rejected by native prepare.
-    The complete candidate still goes through selected native prepare/sim.
+    The default retains legacy per-slot Python filtering. P7.5 passes
+    native_authoritative=True and forwards every engine enchant ID for every
+    slot; selected MythicSim prepare/sim alone decides slot and effect support.
     """
     enchant_ids = sorted(int(e) for e in validator.enchants if int(e) > 0)
     result = {}
     for slot in range(len(pools)):
         if not pools.get(slot):
-            raise ValueError("NO_SOURCE_LEGAL_GEAR_FOR_ENCHANT_SLOT")
-        # Candidate-pool items are native-unverified proposals when
-        # native_authoritative=True. Use the already prepared reference item
-        # for this slot to enumerate enchant options; an invalid first proposal
-        # must not suppress every enchant for the slot.
-        anchor = int(validator.ref_items[slot]["id"])
+            raise ValueError("NO_SOURCE_GEAR_PROPOSALS_FOR_ENCHANT_SLOT")
         options = [None]
-        for enchant_id in enchant_ids:
-            try:
-                validator.item(slot, anchor, enchant_id)
-            except RejectedGear:
-                continue
-            options.append(enchant_id)
+        if native_authoritative:
+            options.extend(enchant_ids)
+        else:
+            anchor = int(validator.ref_items[slot]["id"])
+            for enchant_id in enchant_ids:
+                try:
+                    validator.item(slot, anchor, enchant_id)
+                except RejectedGear:
+                    continue
+                options.append(enchant_id)
         result[slot] = options
     return result
-
 
 def simulate(binary, request, mode, iterations, seed, deadline):
     remaining=deadline-time.monotonic()
