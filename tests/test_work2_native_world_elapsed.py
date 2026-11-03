@@ -28,6 +28,7 @@ def test_paid_world_clock_is_actual_native_and_ack_elapsed_not_fight_duration():
     assert receipt == {
         "world_elapsed_seconds": 11.5,
         "world_seconds_per_target_without_paid_recovery": 5.75,
+        "world_per_target_elapsed_seconds_without_paid_recovery": [5.0, 6.5],
     }
     assert "paid_recovery" not in receipt
 
