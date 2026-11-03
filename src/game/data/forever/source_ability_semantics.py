@@ -252,8 +252,7 @@ def source_ability_actions(ir, *,class_key:str,level:int,db_path:Path|None=None)
             source={**source,'numeric_authority':external_fact['source_authority'],
                     'external_source_urls':external_fact['external_source_urls'],
                     'observation_sha256':external_fact['observation_sha256'],
-                    'source_build':external_fact['source_build'],
-                    'checkpoint_eligibility':external_fact['checkpoint_eligibility']}
+                    'source_build':external_fact['source_build']}
         cost,cost_detail_sha=_source_cost_match(
             str(tooltip.get('cost') or '').strip(),db_path=db,
             class_key=class_key.lower(),spell_id=sid)

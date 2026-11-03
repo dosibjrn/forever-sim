@@ -55,7 +55,7 @@ def test_newer_web_text_stage_changes_actual_core_runtime_but_not_canonical(stag
             required_level=20,effect_kind='direct_heal',db_path=stage)
         assert (fact['low'],fact['high'])==(325,399)
         assert fact['detail_html_independently_verified'] is False
-        assert fact['checkpoint_eligibility'].startswith('BLOCKED_')
+        assert 'checkpoint_eligibility' not in fact
         # Same real full kill + recovery + incoming attacks, fixed caster
         # challenger: the change must affect a scored production runtime.
         scores=[]
@@ -81,6 +81,7 @@ def test_historical_build_uses_canonical_index_not_future_external_stage(stage):
         f=indexed_rank_fact(class_key='druid',name='Wrath',required_level=14,
                             effect_kind='direct_damage',db_path=stage)
         assert f['low']==27 and f['source_build']=='1.60.1.70338'
+        assert 'checkpoint_eligibility' not in f
 
 
 def test_source_identity_tamper_and_unverified_one_source_fail_closed(stage,tmp_path):
