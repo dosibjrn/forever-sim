@@ -33,8 +33,12 @@ def port_bridge(source: str) -> str:
         '''    let front = tick["in_front_of_target"].as_bool()
         .expect("RUST_WORLD_FACING_NOT_PROVIDED");
     // World movement is a live gsim fact, not a native game-rule override.
-    let moving = tick["gsim_player_moving"].as_bool()
-        .expect("RUST_WORLD_PLAYER_MOVEMENT_NOT_PROVIDED");
+    // Existing stationary 2D probes omit movement; retain their false
+    // default. When a live route explicitly supplies movement, reject any
+    // malformed flag rather than silently permitting a noninstant cast.
+    let moving = tick.get("gsim_player_moving").map(|value|
+        value.as_bool().expect("RUST_WORLD_PLAYER_MOVEMENT_INVALID")
+    ).unwrap_or(false);
 ''', "INGRESS")
     source = _replace(source,
         '"facing_applied": true, "in_front_of_target": front',
