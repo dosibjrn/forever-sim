@@ -35,6 +35,7 @@ class TypedRngTwoWorldPortTests(unittest.TestCase):
                 self.assertEqual(insert(replacement, anchor, marker, replacement), replacement)
             with self.subTest(marker=marker, descendant="typed-rng"):
                 beginning, expected = TYPED_RNG_PORTS[marker]
+                self.assertTrue(expected.startswith(beginning))
                 self.assertEqual(expected.count(beginning), 1)
                 # The typed descendant replaces/consumes the original anchor.
                 self.assertNotIn(anchor, expected)
