@@ -540,9 +540,16 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "paid_recovery": False, "checkpoint_certified": False,
         }
     finally:
-        if proc.poll() is None:
-            proc.kill()
-            proc.wait(timeout=5)
+        try:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=5)
+        finally:
+            # The bridge is invoked repeatedly by route candidate scoring.
+            # Close all three pipes on both success and exceptional exits.
+            for stream in (proc.stdin, proc.stdout, proc.stderr):
+                if stream is not None and not stream.closed:
+                    stream.close()
 
 
 def main() -> None:
