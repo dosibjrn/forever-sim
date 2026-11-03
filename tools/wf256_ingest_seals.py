@@ -5,7 +5,7 @@ Only captures are spell-specific; runtime is class-neutral. Re-running is idempo
 from __future__ import annotations
 import json,sqlite3
 from pathlib import Path
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 CAPTURE=Path(__file__).resolve().parents[1]/'data/forever/source_captures/wf256_paladin_crusader_fury_20261011.json'
 COLUMNS={
     'mechanic_kind':'TEXT NOT NULL DEFAULT \'swing_damage\'',
