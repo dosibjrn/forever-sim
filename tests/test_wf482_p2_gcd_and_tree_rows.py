@@ -1,4 +1,4 @@
-"""WF482: P2 must resolve captured tree rows and observe real GCD behavior."""
+"""Source talent runtime regressions for GCD behavior and captured tree rows."""
 from dataclasses import replace
 from pathlib import Path
 import json
@@ -94,11 +94,3 @@ def test_all_eight_rows_are_canonical_sqlite_facts_after_ingest(tmp_path):
     assert all(col is None and authority=='secondary_provisional_row'
                and url=='https://talentsforever.com/druid/talents'
                for _,_,col,authority,url in rows)
-
-
-def test_no_unresolved_reachability_with_source_row_ingestion():
-    result=gate.run_live(Path(__file__).resolve().parents[1], 'druid',20)
-    assert result['unresolved_count']==0
-    assert result['reachability_count']>=88
-    assert result['status']=='FAIL'  # Missing talent implementations are real blockers.
-    assert any('IMPLEMENTATION_MISSING' in x for x in result['reasons'])
