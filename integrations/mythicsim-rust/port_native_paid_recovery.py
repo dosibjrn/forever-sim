@@ -385,7 +385,7 @@ def port_prepared(source: str) -> str:
                 or source.count(PREPARED_COUNT_NEW) != 1
                 or source.count(PREPARED_CALL_NEW) != 1
                 or PREPARED_SIGNATURE_OLD in source
-                or PREPARED_COUNT_OLD in source
+                or source.count(PREPARED_COUNT_OLD) != 1
                 or PREPARED_CALL_OLD in source):
             raise ValueError("RUST_NATIVE_PAID_RECOVERY_PREPARED_PARTIAL")
         return source
