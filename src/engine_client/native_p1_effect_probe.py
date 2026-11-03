@@ -126,6 +126,55 @@ def _sha256_json(value: dict) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+
+def native_prepared_action_inventory(prepare_receipt: dict) -> dict[str, object]:
+    """Expose the selected engine's prepared spell/action records without interpretation.
+
+    This is a native PreparedV2 inventory for the exact prepared build, not a
+    source denominator, Python legality decision, role classifier or P1 proof.
+    Preserve every native spell record (including passive/unaddressable entries)
+    and the separate native major-cooldown channel; do not rank-filter or sort.
+    """
+    unavailable = {
+        "status": "UNAVAILABLE",
+        "reason": "NATIVE_PREPARED_ACTION_INVENTORY_MISSING",
+        "p1_certified": False,
+    }
+    if not isinstance(prepare_receipt, dict) or prepare_receipt.get("status") != "PREPARED":
+        return {**unavailable, "reason": "NATIVE_PREPARE_RECEIPT_NOT_PREPARED"}
+    prepared = prepare_receipt.get("prepared")
+    if not isinstance(prepared, dict):
+        return {**unavailable, "reason": "NATIVE_PREPARED_PAYLOAD_MISSING"}
+    player = prepared.get("player")
+    if not isinstance(player, dict):
+        return {**unavailable, "reason": "NATIVE_PREPARED_PLAYER_MISSING"}
+    spells = player.get("spells")
+    if not isinstance(spells, list) or any(not isinstance(spell, dict) for spell in spells):
+        return {**unavailable, "reason": "NATIVE_PREPARED_SPELLBOOK_MISSING"}
+    major_cooldowns = player.get("major_cooldowns", [])
+    if major_cooldowns is None:
+        major_cooldowns = []
+    if not isinstance(major_cooldowns, list):
+        return {**unavailable, "reason": "NATIVE_PREPARED_MAJOR_COOLDOWNS_INVALID"}
+    return {
+        "status": "AVAILABLE",
+        "engine_identity": prepare_receipt.get("engine_identity"),
+        "prepared_sha256": prepare_receipt.get("prepared_sha256"),
+        "player_class": player.get("class"),
+        "player_level": player.get("level"),
+        "talents_string": player.get("talents_string"),
+        "talents": copy.deepcopy(player.get("talents")),
+        "spell_count": len(spells),
+        "spell_records_with_action_id": sum(
+            spell.get("action_id") is not None for spell in spells
+        ),
+        "major_cooldown_count": len(major_cooldowns),
+        "spells": copy.deepcopy(spells),
+        "major_cooldowns": copy.deepcopy(major_cooldowns),
+        "p1_certified": False,
+    }
+
+
 def _compact(receipt: dict) -> dict:
     keys = (
         "status", "stage", "reason", "engine_identity", "request_sha256",
@@ -394,6 +443,7 @@ def run_native_p1_direct_effect_probe(
         "control_request_sha256": _sha256_json(control_request),
         "positive_prepare": _compact(positive_prepare),
         "control_prepare": _compact(control_prepare),
+        "native_prepared_action_inventory": native_prepared_action_inventory(positive_prepare),
         "positive_sim": _compact(positive_sim),
         "control_sim": _compact(control_sim),
         "dps_with_action": positive_dps,
