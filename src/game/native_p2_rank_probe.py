@@ -274,6 +274,32 @@ def run_native_rank_pair(
 
     before_identity = before.get("engine_identity")
     after_identity = after.get("engine_identity")
+    if not before_identity or not after_identity:
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_ENGINE_IDENTITY_MISSING",
+            "scenario": scenario,
+            "target_talent_id": target_talent_id,
+            "target_rank": int(target_rank),
+            "before": before,
+            "after": after,
+            "rng_mode": rng_mode,
+            "iterations": int(iterations),
+            "seed": int(seed),
+        }
+    if before.get("request_sha256") == after.get("request_sha256"):
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_PAIRED_REQUEST_PAYLOADS_IDENTICAL",
+            "scenario": scenario,
+            "target_talent_id": target_talent_id,
+            "target_rank": int(target_rank),
+            "before": before,
+            "after": after,
+            "rng_mode": rng_mode,
+            "iterations": int(iterations),
+            "seed": int(seed),
+        }
     if before_identity != after_identity:
         return {
             "status": "BLOCKED",
