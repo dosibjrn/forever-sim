@@ -542,12 +542,35 @@ def _probe_predatory_strikes(
     expected_delta = 0.0
     for feature in matching:
         values = feature["rank_values"]
-        current = float(values[rank - 1])
-        previous = float(values[rank - 2]) if rank > 1 else 0.0
-        delta = current if ("per_rank" in str(feature["domain"]).lower()
-                           or "increment" in str(feature["domain"]).lower()) else current - previous
-        if "per_level" in str(feature["domain"]).lower() or "per_level" in str(feature["target"]).lower():
-            delta *= level
+        domain = str(feature["domain"]).lower()
+        target = str(feature["target"]).lower()
+        level_fraction = feature.get(
+            "player_level_fraction_per_rank",
+            observation.get("player_level_fraction_per_rank"),
+        )
+        if level_fraction is not None:
+            if (
+                not isinstance(level_fraction, (int, float))
+                or isinstance(level_fraction, bool)
+                or not math.isfinite(float(level_fraction))
+                or float(level_fraction) <= 0
+            ):
+                raise NativeP2Error("P2_NATIVE_INVALID_PLAYER_LEVEL_FRACTION")
+            # Source L0 records the per-rank fraction explicitly; evaluate it at
+            # the requested player level instead of reusing the source's L30 value.
+            delta = float(level_fraction) * level
+        elif "from_level" in domain or "per_level" in domain or "per_level" in target:
+            raise NativeP2Error(
+                "P2_NATIVE_LEVEL_SCALING_FRACTION_MISSING:predatory_strikes"
+            )
+        else:
+            current = float(values[rank - 1])
+            previous = float(values[rank - 2]) if rank > 1 else 0.0
+            delta = (
+                current
+                if "per_rank" in domain or "increment" in domain
+                else current - previous
+            )
         expected_delta += delta
     actual_delta = (
         _stat_value(after, "AttackPower") - _stat_value(before, "AttackPower")
