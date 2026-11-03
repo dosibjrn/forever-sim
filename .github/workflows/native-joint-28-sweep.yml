@@ -23,7 +23,7 @@ on:
       - .gitmodules
   push:
     branches:
-      - 'work/work2-*'
+      - work/work2-native-joint-28-sweep-20261103
     paths:
       - .github/workflows/native-joint-28-sweep.yml
       - integrations/mythicsim-rust/native_joint_28_sweep.py
