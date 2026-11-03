@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import hashlib
-import os
 from math import isfinite
 from pathlib import Path
 import re
@@ -817,166 +816,11 @@ def _p1_scope_metadata(root: Path, class_key: str, level: int) -> dict:
                 data.get('contextual_zero_when_solo_land_mob_no_allies_or_debuffs', {}))}
 
 
-def _native_p1_canary_probe(root: Path, spell_id: int) -> dict:
-    """Run the one approved native P1 canary; source identity selects, Rust decides.
-
-    This is deliberately limited to the Druid L60 Balance fixture already
-    exercised by the selected-pin integration. It is not a spell-legality
-    allowlist or a substitute for the remaining P1 denominator.
-    """
-    engine_root = root / 'integrations' / 'mythicsim-rust' / 'engine'
-    fixture = engine_root / 'tests' / 'classes' / 'druid' / 'prepare' / 'balance.request.json'
-    binary_value = (os.environ.get('FOREVER_MYTHICSIM_RUST_BIN')
-                    or os.environ.get('FOREVER_ENGINE_BINARY'))
-    if binary_value:
-        binary = Path(binary_value)
-    else:
-        binary = engine_root / 'target' / 'release' / 'forever-engine'
-        if not binary.is_file():
-            binary = engine_root / 'target' / 'debug' / 'forever-engine'
-    if not fixture.is_file():
-        return {'status':'BLOCKED','stage':'request',
-                'reason':'NATIVE_P1_CANARY_FIXTURE_MISSING',
-                'native_executed':False,'effect_observed':False,
-                'p1_certified':False}
-    if not binary.is_file():
-        return {'status':'BLOCKED','stage':'prepare',
-                'reason':'SELECTED_RUST_BINARY_MISSING',
-                'native_executed':False,'effect_observed':False,
-                'p1_certified':False}
-    try:
-        request = json.loads(fixture.read_text(encoding='utf-8'))
-        player = request['raid']['parties'][0]['players'][0]
-        rows = player['rotation']['priorityList']
-        if player.get('class') != 'ClassDruid' or not isinstance(rows, list) or len(rows) != 1:
-            return {'status':'INVALID','stage':'request',
-                    'reason':'NATIVE_P1_CANARY_FIXTURE_IDENTITY_MISMATCH',
-                    'native_executed':False,'effect_observed':False,
-                    'p1_certified':False}
-        fixture_spell_id = rows[0]['action']['castSpell']['spellId']['spellId']
-        if fixture_spell_id != spell_id:
-            return {'status':'INVALID','stage':'request',
-                    'reason':'NATIVE_P1_CANARY_FIXTURE_IDENTITY_MISMATCH',
-                    'native_executed':False,'effect_observed':False,
-                    'p1_certified':False}
-        from src.engine_client.native_p1_effect_probe import run_native_p1_direct_effect_probe
-        return run_native_p1_direct_effect_probe(
-            binary=binary,
-            engine_root=engine_root,
-            request=request,
-            spell_id=spell_id,
-            timeout_seconds=120.0,
-            iterations=10,
-            seed=647003,
-            target_count=2,
-            world_mob_health=1200.0,
-        )
-    except Exception as exc:
-        return {'status':'ERROR','stage':'native_adapter',
-                'reason':f'{type(exc).__name__}:{exc}',
-                'native_executed':False,'effect_observed':False,
-                'p1_certified':False}
-
-
-def _native_p1_probe_summary(report: dict, spell_id: int) -> dict:
-    world = report.get('world_bridge')
-    world = world if isinstance(world, dict) else {}
-    return {
-        'spell_id':spell_id,
-        'status':report.get('status'),
-        'stage':report.get('stage'),
-        'reason':report.get('reason'),
-        'executor':report.get('executor','msim-rust'),
-        'native_executed':report.get('native_executed') is True,
-        'effect_observed':report.get('effect_observed') is True,
-        'controlled_behavior_assertion_passed':
-            report.get('controlled_behavior_assertion_passed') is True,
-        'engine_identity':report.get('engine_identity'),
-        'dps_with_action':report.get('dps_with_action'),
-        'dps_without_action':report.get('dps_without_action'),
-        'dps_delta':report.get('dps_delta'),
-        'world_targets_killed':world.get('world_targets_killed'),
-        'native_damage_events':world.get('native_damage_events'),
-        'actual_2d_ack':world.get('actual_2d_ack'),
-        'p1_certified':False,
-    }
-
-
-def _native_p1_canary_profile_report(root: Path, class_key: str, level: int,
-                                      spec: str, scenario_id: str,
-                                      native_report: dict | None = None) -> dict:
-    """A native-only migration slice, deliberately not a full P1 acceptance."""
-    if native_report is None:
-        native_report = _native_p1_canary_probe(root, 9912)
-    summary = _native_p1_probe_summary(native_report, 9912)
-    status = native_report.get('status')
-    problems = [
-        {'code':'NATIVE_P1_CANARY_ONLY_NOT_FULL_GATE',
-         'ability':'9912',
-         'detail':'One native action is not the full source denominator or optimizer reachability.'},
-        {'code':'P1_OTHER_ACTIONS_AND_OPTIMIZER_REACHABILITY_NOT_YET_NATIVE',
-         'ability':None,
-         'detail':'Remaining P1 actions and optimizer candidate reachability are not measured on the selected native path.'},
-    ]
-    gate_status = 'FAIL'
-    if status in ('INVALID','UNSUPPORTED'):
-        problems.append({'code':'NATIVE_ACTION_REFUSED','ability':'9912',
-                         'detail':f"{status}:{native_report.get('reason') or ''}"})
-    elif status == 'NO_DIRECT_EFFECT_OBSERVED':
-        problems.append({'code':'NATIVE_ACTION_NO_EFFECT','ability':'9912',
-                         'detail':native_report.get('reason') or 'NATIVE_DIRECT_EFFECT_NOT_OBSERVED'})
-    elif status == 'BLOCKED':
-        gate_status = 'BLOCKED'
-        problems.append({'code':'NATIVE_ACTION_EXECUTION_BLOCKED','ability':'9912',
-                         'detail':native_report.get('reason') or 'NATIVE_P1_CANARY_BLOCKED'})
-    elif status != 'NATIVE_DIRECT_BEHAVIOR_VERIFIED':
-        problems.append({'code':'NATIVE_ACTION_EXECUTION_FAILED','ability':'9912',
-                         'detail':f"{status or 'ERROR'}:{native_report.get('reason') or ''}"})
-    elif not (native_report.get('native_executed') is True
-              and native_report.get('effect_observed') is True
-              and native_report.get('controlled_behavior_assertion_passed') is True):
-        problems.append({'code':'NATIVE_ACTION_RECEIPT_INCOMPLETE','ability':'9912',
-                         'detail':'Native direct-behavior receipt did not satisfy its own assertions.'})
-    report = {
-        'class':class_key,'level':level,'spec':spec,'gate':'P1',
-        'status':gate_status,'source':'live_production',
-        'p1_scenario_id':scenario_id,
-        'native_migration_scope':'druid:60:balance:spell-9912',
-        'native_effect_probes':[summary],
-        'native_effect_probe_count':1,
-        'behavior_probes_executed':1 if native_report.get('native_executed') is True else 0,
-        # No optimizer reachability or full source denominator has migrated yet.
-        # Zero/zero intentionally prevents this canary from creating M1 partial credit.
-        'pass_count':0,'reachability_count':0,
-        'coverage_basis':'executed_behavior_assertions',
-        'coverage_scope_complete':False,
-        'partial_scope':'native_p1_canary_only_not_full_gate',
-        'production_engine':'selected_mythicsim_rust_p1_canary',
-        'p1_certified':False,
-        'problems':problems,
-        'problem_count':len(problems),
-        'reasons':[f"{p['code']}:{p.get('ability') or ''}:{p['detail']}" for p in problems],
-    }
-    engine_identity = native_report.get('engine_identity')
-    if isinstance(engine_identity,str) and engine_identity:
-        report['engine_id'] = engine_identity
-    return report
-
-
 def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
              spec:str='unrestricted',scenario_id:str=P1_DEFAULT_SCENARIO)->dict:
     report={'class':class_key,'level':level,'spec':spec,'gate':'P1',
             'status':'FAIL','source':'live_production','reasons':[],
             'p1_scenario_id':scenario_id}
-    if (class_key.strip().lower() == 'druid' and level == 60
-            and spec == 'balance' and scenario_id == P1_DEFAULT_SCENARIO):
-        sys.path.insert(0,str(root))
-        try:
-            return _native_p1_canary_profile_report(
-                root,class_key,level,spec,scenario_id)
-        finally:
-            if sys.path and sys.path[0] == str(root):
-                sys.path.pop(0)
     try:
         sys.path.insert(0,str(root))
         from src.game.data.forever.registry import build_game_ir_slice
