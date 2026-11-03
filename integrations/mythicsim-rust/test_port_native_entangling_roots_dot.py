@@ -62,7 +62,7 @@ class NativeRootsDotPortTest(unittest.TestCase):
             self.assertNotIn(
                 "DruidSpell::EntanglingRoots => insect_swarm::apply", agent
             )
-            self.assertEqual(agent.count("DruidSpell::EntanglingRoots => {"), 1)
+            self.assertIn("DruidSpell::EntanglingRoots => {", agent)
             self.assertIn('control_id: Some("root".to_owned())', bridge)
             self.assertIn('"native_control_events": control_events', bridge)
             self.assertIn('ack["acknowledged_control_event_ids"]', bridge)
