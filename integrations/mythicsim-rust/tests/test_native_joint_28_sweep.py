@@ -436,9 +436,10 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
                 self.assertEqual(original_player["rotation"], player["rotation"])
                 self.assertEqual(original["request"]["encounter"], composed["request"]["encounter"])
                 self.assertEqual(
-                    "COMPOSED_SMOKE_FIXTURE_CURRENT_CLIENT_TALENT_PRESET",
+                    "COMPOSED_PINNED_SOURCE_FIXTURE_CURRENT_CLIENT_TALENT_PRESET_DONOR",
                     composed["source_type"],
                 )
+                self.assertTrue(composed["talent_source_override_applied"])
                 self.assertEqual("wowsims/forever", composed["talent_source_repository"])
                 self.assertEqual(772, composed["talent_source_pull_request"])
                 self.assertEqual(
