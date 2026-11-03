@@ -19,6 +19,10 @@ import time
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps)
 from tools.wf_gate_p7_5_prior import strongest_accepted_prior
+# Same native+2D paid stochastic scorer and budget guard as accepted P7.4.
+from tools.wf_gate_p7_4_live import (
+    _paid_gear_stochastic_finalist, _paid_step_has_budget,
+    _p74_early_rerank_due, _next_p74_confirmation, _freeze_paid_p74_winner)
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
                                      _executed_p7_runtime_proof,
                                      _source_native_world_parity)
@@ -61,6 +65,20 @@ def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pool
         except (source.RejectedGear, ValueError, KeyError, TypeError):
             continue
     raise ValueError("NO_SOURCE_LEGAL_INDEPENDENT_COLD_JOINT_ALTERNATIVE")
+
+
+def _paid_p75_parent(best, finalists, proposal_index, rng):
+    """Only this cold search's genuinely paid builds guide local edits.
+
+    Retain independent cold 1/5 restarts and balanced-screen diversity.
+    """
+    if best is None or proposal_index % 5 == 0:
+        return None
+    if finalists and proposal_index % 3 != 0:
+        return rng.choice(sorted(
+            finalists, key=lambda row: row[0], reverse=True
+        )[:3])[3]
+    return best[3]
 
 
 def run_live(root: Path, class_key: str, level: int, *,
@@ -106,7 +124,15 @@ def run_live(root: Path, class_key: str, level: int, *,
         return {"status": "BLOCKED", "reasons": ["P7_5_" + str(exc)]}
     validator = source.GearValidator(catalogue, items, enchants, base)
     rng = random.Random(670)
-    best = None
+    best = None  # three-fight balanced top result, only a diagnostic
+    balanced_elites = []  # 24 distinct source-legal paid joint candidates
+    stochastic_finalists = []  # 2x24 independent paid native+2D screens
+    rerank_seen = set()
+    confirmed = set()
+    confirmation_attempted = set()
+    rerank_failures = []
+    stochastic_parent_proposals = 0
+    worst_finalist_s = 0.0
     executed = 0
     proposals = 0
     seen = set()
@@ -125,8 +151,69 @@ def run_live(root: Path, class_key: str, level: int, *,
         enchant_pools = (source.source_enchant_pools(validator, pools)
                          if full_search else None)
         distance = source.player(base)["distanceFromTarget"]
-        while (time.monotonic() - search_start < 300.0
-               if full_search else proposals < 3):
+        while True:
+            elapsed = time.monotonic() - search_start if full_search else 0.0
+            if (full_search and elapsed >= 300.0
+                    or not full_search and proposals >= 3):
+                break
+            # Real P7.5 #41565060685 screened 820.66 balanced DPS but
+            # froze only 697.32 stochastic DPS. Spend part of the SAME
+            # 300s budget on independent genuine native+2D finalist scores.
+            if full_search and (elapsed >= 240.0 or
+                                _p74_early_rerank_due(
+                                    elapsed, len(stochastic_finalists))):
+                confirmation = _next_p74_confirmation(
+                    stochastic_finalists, confirmation_attempted, elapsed)
+                if confirmation is not None and _paid_step_has_budget(
+                        search_start, worst_finalist_s):
+                    index, row = confirmation
+                    confirmation_attempted.add(row[2])
+                    started = time.perf_counter()
+                    try:
+                        second_score, second_live = _paid_gear_stochastic_finalist(
+                            production, binary, row[3], distance,
+                            seeds=("1955113", "1955139"))
+                        stochastic_finalists[index] = (
+                            (row[0] + second_score) / 2, second_live, *row[2:])
+                        confirmed.add(row[2])
+                    except (ValueError, RuntimeError, OSError, KeyError,
+                            TimeoutError, TypeError, AssertionError,
+                            subprocess.SubprocessError) as exc:
+                        rerank_failures.append(
+                            "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:160])
+                    finally:
+                        worst_finalist_s = max(
+                            worst_finalist_s, time.perf_counter() - started)
+                    continue
+                pending = next((
+                    row for row in balanced_elites
+                    if row[1] not in rerank_seen), None)
+                if pending is not None and _paid_step_has_budget(
+                        search_start, worst_finalist_s):
+                    screen_score, candidate_sha, candidate = pending
+                    rerank_seen.add(candidate_sha)
+                    started = time.perf_counter()
+                    try:
+                        stochastic_score, stochastic_live = _paid_gear_stochastic_finalist(
+                            production, binary, candidate, distance,
+                            seeds=("1955004", "1955047"))
+                        stochastic_finalists.append((
+                            stochastic_score, stochastic_live, candidate_sha,
+                            candidate, screen_score))
+                    except (ValueError, RuntimeError, OSError, KeyError,
+                            TimeoutError, TypeError, AssertionError,
+                            subprocess.SubprocessError) as exc:
+                        rerank_failures.append(
+                            type(exc).__name__ + ":" + str(exc)[:160])
+                    finally:
+                        worst_finalist_s = max(
+                            worst_finalist_s, time.perf_counter() - started)
+                    continue
+            # Do not start an indivisible native+2D paid call in the tail
+            # when measured subprocess cost would overrun the 300s search.
+            if full_search and elapsed >= 290.0 and not _paid_step_has_budget(
+                    search_start, worst_finalist_s):
+                break
             proposals += 1
             try:
                 # Only a winner already evaluated in THIS live 2D cold search
@@ -138,8 +225,11 @@ def run_live(root: Path, class_key: str, level: int, *,
                         elite=elite, repair_axes=axes,
                         enchant_pools=enchant_pools)
                 else:
-                    elite = (best[3] if full_search and best is not None
-                             and proposals % 5 != 0 else None)
+                    elite = (_paid_p75_parent(
+                        best, stochastic_finalists, proposals, rng)
+                        if full_search else None)
+                    if elite is not None and stochastic_finalists and proposals % 3 != 0:
+                        stochastic_parent_proposals += 1
                     candidate = _cold_joint(
                         base, source, validator, pools, rng,
                         elite=elite, enchant_pools=enchant_pools)
@@ -167,6 +257,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 if not 0 <= score < float("inf"):
                     raise ValueError("SOURCE_JOINT_NATIVE_WORLD_DPS_INVALID")
                 executed += 1
+                balanced_elites.append((score, candidate_sha, candidate))
+                balanced_elites.sort(key=lambda row: row[0], reverse=True)
+                del balanced_elites[24:]
                 if wf613 is not None:
                     wf613.observe(candidate, score, family)
                 if best is None or score > best[0]:
@@ -176,6 +269,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                 failures.append(type(exc).__name__ + ":" + str(exc)[:180])
     finally:
         validator.close()
+    if full_search and elapsed < 300.0:
+        # If a measured paid step cannot fit, complete the original window.
+        # No extra clock read when the loop already reached its deadline.
+        time.sleep(max(0.0, search_start + 300.0 - time.monotonic()))
     search_wall_s = time.monotonic() - search_start
     if best is None:
         return {"status": "FAIL",
@@ -184,7 +281,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "search_wall_s": search_wall_s,
                 "cold_candidate_failures": failures[:4]}
 
-    score, live, candidate_sha, frozen_winner = best
+    (score, live, candidate_sha, frozen_winner,
+     selected_balanced_score, selected_validation) = _freeze_paid_p74_winner(
+        best, stochastic_finalists, confirmed)
     complete_search = full_search and 300.0 <= search_wall_s <= 301.0
     final = {}
     if complete_search:
@@ -281,6 +380,12 @@ def run_live(root: Path, class_key: str, level: int, *,
         "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
         "saved_reference_dps": float(meta["reference_dps"]),
         "joint_cold_world_dps": score,
+        "cold_balanced_screen_best_dps": best[0],
+        "selected_balanced_screen_dps": selected_balanced_score,
+        "paid_joint_stochastic_finalists": len(stochastic_finalists),
+        "paid_joint_stochastic_confirmed": len(confirmed),
+        "stochastic_parent_proposals": stochastic_parent_proposals,
+        "stochastic_finalist_failures": rerank_failures[:4],
         "external_reference_only_floor": p7_required_dps(
             "P7.4", float(meta["reference_dps"])),
         "final_required_dps": required,
@@ -305,7 +410,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "search_strategy": strategy,
         **(wf613.diagnostics() if wf613 is not None else {}),
         "cold_candidate_failures": failures[:4],
-        "selected_validation": "3_native_world_fights_per_cold_full_build",
+        "selected_validation": selected_validation,
         "search_rng_mode": "balanced",
         "coverage_scope_complete": False,
     }
