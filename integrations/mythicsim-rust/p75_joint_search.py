@@ -7,7 +7,7 @@ winners initialize the search population.
 """
 import argparse,copy,json,random,re,sqlite3,subprocess,time
 from pathlib import Path
-from p73_talent_search_v2 import random_build,edit_neighbors,encode,validate,parse,run,sha,player
+from p73_talent_search_v2 import random_build,edit_neighbors,encode,parse,run,sha,player
 from p74_gear_search import candidate_pool, source_enchant_pools
 from p74_gear_validation import GearValidator, RejectedGear, sha256
 from apl_mutation import mutate_apl
@@ -104,8 +104,8 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
             item["enchant"]=enchants[i]
     p["talentsString"]=encode(ranks)
     p["rotation"]["priorityList"]=actions
-    if not validate(ranks):
-        raise ValueError("Joint candidate violates source talent legality")
+    # Forward generated talents unchanged. Only selected MythicSim Rust
+    # prepare/sim --gate decides whether this combination is executable.
     return q
 
 def candidate_key(q):

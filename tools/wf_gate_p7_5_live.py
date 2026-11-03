@@ -57,13 +57,9 @@ def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pool
                 candidate = source.make_candidate(
                     base, pools, rng, elite=elite, repair_axes=repair_axes,
                     **kwargs)
-            p = source.player(candidate)
-            items = p["equipment"]["items"]
-            ids = [int(x["id"]) for x in items]
-            enchants = [int(x.get("enchant") or 0) for x in items]
-            validator.validate(ids, enchants)  # real source+Rust item legality
-            # In cold mode this was independently sampled. With elite it is
-            # descended only from this search's genuinely paid candidate.
+            # A proposal is not a legal build until the selected Rust
+            # native_source_control(sim --gate) accepts it. Do not run a
+            # second Forever/SQLite item-legality veto before forwarding.
             # Equality with a reference axis is never evidence of seeding.
             return candidate
         except (source.RejectedGear, ValueError, KeyError, TypeError):
@@ -288,23 +284,17 @@ def _paid_p75_apl_crossover(candidate, parent, finalists, balanced_elites, sourc
 
 
 def _paid_p75_gear_block_crossover(candidate, parent, finalists,
-                                    balanced_elites, source, validator, rng):
-    """Combine a small block of independently paid gear/enchant pairs.
+                                    balanced_elites, source, rng):
+    """Combine a block of gear/enchants from a distinct, paid cold-search donor.
 
-    The genuine selected-pin P7.5 #41584379499 paid 2,187 source builds but
-    its frozen result remained below the accepted-compatible floor. Existing
-    source-paid crossover only transferred a talent/APL pair, not multiple
-    interacting gear slots. Transfer intact item/enchant pairs solely from
-    another actually executed candidate in THIS independent cold search.
-    The selected source/Rust gear validator must accept the mixed equipment
-    before the usual genuine native+gsim-2D paid evaluation.
+    This constructs a candidate, not a legality certificate. Forward the
+    composite to the selected MythicSim Rust sim --gate, whose VALID/INVALID/
+    UNSUPPORTED/error decision is authoritative. No second Python gear veto.
     """
     items = source.player(candidate)["equipment"]["items"]
 
     def distinct_paid_gear(rows, request_index, limit):
         eligible = []
-        # Cap genuine multi-slot donors after filtering. A top-ranked
-        # one-slot/identical-gear paid row must not exhaust this operator.
         for row in sorted(rows, key=lambda row: row[0], reverse=True):
             paid = row[request_index]
             if paid == parent:
@@ -314,19 +304,12 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
                 continue
             different = [i for i in range(len(items))
                          if items[i] != other[i]]
-            # This operator is specifically a multi-slot crossover, not
-            # another single-slot edit or an identical-gear no-op.
             if len(different) >= 2:
                 eligible.append((other, different))
                 if len(eligible) >= limit:
                     break
         return eligible
 
-    # Every donor has been independently PAID in this cold search. The old
-    # implementation picked only one: four rejected mixes silently discarded
-    # the entire crossover even if another paid donor could form legal gear.
-    # Keep the same four bounded validation attempts, rotating through
-    # balanced finalists first and then other genuinely paid balanced candidates.
     finalist_donors = distinct_paid_gear(finalists, 3, 3)
     balanced_donors = distinct_paid_gear(balanced_elites, 2, 6)
     if not finalist_donors and not balanced_donors:
@@ -334,23 +317,11 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
     rng.shuffle(finalist_donors)
     rng.shuffle(balanced_donors)
     donors = finalist_donors + balanced_donors
-    for attempt in range(4):
-        other, different = donors[attempt % len(donors)]
-        selected = rng.sample(
-            different, min(len(different), rng.randint(2, 5)))
-        mixed = copy.deepcopy(items)
-        for i in selected:
-            mixed[i] = copy.deepcopy(other[i])
-        try:
-            validator.validate(
-                [int(item["id"]) for item in mixed],
-                [int(item.get("enchant") or 0) for item in mixed])
-        except (source.RejectedGear, ValueError, KeyError, TypeError):
-            continue
-        items[:] = mixed
-        return True
-    return False
-
+    other, different = donors[0]
+    selected = rng.sample(different, min(len(different), rng.randint(2, 5)))
+    for i in selected:
+        items[i] = copy.deepcopy(other[i])
+    return True
 
 
 def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
@@ -674,7 +645,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                     elif gear_crossover:
                         _paid_p75_gear_block_crossover(
                             candidate, elite, balanced_finalists,
-                            balanced_elites, source, validator, rng)
+                            balanced_elites, source, rng)
                     elif gear_apl_crossover:
                         _paid_p75_gear_apl_crossover(
                             candidate, elite, balanced_finalists,

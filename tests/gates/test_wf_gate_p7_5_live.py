@@ -28,7 +28,8 @@ def test_cold_joint_changes_all_three_dimensions_and_does_not_seed_winner():
         p["rotation"]["priorityList"] = [3, 2, 1]
         return q
     v = SimpleNamespace(engine={11: {"name": "One"}, 21: {"name": "Two"}},
-                        validate=lambda ids, enchants: True)
+                        validate=lambda *args: (_ for _ in ()).throw(
+                            AssertionError("duplicate Python gear veto executed")))
     source = SimpleNamespace(make_candidate=create, player=player,
                              RejectedGear=ValueError)
     candidate = gate._cold_joint(original, source, v, {}, random.Random(1))
@@ -58,7 +59,9 @@ def test_source_joint_keeps_same_name_distinct_ids_for_real_legality_check(
     names = {100 + i: f"distinct-{i}" for i in range(16)}
     names[110] = names[111] = "same-display-name-not-same-id"
     monkeypatch.setattr(source, "random_build", lambda rng: "legal-ranks")
-    monkeypatch.setattr(source, "validate", lambda ranks: True)
+    # The joint candidate generator must not import or call Python talent
+    # legality: the selected Rust prepare/sim gate owns the outcome.
+    assert not hasattr(source, "validate")
     monkeypatch.setattr(source, "encode", lambda ranks: "legal")
     monkeypatch.setattr(source, "mutate_apl", lambda *args, **kwargs: [1, 2, 3])
 
@@ -334,7 +337,6 @@ def test_joint_cold_admits_independently_rediscovered_reference_axes():
     """
     original = _base()
     player = lambda q: q["raid"]["parties"][0]["players"][0]
-    tried = []
     for unchanged_axis in ("gear", "talents", "rotation", "all"):
         candidate = copy.deepcopy(original)
         p = player(candidate)
@@ -348,18 +350,13 @@ def test_joint_cold_admits_independently_rediscovered_reference_axes():
             assert elite is None  # never seed candidate with a paid prior winner
             assert reference == original
             return copy.deepcopy(candidate)
-        def validate(ids, enchants):
-            tried.append((ids, enchants))
-            return True
         validator = SimpleNamespace(
-            engine={10: {"name": "original"}, 20: {"name": "original2"},
-                    11: {"name": "cold"}, 21: {"name": "cold2"}},
-            validate=validate)
+            validate=lambda *args: (_ for _ in ()).throw(
+                AssertionError("native candidate pre-veto must not execute")))
         source = SimpleNamespace(make_candidate=generate, player=player,
                                  RejectedGear=ValueError)
         selected = gate._cold_joint(original, source, validator, {}, random.Random(4))
         assert selected == candidate, unchanged_axis
-    assert len(tried) == 4
     assert original == _base()
 
 
