@@ -4,6 +4,7 @@ from pathlib import Path
 import port_native_early_retarget as early_retarget
 import port_native_persistent_target as persistent_target
 import port_native_two_world_cli as two_world_cli
+import port_native_two_pull_cli as two_pull_cli
 
 spec = importlib.util.spec_from_file_location(
     "native_paid_recovery_port",
@@ -271,7 +272,26 @@ for marker, original, transform, anchor in (
         raise AssertionError(f"RUST_TYPED_RECOVERY_DRIFT_NOT_REJECTED: {marker}")
 print("RUST_TYPED_RNG_PAID_RECOVERY_COMPOSITION_PASS")
 
-print("RUST_TYPED_TWO_WINDOW_PREPARED_GATEWAY_IDEMPOTENT")
+# The older native-two-pull port runs before the world-kill port in the
+# selected-engine chain. It must leave the original prepared.rs anchor for the
+# distinct world-kill gateway; the paid-recovery port then extends only that
+# world-kill method and remains idempotent.
+two_pull_prepared = two_pull_cli.port_prepared(two_world_cli.PREPARED_ANCHOR)
+assert two_pull_prepared.count(two_world_cli.PREPARED_ANCHOR) == 1
+assert two_pull_cli.PREPARED_ANCHOR in two_pull_prepared
+combined_prepared = two_world_cli.insert(
+    two_pull_prepared, two_world_cli.PREPARED_ANCHOR,
+    two_world_cli.PREPARED_MARKER, two_world_cli.PREPARED_METHOD,
+)
+assert "pub fn native_two_pull_windows(prepared: &PreparedV2)" in combined_prepared
+assert "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode:" in combined_prepared
+assert combined_prepared.count(two_world_cli.PREPARED_ANCHOR) == 1
+assert two_pull_cli.port_prepared(combined_prepared) == combined_prepared
+paid_combined = port.port_prepared(combined_prepared)
+assert paid_combined != combined_prepared
+assert port.port_prepared(paid_combined) == paid_combined
+assert "native_two_world_targets(prepared, target_count, rng_mode, recovery_ns)" in paid_combined
+print("RUST_TWO_PULL_THEN_TWO_WORLD_PAID_PREPARED_CHAIN_PASS")
 
 
 # Structural typed-RNG acceptance is deliberately narrower than a marker-only
