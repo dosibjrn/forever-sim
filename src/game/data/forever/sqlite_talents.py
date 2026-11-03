@@ -19,11 +19,8 @@ from src.game.data.forever.talent_modifiers import normalize_talent_definition
 from src.rulesets.forever.data.schema import TalentRecord
 
 
+from src.shared.identifiers import source_slug as _slug
 from .source_db_scope import DEFAULT_DB, active_ability_db
-
-
-def _slug(value: str) -> str:
-    return re.sub(r'[^a-z0-9]+', '_', value.lower()).strip('_').replace("_s_", 's_')
 
 
 def _rank_one_tooltip(payload: dict) -> str | None:

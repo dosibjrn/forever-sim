@@ -13,8 +13,8 @@ from typing import Any
 
 from src.game.model.ir import (ControlEffect, DamageEffect, HealEffect, PeriodicEffect,
                                PeriodicHealEffect, ResourceCost)
-from .sqlite_talents import DEFAULT_DB, _slug
-from .source_db_scope import active_ability_db
+from src.shared.identifiers import source_slug as _slug
+from .source_db_scope import DEFAULT_DB, active_ability_db
 
 _NUM = r'(\d+(?:\.\d+)?)'
 _IMMOBILIZE = re.compile(r'\bfreezes?\b[^.]*?\bin place\b[^.]*?\bfor\s+(?:up\s+to\s+)?' + _NUM + r'\s+sec\b', re.I)

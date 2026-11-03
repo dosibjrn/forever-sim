@@ -8,7 +8,7 @@ Unreachable post-L30 ranks retain identity and source row but are not scored.
 from __future__ import annotations
 import hashlib,json,shutil,sqlite3
 from pathlib import Path
-from src.game.data.forever.sqlite_talents import _slug
+from src.shared.identifiers import source_slug as _slug
 ROOT=Path(__file__).resolve().parents[1]
 BASE=ROOT/'data/forever/catalogue/forever_abilities.sqlite'
 TARGET=ROOT/'data/forever/staged_warrior_l30_talents_70338.sqlite'

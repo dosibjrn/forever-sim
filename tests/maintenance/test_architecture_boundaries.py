@@ -571,3 +571,42 @@ assert HISTORICAL_DB is DEFAULT_DB
         f"indexed rank source/GameIR boundary failed: "
         f"{result.stdout}\n{result.stderr}"
     )
+
+
+def test_source_slug_helper_is_not_entangled_with_legacy_talent_compiler():
+    """Pure source-name normalization must not instantiate Python GameIR."""
+    import subprocess
+    import sys
+
+    script = """
+import sys
+from src.shared.identifiers import source_slug
+from tools.wf362_stage_warrior30_talents import _slug as stage_slug
+assert stage_slug is source_slug
+assert source_slug('Cat\\'s Paw') == 'cats_paw'
+assert source_slug('  Holy/Fire  ') == 'holy_fire'
+assert source_slug('Rank 1') == 'rank_1'
+assert 'src.game.data.forever.sqlite_talents' not in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+from src.game.data.forever.sqlite_talents import _slug as legacy_slug
+assert legacy_slug is source_slug
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script], cwd=ROOT,
+        text=True, capture_output=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, result.stdout + "\\n" + result.stderr
+
+    migrated = [
+        "src/game/data/forever/source_ability_semantics.py",
+        "src/game/data/forever/source_queued_swing.py",
+        "src/game/data/forever/source_enemy_melee_ap_debuff.py",
+        "src/game/data/forever/source_rank_overlay.py",
+        "src/game/data/forever/source_control_action_compiler.py",
+        "tools/wf362_stage_warrior30_talents.py",
+        "tools/parse_verified_detail_to_staging.py",
+    ]
+    for path in migrated:
+        source = (ROOT / path).read_text(encoding="utf-8")
+        assert "sqlite_talents import" not in source, path
+        assert "source_slug as _slug" in source, path

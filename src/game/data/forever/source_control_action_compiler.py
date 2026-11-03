@@ -17,8 +17,8 @@ import sqlite3
 
 from src.forever_build import current as current_build
 from src.game.model.ir import ActionDefinition, ControlEffect, ResourceCost
-from .sqlite_talents import DEFAULT_DB, _slug
-from .source_db_scope import active_ability_db
+from src.shared.identifiers import source_slug as _slug
+from .source_db_scope import DEFAULT_DB, active_ability_db
 from .source_indexed_action_coverage import _source_spell_ids
 from .source_control_observations import parse_control_observation
 

@@ -17,7 +17,7 @@ import re
 import sqlite3
 
 from src.game.data.forever.source_ability_semantics import _PERIODIC_COMBO
-from src.game.data.forever.sqlite_talents import _slug
+from src.shared.identifiers import source_slug as _slug
 from src.game.multi_pull import evaluate_repeated_pulls
 from src.v2.source_sqlite_detail_snapshots import read_verified_spell_detail_snapshot
 
