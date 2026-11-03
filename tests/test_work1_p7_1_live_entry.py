@@ -391,9 +391,11 @@ def test_full_1000_stochastic_result_not_vetoed_by_ui_or_source_count(
     provider.parent.mkdir(parents=True)
     provider.write_text("""
 import hashlib
-def native_source_control(binary, request, iterations):
+def native_source_control(binary, request, iterations, *, rng_mode):
+    assert rng_mode == "stochastic"
     return {"iterations": iterations, "native_dps": 730.0, "first_duration_s": 120.0}
-def run(binary, request, *, distance, iterations):
+def run(binary, request, *, distance, iterations, rng_mode):
+    assert rng_mode == "stochastic"
     return {"iterations_done": iterations, "native_dps": 730.0,
             "world_mean_dps": 730.0, "sampled_duration_s": 120.0,
             "native_damage_events": iterations, "native_world_ticks": iterations,
