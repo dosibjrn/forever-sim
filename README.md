@@ -5,7 +5,7 @@
 **Engine ownership and migration:** The approved end state is **one game-rules authority: the exact-SHA-pinned [MythicSim Rust fork](https://github.com/dosibjrn/mythicsim-forever-engine)**. Rust owns Warcraft source facts, build legality, combat mechanics and game-world execution. Forever defines scenarios, proposes and searches candidates, scores native results and verifies the unchanged gate contracts. Python GameIR, source catalogues, Go/gsim bridges and Python world code in the **current** tree are transitional live dependencies, not additional permanent sources of game truth; migrate their real consumers and verify native replacement before deleting them. See [#357](https://github.com/dosibjrn/forever-sim/issues/357), [#359](https://github.com/dosibjrn/forever-sim/issues/359) and the [target architecture](docs/REPOSITORY_STRUCTURE.md).
 
 
-## M1 — verified progress over time
+## M1 — historical progress and current active scope
 
 ![Historical pre-v2.20 11-gate M1 acceptance and diagnostic partial progress](docs/planning/M1_HISTORY.svg)
 
@@ -19,11 +19,11 @@ This is an independent Forever simulation and optimization research project. The
 
 **Credit and scope:** this repository is not the official MythicSim project and is not affiliated with its maintainers. Engine references and pinned versions must remain traceable; upstream licenses and notices govern any adapted code.
 
-**Fully certified active-gate checkpoints are counted in the M1 ledger.** User-accepted P7 subgates are tracked separately; do not mistake them for full active P3–P7.5 checkpoint certification. A green CI job or a standalone reference replay does not certify the active P3–P7.5 checkpoint.
+**Fully certified active-gate checkpoints are counted in the M1 ledger.** The linked SVG is the pre-v2.20 11-gate history until Merge regenerates it. User-accepted P7 subgates are tracked separately; do not mistake them for full active P3–P7.5 checkpoint certification. A green CI job or a standalone reference replay does not certify the active P3–P7.5 checkpoint.
 
 ## Work queue and the 148-checkpoint matrix
 
-**Fully certified active-gate checkpoints: see the M1 ledger above.** Four levels **20, 30, 40 and 60** × (9 unrestricted classes + 4 Druid profiles + 24 other profiles) = **37 per level**. Level 50 is **not** in the approved 148-checkpoint scope.
+**Fully certified active-gate checkpoints: 0/148 at the last recorded main-ledger read; run `python tools/m1_progress.py` for the current nine-gate scoreboard.** Four levels **20, 30, 40 and 60** × (9 unrestricted classes + 4 Druid profiles + 24 other profiles) = **37 per level**. Level 50 is **not** in the approved 148-checkpoint scope.
 
 | Level | Unrestricted | Druid spec profiles | Other class spec profiles | Total |
 | --- | ---: | ---: | ---: | ---: |
