@@ -47,14 +47,22 @@ No backend union of incomplete implementations can be treated as P1 PASS.
 | --- | --- | --- |
 | `tools/p1_native_source_inventory.py` | Source-only candidates, role separation, scenario applicability; no GameIR | **None**; candidates may be unverified |
 | `tools/wf_p1_native_scope_matrix.py` | Class/level source inputs for 9 classes × L20/L60 | **None**; no native effects are executed |
-| `tools/wf_p1_native_effects.py` | Run real pinned native Rust APL-present/absent pair when supplied executable and request | **Diagnostic only**, not timing-preserving |
-| `tests/gates/test_wf_p1_native_blackbox.py` | Source/schema/regression tests; no mocked native combat PASS | **None** |
-| `tools/wf_gate.py --gate P1` | Existing historical selected-gsim provider | Not silently replaced by this experiment |
+| `tools/wf_p1_native_effects.py` | Run a selected-Rust PreparedV2 one-action/no-action control pair and observe native direct-effect delta; 2D is opt-in only for world-owned effects | **Diagnostic only**, never a P1 PASS |
+| `tools/wf_gate_p1_live.py` | First native-owned live caller: Druid L20 source Claw (spell ID 1082) goes through PreparedV2; optimizer candidate reachability remains separately checked | **Partial migration only**; all other actions remain transitional |
+| `tests/gates/test_wf_p1_native_blackbox.py` | Request-shaping and fail-closed native-refusal boundary tests; no mocked native combat PASS | **None** |
+| `tools/wf_gate.py --gate P1` | Existing hybrid live provider: the Druid L20 Claw pilot is native, remaining actions retain the historical GameIR path | Not full native P1; do not record PASS |
 
-The existing gsim-specific diagnostic remains useful for gsim backend
+The remaining gsim-specific diagnostic is still useful for backend
 regressions. **Its `2/61` Hunter L20 action count is not native MythicSim P1
-coverage.** A missing gsim GameIR slice at L60 does not mean a native L60
-spell is missing.
+coverage.** The Druid L20 Claw route is one native direct-effect observation,
+not a complete native inventory or a P1 acceptance result. A missing gsim
+GameIR slice at L60 does not mean a native L60 spell is missing.
+
+The Claw pilot uses source spell ID 1082 only to select the test. Its
+checkpoint-level label is Forever-side metadata: the selected Rust
+RaidSimRequest schema has no player-level field, so this experiment makes no
+level-specific acquisition claim. Native INVALID/UNSUPPORTED/no-effect
+responses remain visible and never fall back to GameIR.
 
 ## Partial coverage and estimated effort (not P1 acceptance)
 
@@ -62,12 +70,14 @@ spell is missing.
 
 ## Next production task
 
-Expose/consume genuine spell-by-ID execution or other condition-appropriate
-native mechanism on pinned MythicSim, plus actual event/state observations.
-Run a positive and effect-neutral control through **that** engine. Use selected MythicSim for spell/talent legality; test optimizer admission and actual effects without an independent acquisition proof.
-Only then allow `tools/wf_gate.py` to report native P1 PASS for the selected
-checkpoint. Do not invent missing mechanics in a Python test adapter and do
-not manually update PASS ledgers.
+Continue migrating the remaining P1 actions from GameIR runtime execution to
+the selected native PreparedV2 request/response path. Keep optimizer candidate
+reachability as a separate check, but do not reintroduce source acquisition,
+rank-legality, or Python effect proofs. The Claw pilot is a direct-damage
+control experiment, not a complete P1 gate. Only after the full applicable
+native inventory and effect set is exercised may `tools/wf_gate.py` report
+native P1 PASS for the selected checkpoint. Do not invent missing mechanics in
+a Python test adapter and do not manually update PASS ledgers.
 
 The source-only 18-case matrix can be GREEN while **zero** native abilities
 have been executed. That is correct; P1 itself remains unresolved.
