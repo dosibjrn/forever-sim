@@ -289,6 +289,57 @@ def test_native_prepare_refusal_is_preserved_without_fallback(monkeypatch, tmp_p
     assert result["p1_certified"] is False
 
 
+@pytest.mark.parametrize("native_status", ["INVALID", "UNSUPPORTED", "ERROR"])
+def test_native_positive_sim_refusal_skips_control_and_world(
+    monkeypatch, tmp_path, native_status
+):
+    """Native sim refusals are final; no redundant paid control execution."""
+    from src.engine_client import native_p1_effect_probe as probe
+
+    engine_root = tmp_path / "engine"
+    engine_root.mkdir()
+    binary = engine_root / "forever-engine"
+    binary.write_bytes(b"placeholder")
+    sim_calls = []
+
+    def prepare(**kwargs):
+        marker = "with" if kwargs["scenario"].endswith("with-action") else "without"
+        digest = ("a" if marker == "with" else "b") * 64
+        return {
+            "status": "PREPARED", "stage": "prepare",
+            "engine_identity": "selected-pin",
+            "request_sha256": digest,
+            "prepared": {"marker": marker, "request_sha256": digest},
+        }
+
+    def simulate(**kwargs):
+        sim_calls.append(kwargs["prepared"]["marker"])
+        if kwargs["prepared"]["marker"] != "with":
+            pytest.fail("native positive refusal must not run a control sim")
+        return {
+            "status": native_status, "stage": "sim",
+            "reason": "native_owned_sim_refusal",
+        }
+
+    monkeypatch.setattr(probe, "prepare_native_request", prepare)
+    monkeypatch.setattr(probe, "_simulate_prepared", simulate)
+    monkeypatch.setattr(
+        probe, "_run_world_bridge",
+        lambda *args, **kwargs: pytest.fail("native refusal must not reach world"),
+    )
+    result = probe.run_native_p1_direct_effect_probe(
+        binary=binary, engine_root=engine_root, request=_sample_request(),
+        spell_id=14282, timeout_seconds=5, iterations=1,
+    )
+    assert sim_calls == ["with"]
+    assert result["status"] == native_status
+    assert result["reason"] == "native_owned_sim_refusal"
+    assert result["positive_sim"]["status"] == native_status
+    assert "control_sim" not in result
+    assert result["native_executed"] is False
+    assert result["p1_certified"] is False
+
+
 def test_native_direct_effect_requires_positive_delta_and_real_world_ack(monkeypatch, tmp_path):
     from src.engine_client import native_p1_effect_probe as probe
 
