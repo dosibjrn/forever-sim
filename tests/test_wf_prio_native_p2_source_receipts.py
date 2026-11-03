@@ -115,3 +115,43 @@ def test_native_rank_diagnostic_requires_source_tree_tier_points_in_both_pair_me
     )
     assert result["status"] == "BLOCKED"
     assert result["reason"] == "SOURCE_RANK_PAIR_TIER_NOT_SATISFIED"
+
+
+def test_native_rank_diagnostic_does_not_create_a_source_bridge_gate():
+    source_url = "https://example.invalid/druid-talent-source"
+    source = {
+        "class_key": "druid",
+        "level": 60,
+        "talent_id": "predatory_strikes",
+        "rank": 1,
+        "tree_key": "feral",
+        "tree_row": 3,
+        "rank_cap": 3,
+        "tree_members": ["ferocity", "feral_swiftness", "predatory_strikes"],
+        "points_per_row": 5,
+        "source_build": "1.60.1.70338",
+        "source_url": source_url,
+        "prerequisite": None,
+        "prerequisite_authority": "none_captured",
+        "checkpoint_source_l0": {
+            "source_url": source_url,
+            "source_build": "1.60.1.70338",
+            "effect_domain": "form_melee_attack_power_from_level",
+            "target": "attack_power",
+            "value": 0.02,
+            "condition": "cat_form",
+            "prerequisite_rank_build_bridge_unverified": True,
+        },
+    }
+    result = p2._native_p2_rank_diagnostic(
+        None,
+        "predatory_strikes",
+        1,
+        {
+            "source_rank_facts": source,
+            "control_witness": {"ferocity": 5, "feral_swiftness": 10},
+            "witness": {"ferocity": 5, "feral_swiftness": 10, "predatory_strikes": 1},
+        },
+    )
+    assert result["status"] == "BLOCKED"
+    assert result["reason"] == "FOREVER_MYTHICSIM_RUST_BIN_NOT_SET"

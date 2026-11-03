@@ -1412,6 +1412,12 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
                          if isinstance(source_l0,Mapping) else None)
     if not isinstance(source_prerequisite,Mapping):
         source_prerequisite=None
+    applied_prerequisite=(talent.prerequisite
+                          if isinstance(talent.prerequisite,Mapping) else None)
+    prerequisite=source_prerequisite or applied_prerequisite
+    prerequisite_authority=('checkpoint_source_l0' if source_prerequisite is not None
+                             else 'canonical_game_ir' if applied_prerequisite is not None
+                             else 'none_captured')
     source_url=(source_l0.get('source_url') if isinstance(source_l0,Mapping) else None)
     source_url=(source_url or metadata.get('checkpoint_source_url')
                 or r.provenance.get('source_url'))
@@ -1434,7 +1440,8 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
         'source_url':str(source_url or ''),
         'source_sha256':str(metadata.get('checkpoint_source_stage_sha256')
                              or metadata.get('checkpoint_source_sha256') or ''),
-        'prerequisite':dict(source_prerequisite) if source_prerequisite is not None else None,
+        'prerequisite':dict(prerequisite) if prerequisite is not None else None,
+        'prerequisite_authority':prerequisite_authority,
         'checkpoint_source_l0':dict(source_l0) if isinstance(source_l0,Mapping) else None,
     }
     exclusion = solo_threat_exclusion(compiled, r) if not r.modifiers else None
@@ -1791,9 +1798,9 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
             (isinstance(expected,bool) or not isinstance(expected,int)
              or expected!=len(effects))):
         return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_EFFECT_CLAUSES_INCOMPLETE'}
-    if (l0.get('prerequisite_rank_build_bridge_unverified')
-            or l0.get('unsupported_prerequisite_rank_bridge_unverified')):
-        return {'status':'BLOCKED','reason':'CANONICAL_P2_PREREQUISITE_BUILD_BRIDGE_UNVERIFIED'}
+    # The approved P2 contract does not create a separate source-version
+    # bridge gate. Preserve any bridge annotation in the receipt, but judge
+    # the captured allocation facts and executed effect directly.
     if l0.get('source_build') and str(l0['source_build'])!=source_build:
         return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_BUILD_MISMATCH'}
     for effect in effects:
@@ -1861,7 +1868,11 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
             'tree_key':source['tree_key'],'tree_row':source.get('tree_row'),
             'rank_cap':source['rank_cap'],'source_build':source_build,
             'source_url':source_url,'source_sha256':source.get('source_sha256'),
-            'prerequisite':prerequisite,'points_per_row':points_per_row,
+            'prerequisite':prerequisite,
+            'prerequisite_authority':source.get('prerequisite_authority'),
+            'prerequisite_rank_build_bridge_unverified':bool(
+                l0.get('prerequisite_rank_build_bridge_unverified')),
+            'points_per_row':points_per_row,
             'required_tree_points':required_tree_points,
             'tree_members_count':len(tree_members),
             'effect_domains':[str(effect['domain']) for effect in effects],
