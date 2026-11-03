@@ -2,11 +2,13 @@
 
 No fake metric from this file may be presented as native evidence.
 """
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from native_joint_28_sweep import build_matrix, preflight, gap_summary
+from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report
 
 
 def inventory():
@@ -85,6 +87,42 @@ class SweepContracts(unittest.TestCase):
         self.assertTrue(any(g["cause"] == "VERIFY_PER_RANK_TALENTS_AND_FULL_EQUIP_RULES"
                             for g in gaps))
         self.assertTrue(all("score" not in row for row in rows))
+
+    def test_report_contains_balanced_baseline_best_and_exact_provenance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            engine_src = root / "engine"
+            data = engine_src / "data"
+            data.mkdir(parents=True)
+            for name in ("items", "enchants", "spells"):
+                (data / (name + ".jsonl")).write_text("{}\\n")
+            binary = root / "forever-engine"
+            binary.write_bytes(b"test-native-binary")
+            out = root / "report"
+            rows = [{
+                "profile_id": "druid/feral_cat",
+                "status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+                "native_paid": 2,
+                "baseline_paid": 1,
+                "native_paid_total": 3,
+                "baseline_balanced_score": 101.25,
+                "best_balanced_screen": 111.5,
+                "three_axis_paid": 1,
+                "blocker": None,
+                "promotion_blocker": "BLOCKED_FULL_SOURCE_LEGALITY",
+            }]
+
+            save_report(out, rows, stage=5, binary=binary, engine_src=engine_src)
+
+            provenance = json.loads((out / "provenance.json").read_text())
+            self.assertEqual("balanced", provenance["candidate_rng_mode"])
+            self.assertEqual("stochastic", provenance["holdout_rng_mode"])
+            self.assertEqual("NOT_RUN_STAGE_5", provenance["holdout_status"])
+            self.assertFalse(provenance["process_p7_pass"])
+            matrix = (out / "matrix.md").read_text()
+            self.assertIn("Baseline balanced", matrix)
+            self.assertIn("101.25", matrix)
+            self.assertIn("111.5", matrix)
 
 
 class SourceBlockerClassification(unittest.TestCase):
