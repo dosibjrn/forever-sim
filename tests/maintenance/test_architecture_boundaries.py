@@ -377,3 +377,45 @@ assert callable(source_enrich_target_combat)
         f"source-profile/GameIR import boundary failed: "
         f"{result.stdout}\\n{result.stderr}"
     )
+
+def test_source_acquisition_metadata_imports_do_not_load_legacy_game_rules():
+    """Source-only acquisition readers may be imported without GameIR/talent compilation.
+
+    The active legacy IR audit remains callable; only its module-import
+    dependency on the transitional talent compiler is removed here.
+    """
+    import subprocess
+    import sys
+
+    source = """
+import sys
+from types import SimpleNamespace
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever.source_indexed_action_coverage import (
+    DEFAULT_DB as INDEX_DB, _source_spell_ids, indexed_ability_coverage,
+)
+from src.game.data.forever.source_acquisition import (
+    DEFAULT_DB as ACQUISITION_DB, read_acquisition_evidence,
+    audit_learned_action_legality,
+)
+assert INDEX_DB is DEFAULT_DB and ACQUISITION_DB is DEFAULT_DB
+assert 'src.game.model.ir' not in sys.modules
+assert 'src.game.data.forever.sqlite_talents' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+action = SimpleNamespace(
+    provenance=({'source_spell_id': 123},), metadata={'spell_id': 456},
+)
+assert _source_spell_ids(action) == {123, 456}
+assert read_acquisition_evidence(class_key='druid', spell_ids=[]) == {}
+assert callable(indexed_ability_coverage) and callable(audit_learned_action_legality)
+assert 'src.game.model.ir' not in sys.modules
+assert 'src.game.data.forever.sqlite_talents' not in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"source acquisition/GameIR import boundary failed: "
+        f"{result.stdout}\\n{result.stderr}"
+    )
