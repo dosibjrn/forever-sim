@@ -203,6 +203,8 @@ class GsimNativeDamageWorldApplier:
                         or event.get("control_id") != "root"
                         or type(duration_ns) is not int or duration_ns <= 0
                         or event.get("break_semantics_status") != "unimplemented"
+                        or type(event.get("rank")) is not int
+                        or not 1 <= event["rank"] <= 6
                         or event.get("crit") is not False
                         or event.get("periodic") is not False
                         or caster_type != "" or caster_index != 0 or caster_label != ""
