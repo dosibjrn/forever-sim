@@ -300,6 +300,41 @@ def test_completed_world_route_rejects_steps_from_a_different_generation():
 
 
 
+def test_completed_world_route_rejects_replayed_real_step_as_missing_waypoint():
+    module = _world_module()
+    world = _world()
+    leg = module._queue_world_walk(world, "m1", speed_yards_s=7.)
+    world.advance_to(leg["arrival_s"])
+    steps = [event for event in world.trace
+             if event.kind == "SpatialPlayerMoveStep"]
+    assert len(steps) == leg["scheduled_movement_steps"] == 10
+
+    # The old count-only receipt treated these ten trace entries as a
+    # completed walk even though the final gsim waypoint never happened.
+    # Every event itself came from the real 2D runtime, not a fake point.
+    corrupted_trace = world.trace.copy()
+    last_step_index = max(i for i, event in enumerate(corrupted_trace)
+                          if event.kind == "SpatialPlayerMoveStep")
+    corrupted_trace[last_step_index] = steps[0]
+    kills = [{"world_kill_clock_ns": 0},
+             {"world_kill_clock_ns": round((leg["arrival_s"] + 1.) * 1e9)}]
+    with pytest.raises(AssertionError, match="RUST_WORLD_ROUTE_STEPS_NOT_QUEUED_PATH"):
+        module._paid_world_route_receipts(kills, [leg], corrupted_trace)
+
+
+def test_world_route_receipt_requires_real_queued_waypoint_provenance():
+    module = _world_module()
+    world = _world()
+    leg = module._queue_world_walk(world, "m1", speed_yards_s=7.)
+    world.advance_to(leg["arrival_s"])
+    leg.pop("scheduled_step_positions")
+    with pytest.raises(AssertionError, match="RUST_WORLD_ROUTE_QUEUED_PATH_MISSING"):
+        module._paid_world_route_receipts(
+            [{"world_kill_clock_ns": 0},
+             {"world_kill_clock_ns": round((leg["arrival_s"] + 1.) * 1e9)}],
+            [leg], world.trace)
+
+
 def test_world_elapsed_reports_each_real_native_acked_target_delta():
     verify = _world_module()._verified_world_elapsed
     measured = verify(
