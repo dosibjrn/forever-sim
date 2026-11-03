@@ -22,6 +22,12 @@ def replace_once(source: str, old: str, new: str, marker: str) -> str:
                 if (source.count(HELPER) == 1 and source.count(NEW_GUARD) == 1
                         and source.count(TEST) == 1):
                     return source
+            if marker == "    fn native_persistent_next_target_retains_actor_and_native_queue()":
+                # Early-world clock adds an adjacent Rust test before this
+                # original test. Require both entire tests to be intact.
+                from port_native_early_retarget import TEST
+                if source.count(TEST) == 1 and source.count(FIGHT_TEST) == 1:
+                    return source
             raise ValueError(f"partial or ambiguous already-applied Rust port: {marker}")
         return source
     if source.count(old) != 1:
