@@ -1,5 +1,9 @@
 """G47b: source/route/race capabilities have one registry authority."""
 from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[3]
 
 from src.game.data.forever import registry
 from src.v2.decision_dashboard import _generic_ui_metadata
@@ -26,10 +30,34 @@ def test_g47b_metadata_distinguishes_source_proof_route_and_race():
     assert priest["planning_level_cap"] is None
     assert rogue["planning_level_cap"] == 14
     assert druid["planning_level_cap"] == 14
-    assert druid["race_availability"]["representative_scenario_race"] == "tauren"
+    assert druid["race_availability"]["representative_scenario_race"] is None
     assert druid["race_availability"]["playable_races"] == []
     assert all(m["capabilities"]["full_leveling"] is False for m in data.values())
     assert all(m["capabilities"]["race_selection"] is False for m in data.values())
+
+
+def test_g47b_metadata_does_not_load_legacy_gameir():
+    code = """
+import sys
+from src.game.data.forever.registry import generic_class_metadata
+
+rows = generic_class_metadata(selected_level=21)
+assert rows["druid"]["race_availability"]["representative_scenario_race"] is None
+assert rows["druid"]["race_availability"]["playable_races"] == []
+for module in (
+    'src.game.data.forever.sqlite_talents',
+    'src.game.model.ir',
+    'src.game.runtime.simulator',
+):
+    assert module not in sys.modules, module
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
+    )
+    assert result.returncode == 0, (
+        f"generic metadata loaded legacy GameIR: {result.stdout}\\n{result.stderr}"
+    )
 
 
 def test_g47b_new_provider_remains_discoverable_but_not_falsely_supported(monkeypatch):
