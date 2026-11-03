@@ -198,7 +198,7 @@ jobs:
           python3 integrations/mythicsim-rust/live_two_world_pulls.py \
             --binary /tmp/forever-selected-rust/target/debug/forever-engine \
             --prepared /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
-            --mob-health 1200 --targets 3 --recovery-seconds 5 > /tmp/forever-rust-moving-3world.jsonl
+            --mob-health 1200 --targets 3 --rng-mode balanced --recovery-seconds 5 > /tmp/forever-rust-moving-3world.jsonl
           python3 - <<'PY'
           import json
           with open("/tmp/forever-rust-moving-3world.jsonl") as f:
