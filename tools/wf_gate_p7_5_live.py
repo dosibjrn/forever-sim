@@ -22,7 +22,8 @@ from tools.wf_gate_p7_5_prior import strongest_accepted_prior
 # Same native+2D paid stochastic scorer and budget guard as accepted P7.4.
 from tools.wf_gate_p7_4_live import (
     _paid_gear_stochastic_finalist, _paid_step_has_budget,
-    _p74_early_rerank_due, _next_p74_confirmation, _freeze_paid_p74_winner)
+    _p74_early_rerank_due, _next_p74_confirmation,
+    _next_p74_deep_confirmation, _freeze_paid_p74_winner)
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
                                      _executed_p7_runtime_proof,
                                      _source_native_world_parity)
@@ -141,9 +142,12 @@ def run_live(root: Path, class_key: str, level: int, *,
     rerank_seen = set()
     confirmed = set()
     confirmation_attempted = set()
+    deep_confirmation_attempted = set()
+    deep_confirmed = set()
     rerank_failures = []
     stochastic_parent_proposals = 0
     worst_finalist_s = 0.0
+    worst_confirmation_s = 0.0
     executed = 0
     proposals = 0
     seen = set()
@@ -173,28 +177,52 @@ def run_live(root: Path, class_key: str, level: int, *,
             if full_search and (elapsed >= 240.0 or
                                 _p74_early_rerank_due(
                                     elapsed, len(stochastic_finalists))):
-                confirmation = _next_p74_confirmation(
+                # P7.4 already confirms the strongest paid stochastic finalist
+                # with 144 independent non-holdout fights. P7.5 formerly
+                # stopped at 96, even after a measured 716.30 paid finalist
+                # fell to 702.79 in its 1,000-fight frozen holdout.
+                # Reuse the same bounded two-deep-confirmation policy, never
+                # selecting with the separate frozen holdout.
+                next_deep = _next_p74_deep_confirmation(
+                    stochastic_finalists, confirmed,
+                    deep_confirmation_attempted, elapsed)
+                confirmation = next_deep or _next_p74_confirmation(
                     stochastic_finalists, confirmation_attempted, elapsed)
                 if confirmation is not None and _paid_step_has_budget(
-                        search_start, worst_finalist_s):
+                        search_start, max(worst_finalist_s,
+                                          worst_confirmation_s)):
                     index, row = confirmation
-                    confirmation_attempted.add(row[2])
+                    is_deep = next_deep is not None
+                    if is_deep:
+                        deep_confirmation_attempted.add(row[2])
+                    else:
+                        confirmation_attempted.add(row[2])
                     started = time.perf_counter()
                     try:
                         second_score, second_live = _paid_gear_stochastic_finalist(
                             production, binary, row[3], distance,
-                            seeds=("1955113", "1955139"))
+                            seeds=(("1955181", "1955207") if is_deep
+                                   else ("1955113", "1955139")))
+                        # Initial 48, confirmed 96, deep-confirmed 144
+                        # genuine paid stochastic fights: weight old 96-fight
+                        # mean twice when incorporating the last 48.
+                        new_score = ((2 * row[0] + second_score) / 3
+                                     if is_deep else
+                                     (row[0] + second_score) / 2)
                         stochastic_finalists[index] = (
-                            (row[0] + second_score) / 2, second_live, *row[2:])
-                        confirmed.add(row[2])
+                            new_score, second_live, *row[2:])
+                        if is_deep:
+                            deep_confirmed.add(row[2])
+                        else:
+                            confirmed.add(row[2])
                     except (ValueError, RuntimeError, OSError, KeyError,
                             TimeoutError, TypeError, AssertionError,
                             subprocess.SubprocessError) as exc:
                         rerank_failures.append(
                             "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:160])
                     finally:
-                        worst_finalist_s = max(
-                            worst_finalist_s, time.perf_counter() - started)
+                        worst_confirmation_s = max(
+                            worst_confirmation_s, time.perf_counter() - started)
                     continue
                 pending = next((
                     row for row in balanced_elites
@@ -295,7 +323,7 @@ def run_live(root: Path, class_key: str, level: int, *,
 
     (score, live, candidate_sha, frozen_winner,
      selected_balanced_score, selected_validation) = _freeze_paid_p74_winner(
-        best, stochastic_finalists, confirmed)
+        best, stochastic_finalists, confirmed, deep_confirmed)
     complete_search = full_search and 300.0 <= search_wall_s <= 301.0
     final = {}
     if complete_search:
@@ -396,6 +424,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "selected_balanced_screen_dps": selected_balanced_score,
         "paid_joint_stochastic_finalists": len(stochastic_finalists),
         "paid_joint_stochastic_confirmed": len(confirmed),
+        "paid_joint_stochastic_deep_confirmed": len(deep_confirmed),
         "stochastic_parent_proposals": stochastic_parent_proposals,
         "stochastic_finalist_failures": rerank_failures[:4],
         "external_reference_only_floor": p7_required_dps(
