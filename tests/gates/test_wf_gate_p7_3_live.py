@@ -117,7 +117,7 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
         "class": "ClassDruid", "distanceFromTarget": 15})
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
     # Allow cold and paid-elite attempts before the simulated 300s boundary.
-    # Both may rediscover the same legal allocation; it is paid only once.
+    # Both may rediscover the same native-scored proposal; it is paid only once.
     clock = iter([0.0] * 10 + [300.0] * 10)
     monkeypatch.setattr(p73.time, "monotonic", lambda: next(clock))
     monkeypatch.setattr(
@@ -127,7 +127,7 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
         p73, "_source_native_world_parity", lambda *a, **kw: None)
     proposals = SimpleNamespace(
         cold_talent_string=lambda template, rng: "cold-native-proposal",
-        mutate_talent_string=lambda parent, rng: "mutated-native-proposal")
+        mutate_talent_string=lambda parent, rng: "cold-native-proposal")
     monkeypatch.setattr(p73, "native_talent_proposals", proposals)
     calls = []
     def native(binary, path, n, *, rng_mode):
