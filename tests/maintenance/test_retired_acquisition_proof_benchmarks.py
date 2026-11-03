@@ -59,6 +59,90 @@ RETIRED_TOOLS = (
     "tests/test_wf472_p1_gate_nonimpact.py",
     "tests/gates/test_wf_p1_native_blackbox.py",
     "integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py",
+    "tools/wf318_nine_class_composite_batch.py",
+    "tests/generic/search/test_wf390_generic_talent_subset_search.py",
+    "tools/wf390_generic_talent_search.py",
+    "tests/test_wf318_index_composite_batch.py",
+    "src/engine_client/native_p2_rank_probe.py",
+    "integrations/mythicsim-rust/test_native_p2_rank_probe.py",
+    "integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py",
+    "tests/maintenance/test_native_p2_client_boundary.py",
+    "tests/test_wf_prio_p2_legal_pair.py",
+    "tests/test_wf_prio_native_p2_source_receipts.py",
+    "tools/wf_gate_p2_live.py",
+    "src/game/data/forever/checkpoint_p2_execution_gate.py",
+    "src/game/data/forever/source_checkpoint_p2.py",
+    "src/game/data/forever/source_checkpoint_p2_optimizer.py",
+    "tools/wf351_druid30_p3.py",
+    "tools/ingest_talent_tree_rows_sqlite.py",
+    "tests/test_wf_feral01c_source_tree_gates.py",
+    "data/forever/staged_druid_l30_talents_70338.sqlite",
+    "tests/test_wf337_p2_optimizer_integration.py",
+    "tests/test_wf349_druid30_p2_source_integrity.py",
+    "tests/test_wf350_druid30_staged_talents.py",
+    "tests/test_wf362_warrior_l30_p2.py",
+    "tests/test_wf381_mage_l30_talent_positions_tdd.py",
+    "tests/test_wf387_atomic_rank_promotion.py",
+    "tests/test_wf382_mage_l30_build_delta_p1_tdd.py",
+    "tests/test_talent_tree_row_ingestion.py",
+    "tests/test_wf_feral01c_source_tree_gates.py",
+    "data/forever/source_captures/wowhead_druid_tree_rows_2026-10-10.json",
+    "tests/generic/search/test_wf_p2_cross_tree_source_witness.py",
+    "tests/generic/search/test_wf_p2_source_witness_priority.py",
+    "evidence/wf336/druid_l20_talent_rank_observations_70338.json",
+    "evidence/wf336/WF336_P2_CHECKPOINT_CERTIFICATE.json",
+    "evidence/wf349/WF349_P2_DIAGNOSTIC.json",
+    "evidence/wf349/WF349_P2_SOURCE_GAPS.json",
+    "evidence/wf350/WF350_P2_ACCEPTANCE.json",
+    "evidence/wf362/WF362_WARRIOR_L30_P2_CERTIFICATE.json",
+    "evidence/wf430/WF430_P2_GATE_RED_26PT.json",
+    "evidence/wf432/WF432_P2_FULL_GATE.json",
+    "evidence/wf432/WF432_P2_FULL_GATE_RED.log",
+    "evidence/wf433/WF433_P2_GATE.json",
+    "evidence/wf433/WF433_P2_GATE.log",
+    "evidence/wf434/P2_GATE.json",
+    "evidence/wf434/KNOWN_P2_P4_RED.log",
+    "evidence/wf436/WF436_P2_GATE.json",
+    "evidence/wf436/WF436_P2_GATE_RED.json",
+    "evidence/wf436/WF436_P2_GATE_RED.log",
+    "evidence/wf436/WF436_WIP_VALIDATION.json",
+    "evidence/wf437/WF437_P2_ACCEPTANCE_RED.log",
+    "evidence/wf438/WF438_P2_GATE.log",
+    "evidence/wf482_druid_tree_rows_20261017.json",
+    "gate_evidence/druid/L20/unrestricted/P2.json",
+    "gate_evidence/druid/L30/unrestricted/P2.json",
+    "gate_sources/druid/WF443_P2_GATE_RED.json",
+    "tests/test_wf_prio_p2_source_grant.py",
+    "tests/test_p2_source_control_proc_runtime.py",
+    "tests/test_wf475_live_p2_gate_alignment.py",
+    "tests/test_wf478_p2_effect_runtime.py",
+    "tests/test_wf480_p2_mode_entry_runtime.py",
+    "tests/test_wf479_p2_crit_cost_runtime.py",
+    "tests/test_prio_p2_solo_threat_exclusion.py",
+    "tests/test_prio_p2_live_critical_resource_gain.py",
+    "tests/test_prio_source_cast_pushback_l60.py",
+    "tests/test_wf481_p2_periodic_duration_runtime.py",
+    "tests/test_wf482_p2_gcd_and_tree_rows.py",
+    "tests/test_wf_prio_p2_exact_rank_fullpoint.py",
+    "tests/test_wf35_source_spec_p2_adapter.py",
+    "tests/test_wf430_p2_whole_gate_26point_tdd.py",
+    "tests/gates/test_wf336_generic_p2_acceptance.py",
+    "tests/test_wf428_staged_atomic_fraction_p2_tdd.py",
+    "tests/test_wf429_source_cast_pushback_p2_tdd.py",
+    "tests/test_wf432_p2_full_26point_red.py",
+    "tests/test_wf436_feral_conditional_crit_healing_p2_tdd.py",
+    "tests/test_wf_p2_sourced_cast_stun.py",
+    "tests/test_wf440_bash_stun_compound_tdd.py",
+    "tests/test_wf440_next_cast_instant_p2_tdd.py",
+    "tests/test_wf441_source_spatial_charge_p2_tdd.py",
+    "tests/test_wf439_channel_healing_compound_p2_tdd.py",
+    "tests/test_wf437_blood_frenzy_source_proc_p2_tdd.py",
+    "tests/test_wf439_timed_spell_critical_haste_p2_tdd.py",
+    "tests/test_wf436_source_natural_instinct_runtime_tdd.py",
+    "tests/test_wf441_source_active_periodic_full_heal_p2_tdd.py",
+    "tests/test_wf438_source_resource_talent_action_p2_tdd.py",
+    "tests/test_wf442_source_dodge_resource_and_heal_crit_p2_tdd.py",
+    "tests/test_prio_blood_frenzy_canonical_tooltip.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -80,6 +164,7 @@ RETIRED_SOURCE_PROOF_MODULES = (
     "tests/test_wf290_source_acquisition_batch.py",
     "tests/test_wf291_source_world_acquisition.py",
     "tests/maintenance/test_source_acquisition_import_boundary.py",
+    "src/game/data/forever/source_index_composite_l1.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf332_druid20_acquisition_evidence",
@@ -123,6 +208,12 @@ RETIRED_IMPORT_NAMES = (
     "wf_gate_p1_live",
     "wf_p1_native_effects",
     "native_p1_effect_probe",
+    "wf_gate_p2_live",
+    "checkpoint_p2_execution_gate",
+    "source_checkpoint_p2",
+    "source_checkpoint_p2_optimizer",
+    "wf351_druid30_p3",
+    "ingest_talent_tree_rows_sqlite",
 )
 
 
@@ -131,9 +222,7 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
     assert not (ROOT / "src/v2/source_budgeted_level_route.py").exists()
-    # P2-only compatibility remains outside the deleted bounded-route chain.
-    assert (ROOT / "tools/wf_gate_p2_live.py").is_file()
-    assert (ROOT / "src/engine_client/native_p2_rank_probe.py").is_file()
+    assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
 
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
     for relative in RETIRED_TOOLS:
@@ -206,9 +295,9 @@ def test_historical_p1_gameir_admission_toolchain_is_retired():
     for relative in retired:
         assert not (ROOT / relative).exists(), relative
         assert relative not in workflow, f"retired path remains in maintenance workflow: {relative}"
-    # P1 has no separate live provider; the P2 helper remains an optimizer dependency.
+    # P1/P2 have no live gate provider or retained P2 helper module.
     assert not (ROOT / "tools/wf_gate_p1_live.py").exists()
-    assert (ROOT / "src/game/data/forever/source_checkpoint_p2.py").is_file()
+    assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
 
 
 def test_no_live_python_imports_retired_p1_gameir_admission_toolchain():
@@ -264,3 +353,54 @@ def test_retired_one_off_p3_report_writers_keep_historical_evidence():
     )
     for relative in retained:
         assert (ROOT / relative).is_file(), relative
+
+def test_retired_p2_gate_and_checkpoint_chain_has_no_code_or_actions():
+    """The retired P2 rank-pair adapter must not survive as a hidden workflow."""
+    retired = (
+        "src/engine_client/native_p2_rank_probe.py",
+        "integrations/mythicsim-rust/test_native_p2_rank_probe.py",
+        "integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py",
+        "tests/maintenance/test_native_p2_client_boundary.py",
+    )
+    for relative in retired:
+        assert not (ROOT / relative).exists(), relative
+
+    assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
+    assert not (ROOT / "src/game/data/forever/checkpoint_p2_execution_gate.py").exists()
+    assert not (ROOT / "src/game/data/forever/source_checkpoint_p2.py").exists()
+    assert not (ROOT / "src/game/data/forever/source_checkpoint_p2_optimizer.py").exists()
+    optimizer = (ROOT / "src/v2/source_budgeted_joint_talents.py").read_text(encoding="utf-8")
+    assert "talent_l0_certificate" not in optimizer
+    assert "source_checkpoint_p2_optimizer" not in optimizer
+
+    gate_cli = (ROOT / "tools/wf_gate.py").read_text(encoding="utf-8")
+    assert "native_rank_probe" not in gate_cli
+    assert 'VALIDATORS = {"P3": _validate_p3,' in gate_cli
+
+    rust_workflow = (ROOT / ".github/workflows/rust-upstream-fork.yml").read_text(encoding="utf-8")
+    assert "native_p2_rank_probe" not in rust_workflow
+    assert "test_native_p2_rank_probe" not in rust_workflow
+    assert "FOREVER_P2_HYDRATED_SOURCE_DB_PATH" not in rust_workflow
+    assert "FOREVER_P2_HYDRATED_SOURCE_DB_SHA256" not in rust_workflow
+
+    submodule_workflow = (ROOT / ".github/workflows/rust-submodule-verify.yml").read_text(encoding="utf-8")
+    assert "native_p2_rank_probe" not in submodule_workflow
+    assert "test_native_p2_rank_probe" not in submodule_workflow
+    assert "submodules: true" in submodule_workflow
+    for relative in (".github/workflows/maintenance-evidence-tests.yml",
+                     ".github/workflows/generic-source-search-regressions.yml"):
+        workflow = (ROOT / relative).read_text(encoding="utf-8")
+        assert "wf_gate_p2_live.py" not in workflow
+    generic = (ROOT / ".github/workflows/generic-source-search-regressions.yml").read_text(encoding="utf-8")
+    assert "test_wf_p2_cross_tree_source_witness.py" not in generic
+    assert "test_wf_p2_source_witness_priority.py" not in generic
+    assert "cargo build --locked --bin forever-engine" in submodule_workflow
+
+
+def test_legacy_evidence_reader_rejects_retired_p1_p2(tmp_path):
+    from tools.wf_gate import evaluate
+
+    for gate in ("P1", "P2"):
+        report = evaluate(tmp_path, "druid", 20, "unrestricted", gate, {})
+        assert report["status"] == "FAIL"
+        assert report["reasons"] == ["RETIRED_OR_UNKNOWN_GATE:" + gate]
