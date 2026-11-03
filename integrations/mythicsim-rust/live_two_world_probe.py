@@ -117,7 +117,16 @@ def run(binary: Path, prepared_path: Path, *,
                             ))
                 proc.stdin.write(json.dumps(tick, sort_keys=True, allow_nan=False) + "\n")
                 proc.stdin.flush()
-                receipt = json.loads(proc.stdout.readline())
+                response_line = proc.stdout.readline()
+                if not response_line:
+                    detail = proc.stderr.read()
+                    raise RuntimeError(
+                        "TWO_WORLD_NATIVE_CLOSED_BEFORE_RECEIPT "
+                        + f"iteration={index} clock_ns={clock_ns} "
+                        + f"target={tick['selected_target_id']} "
+                        + f"exit={proc.poll()} stderr={detail[-4500:]}"
+                    )
+                receipt = json.loads(response_line)
                 if (receipt.get("type") != "native_rust_world_receipt"
                         or receipt["iteration_index"] != index
                         or receipt["native_process_id"] != proc.pid
