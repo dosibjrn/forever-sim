@@ -104,3 +104,34 @@ def test_explicit_synthetic_hp_is_not_mislabeled_as_sourced():
     for invalid in (0., -1., 100001., float("nan"), float("inf"), True):
         with pytest.raises(ValueError, match="RUST_MULTI_WORLD_MOB_HEALTH_INVALID"):
             helper(invalid, None)
+
+
+def test_native_health_receipt_proves_real_actor_survived_each_distinct_mob():
+    validate = _world_module()._native_survival_min_health
+    windows = [
+        {"index": 0, "actor_health": 500.0, "actor_mana": 4900.},
+        {"index": 1, "actor_health": 421.5, "actor_mana": 4500.},
+    ]
+    assert validate(windows, 2) == pytest.approx(421.5)
+
+
+@pytest.mark.parametrize("health", [0, -1.0, None, "500", True, float("nan"), float("inf")])
+def test_native_lethal_world_kill_cannot_mask_dead_or_unobserved_player(health):
+    validate = _world_module()._native_survival_min_health
+    windows = [{"index": 0, "actor_health": 500.},
+               {"index": 1, "actor_health": health}]
+    with pytest.raises(AssertionError, match="RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE"):
+        validate(windows, 2)
+
+
+def test_native_survival_refuses_skipped_or_missing_target_receipts():
+    validate = _world_module()._native_survival_min_health
+    for windows, count in (
+        ([{"index": 0, "actor_health": 500.}], 2),
+        ([{"index": 1, "actor_health": 500.},
+          {"index": 1, "actor_health": 500.}], 2),
+        ([{"index": True, "actor_health": 500.},
+          {"index": 1, "actor_health": 500.}], 2),
+    ):
+        with pytest.raises(AssertionError, match="RUST_MULTI_WORLD_NATIVE_SURVIVAL_WINDOWS_INVALID"):
+            validate(windows, count)
