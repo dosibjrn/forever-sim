@@ -106,7 +106,9 @@ class SweepContracts(unittest.TestCase):
                 "baseline_paid": 1,
                 "native_paid_total": 3,
                 "baseline_balanced_score": 101.25,
+                "best_search_balanced_screen": 111.5,
                 "best_balanced_screen": 111.5,
+                "selected_winner_source": "search",
                 "three_axis_paid": 1,
                 "blocker": None,
                 "promotion_blocker": "BLOCKED_FULL_SOURCE_LEGALITY",
@@ -121,6 +123,9 @@ class SweepContracts(unittest.TestCase):
             self.assertFalse(provenance["process_p7_pass"])
             matrix = (out / "matrix.md").read_text()
             self.assertIn("Baseline balanced", matrix)
+            self.assertIn("Best search candidate", matrix)
+            self.assertIn("Selected best", matrix)
+            self.assertIn("search", matrix)
             self.assertIn("101.25", matrix)
             self.assertIn("111.5", matrix)
 
