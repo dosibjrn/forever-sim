@@ -68,7 +68,7 @@ def _action_runtime_probe(ir, action, *, observe_periodic=False,
     # A sourced positional precondition belongs to the encounter, not to a
     # hardcoded class whitelist. Construct the required controlled situation
     # for this effect probe and separately reject the opposite position.
-    # This does NOT certify movement/facing or the full 2D P1/P7 path.
+    # This does NOT certify movement/facing or the full 2D world path.
     positions={str(req.get('value') or '') for req in action.requirements
                if req.get('kind')=='relative_position_is'}
     if len(positions)>1 or (positions and not positions <= {'front','behind'}):
@@ -922,7 +922,7 @@ def _sourced_granted_action_behavior(before, after, mod):
 
     The action must be absent before the talent, sourced from the same parent
     spell and actually change combat state. A cast counter or action registration
-    alone cannot satisfy P2; unrecognized effect families remain FAIL.
+    alone cannot satisfy talent runtime behavior; unrecognized effect families remain FAIL.
     """
     if mod.target_type != 'source_action':
         return None
@@ -1137,7 +1137,7 @@ def _critical_resource_gain_runtime_witness(before, after, mod):
     The sourced proc probability is checked on the compiled rule. The paired
     witness then requires an actual *sampled* extra resource award on the
     selected mode/trigger, plus a no-crit negative control. A rule merely
-    appearing in GameIR cannot pass P2.
+    appearing in GameIR cannot satisfy a behavior assertion.
     """
     from src.game.model.ir import ResourceChangeEffect
     from src.game.runtime import ActorState, CombatRuntime, TargetState
@@ -1385,22 +1385,22 @@ def _load_product_spec_profile(root: Path, class_key: str, level: int, spec: str
     try:
         document = json.loads(path.read_text(encoding='utf-8'))
     except (OSError, ValueError) as exc:
-        raise ValueError('P2_PRODUCT_PROFILE_INVALID_JSON') from exc
+        raise ValueError('TALENT_PROFILE_INVALID_JSON') from exc
     if (not isinstance(document, dict) or document.get('schema_version') != 1
             or document.get('authority') != 'PRODUCT_PROFILE_CONSTRAINT'
             or not isinstance(document.get('profiles'), list)):
-        raise ValueError('P2_PRODUCT_PROFILE_SCHEMA')
+        raise ValueError('TALENT_PROFILE_SCHEMA')
     matches = [entry for entry in document['profiles']
                if isinstance(entry, dict) and entry.get('class_key') == class_key
                and entry.get('level') == level and entry.get('spec') == spec]
     if len(matches) > 1:
-        raise ValueError('P2_PRODUCT_PROFILE_DUPLICATE')
+        raise ValueError('TALENT_PROFILE_DUPLICATE')
     if not matches:
         return None
     entry = matches[0]
     if (not isinstance(source_sha256, str) or len(source_sha256) != 64
             or any(c not in '0123456789abcdef' for c in source_sha256.lower())):
-        raise ValueError('P2_PRODUCT_PROFILE_SOURCE_SHA')
+        raise ValueError('TALENT_PROFILE_SOURCE_SHA')
     if (entry.get('tree_key') != spec
             or entry.get('constraint_kind') != 'minimum_tree_points'
             or entry.get('source_binding') != 'CANONICAL_RUNTIME_TALENT_TREE'
@@ -1408,7 +1408,7 @@ def _load_product_spec_profile(root: Path, class_key: str, level: int, spec: str
             or not entry['contract_version']
             or type(entry.get('minimum_points')) is not int
             or entry['minimum_points'] <= 0):
-        raise ValueError('P2_PRODUCT_PROFILE_INVALID_RULE')
+        raise ValueError('TALENT_PROFILE_INVALID_RULE')
     return {
         'class_key': class_key, 'level': level, 'tree_key': spec,
         'minimum_points': entry['minimum_points'],
@@ -1427,7 +1427,7 @@ def _source_spec_profile(ir, spec: str, *, level: int, bonus: int, step: int,
     A source tree is not itself a gameplay spec rule. Accept either a
     source-verified game rule or an explicitly versioned PRODUCT constraint,
     then independently check every allocation against canonical talent rules.
-    Neither contract alone proves any P2 rank behavior or overall gate PASS.
+    Neither contract alone proves talent-rank behavior or an overall checkpoint PASS.
     """
     if spec == 'unrestricted':
         return None, {'source_spec_profile_verified': True,
