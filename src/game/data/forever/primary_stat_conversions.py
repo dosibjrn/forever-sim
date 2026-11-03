@@ -138,4 +138,4 @@ def source_enrich_primary_stats(ir: GameIRSlice, *, db_path: Path | None = None)
 
 
 # Public compatibility alias; executor uses the same class-neutral arithmetic.
-from src.game.stat_math import converted_stat_amount
+from src.shared.stat_math import converted_stat_amount

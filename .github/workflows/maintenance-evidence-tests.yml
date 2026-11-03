@@ -32,6 +32,8 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/test_wf246_primary_stat_combat.py
+          tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/mechanics/druid/test_druid_mechanics_layout.py
