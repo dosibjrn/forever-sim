@@ -50,6 +50,29 @@ def test_native_rank_diagnostic_forwards_pair_without_source_proof(monkeypatch, 
     assert result == native_result
 
 
+def test_native_rank_diagnostic_derives_control_from_candidate_only(monkeypatch, tmp_path):
+    candidate = {"ferocity": 5, "predatory_strikes": 2}
+    binary = _native_test_binary(tmp_path)
+    calls = []
+
+    def fake_run_native_rank_pair(**kwargs):
+        calls.append(kwargs)
+        return {"status": "PROBE_PASS", "accepted_for_p2": False}
+
+    monkeypatch.setattr(p2, "run_native_rank_pair", fake_run_native_rank_pair)
+    result = p2._native_p2_rank_diagnostic(
+        str(binary), "predatory_strikes", 2,
+        {"witness": candidate},
+        tree_key="feral",
+    )
+
+    assert result["status"] == "PROBE_PASS"
+    assert calls[0]["before_selection"] == {
+        "ferocity": 5, "predatory_strikes": 1,
+    }
+    assert calls[0]["after_selection"] == candidate
+
+
 def test_native_rank_diagnostic_preserves_native_terminal_statuses(monkeypatch, tmp_path):
     binary = _native_test_binary(tmp_path)
     control = {"ferocity": 5}
