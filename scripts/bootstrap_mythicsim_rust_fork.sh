@@ -179,6 +179,15 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): expose retained Rust actor to two real gsim world kills"
 fi
 
+# Publish gsim's actually observed world movement into the retained native
+# actor's existing Rust casting rules. Keep the world as movement authority;
+# do not duplicate spell legality in the Python 2D driver.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_gsim_moving.py" "$PWD"
+git add src/core/fight.rs src/core/fight/world_bridge.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): apply real gsim movement to native cast legality"
+fi
+
 # Existing native retarget regressions and new live terminal predicate must
 # pass before publishing this selected Rust integration.
 cargo test --locked --lib persistent_next_target
