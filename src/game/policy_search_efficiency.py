@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-"""Backend-neutral dominance pruning and evaluation caching for policy search.
+"""GameIR-aware dominance pruning and executable policy identity for G18.
 
 G18 keeps search semantics exact while avoiding repeated expensive combat
-simulations.  Dominance is intentionally conservative: a later combat rule is
+simulations. Dominance is intentionally conservative: a later combat rule is
 removed only when an earlier zero-cooldown rule is guaranteed to match and be
 resource-eligible whenever the later rule could execute in the current Game IR
-slice.  The resulting executable policy signature ignores ids/provenance and
-normalizes action-cost thresholds to numeric values, so structurally different
-search candidates with identical runtime behaviour share one cache entry.
+slice. The resulting executable policy signature ignores ids/provenance and
+normalizes action-cost thresholds to numeric values. Generic memoization lives
+in src.optimization.evaluation_cache; this module supplies the game-aware
+normalization and dominance proof.
 """
 
 from dataclasses import dataclass, field, replace
@@ -16,6 +17,7 @@ import json
 from typing import Any, Callable, Mapping
 
 from src.game.model import ActionDefinition, PolicyCondition, PolicyDefinition, PolicyRuleDefinition
+from src.optimization.evaluation_cache import EvaluationCache
 from src.optimization.policy_search import PolicyEvaluator
 
 
@@ -212,48 +214,44 @@ def executable_policy_signature(policy: PolicyDefinition, *, actions: tuple[Acti
 class PolicyEvaluationCache:
     actions: tuple[ActionDefinition, ...]
     expensive_evaluate: PolicyEvaluator
-    _cache: dict[str, tuple[float | None, Mapping[str, Any]]] = field(default_factory=dict)
-    requests: int = 0
-    expensive_evaluations: int = 0
-    cache_hits: int = 0
     dominance_pruned_requests: int = 0
     dominance_pruned_rule_count: int = 0
+    _cache: EvaluationCache[PolicyDefinition] = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self._cache = EvaluationCache(
+            key_for=lambda policy: executable_policy_signature(policy, actions=self.actions),
+            expensive_evaluate=self.expensive_evaluate,
+        )
+
+    @property
+    def requests(self) -> int:
+        return self._cache.requests
+
+    @property
+    def expensive_evaluations(self) -> int:
+        return self._cache.expensive_evaluations
+
+    @property
+    def cache_hits(self) -> int:
+        return self._cache.cache_hits
 
     def evaluate(self, policy: PolicyDefinition) -> tuple[float | None, Mapping[str, Any]]:
-        self.requests += 1
         effective, pruned = prune_dominated_rules(policy, actions=self.actions)
         if pruned:
             self.dominance_pruned_requests += 1
             self.dominance_pruned_rule_count += len(pruned)
-        key = executable_policy_signature(effective, actions=self.actions)
-        cached = self._cache.get(key)
-        if cached is not None:
-            self.cache_hits += 1
-            score, detail = cached
-            return score, {
-                **dict(detail),
-                "policy_cache_hit": True,
-                "dominance_pruned": bool(pruned),
-                "dominance_pruned_rules": [dict(x) for x in pruned],
-            }
-        self.expensive_evaluations += 1
-        score, detail = self.expensive_evaluate(effective)
-        stored = (score, dict(detail or {}))
-        self._cache[key] = stored
+        score, detail, cache_hit = self._cache.evaluate(effective)
         return score, {
-            **dict(stored[1]),
-            "policy_cache_hit": False,
+            **dict(detail),
+            "policy_cache_hit": bool(cache_hit),
             "dominance_pruned": bool(pruned),
             "dominance_pruned_rules": [dict(x) for x in pruned],
         }
 
     def as_dict(self) -> dict[str, Any]:
         return {
-            "requests": int(self.requests),
-            "expensive_evaluations": int(self.expensive_evaluations),
-            "cache_hits": int(self.cache_hits),
-            "cache_entries": len(self._cache),
+            **self._cache.as_dict(),
             "dominance_pruned_requests": int(self.dominance_pruned_requests),
             "dominance_pruned_rule_count": int(self.dominance_pruned_rule_count),
-            "expensive_evaluations_avoided": int(self.requests - self.expensive_evaluations),
         }
