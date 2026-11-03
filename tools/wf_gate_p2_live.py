@@ -1736,7 +1736,7 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
             scenario=_NATIVE_P2_RANK_SCENARIOS[talent_id],
             before_selection=before, after_selection=after,
             target_talent_id=talent_id, target_rank=int(rank),
-            iterations=100, seed=647003, rng_mode='balanced')
+            iterations=100, seed=647003, rng_mode=NativeRngMode.BALANCED)
     except Exception as exc:
         return {'status': 'BLOCKED',
                 'reason': f'NATIVE_P2_DIAGNOSTIC_FAILED:{type(exc).__name__}:{exc}'}
