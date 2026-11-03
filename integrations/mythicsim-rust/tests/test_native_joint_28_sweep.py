@@ -28,7 +28,7 @@ class SweepContracts(unittest.TestCase):
         calls = []
         def run(profile):
             calls.append(profile)
-            return {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+            return {"status": "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN",
                     "native_paid": 2, "three_axis_paid": 1,
                     "full_source_legality_certified": False}
         rows = build_matrix(inventory(), stage=5, run=run)
@@ -55,40 +55,53 @@ class SweepContracts(unittest.TestCase):
                                 ("priest/discipline", "BLOCKED_SPEC_IDENTITY")):
             self.assertEqual(status, preflight(profile, {}, {}, 5)[0])
 
-    def test_source_bounded_paid_rows_are_never_promotable(self):
+    def test_native_paid_rows_are_not_p7_promotable_but_can_advance_screen(self):
         rows = build_matrix(inventory(), stage=5,
-                            run=lambda _: {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+                            run=lambda _: {"status": "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN",
                                            "native_paid": 10, "three_axis_paid": 5,
-                                           "replay_matches": True,
-                                           "full_source_legality_certified": False})
+                                           "native_errors": 0, "replay_matches": True})
         self.assertFalse(rows[0]["promotable"])
         self.assertFalse(rows[0]["process_gate_pass"])
-        self.assertEqual("BLOCKED_FULL_SOURCE_LEGALITY", rows[0]["promotion_blocker"])
+        self.assertTrue(rows[0]["next_stage_eligible"])
+        self.assertIsNone(rows[0]["promotion_blocker"])
 
-    def test_30_second_stage_rejects_partial_paid_prior(self):
-        prior = {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
-                 "native_paid": 100, "replay_matches": True,
+    def test_30_second_stage_accepts_native_paid_three_axis_replay_without_python_proof(self):
+        prior = {"status": "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN",
+                 "native_paid": 100, "three_axis_paid": 25,
+                 "native_errors": 0, "replay_matches": True,
                  "full_source_legality_certified": False}
-        self.assertEqual("BLOCKED_FULL_SOURCE_LEGALITY",
+        self.assertIsNone(preflight("druid/feral_cat", {}, {}, 30, prior))
+
+    def test_30_second_stage_rejects_missing_native_three_axis_or_replay(self):
+        prior = {"status": "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN",
+                 "native_paid": 100, "three_axis_paid": 0,
+                 "native_errors": 0, "replay_matches": True}
+        self.assertEqual("BLOCKED_PRIOR_STAGE",
+                         preflight("druid/feral_cat", {}, {}, 30, prior)[0])
+        prior["three_axis_paid"] = 1
+        prior["native_errors"] = 1
+        self.assertEqual("BLOCKED_PRIOR_STAGE",
                          preflight("druid/feral_cat", {}, {}, 30, prior)[0])
 
-    def test_300_second_stage_requires_validated_30_second_prior(self):
+    def test_300_second_stage_requires_exact_30_second_replay(self):
         self.assertEqual("BLOCKED_PRIOR_STAGE",
                          preflight("druid/feral_cat", {}, {}, 300, None)[0])
-        prior = {"status": "FULL_SOURCE_NATIVE_JOINT",
-                 "native_paid": 10, "replay_matches": False,
-                 "full_source_legality_certified": True}
+        prior = {"status": "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN",
+                 "native_paid": 10, "three_axis_paid": 1,
+                 "native_errors": 0, "replay_matches": False}
         self.assertEqual("BLOCKED_PRIOR_STAGE",
                          preflight("druid/feral_cat", {}, {}, 300, prior)[0])
+        prior["replay_matches"] = True
+        self.assertIsNone(preflight("druid/feral_cat", {}, {}, 300, prior))
 
     def test_gaps_include_precise_root_cause_and_no_fake_scores(self):
         rows = build_matrix(inventory(), stage=5,
-                            run=lambda _: {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+                            run=lambda _: {"status": "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN",
                                            "native_paid": 1, "three_axis_paid": 1,
-                                           "full_source_legality_certified": False})
+                                           "native_errors": 0, "replay_matches": True})
         gaps = gap_summary(rows)
         self.assertEqual(28, sum(g["count"] for g in gaps))
-        self.assertTrue(any(g["cause"] == "VERIFY_PER_RANK_TALENTS_AND_FULL_EQUIP_RULES"
+        self.assertTrue(any(g["cause"] == "NATIVE_JOINT_PAID_SCREEN_ONLY"
                             for g in gaps))
         self.assertTrue(all("score" not in row for row in rows))
 
@@ -105,15 +118,17 @@ class SweepContracts(unittest.TestCase):
             out = root / "report"
             rows = [{
                 "profile_id": "druid/feral_cat",
-                "status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+                "status": "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN",
                 "native_paid": 2,
                 "baseline_paid": 1,
                 "native_paid_total": 3,
                 "baseline_balanced_score": 101.25,
                 "best_balanced_screen": 111.5,
                 "three_axis_paid": 1,
+                "native_errors": 0,
+                "replay_matches": True,
                 "blocker": None,
-                "promotion_blocker": "BLOCKED_FULL_SOURCE_LEGALITY",
+                "promotion_blocker": None,
             }]
 
             save_report(out, rows, stage=5, binary=binary, engine_src=engine_src)
@@ -220,7 +235,7 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
         })
         results = build_matrix(
             rows, stage=5,
-            run=lambda _: {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+            run=lambda _: {"status": "NATIVE_JOINT_SOURCE_BOUNDED_SCREEN",
                            "native_paid": 1, "three_axis_paid": 0,
                            "full_source_legality_certified": False},
         )
