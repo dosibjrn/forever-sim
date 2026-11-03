@@ -4,6 +4,8 @@ on:
     paths:
       - 'src/game/runtime/native_step_protocol.py'
       - 'src/game/runtime/go_native_world_damage_ack.py'
+      - 'integrations/mythicsim-rust/live_two_world_pulls.py'
+      - 'tests/test_work2_gsim_world_walk.py'
       - 'tests/test_work2_native_world_clock_ack.py'
       - 'tests/integration/backend/test_wf_go_native_world_damage_ack.py'
       - '.github/workflows/native-session-ack-regressions.yml'
@@ -23,4 +25,4 @@ jobs:
       - name: Install bounded test dependency
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Verify native clock and real gsim world lethal ACK (not gate)
-        run: python -m pytest -q tests/test_work2_native_world_clock_ack.py tests/integration/backend/test_wf_go_native_world_damage_ack.py
+        run: python -m pytest -q tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/integration/backend/test_wf_go_native_world_damage_ack.py
