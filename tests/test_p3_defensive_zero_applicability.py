@@ -86,6 +86,49 @@ def test_offensive_zero_still_fails_for_caster(minimal_catalogue):
     assert "NONPOSITIVE_RELEVANT_WEIGHT:spell_power" in result["blockers"]
 
 
+def test_nonapplicable_strength_zero_is_explicit_and_valid(minimal_catalogue, monkeypatch):
+    stats = {**{axis: 5.0 for axis in DEFENSIVE},
+             "strength": 5.0, "spell_power": 10.0}
+    monkeypatch.setattr(p3, "_ordinary_stats", lambda row: stats)
+    monkeypatch.setattr(
+        p3, "item_score",
+        lambda row, weights: sum(float(weights.get(k, 0.0)) * value
+                                 for k, value in stats.items()),
+    )
+    weights = {**{axis: 0.0 for axis in DEFENSIVE},
+               "strength": 0.0, "spell_power": 1.0}
+    result = p3.fast_p3_smoke(
+        class_key="mage", level=20, weights=weights,
+        weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+        weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+        defensive_positive_required=False,
+        applicable_stat_axes={"spell_power"},
+    )
+    assert result["p3_pass"] is True
+    assert result["tested_stat_assertions"] == result["verified_stat_assertions"] == 7
+    assert "NONPOSITIVE_RELEVANT_WEIGHT:strength" not in result["blockers"]
+
+
+def test_missing_nonapplicable_strength_weight_is_still_invalid(minimal_catalogue, monkeypatch):
+    stats = {**{axis: 5.0 for axis in DEFENSIVE},
+             "strength": 5.0, "spell_power": 10.0}
+    monkeypatch.setattr(p3, "_ordinary_stats", lambda row: stats)
+    monkeypatch.setattr(
+        p3, "item_score",
+        lambda row, weights: sum(float(weights.get(k, 0.0)) * value
+                                 for k, value in stats.items()),
+    )
+    weights = {**{axis: 0.0 for axis in DEFENSIVE}, "spell_power": 1.0}
+    result = p3.fast_p3_smoke(
+        class_key="mage", level=20, weights=weights,
+        weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+        weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+        defensive_positive_required=False,
+        applicable_stat_axes={"spell_power"},
+    )
+    assert "MISSING_WEIGHT:strength" in result["blockers"]
+
+
 def test_missing_defensive_weight_is_not_forgiven(minimal_catalogue):
     weights = dict(minimal_catalogue)
     del weights["armor"]
