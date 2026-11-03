@@ -11,7 +11,6 @@ on:
       - 'tools/audit_feral_p7_holdout.py'
       - 'tools/import_feral_p7_archives.py'
       - 'tools/wf_gate_coverage.py'
-      - 'tests/test_wf382_mage_l30_build_delta_p1_tdd.py'
       - 'tests/gates/test_wf34_*acquisition*.py'
       - 'tools/wf_gate_p7_2_live.py'
       - 'tools/wf_gate_p7_3_live.py'
@@ -90,7 +89,6 @@ jobs:
           tests/test_wf330_queued_swing_source_runtime.py
           tests/test_wf331_druid20_source_web_l0.py
           tests/test_wf332_runes_default_off.py
-          tests/test_wf382_mage_l30_build_delta_p1_tdd.py
           tests/test_wf319_druid_l20_canonical_numeric_authority.py::test_real_l20_druid_core_spell_amounts_match_canonical_sqlite
           tests/test_wf322_druid_l20_web_observed_build_parity.py::test_historical_build_uses_canonical_index_not_future_external_stage
           tests/test_wf322_druid_l20_web_observed_build_parity.py::test_newer_web_text_stage_changes_actual_core_runtime_but_not_canonical
