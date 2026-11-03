@@ -71,10 +71,13 @@ def port(source: str) -> str:
         if source.count(old) != 1 or new in source:
             raise ValueError(f"missing or ambiguous native Rust source anchor: {old}")
         source = source.replace(old, new, 1)
-    anchor = "mod tests {\n    use super::{Mp5Path, Side, DEFENDERS, MAX_TARGETS};\n"
+    # Insert AFTER the already published persistent-next-target regression.
+    # Its source port checks that its entire original test block stays intact
+    # on the second idempotent application.
+    anchor = "    /// Go adds a bonus to the raw stats and takes it away again: 77 plus Mana Tide Totem's\\n"
     if source.count(anchor) != 1:
-        raise ValueError("native Rust test module anchor missing")
-    return source.replace(anchor, anchor + "\n" + TEST, 1)
+        raise ValueError("native Rust post-persistence test anchor missing")
+    return source.replace(anchor, TEST + anchor, 1)
 
 
 def main(argv: list[str]) -> int:
