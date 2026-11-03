@@ -119,9 +119,11 @@ class NativeJointScoringContracts(unittest.TestCase):
             "status": "INVALID",
             "error": "MythicSim rejected the request without talentsString",
         }
-        refusal = p73.NativeScoreExtractionError(
-            "native request returned no score after missing-talent refusal",
+        refusal = NativeCandidateRefusal(
+            "INVALID",
             raw_response=raw,
+            reason=raw["error"],
+            returncode=5,
             elapsed_s=0.012,
             request_sha256=fingerprint(effective),
         )
