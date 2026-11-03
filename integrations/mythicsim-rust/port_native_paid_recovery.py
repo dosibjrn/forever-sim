@@ -341,6 +341,30 @@ def port_fight(source: str) -> str:
     return source
 
 
+def is_composed_paid_recovery_source(source: str) -> bool:
+    """Accept only the complete paid-recovery descendant with health and mana receipts."""
+    try:
+        if port_fight(source) != source:
+            return False
+    except ValueError:
+        return False
+    required = (
+        FIGHT_SIGNATURE_NEW,
+        FIGHT_HELPER_MARKER,
+        '"paid_recovery_ns_total"',
+        '"recovery_windows"',
+        FIGHT_CLOCK_NEW.strip(),
+        FIGHT_CLOCK_COMMENT_NEW.strip(),
+        FIGHT_CLOCK_TEST_NEW,
+        FIGHT_NEXT_COMMENT_NEW.strip(),
+        '"native_health_damage_taken"',
+        '"native_health_damage_events"',
+        '"native_combat_mana_regen_actual_gain"',
+        '"native_combat_mana_regen_events"',
+    )
+    return all(source.count(marker) == 1 for marker in required)
+
+
 def port_classes(source: str) -> str:
     if CLASSES_SIGNATURE_NEW in source:
         if (source.count(CLASSES_SIGNATURE_NEW) != 1
