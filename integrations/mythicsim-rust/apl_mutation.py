@@ -18,23 +18,56 @@ def _spell_key(spell):
     return json.dumps(spell, sort_keys=True, separators=(",", ":"))
 
 
+def _condition_spell_identity_keys(condition):
+    """Return canonical spell identities referenced by a predicate and its validity."""
+    refs = set()
+    valid = True
+
+    def visit(node):
+        nonlocal valid
+        if isinstance(node, dict):
+            for key, child in node.items():
+                if key in ("spellId", "auraId"):
+                    if isinstance(child, dict):
+                        if (set(child) <= {"rank", "spellId"}
+                                and isinstance(child.get("spellId"), int)
+                                and child["spellId"] > 0):
+                            identity = {
+                                field: child[field]
+                                for field in ("rank", "spellId")
+                                if field in child
+                            }
+                            refs.add(_spell_key(identity))
+                        else:
+                            valid = False
+                    elif isinstance(child, int) and child > 0:
+                        refs.add(_spell_key({"spellId": child}))
+                    else:
+                        valid = False
+                else:
+                    visit(child)
+        elif isinstance(node, list):
+            for child in node:
+                visit(child)
+
+    visit(condition)
+    return tuple(sorted(refs)), valid
+
+
 def _corpus(source_actions):
     spells = {}
     allowed_casts = {}
-    predicates_by_spell = {}
+    raw_predicates = []
     for entry in source_actions:
         action = entry.get("action", {})
         cast = action.get("castSpell")
         if not isinstance(cast, dict):
-            # Item, potion and other native-action conditions are not cast
-            # predicates and must never enter the generated spell grammar.
+            # Item, potion and opaque native-action conditions never enter
+            # the spell predicate grammar.
             continue
         spell = cast.get("spellId")
         if not isinstance(spell, dict):
             continue
-        # Native castSpell uses a oneof identity: spellId, itemId or
-        # otherId. Preserve all identities found in the frozen source,
-        # but only generate new cast actions from actual spell IDs.
         identity = (
             (isinstance(spell.get("spellId"), int) and spell["spellId"] > 0)
             or (isinstance(spell.get("itemId"), int) and spell["itemId"] > 0)
@@ -48,16 +81,42 @@ def _corpus(source_actions):
             spells[key] = copy.deepcopy(spell)
             condition = action.get("condition")
             if isinstance(condition, dict) and condition:
-                # Conditions are source-observed on this exact spell/rank.
-                # Never graft another cast's (or an item action's) AST here.
-                predicates_by_spell.setdefault(key, []).append(copy.deepcopy(condition))
+                raw_predicates.append((key, copy.deepcopy(condition)))
     if not spells:
         raise ValueError("APL source action corpus contains no known castSpell identities")
+
+    allowed_keys = frozenset(allowed_casts)
+    same_spell = {key: [] for key in spells}
+    compatible = []
+    seen_compatible = set()
+    for source_key, condition in raw_predicates:
+        refs, valid = _condition_spell_identity_keys(condition)
+        if not valid or not set(refs) <= allowed_keys:
+            continue
+        same_spell[source_key].append(condition)
+        condition_key = _spell_key(condition)
+        if condition_key not in seen_compatible:
+            compatible.append(condition)
+            seen_compatible.add(condition_key)
+
     return (
         tuple(spells.values()),
-        {key: tuple(values) for key, values in predicates_by_spell.items()},
-        frozenset(allowed_casts),
+        {key: tuple(values) for key, values in same_spell.items()},
+        allowed_keys,
+        tuple(compatible),
     )
+
+
+def _choose_condition(spell, same_spell, compatible, rng):
+    """Prefer same-spell predicates while retaining safe cross-spell options."""
+    key = _spell_key(spell)
+    own = same_spell.get(key, ())
+    cross = tuple(predicate for predicate in compatible if predicate not in own)
+    if own and cross:
+        pool = own if rng.random() < 0.75 else cross
+    else:
+        pool = own or compatible
+    return copy.deepcopy(rng.choice(pool)) if pool else None
 
 
 def _condition_literals(node, out):
@@ -99,12 +158,11 @@ def _tune_literal(condition, rng):
     return entry["val"] != old
 
 
-def _new_cast(spells, predicates_by_spell, rng):
+def _new_cast(spells, same_spell, compatible, rng):
     spell = copy.deepcopy(rng.choice(spells))
     action = {"castSpell": {"spellId": spell}}
-    predicates = predicates_by_spell.get(_spell_key(spell), ())
-    if predicates and rng.random() < 0.8:
-        condition = copy.deepcopy(rng.choice(predicates))
+    condition = _choose_condition(spell, same_spell, compatible, rng)
+    if condition is not None and rng.random() < 0.8:
         if rng.random() < 0.7:
             _tune_literal(condition, rng)
         action["condition"] = condition
@@ -135,7 +193,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
     deliberately restricted to expression trees and spell IDs present in the
     supplied frozen input. This is not full spellbook-level completeness.
     """
-    spells, predicates_by_spell, allowed = _corpus(source_actions)
+    spells, same_spell, allowed, compatible = _corpus(source_actions)
     if cold:
         # A cold search may READ the saved request as a source-backed grammar,
         # but must not initialize its policy from the saved priority list.
@@ -152,7 +210,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
             if opaque and rng.random() < 0.15:
                 result.append(copy.deepcopy(rng.choice(opaque)))
             else:
-                result.append(_new_cast(spells, predicates_by_spell, rng))
+                result.append(_new_cast(spells, same_spell, compatible, rng))
         # A fallback is a freshly sampled source spell, never a copied saved
         # reference priority entry. Keep the real native action legality check.
         if not _has_fallback(result):
@@ -173,7 +231,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
             i, j = rng.sample(range(len(result)), 2)
             result[i], result[j] = result[j], result[i]
         elif mode == "insert_cast" and len(result) < 20:
-            result.insert(rng.randrange(len(result) + 1), _new_cast(spells, predicates_by_spell, rng))
+            result.insert(rng.randrange(len(result) + 1), _new_cast(spells, same_spell, compatible, rng))
         elif mode == "drop_action" and len(result) > 3:
             result.pop(rng.randrange(len(result)))
         elif mode == "replace_condition":
@@ -182,9 +240,9 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
                 entry = rng.choice(casts)["action"]
                 cast = entry.get("castSpell", {})
                 spell = cast.get("spellId") if isinstance(cast, dict) else None
-                predicates = predicates_by_spell.get(_spell_key(spell), ())
-                if predicates and rng.random() < 0.80:
-                    entry["condition"] = copy.deepcopy(rng.choice(predicates))
+                condition = _choose_condition(spell, same_spell, compatible, rng)
+                if condition is not None and rng.random() < 0.80:
+                    entry["condition"] = condition
                     _tune_literal(entry["condition"], rng)
                 else:
                     entry.pop("condition", None)
