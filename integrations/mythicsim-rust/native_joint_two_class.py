@@ -1047,7 +1047,7 @@ def main() -> None:
     (args.out / "joint_matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
     # This is a native-paid/replay diagnostic, not a source-legality or P7 gate.
     if not all(r["status"] == "NATIVE_JOINT_PAID"
-               and r.get("replay_matches") and r["native_paid"] >= 1
+               and r.get("replay_matches") and r["three_axis_paid"] >= 1
                for r in rows):
         raise SystemExit("BLOCKED: No native-paid two-class JOINT diagnostic with exact replay; see artifacts")
 
