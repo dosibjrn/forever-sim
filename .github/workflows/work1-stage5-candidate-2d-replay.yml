@@ -44,8 +44,8 @@ jobs:
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
       - name: Download the exact Stage-5 artifact
         env:
-          GH_TOKEN: \${{ github.token }}
-          STAGE5_RUN_ID: \${{ github.event.inputs.stage5_run_id || '41662174877' }}
+          GH_TOKEN: ${{ github.token }}
+          STAGE5_RUN_ID: ${{ github.event.inputs.stage5_run_id || '41662174877' }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/stage5"
