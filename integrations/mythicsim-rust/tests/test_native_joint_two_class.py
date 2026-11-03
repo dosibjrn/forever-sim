@@ -15,6 +15,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import p73_talent_search_v2 as p73
 import native_joint_two_class as joint
+from native_matrix import NativeCandidateRejected
 from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast, mutate_apl
 from native_joint_two_class import (
     _ensure_native_damage_action, _native_positive_source_casts,
@@ -675,6 +676,39 @@ class NativeGeneratedDruidTalentDonorContracts(unittest.TestCase):
 
 
 class NativeExecutionErrorReporting(unittest.TestCase):
+    def test_structured_native_invalid_response_is_a_typed_candidate_refusal(self):
+        raw = {"prepared": False, "refusal": {
+            "code": "talents", "reason": "tree rank exceeds native cap"}}
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=5, stdout=json.dumps(raw), stderr=""
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(NativeCandidateRejected) as raised:
+                p73.run(
+                    Path("native"), request(), 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+        self.assertEqual("INVALID", raised.exception.status)
+        self.assertEqual("talents", raised.exception.code)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertEqual(5, raised.exception.returncode)
+        self.assertTrue(raised.exception.request_sha256)
+
+    def test_structured_native_unsupported_response_remains_distinct(self):
+        raw = {"prepared": False, "refusal": {
+            "code": "unsupported", "reason": "native mechanic not implemented"}}
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=5, stdout=json.dumps(raw), stderr=""
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(NativeCandidateRejected) as raised:
+                p73.run(
+                    Path("native"), request(), 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+        self.assertEqual("UNSUPPORTED", raised.exception.status)
+        self.assertEqual(raw, raised.exception.raw_response)
+
     def test_missing_dps_average_preserves_raw_native_response(self):
         source = request()
         raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
