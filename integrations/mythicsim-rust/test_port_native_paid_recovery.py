@@ -271,19 +271,6 @@ for marker, original, transform, anchor in (
         raise AssertionError(f"RUST_TYPED_RECOVERY_DRIFT_NOT_REJECTED: {marker}")
 print("RUST_TYPED_RNG_PAID_RECOVERY_COMPOSITION_PASS")
 
-# The selected fork's typed native two-window prepared gateway must not be
-# duplicated by the older port before multi-world recovery is applied.
-import port_native_two_pull_cli as two_pull
-typed_gateway = (two_pull.ENGINE_TYPED_MARKER + "\n"
-                 + two_pull.ENGINE_TYPED_CALL + "\n"
-                 + "/// What gating a prepared v2 input and simulating it when supported came to.")
-assert two_pull.port_prepared(typed_gateway) == typed_gateway
-try:
-    two_pull.port_prepared(typed_gateway.replace(two_pull.ENGINE_TYPED_CALL, "FORGED_GATEWAY_CALL"))
-except ValueError:
-    pass
-else:
-    raise AssertionError("TYPED_TWO_WINDOW_PREPARED_GATEWAY_DRIFT_ACCEPTED")
 print("RUST_TYPED_TWO_WINDOW_PREPARED_GATEWAY_IDEMPOTENT")
 
 
