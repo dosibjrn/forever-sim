@@ -257,8 +257,9 @@ def _validate_p5(e: dict, previous: dict) -> list[str]:
         return errors
     a = e.get("unique_full_builds")
     b = p4["evidence"].get("unique_full_builds")
-    exhausted = e.get("full_legal_space_exhausted") is True
-    if not exhausted and (not _positive(a) or not _positive(b) or a < 2 * b):
+    # PROCESS v2.17 / docs/gates/P4-P6.md require actual doubled paid
+    # breadth. A caller-supplied finite-space flag is not an approved waiver.
+    if not _positive(a) or not _positive(b) or a < 2 * b:
         errors.append(f"INSUFFICIENT_SEARCH_BREADTH:P5={a},P4={b},required>=2x")
     return errors
 
