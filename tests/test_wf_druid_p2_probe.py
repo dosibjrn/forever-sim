@@ -14,6 +14,10 @@ S2=ROOT/'tools/wf_gate.py'
 spec2=importlib.util.spec_from_file_location('wf_gate',S2)
 gate=importlib.util.module_from_spec(spec2)
 spec2.loader.exec_module(gate)
+S3=ROOT/'tools/wf_gate_coverage.py'
+spec3=importlib.util.spec_from_file_location('gate_coverage',S3)
+coverage=importlib.util.module_from_spec(spec3)
+spec3.loader.exec_module(coverage)
 R=json.loads((ROOT/'gate_sources/druid/WF443_P2_GATE_RED.json').read_text())
 C=(ROOT/'gate_sources/druid/WF443_SOURCE_CATALOGUE.json').read_text().strip()
 
@@ -79,4 +83,39 @@ def test_legacy_semantic_labels_do_not_cause_fail():
     x['ranks_represented_in_search']=129
     x['unlocked_actions_available_to_generated_search']=True
     x['provenance_scope']='CURRENT_EXECUTED_COMBAT_TESTS'
+    x['production_engine']='msim'
     assert gate._validate_p2(x,{})==[]
+
+
+def test_p2_requires_an_approved_production_backend():
+    x=probe.source_report(30,R,C)
+    x['rank_behavior_results']=[{'rank_key':k,'test_id':'test::'+k,
+                                  'passed':True,'actually_executed':True}
+                                 for k in x['reachable_rank_keys']]
+    x['ranks_with_executed_behavior_tests']=129
+    x['ranks_with_executor_paths']=129
+    x['missing_executor_ranks']=0
+    x['failed_behavior_ranks']=0
+    x['talent_paths_legal']=True
+    x['ranks_represented_in_search']=129
+    x['unlocked_actions_available_to_generated_search']=True
+    x['source_specific_behavior_tests_executed']=True
+    x['provenance_scope']='CURRENT_EXECUTED_COMBAT_TESTS'
+    assert 'UNAPPROVED_P2_PRODUCTION_ENGINE:missing' in gate._validate_p2(x,{})
+    x['production_engine']='live_game_ir_compiler_and_runtime'
+    assert ('UNAPPROVED_P2_PRODUCTION_ENGINE:live_game_ir_compiler_and_runtime'
+            in gate._validate_p2(x,{}))
+    x['production_engine']='msim'
+    assert gate._validate_p2(x,{})==[]
+
+
+def test_p2_game_ir_diagnostic_does_not_count_as_m1_partial_coverage():
+    report={'status':'FAIL','gate':'P2',
+            'coverage_basis':'executed_behavior_or_checked_solo_exclusion',
+            'pass_count':3,'reachability_count':10,
+            'behavior_probes_executed':3,
+            'production_engine':'live_game_ir_compiler_and_runtime'}
+    assert coverage.measured_live_coverage(report) is None
+    report['production_engine']='msim'
+    measured=coverage.measured_live_coverage(report)
+    assert measured['verified']==3 and measured['applicable']==10
