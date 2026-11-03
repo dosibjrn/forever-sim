@@ -35,7 +35,7 @@
 ## Acceptance contract
 
 - The scoreboard has **148 checkpoints**: nine unrestricted classes × four levels (20, 30, 40, 60) = 36; Druid four profiles × four levels = 16; eight other classes × three profiles × four levels = 96. There is no L50 checkpoint.
-- A checkpoint counts only when **P3–P6 and P7.1–P7.5** have each genuinely passed with mutually compatible source, ruleset and production-engine semantics. Acceptance can accumulate across separate runs; all gates need not pass in a single session or be rerun merely because unrelated commits landed. P3–P6 assess continuous **100-mob leveling**; P7 assesses a separate pinned MythicSim DPS-reference encounter. Never splice incompatible proofs.
+- A checkpoint counts only when **P3–P6 and P7.1–P7.5** have each genuinely passed with mutually compatible source, ruleset and production-engine semantics. Acceptance can accumulate across separate runs; all gates need not pass in a single session or be rerun merely because unrelated commits landed. P3 assesses the contextual top-five legal gear-score smoke; P4–P6 assess continuous **100-mob leveling**; P7 assesses a separate pinned MythicSim DPS-reference encounter. Never splice incompatible proofs.
 - **No additional implicit gates.** Tests, metadata, compilation, static manifests, native-only diagnostics, partial evidence and green CI are not a substitute for the actual stated predicate. Report PASS/FAIL/BLOCKED truthfully. Preserve previously accepted owner-specific historical decisions and disclose their limits.
 - Exact requirements and runtime authority:
   - [Common acceptance, engines, sources and transition](docs/gates/COMMON.md)
@@ -43,7 +43,7 @@
   - [P3 gear smoke](docs/gates/P3.md)
   - [P4–P6 independent search and 100-mob comparison](docs/gates/P4-P6.md)
   - [P7.1–P7.5 MythicSim reference and live integration](docs/gates/P7.md)
-- Stable on-demand CLI: `python tools/wf_gate.py --class <class> --level <level> --gate P3` (or P4–P7.5). Actual production execution, not prewritten JSON, awards a new PASS; see [runtime contract](docs/gates/RUNTIME_AUTHORITY.md). Acceptance tests may be CLI/integration runs and need not be pytest unit tests.
+- Stable on-demand CLI: `python tools/wf_gate.py --class <class> --level <level> --gate P3` (or P4–P6 or P7.1–P7.5). Actual production execution, not prewritten JSON, awards a new PASS; see [runtime contract](docs/gates/RUNTIME_AUTHORITY.md). Acceptance tests may be CLI/integration runs and need not be pytest unit tests.
 
 ## Delivery and evidence
 
