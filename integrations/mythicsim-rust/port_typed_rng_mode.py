@@ -164,8 +164,6 @@ fn run() -> Result<(), Failure> {"""),
          "simulate_prepared_gated(&prepared, rng_mode)"),
         ("simulate_prepared(&prepared).map_err",
          "simulate_prepared(&prepared, rng_mode).map_err"),
-        ("simulate_prepared(black_box(&prepared))",
-         "simulate_prepared(black_box(&prepared), rng_mode)"),
         ("    let request: Request =", '''    if rng_mode == RngMode::Balanced {
         return Err("legacy prototype has no typed balanced RNG; use prepared v2".into());
     }
@@ -173,6 +171,9 @@ fn run() -> Result<(), Failure> {"""),
     ])
     # Audit machine-readable provenance from the engine's parsed flag.
     source = path.read_text()
+    old = "simulate_prepared(black_box(&prepared))"
+    assert source.count(old) == 2, "expected both bench mode runtime calls"
+    source = source.replace(old, "simulate_prepared(black_box(&prepared), rng_mode)")
     assert source.count('"result": report, "checkpoint_certified": false,') == 1
     source = source.replace(
         '"result": report, "checkpoint_certified": false,',
