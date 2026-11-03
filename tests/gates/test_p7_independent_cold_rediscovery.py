@@ -124,10 +124,11 @@ def test_p72_p75_shared_cold_apl_samples_grammar_not_saved_policy(monkeypatch):
     cast_actions = [row for row in candidate
                     if "castSpell" in row.get("action", {})]
     generated_ids = {id(row) for row in generated}
-    # Only the independently generated unconditional fallback may bypass
-    # _new_cast. In particular, no original reference cast entry is copied.
-    assert sum(id(row) not in generated_ids for row in cast_actions) <= 1
-    assert any("condition" not in row["action"] for row in cast_actions)
+    # Every generated cast is an exact source action template. With no
+    # unconditional source action, cold generation must not synthesize one.
+    assert all(id(row) in generated_ids for row in cast_actions)
+    assert all(row["action"].get("condition") == condition
+               for row in cast_actions)
     assert all(row["action"]["castSpell"]["spellId"]["spellId"] in range(100, 110)
                for row in cast_actions)
     assert source == original
