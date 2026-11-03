@@ -27,6 +27,7 @@ from native_l60_matrix import (
     load_native_item_index, player,
 )
 from p73_talent_search_v2 import run
+from native_source_donors import load_source_donor_fixtures
 
 
 def talent_points(talents: str) -> int:
@@ -43,6 +44,13 @@ def talent_points(talents: str) -> int:
     if any(any(c not in "0123456789" for c in t) for t in trees):
         raise ValueError("Invalid talent encoding")
     return sum(int(c) for t in trees for c in t)
+
+
+def _is_full_51_source_build(talents: object) -> bool:
+    try:
+        return talent_points(talents) == 51
+    except (TypeError, ValueError):
+        return False
 
 
 def native_payload(candidate: dict, iterations: int, seed: int) -> dict:
@@ -92,25 +100,67 @@ def native_score_request(
 
 def source_bounded_adapter(
     class_key: str, reference: dict, same_class: list[dict],
-    items: dict[int, dict],
+    items: dict[int, dict], *, donor_fixtures: list[dict] | None = None,
 ) -> tuple[JointCandidateAdapter, dict]:
-    """Per-source adapters implement legality; the scheduler is unchanged."""
-    gear = NativeGearAdapter(class_key, reference, same_class, items)
+    """Use exact pinned same-class source requests; the scheduler is unchanged."""
+    original = player(reference)
+    extra_same_class = [
+        fixture for fixture in (donor_fixtures or [])
+        if fixture.get("class_name") == original.get("class")
+        and isinstance(fixture.get("request"), dict)
+    ]
+    donor_requests = [fixture["request"] for fixture in extra_same_class]
+    source_requests = same_class + donor_requests
+    gear = NativeGearAdapter(class_key, reference, source_requests, items)
     if not gear.mutable_indices:
         raise ValueError("BLOCKED_GEAR_POOL: no source-bounded legal alternate item")
 
-    original = player(reference)
     base_gear = copy.deepcopy(original["equipment"]["items"])
     base_apl = copy.deepcopy(original["rotation"]["priorityList"])
-    talents = sorted({
-        player(req).get("talentsString")
-        for req in same_class
-        if player(req).get("class") == original["class"]
-        and talent_points(player(req).get("talentsString", "")) == 51
-    })
-    if original["talentsString"] not in talents or len(talents) < 2:
-        raise ValueError("BLOCKED_TALENTS: need two independent full 51-point same-class source builds")
+    source_talents = set()
+    talents = set()
+    for request in source_requests:
+        try:
+            source_player = player(request)
+        except (KeyError, TypeError, ValueError, IndexError):
+            continue
+        if source_player.get("class") != original["class"]:
+            continue
+        source_talent = source_player.get("talentsString")
+        if isinstance(source_talent, str):
+            source_talents.add(source_talent)
+        if _is_full_51_source_build(source_talent):
+            talents.add(source_talent)
+    talents = sorted(talents)
+    if original["talentsString"] not in source_talents or len(talents) < 2:
+        raise ValueError(
+            "BLOCKED_TALENTS: need a source-observed baseline and two "
+            "independent full 51-point same-class source builds"
+        )
     alternate = [t for t in talents if t != original["talentsString"]]
+
+    gear_donor_fixtures_scanned = [
+        {
+            "source_path": fixture["source_path"],
+            "source_sha256": fixture["source_sha256"],
+            "item_count": fixture["item_count"],
+        }
+        for fixture in extra_same_class
+        if fixture.get("item_count") == len(base_gear)
+    ]
+    talent_donor_fixtures = [
+        {
+            "source_path": fixture["source_path"],
+            "source_sha256": fixture["source_sha256"],
+            "talents_sha256": fingerprint(
+                player(fixture["request"]).get("talentsString")
+            ),
+        }
+        for fixture in extra_same_class
+        if _is_full_51_source_build(
+            player(fixture["request"]).get("talentsString")
+        )
+    ]
 
     def make_gear(rng):
         request, _audit = gear.mutate_one(rng)
@@ -142,7 +192,11 @@ def source_bounded_adapter(
         return rng.choice(choices)
 
     def talent_legal(value):
-        return value in talents and talent_points(value) == 51
+        # The exact source reference is a legal starting anchor even when it
+        # spends fewer than 51 points. Every mutated/cold talent candidate
+        # must still be one of the pinned full 51-point source builds.
+        return (value == original["talentsString"]
+                or (value in talents and _is_full_51_source_build(value)))
 
     def cold_apl(rng):
         for _ in range(8):
@@ -177,8 +231,11 @@ def source_bounded_adapter(
     return result, {
         "gear_mutable_slots": list(gear.mutable_indices),
         "talent_builds": talents,
-        "talent_validation": "51_POINT_WHOLE_BUILDS_OBSERVED_IN_PINNED_SAME_CLASS_REQUESTS",
-        "gear_validation": "SOURCE_BOUNDED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
+        "source_donor_fixture_count": len(extra_same_class),
+        "gear_donor_fixtures_scanned": gear_donor_fixtures_scanned,
+        "talent_donor_fixtures": talent_donor_fixtures,
+        "talent_validation": "SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
+        "gear_validation": "PINNED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
         "apl_validation": "SOURCE_CAST_IDENTITIES_AND_OPAQUE_ACTION_CORPUS",
     }
 
@@ -194,7 +251,8 @@ def axis_delta(reference: dict, candidate: dict) -> dict[str, bool]:
 
 def execute(profile_id: str, inventory: list, native_items: dict, *,
             binary: Path, engine_src: Path, seconds: float, iterations: int,
-            seed: int, outdir: Path) -> dict:
+            seed: int, outdir: Path,
+            donor_fixtures: list[dict] | None = None) -> dict:
     row = {
         "profile_id": profile_id, "status": "BLOCKED_SOURCE",
         "dimensions_requested": ["gear", "talents", "apl"],
@@ -228,7 +286,10 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     same_class = [req for entry, req in inventory if req is not None
                   and entry["profile_id"].split("/", 1)[0] == cls]
     try:
-        adapter, scope = source_bounded_adapter(cls, reference, same_class, native_items)
+        adapter, scope = source_bounded_adapter(
+            cls, reference, same_class, native_items,
+            donor_fixtures=donor_fixtures,
+        )
     except Exception as exc:
         row["status"] = "BLOCKED_SOURCE_LEGALITY"
         row["blocker"] = str(exc)[:500]
@@ -391,6 +452,8 @@ def main() -> None:
     registry = ROOT / "config/validation/checkpoint_148.json"
     inventory = create_inventory(registry, args.engine_src)
     items = load_native_item_index(args.engine_src)
+    donor_inventory = load_source_donor_fixtures(args.engine_src)
+    donor_fixtures = donor_inventory["fixtures"]
     args.out.mkdir(parents=True, exist_ok=True)
     rows = []
     for idx, profile in enumerate(args.profile):
@@ -399,11 +462,13 @@ def main() -> None:
             profile, inventory, items,
             binary=args.binary, engine_src=args.engine_src,
             seconds=args.seconds, iterations=args.iterations,
-            seed=args.seed + idx, outdir=outdir)
+            seed=args.seed + idx, outdir=outdir,
+            donor_fixtures=donor_fixtures)
         rows.append(row)
         print(json.dumps({"profile":profile, "status":row["status"],
                           "paid":row["native_paid"],
                           "three_axis_paid":row["three_axis_paid"],
+                          "source_donor_fixture_count":row.get("source_donor_fixture_count", 0),
                           "replay_matches":row.get("replay_matches")}), flush=True)
     (args.out / "joint_matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
     # CI must fail if either class did NOT actually score and replay a
