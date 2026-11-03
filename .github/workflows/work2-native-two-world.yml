@@ -1,5 +1,7 @@
 name: Work2 selected Rust two real gsim world targets (not M1)
 on:
+  push:
+    branches: [work/work2-native-two-distinct-world-targets-20261103]
   pull_request:
     paths:
       - integrations/mythicsim-rust/port_native_two_world_cli.py
