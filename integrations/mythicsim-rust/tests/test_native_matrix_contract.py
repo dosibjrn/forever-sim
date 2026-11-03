@@ -364,12 +364,16 @@ class NativeGenericMatrixContract(unittest.TestCase):
                 source_path.write_text(json.dumps(request))
                 sources[f"{class_key}/{spec}"] = ("engine", relative)
 
-            with patch.object(matrix, "CURRENT_CLIENT_TALENT_OVERRIDES", {}), \\
-                 patch.object(matrix, "enumerate_l60_profiles", return_value=profiles), \\
-                 patch.object(matrix, "SOURCES", sources), \\
-                 patch.object(matrix, "ROOT", root), \\
-                 patch.object(matrix, "load_native_item_index",
-                              side_effect=AssertionError("Python item index must not preflight requests")):
+            with (
+                patch.object(matrix, "CURRENT_CLIENT_TALENT_OVERRIDES", {}),
+                patch.object(matrix, "enumerate_l60_profiles", return_value=profiles),
+                patch.object(matrix, "SOURCES", sources),
+                patch.object(matrix, "ROOT", root),
+                patch.object(
+                    matrix, "load_native_item_index",
+                    side_effect=AssertionError("Python item index must not preflight requests"),
+                ),
+            ):
                 rows = matrix.create_inventory(registry, engine)
 
             self.assertEqual(28, len(rows))
