@@ -205,6 +205,11 @@ WORLD_BRIDGE_PATCHES = [
         "TEST_INIT_9",
     ),
     (
+        "            event_ordinal: 3, pending: Vec::new(),",
+        "            event_ordinal: 3, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(),",
+        "TEST_INIT_3",
+    ),
+    (
         "            event_ordinal: 1, pending: Vec::new(),",
         "            event_ordinal: 1, pending: Vec::new(), control_event_ordinal: 0, pending_controls: Vec::new(),",
         "TEST_INIT_1",
