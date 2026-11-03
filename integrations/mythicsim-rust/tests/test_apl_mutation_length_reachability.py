@@ -1,4 +1,4 @@
-"""Cold APL length must cover source-legal policies beyond the saved reference length."""
+"""Cold APL length and native-damage fallback must preserve source-compatible predicates."""
 import json
 import random
 import re
@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from apl_mutation import _corpus, mutate_apl
+from apl_mutation import _condition_spell_identity_keys, _corpus, mutate_apl
 from native_joint_two_class import _ensure_native_damage_action, _native_positive_source_casts
 
 
@@ -27,6 +27,13 @@ def _predicate_shape(value):
     return value
 
 
+def _shape_set(predicates):
+    return {
+        json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
+        for predicate in predicates
+    }
+
+
 def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it():
     repo = ROOT.parent.parent
     reference = json.loads(
@@ -43,12 +50,11 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
     assert len(source_actions) == 10
     assert len(historical_actions) == 19
 
-    _, predicates_by_spell, allowed_casts = _corpus(source_actions)
-    source_predicates = [
-        predicate
-        for predicates in predicates_by_spell.values()
-        for predicate in predicates
-    ]
+    source_spells, same_spell, allowed_casts, source_predicates = _corpus(source_actions)
+    source_spell_keys = {
+        json.dumps(spell, sort_keys=True, separators=(",", ":"))
+        for spell in source_spells
+    }
     historical_casts = {
         json.dumps(action["action"]["castSpell"]["spellId"],
                    sort_keys=True, separators=(",", ":"))
@@ -57,17 +63,38 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
     }
     assert historical_casts <= allowed_casts
 
-    source_shapes = {
-        json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
-        for predicate in source_predicates
-    }
-    historical_shapes = {
-        json.dumps(_predicate_shape(action["action"]["condition"]),
-                   sort_keys=True, separators=(",", ":"))
-        for action in historical_actions
-        if isinstance(action.get("action", {}).get("condition"), dict)
-    }
-    assert historical_shapes <= source_shapes
+    source_shapes = _shape_set(source_predicates)
+    historical_compatible_shapes = set()
+    historical_compatible_count = 0
+    historical_cross_cast_shapes = set()
+    historical_cross_cast_count = 0
+    for action in historical_actions:
+        action_body = action.get("action", {})
+        condition = action_body.get("condition")
+        cast = action_body.get("castSpell", {})
+        identity = cast.get("spellId") if isinstance(cast, dict) else None
+        if not isinstance(condition, dict) or not isinstance(identity, dict):
+            continue
+        refs, valid = _condition_spell_identity_keys(condition)
+        if not valid or not set(refs) <= source_spell_keys:
+            continue
+        shape = json.dumps(
+            _predicate_shape(condition), sort_keys=True, separators=(",", ":")
+        )
+        historical_compatible_count += 1
+        historical_compatible_shapes.add(shape)
+        target_key = json.dumps(identity, sort_keys=True, separators=(",", ":"))
+        if shape not in _shape_set(same_spell.get(target_key, ())):
+            historical_cross_cast_count += 1
+            historical_cross_cast_shapes.add(shape)
+
+    # 11/16 historical conditions are source-compatible; 6 are cross-cast,
+    # including spell-agnostic predicates. The five conditions referencing
+    # aura 408255 are excluded because it is not in the saved source cast set.
+    assert historical_compatible_count == 11
+    assert historical_cross_cast_count == 6
+    assert historical_compatible_shapes <= source_shapes
+    assert historical_cross_cast_shapes <= source_shapes
 
     saved_snapshot = json.loads(json.dumps(source_actions))
     generated = mutate_apl(None, source_actions, random.Random(29), cold=True)
@@ -76,10 +103,7 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
     assert source_actions == saved_snapshot
 
 
-
-def test_cold_and_elite_cast_conditions_remain_bound_to_their_source_spell():
-    # The old global predicate pool could graft a Life Tap condition onto
-    # Curse of Elements (or even a potion condition onto either cast).
+def test_cold_and_elite_cast_conditions_use_only_source_compatible_cast_predicates():
     source_actions = [
         {
             "action": {
@@ -90,7 +114,18 @@ def test_cold_and_elite_cast_conditions_remain_bound_to_their_source_spell():
         {
             "action": {
                 "castSpell": {"spellId": {"spellId": 1311680}},
-                "condition": {"auraIsActive": {"auraId": {"spellId": 1311680}}},
+                "condition": {
+                    "and": {"vals": [
+                        {"auraIsActive": {"auraId": {"spellId": 1311680}}},
+                        {"dotIsActive": {"spellId": {"spellId": 11689}}},
+                    ]}
+                },
+            }
+        },
+        {
+            "action": {
+                "castSpell": {"spellId": {"spellId": 25311}},
+                "condition": {"dotIsActive": {"spellId": {"spellId": 99999}}},
             }
         },
         {
@@ -99,18 +134,27 @@ def test_cold_and_elite_cast_conditions_remain_bound_to_their_source_spell():
                 "condition": {"auraIsActive": {"auraId": {"spellId": 12662}}},
             }
         },
+        {
+            "action": {
+                "autocastOtherCooldowns": {},
+                "condition": {"dotIsActive": {"spellId": {"spellId": 12662}}},
+            }
+        },
     ]
-    source_conditions = {}
-    for item in source_actions:
-        action = item["action"]
-        cast = action.get("castSpell")
-        condition = action.get("condition")
-        if isinstance(cast, dict) and isinstance(cast.get("spellId"), dict):
-            key = json.dumps(cast["spellId"], sort_keys=True, separators=(",", ":"))
-            source_conditions.setdefault(key, set()).add(
-                json.dumps(condition, sort_keys=True, separators=(",", ":"))
-            )
+    source_snapshot = json.loads(json.dumps(source_actions))
+    spells, same_spell, _allowed_casts, compatible = _corpus(source_actions)
+    source_spell_keys = {
+        json.dumps(spell, sort_keys=True, separators=(",", ":"))
+        for spell in spells
+    }
+    compatible_shapes = _shape_set(compatible)
+    assert json.dumps(_predicate_shape(source_actions[-2]["action"]["condition"]),
+                      sort_keys=True, separators=(",", ":")) not in compatible_shapes
+    assert json.dumps(_predicate_shape(source_actions[-1]["action"]["condition"]),
+                      sort_keys=True, separators=(",", ":")) not in compatible_shapes
 
+    same_shapes = {key: _shape_set(predicates) for key, predicates in same_spell.items()}
+    cross_cast_seen = False
     for seed in range(128):
         for cold in (True, False):
             generated = mutate_apl(
@@ -126,14 +170,20 @@ def test_cold_and_elite_cast_conditions_remain_bound_to_their_source_spell():
                 if not isinstance(cast, dict) or condition is None:
                     continue
                 key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
-                observed = json.dumps(condition, sort_keys=True, separators=(",", ":"))
-                assert observed in source_conditions.get(key, set()), (
-                    f"seed={seed}, cold={cold}, spell={key}, condition={observed}"
+                refs, valid = _condition_spell_identity_keys(condition)
+                assert valid, (seed, cold, condition)
+                assert set(refs) <= source_spell_keys, (seed, cold, key, refs)
+                shape = json.dumps(
+                    _predicate_shape(condition), sort_keys=True, separators=(",", ":")
                 )
+                assert shape in compatible_shapes, (seed, cold, key, shape)
+                if shape not in same_shapes.get(key, set()):
+                    cross_cast_seen = True
+    assert cross_cast_seen, "Compatible cross-cast predicates must remain eligible"
+    assert source_actions == source_snapshot
 
 
-
-def test_native_damage_anchor_and_spell_bound_predicates_compose_on_cold_and_elite_apls():
+def test_native_damage_witness_follows_conditional_opaque_prefix_and_precedes_utility_casts():
     # A source-paid baseline proves 11713 damages; 11689 is a non-damaging
     # Life Tap cast. The item predicate must never enter either cast's pool.
     source_actions = [
@@ -175,40 +225,59 @@ def test_native_damage_anchor_and_spell_bound_predicates_compose_on_cold_and_eli
 
     witnesses = _native_positive_source_casts(source_actions, baseline)
     assert witnesses == [{"spellId": 11713}]
-    _, predicates_by_spell, _ = _corpus(source_actions)
-    assert set(predicates_by_spell) == {
-        json.dumps({"spellId": 11689}, sort_keys=True, separators=(",", ":")),
-        json.dumps({"spellId": 11713}, sort_keys=True, separators=(",", ":")),
+    source_spells, same_spell, _allowed_casts, compatible = _corpus(source_actions)
+    source_spell_keys = {
+        json.dumps(spell, sort_keys=True, separators=(",", ":"))
+        for spell in source_spells
     }
+    compatible_shapes = _shape_set(compatible)
+    same_shapes = {key: _shape_set(predicates) for key, predicates in same_spell.items()}
+    item_shape = json.dumps(
+        _predicate_shape(source_actions[-1]["action"]["condition"]),
+        sort_keys=True, separators=(",", ":"),
+    )
+    assert item_shape not in compatible_shapes
 
+    cross_cast_seen = False
     for seed in range(128):
         cold = mutate_apl(None, source_actions, random.Random(seed), cold=True)
         elite = mutate_apl(cold, source_actions, random.Random(seed + 1000))
         for proposal in (cold, elite):
+            prefix = [
+                entry for entry in proposal
+                if not isinstance(entry.get("action", {}).get("castSpell"), dict)
+                or "condition" in entry.get("action", {})
+            ]
             anchored = _ensure_native_damage_action(
                 proposal, witnesses, random.Random(seed)
             )
-            first = anchored[0]["action"]
-            assert first["castSpell"]["spellId"] == {"spellId": 11713}
-            assert "condition" not in first
+            assert anchored[:len(prefix)] == prefix
+            assert len(anchored) <= 20
 
-            # Every generated cast predicate remains attached to the exact
-            # source spell identity; the non-cast item condition is excluded.
+            fallback = anchored[len(prefix)]["action"]
+            assert fallback["castSpell"]["spellId"] == {"spellId": 11713}
+            assert "condition" not in fallback
+            assert all(
+                isinstance(entry.get("action", {}).get("castSpell"), dict)
+                and "condition" not in entry.get("action", {})
+                for entry in anchored[len(prefix) + 1:]
+            )
+
             for entry in anchored:
                 action = entry.get("action", {})
                 cast = action.get("castSpell")
                 condition = action.get("condition")
                 if not isinstance(cast, dict) or condition is None:
                     continue
-                key = json.dumps(
-                    cast.get("spellId"), sort_keys=True, separators=(",", ":")
+                key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
+                refs, valid = _condition_spell_identity_keys(condition)
+                assert valid
+                assert set(refs) <= source_spell_keys
+                shape = json.dumps(
+                    _predicate_shape(condition), sort_keys=True, separators=(",", ":")
                 )
-                observed = json.dumps(
-                    condition, sort_keys=True, separators=(",", ":")
-                )
-                allowed = {
-                    json.dumps(item, sort_keys=True, separators=(",", ":"))
-                    for item in predicates_by_spell.get(key, ())
-                }
-                assert observed in allowed, (seed, key, observed)
+                assert shape in compatible_shapes
+                if shape not in same_shapes.get(key, set()):
+                    cross_cast_seen = True
         assert source_actions == source_snapshot
+    assert cross_cast_seen
