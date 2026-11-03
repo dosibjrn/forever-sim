@@ -25,18 +25,20 @@ def _class_name(class_key: str) -> str:
 
 
 class NativeGearAdapter:
-    """Conservative candidate pools from actual same-class native fixtures.
+    """Candidate proposals from exact same-class, same-position source fixtures.
 
-    No 16-slot assumptions, no gsim/Wowhead item identity dependency, and
-    no cross-class fixture mixing. Weapon/ranged item identities and hand
-    rules remain fixed; exact same-ID source-observed enchant variants are
-    allowed because they do not change the equipped item identity.
+    This adapter constrains candidate provenance and request shape only. It
+    deliberately does not consult the Python item index or decide item
+    identity, slot/type, armor, class, level, hand, or uniqueness legality.
+    The selected MythicSim Rust evaluator decides whether each exact proposal
+    is valid, invalid, or unsupported.
     """
 
     def __init__(self, class_key: str, reference: dict, fixtures: list[dict], items: dict[int, dict]):
         self.class_key = class_key
         self.reference = copy.deepcopy(reference)
-        self.items = items
+        # Retained as a compatibility argument for existing callers only.
+        # Never use Python item metadata to veto a source-observed proposal.
         self.expected_class = _class_name(class_key)
         if _player(reference)["class"] != self.expected_class:
             raise GearRejected("CLASS_IDENTITY", "Reference belongs to another class")
@@ -57,20 +59,11 @@ class NativeGearAdapter:
                 original_id = self.base[index].get("id", 0)
                 if not isinstance(iid, int) or iid <= 0 or not isinstance(original_id, int) or original_id <= 0:
                     continue
-                native = items.get(iid)
-                original = items.get(original_id)
-                if not native or not original or native.get("type") != original.get("type"):
-                    continue
-                is_weapon_or_ranged = native.get("type") in ("ItemTypeWeapon", "ItemTypeRanged")
-                if is_weapon_or_ranged and iid != original_id:
-                    continue  # keep weapon/ranged identity fixed; same-ID observed variants do not alter hand rules
-                # Same-position/source-observed candidates are proposals.
-                # Armor subtype, class allowance and required level are
-                # Warcraft rules; only the native evaluator may refuse them.
-                # Keep weapon/ranged entries out of generic item-ID pools.
-                # Their same-ID enchant variants are carried only as exact entries.
-                if not is_weapon_or_ranged:
-                    self.pools.setdefault(index, {})[iid] = copy.deepcopy(entry)
+                # Same-class, same-position source entries are proposals.
+                # Do not pre-check native DB presence, item type, slot fit,
+                # armor, class, level, hand, or uniqueness here; Rust owns all
+                # of those decisions, including native INVALID/UNSUPPORTED.
+                self.pools.setdefault(index, {})[iid] = copy.deepcopy(entry)
                 variants = self.variants.setdefault(index, [])
                 if entry not in variants:
                     variants.append(copy.deepcopy(entry))
@@ -106,9 +99,8 @@ class NativeGearAdapter:
                 if entry != self.base[i]:
                     raise GearRejected("EMPTY_SLOT_CHANGED", f"Position {i}")
                 continue
-            native = self.items.get(iid)
-            if native is None:
-                raise GearRejected("ITEM_IDENTITY", f"{iid} absent from native Rust DB")
+            # A source-observed entry is only a proposal. Even native DB
+            # identity and slot/type compatibility are decided by Rust.
             if entry != self.base[i] and entry not in self.variants.get(i, []):
                 raise GearRejected("SOURCE_SLOT", f"{iid} entry not observed at position {i}")
         # Native Rust, not this proposal-domain adapter, checks unique
@@ -121,9 +113,9 @@ class NativeGearAdapter:
         """Add one more source-observed item proposal to an existing candidate.
 
         Never mutate the caller's request or reset an already searched slot
-        to the reference item. The source fixture, native item identity and
-        full non-gear request are checked before AND after mutation. This is
-        still partial gear legality, not certified JOINT search.
+        to the reference item. The exact source fixture and full non-gear
+        request shape are checked before and after mutation; Rust decides
+        whether the proposed equipment is valid.
         """
         self.validate(candidate)
         excluded = excluded_swaps or set()
@@ -151,7 +143,7 @@ class NativeGearAdapter:
                     "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_NATIVE_DB",
                 }
         raise GearRejected(
-            "NO_LEGAL_SOURCE_SWAP", "No further source-bounded legal gear mutation"
+            "NO_SOURCE_OBSERVED_SWAP", "No further source-observed gear proposal"
         )
 
     def mutate_one(
@@ -179,4 +171,4 @@ class NativeGearAdapter:
                     continue
                 return out, {"source_slot_index": i, "from_id": self.base[i]["id"],
                              "to_id": iid, "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_NATIVE_DB"}
-        raise GearRejected("NO_LEGAL_SOURCE_SWAP", "All source-bounded alternatives conflict")
+        raise GearRejected("NO_SOURCE_OBSERVED_SWAP", "All source-observed alternatives were already excluded")
