@@ -18,6 +18,7 @@ on:
       - integrations/mythicsim-rust/tests/test_native_joint_composition.py
       - integrations/mythicsim-rust/tests/test_native_source_donors.py
       - integrations/mythicsim-rust/tests/test_native_matrix_contract.py
+      - integrations/mythicsim-rust/tests/test_native_gear_adapter.py
 
 permissions:
   contents: read
@@ -48,3 +49,4 @@ jobs:
           python integrations/mythicsim-rust/tests/test_native_source_donors.py -v
           python integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py -v
           python integrations/mythicsim-rust/tests/test_native_matrix_contract.py -v
+          python integrations/mythicsim-rust/tests/test_native_gear_adapter.py -v
