@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
@@ -30,6 +31,63 @@ SOURCE_CLASSES = frozenset({
     "ClassWarlock",
     "ClassWarrior",
 })
+
+
+# Emit a profile hint only when the pinned source path explicitly names one
+# class/spec pair. Generic or ambiguous fixtures remain class-only gear donors.
+PROFILE_PATH_TOKENS = {
+    "druid/balance": ("balance-druid", "druid-balance"),
+    "druid/feral_cat": ("feral-cat-druid", "druid-feral-cat"),
+    "druid/feral_bear": ("feral-bear-druid", "druid-feral-bear"),
+    "druid/restoration": ("restoration-druid", "druid-restoration"),
+    "hunter/beast_mastery": ("beast-mastery-hunter", "beastmastery-hunter"),
+    "hunter/marksmanship": ("marksmanship-hunter", "hunter-marksmanship"),
+    "hunter/survival": ("survival-hunter", "hunter-survival"),
+    "mage/arcane": ("arcane-mage", "mage-arcane"),
+    "mage/fire": ("fire-mage", "mage-fire"),
+    "mage/frost": ("frost-mage", "mage-frost"),
+    "paladin/holy": ("holy-paladin", "paladin-holy"),
+    "paladin/protection": ("protection-paladin", "paladin-protection"),
+    "paladin/retribution": ("retribution-paladin", "paladin-retribution"),
+    "priest/discipline": ("discipline-priest", "priest-discipline"),
+    "priest/holy": ("holy-priest", "priest-holy"),
+    "priest/shadow": ("shadow-priest", "priest-shadow"),
+    "rogue/assassination": ("assassination-rogue", "rogue-assassination"),
+    "rogue/combat": ("combat-rogue", "rogue-combat"),
+    "rogue/subtlety": ("subtlety-rogue", "rogue-subtlety"),
+    "shaman/elemental": ("elemental-shaman", "shaman-elemental"),
+    "shaman/enhancement": ("enhancement-shaman", "shaman-enhancement"),
+    "shaman/restoration": ("restoration-shaman", "shaman-restoration"),
+    "warlock/affliction": ("affliction-warlock", "warlock-affliction"),
+    "warlock/demonology": ("demonology-warlock", "warlock-demonology"),
+    "warlock/destruction": ("destruction-warlock", "warlock-destruction"),
+    "warrior/arms": ("arms-warrior", "warrior-arms"),
+    "warrior/fury": ("fury-warrior", "warrior-fury"),
+    "warrior/protection": ("protection-warrior", "warrior-protection"),
+}
+
+
+def source_profile_hint(source_path: str, class_name: str) -> str | None:
+    """Return an explicit class/spec hint from a pinned fixture path, else None.
+
+    The request's class remains authoritative. This is deliberately
+    conservative: it never guesses feral cat vs bear or spec from generic
+    class-only names.
+    """
+    if not isinstance(source_path, str) or class_name not in SOURCE_CLASSES:
+        return None
+    class_key = class_name[len("Class"):].lower()
+    normalized = re.sub(r"[^a-z0-9]+", "-", source_path.lower()).strip("-")
+    if class_key not in normalized.split("-"):
+        return None
+    padded = f"-{normalized}-"
+    matches = [
+        profile_id
+        for profile_id, tokens in PROFILE_PATH_TOKENS.items()
+        if profile_id.split("/", 1)[0] == class_key
+        and any(f"-{token}-" in padded for token in tokens)
+    ]
+    return matches[0] if len(matches) == 1 else None
 
 
 def _first_player(request: dict) -> dict | None:
@@ -91,6 +149,7 @@ def load_source_donor_fixtures(engine_src: Path) -> dict:
                 "source_path": relative_path,
                 "source_sha256": hashlib.sha256(raw).hexdigest(),
                 "class_name": class_name,
+                "profile_id_hint": source_profile_hint(relative_path, class_name),
                 "item_count": len(gear_items),
                 "request": request,
             })
@@ -119,6 +178,7 @@ if __name__ == "__main__":
                 "source_path": item["source_path"],
                 "source_sha256": item["source_sha256"],
                 "class_name": item["class_name"],
+                "profile_id_hint": item["profile_id_hint"],
                 "item_count": item["item_count"],
             }
             for item in inventory["fixtures"]
