@@ -133,9 +133,9 @@ def _typed_native_world_present(source: str, marker: str) -> bool:
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if source.count(anchor) != 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
-    # The published selected Rust fork already has typed RNG. Its complete
-    # source method and the subsequent paid-recovery descendant are valid
-    # idempotent outcomes; a partial signature/call-site change is not.
+    # Selected Rust source uses explicit typed RNG at the class, prepared and
+    # CLI layers. Insert that exact descendant, never the legacy untyped text.
+    typed = replacement
     if marker in (CLASS_MARKER, PREPARED_MARKER, CLI_MARKER):
         typed = typed_rng_variant(marker, replacement)
         # Use the structural validator as the only idempotence fast path.
@@ -201,7 +201,7 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
                 return source
         except ValueError:
             pass
-    if source.count(replacement) == 1:
+    if marker not in (CLASS_MARKER, PREPARED_MARKER, CLI_MARKER) and source.count(replacement) == 1:
         return source
     # The maintained two-world method may already have separately
     # source-validated native health-damage and mana-regeneration receipts.
@@ -232,10 +232,10 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
             older = source[start:end]
             if start >= end or any(token not in older for token in required):
                 raise ValueError(f"RUST_WORLD_MULTI_TARGET_LEGACY_DRIFT_{marker}")
-            return source[:start] + replacement + source[end:]
+            return source[:start] + typed + source[end:]
     if marker in source:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_PARTIAL_{marker}")
-    return source.replace(anchor, replacement + anchor, 1)
+    return source.replace(anchor, typed + anchor, 1)
 
 
 FIGHT_METHOD = """
