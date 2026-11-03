@@ -879,6 +879,13 @@ def source_bounded_adapter(
         return talent_string, source_actions
 
     def filter_to_selected_source_actions(actions, source_actions, source_casts):
+        # HPS/TPS mutation operates on complete, frozen source entries. A
+        # non-witness cast must not retain an altered/stripped source guard
+        # merely because its castSpell identity is source-observed.
+        source_entry_keys = {
+            json.dumps(entry, sort_keys=True, separators=(",", ":"))
+            for entry in source_actions if isinstance(entry, dict)
+        } if objective != "DPS" else set()
         source_noncast_keys = {
             json.dumps(entry["action"], sort_keys=True, separators=(",", ":"))
             for entry in source_actions
@@ -888,6 +895,12 @@ def source_bounded_adapter(
         }
         filtered = []
         for entry in actions:
+            if objective != "DPS":
+                if (isinstance(entry, dict)
+                        and json.dumps(entry, sort_keys=True, separators=(",", ":"))
+                        in source_entry_keys):
+                    filtered.append(copy.deepcopy(entry))
+                continue
             action = entry.get("action", {}) if isinstance(entry, dict) else {}
             if not isinstance(action, dict):
                 continue
@@ -950,6 +963,20 @@ def source_bounded_adapter(
         candidate_casts = apl_cast_identity_keys(candidate_apl)
         if not candidate_casts.issubset(source_casts):
             return False
+        if objective != "DPS":
+            # Candidate-domain integrity, not a Warcraft legality verdict:
+            # preserve the entire action/condition AST for *every* HPS/TPS
+            # source entry, including casts without a positive witness.
+            source_entry_keys = source_apl_keys_by_talentsString.get(
+                talent_string, set()
+            )
+            if any(
+                not isinstance(entry, dict)
+                or json.dumps(entry, sort_keys=True, separators=(",", ":"))
+                not in source_entry_keys
+                for entry in candidate_apl
+            ):
+                return False
 
         if objective == "DPS":
             eligible_witness_keys = {
