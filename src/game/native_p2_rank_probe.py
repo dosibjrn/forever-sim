@@ -309,9 +309,15 @@ def run_native_prepare_pair(
     """
     if scenario not in {"balance", "cat"}:
         raise NativeP2ProbeError(f"NATIVE_P2_SCENARIO_UNSUPPORTED:{scenario}")
-    if isinstance(iterations, bool) or int(iterations) < 1:
+    if isinstance(target_rank, bool) or type(target_rank) is not int or target_rank < 1:
+        raise NativeP2ProbeError("NATIVE_P2_TARGET_RANK_INVALID")
+    if isinstance(iterations, bool) or type(iterations) is not int or iterations < 1:
         raise NativeP2ProbeError("NATIVE_P2_ITERATIONS_INVALID")
-    _selection_delta(before_selection, after_selection, target_talent_id, int(target_rank))
+    if isinstance(seed, bool) or type(seed) is not int:
+        raise NativeP2ProbeError("NATIVE_P2_SEED_INVALID")
+    if timeout_seconds <= 0:
+        raise NativeP2ProbeError("NATIVE_P2_TIMEOUT_INVALID")
+    _selection_delta(before_selection, after_selection, target_talent_id, target_rank)
 
     root = Path(engine_root)
     binary_path = Path(binary)
@@ -373,6 +379,14 @@ def run_native_prepare_pair(
         return {
             "status": "BLOCKED",
             "reason": "NATIVE_ENGINE_IDENTITY_CHANGED_BETWEEN_PREPARE_PAIRS",
+            "before": before,
+            "after": after,
+            "accepted_for_p2": False,
+        }
+    if not before.get("request_sha256") or before.get("request_sha256") == after.get("request_sha256"):
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_P2_PREPARED_REQUEST_HASHES_MISSING_OR_IDENTICAL",
             "before": before,
             "after": after,
             "accepted_for_p2": False,
