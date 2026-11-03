@@ -1018,8 +1018,8 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
                 return 0.0
 
             def sample(self, population, k):
-                self.assertEqual(("gear", "talents", "apl"), tuple(population))
-                self.assertEqual(1, k)
+                if tuple(population) != ("gear", "talents", "apl") or k != 1:
+                    raise AssertionError("expected the single APL mutation axis")
                 return ["apl"]
 
         def preserve_cold(_current, source_actions, _rng, cold=False,
