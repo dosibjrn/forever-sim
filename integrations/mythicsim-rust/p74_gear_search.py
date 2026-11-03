@@ -70,15 +70,21 @@ def candidate_pool(validator, limit, *, independent_enchants=False,
 def source_enchant_pools(validator, pools):
     """Enumerate slot-legal native enchants; never whitelist saved gear only.
 
-    The selected GearValidator enforces native enchant existence and slot
-    restrictions in item(); candidate loadouts are validated again afterwards.
+    The already prepared reference item is the compatibility probe for each
+    slot. Do not use the first candidate-pool item: in native-authoritative
+    mode it is only a proposal and may itself be rejected by native prepare.
+    The complete candidate still goes through selected native prepare/sim.
     """
     enchant_ids = sorted(int(e) for e in validator.enchants if int(e) > 0)
     result = {}
     for slot in range(len(pools)):
         if not pools.get(slot):
             raise ValueError("NO_SOURCE_LEGAL_GEAR_FOR_ENCHANT_SLOT")
-        anchor = pools[slot][0]
+        # Candidate-pool items are native-unverified proposals when
+        # native_authoritative=True. Use the already prepared reference item
+        # for this slot to enumerate enchant options; an invalid first proposal
+        # must not suppress every enchant for the slot.
+        anchor = int(validator.ref_items[slot]["id"])
         options = [None]
         for enchant_id in enchant_ids:
             try:

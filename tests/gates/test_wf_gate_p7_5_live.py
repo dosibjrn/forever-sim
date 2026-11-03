@@ -202,7 +202,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
 
     pool_calls = []
     def pool(v, limit, **kwargs):
-        pool_calls.append(limit)
+        pool_calls.append((limit, kwargs))
         return ({0: [11], 1: [21]}, {})
 
     def player(q):
@@ -236,7 +236,9 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
         lambda path, name: source if "joint_search" in str(path) else producer)
 
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert pool_calls == [None]
+    assert pool_calls == [
+        (None, {"native_authoritative": True, "independent_enchants": True})
+    ]
     assert [(a, b, c) for a, b, c, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
@@ -303,7 +305,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 1.0))
 
     light = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert pool_calls == [15]
+    assert pool_calls == [(15, {"native_authoritative": True})]
     assert len(prior_calls) == 1
     assert [(a, b, c) for a, b, c, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced")]
@@ -462,6 +464,7 @@ def test_full_search_sources_enchants_outside_reference_without_invented_rules(m
 
     class Validator:
         enchants = {101: {}, 102: {}, 103: {}}
+        ref_items = [{"id": 2000 + i} for i in range(16)]
         def __init__(self):
             self.calls = []
         def item(self, slot, anchor, effect_id):
@@ -477,8 +480,8 @@ def test_full_search_sources_enchants_outside_reference_without_invented_rules(m
     selected = module.source_enchant_pools(v, gear_pools)
     assert selected[0] == [None, 101, 103]
     assert all(selected[i] == [None, 102] for i in range(1, 16))
-    assert (0, 1000, 103) in v.calls
-    assert (1, 1001, 101) in v.calls
+    assert (0, 2000, 103) in v.calls
+    assert (1, 2001, 101) in v.calls
 
 
 def test_paid_p75_gear_apl_crossover_uses_distinct_paid_donors():

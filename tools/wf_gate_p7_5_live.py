@@ -474,9 +474,13 @@ def run_live(root: Path, class_key: str, level: int, *,
         # this pool without seeding the saved build. After the first actually
         # paid winner, use its existing source mutation operator for 4/5 of
         # later proposals and fresh independent cold discovery for 1/5.
-        # Enchants and effects remain subject to source verification.
+        # The item pool is proposal-only: the selected native --gate call
+        # decides candidate legality. Source slot/stat columns shape proposals;
+        # no Python item validator may remove a candidate before native prepare.
+        # Enchant options remain sourced from the pinned engine metadata.
         pools, _ = source.candidate_pool(
             validator, limit=None if full_search else 15,
+            native_authoritative=True,
             **({"independent_enchants": True} if full_search else {}))
         enchant_pools = (source.source_enchant_pools(validator, pools)
                          if full_search else None)
