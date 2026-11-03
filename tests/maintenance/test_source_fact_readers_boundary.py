@@ -668,3 +668,71 @@ def test_source_action_overlays_keep_selected_sqlite_and_fail_closed(tmp_path):
     with ability_source_scope(db):
         with pytest.raises(ValueError, match="INVALID_VERIFIED_SOURCE_AREA_FACT"):
             source_enrich_area_actions(ir)
+
+
+
+def test_mode_resource_facts_import_and_execution_do_not_load_gameir(tmp_path):
+    """Mode transition facts need only generic dataclass structure, not GameIR."""
+    db = tmp_path / "mode_resource.sqlite"
+    with sqlite3.connect(db) as connection:
+        connection.executescript("""
+            CREATE TABLE mode_resource_transition_source_facts (
+                class_key TEXT, mode_label TEXT, resource_id TEXT,
+                on_enter TEXT, on_exit TEXT, authority TEXT,
+                source_url TEXT, capture_id TEXT, source_build TEXT,
+                evidence_text TEXT
+            );
+            INSERT INTO mode_resource_transition_source_facts VALUES (
+                'druid', 'cat_form', 'mana', 'reset_to_zero', 'preserve',
+                'fixture', 'https://example.invalid/mode', 'mode-1',
+                '70338', 'explicit sourced transition'
+            );
+        """)
+
+    code = """
+import sys
+from dataclasses import dataclass
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever import mode_resource_facts
+
+assert mode_resource_facts.DEFAULT_DB is DEFAULT_DB
+assert callable(mode_resource_facts.apply_mode_resource_facts)
+assert 'src.game.model.ir' not in sys.modules
+
+@dataclass(frozen=True)
+class ResourceRule:
+    resource_id: str
+    on_enter: str
+    on_exit: str
+
+@dataclass(frozen=True)
+class Mode:
+    label: str
+    resource_rules: tuple
+    provenance: tuple
+
+mode = Mode(
+    label='Cat Form',
+    resource_rules=(ResourceRule('mana', 'preserve', 'preserve'),),
+    provenance=(),
+)
+updated, = mode_resource_facts.apply_mode_resource_facts(
+    'DRUID', (mode,), db_path=sys.argv[1],
+)
+assert updated.resource_rules == (ResourceRule('mana', 'reset_to_zero', 'preserve'),)
+assert updated.provenance == ({
+    'authority': 'fixture',
+    'source_url': 'https://example.invalid/mode',
+    'capture_id': 'mode-1',
+    'source_build': '70338',
+    'evidence_text': 'explicit sourced transition',
+},)
+assert 'src.game.model.ir' not in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(db)], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"mode resource import boundary failed: {result.stdout}\n{result.stderr}"
+    )
