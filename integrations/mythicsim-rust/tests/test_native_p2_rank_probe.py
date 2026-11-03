@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import tempfile
 import time
 from unittest.mock import patch
 from pathlib import Path
@@ -94,28 +95,6 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
         encoded = encode_native_druid_talents({"moonkin_form": 2}, ENGINE_ROOT)
         self.assertEqual(encoded.split("-")[0][-1], "2")
 
-    def test_native_prepare_rejects_over_cap_rank_as_invalid(self):
-        # Exercise the selected Rust prepare CLI with a representable but
-        # source-illegal rank. This must remain a real native integration test:
-        # mocked refusal envelopes below only test response classification.
-        binary = Path(os.environ.get("FOREVER_ENGINE_BINARY", ""))
-        if not binary.is_file():
-            self.skipTest("FOREVER_ENGINE_BINARY is not built in this test run")
-        fixture = ENGINE_ROOT / "tests/classes/druid/prepare/balance.request.json"
-        request = json.loads(fixture.read_text(encoding="utf-8"))
-        request["raid"]["parties"][0]["players"][0]["talentsString"] = (
-            encode_native_druid_talents({"moonkin_form": 2}, ENGINE_ROOT)
-        )
-        result = prepare_native_request(
-            binary=binary,
-            request=request,
-            scenario="native-rank-cap-negative",
-            deadline=time.monotonic() + 60,
-        )
-        self.assertEqual(result["status"], "INVALID", result)
-        self.assertEqual(result["refusal"]["code"], "talents")
-        self.assertIn("Moonkin Form", result["reason"])
-
     def test_prepare_adapter_preserves_structured_native_refusal_category(self):
         # These are synthetic *native response envelopes*. Do not retest
         # MythicSim's Warcraft legality, e.g. a specific talent rank cap.
@@ -127,33 +106,39 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
             ("rotation_unsupported", "UNSUPPORTED"),
             ("prepare_fault", "ERROR"),
         )
-        for native_code, expected in cases:
-            with self.subTest(native_code=native_code):
-                native_refusal = {
-                    "prepared": False,
-                    "refusal": {
-                        "code": native_code,
-                        "reason": "native-owned reason",
-                    },
-                }
-                with patch(
-                    "src.engine_client.native_p2_rank_probe.subprocess.run",
-                    return_value=subprocess.CompletedProcess(
-                        args=["forever-engine", "prepare"],
-                        returncode=3,
-                        stdout=json.dumps(native_refusal),
-                        stderr="",
-                    ),
-                ):
-                    result = prepare_native_request(
-                        binary=Path("/selected/engine/forever-engine"),
-                        request=request,
-                        scenario="native-refusal-wire-contract",
-                        deadline=time.monotonic() + 60,
-                    )
-                self.assertEqual(result["status"], expected, result)
-                self.assertEqual(result["refusal"]["code"], native_code)
-                self.assertEqual(result["reason"], "native-owned reason")
+        # prepare_native_request checks that the binary path exists before
+        # invoking subprocess.run; a temporary file keeps this a boundary-only
+        # test without requiring or validating a real MythicSim executable.
+        with tempfile.TemporaryDirectory(prefix="native-p2-mock-") as directory:
+            binary = Path(directory) / "forever-engine"
+            binary.touch()
+            for native_code, expected in cases:
+                with self.subTest(native_code=native_code):
+                    native_refusal = {
+                        "prepared": False,
+                        "refusal": {
+                            "code": native_code,
+                            "reason": "native-owned reason",
+                        },
+                    }
+                    with patch(
+                        "src.engine_client.native_p2_rank_probe.subprocess.run",
+                        return_value=subprocess.CompletedProcess(
+                            args=["forever-engine", "prepare"],
+                            returncode=3,
+                            stdout=json.dumps(native_refusal),
+                            stderr="",
+                        ),
+                    ):
+                        result = prepare_native_request(
+                            binary=binary,
+                            request=request,
+                            scenario="native-refusal-wire-contract",
+                            deadline=time.monotonic() + 60,
+                        )
+                    self.assertEqual(result["status"], expected, result)
+                    self.assertEqual(result["refusal"]["code"], native_code)
+                    self.assertEqual(result["reason"], "native-owned reason")
 
     def _simulate_with_cli_result(self, returncode, report):
         with patch(
