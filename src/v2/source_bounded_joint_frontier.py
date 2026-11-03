@@ -2500,6 +2500,22 @@ def _paid_refinement_lineages(attempted, shortlist):
     return lineages
 
 
+def _admit_refinement_mode_policy(ir, policy, required_combat_mode, admitted, cap):
+    """Only a legal-in-mode APL uses a scarce paid refinement policy slot.
+
+    A wrong-form APL cannot block a later source-unlocked policy when the
+    candidate budget allows one paid APL. Source checks still run before pay.
+    """
+    signature = policy_identity(policy)
+    if signature in admitted or len(admitted) >= cap:
+        return None
+    if required_combat_mode and not _policy_mode_damage_action_ids(
+            ir, policy, required_combat_mode):
+        return None
+    admitted.add(signature)
+    return signature
+
+
 def _refine_screened_top_n(*, screened, class_key, level, compiled,
                            policies_by_talent, talents, bonus_talent_points,
                            max_top_n, rounds, stat_axes, probe_delta,
@@ -2577,12 +2593,10 @@ def _refine_screened_top_n(*, screened, class_key, level, compiled,
                                 break
                             try:
                                 validate_policy(policy,contender.ir.actions)
-                                signature=policy_identity(policy)
-                                if signature in admitted:continue
-                                admitted.add(signature)
-                                if required_combat_mode and not _policy_mode_damage_action_ids(
-                                        contender.ir,policy,required_combat_mode):
-                                    continue
+                                signature=_admit_refinement_mode_policy(
+                                    contender.ir,policy,required_combat_mode,
+                                    admitted,max(1,max_policy_candidates))
+                                if signature is None:continue
                                 fresh=replace(contender,policy=policy,
                                     opening=(contender.opening if label=='retained_apl' else ()))
                                 trace={'allocation':allocation,
