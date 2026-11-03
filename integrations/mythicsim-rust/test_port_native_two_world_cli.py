@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 
 from port_native_two_world_cli import (
-    CLASS_ANCHOR,
+    CLASSES_ANCHOR,
     CLASS_MARKER,
     CLASS_METHOD,
     CLI_ANCHOR,
@@ -22,7 +22,7 @@ from port_native_two_world_cli import (
 class TypedRngTwoWorldPortTests(unittest.TestCase):
     def cases(self):
         return (
-            (CLASS_ANCHOR, CLASS_MARKER, CLASS_METHOD),
+            (CLASSES_ANCHOR, CLASS_MARKER, CLASS_METHOD),
             (PREPARED_ANCHOR, PREPARED_MARKER, PREPARED_METHOD),
             (CLI_ANCHOR, CLI_MARKER, CLI_METHOD),
         )
