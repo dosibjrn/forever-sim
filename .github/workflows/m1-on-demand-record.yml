@@ -145,6 +145,7 @@ jobs:
             # balanced RNG interface; never substitute a floating upstream.
             grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
             grep -Fq 'SimRng::new(rng_mode,' "$engine/src/core/fight.rs"
+            test -f "$engine/src/core/fight/world_bridge.rs"
           fi
           if [[ "$P7_NEEDED" == true ]]; then
             python integrations/mythicsim-rust/wf659_rng_boolean_audit.py upstream/src
