@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-import pytest
-
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.model import PolicyDefinition
 from src.game.policy_search_efficiency import PolicyEvaluationCache, prune_dominated_rules
@@ -89,12 +87,15 @@ def _druid_generic_record():
         return build_partial_generic_records(class_names=("Druid",), selected_level=23)[0]
 
 
-def test_g18_active_search_reduces_expensive_simulations_without_changing_g17_winner():
+def test_g18_active_search_reports_production_cache_efficiency():
     record = _druid_generic_record()
-    assert record.provenance["naked_evaluation"]["seconds_per_mob"] > 0
-    candidate_id = record.provenance["naked_policy"]["provenance"]["candidate_id"]
-    assert candidate_id.startswith("priority:")
+    seconds_per_mob = record.provenance["naked_evaluation"]["seconds_per_mob"]
+    assert seconds_per_mob is not None and seconds_per_mob > 0
+    policy_provenance = record.provenance["naked_policy"]["provenance"]
+    candidate_id = policy_provenance["candidate_id"]
+    assert isinstance(candidate_id, str) and candidate_id.startswith("priority:")
     assert "|thresholds:" in candidate_id
+    assert policy_provenance["authority"] == "generic_policy_threshold_search"
     efficiency = record.provenance["naked_policy_search_efficiency"]
     assert efficiency == record.provenance["naked_policy"]["provenance"]["search_efficiency"]
     assert efficiency["requests"] > efficiency["expensive_evaluations"] > 0
