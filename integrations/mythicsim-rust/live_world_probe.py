@@ -335,16 +335,25 @@ def run_range_perturbation_pair(binary: Path, request: Path) -> dict:
             or source["encounter"]["targets"][0]["level"] != 63):
         raise AssertionError("P7_WORLD_RANGE_PERTURBATION_REQUIRES_DRUID_BALANCE_L63")
 
-    # Both runs receive the same source request, Balanced RNG, initial range
-    # and switch clock. The control's post-switch range stays at 15yd; only the
-    # perturbed run moves the actual gsim target to 80yd before the next tick.
+    initial_distance = float(player["distanceFromTarget"])
+    if not math.isfinite(initial_distance) or initial_distance <= 0:
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_INITIAL_RANGE_INVALID")
+    far_distance = max(80.0, initial_distance + 50.0)
+
+    # Both runs receive the same saved source request, Balanced RNG, initial
+    # range and switch clock. The control stays at its source-request range;
+    # only the perturbed gsim target moves well outside that range.
     common = {
-        "distance": 15.0,
+        "distance": initial_distance,
         "distance_switch_at_s": 5.0,
         "rng_mode": "balanced",
     }
-    control = run(binary, request, **common, distance_after_switch_yards=15.0)
-    perturbed = run(binary, request, **common, distance_after_switch_yards=80.0)
+    control = run(
+        binary, request, **common,
+        distance_after_switch_yards=initial_distance)
+    perturbed = run(
+        binary, request, **common,
+        distance_after_switch_yards=far_distance)
     if control["source_request_proto_sha256"] != perturbed["source_request_proto_sha256"]:
         raise AssertionError("P7_WORLD_RANGE_PERTURBATION_SOURCE_REQUEST_CHANGED")
     if control["range_switch_clock_ns"] != perturbed["range_switch_clock_ns"]:
@@ -374,23 +383,24 @@ def run_range_perturbation_pair(binary: Path, request: Path) -> dict:
         raise AssertionError("P7_WORLD_RANGE_PERTURBATION_MISSING_NEXT_NATIVE_DECISION")
     switched = trace[switch_index]
     next_decision = trace[switch_index + 1]
-    if (abs(switched["world_distance_yards"] - 80.0) > 1e-6
-            or abs(switched["native_applied_yards"] - 80.0) > 1e-6
-            or abs(next_decision["world_distance_yards"] - 80.0) > 1e-6
-            or abs(next_decision["native_applied_yards"] - 80.0) > 1e-6):
+    if (abs(switched["world_distance_yards"] - far_distance) > 1e-6
+            or abs(switched["native_applied_yards"] - far_distance) > 1e-6
+            or abs(next_decision["world_distance_yards"] - far_distance) > 1e-6
+            or abs(next_decision["native_applied_yards"] - far_distance) > 1e-6):
         raise AssertionError("P7_WORLD_RANGE_PERTURBATION_NOT_SEEN_BY_NEXT_NATIVE_TICK")
     if next_decision["previous_world_ack_id"] != switched["world_after_sha256"]:
         raise AssertionError("P7_WORLD_RANGE_PERTURBATION_ACK_NOT_CONSUMED_BY_NEXT_TICK")
 
     return {
-        "verdict": "REAL_RUST_GSIM2D_RANGE_PERTURBATION_CAUSAL_DIAGNOSTIC_NOT_P7",
+        "verdict": "REAL_RUST_GSIM2D_RANGE_PERTURBATION_CAUSALITY_VERIFIED",
         "checkpoint_certified": False,
         "m1_affected_gates": [],
         "source_request_raw_sha256": perturbed["source_request_raw_sha256"],
         "source_request_proto_sha256": perturbed["source_request_proto_sha256"],
         "range_switch_clock_ns": perturbed["range_switch_clock_ns"],
-        "control_range_after_yards": 15.0,
-        "perturbed_range_after_yards": 80.0,
+        "initial_range_yards": initial_distance,
+        "control_range_after_yards": initial_distance,
+        "perturbed_range_after_yards": far_distance,
         "pre_switch_direct_action_events": sum(
             perturbed["source_direct_action_events_before"].values()),
         "control_post_switch_direct_action_events": control_after,
