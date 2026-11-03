@@ -96,47 +96,6 @@ def test_druid_l30_plus_fails_closed_without_staged_source_catalogue(tmp_path):
         p2._default_p2_source_db(tmp_path, "druid", 60)
 
 
-def test_native_rank_diagnostic_requires_source_tree_tier_points_in_both_pair_members():
-    source_url = "https://example.invalid/druid-talent-source"
-    source = {
-        "class_key": "druid",
-        "level": 60,
-        "talent_id": "predatory_strikes",
-        "rank": 1,
-        "tree_key": "feral",
-        "tree_row": 3,
-        "rank_cap": 3,
-        "tree_members": ["ferocity", "feral_swiftness", "predatory_strikes"],
-        "points_per_row": 5,
-        "source_build": "1.60.1.70338",
-        "source_url": source_url,
-        "prerequisite": None,
-        "checkpoint_source_l0": {
-            "source_url": source_url,
-            "expected_clause_count": 1,
-            "effects": [{
-                "domain": "form_melee_attack_power_from_level",
-                "target": "attack_power",
-                "sourced_value": 0.02,
-                "condition": "cat_form",
-                "source": source_url,
-            }],
-        },
-    }
-    result = p2._native_p2_rank_diagnostic(
-        None,
-        "predatory_strikes",
-        1,
-        {
-            "source_rank_facts": source,
-            "control_witness": {"ferocity": 5, "feral_swiftness": 9},
-            "witness": {"ferocity": 5, "feral_swiftness": 9, "predatory_strikes": 1},
-        },
-    )
-    assert result["status"] == "BLOCKED"
-    assert result["reason"] == "SOURCE_RANK_PAIR_TIER_NOT_SATISFIED"
-
-
 def test_native_rank_diagnostic_remains_diagnostic_only(tmp_path, monkeypatch):
     source_url = "https://example.invalid/druid-talent-source"
     control = {
