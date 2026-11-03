@@ -982,10 +982,13 @@ def execute(profile_id: str, inventory: list, *,
         probe_paid = sum(item.get("status") == "VALID" for item in probe_receipts)
         row["native_donor_probe_attempts"] = len(probe_receipts)
         row["native_donor_probe_paid"] = probe_paid
+        baseline_talent = player(reference).get(
+            "talentsString", MISSING_TALENT_STRING
+        )
         row["native_donor_probe_positive_builds"] = sum(
             bool(witnesses_by_talent.get(talent))
             for talent in witnesses_by_talent
-            if talent != player(reference).get("talentsString", MISSING_TALENT_STRING)
+            if talent != baseline_talent
         )
         row["native_donor_probe_receipts"] = probe_receipts
         adapter_kwargs["native_objective_witnesses_by_talentsString"] = witnesses_by_talent
