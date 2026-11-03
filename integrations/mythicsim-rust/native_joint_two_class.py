@@ -117,7 +117,7 @@ def _ensure_native_damage_action(actions: list[dict],
         is_cast = isinstance(cast, dict)
         identity = cast.get("spellId") if is_cast else None
         identity_key = json.dumps(identity, sort_keys=True, separators=(",", ":"))
-        is_witness = (is_cast and not action.get("condition")
+        is_witness = (is_cast and "condition" not in action
                       and identity_key in allowed)
         if is_witness:
             if identity_key not in seen_witnesses:
