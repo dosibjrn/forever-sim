@@ -258,18 +258,18 @@ class NativeGearAdapterTests(unittest.TestCase):
 
     def test_distinct_source_bounded_swaps_can_be_retried_after_native_failure(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)
-        first, first_audit = adapter.mutate_one(random.Random(11))
-        rejected = {(first_audit["source_slot_index"], first_audit["to_id"])}
-        second, second_audit = adapter.mutate_one(
-            random.Random(11), excluded_swaps=rejected)
-        self.assertNotEqual(
-            (first_audit["source_slot_index"], first_audit["to_id"]),
-            (second_audit["source_slot_index"], second_audit["to_id"]))
-        adapter.validate(first)
-        adapter.validate(second)
-        rejected.add((second_audit["source_slot_index"], second_audit["to_id"]))
+        seen = set()
+        candidates = []
+        for _ in range(3):
+            candidate, audit = adapter.mutate_one(random.Random(11), excluded_swaps=seen)
+            swap = (audit["source_slot_index"], audit["to_id"])
+            self.assertNotIn(swap, seen)
+            seen.add(swap)
+            candidates.append(candidate)
+            adapter.validate(candidate)
+        self.assertEqual(3, len(seen))  # head, chest and weapon proposals all remain searchable
         with self.assertRaisesRegex(GearRejected, "NO_SOURCE_OBSERVED_SWAP"):
-            adapter.mutate_one(random.Random(11), excluded_swaps=rejected)
+            adapter.mutate_one(random.Random(11), excluded_swaps=seen)
 
     def test_native_rng_panic_is_classified_not_paid(self):
         from native_gear_probe import classify_native_failure
