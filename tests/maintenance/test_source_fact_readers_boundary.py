@@ -433,3 +433,78 @@ def test_armor_source_reader_preserves_explicit_sqlite_and_fail_closed(tmp_path)
         )
     with pytest.raises(ValueError, match="invalid canonical armor source fact"):
         load_armor_rules("druid", db_path=path)
+
+
+def test_source_enricher_imports_do_not_load_legacy_talent_compiler():
+    """Three live GameIR enrichers need a SQLite path, not the talent compiler."""
+    code = """
+import sys
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever import (
+    mode_resource_facts, source_incoming_world, source_companions,
+)
+
+for module in (mode_resource_facts, source_incoming_world, source_companions):
+    assert module.DEFAULT_DB is DEFAULT_DB, module.__name__
+
+# GameIR remains live in these overlays; only the unnecessary compiler edge
+# is removed. Never claim the entire native migration is complete.
+assert 'src.game.model.ir' in sys.modules
+assert 'src.game.data.forever.sqlite_talents' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+
+from src.game.data.forever.sqlite_talents import DEFAULT_DB as LEGACY_DB
+assert LEGACY_DB is DEFAULT_DB
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_source_enricher_sqlite_and_fail_closed_behavior(tmp_path):
+    """A path-only migration preserves real SQLite reads and source rejects."""
+    from types import SimpleNamespace
+
+    import pytest
+    from src.game.data.forever.mode_resource_facts import apply_mode_resource_facts
+    from src.game.data.forever.source_companions import source_enrich_companions
+    from src.game.data.forever.source_incoming_world import source_enrich_incoming_world
+
+    db = tmp_path / "source.sqlite"
+    with sqlite3.connect(db) as connection:
+        connection.executescript("""
+            CREATE TABLE mode_resource_transition_source_facts (
+                class_key TEXT, mode_label TEXT, resource_id TEXT,
+                on_enter TEXT, on_exit TEXT, authority TEXT,
+                source_url TEXT, capture_id TEXT, source_build TEXT,
+                evidence_text TEXT
+            );
+            CREATE TABLE companion_family_source_facts (
+                class_key TEXT, min_level INTEGER, max_level INTEGER
+            );
+        """)
+
+    # A source snapshot with no applicable rows is a no-op, not invented data.
+    mode = SimpleNamespace(label="Cat Form", resource_rules=(), provenance=())
+    assert apply_mode_resource_facts("druid", (mode,), db_path=db) == (mode,)
+    ir = SimpleNamespace(actor=SimpleNamespace(metadata={
+        "class_key": "druid", "level": 20,
+    }))
+    assert source_enrich_companions(ir, db_path=db) is ir
+
+    # A fact referencing an unavailable resource must remain fail-closed.
+    with sqlite3.connect(db) as connection:
+        connection.execute(
+            "INSERT INTO mode_resource_transition_source_facts "
+            "(class_key,mode_label,resource_id,on_enter,on_exit) "
+            "VALUES (?,?,?,?,?)",
+            ("druid", "cat_form", "unavailable", "preserve", "preserve"),
+        )
+    with pytest.raises(ValueError, match="unavailable resource"):
+        apply_mode_resource_facts("druid", (mode,), db_path=db)
+
+    # No health resource => no sourced incoming-attack synthesis or DB read.
+    world = SimpleNamespace(incoming_attacks=(), resources=())
+    assert source_enrich_incoming_world(world) is world
