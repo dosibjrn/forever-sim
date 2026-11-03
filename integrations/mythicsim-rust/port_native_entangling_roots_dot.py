@@ -280,8 +280,10 @@ def port_text(path: str, contents: str) -> str:
         if path == "src/classes/druid/agent.rs":
             if RUST_RUNTIME_TEST not in contents:
                 if "mod forever_roots_native_control_tests" in contents:
-                    raise ValueError("NATIVE_ROOTS_INTERNAL_TEST_SOURCE_DRIFT")
-                contents = contents.rstrip() + "\n\n" + RUST_RUNTIME_TEST
+                    if "a landed native Roots cast did not emit a world control event" not in contents:
+                        raise ValueError("NATIVE_ROOTS_INTERNAL_TEST_SOURCE_DRIFT")
+                else:
+                    contents = contents.rstrip() + "\n\n" + RUST_RUNTIME_TEST
         return contents
     if path == "tests/classes/druid/prepare.rs":
         test_name = "forever_roots_preparation_uses_native_spell_data_and_improved_rank"
