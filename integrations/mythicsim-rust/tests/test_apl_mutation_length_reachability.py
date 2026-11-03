@@ -255,8 +255,15 @@ def test_native_damage_witness_follows_conditional_opaque_prefix_for_cold_and_el
         for proposal in (cold, elite):
             prefix = [
                 entry for entry in proposal
-                if not isinstance(entry.get("action", {}).get("castSpell"), dict)
-                or "condition" in entry.get("action", {})
+                if (
+                    not isinstance(entry.get("action", {}).get("castSpell"), dict)
+                    or (
+                        "condition" in entry.get("action", {})
+                        and entry.get("action", {}).get("castSpell", {}).get(
+                            "spellId", {}
+                        ).get("spellId") != 11713
+                    )
+                )
             ]
             anchored = _ensure_native_damage_action(
                 proposal, witnesses, random.Random(seed),
