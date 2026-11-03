@@ -9,7 +9,7 @@
 
 **Owner-approved v2.18 (2026-11-03): P7.5 final tolerance.** P7.5 requires `mean_DPS >= 0.93 * max(saved_reference_DPS, strongest_accepted_compatible_P7.1–P7.4_mean_DPS)` after the same genuine 300-second independent cold search and frozen 1,000-stochastic-fight native↔2D holdout. P7.1–P7.4 remain at `0.99 * saved_reference_DPS`. Do not waive source legality, accepted-prior compatibility, native/world causality or independent search. This supersedes v2.14's/v2.15's earlier 99% P7.5 language. See [P7](docs/gates/P7.md).
 
-**Owner-approved v2.17 (2026-11-02): P2 solo-objective relevance.** Keep the full structurally reachable rank denominator and binary per-rank PASS/FAIL, but require executable behavioral proof only for talent effects that can affect the pinned solo-leveling objective (elapsed combat, pulls, movement, survival, resources or paid recovery). For a truly non-applicable effect, require explicit, source-backed and scenario-specific `DOES_NOT_AFFECT_SIM` justification and a check of the exclusion rather than implementing unrelated mechanics for a test. Mere lack of a DPS increase, an unsupported effect, or an optimizer not selecting a talent never establishes non-applicability. Legal point allocation and search reachability remain required for every rank. Do not add a full 100-mob or unrelated gameplay scenario per talent. See [P1–P2](docs/gates/P1-P2.md).
+**Historical v2.17 note (superseded by v2.20):** the former P2 solo-objective relevance rule is retired; no P2 rank-level acceptance criteria remain active.
 
 **Owner-approved v2.16 (2026-11-02): P5 paid breadth threshold.** Replace the old `N300 >= 10 × N30` condition with `N300 >= 2 × N30` for **unique genuinely paid source-legal complete configurations** in independent cold 30 s and 300 s searches of the same objective/source/space. This removes an over-strict throughput multiplier, not the 30/300 actual wall-time budgets, genuine 100-mob finalist/replay, talent-unlocked-action execution, same source/runtime or any P4/P6/P7 condition. See [P4–P6](docs/gates/P4-P6.md).
 
@@ -39,7 +39,7 @@
 - **No additional implicit gates.** Tests, metadata, compilation, static manifests, native-only diagnostics, partial evidence and green CI are not a substitute for the actual stated predicate. Report PASS/FAIL/BLOCKED truthfully. Preserve previously accepted owner-specific historical decisions and disclose their limits.
 - Exact requirements and runtime authority:
   - [Common acceptance, engines, sources and transition](docs/gates/COMMON.md)
-  - **Retired:** [P1–P2 historical contract](docs/gates/P1-P2.md) is retained for context only and is not an active acceptance gate.
+  - **Retired:** P1/P2 have no active acceptance contract, CLI entry point or M1 record; earlier criteria are historical only.
   - [P3 gear smoke](docs/gates/P3.md)
   - [P4–P6 independent search and 100-mob comparison](docs/gates/P4-P6.md)
   - [P7.1–P7.5 MythicSim reference and live integration](docs/gates/P7.md)
