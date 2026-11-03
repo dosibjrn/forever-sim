@@ -461,3 +461,65 @@ assert 'src.game.runtime.simulator' not in sys.modules
         f"source checkpoint/GameIR boundary failed: "
         f"{result.stdout}\\n{result.stderr}"
     )
+
+
+def test_source_only_ingest_and_maintenance_readers_do_not_import_game_ir():
+    """SQLite source-only consumers share one path without loading talent/GameIR.
+
+    Existing legacy sqlite_talents.DEFAULT_DB remains the same public object
+    when explicitly requested; this is not a source-legality migration.
+    """
+    import subprocess
+    import sys
+
+    source = """
+import json
+import sys
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever import (
+    source_ability_repair,
+    source_stat_aura_candidates,
+    source_maintenance_ranks,
+)
+
+for module in (source_ability_repair, source_stat_aura_candidates, source_maintenance_ranks):
+    assert module.DEFAULT_DB is DEFAULT_DB
+assert callable(source_ability_repair.repair_queue)
+assert callable(source_stat_aura_candidates.ingest)
+assert callable(source_stat_aura_candidates.read_current_candidates)
+assert callable(source_maintenance_ranks.latest_reactive_maintenance_rank)
+assert callable(source_maintenance_ranks.latest_stat_maintenance_rank)
+
+record = dict(
+    class_key='druid', spell_id=41, batch_id='batch-1',
+    name='Sourced Aura', level_hint=20, source_url='https://example.invalid/spell=41',
+)
+record['raw_listview_json'] = json.dumps({
+    'id': 41, 'name': 'Sourced Aura', 'level': 20,
+    'envChange': {'after': {
+        'name': 'Sourced Aura',
+        'text': "Increases the target's Stamina by 5 for 1 hour.",
+        'cost': '10 Mana', 'cast': 'Instant', 'cooldown': '',
+    }},
+})
+candidate = source_stat_aura_candidates._extract(record)
+assert candidate[:9] == (
+    'druid', 41, 'batch-1', 'https://example.invalid/spell=41',
+    20, 'stamina', 5.0, 3600.0, 10.0,
+)
+assert candidate[-1] == 'BLOCKED_ACTOR_PRIMARY_BASELINE_AND_ACQUISITION_UNVERIFIED'
+assert 'src.game.data.forever.sqlite_talents' not in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+
+from src.game.data.forever.sqlite_talents import DEFAULT_DB as HISTORICAL_DB
+assert HISTORICAL_DB is DEFAULT_DB
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"Source-only import and legacy compatibility failed: "
+        f"{result.stdout}\n{result.stderr}"
+    )
