@@ -202,7 +202,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
             [item["source_path"] for item in scope["gear_donor_fixtures_scanned"]],
         )
         self.assertEqual(
-            ["fixtures/forever-gaps/druid-gear-and-talent.request.json"],
+            ["fixtures/forever-gaps/balance-druid-gear-and-talent.request.json"],
             [item["source_path"] for item in scope["talent_donor_fixtures"]],
         )
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))
@@ -237,7 +237,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
             sorted(["7777777-2", "6666666-9"]), scope["talent_builds"]
         )
         self.assertEqual(
-            "SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
+            "SAME_PROFILE_SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
             scope["talent_validation"],
         )
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))
