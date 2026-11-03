@@ -10,6 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 RETIRED_TOOLS = (
     "tools/wf332_druid20_acquisition_evidence.py",
+    "tests/test_wf_gen03a4c2b2_completeness.py",
+    "tests/test_wf_gen03a4c2b2_proof_contract.py",
+    "tests/test_wf_gen03a4c2b2_independent_oracle.py",
     "tools/wf288_real_contiguous_route_benchmark.py",
     "tools/wf288_replay_route.py",
     "tools/wf257_run_corridor.py",
@@ -59,6 +62,9 @@ RETIRED_TOOLS = (
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
+    "src/v2/source_sqlite_semantic_proof.py",
+    "src/v2/source_sqlite_semantic_audit.py",
+    "src/v2/source_sqlite_direct_damage_oracle.py",
     "src/v2/source_budgeted_level_route.py",
     "src/v2/source_stateful_level_route.py",
     "src/v2/source_legal_level_corridor.py",
