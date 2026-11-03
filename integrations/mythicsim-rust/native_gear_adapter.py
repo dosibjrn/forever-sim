@@ -7,6 +7,8 @@ legality: the selected MythicSim Rust evaluator accepts/refuses exact builds.
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import random
 
 
@@ -22,6 +24,19 @@ def _player(request):
 
 def _class_name(class_key: str) -> str:
     return "Class" + class_key.capitalize()
+
+
+def _variant_sha256(entry: dict) -> str:
+    """Stable identity for an exact source-observed item + enchant proposal."""
+    payload = json.dumps(entry, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _swap_excluded(excluded: set, index: int, entry: dict) -> bool:
+    # Existing ID-wide exclusions remain supported; new native refusals can
+    # exclude only the exact item/enchant/effect variant that was attempted.
+    return ((index, entry["id"]) in excluded
+            or (index, entry["id"], _variant_sha256(entry)) in excluded)
 
 
 class NativeGearAdapter:
@@ -111,7 +126,7 @@ class NativeGearAdapter:
 
     def mutate_from(
         self, candidate: dict, rng: random.Random,
-        *, excluded_swaps: set[tuple[int, int]] | None = None,
+        *, excluded_swaps: set[tuple[int, int] | tuple[int, int, str]] | None = None,
     ) -> tuple[dict, dict]:
         """Add one more source-observed item proposal to an existing candidate.
 
@@ -130,7 +145,7 @@ class NativeGearAdapter:
             choices = [
                 entry for entry in self.variants[i]
                 if entry != current[i] and entry != self.base[i]
-                and (i, entry["id"]) not in excluded
+                and not _swap_excluded(excluded, i, entry)
             ]
             rng.shuffle(choices)
             for entry in choices:
@@ -143,6 +158,7 @@ class NativeGearAdapter:
                     continue
                 return out, {
                     "source_slot_index": i, "from_id": old_id, "to_id": iid,
+                    "to_variant_sha256": _variant_sha256(entry),
                     "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_POSITION",
                 }
         raise GearRejected(
@@ -150,7 +166,7 @@ class NativeGearAdapter:
         )
 
     def mutate_one(
-        self, rng: random.Random, *, excluded_swaps: set[tuple[int, int]] | None = None
+        self, rng: random.Random, *, excluded_swaps: set[tuple[int, int] | tuple[int, int, str]] | None = None
     ) -> tuple[dict, dict]:
         """Mutate one source-observed slot; exclude prior native-refused swaps."""
         excluded = excluded_swaps or set()
@@ -161,7 +177,7 @@ class NativeGearAdapter:
         for i in indices:
             alternatives = [
                 entry for entry in self.variants[i]
-                if entry != self.base[i] and (i, entry["id"]) not in excluded
+                if entry != self.base[i] and not _swap_excluded(excluded, i, entry)
             ]
             rng.shuffle(alternatives)
             for entry in alternatives:
@@ -173,5 +189,6 @@ class NativeGearAdapter:
                 except GearRejected:
                     continue
                 return out, {"source_slot_index": i, "from_id": self.base[i]["id"],
-                             "to_id": iid, "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_POSITION"}
+                             "to_id": iid, "to_variant_sha256": _variant_sha256(entry),
+                             "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_POSITION"}
         raise GearRejected("NO_SOURCE_OBSERVED_SWAP", "All source-observed alternatives were already excluded")
