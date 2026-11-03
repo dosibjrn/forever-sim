@@ -7,7 +7,6 @@ fabricated runtime modifiers. Default canonical SQLite is not changed.
 from __future__ import annotations
 from dataclasses import replace
 import hashlib, json, sqlite3
-from src.game.model.ir import TalentDefinition,TalentRankDefinition,TalentModifier
 
 
 def apply_staged_talent_catalogue(conn:sqlite3.Connection, class_key:str, level:int, talents):
@@ -23,6 +22,10 @@ def apply_staged_talent_catalogue(conn:sqlite3.Connection, class_key:str, level:
     if (data.get('class_key')!=class_key.lower() or data.get('source_build')!=row['source_build']
             or int(data.get('min_level',-1))!=int(row['min_level'])):
         raise ValueError('STAGED_TALENT_SOURCE_SCOPE_MISMATCH')
+    # Source-only imports and missing/invalid snapshots must not load the
+    # transitional GameIR compiler. Keep the live compiler unchanged until
+    # its callers migrate to the selected MythicSim Rust API.
+    from src.game.model.ir import TalentDefinition,TalentRankDefinition,TalentModifier
     entries=data['catalogue'];observations={r['talent_id']:r for r in data['observations']}
     unreachable={r['indexed_talent_id']:r for r in data.get('observed_unreachable_talent_positions',[])}
     if len(entries)!=len({r['talent_id'] for r in entries}):
