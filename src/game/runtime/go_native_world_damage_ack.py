@@ -1,9 +1,9 @@
-"""Actual gsim target-state application of source-native Go spell damage.
+"""Actual gsim target-state application of source-native damage and root control.
 
-A real native per-spell DealDamage event, not a cumulative DPS counter, is
-applied to an actual gsim CombatRuntime target. The returned ACK binds the
-native event IDs and the measured before/after world hashes to one tick.
-This is a narrow one-enemy source event seam, NOT a full P7 certificate.
+Damage events mutate target HP; a landed native Entangling Roots control event
+immobilizes a moving 2D target until its source duration expires. Root damage-
+break semantics remain explicitly unimplemented, so this is not a P1/P2 PASS
+or a full P7 certificate.
 """
 from __future__ import annotations
 
