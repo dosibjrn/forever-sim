@@ -718,3 +718,8 @@ def test_optimizer_package_has_no_gameplay_or_ruleset_dependencies():
         if bad:
             offenders[str(path)] = bad
     assert offenders == {}
+
+
+def test_empty_classic_shared_ruleset_package_is_not_retained():
+    """Do not keep an empty shared namespace under the legacy Classic adapter."""
+    assert not (ROOT / "src/rulesets/classic/shared").exists()
