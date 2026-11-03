@@ -386,6 +386,21 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
     return receipts, total_paid_s
 
 
+def _native_world_pulls_command(binary: Path, prepared: Path,
+                                 target_count: int, recovery_ns: int) -> list[str]:
+    """Build a CLI call compatible with both the old and paid-recovery Rust pins."""
+    command = [
+        str(binary.resolve()), "native-world-pulls", "--infile",
+        str(prepared.resolve()), "--targets", str(target_count),
+    ]
+    # The selected production pin does not have the new CLI flag until the
+    # paid-recovery source port is applied. Preserve its exact legacy argv
+    # when recovery is zero; only paid-recovery diagnostics pass the flag.
+    if recovery_ns > 0:
+        command.extend(["--recovery-ns", str(recovery_ns)])
+    return command
+
+
 def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         target_count: int = 2, corrupt_ack: bool = False,
         recovery_ns: int = 0,
@@ -449,9 +464,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     native_report = None
     env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1", WOWSIM_RNG_MODE="stochastic")
     proc = subprocess.Popen(
-        [str(binary.resolve()), "native-world-pulls", "--infile",
-         str(prepared.resolve()), "--targets", str(target_count),
-         "--recovery-ns", str(recovery_ns)],
+        _native_world_pulls_command(binary, prepared, target_count, recovery_ns),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
