@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Port source-native Forever Entangling Roots periodic damage, not root/2D CC acceptance.
+"""Port source-native Forever Entangling Roots damage and landed root control.
 
-This is source-patching infrastructure only: ALL Warcraft mechanics execute in the
-maintained MythicSim Rust fork. The true root / damage-break / world CC remains
-unimplemented and MUST NOT be marked P1/P2 PASS by this incremental change.
+The selected Rust source owns rank, hit, cast, dot lifetime and periodic damage.
+A landed native Roots dot publishes its exact target-control expiry to gsim's
+existing 2D root behavior. Damage-break and rank/target-cap semantics remain
+incomplete; this is not a P1/P2 acceptance pass.
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ def replace_once(source: str, old: str, new: str, label: str) -> str:
 
 
 ROOTS_METHOD = """
-    /// Source-native Forever Roots periodic damage, not yet root/break/2D CC behavior.
+    /// Source-native Forever Roots periodic damage; landed root lifetime is bridged to gsim.
     /// Keep GoReference preparation unchanged for the pinned Go goldens.
     fn register_entangling_roots_spell(&mut self, sim: &mut Sim) {
         let rank = Ladder::ranked(&ENTANGLING_ROOTS_RANKS).highest();
@@ -113,6 +114,44 @@ AGENT_PATCHES = [
      "            DruidSpell::MoonfireDot | DruidSpell::InsectSwarm | DruidSpell::EntanglingRoots => {\n"
      "                fight.snapshot_dot_tick(dot)\n"
      "            }", "DOT_TICK"),
+    ("    fn on_dot_gain(fight: &mut Fight<Self>, dot: DotId, behavior: DruidSpell) {\n"
+     "        if behavior == DruidSpell::InsectSwarm {\n"
+     "            let side = fight.dots[dot].side;\n"
+     "            insect_swarm::on_dot_gain(fight, fight.agent.insect_swarm_debuff, side);\n"
+     "        }\n"
+     "    }",
+     "    fn on_dot_gain(fight: &mut Fight<Self>, dot: DotId, behavior: DruidSpell) {\n"
+     "        if behavior == DruidSpell::InsectSwarm {\n"
+     "            let side = fight.dots[dot].side;\n"
+     "            insect_swarm::on_dot_gain(fight, fight.agent.insect_swarm_debuff, side);\n"
+     "        }\n"
+     "        if behavior == DruidSpell::EntanglingRoots {\n"
+     "            let state = &fight.dots[dot];\n"
+     "            assert!(matches!(state.side, crate::core::fight::Side::Target),\n"
+     "                \"RUST_WORLD_ROOT_CONTROL_TARGET_NOT_PRIMARY\");\n"
+     "            let duration_ns = state.tick_period.checked_mul(i64::from(state.remaining_ticks))\n"
+     "                .expect(\"RUST_WORLD_ROOT_DURATION_OVERFLOW\");\n"
+     "            let expires_at_ns = fight.now.checked_add(duration_ns)\n"
+     "                .expect(\"RUST_WORLD_ROOT_EXPIRY_OVERFLOW\");\n"
+     "            crate::core::fight::world_bridge::record_root_control(fight.now, Some(expires_at_ns));\n"
+     "        }\n"
+     "    }", "ROOT_GAIN"),
+    ("        if behavior == DruidSpell::InsectSwarm {\n"
+     "            let side = fight.dots[dot].side;\n"
+     "            insect_swarm::on_dot_expire(fight, fight.agent.insect_swarm_debuff, side);\n"
+     "        }\n"
+     "    }",
+     "        if behavior == DruidSpell::InsectSwarm {\n"
+     "            let side = fight.dots[dot].side;\n"
+     "            insect_swarm::on_dot_expire(fight, fight.agent.insect_swarm_debuff, side);\n"
+     "        }\n"
+     "        if behavior == DruidSpell::EntanglingRoots {\n"
+     "            let side = fight.dots[dot].side;\n"
+     "            assert!(matches!(side, crate::core::fight::Side::Target),\n"
+     "                \"RUST_WORLD_ROOT_CONTROL_TARGET_NOT_PRIMARY\");\n"
+     "            crate::core::fight::world_bridge::record_root_control(fight.now, None);\n"
+     "        }\n"
+     "    }", "ROOT_EXPIRE"),
 ]
 
 CONTRACT_PATCHES = [
@@ -134,6 +173,166 @@ COVERAGE_PATCHES = [
      '        "insect_swarm" if spell.dot.is_some() => Some("insect_swarm"),\n'
      '        "entangling_roots" if spell.dot.is_some() => Some("entangling_roots"),', "COVERAGE"),
 ]
+
+
+ROOT_CONTROL_BLOCK = """
+// The native Druid agent reports only a landed Roots dot's actual expiry.
+// Keep this separate from damage events: it is a typed world-control receipt.
+#[derive(Clone, Copy, Default)]
+struct RootControlState {
+    expires_at_ns: Option<i64>,
+    changed_at_ns: Option<i64>,
+}
+thread_local! {
+    static ROOT_CONTROL: RefCell<RootControlState> = const { RefCell::new(RootControlState {
+        expires_at_ns: None,
+        changed_at_ns: None,
+    }) };
+}
+fn root_control_snapshot() -> RootControlState {
+    ROOT_CONTROL.with(|state| *state.borrow())
+}
+fn reset_root_control() {
+    ROOT_CONTROL.with(|state| *state.borrow_mut() = RootControlState::default());
+}
+fn clear_root_control_change() {
+    ROOT_CONTROL.with(|state| state.borrow_mut().changed_at_ns = None);
+}
+pub(crate) fn record_root_control(at_ns: i64, expires_at_ns: Option<i64>) {
+    // No bridge means no world-side effect. Ordinary native-only fights remain unchanged.
+    if !BRIDGE.with(|state| state.borrow().is_some()) {
+        return;
+    }
+    let changed_at_ns = at_ns.max(0);
+    let expires_at_ns = expires_at_ns.filter(|expiry| *expiry > changed_at_ns);
+    ROOT_CONTROL.with(|state| {
+        let mut state = state.borrow_mut();
+        if state.expires_at_ns != expires_at_ns {
+            state.expires_at_ns = expires_at_ns;
+            state.changed_at_ns = Some(changed_at_ns);
+        }
+    });
+}
+"""
+
+WORLD_BRIDGE_PATCHES = [
+    (
+        "thread_local! {\\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\\n}\\n",
+        "thread_local! {\\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\\n}\\n\\n" + ROOT_CONTROL_BLOCK,
+        "ROOT_STATE",
+    ),
+    (
+        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\\n        pending: Vec::new(),\\n    }));\\n}",
+        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\\n        pending: Vec::new(),\\n    }));\\n    reset_root_control();\\n}",
+        "ROOT_START_RESET",
+    ),
+    (
+        "        bridge.event_ordinal = 0;\\n    });\\n}",
+        "        bridge.event_ordinal = 0;\\n        reset_root_control();\\n    });\\n}",
+        "ROOT_ITERATION_RESET",
+    ),
+    (
+        "        bridge.next_tick_ns = at_ns;\\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
+        "        bridge.next_tick_ns = at_ns;\\n        reset_root_control();\\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
+        "ROOT_TARGET_RESET",
+    ),
+    (
+        "        (boundary >= 0 && boundary > bridge.last_tick_ns\\n            && boundary <= next_native_ns && boundary <= end_ns)\\n            .then_some(boundary)",
+        """        // A source-native Roots gain/expiry is a real world boundary. Round
+        // upward to gsim's millisecond clock and never jump over an earlier
+        // independent world deadline.
+        let root = root_control_snapshot();
+        let root_boundary = root.changed_at_ns.map(|changed_at_ns| {
+            let rounded = changed_at_ns.saturating_add(999_999) / 1_000_000 * 1_000_000;
+            let earliest = if bridge.last_tick_ns < 0 {
+                0
+            } else {
+                bridge.last_tick_ns.saturating_add(1_000_000)
+            };
+            rounded.max(earliest)
+        }).filter(|candidate| *candidate >= 0
+            && *candidate <= next_native_ns && *candidate <= end_ns);
+        let boundary = root_boundary.map(|candidate| candidate.min(boundary)).unwrap_or(boundary);
+        (boundary >= 0 && boundary > bridge.last_tick_ns
+            && boundary <= next_native_ns && boundary <= end_ns)
+            .then_some(boundary)""",
+        "ROOT_DUE",
+    ),
+    (
+        "    let events = std::mem::take(&mut bridge.pending);",
+        "    let root_control = root_control_snapshot();\\n    let events = std::mem::take(&mut bridge.pending);",
+        "ROOT_EXCHANGE_SNAPSHOT",
+    ),
+    (
+        "            \\"native_encounter_damage\\": cumulative_damage,\\n            \\"facing_applied\\": true, \\"in_front_of_target\\": front",
+        "            \\"native_encounter_damage\\": cumulative_damage,\\n            \\"native_rooted_until_ns\\": root_control.expires_at_ns,\\n            \\"native_root_control_changed_at_ns\\": root_control.changed_at_ns,\\n            \\"facing_applied\\": true, \\"in_front_of_target\\": front",
+        "ROOT_RECEIPT",
+    ),
+    (
+        "    let ack = receive();\\n    assert!(ack[\\"type\\"] == \\"gsim_native_damage_applied_ack\\"",
+        """    let ack = receive();
+    assert!(ack.get("native_rooted_until_ns").is_some()
+        && ack["native_rooted_until_ns"].as_i64() == root_control.expires_at_ns,
+        "RUST_WORLD_ROOT_CONTROL_ACK_MISMATCH");
+    assert!(ack.get("native_root_control_changed_at_ns").is_some()
+        && ack["native_root_control_changed_at_ns"].as_i64() == root_control.changed_at_ns,
+        "RUST_WORLD_ROOT_CONTROL_CHANGE_ACK_MISMATCH");
+    let expected_rooted = root_control.expires_at_ns
+        .map(|expiry| expiry > clock_ns).unwrap_or(false);
+    assert!(ack["world_target_rooted"].as_bool() == Some(expected_rooted),
+        "RUST_WORLD_ROOT_CONTROL_STATE_ACK_MISMATCH");
+    assert!(ack["type"] == "gsim_native_damage_applied_ack" """,
+        "ROOT_ACK",
+    ),
+    (
+        "    bridge.next_tick_ns = next_world_boundary_ns;\\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
+        "    bridge.next_tick_ns = next_world_boundary_ns;\\n    clear_root_control_change();\\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
+        "ROOT_CLEAR_CHANGE",
+    ),
+]
+
+RUST_ROOT_CONTROL_TEST = """
+#[cfg(test)]
+mod native_root_control_bridge_tests {
+    use super::*;
+
+    #[test]
+    fn landed_root_gain_and_expiry_force_world_boundaries() {
+        BRIDGE.with(|slot| *slot.borrow_mut() = Some(Bridge {
+            iteration: 0, sequence: 0, next_tick_ns: 100_000_000,
+            last_tick_ns: -1, last_health: None, previous_ack_id: String::new(),
+            source_hash: "b".repeat(64), event_ordinal: 0, pending: Vec::new(),
+        }));
+        reset_root_control();
+
+        record_root_control(50_000_000, Some(27_050_000_000));
+        assert_eq!(root_control_snapshot().expires_at_ns, Some(27_050_000_000));
+        assert_eq!(due(100_000_000, 60_000_000_000), Some(50_000_000));
+
+        clear_root_control_change();
+        BRIDGE.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let bridge = slot.as_mut().unwrap();
+            bridge.last_tick_ns = 50_000_000;
+            bridge.next_tick_ns = 150_000_000;
+        });
+        assert_eq!(due(150_000_000, 60_000_000_000), Some(150_000_000));
+
+        BRIDGE.with(|slot| {
+            let mut slot = slot.borrow_mut();
+            let bridge = slot.as_mut().unwrap();
+            bridge.last_tick_ns = 27_000_000_000;
+            bridge.next_tick_ns = 27_100_000_000;
+        });
+        record_root_control(27_050_000_000, None);
+        assert_eq!(root_control_snapshot().expires_at_ns, None);
+        assert_eq!(due(27_100_000_000, 60_000_000_000), Some(27_050_000_000));
+
+        reset_root_control();
+        BRIDGE.with(|slot| *slot.borrow_mut() = None);
+    }
+}
+"""
 
 RUST_TEST = """
 #[test]
@@ -227,6 +426,16 @@ def port_text(path: str, contents: str) -> str:
         for old, new, label in patches[path]:
             contents = replace_once(contents, old, new, label)
         return contents
+    if path == "src/core/fight/world_bridge.rs":
+        for old, new, label in WORLD_BRIDGE_PATCHES:
+            if label == "ROOT_RECEIPT" and "native_rooted_until_ns" in contents:
+                continue  # The later gsim-moving port appends its own receipt field.
+            contents = replace_once(contents, old, new, label)
+        if RUST_ROOT_CONTROL_TEST not in contents:
+            if "fn landed_root_gain_and_expiry_force_world_boundaries()" in contents:
+                raise ValueError("NATIVE_ROOTS_BRIDGE_TEST_SOURCE_DRIFT")
+            contents = contents.rstrip() + "\n" + RUST_ROOT_CONTROL_TEST
+        return contents
     if path == "tests/classes/druid/prepare.rs":
         for test_name, section in (
             ("forever_roots_preparation_uses_native_spell_data_and_improved_rank", RUST_TEST),
@@ -248,6 +457,7 @@ PATHS = [
     "src/contracts/prepared_v2.rs",
     "src/classes/druid/prepare/export.rs",
     "tests/classes/druid/prepare.rs",
+    "src/core/fight/world_bridge.rs",
 ]
 
 
@@ -260,7 +470,7 @@ def main(argv: list[str]) -> int:
     for path, text in result.items():
         if text != original[path]:
             (root / path).write_text(text)
-    print("RUST_FOREVER_ROOTS_DOT_SOURCE_PORT_OK")
+    print("RUST_FOREVER_ROOTS_DOT_AND_WORLD_CONTROL_SOURCE_PORT_OK")
     return 0
 
 
