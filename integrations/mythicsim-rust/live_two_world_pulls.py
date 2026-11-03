@@ -22,8 +22,8 @@ from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApp
 from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
 from src.game.model import ActorDefinition, ResourceDefinition
 from src.game.runtime import ActorState, CombatRuntime, TargetState
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
-from src.shared.leveling.objective import MOB_BASE_HP, representative_hp
+from src.scenarios.spaced_pulls import SpacedPullLayout
+from src.scenarios.leveling_targets import MOB_BASE_HP, representative_hp
 
 
 def _source_approach_radius(request: dict) -> float:
@@ -133,7 +133,7 @@ def _target_health_profile(mob_health: float | None, classic_mob_level: int | No
         return representative_hp(classic_mob_level), {
             "source_status": "classic_reference_proxy_not_verified_forever",
             "source_basis": "CMaNGOS warrior BaseHealthExp0 ordinary melee reference",
-            "authority": "src.shared.leveling.objective.MOB_BASE_HP",
+            "authority": "src.scenarios.leveling_targets.MOB_BASE_HP",
             "level": classic_mob_level,
         }
     if mob_health is None:
