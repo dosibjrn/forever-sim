@@ -359,6 +359,13 @@ for marker, anchor, method, transform, expected in (
      two_world_cli.CLI_METHOD, port.port_main,
      'args[5] != "--rng-mode"'),
 ):
+    untyped_source = method + anchor
+    try:
+        two_world_cli.insert(untyped_source, anchor, marker, method)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f"RUST_WORLD_UNTYPED_GATEWAY_ACCEPTED: {marker}")
     inserted = two_world_cli.insert(anchor, anchor, marker, method)
     assert expected in inserted, marker
     assert two_world_cli._typed_native_world_present(inserted, marker), marker
