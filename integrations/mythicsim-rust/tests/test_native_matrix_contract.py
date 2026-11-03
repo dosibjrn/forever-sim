@@ -22,7 +22,7 @@ ROOT = HERE.parents[2]
 sys.path.insert(0, str(HERE.parent))
 
 # Required interface for the next agent, deliberately not implemented yet:
-from native_matrix import enumerate_l60_profiles, search_native, next_budget
+from native_matrix import NativeCandidateRejected, enumerate_l60_profiles, search_native, next_budget
 
 
 class FakeClock:
@@ -204,7 +204,10 @@ class NativeGenericMatrixContract(unittest.TestCase):
         self.assertIsNone(next_budget(5, {**runnable, "status": "BLOCKED_GEAR_LEGALITY"}))
         self.assertIsNone(next_budget(5, {**runnable, "engine_errors": 1}))
         # Improvements are NOT required to promote a correctly running search:
-        self.assertEqual(30, next_budget(5, {**runnable, "improvement": -0.1}))
+        self.assertEqual(30, next_budget(5, {
+            **runnable, "improvement": -0.1,
+            "native_invalid": 4, "native_unsupported": 2,
+        }))
 
     def test_budget_exhaustion_is_not_a_native_engine_failure(self):
         calls = []
@@ -232,6 +235,70 @@ class NativeGenericMatrixContract(unittest.TestCase):
         self.assertEqual(1, result["paid_candidates"])
         self.assertIsNone(next_budget(300, result))
         self.assertEqual(30, next_budget(5, result))
+
+    def test_native_invalid_candidates_are_not_engine_errors_and_search_continues(self):
+        calls = 0
+
+        def evaluate(candidate, *, iterations, seed, rng_mode):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise NativeCandidateRejected(
+                    status="INVALID", code="talents", reason="native rank refusal",
+                    raw_response={"prepared": False, "refusal": {
+                        "code": "talents", "reason": "native rank refusal"}},
+                    elapsed_s=0.001, request_sha256="request-sha",
+                    returncode=5, stdout="", stderr="",
+                )
+            return 80.0
+
+        result = search_native(
+            profile_id="mage/arcane",
+            reference={"profile": "mage/arcane"},
+            propose=lambda rng: {"nonce": rng.randint(1, 1000000)},
+            mutate=lambda candidate, rng: {"nonce": rng.randint(1, 1000000)},
+            legal=lambda candidate: True,
+            evaluate=evaluate,
+            seconds=0.025,
+            iterations=1,
+            seed=37,
+            clock=FakeClock(),
+        )
+        self.assertEqual("RAN", result["status"])
+        self.assertGreater(result["native_invalid"], 0)
+        self.assertEqual(0, result["native_unsupported"])
+        self.assertGreater(result["native_rejections"], 0)
+        self.assertEqual(0, result["engine_errors"])
+        self.assertGreater(result["paid_candidates"], 0)
+
+    def test_native_unsupported_is_distinct_and_not_an_engine_error(self):
+        def evaluate(candidate, *, iterations, seed, rng_mode):
+            raise NativeCandidateRejected(
+                status="UNSUPPORTED", code="unsupported",
+                reason="native does not implement this request",
+                raw_response={"prepared": False, "refusal": {
+                    "code": "unsupported",
+                    "reason": "native does not implement this request"}},
+                elapsed_s=0.001, request_sha256="request-sha",
+                returncode=5, stdout="", stderr="",
+            )
+
+        result = search_native(
+            profile_id="mage/frost",
+            reference={"profile": "mage/frost"},
+            propose=lambda rng: {"nonce": rng.randint(1, 1000000)},
+            mutate=lambda candidate, rng: {"nonce": rng.randint(1, 1000000)},
+            legal=lambda candidate: True,
+            evaluate=evaluate,
+            seconds=0.025,
+            iterations=1,
+            seed=38,
+            clock=FakeClock(),
+        )
+        self.assertEqual("BLOCKED_NATIVE_UNSUPPORTED", result["status"])
+        self.assertEqual(0, result["native_invalid"])
+        self.assertGreater(result["native_unsupported"], 0)
+        self.assertEqual(0, result["engine_errors"])
 
     def test_non_finite_native_metric_is_not_a_paid_candidate(self):
         result = search_native(
