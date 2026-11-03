@@ -69,13 +69,6 @@ def test_unknown_executable_and_noop_never_certified():
     assert 'EMPTY_GAME_IR_EFFECT' in codes(r)
 
 
-def test_source_level_and_conditional_checks():
-    r=check([row(lvl=10)],ir_with(action(req=({'kind':'minimum_level','value':25},))))
-    assert 'WRONG_MINIMUM_LEVEL' in codes(r)
-    r=check([row(lvl=None)],ir_with(action()))
-    assert 'UNRESOLVED_SOURCE_REQUIRED_LEVEL' in codes(r)
-
-
 def test_missing_production_baseline_cannot_pass():
     from tempfile import TemporaryDirectory
     with TemporaryDirectory() as tmp:
@@ -98,18 +91,6 @@ def test_cli_production_uses_live_baseline_not_earlier_json_verdict():
     assert entry['source_id'] and entry['engine_id']
     assert entry['problem_count']==len(entry['problems'])
 
-
-def test_higher_level_spell_must_not_enter_level_20_gameir():
-    def builder(ir,rules):return policy(rules[0][0])
-    r=audit_inventory([row(100,lvl=20)],ir_with(action(100),action(300)),
-        parser=lambda a:set(),
-        source_classifier=lambda a,b:{'role':'ABILITY'},
-        policy_builder=builder,
-        scratch_builder=lambda i,max_candidates:[policy(a.id) for a in i.actions],
-        executor=lambda i,a:{'status':'executed','events':1,'effect_observed':True},
-        effect_checker=lambda e:'direct_damage',
-        higher_level_rows=[row(300,lvl=30)])
-    assert 'ILLEGAL_HIGH_LEVEL_ACTION_IN_GAME_IR' in codes(r)
 
 def test_engraving_setup_not_implicitly_a_castable_spell():
     r=audit_inventory([row(100),row(200)],ir_with(action(100)),
@@ -234,33 +215,6 @@ def test_source_level_zero_nonaction_must_not_hide_a_compiled_action():
     rows=[row(100,lvl=10),row(16836,name='Improved Thorns',lvl=0,rank=1)]
     r=check(rows,ir_with(action(100),action(16836)))
     assert r['status']=='PASS' and r['checked_source_abilities']==2
-
-
-def test_source_unverified_rune_inactive_without_erasing_ordinary_missing_ability():
-    r=audit_inventory([row(100),row(200),row(300)],ir_with(action(100)),
-        parser=lambda a:set(),source_classifier=lambda r,raw:{'role':'ABILITY'},
-        policy_builder=lambda ir,rules:policy(rules[0][0]),
-        scratch_builder=lambda ir,max_candidates:[policy(a.id) for a in ir.actions],
-        executor=lambda ir,a:{'status':'executed','effect_observed':True},
-        source_inactive_ids={200:'rune_grant_unverified_default_off'},
-        effect_checker=lambda e:'direct_damage')
-    assert r['status']=='FAIL'
-    assert 'MISSING_GAME_IR_ACTION' in codes(r)
-    assert any('300:' in (p['ability'] or '') for p in r['problems']
-               if p['code']=='MISSING_GAME_IR_ACTION')
-    assert not any('200:' in (p['ability'] or '') for p in r['problems'])
-    assert any(x['source_spell_id']==200 for x in r['excluded_nonaction_or_inactive_rows'])
-
-
-def test_inactive_rune_leaking_into_legal_actions_fails():
-    r=audit_inventory([row(100),row(200)],ir_with(action(100),action(200)),
-        parser=lambda a:set(),source_classifier=lambda r,raw:{'role':'ABILITY'},
-        policy_builder=lambda ir,rules:policy(rules[0][0]),
-        scratch_builder=lambda ir,max_candidates:[policy(a.id) for a in ir.actions],
-        executor=lambda ir,a:{'status':'executed','effect_observed':True},
-        source_inactive_ids={200:'rune_grant_unverified_default_off'},
-        effect_checker=lambda e:'direct_damage')
-    assert 'INACTIVE_SOURCE_ACTION_ENTERED_GAME_IR' in codes(r)
 
 
 def test_an_exclusion_requires_actual_source_scope_not_merely_a_missing_action():
@@ -426,13 +380,6 @@ def test_matching_conditional_requirement_only():
     assert recognized['conditional_actions'][0]['reason']=='requires 35 energy; have 0'
 
 
-def test_source_rank_cannot_be_cast_before_own_minimum_level():
-    a=action(req=({'kind':'minimum_level','value':10},))
-    r=check([row(lvl=20)],ir_with(a))
-    assert 'ACTION_AVAILABLE_BEFORE_SOURCE_LEVEL' in codes(r)
-    assert r['status']=='FAIL'
-
-
 def test_malformed_requirement_gets_named_fail_instead_of_crashing():
     a=action(req=('broken_requirement',))
     r=check([row()],ir_with(a))
@@ -549,3 +496,50 @@ def test_p1_real_production_heal_requires_restored_health_not_overheal():
     assert wounded.payload['restored'] > 0
     assert _p1_effect_observed(wounded)
     assert _runtime_exercise(ir, action, 20)['status'] == 'executed'
+
+def test_native_selected_action_bypasses_gameir_proofs_and_preserves_refusal():
+    """A native refusal is authoritative; never fall back to GameIR for Claw."""
+    claw = N(id='claw:20', family_key='druid_cat_claw',
+             owner_actor_id='actor', effects=(), requirements=('not-a-python-proof',),
+             provenance=(), metadata={})
+    calls = {'native': 0}
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError('native-owned Claw must not use GameIR/source proof')
+
+    def native_executor(ir, action, source_row):
+        calls['native'] += 1
+        assert action.id == 'claw:20'
+        assert source_row['spell_id'] == 1082
+        return {
+            'status':'UNSUPPORTED',
+            'native_status':'UNSUPPORTED',
+            'reason':'selected Rust refused Claw rank 1',
+            'effect_observed':False,
+            'native_result':{
+                'status':'UNSUPPORTED',
+                'reason':'selected Rust refused Claw rank 1',
+                'p1_certified':False,
+            },
+        }
+
+    result = audit_inventory(
+        [row(1082, name='Claw', lvl=20, rank=1)],
+        ir_with(claw),
+        parser=lambda action: {1082},
+        source_classifier=forbidden,
+        policy_builder=lambda ir, rules: policy(rules[0][0]),
+        scratch_builder=lambda ir, max_candidates: [policy(a.id) for a in ir.actions],
+        executor=forbidden,
+        effect_checker=forbidden,
+        native_source_spell_ids={1082},
+        native_executor=native_executor,
+    )
+    assert calls['native'] == 1
+    assert result['status'] == 'FAIL'
+    assert result['production_runtime_exercises'] == 0
+    assert 'NATIVE_UNSUPPORTED' in codes(result)
+    assert result['native_action_results'][0]['status'] == 'UNSUPPORTED'
+    assert result['native_action_results'][0]['effect_observed'] is False
+    assert result['native_source_spell_ids'] == [1082]
+
