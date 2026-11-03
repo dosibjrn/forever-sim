@@ -44,8 +44,8 @@ def test_default_collection_excludes_release_but_explicit_path_collects(tmp_path
     assert "test_fast.py::test_fast" not in explicit
 
 
-def test_historical_overlay_zip_packagers_retired_but_evidence_retained():
-    """Legacy six-gate ZIP handovers are not current release/acceptance CLIs."""
+def test_historical_overlay_zip_packagers_retired_but_active_evidence_retained():
+    """Legacy ZIP handovers are retired; retained P4-P6 evidence remains available."""
     for name in ("wf360_build_release.py", "wf361_build_release.py", "wf362_build_release.py"):
         assert not (ROOT / "tools" / name).exists()
     for relative in (
@@ -53,6 +53,5 @@ def test_historical_overlay_zip_packagers_retired_but_evidence_retained():
         "evidence/wf360/WF360_L30_P5_300S.json",
         "evidence/wf360/WF360_L30_P6_FRESH_100MOB.json",
         "evidence/wf361/WF361_WARRIOR_L30_P1_CERTIFICATE.json",
-        "evidence/wf362/WF362_WARRIOR_L30_P2_CERTIFICATE.json",
     ):
         assert (ROOT / relative).is_file(), relative
