@@ -7,7 +7,7 @@ provisional, never claimed as current-server verified.
 from __future__ import annotations
 import json,sqlite3
 from pathlib import Path
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 CAPTURE=Path(__file__).resolve().parents[1]/'data/forever/source_captures/wf254_paladin_rank_batch_20261011.json'
 
 def ingest(db_path=DEFAULT_DB,capture_path=CAPTURE):
