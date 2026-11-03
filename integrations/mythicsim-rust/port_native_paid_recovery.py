@@ -46,12 +46,12 @@ QUEUE_METHOD = """    /// Pop the earliest live action matching the predicate no
     }
 
 """
-QUEUE_TEST_ANCHOR = "    fn handles_from_before_a_clear_are_inert()"
+QUEUE_TEST_ANCHOR = "    #[test]\n    fn handles_from_before_a_clear_are_inert()"
 QUEUE_TEST_MARKER = "fn pop_first_matching_before_preserves_nonmatching_actions_and_order()"
 QUEUE_TESTS = """    #[test]
     fn pop_first_matching_before_preserves_nonmatching_actions_and_order() {
         let mut queue = PendingQueue::default();
-        let attack_before = queue.push(1, 0, "attack_before");
+        queue.push(1, 0, "attack_before");
         queue.push(2, 1, "mana_tick");
         queue.push(3, 0, "attack_after");
         queue.push(4, 1, "health_tick");
@@ -60,7 +60,8 @@ QUEUE_TESTS = """    #[test]
         });
         assert_eq!(popped.map(|(time, _, action)| (time, action)),
             Some((2, "mana_tick")));
-        assert!(queue.cancel(attack_before));
+        assert_eq!(queue.pop().map(|(time, _, action)| (time, action)),
+            Some((1, "attack_before")));
         assert_eq!(queue.pop().map(|(time, _, action)| (time, action)),
             Some((3, "attack_after")));
         assert_eq!(queue.pop().map(|(time, _, action)| (time, action)),
