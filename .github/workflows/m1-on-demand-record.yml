@@ -98,6 +98,14 @@ jobs:
             if [[ "$entry" == *:P7.* ]]; then p7_needed=true; fi
           done
           printf 'p7_needed=%s\n' "$p7_needed" >> "$GITHUB_OUTPUT"
+          p1_native_needed=false
+          for entry in "${unique[@]}"; do
+            if [[ "$entry" == "druid:60:balance:P1" ]]; then p1_native_needed=true; fi
+          done
+          native_needed="$p7_needed"
+          if [[ "$p1_native_needed" == true ]]; then native_needed=true; fi
+          printf 'p1_native_needed=%s\n' "$p1_native_needed" >> "$GITHUB_OUTPUT"
+          printf 'native_needed=%s\n' "$native_needed" >> "$GITHUB_OUTPUT"
           echo "Accepted ${#unique[@]} production targets"
 
       - name: Checkout current main, without saved write credentials
@@ -113,11 +121,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Any P7 gate uses the exact SAME checked-in production gitlink as
-      # the native-world workflow plus its deterministic tracked typed-mode port.
+      # Native-backed P1/P7 gates use the exact SAME checked-in production gitlink
+      # as the native-world workflow plus its deterministic tracked typed-mode port.
       # No floating branch or environment-selected RNG mode.
-      - name: Hydrate and verify production Rust fork gitlink for selected P7 gate
-        if: steps.targets.outputs.p7_needed == 'true'
+      - name: Hydrate and verify production Rust fork gitlink for selected native-backed gate
+        if: steps.targets.outputs.native_needed == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -146,8 +154,8 @@ jobs:
           grep -Fq 'SimRng::new(rng_mode,' "$engine/src/core/fight.rs"
           echo "M1 selected exact checked-in Rust fork revision $actual with typed RNG port"
 
-      - name: Apply tracked typed RNG port and build exact fork-submodule production Rust engine
-        if: steps.targets.outputs.p7_needed == 'true'
+      - name: Apply tracked typed RNG port and build exact fork-submodule production Rust engine for native-backed gate
+        if: steps.targets.outputs.native_needed == 'true'
         working-directory: upstream
         env:
           CARGO_PROFILE_RELEASE_LTO: "off"
