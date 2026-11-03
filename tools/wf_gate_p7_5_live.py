@@ -269,8 +269,9 @@ def run_live(root: Path, class_key: str, level: int, *,
                 failures.append(type(exc).__name__ + ":" + str(exc)[:180])
     finally:
         validator.close()
-    if full_search:
+    if full_search and elapsed < 300.0:
         # If a measured paid step cannot fit, complete the original window.
+        # No extra clock read when the loop already reached its deadline.
         time.sleep(max(0.0, search_start + 300.0 - time.monotonic()))
     search_wall_s = time.monotonic() - search_start
     if best is None:
