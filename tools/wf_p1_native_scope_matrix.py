@@ -38,9 +38,6 @@ def main(argv=None) -> int:
                 "native_auto":states["NATIVE_AUTO_ATTACK"],
                 "pet_actions":states["PET_ACTION"],
                 "noncastable_source_records":states["NOT_A_PROVEN_CASTABLE_ACTION"],
-                "source_acquisition_unproven":sum(
-                    x["status"]=="POTENTIALLY_AVAILABLE_AT_LEVEL_NOT_PROVEN_LEARNED"
-                    for x in source["candidates"]),
                 "engine_effects_tested":0,
                 "status":"SOURCE_INPUT_READY_NATIVE_EFFECT_EXECUTION_PENDING",
                 "p1_certified":False,
