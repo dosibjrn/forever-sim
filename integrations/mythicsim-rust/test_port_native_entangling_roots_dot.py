@@ -17,6 +17,7 @@ class NativeRootsDotPortTest(unittest.TestCase):
         patches = {
             "src/classes/druid/prepare/balance.rs": port.PREP_PATCHES,
             "src/classes/druid/agent.rs": port.AGENT_PATCHES,
+            "src/core/fight/world_bridge.rs": port.WORLD_BRIDGE_PATCHES,
             "src/classes/druid/prepared/coverage.rs": port.COVERAGE_PATCHES,
             "src/contracts/prepared_v2.rs": port.CONTRACT_PATCHES,
             "src/classes/druid/prepare/export.rs": port.EXPORT_PATCHES,
@@ -38,6 +39,13 @@ class NativeRootsDotPortTest(unittest.TestCase):
             self.assertIn("EntanglingRoots {}", (root / "src/contracts/prepared_v2.rs").read_text())
             self.assertIn('"kind": "entangling_roots"', (root / "src/classes/druid/prepare/export.rs").read_text())
             self.assertIn('"entangling_roots",', (root / "src/classes/druid/prepared/coverage.rs").read_text())
+            agent = (root / "src/classes/druid/agent.rs").read_text()
+            self.assertIn("record_control_applied", agent)
+            bridge = (root / "src/core/fight/world_bridge.rs").read_text()
+            self.assertIn("native_control_events", bridge)
+            self.assertIn("native-control-", bridge)
+            self.assertIn("RUST_WORLD_CONTROL_ACK_EVENTS_MISMATCH", bridge)
+            self.assertIn("root_at_previous_ack_time_is_flushed_on_next_gsim_millisecond", bridge)
 
     def test_missing_native_anchor_is_not_silently_accepted(self):
         path = "src/classes/druid/agent.rs"
