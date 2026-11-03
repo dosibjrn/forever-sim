@@ -150,7 +150,6 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_gsim_moving.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_health_damage_receipts.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_mana_regen_receipts.py /tmp/forever-selected-rust
-          python3 integrations/mythicsim-rust/port_native_typed_rng.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_paid_recovery.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_improved_roots_rank.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_entangling_roots_dot.py /tmp/forever-selected-rust
