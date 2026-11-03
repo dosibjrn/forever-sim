@@ -36,7 +36,7 @@ def test_committed_druid_profile_is_explicit_product_contract():
     assert rule["source_db_sha256"] == "a" * 64
     assert rule["tree_key"] == "balance"
     assert "source_url" not in rule
-    assert p2._load_product_spec_profile(ROOT, "mage", 60, "balance",
+    assert profile._load_product_spec_profile(ROOT, "mage", 60, "balance",
                                          source_sha256="a" * 64) is None
 
 
@@ -46,7 +46,7 @@ def test_product_profile_is_legal_full_point_frontier_not_external_url(monkeypat
     observed = []
     monkeypatch.setattr(profile, "validate_talent_selection",
                         lambda ir, allocation, **kwargs: observed.append(dict(allocation)))
-    rule = p2._load_product_spec_profile(ROOT, "druid", 60, "balance",
+    rule = profile._load_product_spec_profile(ROOT, "druid", 60, "balance",
                                          source_sha256="a" * 64)
     def frontier(ir, starts, *, tree_key, minimum_points, level,
                  bonus_talent_points, max_frontier):
@@ -75,7 +75,7 @@ def test_wrong_contract_schema_fails_closed(tmp_path, field, value):
     target.parent.mkdir(parents=True)
     target.write_text(json.dumps(data))
     with pytest.raises(ValueError, match="SOURCE_PRODUCT_PROFILE_"):
-        p2._load_product_spec_profile(tmp_path, "druid", 60, "balance",
+        profile._load_product_spec_profile(tmp_path, "druid", 60, "balance",
                                       source_sha256="a" * 64)
 
 
@@ -86,13 +86,13 @@ def test_duplicate_product_profile_fails_closed(tmp_path):
     target.parent.mkdir(parents=True)
     target.write_text(json.dumps(data))
     with pytest.raises(ValueError, match="SOURCE_PRODUCT_PROFILE_DUPLICATE"):
-        p2._load_product_spec_profile(tmp_path, "druid", 60, "balance",
+        profile._load_product_spec_profile(tmp_path, "druid", 60, "balance",
                                       source_sha256="a" * 64)
 
 
 def test_source_hash_is_required_not_invented():
     with pytest.raises(ValueError, match="SOURCE_PRODUCT_PROFILE_SOURCE_SHA"):
-        p2._load_product_spec_profile(ROOT, "druid", 60, "balance",
+        profile._load_product_spec_profile(ROOT, "druid", 60, "balance",
                                       source_sha256="not-a-hash")
 
 
@@ -113,16 +113,16 @@ def test_active_gate_consumers_are_decoupled_from_retired_p2_provider():
 
 
 def test_product_constraint_cannot_bypass_canonical_prerequisites(monkeypatch):
-    monkeypatch.setattr(p2, "available_talent_points",
+    monkeypatch.setattr(profile, "available_talent_points",
                         lambda level, bonus_talent_points: 51)
     def illegal_allocation(ir, allocation, **kwargs):
         raise ValueError("missing_canonical_prerequisite")
-    monkeypatch.setattr(p2, "validate_talent_selection", illegal_allocation)
-    rule = p2._load_product_spec_profile(ROOT, "druid", 60, "balance",
+    monkeypatch.setattr(profile, "validate_talent_selection", illegal_allocation)
+    rule = profile._load_product_spec_profile(ROOT, "druid", 60, "balance",
                                          source_sha256="a" * 64)
     def frontier(ir, starts, **kwargs):
         return ([{"balance_capstone": 31, "restoration_filler": 20}], {})
     with pytest.raises(ValueError, match="SOURCE_SPEC_FRONTIER_ILLEGAL_ALLOCATION:missing_canonical_prerequisite"):
-        p2._source_spec_profile(
+        profile._source_spec_profile(
             _ir(), "balance", level=60, bonus=0, step=5,
             source_sha256="a" * 64, frontier_builder=frontier, profile_rule=rule)
