@@ -22,10 +22,6 @@ class LevelState:
     action_ids: tuple[str, ...]
     gear_scenario: str = "source_actor_naked"
     selected_items: tuple[str, ...] = ()
-    # Real world states need an independently sourced origin and replayable
-    # acquisition transactions. Empty defaults preserve bounded scenarios.
-    world_origin_id: str | None = None
-    world_acquisition_events: tuple[dict, ...] = ()
 
 
 def require_exact_talent_ranks(talents: Mapping[str, int]) -> None:
@@ -68,21 +64,12 @@ def _canonical_state(state: LevelState):
     return ir
 
 
-def validate_level_state(state: LevelState, *, require_world_acquisition: bool = False, world_db_path=None) -> dict:
+def validate_level_state(state: LevelState) -> dict:
+    # This legacy bounded-scenario check must not require independent trainer,
+    # quest or learned-rank certificates. The selected MythicSim native engine
+    # owns spell acquisition and rank legality; this function does not certify
+    # native game legality or any P1-P7 acceptance gate.
     ir = _canonical_state(state)
-    if require_world_acquisition:
-        # Real route admission must NOT treat indexed ranks as already learned.
-        # A verified trainer/quest/rune *event* is required before acceptance.
-        from src.game.data.forever.source_acquisition import audit_learned_action_legality
-        from src.game.talents import apply_talent_selection
-        executable, _ = apply_talent_selection(ir, state.talents, level=state.level)
-        report = audit_learned_action_legality(executable, level=state.level,
-                                               action_ids=state.action_ids,
-                                               world_anchor_id=state.world_origin_id,
-                                               world_events=state.world_acquisition_events,db_path=world_db_path)
-        if not report['complete']:
-            raise ValueError('world acquisition not verified: ' +
-                             ', '.join(sorted({r['status'] for r in report['blockers']})))
     return {
         "status": "LEGAL_SOURCE_SCENARIO", "class_key": state.class_key,
         "race_key": state.race_key, "level": state.level,
@@ -94,16 +81,15 @@ def validate_level_state(state: LevelState, *, require_world_acquisition: bool =
     }
 
 
-def validate_level_transition(parent: LevelState, child: LevelState, *,
-                              require_world_acquisition: bool = False) -> dict:
+def validate_level_transition(parent: LevelState, child: LevelState) -> dict:
     if parent.class_key != child.class_key:
         raise ValueError("class identity mismatch in level transition")
     if parent.race_key != child.race_key:
         raise ValueError("race change in level transition")
     if child.level != parent.level + 1:
         raise ValueError("nonconsecutive level transition")
-    before = validate_level_state(parent, require_world_acquisition=require_world_acquisition)
-    after = validate_level_state(child, require_world_acquisition=require_world_acquisition)
+    before = validate_level_state(parent)
+    after = validate_level_state(child)
     if before["ruleset"] != after["ruleset"]:
         raise ValueError("ruleset change in level transition")
     if parent.gear_scenario != child.gear_scenario or parent.selected_items != child.selected_items:

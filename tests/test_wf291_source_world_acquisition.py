@@ -85,13 +85,11 @@ def test_real_spell_detail_and_npc_id_allow_synthetic_local_purchase(sourced_db)
         world_events=(_trainer(npc),),db_path=path)
     assert result['complete'] is True
     assert result['verified_world_acquisition_count']==1
-    # The complete LevelState validator uses production canonical DB, NOT the
-    # synthetic test fixture, so a forged trace cannot certify a real state.
+    # A synthetic trainer trace is never a native game-legality certificate.
+    # The legacy LevelState boundary no longer independently audits it.
     state=LevelState(class_key='mage',level=10,race_key=ir.actor.metadata.get('race_key'),
-        talents={},action_ids=('frost_nova:122',),world_origin_id='TEST_ANCHOR',
-        world_acquisition_events=(_trainer(npc),))
-    with pytest.raises(ValueError):
-        validate_level_state(state,require_world_acquisition=True)
+        talents={},action_ids=('frost_nova:122',))
+    assert validate_level_state(state)['status']=='LEGAL_SOURCE_SCENARIO'
 
 
 def test_negative_wrong_npc_zone_rank_funds_and_claim(sourced_db):

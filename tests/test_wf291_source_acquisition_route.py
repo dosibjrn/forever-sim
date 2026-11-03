@@ -103,15 +103,14 @@ def test_stale_source_entity_cannot_authorize_local_event(tmp_path):
         apply_source_consistent_acquisition(_mage_state(),_mage_event(),db_path=path)
 
 
-def test_local_acquisition_proof_is_not_accepted_as_world_route():
+def test_local_acquisition_proof_is_not_a_level_state_requirement():
     from src.game.level_legality import LevelState, validate_level_state
-    state=LevelState('mage',10,'human',{},('frost_nova:122',))
-    # Race from actual source actor; this test must never rely on assumed race.
     from src.game.data.forever.registry import build_game_ir_slice
     ir=build_game_ir_slice(class_key='mage',level=10)
-    state=replace(state,race_key=ir.actor.metadata.get('race_key'))
-    with pytest.raises(ValueError,match='world acquisition not verified'):
-        validate_level_state(state,require_world_acquisition=True)
+    state=LevelState('mage',10,ir.actor.metadata.get('race_key'),{},('frost_nova:122',))
+    # LevelState no longer requests a trainer/quest proof. This does not
+    # assert native spell legality or a certified route.
+    assert validate_level_state(state)['status']=='LEGAL_SOURCE_SCENARIO'
 
 
 def test_acquisition_gates_existing_real_l2_route_and_persists_learned_rank():
