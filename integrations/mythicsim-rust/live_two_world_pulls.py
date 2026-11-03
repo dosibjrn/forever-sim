@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Two *distinct* gsim 2D mob kills on one source-Rust actor/ACK timeline.
+"""Multiple *distinct* gsim 2D mob kills on one source-Rust actor/ACK timeline.
 
 This is a bounded production integration regression, not paid recovery,
 a 100-mob run, or P4/P5/P6 acceptance. Damage and Warcraft actions originate
@@ -21,38 +21,50 @@ from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApp
 from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
 from src.game.model import ActorDefinition, ResourceDefinition
 from src.game.runtime import ActorState, CombatRuntime, TargetState
+from src.shared.leveling.spaced_pulls import SpacedPullLayout
 
 
 def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
-        corrupt_ack: bool = False) -> dict:
-    """Execute two world kills; retain one Rust process, actor and ACK lineage."""
+        target_count: int = 2, corrupt_ack: bool = False) -> dict:
+    """Execute N world kills; retain one Rust process, actor and ACK lineage."""
     if not 0 < mob_health <= 100_000:
-        raise ValueError("RUST_TWO_WORLD_MOB_HEALTH_INVALID")
+        raise ValueError("RUST_MULTI_WORLD_MOB_HEALTH_INVALID")
+    if type(target_count) is not int or not 2 <= target_count <= 100:
+        raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
     request = json.loads(prepared.read_text())
     source_hash = request["request_sha256"]
     if not isinstance(source_hash, str) or len(source_hash) != 64:
         raise ValueError("RUST_TWO_WORLD_PREPARED_SOURCE_INVALID")
-    # Real two-target gsim CombatRuntime; first m1, then m0. Never replace
-    # the world or actor between targets. Only the selected world mob changes.
+    # One actual 2D world for the entire target sequence. This is the
+    # existing native combat/world ACK diagnostic, not paid travel/recovery.
+    # Use the project's actual 20-yard spaced square grid. Center the
+    # diagnostic world around the player so early targets are reachable without
+    # pretending to have paid a between-pull route. Farther targets still
+    # require future real movement/retargeting; no 100-mob PASS is implied.
+    targets = ("m1", "m0") + tuple(f"m{i}" for i in range(2, target_count))
+    route = SpacedPullLayout(mob_count=target_count)
+    points = route.positions_yards
+    center_x = sum(x for x, _ in points) / target_count + 0.123
+    center_y = sum(y for _, y in points) / target_count + 0.257
+    positions = {target_id: (x - center_x, y - center_y)
+                 for target_id, (x, y) in zip(targets, points)}
     actor = ActorState.from_ir(
         ActorDefinition("hero", "player", base_stats={}),
         (ResourceDefinition("health", "Health", "hero",
                             initial_amount=500, capacity=500),), ())
     world = CombatRuntime(
         actor=actor, target=TargetState.with_health("m0", mob_health),
-        other_targets=(TargetState.with_health("m1", mob_health),),
-        spatial_positions_yards={"m0": (-15., 0.), "m1": (15., 0.)},
+        other_targets=tuple(TargetState.with_health(t, mob_health)
+                            for t in targets if t != "m0"),
+        spatial_positions_yards=positions,
         enemy_move_speed_yards_s=0., melee_radius_yards=5.,
     )
-    # Both targets have actual, nondegenerate 2D positions and headings.
-    # Rust requires the world-facing bit at every causal ACK boundary.
-    world.targets["m1"].metadata["facing_xy_yards"] = (-1., 0.)
-    world.targets["m0"].metadata["facing_xy_yards"] = (1., 0.)
-    world.engage_target("m1")
-    world.select_target("m1")
+    for target_id, (x, y) in positions.items():
+        world.targets[target_id].metadata["facing_xy_yards"] = (-x, -y)
+    world.engage_target(targets[0])
+    world.select_target(targets[0])
     feed = GsimGoRangeFeed(world, native_player_index=0)
     applier = GsimNativeDamageWorldApplier(world)
-    targets = ("m1", "m0")
     iteration = 0
     previous_ack = ""
     last_clock_ns = -1
@@ -63,7 +75,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
     env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1", WOWSIM_RNG_MODE="stochastic")
     proc = subprocess.Popen(
         [str(binary.resolve()), "native-world-pulls", "--infile",
-         str(prepared.resolve()), "--targets", "2"],
+         str(prepared.resolve()), "--targets", str(target_count)],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
@@ -79,7 +91,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
                 raise AssertionError(("RUST_TWO_WORLD_UNEXPECTED_OUTPUT", native))
             index = native["iteration_index"]
             if index != iteration:
-                if index != iteration + 1 or index != 1 or len(kills) != 1:
+                if index != iteration + 1 or len(kills) != index or index >= target_count:
                     raise AssertionError("RUST_TWO_WORLD_TARGET_INDEX_SKIP")
                 if world.targets[targets[iteration]].alive:
                     raise AssertionError("RUST_TWO_WORLD_NEXT_TARGET_BEFORE_LETHAL")
@@ -143,25 +155,27 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
             return {"forged_ack_rejected": True, "native_events": events}
         if status != 0:
             raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", status, stderr[-3000:]))
-        if native_report is None or len(kills) != 2 or events < 2:
+        if native_report is None or len(kills) != target_count or events < target_count:
             raise AssertionError(("RUST_TWO_WORLD_KILLS_NOT_COMPLETED", native_report, kills, events))
         result = native_report["result"]
         if (native_report["source_sha256"] != source_hash
-                or result["world_targets_killed"] != 2
+                or result["world_targets_killed"] != target_count
                 or not result["continuous_native_actor"]
                 or not result["actual_2d_ack"]
                 or result["paid_recovery"]
-                or len(result["windows"]) != 2
-                or result["windows"][1]["native_kill_ns"] <= result["windows"][0]["native_kill_ns"]
+                or len(result["windows"]) != target_count
+                or any(b["native_kill_ns"] <= a["native_kill_ns"]
+                       for a, b in zip(result["windows"], result["windows"][1:]))
                 or native_report["checkpoint_certified"]):
             raise AssertionError("RUST_TWO_WORLD_NATIVE_RESULT_INVALID")
-        if [k["target_id"] for k in kills] != ["m1", "m0"]:
+        if [k["target_id"] for k in kills] != list(targets):
             raise AssertionError("RUST_TWO_WORLD_DISTINCT_TARGET_IDS_INVALID")
         return {
             "source_sha256": source_hash, "native_pid": proc.pid,
             "native_windows": result["windows"], "world_kills": kills,
             "native_damage_events": events, "world_ticks": ticks,
             "continuous_native_actor": True, "actual_2d_ack": True,
+            "world_targets_killed": target_count,
             "paid_recovery": False, "checkpoint_certified": False,
         }
     finally:
@@ -175,10 +189,13 @@ def main() -> None:
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--prepared", type=Path, required=True)
     parser.add_argument("--mob-health", type=float, default=1200.)
+    parser.add_argument("--targets", type=int, default=2)
     args = parser.parse_args()
-    valid = run(args.binary, args.prepared, mob_health=args.mob_health)
+    valid = run(args.binary, args.prepared, mob_health=args.mob_health,
+                target_count=args.targets)
     print("RUST_TWO_REAL_GSIM_WORLD_KILLS", json.dumps(valid, sort_keys=True), flush=True)
-    forged = run(args.binary, args.prepared, mob_health=args.mob_health, corrupt_ack=True)
+    forged = run(args.binary, args.prepared, mob_health=args.mob_health,
+                 target_count=args.targets, corrupt_ack=True)
     print("RUST_TWO_WORLD_FORGED_ACK_REJECTED", json.dumps(forged, sort_keys=True), flush=True)
 
 
