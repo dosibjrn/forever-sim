@@ -106,5 +106,27 @@ class MaintenanceTestLayout(unittest.TestCase):
         self.assertTrue((ROOT / "tests/release").is_dir())
 
 
+    def test_p1_p2_source_contracts_are_grouped_and_manually_runnable(self):
+        """Retain the exact-HEAD P1/P2 suite after removing flat test paths."""
+        names = (
+            "test_wf34_acquisition_snapshot_binding.py",
+            "test_wf34_p1_acquisition_ledger_fail_closed.py",
+            "test_wf34_p1_client_acquisition_proof.py",
+            "test_wf35_product_spec_profile_contract.py",
+        )
+        workflow = (ROOT / ".github/workflows/manual-exact-pr-head.yml").read_text()
+        for name in names:
+            with self.subTest(name=name):
+                self.assertFalse((ROOT / "tests" / name).exists())
+                target = ROOT / "tests" / "gates" / name
+                self.assertTrue(target.is_file())
+                ast.parse(target.read_text(encoding="utf-8"), filename=str(target))
+                self.assertIn(f"tests/gates/{name}", workflow)
+                self.assertNotIn(f"tests/{name}", workflow)
+        p2 = (ROOT / "tests/gates/test_wf35_product_spec_profile_contract.py").read_text()
+        self.assertIn("ROOT = Path(__file__).resolve().parents[2]", p2)
+
+
+
 if __name__ == "__main__":
     unittest.main()
