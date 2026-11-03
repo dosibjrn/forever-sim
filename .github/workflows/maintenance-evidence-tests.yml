@@ -20,6 +20,20 @@ on:
       - 'tools/wf_gate_p1_live.py'
       - 'tools/wf332_druid20_acquisition_evidence.py'
       - 'tools/wf291_source_acquisition_route_benchmark.py'
+      - 'src/game/data/forever/source_checkpoint_p1_acceptance.py'
+      - 'tools/wf406_druid20_live_p1p2.py'
+      - 'tools/wf335_spellbook_p1.py'
+      - 'tools/wf348_druid30_spellbook_p1.py'
+      - 'tools/wf361_warrior_l30_p1.py'
+      - 'tools/wf377_mage_l30_p1.py'
+      - 'tools/wf333_checkpoint_p1_contract.py'
+      - 'tests/test_wf335_druid20_spellbook_p1.py'
+      - 'tests/test_wf348_druid30_source_spellbook.py'
+      - 'tests/test_wf361_warrior_l30_p1.py'
+      - 'tests/test_wf377_mage_l30_source_p1.py'
+      - 'tests/test_wf377_mage_spellbook_reconciliation.py'
+      - 'tests/test_wf382_mage_l30_build_delta_p1_tdd.py'
+      - 'tests/gates/test_wf333_checkpoint_p1_contract.py'
       - 'tests/test_wf469_p1_alignment.py'
       - 'tests/test_wf470_p1_scope.py'
       - 'tests/gates/test_wf34_*acquisition*.py'
@@ -68,6 +82,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/test_wf382_mage_l30_build_delta_p1_tdd.py
           tests/gates/test_p1_native_progress.py
           tests/gates/test_wf_p1_native_blackbox.py
           tests/test_wf469_p1_alignment.py
