@@ -404,29 +404,31 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
 
 
 def _native_world_pulls_command(binary: Path, prepared: Path,
-                                 target_count: int, recovery_ns: int) -> list[str]:
-    """Build a CLI call compatible with both the old and paid-recovery Rust pins."""
+                                 target_count: int, recovery_ns: int, *,
+                                 rng_mode: str) -> list[str]:
+    """Build the typed native CLI call; RNG mode is always an explicit input."""
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_NATIVE_WORLD_PULLS_RNG_MODE_INVALID")
     command = [
         str(binary.resolve()), "native-world-pulls", "--infile",
         str(prepared.resolve()), "--targets", str(target_count),
-        "--rng-mode", "stochastic",
+        "--rng-mode", rng_mode,
     ]
-    # The selected production pin does not have the new CLI flag until the
-    # paid-recovery source port is applied. Preserve its exact legacy argv
-    # when recovery is zero; only paid-recovery diagnostics pass the flag.
     if recovery_ns > 0:
         command.extend(["--recovery-ns", str(recovery_ns)])
     return command
 
 
-def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
-        target_count: int = 2, corrupt_ack: bool = False,
-        recovery_ns: int = 0,
+def run(binary: Path, prepared: Path, *, rng_mode: str,
+        mob_health: float | None = None, target_count: int = 2,
+        corrupt_ack: bool = False, recovery_ns: int = 0,
         require_native_moving: bool = False,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
         require_native_zero_health_damage: bool = False) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_NATIVE_WORLD_PULLS_RNG_MODE_INVALID")
     if require_native_health_damage and require_native_zero_health_damage:
         raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
@@ -484,7 +486,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         "FOREVER_GSIM_WORLD_BRIDGE": "1",
     }
     proc = subprocess.Popen(
-        _native_world_pulls_command(binary, prepared, target_count, recovery_ns),
+        _native_world_pulls_command(
+            binary, prepared, target_count, recovery_ns, rng_mode=rng_mode
+        ),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
@@ -659,6 +663,7 @@ def main() -> None:
     target.add_argument("--classic-mob-level", type=int, default=None,
                         help="CMaNGOS ordinary-mob reference HP (Classic proxy, not Forever-verified)")
     parser.add_argument("--targets", type=int, default=2)
+    parser.add_argument("--rng-mode", choices=("balanced", "stochastic"), required=True)
     parser.add_argument("--recovery-seconds", type=float, default=0.0,
                         help="fixed native passive-regeneration time charged after each kill (0..300)")
     parser.add_argument("--require-native-moving", action="store_true")
@@ -671,15 +676,17 @@ def main() -> None:
     if not isfinite(args.recovery_seconds) or not 0 <= args.recovery_seconds <= 300:
         raise ValueError("RUST_NATIVE_PAID_RECOVERY_DURATION_INVALID")
     recovery_ns = round(args.recovery_seconds * 1_000_000_000)
-    valid = run(args.binary, args.prepared, mob_health=args.mob_health,
-                target_count=args.targets, recovery_ns=recovery_ns,
+    valid = run(args.binary, args.prepared, rng_mode=args.rng_mode,
+                mob_health=args.mob_health, target_count=args.targets,
+                recovery_ns=recovery_ns,
                 require_native_moving=args.require_native_moving,
                 classic_mob_level=args.classic_mob_level,
                 require_native_health_damage=args.require_native_health_damage,
                 require_native_zero_health_damage=args.require_native_zero_health_damage)
     print("RUST_TWO_REAL_GSIM_WORLD_KILLS", json.dumps(valid, sort_keys=True), flush=True)
-    forged = run(args.binary, args.prepared, mob_health=args.mob_health,
-                 target_count=args.targets, corrupt_ack=True, recovery_ns=recovery_ns,
+    forged = run(args.binary, args.prepared, rng_mode=args.rng_mode,
+                 mob_health=args.mob_health, target_count=args.targets,
+                 corrupt_ack=True, recovery_ns=recovery_ns,
                  classic_mob_level=args.classic_mob_level)
     print("RUST_TWO_WORLD_FORGED_ACK_REJECTED", json.dumps(forged, sort_keys=True), flush=True)
 
