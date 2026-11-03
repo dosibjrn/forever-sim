@@ -29,8 +29,9 @@ class NativeGearAdapter:
     """Conservative candidate pools from actual same-class native fixtures.
 
     No 16-slot assumptions, no gsim/Wowhead item identity dependency, and
-    no cross-class fixture mixing. Weapon/offhand/ranged positions remain
-    fixed until explicit hand/equip rules have been independently verified.
+    no cross-class fixture mixing. Weapon/ranged item identities and hand
+    rules remain fixed; exact same-ID source-observed enchant variants are
+    allowed because they do not change the equipped item identity.
     """
 
     def __init__(self, class_key: str, reference: dict, fixtures: list[dict], items: dict[int, dict]):
@@ -61,8 +62,8 @@ class NativeGearAdapter:
                 original = items.get(original_id)
                 if not native or not original or native.get("type") != original.get("type"):
                     continue
-                if native.get("type") in ("ItemTypeWeapon", "ItemTypeRanged"):
-                    continue  # hand, shield, relic and ranged rules are not yet certified
+                if native.get("type") in ("ItemTypeWeapon", "ItemTypeRanged") and iid != original_id:
+                    continue  # keep weapon/ranged identity fixed; same-ID observed variants do not alter hand rules
                 # A source donor of the same broad slot type is insufficient:
                 # e.g. a Mage cloth head cannot silently become a plate head.
                 if native.get("armor_type") != original.get("armor_type"):
