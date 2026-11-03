@@ -5,7 +5,7 @@ from pathlib import Path
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.source_rank_promotion import promote_atomic_source_talent_effects
 from src.game.talents import apply_talent_selection
-from tools.wf_gate_p2_live import _action_runtime_probe
+from tools.wf_talent_runtime import _action_runtime_probe
 
 DB = Path(__file__).resolve().parents[1] / 'data/forever/staged_druid_l30_talents_70338.sqlite'
 FILLER = {'genesis': 5, 'improved_wrath': 5, 'improved_moonfire': 2,
@@ -64,7 +64,7 @@ def test_missing_or_mismatched_grant_cannot_promote_noop_rank():
 def test_real_canonical_l60_source_has_legal_51_point_balance_build():
     """RED before grant promotion: Balance had only 30 executable points.
 
-    This is a real canonical SQLite/optimizer legality test, not P2 PASS.
+    This is a real canonical SQLite/optimizer legality test, not a standalone gate PASS.
     """
     from src.game.data.forever.sqlite_talents import DEFAULT_DB
     from src.game.talent_execution_coverage import compile_talent_runtime
@@ -90,7 +90,7 @@ def test_real_canonical_l60_source_has_legal_51_point_balance_build():
 
 
 def test_p2_granted_action_proves_damage_and_target_debuff_not_registration():
-    from tools.wf_gate_p2_live import _behavior_fixtures
+    from tools.wf_talent_runtime import _behavior_fixtures
     ir = _stripped_source()
     compiled, _ = promote_atomic_source_talent_effects(ir)
     mod = next(t.ranks[0].modifiers[0] for t in compiled.talents
@@ -104,7 +104,7 @@ def test_p2_granted_action_proves_damage_and_target_debuff_not_registration():
     observed = tests[0]['observed']
     assert observed['periodic_damage'] > 0
     assert observed['target_stat_modifiers_on_apply']
-    # A source-registered action with no applied effects is not a P2 PASS.
+    # A source-registered action with no applied effects is not a standalone gate PASS.
     silent = replace(selected, actions=tuple(
         replace(a, effects=()) if a.id == 'insect_swarm:24974' else a
         for a in selected.actions))
