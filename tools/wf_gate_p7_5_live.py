@@ -423,22 +423,18 @@ def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
         return False
     rng.shuffle(pairs)
 
-    # Preserve the existing four bounded source-gear validation attempts.
-    for attempt in range(4):
-        (gear_sha, other, different), (apl_sha, rotation) = pairs[attempt % len(pairs)]
-        selected = rng.sample(
-            different, min(len(different), rng.randint(2, 5)))
-        mixed = copy.deepcopy(items)
-        for i in selected:
-            mixed[i] = copy.deepcopy(other[i])
-        # No Python GearValidator veto here. The caller's selected Rust
-        # native_source_control(sim --gate) is the authority for this composite;
-        # a native refusal is recorded as a failed proposal, never retried in
-        # Python or treated as a legal paid candidate.
-        candidate_player["equipment"]["items"][:] = mixed
-        candidate_player["rotation"] = copy.deepcopy(rotation)
-        return True
-    return False
+    # One proposal yields one composite. The caller's selected Rust
+    # native_source_control(sim --gate) is the only legality authority; a
+    # native refusal ends this proposal rather than falling back to Python.
+    (_, other, different), (_, rotation) = pairs[0]
+    selected = rng.sample(
+        different, min(len(different), rng.randint(2, 5)))
+    mixed = copy.deepcopy(items)
+    for i in selected:
+        mixed[i] = copy.deepcopy(other[i])
+    candidate_player["equipment"]["items"][:] = mixed
+    candidate_player["rotation"] = copy.deepcopy(rotation)
+    return True
 
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
