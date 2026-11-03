@@ -2,6 +2,8 @@ name: Bootstrap and sync MythicSim Rust public fork
 
 on:
   workflow_dispatch:
+  issue_comment:
+    types: [created]
   pull_request:
     paths:
       - .github/workflows/rust-upstream-fork.yml
@@ -13,6 +15,15 @@ permissions:
 
 jobs:
   check-script:
+    # A comment is allowed to run the fork writer ONLY when the repository
+    # owner posts the exact command on a closed PR. On issue_comment GitHub
+    # checks out the default branch (main), never the PR's untrusted branch.
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.comment.body == '/rust-fork-sync' &&
+       github.event.comment.user.login == github.repository_owner &&
+       github.event.issue.pull_request != null &&
+       github.event.issue.state == 'closed')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +68,13 @@ jobs:
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
 
   sync-fork:
-    if: github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.comment.body == '/rust-fork-sync' &&
+       github.event.comment.user.login == github.repository_owner &&
+       github.event.issue.pull_request != null &&
+       github.event.issue.state == 'closed')
     needs: check-script
     runs-on: ubuntu-24.04
     timeout-minutes: 120
