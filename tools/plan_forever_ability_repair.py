@@ -15,7 +15,7 @@ if __package__ in (None,''):
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
 from src.game.data.forever.source_ability_repair import repair_queue
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 
 def plan(*,class_key:str,level:int,db_path:Path=DEFAULT_DB)->dict:
