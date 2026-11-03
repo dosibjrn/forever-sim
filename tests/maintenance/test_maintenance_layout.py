@@ -75,24 +75,8 @@ class MaintenanceTestLayout(unittest.TestCase):
                 source.replace("tests/fixtures/wf243_heldout_feral_l20.json", ""),
             )
 
-    def test_p1_policy_has_one_static_config_home(self):
-        old = ROOT / "gate_config" / "p1_scenario_applicability_v1.json"
-        new = ROOT / "config" / "gates" / "p1_scenario_applicability_v1.json"
-        self.assertFalse(old.exists(), f"stale policy location: {old}")
-        self.assertTrue(new.is_file(), f"missing scenario policy: {new}")
-        workflow = (ROOT / ".github" / "workflows"
-                    / "p1-native-validator-contract.yml").read_text()
-        self.assertIn("config/gates/p1_scenario_applicability_v1.json", workflow)
-        self.assertNotIn("gate_config/", workflow)
-        for consumer in (
-            ROOT / "tools" / "wf_gate_p1_live.py",
-        ):
-            content = consumer.read_text()
-            self.assertIn("p1_scenario_applicability_v1.json", content)
-            self.assertNotIn("gate_config", content)
-
     def test_retired_p1_source_inventory_and_progress_sidecars_are_gone(self):
-        """The native P1 caller no longer depends on source-list/progress sidecars."""
+        """Retired standalone P1/P2 gates leave no provider or proof sidecars."""
         for relative in (
             "tools/p1_native_source_inventory.py",
             "tools/p1_native_progress.py",
@@ -100,9 +84,10 @@ class MaintenanceTestLayout(unittest.TestCase):
             "tests/gates/test_p1_native_progress.py",
         ):
             self.assertFalse((ROOT / relative).exists(), f"retired P1 diagnostic remains: {relative}")
-        effects = (ROOT / "tools" / "wf_p1_native_effects.py").read_text(encoding="utf-8")
-        self.assertNotIn("p1_native_source_inventory", effects)
-        self.assertNotIn("p1_native_progress", effects)
+        self.assertFalse((ROOT / "tools" / "wf_p1_native_effects.py").exists())
+        self.assertFalse((ROOT / "tools" / "wf_gate_p1_live.py").exists())
+        self.assertFalse((ROOT / "tools" / "wf_gate_p2_live.py").exists())
+        self.assertTrue((ROOT / "tools" / "wf_talent_runtime.py").is_file())
 
     def test_current_ci_does_not_reference_old_test_locations(self):
         workflows = ROOT / ".github" / "workflows"
@@ -120,8 +105,8 @@ class MaintenanceTestLayout(unittest.TestCase):
         self.assertTrue((ROOT / "tests/release").is_dir())
 
 
-    def test_p1_p2_source_contracts_are_grouped_and_manually_runnable(self):
-        """Retain the exact-HEAD P1/P2 suite after removing flat test paths."""
+    def test_source_profile_contract_is_grouped_and_manually_runnable(self):
+        """Retain the exact-HEAD source-profile regression after moving it into gates/."""
         names = (
             "test_wf35_product_spec_profile_contract.py",
         )
@@ -141,12 +126,8 @@ class MaintenanceTestLayout(unittest.TestCase):
         ):
             self.assertFalse((ROOT / "tests/gates" / retired).exists())
             self.assertNotIn(retired, workflow)
-        for active in ("tests/test_wf469_p1_alignment.py",
-                       "tests/test_wf470_p1_scope.py"):
-            self.assertTrue((ROOT / active).is_file())
-            self.assertIn(active, workflow)
-        p2 = (ROOT / "tests/gates/test_wf35_product_spec_profile_contract.py").read_text()
-        self.assertIn("ROOT = Path(__file__).resolve().parents[2]", p2)
+        source_profile = (ROOT / "tests/gates/test_wf35_product_spec_profile_contract.py").read_text()
+        self.assertIn("ROOT = Path(__file__).resolve().parents[2]", source_profile)
 
 
 
