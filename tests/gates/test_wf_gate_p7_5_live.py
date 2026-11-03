@@ -197,7 +197,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
         def close(self): pass
 
     pool_calls = []
-    def pool(v, limit):
+    def pool(v, limit, **kwargs):
         pool_calls.append(limit)
         return ({0: [11], 1: [21]}, {})
 
