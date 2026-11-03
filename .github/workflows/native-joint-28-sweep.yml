@@ -118,6 +118,7 @@ jobs:
           python integrations/mythicsim-rust/tests/test_native_joint_28_sweep.py
           python integrations/mythicsim-rust/tests/test_native_gear_adapter.py
           python integrations/mythicsim-rust/tests/test_native_source_donors.py
+          python integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
 
       - name: Run balanced native 5s × 28 profile sweep
         working-directory: project
