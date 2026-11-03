@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Load a bounded, deterministic donor corpus from the pinned Rust engine.
 
-These are additional source request fixtures, not synthetic items or a full
-class/equip-law proof. Consumers must still apply same-class, exact-slot-shape,
-native item DB, item-type, armor-type, class-allowlist and level guards.
+These are additional source request fixtures, not synthetic items or a game-law
+proof. Consumers bound proposals by same-class, exact-slot-shape, source-observed
+entries and native item identity/type. MythicSim Rust alone decides armor,
+class, level, unique and all other equipment legality.
 """
 from __future__ import annotations
 
