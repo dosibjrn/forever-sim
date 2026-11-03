@@ -35,6 +35,7 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
         layout = parse_native_druid_layout(ENGINE_ROOT)
         self.assertEqual(layout["feral"][10]["field"], "predatory_strikes")
         self.assertEqual(layout["balance"][15]["field"], "moonkin_form")
+        self.assertNotIn("max_rank", layout["balance"][15])
 
     def test_predatory_strikes_rank_pair_uses_native_prepare_cli(self):
         binary = Path(os.environ.get("FOREVER_ENGINE_BINARY", ""))
