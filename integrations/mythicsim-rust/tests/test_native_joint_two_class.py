@@ -1031,17 +1031,17 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
 
         with patch.object(joint, "mutate_apl", side_effect=preserve_cold):
             mutated = adapter.mutate(candidate, AplOnlyRng())
-        self.assertIn(source_entry, mutated)
+        mutated_apl = mutated["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+        self.assertIn(source_entry, mutated_apl)
         self.assertEqual(
             condition,
             next(
                 entry["action"]["condition"]
-                for entry in mutated
+                for entry in mutated_apl
                 if entry.get("action", {}).get("castSpell", {}).get("spellId", {}).get("spellId") == 10463
             ),
         )
-        candidate_player["rotation"]["priorityList"] = mutated
-        self.assertTrue(adapter.legal(candidate))
+        self.assertTrue(adapter.legal(mutated))
 
     def test_native_verified_cross_build_apl_enters_selected_talent_domain(self):
         baseline = request()
