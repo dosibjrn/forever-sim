@@ -307,7 +307,7 @@ def main(argv: list[str]) -> int:
     for path, text in result.items():
         if text != original[path]:
             (root / path).write_text(text)
-    print("RUST_FOREVER_ROOTS_DOT_SOURCE_PORT_OK")
+    print("RUST_FOREVER_ROOTS_NATIVE_CONTROL_SOURCE_PORT_OK")
     return 0
 
 
