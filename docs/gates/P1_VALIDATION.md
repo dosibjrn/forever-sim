@@ -47,7 +47,7 @@ No backend union of incomplete implementations can be treated as P1 PASS.
 | --- | --- | --- |
 | `tools/p1_native_source_inventory.py` | Source-only candidates, role separation, scenario applicability; no GameIR | **None**; candidates may be unverified |
 | `tools/wf_p1_native_scope_matrix.py` | Class/level source inputs for 9 classes × L20/L60 | **None**; no native effects are executed |
-| `tools/wf_p1_native_effects.py` | Run real pinned native Rust APL-present/absent pair when supplied executable and request | **Diagnostic only**, not timing-preserving |
+| `tools/wf_p1_native_effects.py` | Run a selected-Rust PreparedV2 single-action/no-action pair and the live 2D world bridge | **Diagnostic only**, not a formal P1 PASS |
 | `tests/gates/test_wf_p1_native_blackbox.py` | Source/schema/regression tests; no mocked native combat PASS | **None** |
 | `tools/wf_gate.py --gate P1` | Existing historical selected-gsim provider | Not silently replaced by this experiment |
 

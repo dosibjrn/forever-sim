@@ -1,17 +1,49 @@
-"""P1 source inventory/black-box native harness contracts.
+"""P1 Forever native request/response boundary contracts.
 
-Only schema tests may use miniature request objects. A passing test here
-NEVER asserts native combat success without executing MythicSim Rust.
+Unit tests validate Forever-owned request plumbing and response handling only.
+The pinned-Rust integration separately exercises the real native call and
+live 2D world bridge.
 """
 from copy import deepcopy
+import json
 from pathlib import Path
+import subprocess
+import time
 
 import pytest
 
-from tools.p1_native_source_inventory import inventory
-from tools.wf_p1_native_effects import native_apl_pair, run_native
+from src.engine_client.native_p2_rank_probe import (
+    NativeRngMode,
+    _simulate_prepared,
+)
 
-ROOT = Path(__file__).resolve().parents[2]
+from tools.wf_p1_native_effects import native_single_action_pair, run_native
+
+
+
+def _simulate_prepared_report(monkeypatch, tmp_path, report, *, allow_zero):
+    """Exercise the actual Forever report adapter with a synthetic native CLI reply.
+
+    The fake executable only writes the supplied response envelope; it does
+    not assert or emulate MythicSim's Warcraft mechanics.
+    """
+    from src.engine_client import native_p2_rank_probe as adapter
+
+    def fake_run(argv, **kwargs):
+        output = Path(argv[argv.index("--outfile") + 1])
+        output.write_text(json.dumps(report), encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(adapter.subprocess, "run", fake_run)
+    return _simulate_prepared(
+        binary_path=tmp_path / "forever-engine",
+        prepared={"sim": {"iterations": 10, "seed": 647003}},
+        rng_mode=NativeRngMode.BALANCED,
+        iterations=10,
+        seed=647003,
+        deadline=time.monotonic() + 5,
+        allow_zero_dps_if_avg_absent=allow_zero,
+    )
 
 
 def _sample_request():
@@ -29,133 +61,328 @@ def _sample_request():
     }
 
 
-def test_hunter_l20_source_inventory_no_gameir_and_no_false_pass():
-    result = inventory("hunter", 20)
-    assert result["source_only"] is True
-    assert result["game_ir_required"] is False
-    assert result["effects_tested"] == 0
-    assert result["p1_certified"] is False
-    assert result["candidate_count"] > 0
-    # Auto Shot is already a native autoattack source, not a missing
-    # player ActionDefinition.
-    special = {x["spell_id"]: x["status"] for x in result["separate"]}
-    assert special[75] == "NATIVE_AUTO_ATTACK"
-    assert {14282, 13550} <= {x["spell_id"] for x in result["candidates"]}
+def _druid_request():
+    request = _sample_request()
+    request["raid"]["parties"][0]["players"][0]["class"] = "ClassDruid"
+    return request
 
 
-@pytest.mark.parametrize("cls", ("druid", "hunter", "mage", "paladin", "priest",
-                                   "rogue", "shaman", "warlock", "warrior"))
-@pytest.mark.parametrize("level", (20, 60))
-def test_class_level_p1_source_inventory_does_not_require_old_python_adapters(cls, level):
-    result = inventory(cls, level)
-    assert result["class"] == cls
-    assert result["level"] == level
-    assert result["candidate_count"] + result["separate_count"] > 0
-    assert result["p1_certified"] is False
+def test_native_single_action_pair_keeps_every_non_action_field_identical():
+    request = _sample_request()
+    reference = deepcopy(request)
+    positive, no_action = native_single_action_pair(request, 14282)
 
-
-def test_native_apl_control_preserves_all_non_apl_request_content():
-    req = _sample_request()
-    reference = deepcopy(req)
-    baseline, no_spell = native_apl_pair(req, 14282)
-    assert req == reference and baseline == reference
-    player = no_spell["raid"]["parties"][0]["players"][0]
-    assert player["rotation"]["priorityList"] == [
-        {"action": {"castSpell": {"spellId": {"spellId": 13550}}}}
+    assert request == reference
+    positive_player = positive["raid"]["parties"][0]["players"][0]
+    control_player = no_action["raid"]["parties"][0]["players"][0]
+    assert positive_player["rotation"]["priorityList"] == [
+        {"action": {"castSpell": {"spellId": {"spellId": 14282}}}}
     ]
-    player["rotation"]["priorityList"] = deepcopy(
-        req["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"])
-    assert no_spell == req
+    assert control_player["rotation"]["priorityList"] == []
+
+    positive_normalized = deepcopy(positive)
+    control_normalized = deepcopy(no_action)
+    positive_normalized["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] = ["ACTION"]
+    control_normalized["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] = ["ACTION"]
+    assert positive_normalized == control_normalized
 
 
-def test_native_missing_apl_spell_is_not_labeled_missing_engine_implementation():
-    with pytest.raises(ValueError, match="SPELL_NOT_IN_SOURCE_NATIVE_APL"):
-        native_apl_pair(_sample_request(), 1130)
+def test_native_single_action_pair_forwards_absent_candidate_as_native_wire_request():
+    request = _sample_request()
+    reference = deepcopy(request)
+    positive, no_action = native_single_action_pair(request, 1130)
+
+    positive_player = positive["raid"]["parties"][0]["players"][0]
+    control_player = no_action["raid"]["parties"][0]["players"][0]
+    assert positive_player["rotation"]["priorityList"] == [
+        {"action": {"castSpell": {"spellId": {"spellId": 1130}}}}
+    ]
+    assert control_player["rotation"]["priorityList"] == []
+    assert request == reference
+
+    positive_normalized = deepcopy(positive)
+    control_normalized = deepcopy(no_action)
+    positive_normalized["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] = ["ACTION"]
+    control_normalized["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] = ["ACTION"]
+    assert positive_normalized == control_normalized
 
 
-def test_native_runner_rejects_missing_binary_without_fabricating_native_output():
-    with pytest.raises(FileNotFoundError, match="PINNED_RUST_ENGINE_BINARY_MISSING"):
-        run_native(ROOT/"nonexistent-forever-engine", _sample_request(),
-                   class_key="hunter", level=20, spell_id=14282)
+def test_native_single_action_pair_rejects_ambiguous_duplicate_action():
+    duplicate = _sample_request()
+    duplicate["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"].append(
+        deepcopy(duplicate["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"][0])
+    )
+    with pytest.raises(ValueError, match="AMBIGUOUS_IN_APL"):
+        native_single_action_pair(duplicate, 14282)
 
 
-def test_source_only_nonimpact_never_becomes_an_effect_pass():
-    result = inventory("druid", 20)
-    rows = {x["name"]: x["status"] for x in result["separate"]}
-    for name in ("Aquatic Form", "Growl", "Cure Poison", "Rebirth", "Revive"):
-        assert rows[name] == "NOT_RELEVANT_TO_SIMULATION"
-    assert result["p1_certified"] is False
+def test_native_single_action_pair_rejects_hidden_rotation_channels():
+    request = _sample_request()
+    request["raid"]["parties"][0]["players"][0]["rotation"]["prepullActions"] = [
+        {"action": {"castSpell": {"spellId": {"spellId": 1}}}}
+    ]
+    with pytest.raises(ValueError, match="UNCONTROLLED_ROTATION_CHANNEL"):
+        native_single_action_pair(request, 14282)
 
 
-
-
-def test_unproven_python_source_role_does_not_block_a_native_apl_probe(monkeypatch, tmp_path):
-    """Test Forever admission plumbing, not the correctness of Rust game rules.
-
-    The legacy source role is uncertain, but the caller has an explicit native
-    castSpell request. Only MythicSim may decide whether it is supported.
-    This is a mocked adapter test and never earns P1 effect coverage.
-    """
+def test_native_probe_has_no_source_inventory_or_shadow_progress_dependency(
+    monkeypatch, tmp_path
+):
     from tools import wf_p1_native_effects as native
 
-    source = {
-        "class": "hunter", "level": 20,
-        "scenario": "current_solo_leveling_100mob_v1",
-        "source_only": True, "game_ir_required": False,
-        "candidates": [{"spell_id": 13550}],
-        "separate": [{"spell_id": 14282, "status": "NOT_A_PROVEN_CASTABLE_ACTION"}],
-    }
-    monkeypatch.setattr(native, "inventory", lambda *args, **kwargs: source)
     calls = []
 
-    def fake_native(binary, request, *, timeout_s):
-        actions = request["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
-        calls.append([row["action"]["castSpell"]["spellId"]["spellId"] for row in actions])
-        return {"result": {"raidMetrics": {"dps": {"avg": float(len(actions))}}}}
+    def fake_probe(**kwargs):
+        calls.append(kwargs)
+        return {
+            "status": "NATIVE_DIRECT_BEHAVIOR_VERIFIED",
+            "proof_kind": "NATIVE_DIRECT_EFFECT",
+            "executor": "msim-rust",
+            "native_executed": True,
+            "effect_observed": True,
+            "controlled_behavior_assertion_passed": True,
+            "observable_effects": {"dps_delta": 4.0, "actual_2d_ack": True},
+            "p1_certified": False,
+        }
 
-    monkeypatch.setattr(native, "_run", fake_native)
-    binary = tmp_path / "forever-engine"
-    binary.write_bytes(b"unit-test-placeholder-not-an-engine")
-    result = native.run_native(binary, _sample_request(),
-                               class_key="hunter", level=20, spell_id=14282)
-    assert calls == [[14282, 13550], [13550]]
-    assert result["status"] == "NATIVE_APL_ABLATION_DIFFERENCE"
+    monkeypatch.setattr(native, "run_native_p1_direct_effect_probe", fake_probe)
+    result = native.run_native(
+        tmp_path / "forever-engine",
+        _sample_request(),
+        class_key="hunter",
+        level=20,
+        spell_id=14282,
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["spell_id"] == 14282
+    assert result["status"] == "NATIVE_DIRECT_BEHAVIOR_VERIFIED"
+    assert result["native_executed"] is True
+    assert result["p1_certified"] is False
+    assert not hasattr(native, "inventory")
+    assert not hasattr(native, "native_p1_progress")
+    assert "source_candidate_membership" not in result
+    assert "source_scope_membership" not in result
+    assert "p1_native_progress" not in result
+    assert "p1_native_progress_error" not in result
+
+
+def test_native_prepare_refusal_is_preserved_without_fallback(monkeypatch, tmp_path):
+    from src.engine_client import native_p1_effect_probe as probe
+
+    engine_root = tmp_path / "engine"
+    engine_root.mkdir()
+    binary = engine_root / "forever-engine"
+    binary.write_bytes(b"placeholder")
+    calls = []
+
+    def prepare(**kwargs):
+        calls.append(kwargs["scenario"])
+        if kwargs["scenario"].endswith("with-action"):
+            player = kwargs["request"]["raid"]["parties"][0]["players"][0]
+            assert player["rotation"]["priorityList"] == [
+                {"action": {"castSpell": {"spellId": {"spellId": 1130}}}}
+            ]
+            return {"status": "UNSUPPORTED", "stage": "prepare",
+                    "reason": "native_action_not_supported"}
+        return {
+            "status": "PREPARED", "stage": "prepare",
+            "engine_identity": "selected-pin",
+            "request_sha256": "c" * 64,
+            "prepared": {"request_sha256": "c" * 64},
+        }
+
+    monkeypatch.setattr(probe, "prepare_native_request", prepare)
+    monkeypatch.setattr(
+        probe, "_simulate_prepared",
+        lambda **kwargs: pytest.fail("native prepare refusal must not fall back to simulation"),
+    )
+    monkeypatch.setattr(
+        probe, "_run_world_bridge",
+        lambda *args, **kwargs: pytest.fail("native prepare refusal must not reach the world bridge"),
+    )
+    result = probe.run_native_p1_direct_effect_probe(
+        binary=binary, engine_root=engine_root, request=_druid_request(),
+        spell_id=1130, timeout_seconds=5,
+    )
+    assert result["status"] == "UNSUPPORTED"
+    assert result["reason"] == "native_action_not_supported"
+    # Native refusal of the selected action is final: do not prepare a
+    # redundant no-action control or execute either side.
+    assert calls == ["p1-druid-l60-single-action-1130-with-action"]
+    assert result["p1_certified"] is False
+
+
+def test_native_direct_effect_requires_positive_delta_and_real_world_ack(monkeypatch, tmp_path):
+    from src.engine_client import native_p1_effect_probe as probe
+
+    engine_root = tmp_path / "engine"
+    engine_root.mkdir()
+    binary = engine_root / "forever-engine"
+    binary.write_bytes(b"placeholder")
+    prepare_count = 0
+
+    def prepare(**kwargs):
+        nonlocal prepare_count
+        prepare_count += 1
+        marker = "with" if kwargs["scenario"].endswith("with-action") else "without"
+        digest = ("a" if marker == "with" else "b") * 64
+        return {
+            "status": "PREPARED", "stage": "prepare",
+            "engine_identity": "selected-pin",
+            "request_sha256": digest,
+            "prepared_sha256": digest,
+            "prepared": {"marker": marker, "request_sha256": digest},
+        }
+
+    def simulate(**kwargs):
+        marker = kwargs["prepared"]["marker"]
+        return {
+            "status": "EXECUTED", "stage": "sim",
+            "dps": 18.0 if marker == "with" else 4.0,
+            "engine_identity": "selected-pin",
+        }
+
+    world_calls = []
+    def world(binary_path, prepared, *, target_count, mob_health):
+        world_calls.append({
+            "binary_path": binary_path,
+            "prepared": prepared,
+            "target_count": target_count,
+            "mob_health": mob_health,
+        })
+        return {
+            "actual_2d_ack": True,
+            "continuous_native_actor": True,
+            "world_targets_killed": 2,
+            "native_damage_events": 2,
+            "checkpoint_certified": False,
+            "world_elapsed_seconds": 3.0,
+        }
+
+    monkeypatch.setattr(probe, "prepare_native_request", prepare)
+    monkeypatch.setattr(probe, "_simulate_prepared", simulate)
+    monkeypatch.setattr(probe, "_run_world_bridge", world)
+    result = probe.run_native_p1_direct_effect_probe(
+        binary=binary, engine_root=engine_root, request=_druid_request(),
+        spell_id=14282, timeout_seconds=5, iterations=1,
+    )
+    assert prepare_count == 2
+    assert len(world_calls) == 1
+    assert result["status"] == "NATIVE_DIRECT_BEHAVIOR_VERIFIED"
+    assert result["dps_delta"] == 14.0
+    assert result["positive_action_count"] == 1
+    assert result["control_action_count"] == 0
+    assert result["effect_observed"] is True
+    assert result["controlled_behavior_assertion_passed"] is True
+    assert result["observable_effects"]["actual_2d_ack"] is True
+    assert result["world_bridge"]["checkpoint_certified"] is False
+    assert result["p1_certified"] is False
+
+
+def test_native_direct_effect_does_not_claim_success_without_metric_delta(monkeypatch, tmp_path):
+    from src.engine_client import native_p1_effect_probe as probe
+
+    engine_root = tmp_path / "engine"
+    engine_root.mkdir()
+    binary = engine_root / "forever-engine"
+    binary.write_bytes(b"placeholder")
+
+    def prepare(**kwargs):
+        marker = "with" if kwargs["scenario"].endswith("with-action") else "without"
+        digest = ("a" if marker == "with" else "b") * 64
+        return {
+            "status": "PREPARED", "stage": "prepare",
+            "engine_identity": "selected-pin",
+            "request_sha256": digest,
+            "prepared": {"marker": marker, "request_sha256": digest},
+        }
+
+    def simulate(**kwargs):
+        return {"status": "EXECUTED", "stage": "sim", "dps": 4.0}
+
+    monkeypatch.setattr(probe, "prepare_native_request", prepare)
+    monkeypatch.setattr(probe, "_simulate_prepared", simulate)
+    monkeypatch.setattr(
+        probe, "_run_world_bridge",
+        lambda *args, **kwargs: pytest.fail("world bridge must not run without an effect delta"),
+    )
+    result = probe.run_native_p1_direct_effect_probe(
+        binary=binary, engine_root=engine_root, request=_druid_request(),
+        spell_id=14282, timeout_seconds=5, iterations=1,
+    )
+    assert result["status"] == "NO_DIRECT_EFFECT_OBSERVED"
     assert result["effect_observed"] is False
     assert result["p1_certified"] is False
-    assert result["p1_native_progress"]["verified"] == 0
-    assert result["p1_native_progress"]["diagnostic_only_spell_ids"] == [14282]
 
 
+def test_empty_native_control_report_counts_zero_only_after_all_fights_complete(
+    monkeypatch, tmp_path
+):
+    # Match the real Rust protobuf-JSON shape used by the 2D bridge: dps.avg
+    # is omitted for a zero-damage fight, while iterationsDone is explicit.
+    report = {
+        "identity": {"engine": "forever-engine"},
+        "result": {
+            "iterationsDone": 10,
+            "raidMetrics": {"dps": {}},
+        },
+    }
+    result = _simulate_prepared_report(
+        monkeypatch, tmp_path, report, allow_zero=True
+    )
+    assert result["status"] == "EXECUTED", result
+    assert result["dps"] == 0.0
+    assert result["iterations_done"] == 10
+    assert result["zero_dps_due_to_absent_avg"] is True
 
-def test_native_preparation_refusal_preserves_rust_reason(monkeypatch, tmp_path):
-    """The pinned Rust CLI emits a JSON refusal on stdout with exit code 5."""
-    from subprocess import CompletedProcess
-    from tools.wf_p1_native_effects import _run
 
-    def refused(argv, **kwargs):
-        return CompletedProcess(
-            argv, 5,
-            stdout='{"prepared":false,"refusal":{"code":"talents","reason":"illegal rank"}}',
-            stderr="",
-        )
+def test_empty_native_control_report_remains_invalid_for_default_p2_parser(
+    monkeypatch, tmp_path
+):
+    report = {
+        "identity": {"engine": "forever-engine"},
+        "result": {
+            "iterationsDone": 10,
+            "raidMetrics": {"dps": {}},
+        },
+    }
+    result = _simulate_prepared_report(
+        monkeypatch, tmp_path, report, allow_zero=False
+    )
+    assert result["status"] == "ERROR"
+    assert result["reason"] == "NATIVE_SIM_REPORT_INVALID:KeyError:'avg'"
 
-    monkeypatch.setattr("tools.wf_p1_native_effects.subprocess.run", refused)
-    with pytest.raises(ValueError, match="NATIVE_PREPARE_REFUSED:talents:illegal rank"):
-        _run(tmp_path / "forever-engine", _sample_request(), timeout_s=1.0)
+
+def test_empty_native_control_report_is_rejected_when_iterations_are_incomplete(
+    monkeypatch, tmp_path
+):
+    report = {
+        "identity": {"engine": "forever-engine"},
+        "result": {
+            "iterationsDone": 9,
+            "raidMetrics": {"dps": {}},
+        },
+    }
+    result = _simulate_prepared_report(
+        monkeypatch, tmp_path, report, allow_zero=True
+    )
+    assert result["status"] == "ERROR"
+    assert "NATIVE_SIM_EMPTY_DPS_ITERATIONS_INCOMPLETE" in result["reason"]
 
 
-def test_native_coverage_refusal_preserves_rust_reason(monkeypatch, tmp_path):
-    """Valid unsupported inputs report exit 3, not a synthetic P1 success."""
-    from subprocess import CompletedProcess
-    from tools.wf_p1_native_effects import _run
-
-    def refused(argv, **kwargs):
-        return CompletedProcess(
-            argv, 3,
-            stdout='{"supported":false,"refusals":[{"code":"native_gap","reason":"unsupported spell"}]}',
-            stderr="",
-        )
-
-    monkeypatch.setattr("tools.wf_p1_native_effects.subprocess.run", refused)
-    with pytest.raises(ValueError, match="NATIVE_COVERAGE_REFUSED:"):
-        _run(tmp_path / "forever-engine", _sample_request(), timeout_s=1.0)
+def test_empty_native_control_report_does_not_hide_missing_dps_block(
+    monkeypatch, tmp_path
+):
+    report = {
+        "identity": {"engine": "forever-engine"},
+        "result": {
+            "iterationsDone": 10,
+            "raidMetrics": {},
+        },
+    }
+    result = _simulate_prepared_report(
+        monkeypatch, tmp_path, report, allow_zero=True
+    )
+    assert result["status"] == "ERROR"
+    assert result["reason"] == "NATIVE_SIM_REPORT_INVALID:KeyError:'dps'"

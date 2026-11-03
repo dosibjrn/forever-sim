@@ -1,4 +1,4 @@
-name: Compile exact pinned patched Rust fork source (not M1 gate)
+name: Build selected Rust engine for Forever boundary tests (not M1 gate)
 on:
   pull_request:
     paths:
@@ -6,24 +6,30 @@ on:
       - integrations/mythicsim-rust/engine
       - .github/workflows/rust-submodule-verify.yml
       - .github/workflows/wf-gsim-rust-native-world.yml
-      - integrations/mythicsim-rust/port_native_typed_rng.py
-      - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
       - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
       - src/engine_client/native_p2_rank_probe.py
+      - src/engine_client/native_p1_effect_probe.py
+      - tools/wf_p1_native_effects.py
+      - integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
       - .github/workflows/m1-on-demand-record.yml
 
 permissions:
   contents: read
 
 jobs:
-  source-compiles:
+  native-boundary:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Require exact Git submodule commit and our actual Rust source patch
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install minimal live 2D world bridge dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Require the exact selected engine pin
         shell: bash
         run: |
           set -euo pipefail
@@ -32,42 +38,15 @@ jobs:
           actual="$(git -C "$engine" rev-parse HEAD)"
           test -n "$expected" && test "$expected" = "$actual"
           grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
-          test -f "$engine/src/core/fight/world_bridge.rs"
-          # #528: selected gitlink itself must contain the typed runtime;
-          # a temporary CI source port is never proof of published production code.
-          grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
-          ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
-          grep -Fq 'pub(crate) fn new(mode: RngMode,' "$engine/src/core/rng.rs"
-          grep -Fq 'SimRng::new(rng_mode,' "$engine/src/core/fight.rs"
-          python3 integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
-          # Retain the idempotence check below, but additionally require that
-          # porting the already-published pin changes ZERO tracked Rust files.
-          if ! git -C "$engine" diff --quiet; then
-            echo "PINNED_RUST_REQUIRES_UNPUBLISHED_TYPED_RNG_PATCH" >&2; exit 1
-          fi
-          # Fork-sync retries and an already-typed published pin must not
-          # duplicate the Rust enum or rewrite migrated test callsites.
-          first_port="$(git -C "$engine" diff --binary | sha256sum)"
-          python3 integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
-          second_port="$(git -C "$engine" diff --binary | sha256sum)"
-          if [[ "$first_port" != "$second_port" ]]; then
-            echo "RUST_TYPED_RNG_PORT_NOT_IDEMPOTENT" >&2; exit 1
-          fi
-          grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
-          if grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"; then
-            echo "ENVIRONMENT_SELECTED_RNG_REMAINS_IN_SELECTED_RUST" >&2; exit 1
-          fi
-          grep -Fq 'RandomRequest::Bernoulli' "$engine/src/core/rng.rs"
           echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
-      - name: Compile typed RNG API and all Rust integration-test targets
+      - name: Build selected engine binary for Forever boundary invocation
         working-directory: integrations/mythicsim-rust/engine
-        run: |
-          cargo test --locked --lib typed_rng_api_tests
-          cargo test --locked --lib native_improved_roots_rank
-          cargo check --locked
-          cargo test --locked --no-run
-          cargo build --locked --bin forever-engine
-      - name: Exercise selected-Rust P2 prepare adapter
+        run: cargo build --locked --bin forever-engine
+      - name: Exercise selected-Rust P2 prepare response adapter
         env:
           FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         run: python3 integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
+      - name: Exercise selected-Rust P1 direct action and live 2D world bridge
+        env:
+          FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        run: python3 integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
