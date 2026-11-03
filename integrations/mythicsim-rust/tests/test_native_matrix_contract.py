@@ -546,6 +546,19 @@ class NativeGenericMatrixContract(unittest.TestCase):
                 )
         self.assertEqual("ERROR", caught.exception.status)
 
+    def test_unsupported_native_objective_fails_before_subprocess(self):
+        import time
+        from unittest.mock import patch
+        from native_executor import run as native_run
+
+        with patch("native_executor.subprocess.run") as invoke:
+            with self.assertRaisesRegex(ValueError, "Unsupported native objective: HPS"):
+                native_run(
+                    "unused-binary", {"simOptions": {}}, 40, 731, "balanced",
+                    time.monotonic() + 5.0, objective="HPS",
+                )
+        invoke.assert_not_called()
+
     def test_native_tps_uses_player_threat_receipt_and_preserves_unscored_classification(self):
         import subprocess
         import time
