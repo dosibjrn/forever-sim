@@ -5,7 +5,7 @@ import threading
 import pytest
 
 from src.game.data.forever import build_game_ir_slice
-from src.game.policy_search import search_priority_policy
+from src.optimization.policy_search import search_priority_policy
 from src.game.talents import apply_talent_selection, explicit_seed_selection
 from src.listener import DECISIONS_HTML
 from src.service.client import ServiceClient
