@@ -71,6 +71,31 @@ def _paid_elite_choice(elites, rng, proposal_index):
     return rng.choice(elites[:min(18, len(elites))])[1]
 
 
+def _p73_paid_parent_pool(balanced_elites, stochastic_finalists, proposal_index):
+    """Use paid native+2D stochastic feedback for most local talent proposals.
+
+    Three balanced fights can misrank a talent allocation against stochastic
+    DPS. Only this run's independently executed source-legal contenders enter
+    the stochastic parent pool. Every third exploitation retains the balanced
+    elite diversity; every fifth proposal is still a wholly cold source draw.
+    """
+    if not stochastic_finalists or proposal_index % 3 == 0:
+        return balanced_elites
+    return sorted(
+        ((row[0], row[3]) for row in stochastic_finalists),
+        key=lambda item: item[0], reverse=True)
+
+
+def _p73_early_rerank_due(elapsed_s, attempted_count):
+    """Pay for at most six early native+2D stochastic finalists, 120–240 s.
+
+    Reranks are charged to the existing 300-second search, not the separate
+    frozen 1,000-fight stochastic holdout. Failed attempts consume a slot.
+    """
+    return (120.0 <= elapsed_s < 240.0 and attempted_count < 6
+            and elapsed_s >= 120.0 + 20.0 * attempted_count)
+
+
 def _paid_stochastic_finalist(production, binary, request: dict, distance: float):
     """Re-rank a paid live elite on separate stochastic seeds, not acceptance.
 
@@ -130,6 +155,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     reranked = []  # independently paid stochastic native+world finalists
     rerank_seen = set()
     rerank_failures = []
+    early_stochastic_finalists_paid = 0
+    stochastic_parent_proposals = 0
     executed = 0
     proposals = 0
     seen = set()
@@ -141,7 +168,12 @@ def run_live(root: Path, class_key: str, level: int, *,
            if full_search else proposals < 3):
         # Restore the native optimizer's paid finalist rerank inside the
         # SAME 300-second cold search, without seeding the saved reference.
-        if (full_search and 240.0 <= time.monotonic() - search_start < 295.0):
+        rerank_elapsed = (time.monotonic() - search_start
+                          if full_search else 0.0)
+        early_rerank = (_p73_early_rerank_due(
+            rerank_elapsed, len(rerank_seen)) if full_search else False)
+        if (full_search and
+                (240.0 <= rerank_elapsed < 295.0 or early_rerank)):
             pending = next(
                 ((sc, req, hashlib.sha256(json.dumps(req, sort_keys=True).encode()).hexdigest())
                  for sc, req in elites
@@ -156,6 +188,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                         player["distanceFromTarget"])
                     reranked.append((rerank_dps, rerank_live, contender_sha,
                                      contender, screen_dps))
+                    if early_rerank:
+                        early_stochastic_finalists_paid += 1
                 except (ValueError, RuntimeError, OSError, TypeError,
                         KeyError, subprocess.SubprocessError, AssertionError) as exc:
                     rerank_failures.append(type(exc).__name__ + ":" + str(exc)[:180])
@@ -167,7 +201,12 @@ def run_live(root: Path, class_key: str, level: int, *,
             # This restores the existing native source P7.3 optimizer's
             # diverse paid-elite population (top 18 of 22); every fifth
             # proposal remains independent from the reference/source grammar.
-            elite = (_paid_elite_choice(elites, rng, proposals)
+            parent_pool = (_p73_paid_parent_pool(elites, reranked, proposals)
+                           if full_search else elites)
+            if (full_search and parent_pool is not elites
+                    and proposals % 5 != 0):
+                stochastic_parent_proposals += 1
+            elite = (_paid_elite_choice(parent_pool, rng, proposals)
                      if full_search else None)
             candidate = _cold_talents(base, rng, source, elite=elite)
             sha = hashlib.sha256(json.dumps(
@@ -302,6 +341,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "winner_screen_dps": screen_score,
         "winner_selection": winner_selection,
         "paid_stochastic_finalists": len(reranked),
+        "early_stochastic_finalists_paid": early_stochastic_finalists_paid,
+        "stochastic_parent_proposals": stochastic_parent_proposals,
         "paid_stochastic_finalist_failures": rerank_failures[:4],
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
