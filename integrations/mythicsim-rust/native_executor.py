@@ -120,7 +120,18 @@ def _raise_execution_error(*, returncode, stdout, stderr, raw_response,
 
 def _raise_structured_native_outcome(raw, *, returncode, stdout, stderr,
                                      elapsed_s, request_sha256):
-    status = str(raw.get("status", "")).upper()
+    raw_status = raw.get("status")
+    status = ""
+    if "status" in raw:
+        allowed_statuses = {"VALID", "INVALID", "UNSUPPORTED", "ERROR", "FAILED"}
+        if not isinstance(raw_status, str) or raw_status.upper() not in allowed_statuses:
+            _raise_execution_error(
+                returncode=returncode, stdout=stdout,
+                stderr=stderr or f"Unknown native status: {raw_status!r}",
+                raw_response=raw, elapsed_s=elapsed_s,
+                request_sha256=request_sha256, output_exists=True,
+            )
+        status = raw_status.upper()
     if status in {"INVALID", "UNSUPPORTED"}:
         raise NativeCandidateRefusal(
             status, raw_response=raw,
