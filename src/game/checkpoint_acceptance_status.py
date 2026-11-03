@@ -1,4 +1,4 @@
-"""Report current M1 checkpoint status alongside separate historical P1–P6 facts.
+"""Report current M1 checkpoint status alongside separate historical pre-v2.20 facts.
 
 WF360/WF365/WF367 are legacy six-gate evidence, not current certification.
 Only the canonical Merge-owned M1 register can supply full checkpoint counts.
@@ -70,7 +70,7 @@ def accepted_checkpoint_status(root: Path) -> dict:
     return {
         "accepted_checkpoints": f"{certified}/{current['total_checkpoints']}",
         "full_checkpoint_certified": certified > 0,
-        "full_checkpoint_authority": "CANONICAL_M1_LEDGER_COMPATIBLE_P1_P7_5",
+        "full_checkpoint_authority": "CANONICAL_M1_LEDGER_COMPATIBLE_P3_P7_5",
         "legacy_six_gate_accepted_checkpoints": legacy["accepted_checkpoints"],
         "legacy_six_gate_druid_l30": legacy["druid_l30"],
         "legacy_six_gate_authority": legacy["authority"],
