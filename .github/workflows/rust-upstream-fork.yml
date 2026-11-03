@@ -17,6 +17,7 @@ on:
       - integrations/mythicsim-rust/port_native_two_world_cli.py
       - integrations/mythicsim-rust/port_native_gsim_moving.py
       - integrations/mythicsim-rust/port_native_health_damage_receipts.py
+      - integrations/mythicsim-rust/port_typed_rng_mode.py
       - integrations/mythicsim-rust/test_port_native_health_damage_receipts.py
       - integrations/mythicsim-rust/test_port_native_world_lethal_terminal.py
       - tests/test_work2_rust_gsim_moving_port.py
@@ -78,7 +79,7 @@ jobs:
               "git push fork refs/remotes/origin/main:refs/heads/main",
               "check_engine_source", "cargo check --locked",
               "port_upstream_paladin_typed_rng.py", "git merge --no-ff",
-              "FORK_ENGINE_SHA",
+              "FORK_ENGINE_SHA", "port_typed_rng_mode.py",
           ):
               assert required in s, required
           print("SOURCE_PACKAGING_AND_GIT_SAFETY_GUARDS_PRESENT")
