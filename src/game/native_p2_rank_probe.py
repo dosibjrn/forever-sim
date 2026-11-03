@@ -435,6 +435,275 @@ def run_native_prepare_pair(
     }
 
 
+def _prepared_spell_range_map(prepared: Mapping) -> dict[int, float]:
+    """Return source-engine max range by native spell identity."""
+    player = prepared.get("player", {})
+    spells = player.get("spells", []) if isinstance(player, Mapping) else []
+    if not isinstance(spells, list):
+        return {}
+    ranges: dict[int, float] = {}
+    for spell in spells:
+        if not isinstance(spell, Mapping):
+            continue
+        action = spell.get("action_id", spell.get("actionId", spell.get("id")))
+        spell_id = None
+        if isinstance(action, Mapping):
+            for key in ("spell_id", "spellId"):
+                value = action.get(key)
+                if isinstance(value, int) and not isinstance(value, bool):
+                    spell_id = value
+                    break
+            if spell_id is None:
+                for value in action.values():
+                    if isinstance(value, Mapping):
+                        for key in ("spell_id", "spellId"):
+                            nested = value.get(key)
+                            if isinstance(nested, int) and not isinstance(nested, bool):
+                                spell_id = nested
+                                break
+                    if spell_id is not None:
+                        break
+        elif isinstance(action, str):
+            match = re.search(r"(\d+)$", action)
+            if match:
+                spell_id = int(match.group(1))
+        raw_range = spell.get("max_range", spell.get("maxRange"))
+        if (isinstance(spell_id, int) and not isinstance(spell_id, bool)
+                and isinstance(raw_range, (int, float))
+                and not isinstance(raw_range, bool)
+                and math.isfinite(float(raw_range)) and float(raw_range) > 0):
+            ranges[spell_id] = max(ranges.get(spell_id, 0.0), float(raw_range))
+    return ranges
+
+
+def _rotation_spell_ids(value: object) -> list[int]:
+    """Collect ordered native spell IDs from the fixture's actual rotation."""
+    found: list[int] = []
+
+    def visit(node: object) -> None:
+        if isinstance(node, Mapping):
+            for key, child in node.items():
+                if key in {"spell_id", "spellId"} and isinstance(child, int) and not isinstance(child, bool):
+                    found.append(child)
+                visit(child)
+        elif isinstance(node, (list, tuple)):
+            for child in node:
+                visit(child)
+
+    visit(value)
+    return list(dict.fromkeys(found))
+
+
+def _observed_world_spell_ids(report: Mapping) -> list[int]:
+    found: set[int] = set()
+    for field in ("source_action_events_before", "source_action_events_after"):
+        counts = report.get(field, {})
+        if not isinstance(counts, Mapping):
+            continue
+        for action_id, count in counts.items():
+            if isinstance(count, (int, float)) and count > 0:
+                match = re.search(r"(\d+)$", str(action_id))
+                if match:
+                    found.add(int(match.group(1)))
+    return sorted(found)
+
+
+def run_native_range_world_pair(
+    *,
+    binary: str | Path,
+    engine_root: str | Path,
+    scenario: str,
+    before_selection: Mapping[str, int],
+    after_selection: Mapping[str, int],
+    target_talent_id: str,
+    target_rank: int,
+    rng_mode: NativeRngMode,
+    seed: int = 647003,
+    timeout_seconds: float = 60.0,
+) -> dict[str, object]:
+    """Prove one source-native range rank in the real Rust ↔ gsim 2D path.
+
+    The control and candidate use identical source request, rotation, seed,
+    target position and world-facing state. Only the source-legal talent rank
+    differs. The target is placed strictly between the selected Rust engine's
+    before/after max-range values; the world feed supplies that actual distance
+    to Rust, and gsim applies the resulting native damage/ACK. This is a
+    diagnostic receipt, never a P2 acceptance or M1 credit.
+    """
+    if rng_mode is not NativeRngMode.BALANCED:
+        raise NativeP2ProbeError("NATIVE_P2_RANGE_WORLD_REQUIRES_BALANCED_RNG")
+    if target_talent_id != "natures_reach" or scenario != "balance" or target_rank not in (1, 2):
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_P2_RANGE_WORLD_PILOT_SCOPE_UNSUPPORTED",
+            "target_talent_id": target_talent_id,
+            "target_rank": target_rank,
+            "scenario": scenario,
+            "accepted_for_p2": False,
+            "counted_in_p2_acceptance": False,
+        }
+    binary_path = Path(binary)
+    root = Path(engine_root)
+    pair = run_native_prepare_pair(
+        binary=binary_path,
+        engine_root=root,
+        scenario=scenario,
+        before_selection=before_selection,
+        after_selection=after_selection,
+        target_talent_id=target_talent_id,
+        target_rank=target_rank,
+        timeout_seconds=timeout_seconds,
+        iterations=1,
+        seed=seed,
+    )
+    if pair.get("status") != "PREPARED":
+        return {
+            **{key: value for key, value in pair.items() if not key.startswith("_")},
+            "status": "BLOCKED",
+            "reason": pair.get("reason", "NATIVE_P2_RANGE_WORLD_PREPARE_PAIR_NOT_READY"),
+            "accepted_for_p2": False,
+            "counted_in_p2_acceptance": False,
+        }
+
+    request_path = root / "tests" / "classes" / "druid" / "prepare" / "balance.request.json"
+    if not request_path.is_file():
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_P2_RANGE_WORLD_REQUEST_FIXTURE_MISSING",
+            "accepted_for_p2": False,
+            "counted_in_p2_acceptance": False,
+        }
+    base_request = json.loads(request_path.read_text(encoding="utf-8"))
+    player = _druid_player(base_request)
+    rotation_spell_ids = _rotation_spell_ids(player.get("rotation"))
+    before_ranges = _prepared_spell_range_map(pair["_before_prepared"])
+    after_ranges = _prepared_spell_range_map(pair["_after_prepared"])
+    range_pairs = [
+        (spell_id, before_ranges[spell_id], after_ranges[spell_id])
+        for spell_id in rotation_spell_ids
+        if spell_id in before_ranges and spell_id in after_ranges
+        and after_ranges[spell_id] > before_ranges[spell_id]
+    ]
+    if not range_pairs:
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_P2_RANGE_WORLD_NO_ROTATION_SPELL_RANGE_DELTA",
+            "rotation_spell_ids": rotation_spell_ids,
+            "before_spell_ranges": before_ranges,
+            "after_spell_ranges": after_ranges,
+            "accepted_for_p2": False,
+            "counted_in_p2_acceptance": False,
+        }
+    spell_id, before_range, after_range = range_pairs[0]
+    distance = round((before_range + after_range) / 2.0, 3)
+    if not before_range < distance < after_range:
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_P2_RANGE_WORLD_DISTANCE_NOT_BETWEEN_RANGES",
+            "spell_id": spell_id,
+            "before_max_range_yards": before_range,
+            "after_max_range_yards": after_range,
+            "distance_yards": distance,
+            "accepted_for_p2": False,
+            "counted_in_p2_acceptance": False,
+        }
+
+    before_request = copy.deepcopy(base_request)
+    after_request = copy.deepcopy(base_request)
+    _druid_player(before_request)["talentsString"] = pair["talents_string_before"]
+    _druid_player(after_request)["talentsString"] = pair["talents_string_after"]
+    for request in (before_request, after_request):
+        request["simOptions"]["iterations"] = 1
+        request["simOptions"]["randomSeed"] = str(int(seed))
+        request["simOptions"]["debugFirstIteration"] = False
+
+    try:
+        from live_world_probe import run as run_live_world_probe
+        with tempfile.TemporaryDirectory(prefix="native-p2-range-world-") as folder:
+            folder_path = Path(folder)
+            before_path = folder_path / "control.request.json"
+            after_path = folder_path / "candidate.request.json"
+            before_path.write_text(json.dumps(before_request, sort_keys=True, allow_nan=False))
+            after_path.write_text(json.dumps(after_request, sort_keys=True, allow_nan=False))
+            control = run_live_world_probe(
+                binary_path, before_path, distance=distance, iterations=1,
+                rng_mode=rng_mode.value, allow_zero_damage=True,
+                source_in_front_of_target=True,
+            )
+            candidate = run_live_world_probe(
+                binary_path, after_path, distance=distance, iterations=1,
+                rng_mode=rng_mode.value, allow_zero_damage=True,
+                source_in_front_of_target=True,
+            )
+    except Exception as exc:
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_P2_RANGE_WORLD_EXECUTION_FAILED:"
+                      + type(exc).__name__ + ":" + str(exc),
+            "spell_id": spell_id,
+            "distance_yards": distance,
+            "before_max_range_yards": before_range,
+            "after_max_range_yards": after_range,
+            "engine_identity": pair.get("engine_identity"),
+            "source_layout_sha256": pair.get("source_layout_sha256"),
+            "accepted_for_p2": False,
+            "counted_in_p2_acceptance": False,
+        }
+
+    control_events = int(control.get("native_damage_events", 0))
+    candidate_events = int(candidate.get("native_damage_events", 0))
+    control_damage = float(control.get("world_applied_damage", 0.0))
+    candidate_damage = float(candidate.get("world_applied_damage", 0.0))
+    candidate_spell_ids = _observed_world_spell_ids(candidate)
+    control_spell_ids = _observed_world_spell_ids(control)
+    passed = (
+        control_events == 0 and control_damage == 0.0
+        and candidate_events > 0 and candidate_damage > 0.0
+        and spell_id in candidate_spell_ids
+        and int(control.get("native_world_ticks", 0)) > 0
+        and int(candidate.get("native_world_ticks", 0)) > 0
+    )
+    if control_events != 0 or control_damage != 0.0:
+        reason = "NATIVE_P2_RANGE_WORLD_CONTROL_DAMAGED_OUTSIDE_BASE_RANGE"
+    elif candidate_events <= 0 or candidate_damage <= 0.0:
+        reason = "NATIVE_P2_RANGE_WORLD_CANDIDATE_NO_NATIVE_WORLD_DAMAGE"
+    elif spell_id not in candidate_spell_ids:
+        reason = "NATIVE_P2_RANGE_WORLD_CANDIDATE_DID_NOT_CAST_RANGE_AFFECTED_SPELL"
+    elif int(control.get("native_world_ticks", 0)) <= 0 or int(candidate.get("native_world_ticks", 0)) <= 0:
+        reason = "NATIVE_P2_RANGE_WORLD_WORLD_TICK_MISSING"
+    else:
+        reason = "NATIVE_RANGE_EFFECT_CHANGED_REAL_WORLD_REACH"
+    return {
+        "status": "WORLD_RANGE_PASS" if passed else "WORLD_RANGE_FAIL",
+        "reason": reason,
+        "scenario": scenario,
+        "target_talent_id": target_talent_id,
+        "target_rank": int(target_rank),
+        "spell_id": spell_id,
+        "distance_yards": distance,
+        "before_max_range_yards": before_range,
+        "after_max_range_yards": after_range,
+        "before_native_damage_events": control_events,
+        "after_native_damage_events": candidate_events,
+        "before_world_applied_damage": control_damage,
+        "after_world_applied_damage": candidate_damage,
+        "before_native_world_ticks": int(control.get("native_world_ticks", 0)),
+        "after_native_world_ticks": int(candidate.get("native_world_ticks", 0)),
+        "before_observed_spell_ids": control_spell_ids,
+        "after_observed_spell_ids": candidate_spell_ids,
+        "before_native_dps": float(control.get("native_dps", 0.0)),
+        "after_native_dps": float(candidate.get("native_dps", 0.0)),
+        "before_request_proto_sha256": control.get("source_request_proto_sha256"),
+        "after_request_proto_sha256": candidate.get("source_request_proto_sha256"),
+        "engine_identity": pair.get("engine_identity"),
+        "source_layout_sha256": pair.get("source_layout_sha256"),
+        "rng_mode": rng_mode.value,
+        "iterations": 1,
+        "accepted_for_p2": False,
+        "counted_in_p2_acceptance": False,
+    }
+
+
 def _selection_delta(
     before: Mapping[str, int],
     after: Mapping[str, int],
