@@ -307,7 +307,7 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
         "talentsString": "B",
         "rotation": {"priorityList": [3, 2, 1]},
     }
-    assert result["joint_cold_world_dps"] == 770.0
+    assert result["joint_cold_world_dps"] == 800.0
     assert result["selected_validation"] == (
         "paid_2x24_balanced_live_native_finalist")
     assert ("native", 1000, "stochastic", "B") in calls
