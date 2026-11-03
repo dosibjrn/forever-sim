@@ -80,6 +80,43 @@ def measured_live_coverage(report: dict) -> dict | None:
 P7_FINAL_STOCHASTIC_ITERATIONS = 1_000
 P7_FINAL_DPS_FLOOR_FRACTION = 0.99
 
+P7_SEARCH_BUDGET_SECONDS = 300.0
+
+
+def p7_search_deadline_completed(
+    *,
+    full_search: bool,
+    search_start: float,
+    search_deadline: float,
+    last_paid_step_completed_at: float,
+    observed_at: float,
+) -> bool:
+    """Verify a hard 300s search window without a one-second overrun grace.
+
+    observed_at may be slightly later than the deadline because the process
+    reads the clock or sleeps after the final paid step. That is not extra
+    search work. A paid step that itself completes after the deadline is an
+    overrun and must not be accepted, even when it is within 301s.
+    """
+    values = (
+        search_start,
+        search_deadline,
+        last_paid_step_completed_at,
+        observed_at,
+    )
+    if (not full_search
+            or any(type(value) not in (int, float) or not isfinite(value)
+                   for value in values)):
+        return False
+    if abs((search_deadline - search_start) - P7_SEARCH_BUDGET_SECONDS) > 1e-6:
+        return False
+    return bool(
+        search_start < last_paid_step_completed_at <= search_deadline
+        and observed_at >= search_deadline
+    )
+
+
+
 
 def p7_required_dps(gate: str, saved_reference: float, *,
                     strongest_accepted_compatible_prior: float | None = None) -> float:
