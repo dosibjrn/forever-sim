@@ -1,0 +1,119 @@
+name: Work1 P7.5 WF613 paid-parent probe
+
+on:
+  push:
+    branches:
+      - work/work1-p75-wf613-3proposal-probe-20261103
+    paths:
+      - ".github/workflows/work1-p75-wf613-3proposal-probe.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work1-p75-wf613-probe-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_PROFILE_RELEASE_LTO: "off"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+      FOREVER_P7_FULL_SOURCE_SEARCH: "0"
+      FOREVER_P7_SEARCH_STRATEGY: "wf613"
+    steps:
+      - name: Checkout exact probe HEAD without write credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          lfs: true
+          persist-credentials: false
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+
+      - name: Hydrate and verify the exact selected Rust pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          git submodule update --init --depth 1 "$engine"
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          [[ -n "$recorded" && "$actual" == "$recorded" ]]
+          [[ "$(git -C "$engine" remote get-url origin)" == *"dosibjrn/mythicsim-forever-engine"* ]]
+          python integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
+          git -C "$engine" diff --quiet
+          ln -s "$engine" upstream
+          cargo build --release --locked --manifest-path "$engine/Cargo.toml"
+          {
+            echo "Probe HEAD: $(git rev-parse HEAD)"
+            echo "Selected Rust pin: $actual"
+            echo "Search strategy: WF613"
+            echo "Scope: three source-paid Balanced native+2D proposals; no M1 write."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install live gate runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+
+      - name: Execute bounded WF613 paid-parent probe (no M1 recording)
+        shell: bash
+        env:
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/p75-wf613-probe.json"
+          log="$RUNNER_TEMP/p75-wf613-probe.log"
+          set +e
+          python tools/wf_gate.py --class druid --level 60 --spec balance --gate P7.5 --out "$report" 2>&1 | tee "$log"
+          rc=${PIPESTATUS[0]}
+          set -e
+          python - "$report" "$rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text())
+          result = report["results"][0]
+          assert result["gate"] == "P7.5"
+          assert result["search_strategy"] == "wf613", result
+          attempts = result.get("operator_attempts")
+          assert isinstance(attempts, dict) and attempts, result
+          assert type(result.get("paid_archive_size")) is int, result
+          print("WF613_PAID_PARENT_PROBE", json.dumps({
+              "cli_rc": int(sys.argv[2]),
+              "gate_status": result["status"],
+              "reasons": result.get("reasons"),
+              "operator_attempts": attempts,
+              "operator_best_improvements": result.get("operator_best_improvements"),
+              "paid_archive_size": result.get("paid_archive_size"),
+              "best_paid_balanced_world_dps": result.get("best_paid_balanced_world_dps"),
+              "source_legal_joint_candidates_paid": result.get("source_legal_joint_candidates_paid"),
+              "search_wall_s": result.get("search_wall_s"),
+          }, sort_keys=True), flush=True)
+          assert result.get("paid_archive_size", 0) > 0
+          assert sum(attempts.values()) == 3, attempts
+          PY
+          git diff --exit-code -- docs/planning/M1_PASSES.tsv
+          mkdir -p "$RUNNER_TEMP/p75-probe-artifact"
+          cp "$report" "$log" "$RUNNER_TEMP/p75-probe-artifact/"
+          {
+            echo
+            echo "## WF613 paid-parent probe"
+            echo
+            echo "- Probe HEAD: $(git rev-parse HEAD)"
+            echo "- Selected Rust pin: $(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
+            echo "- Three source-paid Balanced native+2D proposals; no full search, stochastic holdout, or M1 write."
+            cat "$report"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bounded probe receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work1-p75-wf613-probe-${{ github.sha }}
+          path: ${{ runner.temp }}/p75-probe-artifact/
+          if-no-files-found: warn
