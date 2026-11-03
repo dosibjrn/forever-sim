@@ -364,6 +364,25 @@ def test_serial_world_retarget_requires_acknowledged_lethal_gsim_damage():
     assert ack["applied_event_ids"] == ["native-effect-2"]
 
 
+
+def test_external_world_death_cannot_authorize_native_target_transfer():
+    """RED on the old applier: dead gsim HP was enough without native lethal ACK."""
+    rt, tick, reply = fixture()
+    applier = GsimNativeDamageWorldApplier(rt)
+    applier.apply(tick, reply)  # Real ACK, but native hit was nonlethal.
+    assert rt.targets["m1"].alive
+    # The world changes HP independently; the native effect did NOT kill it.
+    rt.targets["m1"].health = 0.0
+    rt.engage_target("m0")
+    rt.select_target("m0")
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_NATIVE_LETHAL"):
+        applier.begin_next_world_target("m0")
+    assert rt.targets["m0"].alive
+    assert applier._target_id == "m1"
+
+
+
 def test_source_native_damage_cannot_apply_to_unselected_real_gsim_target():
     # The native target slot belongs to the actual gsim selected target.
     # A forged tick may carry the correct world hash, PID, event and time,
