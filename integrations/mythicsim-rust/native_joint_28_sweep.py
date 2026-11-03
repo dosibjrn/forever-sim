@@ -19,6 +19,7 @@ from native_joint_two_class import execute
 from native_source_donors import load_source_donor_fixtures
 from native_l60_matrix import (
     HEAL, TANK, ROOT, create_inventory,
+    current_client_talent_donor_fixtures,
 )
 
 STAGES = (5, 30, 300)
@@ -205,6 +206,14 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
                 "source_sha256": item["source_sha256"],
                 "class_name": item["class_name"],
                 "item_count": item["item_count"],
+                "source_type": item.get("source_type", "PINNED_SOURCE_FIXTURE"),
+                "talent_source_repository": item.get("talent_source_repository"),
+                "talent_source_pull_request": item.get("talent_source_pull_request"),
+                "talent_source_commit": item.get("talent_source_commit"),
+                "talent_source_path": item.get("talent_source_path"),
+                "talent_source_blob_sha": item.get("talent_source_blob_sha"),
+                "talent_preset_name": item.get("talent_preset_name"),
+                "composed_over_profile": item.get("composed_over_profile"),
             }
             for item in donor_inventory.get("fixtures", [])
         ]
@@ -214,6 +223,9 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
         provenance["source_donor_corpus"] = {
             "directories": donor_inventory.get("directories", []),
             "loaded_count": len(donor_manifest),
+            "pinned_engine_fixture_count": donor_inventory.get("pinned_engine_fixture_count", len(donor_manifest)),
+            "current_client_preset_donor_count": len(donor_inventory.get("current_client_preset_donors", [])),
+            "current_client_preset_donors": donor_inventory.get("current_client_preset_donors", []),
             "skipped_count": len(donor_inventory.get("skipped", [])),
             "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
             "skipped_sources": donor_inventory.get("skipped", []),
@@ -263,6 +275,21 @@ def main() -> None:
     inventory = create_inventory(ROOT / "config/validation/checkpoint_148.json",
                                  args.engine_src)
     donor_inventory = load_source_donor_fixtures(args.engine_src)
+    donor_inventory["pinned_engine_fixture_count"] = len(donor_inventory["fixtures"])
+    preset_donors = current_client_talent_donor_fixtures(inventory)
+    donor_inventory["current_client_preset_donors"] = [
+        {
+            key: donor[key]
+            for key in (
+                "source_path", "source_sha256", "talent_preset_name",
+                "talent_string", "composed_over_profile",
+                "talent_source_commit", "talent_source_blob_sha",
+                "talent_source_url",
+            )
+        }
+        for donor in preset_donors
+    ]
+    donor_inventory["fixtures"] = donor_inventory["fixtures"] + preset_donors
     donor_fixtures = donor_inventory["fixtures"]
     previous = ({r["profile_id"]: r for r in json.loads(args.prior.read_text())}
                 if args.prior else None)
@@ -292,7 +319,8 @@ def main() -> None:
                       "native_invalid": sum(r.get("native_invalid", 0) for r in rows),
                       "native_unsupported": sum(r.get("native_unsupported", 0) for r in rows),
                       "native_errors": sum(r.get("native_errors", 0) for r in rows),
-                      "source_donor_fixtures": len(donor_fixtures)},
+                      "source_donor_fixtures": len(donor_fixtures),
+                      "current_client_preset_donors": len(preset_donors)},
                      sort_keys=True), flush=True)
 
 
