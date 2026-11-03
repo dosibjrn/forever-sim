@@ -2,7 +2,7 @@ from __future__ import annotations
 import pytest
 from src.rulesets.forever.classes.druid import Talents
 from src.rulesets.forever.classes.druid.mechanics import _bear_pack
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.scenarios.spaced_pulls import SpacedPullLayout
 
 
 def test_legacy_bear_pack_charges_20_yard_movement_before_any_grouped_aoe():
