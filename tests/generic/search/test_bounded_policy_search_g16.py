@@ -21,6 +21,14 @@ def _talented_ir():
     return talented
 
 
+
+
+@pytest.fixture(scope="module")
+def _druid_generic_record():
+    """Share one real source-backed G16 publication across the boundary tests."""
+    return build_partial_generic_records(class_names=("Druid",), selected_level=20)[0]
+
+
 def test_g16_bounded_search_enumerates_inclusion_and_priority_without_threshold_mutation():
     ir = _talented_ir()
     seed = ir.policies[0]
@@ -47,8 +55,8 @@ def test_g16_bounded_search_enumerates_inclusion_and_priority_without_threshold_
     assert wrath_rule.conditions[-1].threshold_source == "action_cost"
 
 
-def test_g16_search_selects_real_better_policy_and_keeps_inferior_seed_visible():
-    record = build_partial_generic_records(class_names=("Druid",), selected_level=20)[0]
+def test_g16_search_selects_real_better_policy_and_keeps_inferior_seed_visible(_druid_generic_record):
+    record = _druid_generic_record
     search = record.provenance["naked_policy_search"]
     assert search["candidate_count"] == 4
     assert search["valid_candidate_count"] == 4
@@ -68,8 +76,8 @@ def test_g16_search_selects_real_better_policy_and_keeps_inferior_seed_visible()
     assert moonfire_only["stop_reason"] is None
 
 
-def test_g16_publication_marks_actual_search_and_selected_policy_not_seed():
-    record = build_partial_generic_records(class_names=("Druid",), selected_level=20)[0]
+def test_g16_publication_marks_actual_search_and_selected_policy_not_seed(_druid_generic_record):
+    record = _druid_generic_record
     assert record.capability["policy_ir"] is True
     assert record.capability["policy_execution"] is True
     assert record.capability["policy_search"] is True
@@ -89,7 +97,16 @@ def test_g16_publication_marks_actual_search_and_selected_policy_not_seed():
     assert record.provenance["legacy_fallback"] is False
 
 
-def test_g16_real_service_and_listener_surface_search_result(tmp_path):
+def test_g16_real_service_and_listener_surface_search_result(tmp_path, monkeypatch, _druid_generic_record):
+    # Keep this HTTP contract test bounded: the record is produced once by the real
+    # generic backend fixture, while the dashboard's all-class publication (which
+    # includes unrelated route/frontier work) is replaced with that same real record.
+    import src.v2.decision_dashboard as decision_dashboard
+    monkeypatch.setattr(
+        decision_dashboard,
+        "_generic_decision_payload",
+        lambda selected_level: {"decisions": [_druid_generic_record.as_dict()]},
+    )
     store = QueueStore(tmp_path / "queue.sqlite3")
     server = OptimizerHTTPServer(("127.0.0.1", 0), store, project_root=Path.cwd())
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -97,7 +114,7 @@ def test_g16_real_service_and_listener_surface_search_result(tmp_path):
     try:
         client = ServiceClient(f"http://127.0.0.1:{server.server_address[1]}", timeout=2)
         payload = client.decisions(level=20, backend_id="generic")
-        record = next(r for r in payload["decisions"] if str(r["identity"]["class_name"]).lower() == "druid")
+        record = payload["decisions"][0]
         assert record["capability"]["policy_search"] is True
         assert record["provenance"]["naked_policy_search"]["selected_candidate_id"] == "priority:direct_filler"
         assert record["provenance"]["naked_policy"]["provenance"]["authority"] == "generic_policy_threshold_search"
