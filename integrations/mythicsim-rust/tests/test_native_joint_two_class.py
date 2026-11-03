@@ -751,6 +751,30 @@ class NativeCliOutcomeClassificationContracts(unittest.TestCase):
         self.assertEqual(raw, response)
         self.assertTrue(request_sha)
 
+    def test_unknown_explicit_native_status_fails_closed(self):
+        source = request()
+        raw = {
+            "status": "MAYBE_VALID",
+            "result": {"raidMetrics": {"dps": {"avg": 999.0}}},
+        }
+
+        def write_output(args, **kwargs):
+            Path(args[args.index("--outfile") + 1]).write_text(json.dumps(raw))
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        with patch.object(p73.subprocess, "run", side_effect=write_output):
+            with self.assertRaises(native_exec.NativeExecutionError) as raised:
+                native_exec.run(
+                    Path("native"), source, 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+
+        self.assertEqual("ERROR", raised.exception.status)
+        self.assertEqual(0, raised.exception.returncode)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertIn("Unknown native status", str(raised.exception))
+        self.assertTrue(raised.exception.request_sha256)
+
     def test_gate_exit_three_is_native_unsupported(self):
         raw = {
             "supported": False,
