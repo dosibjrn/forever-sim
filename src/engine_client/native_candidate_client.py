@@ -185,12 +185,11 @@ def _simulate_prepared(
     iterations: int,
     seed: int,
     deadline: float,
-    allow_zero_dps_if_avg_absent: bool = False,
 ) -> dict[str, object]:
     """Execute one PreparedV2 input through the selected Rust simulator.
 
-    An explicit empty-DPS control may opt in to the native empty-DPS report shape.
-    The default remains strict for candidate scoring.
+    Missing, malformed or non-finite native scores remain execution errors;
+    this client never synthesizes a score or falls back to Python.
     """
     with tempfile.TemporaryDirectory(prefix="forever-native-candidate-sim-") as directory:
         root = Path(directory)
@@ -265,31 +264,7 @@ def _simulate_prepared(
         try:
             report_bytes = report_path.read_bytes()
             report = json.loads(report_bytes)
-            zero_dps_due_to_absent_avg = False
-            try:
-                score = float(_native_executor.dps(report))
-            except KeyError as exc:
-                # The real protobuf-JSON report omits dps.avg when a fight
-                # has zero damage. Permit that shape only for the P1 empty
-                # control, and only when native reports every requested fight.
-                if not allow_zero_dps_if_avg_absent or exc.args != ("avg",):
-                    raise
-                result = report.get("result") if isinstance(report, dict) else None
-                raid_metrics = (
-                    result.get("raidMetrics") if isinstance(result, dict) else None
-                )
-                dps_metric = (
-                    raid_metrics.get("dps") if isinstance(raid_metrics, dict) else None
-                )
-                iterations_done = (
-                    result.get("iterationsDone") if isinstance(result, dict) else None
-                )
-                if type(iterations_done) is not int or iterations_done != iterations:
-                    raise ValueError("NATIVE_SIM_EMPTY_DPS_ITERATIONS_INCOMPLETE")
-                if not isinstance(dps_metric, dict) or "avg" in dps_metric:
-                    raise ValueError("NATIVE_SIM_EMPTY_DPS_REPORT_SHAPE_INVALID")
-                score = 0.0
-                zero_dps_due_to_absent_avg = True
+            score = float(_native_executor.dps(report))
         except (UnicodeDecodeError, ValueError, KeyError, TypeError, OverflowError) as exc:
             return {"status": "ERROR", "stage": "sim",
                     "reason": f"NATIVE_SIM_REPORT_INVALID:{type(exc).__name__}:{exc}",
@@ -306,7 +281,6 @@ def _simulate_prepared(
                 report.get("result", {}).get("iterationsDone")
                 if isinstance(report.get("result"), dict) else None
             ),
-            "zero_dps_due_to_absent_avg": zero_dps_due_to_absent_avg,
             "elapsed_seconds": elapsed,
             "report_sha256": hashlib.sha256(report_bytes).hexdigest(),
             "prepared_input_sha256": hashlib.sha256(prepared_bytes).hexdigest(),
