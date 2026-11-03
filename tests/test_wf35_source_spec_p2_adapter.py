@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from tools import wf_gate_p2_live as p2
+from tools import wf_talent_runtime as talent_runtime
 
 
 def _ir(rule=None):
@@ -37,7 +37,7 @@ def _allocation():
 
 def _build_with(builder, spec="balance", rule=None):
     with patch.object(p2,"available_talent_points",return_value=51):
-        return p2._source_spec_profile(_ir(rule),spec,level=60,bonus=0,
+        return talent_runtime._source_spec_profile(_ir(rule),spec,level=60,bonus=0,
                                        step=5,source_sha256="a"*64,
                                        frontier_builder=builder)
 
@@ -62,8 +62,8 @@ def test_existing_source_tree_does_not_self_certify_spec_semantics():
     assert meta["source_spec_profile_verified"] is False
     assert meta["source_spec_profile_authority"]=="UNVERIFIED_SOURCE_TREE_ONLY"
     assert meta["source_spec_candidate_frontier_exhaustive"] is False
-    assert p2._source_spec_rank_witness(population,"source_t0",5)==_allocation()
-    assert p2._source_spec_rank_witness(population,"source_t0",4) is None
+    assert talent_runtime._source_spec_rank_witness(population,"source_t0",5)==_allocation()
+    assert talent_runtime._source_spec_rank_witness(population,"source_t0",4) is None
 
 
 def test_only_same_class_level_tree_and_sourced_rule_could_verify_profile():
@@ -98,7 +98,7 @@ def test_bounded_frontier_must_not_forge_full_point_or_tree_membership():
 
 def test_unrestricted_profile_is_unchanged_without_invoking_frontier():
     with patch.object(p2,"available_talent_points",side_effect=AssertionError):
-        population,meta=p2._source_spec_profile(_ir(),"unrestricted",
+        population,meta=talent_runtime._source_spec_profile(_ir(),"unrestricted",
                                                 level=60,bonus=0,step=5)
     assert population is None
     assert meta["source_spec_profile_verified"] is True
@@ -149,7 +149,7 @@ def test_p2_reuses_exact_legal_full_point_spec_witness_for_unlock():
         "src.v2.source_bounded_joint_frontier._source_unlock_full_point_allocation",
         side_effect=AssertionError("do not rebuild an already validated full spec"),
     ):
-        full = p2._full_point_unlock_witness(
+        full = talent_runtime._full_point_unlock_witness(
             _ir(), target, 1, witness, level=60, bonus=0)
     assert full == witness
     assert full is not witness
@@ -166,7 +166,7 @@ def test_p2_partial_witness_still_uses_generic_full_point_builder():
         "src.v2.source_bounded_joint_frontier._source_unlock_full_point_allocation",
         return_value=rebuilt,
     ) as builder:
-        full = p2._full_point_unlock_witness(
+        full = talent_runtime._full_point_unlock_witness(
             compiled, target, 1, partial, level=60, bonus=0)
     assert full == rebuilt
     builder.assert_called_once_with(
@@ -190,7 +190,7 @@ def test_spec_rank_probe_uses_legal_partial_effect_control_but_full_search_candi
     compiled = _ir()
     # Unlike a mocked legality check, this synthetic allocation satisfies
     # the actual generic tier/prerequisite/budget validator (31/51 points).
-    p2.validate_talent_selection(compiled, isolated, level=60)
+    talent_runtime.validate_talent_selection(compiled, isolated, level=60)
     receipt = N(applied_modifiers=[{"talent_id": "source_capstone", "rank": 1}])
     with patch.object(p2, "available_talent_points", return_value=51), patch.object(
         p2, "_witness", return_value=isolated
@@ -202,7 +202,7 @@ def test_spec_rank_probe_uses_legal_partial_effect_control_but_full_search_candi
         p2, "source_legal_talent_neighbors",
         side_effect=AssertionError("must not use out-of-profile predecessor"),
     ):
-        result = p2._rank_probe(compiled, talent, 1, full, level=60,
+        result = talent_runtime._rank_probe(compiled, talent, 1, full, level=60,
                                 bonus=0, profile_tree="balance")
     assert result["status"] == "PASS"
     assert result["witness"] == isolated
@@ -226,7 +226,7 @@ def test_unrestricted_rank_probe_still_checks_real_neighbor_reachability():
     ), patch.object(p2, "replace", side_effect=lambda mod, **kw: mod), patch.object(
         p2, "source_legal_talent_neighbors", return_value={"neighbors": ()}
     ) as neighbors:
-        result = p2._rank_probe(compiled, talent, 1, {"source_capstone": 1},
+        result = talent_runtime._rank_probe(compiled, talent, 1, {"source_capstone": 1},
                                 level=60, bonus=0)
     neighbors.assert_called_once()
     assert result["status"] == "FAIL"
