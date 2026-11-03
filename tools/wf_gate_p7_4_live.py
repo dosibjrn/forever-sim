@@ -303,11 +303,11 @@ def _freeze_paid_p74_winner(screen_best, reranked, confirmed=(),
         score, live, sha, request, screen_score = max(
             deep_rows or confirmed_rows or reranked, key=lambda row: row[0])
         return (score, live, sha, request, screen_score,
-                ("paid_6x24_stochastic_live_native_deep_confirmed_finalist"
+                ("paid_6x24_balanced_live_native_deep_confirmed_finalist"
                  if deep_rows else
-                 "paid_4x24_stochastic_live_native_confirmed_finalist"
+                 "paid_4x24_balanced_live_native_confirmed_finalist"
                  if confirmed_rows else
-                 "paid_2x24_stochastic_live_native_finalist"))
+                 "paid_2x24_balanced_live_native_finalist"))
     score, live, sha, request = screen_best
     return (score, live, sha, request, score,
             "three_balanced_live_screen_only")
