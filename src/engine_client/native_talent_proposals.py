@@ -14,7 +14,7 @@ def _decode(value: str) -> tuple[list[str], list[int]]:
     if not isinstance(value, str) or not value:
         raise ValueError("TALENT_PROPOSAL_STRING_MISSING")
     parts = value.split("-")
-    if any(part and not part.isdigit() for part in parts):
+    if any(char not in "0123456789" for part in parts for char in part):
         raise ValueError("TALENT_PROPOSAL_STRING_FORMAT_INVALID")
     digits = [int(char) for part in parts for char in part]
     if not digits:
