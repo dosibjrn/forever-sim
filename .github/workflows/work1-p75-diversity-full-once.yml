@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           lfs: true
+          fetch-depth: 3
           persist-credentials: false
       - name: Hydrate and validate selected Rust fork gitlink
         shell: bash
@@ -30,7 +31,8 @@ jobs:
           test -f upstream/src/core/fight/world_bridge.rs
           test "$actual" = "4aaefef11c21eaaa52a1531a27ac4e6b294cd770"
           echo "Selected Rust SHA=$actual"
-          test "$(git rev-parse HEAD^)" = "5c23c2705c9079f1c5eaf693c64fe90b49aca7c7"
+          git merge-base --is-ancestor "5c23c2705c9079f1c5eaf693c64fe90b49aca7c7" HEAD
+          git diff --quiet "5c23c2705c9079f1c5eaf693c64fe90b49aca7c7" HEAD -- tools/wf_gate_p7_5_live.py tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
       - name: Hydrate real source catalogue
         run: git lfs pull --include="data/forever/catalogue/items_2026-09-29.sqlite" --exclude=""
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
