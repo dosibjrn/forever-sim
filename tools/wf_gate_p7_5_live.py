@@ -20,7 +20,7 @@ import time
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps)
 from tools.wf_gate_p7_5_prior import strongest_accepted_prior
-# Same native+2D paid stochastic scorer and budget guard as accepted P7.4.
+# Shared native+2D balanced-finalist scheduling helpers from P7.4.
 from tools.wf_gate_p7_4_live import (
     _paid_step_has_budget,
     _p74_early_rerank_due, _next_p74_confirmation,
@@ -78,7 +78,7 @@ def _paid_p75_parent(best, finalists, proposal_index, rng, *,
     rotation search this collapses exploration onto one stochastic outlier.
     Keep the 1/5 independent cold restarts; on every third local proposal,
     draw from the six highest *actually executed* balanced candidates.
-    Other local proposals prefer the strongest separately paid stochastic
+    Other local proposals prefer the strongest separately paid balanced
     finalists once available. Never draw from saved or prior gate winners.
     """
     if best is None or proposal_index % 5 == 0:
@@ -280,7 +280,7 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
     # implementation picked only one: four rejected mixes silently discarded
     # the entire crossover even if another paid donor could form legal gear.
     # Keep the same four bounded validation attempts, rotating through
-    # stochastic finalists first and then genuinely paid balanced candidates.
+    # balanced finalists first and then other genuinely paid balanced candidates.
     finalist_donors = distinct_paid_gear(finalists, 3, 3)
     balanced_donors = distinct_paid_gear(balanced_elites, 2, 6)
     if not finalist_donors and not balanced_donors:

@@ -84,13 +84,13 @@ def capture_rng_backtrace(binary, request: dict, *, iterations: int, seed: int,
     payload["simOptions"]["iterations"] = iterations
     payload["simOptions"]["randomSeed"] = str(seed)
     stderr_path.parent.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, WOWSIM_RNG_MODE="balanced", RUST_BACKTRACE="1")
+    env = {k: v for k, v in os.environ.items() if k != "WOWSIM_RNG_MODE"} | {"RUST_BACKTRACE": "1"}
     with tempfile.TemporaryDirectory() as tmp:
         request_path = Path(tmp) / "exact_failed_request.json"
         output_path = Path(tmp) / "native_output.json"
         request_path.write_text(json.dumps(payload, separators=(",", ":")))
         command = [str(binary), "sim", "--request", str(request_path),
-                   "--outfile", str(output_path), "--gate"]
+                   "--outfile", str(output_path), "--gate", "--rng-mode", "balanced"]
         try:
             completed = native_runner(command, stdout=subprocess.DEVNULL,
                                       stderr=subprocess.PIPE, text=True,

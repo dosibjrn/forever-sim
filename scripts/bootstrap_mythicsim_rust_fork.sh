@@ -216,8 +216,19 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): charge source-native recovery time between world kills"
 fi
 
+# The canonical RNG contract is typed and required at the native boundary.
+# Never publish an environment-selected stochastic optimizer fallback.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_typed_rng.py" "$PWD"
+git add src/core/rng.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs \
+  src/lib.rs src/main.rs src/classes/*/agent.rs src/classes/*/prepared.rs
+git add tests/
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): require typed RNG mode throughout native combat"
+fi
+
 # Existing native retarget, world terminal and queue regressions must pass
 # before publishing this selected Rust integration.
+cargo test --locked --lib typed_rng_api_tests
 cargo test --locked --lib persistent_next_target
 cargo test --locked --lib world_lethal_terminal
 cargo test --locked --lib pop_first_matching_before

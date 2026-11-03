@@ -409,6 +409,7 @@ def _native_world_pulls_command(binary: Path, prepared: Path,
     command = [
         str(binary.resolve()), "native-world-pulls", "--infile",
         str(prepared.resolve()), "--targets", str(target_count),
+        "--rng-mode", "stochastic",
     ]
     # The selected production pin does not have the new CLI flag until the
     # paid-recovery source port is applied. Preserve its exact legacy argv
@@ -479,7 +480,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     native_moving_ticks = 0
     native_moving_receipts = 0
     native_report = None
-    env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1", WOWSIM_RNG_MODE="stochastic")
+    env = {k: v for k, v in os.environ.items() if k != "WOWSIM_RNG_MODE"} | {
+        "FOREVER_GSIM_WORLD_BRIDGE": "1",
+    }
     proc = subprocess.Popen(
         _native_world_pulls_command(binary, prepared, target_count, recovery_ns),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,

@@ -157,7 +157,7 @@ def main():
     seen=set();paid=[];errors=[];elites=[];rerank_records=[]
     source_seed=int(ref["simOptions"]["randomSeed"])
     balanced_peak=float("-inf")
-    stochastic_probes=0
+    balanced_probes=0
     rejected_unknown=set()
     while time.monotonic()<screen_end-0.1:
         elite=(rng.choice(elites[:min(8,len(elites))])[1]
@@ -189,15 +189,15 @@ def main():
                     "priorityList":copy.deepcopy(candidate_player["rotation"]["priorityList"]),
                     "screen_iterations":args.screen_iterations,"screen_seed":source_seed}
             # Balanced is a cheap ranking hint, not an unbiased expected DPS.
-            # Stochastic probes are independently seeded and govern the elite pool.
+            # Additional balanced native probes govern the elite pool; stochastic is holdout-only.
             promising=(len(elites)<10 or value>=balanced_peak-38.
                        or rng.random()<0.04)
             if promising and time.monotonic()<screen_end-0.5:
                 probe,_,probe_duration,_=run(args.binary,q,160,source_seed+554433,
-                                             "stochastic",screen_end)
-                record["stochastic_probe_dps"]=probe
-                record["stochastic_probe_s"]=probe_duration
-                stochastic_probes+=1
+                                             "balanced",screen_end)
+                record["balanced_probe_dps"]=probe
+                record["balanced_probe_s"]=probe_duration
+                balanced_probes+=1
                 elites.append((probe,q))
                 elites.sort(key=lambda x:-x[0])
                 elites=elites[:28]
@@ -221,14 +221,14 @@ def main():
     for score,q in elites[:25]:
         if time.monotonic()>rerank_end-0.1:break
         try:
-            value,_,duration,_=run(args.binary,q,2000,source_seed+555123,"stochastic",rerank_end)
+            value,_,duration,_=run(args.binary,q,2000,source_seed+555123,"balanced",rerank_end)
             reranked.append((value,q))
             rerank_records.append({"candidate_key":candidate_key(q),
-                                   "stochastic_rerank_dps":value,
+                                   "balanced_rerank_dps":value,
                                    "iterations":2000,"seed":source_seed+555123})
         except (TimeoutError,subprocess.TimeoutExpired):break
         except Exception as exc:errors.append({"key":candidate_key(q),"error":str(exc)[:800]})
-    if not reranked:raise RuntimeError("No stochastic finalists evaluated")
+    if not reranked:raise RuntimeError("No balanced finalists evaluated")
     score,winner=max(reranked,key=lambda x:x[0])
     # A reference-identical winner is legal IF independently rediscovered.
     winner_items=player(winner)["equipment"]["items"]
@@ -240,7 +240,7 @@ def main():
     elapsed=time.monotonic()-started
     floor= max(REFERENCE_DPS,0.99*args.accepted_prior_dps) if args.accepted_prior_dps is not None else None
     report={"status":"NATIVE_P75_DIAGNOSTIC_NOT_PROCESS_GATE_PASS","elapsed_s":elapsed,
-       "paid_unique":len(paid),"failures":len(errors),
+       "paid_unique":len(paid),"failures":len(errors),"search_rng_mode":"balanced",
        "legality_rejections":len(legal_rejections),
        "catalogue_rejections_by_category":dict(excluded),
        "reference_sha256":sha(ref),
@@ -248,13 +248,13 @@ def main():
        "catalogue_sha256":sha256(args.catalogue),
        "engine_items_sha256":sha256(args.engine_items),
        "engine_enchants_sha256":sha256(args.engine_enchants),
-       "stochastic_probes":stochastic_probes,"engine_unavailable_items_rejected":sorted(rejected_unknown),
+       "balanced_probes":balanced_probes,"engine_unavailable_items_rejected":sorted(rejected_unknown),
        "apl_search_grammar":"GENERIC_TYPED_SOURCE_REFERENCE_CORPUS",
        "apl_search_support":"Action creation, deletion, ordering, predicate substitution and RHS threshold mutation; only known spell IDs and condition ASTs; full spellbook/effect parity unverified",
        "winner_gear":[x["id"] for x in player(winner)["equipment"]["items"]],
        "winner_talents":player(winner)["talentsString"],
        "winner_apl_sha256":sha(player(winner)["rotation"]),
-       "rerank_dps":score,"holdout_dps":holdout,"external_reference_dps":REFERENCE_DPS,
+       "rerank_dps":score,"rerank_rng_mode":"balanced","holdout_mode":"stochastic","holdout_dps":holdout,"external_reference_dps":REFERENCE_DPS,
        "accepted_prior_dps":args.accepted_prior_dps,
        "accepted_prior_provenance":args.accepted_prior_provenance,
        "point_floor_provisional":floor,
