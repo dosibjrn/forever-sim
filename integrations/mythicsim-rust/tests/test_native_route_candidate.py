@@ -85,6 +85,7 @@ class NativeCandidateClientTests(unittest.TestCase):
             prepared_output = {
                 "schema_version": 2,
                 "contract": "forever-prepared",
+                "scenario_id": scenario,
                 "request_sha256": "a" * 64,
                 "reference": {"engine_revision": "selected-rust-sha"},
                 "player": {
