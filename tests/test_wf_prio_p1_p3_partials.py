@@ -16,7 +16,7 @@ def _assert_partial_source_execution(report, gate):
 
 
 def test_druid_l60_balance_p3_actual_paid_item_stat_weight_fraction():
-    report = _run_live_gate(ROOT, "druid", 60, "balance", "P3", "")
+    report = _run_live_gate(ROOT, "druid", 60, "balance", "P3")
     n, d = _assert_partial_source_execution(report, "P3")
     assert report["production_engine"] == "gsim_CombatRuntime"
     assert report["behavior_probes_executed"] > 0
