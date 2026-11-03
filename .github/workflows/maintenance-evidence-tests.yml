@@ -20,6 +20,8 @@ on:
       - 'tests/gates/test_wf34_*acquisition*.py'
       - 'tools/wf_gate_p7_2_live.py'
       - 'tools/wf_gate_p7_3_live.py'
+      - 'src/engine_client/native_talent_proposals.py'
+      - 'tools/wf_gate.py'
       - 'tools/wf_gate_p7_4_live.py'
       - 'tools/wf_gate_p7_5_live.py'
       - 'tests/test_p7_search_deadline_contract.py'
@@ -61,6 +63,8 @@ jobs:
           tools/wf_gate_coverage.py
           tools/wf_gate_p7_2_live.py
           tools/wf_gate_p7_3_live.py
+          src/engine_client/native_talent_proposals.py
+          tools/wf_gate.py
           tools/wf_gate_p7_4_live.py
           tools/wf_gate_p7_5_live.py
           tests/test_p7_search_deadline_contract.py

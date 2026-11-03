@@ -650,6 +650,12 @@ def main(argv=None) -> int:
                         "paid_stochastic_finalists",
                         "paid_stochastic_confirmed_finalists",
                         "source_legal_cold_candidates_paid",
+                        "native_world_scored_candidates_paid",
+                        "native_invalid_candidates",
+                        "native_unsupported_candidates",
+                        "native_unscored_candidates",
+                        "native_execution_errors",
+                        "world_execution_errors",
                         "frozen_stochastic_iterations",
                         "frozen_stochastic_native_dps",
                         "frozen_stochastic_world_dps",
@@ -669,6 +675,10 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 256:
                     record[key] = value
+            for key in ("native_refusal_samples", "native_unscored_samples"):
+                value = report.get(key)
+                if isinstance(value, list):
+                    record[key] = value[:4]
         if gate == "P7.5":
             # The live provider now returns the exact independently paid
             # frozen winner. Preserve it in the CLI/M1 Actions receipt so a
