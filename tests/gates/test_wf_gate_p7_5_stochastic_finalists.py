@@ -1,4 +1,5 @@
-"""P7.5 paid stochastic finalist selection; injected interfaces, not gate evidence."""
+"""P7.5 paid balanced finalist selection; injected interfaces, not gate evidence."""
+import ast
 import copy
 import hashlib
 import json
@@ -823,3 +824,31 @@ def test_p74_optimizer_search_is_balanced_before_frozen_stochastic_holdout(
         "test_wf_gate_p7_4_live.py",
         "test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout",
         monkeypatch, tmp_path)
+
+
+
+def test_p75_unrestricted_search_uses_balanced_until_frozen_holdout():
+    source_path = Path(__file__).resolve().parents[2] / "integrations/mythicsim-rust/p75_unrestricted_search.py"
+    source = source_path.read_text()
+    tree = ast.parse(source)
+    expected = {
+        "a.screen_iterations": "balanced",
+        "140": "balanced",
+        "1800": "balanced",
+        "a.holdout_iterations": "stochastic",
+    }
+    observed = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+            continue
+        if node.func.id != "run" or len(node.args) < 5:
+            continue
+        if ast.get_source_segment(source, node.args[0]) != "a.binary":
+            continue
+        iterations = ast.get_source_segment(source, node.args[2])
+        observed[iterations] = ast.literal_eval(node.args[4])
+    assert observed == expected
+    assert "stochastic_fallback" not in source
+    assert "WOWSIM_RNG_MODE" not in source
+    assert '"rng_mode":"balanced"' in source
+    assert '"holdout_mode":"stochastic"' in source
