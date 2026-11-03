@@ -591,3 +591,156 @@ def test_empty_native_control_report_does_not_hide_missing_dps_block(
     )
     assert result["status"] == "ERROR"
     assert result["reason"] == "NATIVE_SIM_REPORT_INVALID:KeyError:'dps'"
+
+
+def test_native_prepared_action_inventory_preserves_native_records_without_filtering():
+    from src.engine_client.native_p1_effect_probe import native_prepared_action_inventory
+
+    spellbook = [
+        {
+            "action_id": {"spell_id": 14282},
+            "rank": 1,
+            "class_spell": "AimedShot",
+            "flags": {"passive": False},
+            "cast_kind": "cast",
+        },
+        {
+            "action_id": {"spell_id": 13550},
+            "rank": 2,
+            "class_spell": "SerpentSting",
+            "flags": {"passive": False},
+            "cast_kind": "instant",
+        },
+        {
+            "action_id": None,
+            "rank": 0,
+            "class_spell": "PassiveProc",
+            "flags": {"passive": True},
+            "cast_kind": "passive",
+        },
+    ]
+    cooldowns = [{"spell_id": 3045}, {"spell_id": 19503}]
+    receipt = {
+        "status": "PREPARED",
+        "engine_identity": "selected-pin",
+        "prepared_sha256": "a" * 64,
+        "prepared": {
+            "player": {
+                "class": "Hunter",
+                "level": 20,
+                "talents_string": "123",
+                "talents": {"beast_mastery": 1},
+                "spells": spellbook,
+                "major_cooldowns": cooldowns,
+            },
+        },
+    }
+    original = deepcopy(receipt)
+
+    result = native_prepared_action_inventory(receipt)
+
+    assert receipt == original
+    assert result["status"] == "AVAILABLE"
+    assert result["engine_identity"] == "selected-pin"
+    assert result["player_class"] == "Hunter"
+    assert result["player_level"] == 20
+    assert result["spell_count"] == 3
+    assert result["spell_records_with_action_id"] == 2
+    assert result["major_cooldown_count"] == 2
+    assert result["spells"] == spellbook
+    assert result["major_cooldowns"] == cooldowns
+    assert result["p1_certified"] is False
+
+
+@pytest.mark.parametrize(
+    "prepared",
+    [
+        {},
+        {"player": {}},
+        {"player": {"spells": None}},
+        {"player": {"spells": [{"action_id": 1}, None]}},
+        {"player": {"spells": [], "major_cooldowns": {}}},
+    ],
+)
+def test_native_prepared_action_inventory_fails_closed_when_native_records_are_missing(prepared):
+    from src.engine_client.native_p1_effect_probe import native_prepared_action_inventory
+
+    result = native_prepared_action_inventory({
+        "status": "PREPARED",
+        "engine_identity": "selected-pin",
+        "prepared": prepared,
+    })
+
+    assert result["status"] == "UNAVAILABLE"
+    assert result["p1_certified"] is False
+
+
+def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypatch, tmp_path):
+    from src.engine_client import native_p1_effect_probe as probe
+
+    engine_root = tmp_path / "engine"
+    engine_root.mkdir()
+    binary = engine_root / "forever-engine"
+    binary.write_bytes(b"placeholder")
+    spellbook = [
+        {"action_id": {"spell_id": 14282}, "rank": 1, "class_spell": "AimedShot"},
+        {"action_id": None, "rank": 0, "class_spell": "PassiveProc"},
+    ]
+
+    def prepare(**kwargs):
+        marker = "with" if kwargs["scenario"].endswith("with-action") else "without"
+        digest = ("a" if marker == "with" else "b") * 64
+        return {
+            "status": "PREPARED",
+            "stage": "prepare",
+            "engine_identity": "selected-pin",
+            "request_sha256": digest,
+            "prepared_sha256": digest,
+            "prepared": {
+                "marker": marker,
+                "player": {
+                    "class": "Hunter",
+                    "level": 20,
+                    "talents_string": "123",
+                    "talents": {},
+                    "spells": spellbook,
+                    "major_cooldowns": [],
+                },
+            },
+        }
+
+    def simulate(**kwargs):
+        marker = kwargs["prepared"]["marker"]
+        return {
+            "status": "EXECUTED",
+            "stage": "sim",
+            "dps": 18.0 if marker == "with" else 4.0,
+            "engine_identity": "selected-pin",
+        }
+
+    monkeypatch.setattr(probe, "prepare_native_request", prepare)
+    monkeypatch.setattr(probe, "_simulate_prepared", simulate)
+    monkeypatch.setattr(
+        probe, "_run_world_bridge",
+        lambda *args, **kwargs: pytest.fail("non-spatial probe must not start 2D"),
+    )
+
+    result = probe.run_native_p1_direct_effect_probe(
+        binary=binary,
+        engine_root=engine_root,
+        request=_sample_request(),
+        spell_id=14282,
+        timeout_seconds=5,
+        iterations=1,
+        requires_2d_world=False,
+        target_count=0,
+        world_mob_health=0,
+    )
+
+    inventory = result["native_prepared_action_inventory"]
+    assert result["status"] == "NATIVE_DIRECT_EFFECT_VERIFIED"
+    assert inventory["status"] == "AVAILABLE"
+    assert inventory["spells"] == spellbook
+    assert inventory["spell_count"] == 2
+    assert inventory["p1_certified"] is False
+    assert result["p1_certified"] is False
