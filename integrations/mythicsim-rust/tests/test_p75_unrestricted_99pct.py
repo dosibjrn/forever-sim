@@ -272,6 +272,37 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         self.assertNotIn('stochastic_fallback',src)
         self.assertNotIn('balanced_crit_stochastic_fallbacks',src)
 
+    def test_cold_apl_can_generate_19_actions_from_10_action_source_grammar(self):
+        import json
+        from apl_mutation import mutate_apl
+        request = json.loads((
+            ROOT.parents[1] / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
+        ).read_text())
+        source_actions = request["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+        self.assertEqual(len(source_actions), 10)
+
+        class ForceNineteen(random.Random):
+            def randint(self, lower, upper):
+                if upper < 19:
+                    raise AssertionError(
+                        f"Cold APL length ceiling {upper} excludes a legal 19-action policy"
+                    )
+                return 19
+
+            def random(self):
+                return 0.99  # no opaque actions or invented predicate forms
+
+        candidate = mutate_apl(None, source_actions, ForceNineteen(670), cold=True)
+        self.assertEqual(len(candidate), 19)
+        allowed_spells = {
+            json.dumps(entry["action"]["castSpell"]["spellId"], sort_keys=True)
+            for entry in source_actions if "castSpell" in entry.get("action", {})
+        }
+        for entry in candidate:
+            action = entry.get("action", {})
+            self.assertIn("castSpell", action)
+            self.assertIn(json.dumps(action["castSpell"]["spellId"], sort_keys=True),
+                          allowed_spells)
     def test_gear_swaps_do_not_carry_old_item_enchants(self):
         # A legal new item may not accept the enchant from the old item.
         # Previously 50% gear mutations retained that enchant and were
