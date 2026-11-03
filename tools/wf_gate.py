@@ -671,11 +671,14 @@ def main(argv=None) -> int:
                     record[key] = report[key]
             for key in ("winner_selection", "frozen_request_raw_sha256",
                         "frozen_stochastic_failure", "search_strategy",
-                        "source_original_talents", "cold_winner_talents",
-                        "native_refusal_samples", "native_unscored_samples"):
+                        "source_original_talents", "cold_winner_talents"):
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 256:
                     record[key] = value
+            for key in ("native_refusal_samples", "native_unscored_samples"):
+                value = report.get(key)
+                if isinstance(value, list):
+                    record[key] = value[:4]
         if gate == "P7.5":
             # The live provider now returns the exact independently paid
             # frozen winner. Preserve it in the CLI/M1 Actions receipt so a
