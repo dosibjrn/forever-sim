@@ -106,6 +106,61 @@ def test_explicit_synthetic_hp_is_not_mislabeled_as_sourced():
             helper(invalid, None)
 
 
+def test_native_incoming_health_damage_is_sourced_from_each_rust_window():
+    validate = _world_module()._native_health_damage_summary
+    windows = [
+        {"index": 0, "native_health_damage_taken": 0.0,
+         "native_health_damage_events": 0},
+        {"index": 1, "native_health_damage_taken": 241.5,
+         "native_health_damage_events": 2},
+    ]
+    assert validate(windows, require_positive=True) == {
+        "observed": True, "damage_taken": 241.5, "damage_events": 2,
+    }
+    assert validate(windows, require_positive=False)["damage_taken"] == 241.5
+
+
+def test_native_incoming_health_damage_zero_is_not_a_positive_attack():
+    validate = _world_module()._native_health_damage_summary
+    windows = [
+        {"index": 0, "native_health_damage_taken": 0.0,
+         "native_health_damage_events": 0},
+    ]
+    assert validate(windows, require_positive=False)["observed"] is True
+    with pytest.raises(AssertionError, match="RUST_WORLD_NATIVE_ATTACK_NOT_OBSERVED"):
+        validate(windows, require_positive=True)
+
+
+def test_native_incoming_health_damage_absent_is_never_fabricated():
+    validate = _world_module()._native_health_damage_summary
+    windows = [{"index": 0, "actor_health": 2893.}]
+    assert validate(windows, require_positive=False) == {
+        "observed": False, "damage_taken": None, "damage_events": None,
+    }
+    with pytest.raises(AssertionError, match="RUST_WORLD_NATIVE_HEALTH_DAMAGE_PORT_NOT_SELECTED"):
+        validate(windows, require_positive=True)
+
+
+@pytest.mark.parametrize("amount,events", [
+    (-1., 1), (float("nan"), 1), (float("inf"), 1),
+    (True, 1), ("1", 1), (1., -1), (1., 1.5),
+    (1., True), (1., 0),
+])
+def test_native_incoming_damage_rejects_corrupt_rust_receipts(amount, events):
+    validate = _world_module()._native_health_damage_summary
+    with pytest.raises(AssertionError, match="RUST_WORLD_NATIVE_HEALTH_DAMAGE_RECEIPT_INVALID"):
+        validate([{"index": 0, "native_health_damage_taken": amount,
+                   "native_health_damage_events": events}], require_positive=False)
+
+
+def test_native_incoming_damage_rejects_partial_window_provenance():
+    validate = _world_module()._native_health_damage_summary
+    with pytest.raises(AssertionError, match="RUST_WORLD_NATIVE_HEALTH_DAMAGE_RECEIPT_INVALID"):
+        validate([{"index": 0, "native_health_damage_taken": 5.,
+                   "native_health_damage_events": 1},
+                  {"index": 1, "actor_health": 100.}], require_positive=False)
+
+
 def test_native_health_receipt_proves_real_actor_survived_each_distinct_mob():
     validate = _world_module()._native_survival_min_health
     windows = [
