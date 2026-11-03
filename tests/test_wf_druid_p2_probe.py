@@ -109,7 +109,7 @@ def test_p2_requires_an_approved_production_backend():
     assert gate._validate_p2(x,{})==[]
 
 
-def test_p2_game_ir_diagnostic_does_not_count_as_m1_partial_coverage():
+def test_retired_p2_diagnostic_never_counts_as_m1_partial_coverage():
     report={'status':'FAIL','gate':'P2',
             'coverage_basis':'executed_behavior_or_checked_solo_exclusion',
             'pass_count':3,'reachability_count':10,
@@ -117,8 +117,7 @@ def test_p2_game_ir_diagnostic_does_not_count_as_m1_partial_coverage():
             'production_engine':'live_game_ir_compiler_and_runtime'}
     assert coverage.measured_live_coverage(report) is None
     report['production_engine']='msim'
-    measured=coverage.measured_live_coverage(report)
-    assert measured['verified']==3 and measured['applicable']==10
+    assert coverage.measured_live_coverage(report) is None
 
 
 def _native_p2_diagnostic_report():
