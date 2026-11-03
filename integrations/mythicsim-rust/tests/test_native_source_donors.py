@@ -233,8 +233,8 @@ class SourceDonorAdapterTests(unittest.TestCase):
         # Native verification is provenance, never candidate admission.
         self.assertEqual(["99999-4"], scope["native_verified_talent_builds"])
         self.assertEqual(
-            "SOURCE_OBSERVED_CANDIDATE_STRINGS_NATIVE_RUST_AUTHORITATIVE",
-            scope["talent_validation"],
+            "SOURCE_OBSERVED_PROPOSALS_NATIVE_RUST_AUTHORITATIVE",
+            scope["talent_candidate_source"],
         )
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))
         for build in scope["talent_builds"]:
