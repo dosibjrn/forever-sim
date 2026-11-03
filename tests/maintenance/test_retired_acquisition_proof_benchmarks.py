@@ -26,6 +26,8 @@ RETIRED_TOOLS = (
     "tools/wf362_warrior_l30_p2_acceptance.py",
     "tools/wf338_druid_l20_p3_certificate.py",
     "tools/wf356_legacy_l30_equipment_audit.py",
+    "tools/wf344_source_equipment_merged_report.py",
+    "tools/wf352_p3_reaudit.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -53,6 +55,8 @@ RETIRED_IMPORT_NAMES = (
     "wf362_warrior_l30_p2_acceptance",
     "wf338_druid_l20_p3_certificate",
     "wf356_legacy_l30_equipment_audit",
+    "wf344_source_equipment_merged_report",
+    "wf352_p3_reaudit",
 )
 
 
@@ -158,3 +162,19 @@ def test_unapproved_p7_legacy_holdout_preflight_is_retired():
     for subgate in ("P7.1", "P7.2", "P7.3", "P7.4", "P7.5"):
         assert subgate in p7, subgate
     assert "P7_LEGACY_HOLDOUT" not in p7
+
+
+
+def test_retired_one_off_p3_report_writers_keep_historical_evidence():
+    """Retiring one-off generators must not delete their retained evidence."""
+    retained = (
+        "evidence/wf344/WF344_P4_SOURCE_EQUIPMENT_30S.json",
+        "evidence/wf344/WF344_P5_SOURCE_EQUIPMENT_300S.json",
+        "evidence/wf344/WF344_SOURCE_DISPLAY_PERCENT_EQUIPMENT_TOP5.json",
+        "evidence/wf344/WF344_TOP5_READABLE_REPORT.md",
+        "evidence/wf352/WF352_L30_P3_TOP5.json",
+        "evidence/wf352/WF352_P3_ADVERSARIAL_CURVES.json",
+        "evidence/wf352/WF352_P3_REVOCATION.json",
+    )
+    for relative in retained:
+        assert (ROOT / relative).is_file(), relative
