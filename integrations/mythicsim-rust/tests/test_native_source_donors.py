@@ -156,6 +156,10 @@ class SourceDonorAdapterTests(unittest.TestCase):
 
         self.assertEqual([0], scope["gear_mutable_slots"])
         self.assertEqual(
+            "PINNED_SAME_CLASS_SOURCE_REQUESTS_SAME_POSITION",
+            scope["gear_candidate_source"],
+        )
+        self.assertEqual(
             [
                 "<MISSING_TALENT_STRING>",
                 "7777777-2",
