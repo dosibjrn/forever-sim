@@ -240,9 +240,33 @@ def _tune_literal(condition, rng):
     return entry["val"] != old
 
 
-def _new_cast(spells, predicates_by_spell, compatible_predicates, rng):
+def _source_cast_templates(source_actions):
+    """Preserve exact source cast payloads (including healing targets) for proposals."""
+    templates = {}
+    for entry in source_actions:
+        action = entry.get("action", {}) if isinstance(entry, dict) else {}
+        cast = action.get("castSpell") if isinstance(action, dict) else None
+        spell = cast.get("spellId") if isinstance(cast, dict) else None
+        spell_id = spell.get("spellId") if isinstance(spell, dict) else None
+        if (not isinstance(spell_id, int) or isinstance(spell_id, bool)
+                or spell_id <= 0):
+            continue
+        variants = templates.setdefault(_spell_key(spell), {})
+        variants.setdefault(_spell_key(cast), copy.deepcopy(cast))
+    return {key: tuple(variants.values()) for key, variants in templates.items()}
+
+
+def _cast_from_source(spell, cast_templates, rng):
+    variants = cast_templates.get(_spell_key(spell), ())
+    if not variants:
+        return {"spellId": copy.deepcopy(spell)}
+    return copy.deepcopy(variants[0] if len(variants) == 1 else rng.choice(variants))
+
+
+def _new_cast(spells, predicates_by_spell, compatible_predicates, rng,
+              cast_templates=None):
     spell = copy.deepcopy(rng.choice(spells))
-    action = {"castSpell": {"spellId": spell}}
+    action = {"castSpell": _cast_from_source(spell, cast_templates or {}, rng)}
     preferred = _predicates_for_spell(
         predicates_by_spell.get(_spell_key(spell), ()), spell
     )
@@ -300,6 +324,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
     supplied frozen input. This is not full spellbook-level completeness.
     """
     spells, predicates_by_spell, allowed, compatible_predicates, source_aura_keys = _corpus(source_actions)
+    cast_templates = _source_cast_templates(source_actions)
     if cold:
         # A cold search may READ the saved request as a source-backed grammar,
         # but must not initialize its policy from the saved priority list.
@@ -316,14 +341,15 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
             if opaque and rng.random() < 0.15:
                 result.append(copy.deepcopy(rng.choice(opaque)))
             else:
-                result.append(_new_cast(spells, predicates_by_spell, compatible_predicates, rng))
+                result.append(_new_cast(spells, predicates_by_spell, compatible_predicates, rng,
+                                        cast_templates=cast_templates))
         # A fallback is a freshly sampled source spell, never a copied saved
         # reference priority entry. Keep the real native action legality check.
         if not _has_fallback(result):
             if len(result) >= 20:
                 result.pop()
-            result.append({"action": {"castSpell": {
-                "spellId": copy.deepcopy(rng.choice(spells))}}})
+            result.append({"action": {"castSpell": _cast_from_source(
+                rng.choice(spells), cast_templates, rng)}})
         rng.shuffle(result)
     else:
         result = copy.deepcopy(actions)
@@ -360,7 +386,9 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
             i, j = rng.sample(range(len(result)), 2)
             result[i], result[j] = result[j], result[i]
         elif mode == "insert_cast" and len(result) < 20:
-            result.insert(rng.randrange(len(result) + 1), _new_cast(spells, predicates_by_spell, compatible_predicates, rng))
+            result.insert(rng.randrange(len(result) + 1), _new_cast(
+                spells, predicates_by_spell, compatible_predicates, rng,
+                cast_templates=cast_templates))
         elif mode == "drop_action" and len(result) > 3:
             result.pop(rng.randrange(len(result)))
         elif mode == "replace_condition":
