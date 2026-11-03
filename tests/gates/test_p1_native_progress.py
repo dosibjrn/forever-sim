@@ -91,7 +91,8 @@ def test_verifiable_native_direct_effects_count_conservatively_no_formal_pass():
     assert measured["milestones_reached"][-1] == 97
     assert measured["progress_naksut"] == 8
     assert measured["formal_gate_pass"] is False
-    assert measured["source_legality_confirmed"] is False
+    assert "source_legality_confirmed" not in measured
+    assert "source_acquisition_unverified_count" not in measured
 
 
 
