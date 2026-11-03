@@ -249,7 +249,7 @@ def _probe_native_prepared_action_candidates(
             unclassified_count += 1
             continue
         flags = spell["flags"]
-        if "APL" not in flags:
+        if "SpellFlagAPL" not in flags:
             non_apl_count += 1
             continue
         action_id = spell.get("action_id")
