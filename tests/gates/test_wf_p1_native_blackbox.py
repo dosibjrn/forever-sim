@@ -615,7 +615,7 @@ def test_native_prepared_action_inventory_preserves_native_records_without_filte
             "action_id": None,
             "rank": 0,
             "class_spell": "PassiveProc",
-            "flags": [],
+            "flags": ["SpellFlagPassiveSpell"],
             "cast_kind": "passive",
         },
     ]
@@ -699,7 +699,7 @@ def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypat
             "action_id": None,
             "rank": 0,
             "class_spell": "PassiveProc",
-            "flags": [],
+            "flags": ["SpellFlagPassiveSpell"],
         },
     ]
     cooldowns = [{"action_id": {"spell_id": 3045}}]
