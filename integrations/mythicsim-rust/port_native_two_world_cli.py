@@ -76,7 +76,7 @@ def typed_rng_descendant(marker: str, replacement: str) -> str | None:
             1,
         ).replace(
             "let report = native_two_world_targets(&prepared, target_count)",
-            "let mode = RngMode::parse_cli(&args[6])?;\\n        let report = native_two_world_targets(&prepared, target_count, mode)",
+            "let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)",
             1,
         )
     return None
