@@ -551,82 +551,60 @@ def test_p1_real_production_heal_requires_restored_health_not_overheal():
     assert _runtime_exercise(ir, action, 20)['status'] == 'executed'
 
 
-
-def test_native_p1_executor_replaces_gameir_effect_validation_and_runtime():
-    selected = action(9912, effects=(), req=('legacy-only-requirement',), trace=False)
+def test_native_p1_canary_profile_bypasses_gameir_and_cannot_award_partial(monkeypatch, tmp_path):
+    import wf_gate_p1_live as provider
     calls = []
-    def native(row_value, action_value):
-        calls.append((row_value['spell_id'], action_value.id))
-        return {
-            'outcome': {'status':'executed','effect_observed':True,
-                        'native_status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED'},
-            'report': {'spell_id':9912,'status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED',
-                       'native_executed':True,'effect_observed':True,
-                       'p1_certified':False},
-        }
-    result = audit_inventory(
-        [row(9912)], ir_with(selected), parser=lambda a:set(),
-        source_classifier=lambda r,raw:{'role':'ABILITY'},
-        policy_builder=lambda ir,rules:policy(rules[0][0]),
-        scratch_builder=lambda ir,max_candidates:[policy(a.id) for a in ir.actions],
-        executor=lambda ir,a:(_ for _ in ()).throw(
-            AssertionError('native-selected action fell back to GameIR runtime')),
-        native_executor=native,
-        effect_checker=lambda e:(_ for _ in ()).throw(
-            AssertionError('native-selected action consulted GameIR effect dispatch')),
-    )
-    assert calls == [(9912, 'source_spell:9912')]
-    assert result['status'] == 'PASS'
-    assert result['pass_count'] == 1
-    assert result['production_runtime_exercises'] == 1
-    assert result['native_effect_probe_count'] == 1
-    assert result['native_effect_probes'][0]['p1_certified'] is False
-
-
-def test_native_p1_refusal_is_preserved_without_gameir_fallback():
-    selected = action(9912, effects=(), trace=False)
-    result = audit_inventory(
-        [row(9912)], ir_with(selected), parser=lambda a:set(),
-        source_classifier=lambda r,raw:{'role':'ABILITY'},
-        policy_builder=lambda ir,rules:policy(rules[0][0]),
-        scratch_builder=lambda ir,max_candidates:[policy(a.id) for a in ir.actions],
-        executor=lambda ir,a:(_ for _ in ()).throw(
-            AssertionError('native refusal must never fall back to GameIR')),
-        native_executor=lambda row_value,action_value:{
-            'outcome': {'status':'native_refused','native_status':'UNSUPPORTED',
-                        'reason':'native_action_not_supported'},
-            'report': {'spell_id':9912,'status':'UNSUPPORTED',
-                       'reason':'native_action_not_supported','p1_certified':False},
+    native = {
+        'status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED',
+        'native_executed':True,
+        'effect_observed':True,
+        'controlled_behavior_assertion_passed':True,
+        'engine_identity':'selected-rust-engine-identity',
+        'dps_with_action':75.3,
+        'dps_without_action':0.0,
+        'dps_delta':75.3,
+        'world_bridge':{
+            'world_targets_killed':2,
+            'native_damage_events':22,
+            'actual_2d_ack':True,
         },
-        effect_checker=lambda e:'direct_damage',
+    }
+    monkeypatch.setattr(
+        provider, '_native_p1_canary_probe',
+        lambda root, spell_id: calls.append((root,spell_id)) or native,
     )
+    result = provider.run_live(tmp_path, 'druid', 60, spec='balance')
+    assert calls == [(tmp_path,9912)]
     assert result['status'] == 'FAIL'
-    assert 'NATIVE_ACTION_REFUSED' in codes(result)
-    assert result['native_effect_probes'][0]['status'] == 'UNSUPPORTED'
-    assert result['pass_count'] == 0
-
-
-def test_native_p1_probe_runs_even_without_a_gameir_action():
-    calls = []
-    result = audit_inventory(
-        [row(9912)], ir_with(), parser=lambda a:set(),
-        source_classifier=lambda r,raw:{'role':'ABILITY'},
-        policy_builder=lambda ir,rules:policy(rules[0][0]),
-        scratch_builder=lambda ir,max_candidates:[],
-        executor=lambda ir,a:(_ for _ in ()).throw(
-            AssertionError('native-selected source identity must not use GameIR')),
-        native_executor=lambda row_value,action_value:(
-            calls.append((row_value['spell_id'],action_value)) or {
-                'outcome': {'status':'executed','effect_observed':True,
-                            'native_status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED'},
-                'report': {'spell_id':9912,'status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED',
-                           'effect_observed':True,'p1_certified':False},
-            }),
-        effect_checker=lambda e:'direct_damage',
-    )
-    assert calls == [(9912, None)]
-    assert result['native_effect_probe_count'] == 1
+    assert result['native_migration_scope'] == 'druid:60:balance:spell-9912'
     assert result['native_effect_probes'][0]['status'] == 'NATIVE_DIRECT_BEHAVIOR_VERIFIED'
-    assert result['pass_count'] == 0
-    assert result['status'] == 'FAIL'
-    assert 'MISSING_GAME_IR_ACTION' in codes(result)
+    assert result['native_effect_probes'][0]['actual_2d_ack'] is True
+    assert result['behavior_probes_executed'] == 1
+    assert result['pass_count'] == 0 and result['reachability_count'] == 0
+    assert result['p1_certified'] is False
+    assert any('NATIVE_P1_CANARY_ONLY_NOT_FULL_GATE' in reason for reason in result['reasons'])
+
+
+def test_native_p1_canary_preserves_native_terminal_statuses():
+    from pathlib import Path
+    from wf_gate_p1_live import _native_p1_canary_profile_report
+    cases = (
+        ('INVALID','NATIVE_ACTION_REFUSED','FAIL'),
+        ('UNSUPPORTED','NATIVE_ACTION_REFUSED','FAIL'),
+        ('NO_DIRECT_EFFECT_OBSERVED','NATIVE_ACTION_NO_EFFECT','FAIL'),
+        ('ERROR','NATIVE_ACTION_EXECUTION_FAILED','FAIL'),
+        ('BLOCKED','NATIVE_ACTION_EXECUTION_BLOCKED','BLOCKED'),
+    )
+    for status, expected_code, expected_gate_status in cases:
+        report = _native_p1_canary_profile_report(
+            Path('.'), 'druid', 60, 'balance',
+            'current_solo_leveling_100mob_v1',
+            native_report={'status':status,'reason':'native terminal receipt',
+                           'native_executed':False,'effect_observed':False,
+                           'p1_certified':False},
+        )
+        assert report['status'] == expected_gate_status
+        assert report['native_effect_probes'][0]['status'] == status
+        assert any(expected_code in reason for reason in report['reasons'])
+        assert report['p1_certified'] is False
+        assert report['pass_count'] == 0 and report['reachability_count'] == 0
