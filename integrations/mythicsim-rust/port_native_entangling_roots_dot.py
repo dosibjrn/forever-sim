@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Port source-native Forever Entangling Roots periodic damage, not root/2D CC acceptance.
+"""Port source-native Forever Entangling Roots periodic damage and landed 2D root control.
 
-This is source-patching infrastructure only: ALL Warcraft mechanics execute in the
-maintained MythicSim Rust fork. The true root / damage-break / world CC remains
-unimplemented and MUST NOT be marked P1/P2 PASS by this incremental change.
+The Rust source owns the landed DoT/control event and its native duration; the
+actual gsim CombatRuntime owns 2D immobilization and expiry. Damage-break
+semantics and full P1/P2 gate acceptance remain unimplemented.
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def replace_once(source: str, old: str, new: str, label: str) -> str:
 
 
 ROOTS_METHOD = """
-    /// Source-native Forever Roots periodic damage, not yet root/break/2D CC behavior.
+    /// Source-native Forever Roots periodic damage; landed control is bridged separately.
     /// Keep GoReference preparation unchanged for the pinned Go goldens.
     fn register_entangling_roots_spell(&mut self, sim: &mut Sim) {
         let rank = Ladder::ranked(&ENTANGLING_ROOTS_RANKS).highest();
@@ -96,7 +96,8 @@ AGENT_PATCHES = [
      "SPELL"),
     ("        for effect in &prepared.effects {\n            match effect {\n                Effect::Heals {",
      "        // Native-only Forever spell: source data owns base tick numbers, not a\n"
-     "        // Python or Go copy. Root/break and real 2D CC remain unimplemented.\n"
+     "        // Python or Go copy. The landed root is bridged to gsim; damage-break\n"
+     "        // semantics remain unmodeled and must not be treated as a full CC PASS.\n"
      "        if let Some(roots) = find_spell(&fight, 9853, 0) {\n"
      "            let dot = fight.spells[roots].dot.ok_or(\"Entangling Roots lacks its dot\")?;\n"
      "            let row = crate::prepare::spelldata::Ladder::ranked(&[9853]).highest();\n"
@@ -113,6 +114,33 @@ AGENT_PATCHES = [
      "            DruidSpell::MoonfireDot | DruidSpell::InsectSwarm | DruidSpell::EntanglingRoots => {\n"
      "                fight.snapshot_dot_tick(dot)\n"
      "            }", "DOT_TICK"),
+    ("    fn on_dot_gain(fight: &mut Fight<Self>, dot: DotId, behavior: DruidSpell) {\n"
+     "        if behavior == DruidSpell::InsectSwarm {\n"
+     "            let side = fight.dots[dot].side;\n"
+     "            insect_swarm::on_dot_gain(fight, fight.agent.insect_swarm_debuff, side);\n"
+     "        }\n"
+     "    }",
+     "    fn on_dot_gain(fight: &mut Fight<Self>, dot: DotId, behavior: DruidSpell) {\n"
+     "        if behavior == DruidSpell::InsectSwarm {\n"
+     "            let side = fight.dots[dot].side;\n"
+     "            insect_swarm::on_dot_gain(fight, fight.agent.insect_swarm_debuff, side);\n"
+     "        }\n"
+     "        // This callback runs only after the native binary spell gained its DoT: a miss\n"
+     "        // cannot create a control event. The selected 2D world owns movement and expiry.\n"
+     "        if behavior == DruidSpell::EntanglingRoots {\n"
+     "            let root = &fight.dots[dot];\n"
+     "            if root.side == Side::Target {\n"
+     "                let duration_ns = i64::from(root.remaining_ticks)\n"
+     "                    .checked_mul(root.tick_period)\n"
+     "                    .filter(|duration| *duration > 0)\n"
+     "                    .expect(\"RUST_WORLD_ROOT_DURATION_INVALID\");\n"
+     "                let action = format!(\"{:?}\", fight.spells[root.spell].id);\n"
+     "                crate::core::fight::world_bridge::record_control(\n"
+     "                    fight.now, duration_ns, \"root\", action, \"Target\".to_owned(),\n"
+     "                );\n"
+     "            }\n"
+     "        }\n"
+     "    }", "ROOT_CONTROL"),
 ]
 
 CONTRACT_PATCHES = [
