@@ -279,3 +279,35 @@ def test_p73_paid_stochastic_finalist_rejects_unpaired_native_world(
                         lambda *args: "real native/world mismatch")
     with pytest.raises(ValueError, match="P73_FINALIST_NATIVE_WORLD_PARITY"):
         gate._paid_stochastic_finalist(producer, tmp_path / "engine", source, 15)
+
+
+def test_p73_early_stochastic_feedback_is_paid_and_preserves_cold_diversity():
+    """Search uses only paid source-native+2D contenders, not reference seeds."""
+    due = gate._p73_early_rerank_due
+    assert not due(119.9, 0)
+    assert due(120.0, 0)
+    assert not due(139.9, 1)
+    assert due(140.0, 1)
+    assert due(220.0, 5)
+    assert not due(220.0, 6)
+    assert not due(240.0, 0)
+
+    balanced_req = {"raid": "balanced paid contender"}
+    stochastic_req = {"raid": "stochastic paid contender"}
+    balanced = [(900.0, balanced_req)]
+    # The second value is a real paid world receipt; the fourth is the
+    # untouched source-legal request, not the seed-mutated rerank request.
+    stochastic = [(750.0, {"world_mean_dps": 750.0}, "source-sha",
+                   stochastic_req, 720.0)]
+    assert gate._p73_paid_parent_pool(balanced, stochastic, 1) == [
+        (750.0, stochastic_req)]
+    assert gate._p73_paid_parent_pool(balanced, stochastic, 3) is balanced
+    assert gate._p73_paid_parent_pool(balanced, [], 1) is balanced
+
+    class PickFirst:
+        @staticmethod
+        def choice(options):
+            return options[0]
+    parent = gate._p73_paid_parent_pool(balanced, stochastic, 1)
+    assert gate._paid_elite_choice(parent, PickFirst(), 1) is stochastic_req
+    assert gate._paid_elite_choice(parent, PickFirst(), 5) is None
