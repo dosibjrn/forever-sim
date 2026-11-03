@@ -101,7 +101,8 @@ print("RUST_NATIVE_PAID_RECOVERY_PORT_IDEMPOTENT_AND_FAIL_CLOSED")
 # The paid-recovery port changes the early-retarget clock test. The earlier
 # persistent-target port must still accept this exact composed descendant on
 # the second source-port pass, while rejecting any partial/drifted extension.
-source = FIGHT.replace(
+source = FIGHT[FIGHT.index("    #[test]"):]
+source = source.replace(
     early_retarget.TEST_MARKER, "fn fixture_clock_boundary()"
 ).replace(
     port.FIGHT_CLOCK_TEST_OLD,
@@ -109,9 +110,7 @@ source = FIGHT.replace(
 )
 method_anchor = "    /// Go " + chr(96) + "Simulation.reset" + chr(96) + " and " + chr(96) + "Environment.reset" + chr(96) + ".\n"
 source += (
-    "\n" + persistent_target.FIGHT_METHOD.replace(
-        port.FIGHT_CLOCK_COMMENT_OLD, ""
-    )
+    "\n" + persistent_target.FIGHT_METHOD
     + method_anchor
     + persistent_target.FIGHT_TEST.rstrip("\n") + "\n"
 )
