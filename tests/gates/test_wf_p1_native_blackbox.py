@@ -608,7 +608,7 @@ def test_native_prepared_action_inventory_preserves_native_records_without_filte
             "action_id": {"spell_id": 13550},
             "rank": 2,
             "class_spell": "SerpentSting",
-            "flags": {"passive": False},
+            "flags": ["APL"],
             "cast_kind": "instant",
         },
         {
