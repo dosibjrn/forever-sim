@@ -773,6 +773,9 @@ def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypat
     assert inventory["spell_count"] == 3
     assert inventory["major_cooldown_count"] == 1
     assert inventory["p1_certified"] is False
+    assert result["native_action_inventory_parity"]["status"] == "MATCH"
+    assert result["native_action_inventory_parity"]["positive_spell_records_equal"] is True
+    assert result["native_action_inventory_parity"]["positive_major_cooldowns_equal"] is True
     candidate_probe = result["native_action_candidate_probe"]
     assert candidate_probe["status"] == "AVAILABLE"
     assert candidate_probe["candidate_scope"] == "NATIVE_PREPARED_APL_SPELLS_ONLY"
