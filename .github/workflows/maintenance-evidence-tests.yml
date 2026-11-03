@@ -111,3 +111,6 @@ jobs:
           tests/mechanics/hunter/test_hunter_mechanics_layout.py
           tests/mechanics/mage/test_mage_extended_layout.py
           tests/mechanics/paladin/test_paladin_mechanics_layout.py
+
+      - name: Verify active M1 scoreboard on the PR tree
+        run: python tools/m1_progress.py
