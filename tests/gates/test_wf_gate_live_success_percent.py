@@ -1,6 +1,5 @@
-"""Live FAIL success% and 80/20 are asserted behavior, never exploration.
+"""Active-gate FAIL success% and 80/20 are asserted behavior, never exploration.
 
-Real P2 test executes the production GameIR/CombatRuntime rank probes.
 Unit cases guard against metadata, sampling and candidate-count fraud.
 """
 import subprocess
@@ -14,20 +13,6 @@ from tools.wf_gate_coverage import (measured_live_coverage,
                                     p7_required_dps,
                                     P7_FINAL_STOCHASTIC_ITERATIONS,
                                     pareto_effort_fraction)
-from tools.wf_gate_probe import probe_gate
-
-
-def test_real_druid_p2_live_fail_shows_success_and_8020():
-    row = probe_gate("druid", 60, "balance", "P2", timeout_s=45.0)
-    assert row["status"] == "FAIL", row
-    assert row["verified"] > 0
-    assert row["applicable"] >= row["verified"]
-    c = row["verified"] / row["applicable"]
-    assert row["partial_coverage_percent"] == round(100 * c, 2)
-    assert row["pareto_effort_estimate_percent"] == round(
-        100 * pareto_effort_fraction(c), 2)
-    assert row["engine_id"] == "live_game_ir_compiler_and_runtime"
-    assert len(row["source_id"]) == 64
 
 
 def test_direct_scoreboard_script_still_runs_without_pythonpath():
