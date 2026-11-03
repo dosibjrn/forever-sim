@@ -140,7 +140,7 @@ jobs:
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml forever_roots_native_periodic_ticks_change_with_rank -- --nocapture
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib persistent_next_target
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib world_lethal_terminal
-          cargo run --quiet --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml -- native-pulls --infile /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json --targets 2 > /tmp/forever-native-two-window.json
+          cargo run --quiet --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml -- native-pulls --infile /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json --targets 2 --rng-mode stochastic > /tmp/forever-native-two-window.json
           python3 - <<'PY'
           import json, math
           with open("/tmp/forever-native-two-window.json") as f:
@@ -167,7 +167,7 @@ jobs:
           python3 integrations/mythicsim-rust/live_two_world_pulls.py \
             --binary /tmp/forever-selected-rust/target/debug/forever-engine \
             --prepared /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
-            --mob-health 1200 --targets 3 --require-native-moving > /tmp/forever-rust-moving-3world.jsonl
+            --mob-health 1200 --targets 3 --rng-mode stochastic --require-native-moving > /tmp/forever-rust-moving-3world.jsonl
           python3 - <<'PY'
           import json
           with open("/tmp/forever-rust-moving-3world.jsonl") as f:
