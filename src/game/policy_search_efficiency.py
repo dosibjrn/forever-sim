@@ -16,7 +16,7 @@ import json
 from typing import Any, Callable, Mapping
 
 from src.game.model import ActionDefinition, PolicyCondition, PolicyDefinition, PolicyRuleDefinition
-from src.game.policy_search import PolicyEvaluator
+from src.optimization.policy_search import PolicyEvaluator
 
 
 def _condition_value(condition: PolicyCondition, *, action: ActionDefinition) -> Any:
