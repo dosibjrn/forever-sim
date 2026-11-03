@@ -34,3 +34,11 @@ def test_threshold_core_does_not_import_game_model():
     code = ("import src.optimization.threshold_candidates; import sys; "
             "assert 'src.game' not in sys.modules")
     subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_live_g17_adapter_uses_optimizer_enumerator():
+    from src.game import policy_threshold_search as adapter
+    from src.optimization import threshold_candidates as core
+
+    assert adapter.iter_threshold_candidates is core.iter_threshold_candidates
+    assert not hasattr(adapter, "_threshold_identity")
