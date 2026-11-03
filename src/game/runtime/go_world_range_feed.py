@@ -106,7 +106,9 @@ class GsimGoRangeFeed:
         # Immediately reject fake/non-2D runtimes, not only on first tick.
         self._snapshot(runtime)
 
-    def next_tick(self) -> dict:
+    def next_tick(self, *, allow_same_clock: bool = False) -> dict:
+        if type(allow_same_clock) is not bool:
+            raise GoWorldRangeError("WORLD_SAME_CLOCK_PERMISSION_INVALID")
         if self._pending is not None:
             raise GoWorldRangeError("PREVIOUS_NATIVE_RANGE_RECEIPT_MISSING")
         world = self._snapshot(self._runtime)
@@ -121,7 +123,8 @@ class GsimGoRangeFeed:
             raise GoWorldRangeError("WORLD_TARGET_HEALTH_INVALID")
         projection["world_target_health_before"] = health
         projection["world_target_max_health"] = max_health
-        if projection["clock_ms"] <= self._last_clock_ms:
+        if (projection["clock_ms"] < self._last_clock_ms
+                or (projection["clock_ms"] == self._last_clock_ms and not allow_same_clock)):
             raise GoWorldRangeError("WORLD_CLOCK_NOT_MONOTONIC")
         self._pending = projection
         return dict(projection)
