@@ -115,6 +115,14 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): prepare source-native Entangling Roots damage and talent ranks"
 fi
 
+# Expose the selected native Druid talent layout as versioned wire metadata.
+# This API reports layout only; native prepare remains the legality authority.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_talent_layout_api.py" "$PWD"
+git add src/classes/druid/prepare.rs src/lib.rs src/main.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): export native Druid talent layout metadata"
+fi
+
 # Preserve native scheduler events beyond a pull boundary on the fork itself.
 # A future stateful two-target session must be able to resume queued events
 # instead of silently consuming them at the previous target's deadline.
@@ -223,6 +231,7 @@ cargo test --locked --lib persistent_next_target
 cargo test --locked --lib world_lethal_terminal
 # Native Druid P2 witnesses must pass before the selected Rust integration is published.
 cargo test --locked --lib native_improved_roots_rank_intake
+cargo test --locked --lib druid_talent_layout_api_tests
 
 # This is an engine packaging update, not a gate or native reference test.
 check_engine_source
