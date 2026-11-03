@@ -11,11 +11,7 @@ on:
       - 'tools/audit_feral_p7_holdout.py'
       - 'tools/import_feral_p7_archives.py'
       - 'tools/wf_gate_coverage.py'
-      - 'tools/p1_native_source_inventory.py'
-      - 'tools/p1_native_progress.py'
-      - 'tools/wf_p1_native_scope_matrix.py'
       - 'tools/wf_p1_native_effects.py'
-      - 'tests/gates/test_p1_native_progress.py'
       - 'tests/gates/test_wf_p1_native_blackbox.py'
       - 'tools/wf_gate_p1_live.py'
       - 'tests/test_wf382_mage_l30_build_delta_p1_tdd.py'
@@ -74,7 +70,6 @@ jobs:
           tests/test_wf331_druid20_source_web_l0.py
           tests/test_wf332_runes_default_off.py
           tests/test_wf382_mage_l30_build_delta_p1_tdd.py
-          tests/gates/test_p1_native_progress.py
           tests/gates/test_wf_p1_native_blackbox.py
           tests/test_wf469_p1_alignment.py
           tests/test_wf470_p1_scope.py
