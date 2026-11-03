@@ -665,7 +665,7 @@ class NativeExecutionErrorReporting(unittest.TestCase):
         self.assertIs(p73.NativeExecutionError, native_exec.NativeExecutionError)
         self.assertIs(p73.NativeScoreExtractionError, native_exec.NativeScoreExtractionError)
 
-    def test_missing_dps_average_preserves_raw_native_response(self):
+    def test_incomplete_dps_distribution_is_execution_error_and_preserves_raw_response(self):
         source = request()
         raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
 
@@ -675,21 +675,24 @@ class NativeExecutionErrorReporting(unittest.TestCase):
             return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
 
         with patch.object(p73.subprocess, "run", side_effect=write_output):
-            with self.assertRaises(native_exec.NativeScoreExtractionError) as raised:
+            with self.assertRaises(native_exec.NativeExecutionError) as raised:
                 native_exec.run(
                     Path("native"), source, 40, 731, "balanced",
                     time.monotonic() + 5.0,
                 )
 
         self.assertEqual(raw, raised.exception.raw_response)
-        self.assertIn("result.raidMetrics.dps.avg", str(raised.exception))
+        self.assertEqual("ERROR", raised.exception.status)
+        self.assertEqual(0, raised.exception.returncode)
         self.assertGreaterEqual(raised.exception.elapsed_s, 0.0)
         self.assertTrue(raised.exception.request_sha256)
 
     def test_failed_score_extraction_writes_request_and_raw_response_receipts(self):
         effective = native_payload(request(), 40, 731)
         key = fingerprint(effective)
-        raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
+        raw = {"result": {"raidMetrics": {"dps": {
+            "aggregatorData": {"n": 40}, "hist": {"0": 40},
+        }}}}
         exc = native_exec.NativeScoreExtractionError(
             "missing avg", raw_response=raw, elapsed_s=0.012,
             request_sha256=key,
