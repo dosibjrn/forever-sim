@@ -78,7 +78,7 @@ jobs:
           declare -A seen=()
           unique=()
           for entry in "${entries[@]}"; do
-            [[ "$entry" =~ ^(druid|hunter|mage|paladin|priest|rogue|shaman|warlock|warrior):(20|30|40|60):[a-z][a-z0-9_-]*:(P[1-6]|P7\.[1-5])$ ]] ||
+            [[ "$entry" =~ ^(druid|hunter|mage|paladin|priest|rogue|shaman|warlock|warrior):(20|30|40|60):[a-z][a-z0-9_-]*:(P[3-6]|P7\.[1-5])$ ]] ||
               { echo "Invalid gate target: $entry" >&2; exit 2; }
             gate="${entry##*:}"
             # P7.1 supports a genuine short coupled-native diagnostic.
