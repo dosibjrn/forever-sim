@@ -415,7 +415,7 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                     scratch_builder, executor, higher_level_rows=(), max_errors=10000,
                     effect_checker=None, source_inactive_ids=None,
                     scope_facts=None, context_exclusions=None, scenario_nonimpact=None,
-                    native_executor=None, scenario_id=P1_DEFAULT_SCENARIO):
+                    scenario_id=P1_DEFAULT_SCENARIO):
     """PROCESS P1 gate: all source actions are traceable, legal, and offered.
 
     A recognized unmet conditional prerequisite is reported but cannot PASS
@@ -430,9 +430,6 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
     context_exclusions = context_exclusions or {}
     scenario_nonimpact = scenario_nonimpact or {}
     nonimpact: list[dict[str,Any]] = []
-    native_probe_reports: list[dict[str,Any]] = []
-    native_row_results: dict[int,dict[str,Any]] = {}
-    native_outcomes: dict[str,dict[str,Any]] = {}
     def issue(code, row=None, detail=None):
         if len(problems) < max_errors:
             problems.append({'code':code, 'ability':_id_label(row) if row else None,
@@ -461,30 +458,6 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
             if indexed.get(sid):
                 issue('INACTIVE_SOURCE_ACTION_ENTERED_GAME_IR',row, reason)
             continue
-        # Probe the selected source identity before asking whether GameIR can
-        # represent it. Native INVALID/UNSUPPORTED remains authoritative.
-        if native_executor is not None:
-            try:
-                native = native_executor(row, None)
-            except Exception as exc:
-                native = {
-                    'outcome': {'status':'native_error','native_status':'ERROR',
-                                'reason':f'{type(exc).__name__}:{exc}'},
-                    'report': {'spell_id':sid,'status':'ERROR',
-                               'reason':f'{type(exc).__name__}:{exc}',
-                               'p1_certified':False},
-                }
-            if native is not None:
-                if not isinstance(native, dict) or not isinstance(native.get('outcome'), dict):
-                    issue('NATIVE_ACTION_PROBE_INVALID',row,'source identity probe')
-                    native_row_results[sid] = {
-                        'outcome': {'status':'native_error','native_status':'ERROR',
-                                    'reason':'INVALID_NATIVE_ACTION_PROBE_RESULT'}}
-                else:
-                    native_row_results[sid] = native
-                    summary = native.get('report')
-                    if isinstance(summary, dict):
-                        native_probe_reports.append(summary)
         try:
             classification = source_classifier(row, row['raw_listview_json'])
         except (TypeError, KeyError, ValueError) as exc:
@@ -558,25 +531,6 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
         if len(matches)>1:
             issue('DUPLICATE_GAME_IR_SOURCE_MATCH',row,','.join(a.id for a in matches))
         for action in matches:
-            native = native_row_results.get(sid)
-            if native is not None:
-                if not isinstance(native, dict) or not isinstance(native.get('outcome'), dict):
-                    issue('NATIVE_ACTION_PROBE_INVALID', row, action.id)
-                    native_outcomes[action.id] = {
-                        'status':'native_error','native_status':'ERROR',
-                        'reason':'INVALID_NATIVE_ACTION_PROBE_RESULT'}
-                else:
-                    native_outcomes[action.id] = native['outcome']
-                # Native prepare/execute owns this action's validity and effects.
-                # Keep only Forever's candidate/policy reachability check here.
-                try:
-                    p=policy_builder(ir,((action.id,()),))
-                    if not any(rule.action_id==action.id for rule in p.rules):
-                        issue('POLICY_DROPS_ACTION',row,action.id)
-                except (TypeError,ValueError,KeyError) as exc:
-                    issue('POLICY_CANNOT_REFER_TO_ACTION',row,
-                          f'{action.id}:{type(exc).__name__}:{exc}')
-                continue
             for err in _requirements_well_formed(action):
                 issue('INVALID_OR_UNSUPPORTED_PREREQUISITE',row,f'{action.id}:{err}')
             known_modes = {m.id for m in ir.modes}
@@ -635,23 +589,12 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
     for row in eligible:
         for action in indexed.get(int(row['spell_id']),()):
             try:
-                outcome=native_outcomes.get(action.id)
-                if outcome is None:
-                    outcome=executor(ir,action)
+                outcome=executor(ir,action)
             except Exception as exc:
                 issue('COMBAT_RUNTIME_EXCEPTION',row,f'{action.id}:{type(exc).__name__}:{exc}')
                 continue
             if outcome.get('status')=='executed' and outcome.get('effect_observed') is True:
                 exercised.append(action.id)
-            elif outcome.get('status') == 'native_refused':
-                issue('NATIVE_ACTION_REFUSED',row,
-                      f"{action.id}:{outcome.get('native_status')}:{outcome.get('reason')}")
-            elif outcome.get('status') == 'native_no_effect':
-                issue('NATIVE_ACTION_NO_EFFECT',row,
-                      f"{action.id}:{outcome.get('reason')}")
-            elif outcome.get('status') == 'native_error':
-                issue('NATIVE_ACTION_EXECUTION_FAILED',row,
-                      f"{action.id}:{outcome.get('native_status')}:{outcome.get('reason')}")
             elif (outcome.get('status')=='conditional' and
                   _legitimate_conditional(action, str(outcome.get('reason') or ''))):
                 # A recognized prerequisite is a useful diagnostic, but it
@@ -694,8 +637,6 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
             'does_not_affect_sim_count':len(nonimpact),
             'matched_source_abilities':sum(bool(indexed.get(int(r['spell_id']))) for r in eligible),
             'production_runtime_exercises':len(exercised),
-            'native_effect_probes':native_probe_reports,
-            'native_effect_probe_count':len(native_probe_reports),
             'conditional_actions':conditional,
             'actual_scratch_policy_count':len(generated),
             'problems':problems,
@@ -957,11 +898,81 @@ def _native_p1_probe_summary(report: dict, spell_id: int) -> dict:
     }
 
 
+def _native_p1_canary_profile_report(root: Path, class_key: str, level: int,
+                                      spec: str, scenario_id: str,
+                                      native_report: dict | None = None) -> dict:
+    """A native-only migration slice, deliberately not a full P1 acceptance."""
+    if native_report is None:
+        native_report = _native_p1_canary_probe(root, 9912)
+    summary = _native_p1_probe_summary(native_report, 9912)
+    status = native_report.get('status')
+    problems = [
+        {'code':'NATIVE_P1_CANARY_ONLY_NOT_FULL_GATE',
+         'ability':'9912',
+         'detail':'One native action is not the full source denominator or optimizer reachability.'},
+        {'code':'P1_OTHER_ACTIONS_AND_OPTIMIZER_REACHABILITY_NOT_YET_NATIVE',
+         'ability':None,
+         'detail':'Remaining P1 actions and optimizer candidate reachability are not measured on the selected native path.'},
+    ]
+    gate_status = 'FAIL'
+    if status in ('INVALID','UNSUPPORTED'):
+        problems.append({'code':'NATIVE_ACTION_REFUSED','ability':'9912',
+                         'detail':f"{status}:{native_report.get('reason') or ''}"})
+    elif status == 'NO_DIRECT_EFFECT_OBSERVED':
+        problems.append({'code':'NATIVE_ACTION_NO_EFFECT','ability':'9912',
+                         'detail':native_report.get('reason') or 'NATIVE_DIRECT_EFFECT_NOT_OBSERVED'})
+    elif status == 'BLOCKED':
+        gate_status = 'BLOCKED'
+        problems.append({'code':'NATIVE_ACTION_EXECUTION_BLOCKED','ability':'9912',
+                         'detail':native_report.get('reason') or 'NATIVE_P1_CANARY_BLOCKED'})
+    elif status != 'NATIVE_DIRECT_BEHAVIOR_VERIFIED':
+        problems.append({'code':'NATIVE_ACTION_EXECUTION_FAILED','ability':'9912',
+                         'detail':f"{status or 'ERROR'}:{native_report.get('reason') or ''}"})
+    elif not (native_report.get('native_executed') is True
+              and native_report.get('effect_observed') is True
+              and native_report.get('controlled_behavior_assertion_passed') is True):
+        problems.append({'code':'NATIVE_ACTION_RECEIPT_INCOMPLETE','ability':'9912',
+                         'detail':'Native direct-behavior receipt did not satisfy its own assertions.'})
+    report = {
+        'class':class_key,'level':level,'spec':spec,'gate':'P1',
+        'status':gate_status,'source':'live_production',
+        'p1_scenario_id':scenario_id,
+        'native_migration_scope':'druid:60:balance:spell-9912',
+        'native_effect_probes':[summary],
+        'native_effect_probe_count':1,
+        'behavior_probes_executed':1 if native_report.get('native_executed') is True else 0,
+        # No optimizer reachability or full source denominator has migrated yet.
+        # Zero/zero intentionally prevents this canary from creating M1 partial credit.
+        'pass_count':0,'reachability_count':0,
+        'coverage_basis':'executed_behavior_assertions',
+        'coverage_scope_complete':False,
+        'partial_scope':'native_p1_canary_only_not_full_gate',
+        'production_engine':'selected_mythicsim_rust_p1_canary',
+        'p1_certified':False,
+        'problems':problems,
+        'problem_count':len(problems),
+        'reasons':[f"{p['code']}:{p.get('ability') or ''}:{p['detail']}" for p in problems],
+    }
+    engine_identity = native_report.get('engine_identity')
+    if isinstance(engine_identity,str) and engine_identity:
+        report['engine_id'] = engine_identity
+    return report
+
+
 def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
              spec:str='unrestricted',scenario_id:str=P1_DEFAULT_SCENARIO)->dict:
     report={'class':class_key,'level':level,'spec':spec,'gate':'P1',
             'status':'FAIL','source':'live_production','reasons':[],
             'p1_scenario_id':scenario_id}
+    if (class_key.strip().lower() == 'druid' and level == 60
+            and spec == 'balance' and scenario_id == P1_DEFAULT_SCENARIO):
+        sys.path.insert(0,str(root))
+        try:
+            return _native_p1_canary_profile_report(
+                root,class_key,level,spec,scenario_id)
+        finally:
+            if sys.path and sys.path[0] == str(root):
+                sys.path.pop(0)
     try:
         sys.path.insert(0,str(root))
         from src.game.data.forever.registry import build_game_ir_slice
@@ -969,6 +980,7 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
         from src.game.data.forever.source_indexed_action_coverage import _source_spell_ids
         from src.game.data.forever.sqlite_talents import DEFAULT_DB
         from src.game.policy_evolution import from_source_rules,scratch_policies
+        from src.game.runtime import ActorState,CombatRuntime,TargetState
         from src.game.runtime.effect_capabilities import effect_execution_kind
         source_db=Path(db_override or DEFAULT_DB)
         if not source_db.is_absolute():source_db=root/source_db
@@ -987,39 +999,6 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
         report['engine_id']=_source_code_fingerprint(root)
         report['ir_id']=ir.id
         nonimpact=_load_p1_scenario_nonimpact(root,class_key,level,scenario_id)
-        native_probe_cache = {}
-        def native_executor(row, action):
-            sid = int(row['spell_id'])
-            # The source ID is only a test selector. MythicSim prepare/execute
-            # decides whether it is valid/supported and whether it has an effect.
-            if not (class_key.strip().lower() == 'druid' and level == 60
-                    and spec == 'balance' and scenario_id == P1_DEFAULT_SCENARIO
-                    and sid == 9912):
-                return None
-            if sid not in native_probe_cache:
-                native_report = _native_p1_canary_probe(root, sid)
-                status = native_report.get('status')
-                if (status == 'NATIVE_DIRECT_BEHAVIOR_VERIFIED'
-                        and native_report.get('native_executed') is True
-                        and native_report.get('effect_observed') is True
-                        and native_report.get('controlled_behavior_assertion_passed') is True):
-                    outcome = {'status':'executed','effect_observed':True,
-                               'native_status':status}
-                elif status in ('INVALID','UNSUPPORTED'):
-                    outcome = {'status':'native_refused','native_status':status,
-                               'reason':native_report.get('reason')}
-                elif status == 'NO_DIRECT_EFFECT_OBSERVED':
-                    outcome = {'status':'native_no_effect','native_status':status,
-                               'reason':native_report.get('reason') or
-                                         'NATIVE_DIRECT_EFFECT_NOT_OBSERVED'}
-                else:
-                    outcome = {'status':'native_error','native_status':status or 'ERROR',
-                               'reason':native_report.get('reason')}
-                native_probe_cache[sid] = {
-                    'outcome':outcome,
-                    'report':_native_p1_probe_summary(native_report,sid),
-                }
-            return native_probe_cache[sid]
         check=audit_inventory(rows,ir,parser=_source_spell_ids,
                   source_classifier=classify_indexed_ability,
                   policy_builder=from_source_rules,scratch_builder=scratch_policies,
@@ -1030,8 +1009,7 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
                       scope_meta.get('spellbook_file'),rows),
                       **_load_source_scope_facts(source_db,class_key)},
                   context_exclusions=scope_meta.get('scope_context_exclusions',{}),
-                  scenario_nonimpact=nonimpact,native_executor=native_executor,
-                  scenario_id=scenario_id)
+                  scenario_nonimpact=nonimpact,scenario_id=scenario_id)
         report.update(check)
         report['reasons'] = [
             f"{issue['code']}:{issue['ability'] or ''}:{issue['detail'] or ''}"
