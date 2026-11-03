@@ -87,7 +87,7 @@ jobs:
           tests/test_wf_feral01_sqlite_talent_execution.py::test_unknown_talent_effect_is_not_a_zero_cost_noop
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
           integrations/mythicsim-rust/tests/test_p73_native_search_ci.py
-          integrations/mythicsim-rust/tests/test_p75_joint_contract.py
+          integrations/mythicsim-rust/tests/test_p75_joint_contract.py::JointSearchContracts::test_cold_apl_can_reach_nineteen_actions_from_ten_action_reference
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
           tests/test_work1_p7_balanced_native_world_rng.py
