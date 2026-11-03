@@ -17,7 +17,7 @@ def average_dps(report):
             return float(value)
     raise ValueError("native Rust output contains no average DPS")
 
-def simulate(binary, request, iterations, output_dir, label, rng_mode="stochastic", deadline=None):
+def simulate(binary, request, iterations, output_dir, label, rng_mode="balanced", deadline=None):
     if deadline is not None and time.monotonic() >= deadline:
         raise TimeoutError("End-to-end search deadline exhausted before native execution")
     req = copy.deepcopy(request)
