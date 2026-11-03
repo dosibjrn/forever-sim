@@ -1,8 +1,10 @@
 """Production wrapper contract for balanced native JOINT receipts."""
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
+import tempfile
 import time
 import unittest
 from pathlib import Path
@@ -10,7 +12,9 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import p73_talent_search_v2 as p73
-from native_joint_two_class import fingerprint, native_payload, native_score_request
+from native_joint_two_class import (
+    _write_native_failure, fingerprint, native_payload, native_score_request,
+)
 
 
 def request():
@@ -70,6 +74,48 @@ class NativeJointScoringContracts(unittest.TestCase):
 
 
 class NativeExecutionErrorReporting(unittest.TestCase):
+    def test_missing_dps_average_preserves_raw_native_response(self):
+        source = request()
+        raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
+
+        def write_output(args, **kwargs):
+            output = Path(args[args.index("--outfile") + 1])
+            output.write_text(json.dumps(raw))
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        with patch.object(p73.subprocess, "run", side_effect=write_output):
+            with self.assertRaises(p73.NativeScoreExtractionError) as raised:
+                p73.run(
+                    Path("native"), source, 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertIn("result.raidMetrics.dps.avg", str(raised.exception))
+        self.assertGreaterEqual(raised.exception.elapsed_s, 0.0)
+        self.assertTrue(raised.exception.request_sha256)
+
+    def test_failed_score_extraction_writes_request_and_raw_response_receipts(self):
+        effective = native_payload(request(), 40, 731)
+        key = fingerprint(effective)
+        raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
+        exc = p73.NativeScoreExtractionError(
+            "missing avg", raw_response=raw, elapsed_s=0.012,
+            request_sha256=key,
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            outdir = Path(directory)
+            receipt = _write_native_failure(outdir, key, effective, exc)
+            request_path = outdir / ("failed_" + key + ".json")
+            response_path = outdir / ("failed_" + key + ".response.json")
+
+            self.assertEqual(effective, json.loads(request_path.read_text()))
+            self.assertEqual(raw, json.loads(response_path.read_text()))
+            self.assertEqual(fingerprint(raw), receipt["raw_response_sha256"])
+            self.assertEqual(response_path.name, receipt["response_file"])
+            self.assertNotIn("score", receipt)
+
     def test_failed_native_execution_preserves_returncode_stdout_and_stderr(self):
         completed = subprocess.CompletedProcess(
             args=["native"], returncode=7,
