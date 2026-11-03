@@ -28,3 +28,5 @@ jobs:
           python -m compileall -q integrations/mythicsim-rust/p74_gear_search.py tools/wf_gate_p7_4_live.py tools/wf_gate_p7_5_live.py
 
 # Focused GREEN verification after both source and fixture updates.
+
+# Final focused verification with corrected mock pool signature.
