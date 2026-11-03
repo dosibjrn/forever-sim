@@ -42,6 +42,11 @@ AFTER_WINDOW = """            previous_mana_regen_gain = mana_regen_gain;
 
 def port(source: str) -> str:
     if source.count(METHOD) != 1:
+        from port_native_paid_recovery import (
+            FIGHT_SIGNATURE_NEW, is_composed_paid_recovery_source,
+        )
+        if FIGHT_SIGNATURE_NEW in source and is_composed_paid_recovery_source(source):
+            return source
         raise ValueError("RUST_MANA_REGEN_METHOD_MISSING_OR_DUPLICATE")
     start = source.index(METHOD)
     end = source.find(END, start)
