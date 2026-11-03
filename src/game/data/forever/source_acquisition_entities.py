@@ -12,7 +12,6 @@ def _typed_listview(html: str, anchor: str, template: str) -> list[dict]:
     # Restrict match to a single HTML script tag and exact listview id/template;
     # parse the JS `data` value with a JSON decoder (NEVER eval). This format
     # contains JSON literal data under a JS object, not JSON for the outer args.
-    start = 0
     matches = []
     for script in re.finditer(r'<script\b[^>]*>(.*?)</script\s*>', html, re.S | re.I):
         body = script.group(1)
@@ -41,8 +40,3 @@ def _typed_listview(html: str, anchor: str, template: str) -> list[dict]:
         raise ValueError(f'{anchor}: expected exactly one typed source listview, got {len(matches)}')
     return matches[0]
 
-
-# Canonical relation kind -> (source entity template, typed Wowhead related tab).
-TYPES = {'taught_by_npc': ('npc', 'taught-by-npc'),
-         'taught_by_item': ('item', 'taught-by-item'),
-         'reward_from_quest': ('quest', 'reward-from-q')}
