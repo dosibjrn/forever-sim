@@ -34,6 +34,9 @@ class NativeRootsDotPortTest(unittest.TestCase):
                 dest = root / path
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text("\n".join(old for old, _, _ in rules))
+            landing_guard = root / port.LANDING_GUARD_PATH
+            landing_guard.parent.mkdir(parents=True, exist_ok=True)
+            landing_guard.write_text(port.LANDING_GUARD)
             dest = root / "tests/classes/druid/prepare.rs"
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text("// native test suite\n")
@@ -143,6 +146,18 @@ class NativeRootsDotPortTest(unittest.TestCase):
                 NativeDamageWorldApplicationError,
                 "WORLD_ROOT_CONTROL_EARLY_CLEAR_UNSUPPORTED"):
             applier.apply(tick, response)
+
+    def test_roots_miss_path_cannot_emit_dot_gain_control(self):
+        self.assertLess(
+            port.LANDING_GUARD.index("if result.landed()"),
+            port.LANDING_GUARD.index("fight.apply_dot"),
+        )
+        self.assertIn("fight.apply_dot(fight.dot_on(dot, target));", port.LANDING_GUARD)
+        with self.assertRaisesRegex(ValueError, "NATIVE_ROOTS_LANDING_GUARD_MISSING"):
+            port.port_text(
+                port.LANDING_GUARD_PATH,
+                port.LANDING_GUARD.replace("if result.landed()", "if false"),
+            )
 
     def test_missing_native_anchor_is_not_silently_accepted(self):
         path = "src/classes/druid/agent.rs"
