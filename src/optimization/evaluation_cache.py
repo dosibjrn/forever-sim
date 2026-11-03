@@ -20,7 +20,7 @@ class EvaluationCache(Generic[CandidateT]):
     """Memoize expensive candidate evaluations by a caller-supplied key."""
 
     key_for: Callable[[CandidateT], Hashable]
-    expensive_evaluate: EvaluationFunction[CandidateT]
+    expensive_evaluate: EvaluationFunction
     _cache: dict[Hashable, tuple[float | None, Mapping[str, Any]]] = field(
         default_factory=dict,
         repr=False,
