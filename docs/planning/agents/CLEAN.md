@@ -1,6 +1,6 @@
 # Clean — repository architecture owner
 
-Read [COMMON](COMMON.md), this file, current [WORK_PRIORITY](../WORK_PRIORITY.md), and [REPOSITORY_STRUCTURE](../../REPOSITORY_STRUCTURE.md), especially its **Ideal architecture** and **Convergence rules**. Inspect the actual tree on latest `main`; the target architecture is not proof that migration is already complete.
+Read [COMMON](COMMON.md), this file, current [WORK_PRIORITY](../WORK_PRIORITY.md), and [REPOSITORY_STRUCTURE](../../REPOSITORY_STRUCTURE.md), especially its **Ideal architecture** and **Convergence rules**. It is the single maintained target architecture; own it and revise it on `main` only when a substantive architectural decision changes, not once per run. Do not create a parallel architecture plan. Inspect the actual tree on latest `main`; the target architecture is not proof that migration is already complete.
 
 ## First priority: retire duplicated GameIR/source-legality code
 
