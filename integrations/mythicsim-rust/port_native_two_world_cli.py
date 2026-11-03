@@ -29,14 +29,17 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     return source.replace(anchor, replacement + anchor, 1)
 
 
-FIGHT_METHOD = """    /// Two genuinely distinct gsim world mobs, one selected source-Rust actor.
-    /// Both must die from native damage with a committed world HP/hash ACK.
-    /// No paid recovery is simulated; this is not P4-P6 certification.
-    pub(crate) fn native_two_world_targets(&mut self)
+FIGHT_METHOD = """
+    /// Multiple distinct gsim world deaths on one retained source-Rust actor.
+    /// This diagnostic does NOT charge movement/recovery or certify P4–P6.
+    pub(crate) fn native_two_world_targets(&mut self, target_count: usize)
         -> Result<serde_json::Value, &'static str>
     {
         if !world_bridge::enabled() {
-            return Err("RUST_TWO_WORLD_TARGETS_REQUIRES_GSIM");
+            return Err("RUST_MULTI_WORLD_TARGETS_REQUIRES_GSIM");
+        }
+        if !(2..=100).contains(&target_count) {
+            return Err("RUST_MULTI_WORLD_TARGET_COUNT_INVALID");
         }
         if !self.extra_targets_built {
             self.build_extra_targets();
@@ -47,38 +50,38 @@ FIGHT_METHOD = """    /// Two genuinely distinct gsim world mobs, one selected s
         self.log = None;
         world_bridge::begin_iteration(0);
         self.prepare_first_native_pull();
-        while self.step() {}
-        if !world_bridge::acknowledged_lethal() {
-            return Err("RUST_FIRST_WORLD_TARGET_NOT_NATIVE_LETHAL");
+        let mut windows = Vec::with_capacity(target_count);
+        let mut previous_damage = 0.0;
+        for index in 0..target_count {
+            if index != 0 {
+                // No free actor reset. This intentionally retains the current
+                // no-downtime diagnostic clock until real paid travel/recovery
+                // is coupled through the same native/world timeline.
+                let next_at = self.now.checked_add(1_000_000)
+                    .ok_or("RUST_WORLD_TARGET_CLOCK_OVERFLOW")?;
+                let next_end = next_at.checked_add(self.config.base_duration)
+                    .ok_or("RUST_WORLD_TARGET_DURATION_OVERFLOW")?;
+                self.begin_next_target(next_at, next_end)?;
+            }
+            while self.step() {}
+            if !world_bridge::acknowledged_lethal() {
+                return Err("RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL");
+            }
+            let total_damage = self.encounter_damage_taken;
+            windows.push(serde_json::json!({
+                "index": index,
+                "native_kill_ns": self.now,
+                "native_damage": total_damage - previous_damage,
+                "actor_mana": self.player.mana,
+                "actor_health": self.player.health,
+            }));
+            previous_damage = total_damage;
         }
-        let first_clock = self.now;
-        let first_damage = self.encounter_damage_taken;
-        let first = serde_json::json!({
-            "index": 0, "native_kill_ns": first_clock,
-            "native_damage": first_damage,
-            "actor_mana": self.player.mana, "actor_health": self.player.health,
-        });
-        // The next gsim boundary is one representable millisecond after the
-        // acknowledged kill; no fabricated free travel or resource reset.
-        let next_at = first_clock.checked_add(1_000_000)
-            .ok_or("RUST_WORLD_TARGET_CLOCK_OVERFLOW")?;
-        let next_end = next_at.checked_add(self.config.base_duration)
-            .ok_or("RUST_WORLD_TARGET_DURATION_OVERFLOW")?;
-        self.begin_next_target(next_at, next_end)?;
-        while self.step() {}
-        if !world_bridge::acknowledged_lethal() {
-            return Err("RUST_SECOND_WORLD_TARGET_NOT_NATIVE_LETHAL");
-        }
-        let second = serde_json::json!({
-            "index": 1, "native_kill_ns": self.now,
-            "native_damage": self.encounter_damage_taken - first_damage,
-            "actor_mana": self.player.mana, "actor_health": self.player.health,
-        });
         let report = serde_json::json!({
-            "scope": "TWO_REAL_GSIM_2D_KILLS_SAME_NATIVE_ACTOR_NOT_P4_P6",
+            "scope": "MULTI_GSIM_2D_KILLS_SAME_NATIVE_ACTOR_NOT_P4_P6",
             "continuous_native_actor": true, "actual_2d_ack": true,
-            "paid_recovery": false, "world_targets_killed": 2,
-            "windows": [first, second],
+            "paid_recovery": false, "world_targets_killed": target_count,
+            "windows": windows,
         });
         self.cleanup();
         Ok(report)
@@ -86,50 +89,64 @@ FIGHT_METHOD = """    /// Two genuinely distinct gsim world mobs, one selected s
 
 """
 
-CLASS_METHOD = """/// Two source-native kills with real gsim world HP/hash ACK and one actor.
+CLASS_METHOD = """
+/// Multiple distinct world ACKs with one source-native actor.
 pub(crate) fn native_two_world_targets(
     prepared: &crate::contracts::prepared_v2::PreparedV2,
+    target_count: usize,
 ) -> Result<serde_json::Value, String> {
     match prepared.player.class.as_str() {
-        "ClassMage" => mage::agent::MageAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
-        "ClassDruid" => druid::agent::DruidAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
-        "ClassWarlock" => warlock::agent::WarlockAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
-        "ClassShaman" => shaman::agent::ShamanAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
-        "ClassPaladin" => paladin::agent::PaladinAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
-        "ClassPriest" => priest::agent::PriestAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
-        "ClassRogue" => rogue::agent::RogueAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
-        "ClassWarrior" => warrior::agent::WarriorAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
-        "ClassHunter" => hunter::agent::HunterAgent::fight(prepared)?.native_two_world_targets().map_err(str::to_string),
+        "ClassMage" => mage::agent::MageAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassDruid" => druid::agent::DruidAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassWarlock" => warlock::agent::WarlockAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassShaman" => shaman::agent::ShamanAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassPaladin" => paladin::agent::PaladinAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassPriest" => priest::agent::PriestAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassRogue" => rogue::agent::RogueAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassWarrior" => warrior::agent::WarriorAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassHunter" => hunter::agent::HunterAgent::fight(prepared)?.native_two_world_targets(target_count).map_err(str::to_string),
         other => Err(format!("class {other} has no native fight agent")),
     }
 }
 
 """
 
-PREPARED_METHOD = """/// Same selected native actor across two real world-lethal ACKs, not a gate.
-pub fn native_two_world_targets(prepared: &PreparedV2)
+PREPARED_METHOD = """
+/// One selected source-native actor and monotonic gsim ACKs; diagnostic only.
+pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize)
     -> Result<serde_json::Value, PreparedError>
 {
     check(prepared)?;
     if !crate::core::fight::world_bridge::enabled() {
         return Err(PreparedError::Invalid(
-            "RUST_TWO_WORLD_TARGETS_REQUIRES_GSIM".to_owned()));
+            "RUST_MULTI_WORLD_TARGETS_REQUIRES_GSIM".to_owned()));
+    }
+    if !(2..=100).contains(&target_count) {
+        return Err(PreparedError::Invalid(
+            "RUST_MULTI_WORLD_TARGET_COUNT_INVALID".to_owned()));
     }
     crate::core::fight::world_bridge::start(&prepared.request_sha256);
-    crate::classes::native_two_world_targets(prepared).map_err(PreparedError::Invalid)
+    crate::classes::native_two_world_targets(prepared, target_count)
+        .map_err(PreparedError::Invalid)
 }
 
 """
 
-CLI_METHOD = """    if args[0] == "native-world-pulls" {
-        if args.len() != 5 || args[1] != "--infile"
-            || args[3] != "--targets" || args[4] != "2" {
-            return Err("native-world-pulls requires --infile PREPARED_V2.json --targets 2".into());
+CLI_METHOD = """
+    if args[0] == "native-world-pulls" {
+        if args.len() != 5 || args[1] != "--infile" || args[3] != "--targets" {
+            return Err("native-world-pulls requires --infile PREPARED_V2.json --targets 2..100".into());
+        }
+        let target_count = args[4].parse::<usize>()
+            .map_err(|_| "native-world-pulls target count must be an integer")?;
+        if !(2..=100).contains(&target_count) {
+            return Err("native-world-pulls requires --targets 2..100".into());
         }
         let input = fs::read(&args[2]).map_err(|err| err.to_string())?;
         let prepared = prepared_v2(&input)?
             .ok_or("native-world-pulls requires a prepared v2 input")?;
-        let report = native_two_world_targets(&prepared).map_err(|err| err.to_string())?;
+        let report = native_two_world_targets(&prepared, target_count)
+            .map_err(|err| err.to_string())?;
         println!("{}", serde_json::json!({
             "engine": "forever-engine",
             "source_sha256": prepared.request_sha256,
