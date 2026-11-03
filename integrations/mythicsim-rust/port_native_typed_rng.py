@@ -12,7 +12,7 @@ def edit(root, name, transformations):
     path = root / name
     src = path.read_text()
     for old, new, count in transformations:
-        if src.count(new) == count and old not in src:
+        if src.count(new) == count:
             continue
         actual = src.count(old)
         if actual != count:
