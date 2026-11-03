@@ -1,7 +1,6 @@
-"""Scenario timing ownership and legacy identity compatibility regression."""
+"""Scenario timing ownership regression after removing the legacy shim."""
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 
 import pytest
@@ -11,19 +10,13 @@ from src.scenarios.timing import (
     TIMING_CONTRACT_VERSION,
     between_pull_travel_s,
 )
-from src.shared.leveling.timing import (
-    between_pull_travel_s as legacy_between_pull_travel_s,
-)
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_scenario_timing_is_canonical_and_legacy_is_only_a_reexport():
+def test_scenario_timing_is_canonical_and_legacy_shim_is_removed():
     legacy = ROOT / "src/shared/leveling/timing.py"
-    tree = ast.parse(legacy.read_text(encoding="utf-8"))
-    assert not any(isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
-                   for node in ast.walk(tree))
-    assert legacy_between_pull_travel_s is between_pull_travel_s
+    assert not legacy.exists()
     assert TIMING_CONTRACT_VERSION == "solo_leveling_timing_v1"
     assert BASE_BETWEEN_PULL_TRAVEL_S == pytest.approx(2.2)
     assert between_pull_travel_s() == pytest.approx(2.2)
