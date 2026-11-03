@@ -60,6 +60,8 @@ TEST_ANCHOR = "    fn native_persistent_next_target_retains_actor_and_native_que
 
 
 def port_source(source: str) -> str:
+    if source.count("world_bridge::begin_next_target(at_ns)?;") != 1:
+        raise ValueError("Rust early-world-target source anchors missing or ambiguous")
     if NEW_GUARD in source:
         if (source.count(NEW_GUARD) != 1 or source.count(HELPER) != 1
                 or source.count(TEST) != 1 or OLD_GUARD in source):
