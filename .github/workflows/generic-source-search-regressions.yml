@@ -6,6 +6,8 @@ on:
       - 'tests/generic/publication/**'
       - 'tests/gates/test_wf_gate_p7_5_stochastic_finalists.py'
       - 'tools/wf_gate_p7_5_live.py'
+      - 'tests/gates/test_wf_gate_p7_2_live.py'
+      - 'tools/wf_gate_p7_2_live.py'
       - 'tests/gates/test_wf_gate_p7_3_live.py'
       - 'tests/gates/test_wf_gate_p7_4_live.py'
       - 'tests/gates/test_wf_gate_class_cli.py'
@@ -88,6 +90,7 @@ jobs:
           tests/test_wf332_runes_default_off.py
           tests/test_wf_feral01_sqlite_talent_execution.py::test_unknown_talent_effect_is_not_a_zero_cost_noop
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
+          tests/gates/test_wf_gate_p7_2_live.py
           integrations/mythicsim-rust/tests/test_p73_native_search_ci.py
           integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
