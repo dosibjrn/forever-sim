@@ -218,6 +218,23 @@ def _paid_step_has_budget(search_start: float, observed_max_s: float) -> bool:
     return time.monotonic() + reserve_s < search_start + 300.0
 
 
+def _next_p74_confirmation(reranked, attempted, elapsed_s):
+    """Choose the best unconfirmed *paid* finalist during the bounded search.
+
+    Do not cap confirmations at three: a later better paid finalist must
+    remain confirmable without using the frozen 1,000-fight holdout. Reserve
+    295–300s for the existing newly paid screen/rerank path.
+    """
+    if len(reranked) < 3 or not 260.0 <= elapsed_s < 295.0:
+        return None
+    return next((
+        (index, row)
+        for index, row in sorted(enumerate(reranked),
+                                 key=lambda item: item[1][0], reverse=True)
+        if row[2] not in attempted
+    ), None)
+
+
 def _freeze_paid_p74_winner(screen_best, reranked, confirmed=()):
     """Freeze genuinely paid stochastic winner; never use the 1k holdout to rank."""
     if reranked:
@@ -305,23 +322,21 @@ def run_live(root: Path, class_key: str, level: int, *,
             # screen candidates but never reranked them; once any previous
             # finalist had been reranked, these late candidates were
             # categorically excluded from the frozen winner decision.
-            # The last full 1,000-fight holdout measured 718.03 DPS after
-            # 24+24-fight finalist selection estimated 732.09. Spend a small
-            # slice of the SAME cold-search budget confirming up to three
-            # leading already-paid finalists with an independent seed pair,
-            # rather than selecting the highest noisy 48-fight estimate.
-            # Keep 295-300s open for genuinely new candidates/reranks.
+            # Last two full 1,000-fight holdouts were below the floor even
+            # though the selected 48-fight finalist was above it. The first
+            # three paid confirmations do not protect a subsequently reranked
+            # higher unconfirmed finalist. From 260–295s, keep confirming the
+            # strongest yet-unconfirmed paid contender, subject to the SAME
+            # measured 300s call budget. Preserve 295–300s for late genuinely
+            # paid screens/reranks (which remain eligible to win).
             if full_search and time.monotonic() - search_start >= 240.0:
-                if (len(reranked) >= 3 and len(confirmation_attempted) < 3
-                        and 280.0 <= time.monotonic() - search_start < 295.0):
-                    next_confirmation = next((
-                        (index, row) for index, row in
-                        sorted(enumerate(reranked), key=lambda item: item[1][0],
-                               reverse=True)
-                        if row[2] not in confirmation_attempted), None)
-                    if (next_confirmation is not None and _paid_step_has_budget(
+                next_confirmation = _next_p74_confirmation(
+                    reranked, confirmation_attempted,
+                    time.monotonic() - search_start)
+                if next_confirmation is not None:
+                    if _paid_step_has_budget(
                             search_start, max(worst_finalist_s,
-                                              worst_confirmation_s))):
+                                              worst_confirmation_s)):
                         index, row = next_confirmation
                         confirmation_attempted.add(row[2])
                         paid_start = time.perf_counter()
