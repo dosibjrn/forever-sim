@@ -167,22 +167,34 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
     The selected source/Rust gear validator must accept the mixed equipment
     before the usual genuine native+gsim-2D paid evaluation.
     """
-    donors = [row[3] for row in sorted(
-        finalists, key=lambda row: row[0], reverse=True)[:3]
-        if row[3] != parent]
-    if not donors:
-        donors = [row[2] for row in sorted(
-            balanced_elites, key=lambda row: row[0], reverse=True)[:6]
-            if row[2] != parent]
-    if not donors:
-        return False
     items = source.player(candidate)["equipment"]["items"]
-    other = source.player(rng.choice(donors))["equipment"]["items"]
-    if len(items) != len(other):
+
+    def distinct_paid_gear(rows, request_index, limit):
+        eligible = []
+        for row in sorted(rows, key=lambda row: row[0], reverse=True)[:limit]:
+            paid = row[request_index]
+            if paid == parent:
+                continue
+            other = source.player(paid)["equipment"]["items"]
+            if len(items) != len(other):
+                continue
+            different = [i for i in range(len(items))
+                         if items[i] != other[i]]
+            # This operator is specifically a multi-slot crossover, not
+            # another single-slot edit or an identical-gear no-op.
+            if len(different) >= 2:
+                eligible.append((other, different))
+        return eligible
+
+    # Paid stochastic finalists may differ only in talents or rotation.
+    # Fall back to genuinely paid balanced candidates with distinct gear
+    # rather than wasting this proposal on an unchanged equipment block.
+    donors = distinct_paid_gear(finalists, 3, 3)
+    if not donors:
+        donors = distinct_paid_gear(balanced_elites, 2, 6)
+    if not donors:
         return False
-    different = [i for i in range(len(items)) if items[i] != other[i]]
-    if not different:
-        return False
+    other, different = rng.choice(donors)
     for _ in range(4):
         selected = rng.sample(
             different, min(len(different), rng.randint(2, 5)))

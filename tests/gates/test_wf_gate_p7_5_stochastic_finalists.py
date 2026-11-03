@@ -94,6 +94,40 @@ def test_p75_gear_block_crossover_preserves_paid_enchants_and_source_validation(
     assert rejected == before
 
 
+def test_p75_gear_block_uses_paid_balanced_gear_when_finalist_gear_is_identical():
+    """A talent-only stochastic finalist must not consume a gear crossover."""
+    parent, finalist, donor, child = (
+        _candidate(name) for name in ("parent", "stochastic", "balanced", "child"))
+    source = SimpleNamespace(
+        player=lambda q: q["raid"]["parties"][0]["players"][0],
+        RejectedGear=ValueError)
+    # Source-paid finalist has a distinct talent/APL but unchanged gear.
+    assert source.player(finalist)["equipment"] == source.player(child)["equipment"]
+    source.player(donor)["equipment"]["items"] = [
+        {"id": 71, "enchant": 801}, {"id": 72, "enchant": 802}]
+    validated = []
+    validator = SimpleNamespace(
+        validate=lambda ids, enchants: validated.append((ids, enchants)))
+    assert gate._paid_p75_gear_block_crossover(
+        child, parent, [(800.0, {}, "paid-finalist", finalist, 900.0)],
+        [(900.0, "paid-parent", parent), (780.0, "paid-gear", donor)],
+        source, validator, random.Random(5))
+    assert source.player(child)["equipment"] == source.player(donor)["equipment"]
+    assert validated == [([71, 72], [801, 802])]
+
+    # A one-slot-only paid donor is not a multi-slot recombination.
+    one_slot = _candidate("one-slot")
+    source.player(one_slot)["equipment"]["items"][0]["id"] = 91
+    fresh = _candidate("fresh")
+    before = copy.deepcopy(fresh)
+    validated.clear()
+    assert not gate._paid_p75_gear_block_crossover(
+        fresh, parent, [(800.0, {}, "paid-one-slot", one_slot, 900.0)],
+        [], source, validator, random.Random(5))
+    assert fresh == before
+    assert validated == []
+
+
 def test_p75_paid_stochastic_parent_and_independent_cold_restarts():
     a, b = _candidate("balanced"), _candidate("stochastic")
     balanced = (900.0, {}, "sha-a", a)
