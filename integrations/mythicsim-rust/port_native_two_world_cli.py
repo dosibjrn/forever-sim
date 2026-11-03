@@ -82,6 +82,86 @@ def typed_rng_descendant(marker: str, replacement: str) -> str | None:
     return None
 
 
+# The selected published fork may already carry the exact two-world entry point
+# after the typed-RNG API migration. Accept only these exact complete descendants;
+# a partial method, missing RNG argument or changed dispatch body still fails closed.
+TYPED_RNG_PORTS = {
+    CLASS_MARKER: (
+        "/// Multiple distinct world ACKs with one source-native actor.",
+        """/// Multiple distinct world ACKs with one source-native actor.
+pub(crate) fn native_two_world_targets(
+    prepared: &crate::contracts::prepared_v2::PreparedV2,
+    target_count: usize,
+    rng_mode: crate::core::rng::RngMode,
+) -> Result<serde_json::Value, String> {
+    match prepared.player.class.as_str() {
+        "ClassMage" => mage::agent::MageAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassDruid" => druid::agent::DruidAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassWarlock" => warlock::agent::WarlockAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassShaman" => shaman::agent::ShamanAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassPaladin" => paladin::agent::PaladinAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassPriest" => priest::agent::PriestAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassRogue" => rogue::agent::RogueAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassWarrior" => warrior::agent::WarriorAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        "ClassHunter" => hunter::agent::HunterAgent::fight(prepared, rng_mode)?.native_two_world_targets(target_count).map_err(str::to_string),
+        other => Err(format!("class {other} has no native fight agent")),
+    }
+}
+
+""",
+    ),
+    PREPARED_MARKER: (
+        "/// One selected source-native actor and monotonic gsim ACKs; diagnostic only.",
+        """/// One selected source-native actor and monotonic gsim ACKs; diagnostic only.
+pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode: crate::core::rng::RngMode)
+    -> Result<serde_json::Value, PreparedError>
+{
+    check(prepared)?;
+    if !crate::core::fight::world_bridge::enabled() {
+        return Err(PreparedError::Invalid(
+            "RUST_MULTI_WORLD_TARGETS_REQUIRES_GSIM".to_owned()));
+    }
+    if !(2..=100).contains(&target_count) {
+        return Err(PreparedError::Invalid(
+            "RUST_MULTI_WORLD_TARGET_COUNT_INVALID".to_owned()));
+    }
+    crate::core::fight::world_bridge::start(&prepared.request_sha256);
+    crate::classes::native_two_world_targets(prepared, target_count, rng_mode)
+        .map_err(PreparedError::Invalid)
+}
+
+""",
+    ),
+    CLI_MARKER: (
+        '    if args[0] == "native-world-pulls" {',
+        """    if args[0] == "native-world-pulls" {
+        if args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode" {
+            return Err("native-world-pulls requires --infile PREPARED_V2.json --targets 2..100".into());
+        }
+        let target_count = args[4].parse::<usize>()
+            .map_err(|_| "native-world-pulls target count must be an integer")?;
+        if !(2..=100).contains(&target_count) {
+            return Err("native-world-pulls requires --targets 2..100".into());
+        }
+        let input = fs::read(&args[2]).map_err(|err| err.to_string())?;
+        let prepared = prepared_v2(&input)?
+            .ok_or("native-world-pulls requires a prepared v2 input")?;
+        let mode = RngMode::parse_cli(&args[6])?;
+        let report = native_two_world_targets(&prepared, target_count, mode)
+            .map_err(|err| err.to_string())?;
+        println!("{}", serde_json::json!({
+            "engine": "forever-engine",
+            "source_sha256": prepared.request_sha256,
+            "result": report, "checkpoint_certified": false,
+        }));
+        return Ok(());
+    }
+
+""",
+    ),
+}
+
+
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if source.count(anchor) != 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
@@ -106,6 +186,17 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
             return source
     if source.count(replacement) > 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_DUPLICATE_{marker}")
+    typed = TYPED_RNG_PORTS.get(marker)
+    if typed is not None:
+        beginning, expected = typed
+        if beginning in source:
+            if source.count(beginning) != 1:
+                raise ValueError(f"RUST_WORLD_MULTI_TARGET_TYPED_RNG_AMBIGUOUS_{marker}")
+            start = source.index(beginning)
+            end = source.index(anchor)
+            if start >= end or source[start:end] != expected:
+                raise ValueError(f"RUST_WORLD_MULTI_TARGET_TYPED_RNG_DRIFT_{marker}")
+            return source
     # The previously validated two-target CLI and methods already exist in the
     # maintained public Rust fork on some source lineages. Replace only their
     # exact identified bounded block, never another function or game mechanic.
