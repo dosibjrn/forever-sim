@@ -18,8 +18,6 @@ on:
       - 'tests/gates/test_p1_native_progress.py'
       - 'tests/gates/test_wf_p1_native_blackbox.py'
       - 'tools/wf_gate_p1_live.py'
-      - 'tools/wf332_druid20_acquisition_evidence.py'
-      - 'tools/wf291_source_acquisition_route_benchmark.py'
       - 'src/game/data/forever/source_checkpoint_p1_acceptance.py'
       - 'tools/wf406_druid20_live_p1p2.py'
       - 'tools/wf335_spellbook_p1.py'

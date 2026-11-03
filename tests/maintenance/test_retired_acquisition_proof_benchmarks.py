@@ -1,32 +1,46 @@
-"""Obsolete standalone acquisition-proof benchmarks must not return as gates.
+"""Retired source-proof and source-audit CLIs must not return as gates.
 
-The selected MythicSim backend owns spell/rank acquisition legality.
-The real route and stable gate entrypoints remain separate live code.
+MythicSim owns spell/rank acquisition legality and game-source facts.
+The real route and stable production gate entrypoints remain separate live code.
 """
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+RETIRED_TOOLS = (
+    "tools/wf332_druid20_acquisition_evidence.py",
+    "tools/wf291_source_acquisition_route_benchmark.py",
+    "tools/audit_forever_source_coverage.py",
+    "tools/audit_forever_source_rules.py",
+    "tools/wf318_four_level_frontier.py",
+)
+RETIRED_IMPORT_NAMES = (
+    "wf332_druid20_acquisition_evidence",
+    "wf291_source_acquisition_route_benchmark",
+    "audit_forever_source_coverage",
+    "audit_forever_source_rules",
+    "wf318_four_level_frontier",
+)
 
-def test_historical_acquisition_proof_benchmarks_are_not_live_clis():
-    assert not (ROOT / "tools/wf332_druid20_acquisition_evidence.py").exists()
-    assert not (ROOT / "tools/wf291_source_acquisition_route_benchmark.py").exists()
+
+def test_retired_source_proof_and_audit_clis_are_not_live_tools():
+    for relative in RETIRED_TOOLS:
+        assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
     assert (ROOT / "src/v2/source_budgeted_level_route.py").is_file()
 
+    workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
+    for relative in RETIRED_TOOLS:
+        assert relative not in workflow, relative
 
-def test_no_live_python_imports_retired_proof_benchmarks():
-    retired = (
-        "wf332_druid20_acquisition_evidence",
-        "wf291_source_acquisition_route_benchmark",
-    )
+
+def test_no_live_python_imports_retired_source_proof_and_audit_clis():
     for root in (ROOT / "src", ROOT / "tools", ROOT / "tests"):
         for path in root.rglob("*.py"):
             if path == Path(__file__):
                 continue
             source = path.read_text(encoding="utf-8")
-            assert not any(name in source for name in retired), path
-
+            assert not any(name in source for name in RETIRED_IMPORT_NAMES), path
 
 
 def test_historical_p1_gameir_admission_toolchain_is_retired():
