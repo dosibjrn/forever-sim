@@ -4,7 +4,7 @@
 - [PROCESS](../PROCESS.md) — **current approved**, concise governance, engineering workflow and acceptance policy.
 - [Gate contracts](gates/README.md) — exact active P3–P7.5 predicates, runtime/source constraints, and live CLI authority.
 - [Retired P1/P2 archive](gates/P1-P2.md) — historical contract only; not active acceptance.
-- [OVERALL PLAN](../OVERALL_PLAN.md) — **canonical approved v5**, product scope and finish line.
+- [OVERALL PLAN](../OVERALL_PLAN.md) — **canonical approved v6**, product scope and finish line.
 - [Large assets / Git LFS](LARGE_ASSETS_LFS.md) — current 14-asset hydrated baseline, tracking rules, and verification for future additions.
 - [Ideal repository architecture](REPOSITORY_STRUCTURE.md) — Clean-owned maintained target structure, dependency boundaries, observed deviations and safe convergence plan.
 - [Current work allocation](planning/WORK_PRIORITY.md) — current owner/issue/next executable step; this is the live work queue.
