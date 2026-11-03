@@ -25,8 +25,18 @@ def _talented_ir():
 
 @pytest.fixture(scope="module")
 def _druid_generic_record():
-    """Share one real source-backed G16 publication across the boundary tests."""
-    return build_partial_generic_records(class_names=("Druid",), selected_level=20)[0]
+    """Share one real G16 publication with talent allocation held at its seed."""
+    # This suite proves G16 structural policy search, not the separate 256-candidate
+    # talent-allocation optimizer. Keep the source-backed seed real and let the
+    # production G16 search run normally; talent-search breadth has its own tests.
+    from unittest.mock import patch
+    import src.game.talent_search as talent_search
+
+    def seed_only(ir_slice, *, level, max_candidates=1024, bonus_talent_points=0):
+        return ((explicit_seed_selection(ir_slice, level=level),), False)
+
+    with patch.object(talent_search, "enumerate_legal_talent_allocations", side_effect=seed_only):
+        return build_partial_generic_records(class_names=("Druid",), selected_level=20)[0]
 
 
 def test_g16_bounded_search_enumerates_inclusion_and_priority_without_threshold_mutation():
