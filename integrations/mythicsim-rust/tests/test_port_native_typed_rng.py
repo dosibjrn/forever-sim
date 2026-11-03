@@ -2,10 +2,12 @@
 import sys
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from port_native_typed_rng import add_explicit_mode_to_test_calls
+from port_native_typed_rng import (add_explicit_mode_to_test_calls, edit,
+                                   migrate_test_simulate_calls)
 
 
 class TypedRngTestCallMigrationTests(unittest.TestCase):
@@ -49,6 +51,35 @@ let second = forever_engine::simulate_prepared(
             "forever_engine::RngMode::Stochastic)",
             migrated,
         )
+
+
+    def test_nested_source_anchor_is_idempotent(self):
+        """Already-published typed Rust must not gain a duplicate enum."""
+        old = "pub(crate) enum RandomRequest { Uniform01, Bernoulli(f64) }"
+        new = old + "\n#[derive(Clone, Copy)] pub enum RngMode { Balanced, Stochastic }"
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "src/core").mkdir(parents=True)
+            path = root / "src/core/rng.rs"
+            path.write_text(old)
+            edit(root, "src/core/rng.rs", [(old, new, 1)])
+            self.assertEqual(path.read_text(), new)
+            edit(root, "src/core/rng.rs", [(old, new, 1)])
+            self.assertEqual(path.read_text(), new)
+
+    def test_selected_rust_test_call_migration_is_idempotent(self):
+        """A fork-sync retry must accept previously migrated Rust tests."""
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "tests").mkdir()
+            path = root / "tests/explicit.rs"
+            path.write_text("let result = simulate_prepared(&prepared);\n")
+            first = migrate_test_simulate_calls(root)
+            self.assertEqual(first, [("tests/explicit.rs", 1)])
+            migrated = path.read_text()
+            self.assertIn("forever_engine::RngMode::Stochastic", migrated)
+            self.assertEqual(migrate_test_simulate_calls(root), [])
+            self.assertEqual(path.read_text(), migrated)
 
 
 if __name__ == "__main__":
