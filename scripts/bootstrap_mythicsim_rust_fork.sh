@@ -125,6 +125,13 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): expose selected native same-actor two-window diagnostic"
 fi
 
+# The second source-backed target's armor ramp must use the retained native clock.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_target_ramp_clock.py" "$PWD"
+git add src/core/fight.rs
+if ! git diff --cached --quiet; then
+  git commit -m "fix(forever): schedule second-target armor effects at global native time"
+fi
+
 # The two-target native state and world ACK regressions must pass before
 # a new fork revision is published; compilation alone is insufficient.
 cargo test --locked --lib persistent_next_target
