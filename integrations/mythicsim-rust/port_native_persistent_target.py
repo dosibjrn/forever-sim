@@ -49,7 +49,7 @@ def replace_once(source: str, old: str, new: str, marker: str) -> str:
             # Work2's later early-kill clock port is a verified descendant of
             # this source method, not a partially applied base migration.
             if marker == "    pub(crate) fn begin_next_target(&mut self":
-                from port_native_early_retarget import HELPER, NEW_GUARD, TEST
+                from port_native_early_retarget import HELPER, NEW_GUARD, TEST, TEST_TYPED
                 if (source.count(HELPER) == 1 and source.count(NEW_GUARD) == 1
                         and (source.count(TEST) == 1 or source.count(TEST_TYPED) == 1)):
                     return source
