@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from src.game.data.forever import build_game_ir_slice
 from src.game.data.forever.tuning_overlays import direct_damage_overlays
-from src.game.model.overlay import FieldOverlay, apply_numeric_field_overlays
+from src.shared.field_overlays import FieldOverlay, apply_numeric_field_overlays
 from src.v2.generic_backend import build_partial_generic_records
 
 

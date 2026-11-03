@@ -31,7 +31,7 @@ from src.game.runtime.multi_actor_probe import execute_multi_actor_mechanics_pro
 from src.game.runtime.hunter_pet_slice import search_hunter_pet_policy
 from src.game.runtime.timed_summon_probe import execute_timed_summon_mechanics_probe
 from src.game.policy import execute_priority_policy
-from src.game.policy_search import search_priority_policy
+from src.optimization.policy_search import search_priority_policy
 from src.game.policy_threshold_search import search_policy_thresholds
 from src.game.policy_search_efficiency import PolicyEvaluationCache
 from src.game.evaluation import Evaluation, evaluation_from_combat_timeline, evaluation_with_recovery
