@@ -340,3 +340,87 @@ def test_p2_source_db_diagnostics_report_same_process_file_identity(tmp_path):
     assert diagnostics["source_db_integrity_check"] == "ok"
     assert _sqlite_connection_path(f"file:{source_db.resolve()}?mode=ro") == str(source_db.resolve())
     assert _sqlite_connection_path(":memory:") is None
+
+
+def test_live_p2_forwards_native_candidate_before_gameir_legality_veto(
+        tmp_path, monkeypatch):
+    import json
+    import sqlite3
+    from types import SimpleNamespace
+
+    source_db = tmp_path / "source.sqlite"
+    with sqlite3.connect(source_db) as db:
+        db.execute("CREATE TABLE talent_tree_row_facts (class_key TEXT)")
+        db.execute("INSERT INTO talent_tree_row_facts VALUES ('druid')")
+        db.execute(
+            "CREATE TABLE checkpoint_talent_source_catalogue "
+            "(class_key TEXT, source_build TEXT, source_json TEXT, min_level INTEGER)"
+        )
+        db.execute(
+            "INSERT INTO checkpoint_talent_source_catalogue VALUES (?, ?, ?, ?)",
+            ("druid", "1.60.1.70338",
+             json.dumps({"source_build": "1.60.1.70338"}), 30),
+        )
+
+    talent = SimpleNamespace(
+        id="predatory_strikes",
+        tree_key="feral",
+        metadata={"row": 2},
+        ranks=[SimpleNamespace(rank=1)],
+    )
+    compiled = SimpleNamespace(
+        actor=SimpleNamespace(metadata={"class_key": "druid", "level": 60}),
+        provenance={"talent_tree_rules": {"points_per_row": 5}},
+        talents=[talent],
+    )
+    monkeypatch.setattr(p2, "_default_p2_source_db", lambda *args: source_db)
+    monkeypatch.setattr(
+        p2, "_p2_source_db_diagnostics",
+        lambda *args: {
+            "source_db_integrity_check": "ok",
+            "source_db_sha256": "source-sha",
+        },
+    )
+    monkeypatch.setattr(p2, "build_game_ir_slice", lambda **kwargs: compiled)
+    monkeypatch.setattr(p2, "compile_talent_runtime", lambda ir: (compiled, {}))
+    monkeypatch.setattr(p2, "_load_product_spec_profile", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        p2, "_source_spec_profile",
+        lambda *args, **kwargs: (None, {"source_spec_profile_verified": True}),
+    )
+    monkeypatch.setattr(
+        p2, "_witness",
+        lambda *args, **kwargs: {"ferocity": 5, "predatory_strikes": 1},
+    )
+
+    order = []
+
+    def native_probe(binary, talent_id, rank, pair, **kwargs):
+        order.append("native")
+        assert talent_id == "predatory_strikes"
+        assert rank == 1
+        assert pair["control_witness"] == {"ferocity": 5}
+        assert pair["witness"] == {"ferocity": 5, "predatory_strikes": 1}
+        assert kwargs == {
+            "checkpoint_class": "druid",
+            "checkpoint_level": 60,
+            "tree_key": "feral",
+        }
+        return {"status": "INVALID", "reason": "NATIVE_TALENT_REFUSAL"}
+
+    def legacy_gameir_check(*args, **kwargs):
+        order.append("legacy_gameir_check")
+        raise ValueError("LEGACY_GAMEIR_REJECTED")
+
+    monkeypatch.setattr(p2, "_native_p2_rank_diagnostic", native_probe)
+    monkeypatch.setattr(p2, "check_structural_allocation", legacy_gameir_check)
+
+    report = p2.run_live(tmp_path, "druid", 60, spec="balance")
+
+    assert order == ["native", "legacy_gameir_check"]
+    assert report["native_rank_probe_results"][0]["status"] == "INVALID"
+    assert report["native_rank_probe_results"][0]["reason"] == "NATIVE_TALENT_REFUSAL"
+    assert report["native_rank_probe_results"][0]["accepted_for_p2"] is False
+    assert report["native_rank_probe_summary"]["counted_in_p2_acceptance"] is False
+    # The formal P2 predicate is intentionally unchanged by this diagnostic.
+    assert report["status"] == "FAIL"
