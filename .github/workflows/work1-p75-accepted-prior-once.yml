@@ -17,4 +17,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -q pytest
-      - run: python -m pytest -q tests/gates/test_wf_gate_p7_5_prior.py
+      - run: python -m pytest -q tests/gates/test_wf_gate_p7_5_prior.py tests/gates/test_wf_gate_p7_5_live.py\n      - run: python -m compileall -q tools/wf_gate_p7_5_prior.py tools/wf_gate_p7_5_live.py
