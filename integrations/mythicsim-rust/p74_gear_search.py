@@ -191,7 +191,7 @@ def main():
             if time.monotonic()>rerank_end-.1:break
             req=_swap(reference,candidate["ids"])
             try:
-                score=simulate(a.binary,req,"stochastic",2000,search_seed+555123,rerank_end)
+                score=simulate(a.binary,req,"balanced",24,search_seed+555123,rerank_end
                 reranked.append({**candidate,"rerank_dps":score})
             except (TimeoutError,subprocess.TimeoutExpired):break
             except NativeFailure as exc:
