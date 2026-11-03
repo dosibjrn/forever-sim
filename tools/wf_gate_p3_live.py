@@ -120,6 +120,12 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "real_source_search_attempts": result.get("attempted", 0),
             "real_source_search_evaluated": result.get("evaluated", 0)}
     record = naked["winner"]
+    runner_up_record = naked.get("runner_up")
+    runner_up_summary = (None if not runner_up_record else {
+        key: runner_up_record.get(key) for key in (
+            "prefix", "fallback", "guarded_action", "score_s_per_mob",
+            "policy_id", "status")
+    })
     policy = _make_policy(
         ir, record["fallback"],
         guarded_action=record.get("guarded_action"),
@@ -192,6 +198,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "production_component": "src.game.checkpoint_p3_smoke.fast_p3_smoke_for_policy",
         "production_engine": "gsim_CombatRuntime",
         "source_profile_production_build": profile_context,
+        "source_naked_runner_up": runner_up_summary,
         "real_source_search_attempts": result.get("attempted", 0),
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
