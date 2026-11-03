@@ -22,7 +22,7 @@ Forever must not recreate or require trainer/quest/rank acquisition certificates
 - Never add or extend GameIR, a parallel Python game model, a Forever game-legality/source catalogue, or a Python workaround for missing Rust behavior.
 - Migrate each live caller to the native boundary before removing its replaced Python implementation. Preserve real effects, candidate reachability, native refusals, world/2D/100-mob semantics, approved gates and historical M1/PASS records.
 - Owner decision #2 (2026-11-03): P1 ability and P2 talent gates are retired from formal acceptance. Active gates are P3–P6 and P7.1–P7.5 (nine per checkpoint); preserve historical P1/P2 ledger rows but ignore them in M1 and reject new P1/P2 records. Do not schedule or recreate P1/P2 work.
-- The default first task is removing a meaningful live GameIR dependency. Change the Rust fork only for a specifically reproduced missing interface or execution capability required by that caller. Use an ordinary fork branch/PR; `/rust-fork-sync` is only the privileged sync path.
+- Owner clarification (2026-11-04): **retire P1, P2 and GameIR rather than rebuilding their obsolete behavior behind new adapter checks.** Delete unused historical/test/diagnostic callers along with their old GameIR implementation. Migrate **only** behavior proven necessary for active P3–P7.5 gate execution or actual optimizer use; otherwise no native replacement is required. Change the Rust fork only for a specifically reproduced missing capability on such an active caller. Use an ordinary fork branch/PR; `/rust-fork-sync` is only the privileged sync path.
 
 ## Trusted-engine boundary: do not validate MythicSim
 
