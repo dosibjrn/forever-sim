@@ -186,16 +186,18 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
                 eligible.append((other, different))
         return eligible
 
-    # Paid stochastic finalists may differ only in talents or rotation.
-    # Fall back to genuinely paid balanced candidates with distinct gear
-    # rather than wasting this proposal on an unchanged equipment block.
-    donors = distinct_paid_gear(finalists, 3, 3)
-    if not donors:
-        donors = distinct_paid_gear(balanced_elites, 2, 6)
+    # Every donor has been independently PAID in this cold search. The old
+    # implementation picked only one: four rejected mixes silently discarded
+    # the entire crossover even if another paid donor could form legal gear.
+    # Keep the same four bounded validation attempts, rotating through
+    # stochastic finalists first and then genuinely paid balanced candidates.
+    donors = (distinct_paid_gear(finalists, 3, 3)
+              + distinct_paid_gear(balanced_elites, 2, 6))
     if not donors:
         return False
-    other, different = rng.choice(donors)
-    for _ in range(4):
+    rng.shuffle(donors)
+    for attempt in range(4):
+        other, different = donors[attempt % len(donors)]
         selected = rng.sample(
             different, min(len(different), rng.randint(2, 5)))
         mixed = copy.deepcopy(items)
