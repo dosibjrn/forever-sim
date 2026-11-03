@@ -93,7 +93,8 @@ def test_assembly_retains_stage_order_and_primary_stat_db_scope(
     assert [stage for stage, _ in calls] == expected
     arguments = dict(calls)
     assert arguments["source_enrich_primary_stats"] == {"db_path": staged_db}
-    assert arguments["source_enrich_target_combat"] == {}
+    assert arguments["source_enrich_target_combat"] == {"db_path": staged_db}
+    assert arguments["source_enrich_incoming_world"] == {"db_path": staged_db}
     assert arguments["source_ability_actions"] == {
         "class_key": "druid", "level": 30, "db_path": staged_db
     }
