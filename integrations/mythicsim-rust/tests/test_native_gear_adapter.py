@@ -9,9 +9,13 @@ from native_gear_adapter import NativeGearAdapter, GearRejected
 
 
 def req(cls, ids):
-    return {"raid": {"parties": [{"players": [{"class": "Class" + cls,
-        "equipment": {"items": [{"id": x} for x in ids]},
-        "talentsString": "51", "rotation": {"priorityList": [{"action": {"wait": {}}}]}}]}]}}
+    return {
+        "raid": {"parties": [{"players": [{"class": "Class" + cls,
+            "equipment": {"items": [{"id": x} for x in ids]},
+            "talentsString": "51",
+            "rotation": {"priorityList": [{"action": {"wait": {}}}]}}]}]},
+        "simOptions": {"iterations": 3, "randomSeed": "47"},
+    }
 
 
 class NativeGearAdapterTests(unittest.TestCase):
