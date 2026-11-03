@@ -62,6 +62,14 @@ def _world_report(target_count: int = 100) -> dict:
         "actual_2d_ack": True,
         "native_damage_events": target_count,
         "world_ticks": target_count,
+        "native_gsim_moving_ticks": target_count - 1,
+        "native_moving_receipts": target_count,
+        "native_movement_cast_legal": True,
+        "gsim_world_walk_steps": target_count - 1,
+        "gsim_route_legs": [{} for _ in range(target_count - 1)],
+        "gsim_route_paid_receipts": [{} for _ in range(target_count - 1)],
+        "gsim_route_paid_movement_s": float(target_count - 1),
+        "world_target_hp": 100.0,
         "native_windows": windows,
         "world_kills": kills,
         "world_elapsed_seconds": float(target_count * 2),
@@ -333,6 +341,11 @@ class SelectedRustRouteCandidateIntegrationTests(unittest.TestCase):
         self.assertTrue(world["actual_2d_ack"])
         self.assertGreaterEqual(world["native_damage_events"], 100)
         self.assertGreaterEqual(world["world_ticks"], 100)
+        self.assertGreater(world["native_gsim_moving_ticks"], 0)
+        self.assertTrue(world["native_movement_cast_legal"])
+        self.assertEqual(world["gsim_route_legs"], 99)
+        self.assertEqual(world["gsim_route_paid_receipts"], 99)
+        self.assertGreater(world["gsim_route_paid_movement_s"], 0)
         self.assertFalse(result["cross_level_resource_carry_verified"])
         self.assertFalse(result["route_transition_supported"])
         self.assertFalse(result["checkpoint_certified"])
