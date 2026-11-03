@@ -32,6 +32,8 @@ on:
       - 'tests/test_wf272_source_ranked_periodic_finisher.py'
       - 'src/v2/source_budgeted_gear.py'
       - 'tools/wf_gate_p3_live.py'
+      - 'tests/test_selected_source_plumbing.py'
+      - 'tests/test_prio_p3_live_sourced_chance_gear.py'
       - 'tests/test_prio_p3_source_policy_sp.py'
       - 'tests/test_level_legality_p00c.py'
       - 'src/v2/generic_frontier.py'
@@ -99,6 +101,8 @@ jobs:
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_prio_p3_source_policy_sp.py
+          tests/test_selected_source_plumbing.py
+          tests/test_prio_p3_live_sourced_chance_gear.py
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/mechanics/druid/test_druid_mechanics_layout.py
           tests/mechanics/druid/test_druid_cat_closure_v0114896.py
