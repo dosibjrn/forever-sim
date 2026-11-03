@@ -56,9 +56,10 @@ class NativeGearAdapterTests(unittest.TestCase):
         self.assertIn(audit["source_slot_index"], (0, 1, 2))
         adapter.validate(candidate)
 
-    def test_native_class_allowlist_does_not_prevent_source_proposal(self):
+    def test_native_item_type_and_class_rules_do_not_prevent_source_proposal(self):
         items = copy.deepcopy(self.items)
         items[11]["class_allowlist"] = ["ClassWarrior"]
+        items[11]["type"] = "ItemTypeChest"  # wrong slot/type is still a native decision
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
         self.assertIn(11, adapter.pools[0])
         candidate = copy.deepcopy(self.fire)
@@ -167,6 +168,27 @@ class NativeGearAdapterTests(unittest.TestCase):
         candidate = copy.deepcopy(source)
         candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 999999}
         adapter.validate(candidate)  # unknown native identity is sent to Rust, not pre-rejected
+
+        from native_joint_two_class import native_score_request, native_payload, fingerprint
+        from native_matrix import NativeCandidateRefusal
+        import time
+        seen = []
+        raw = {"status": "INVALID", "reason": "native unknown-item refusal"}
+
+        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline):
+            seen.append(copy.deepcopy(request))
+            raise NativeCandidateRefusal(
+                "INVALID", raw_response=raw, reason=raw["reason"],
+                request_sha256=fingerprint(native_payload(request, iterations, seed)),
+            )
+
+        with self.assertRaises(NativeCandidateRefusal) as caught:
+            native_score_request(Path("forever-engine"), candidate, 4, 731,
+                                 "balanced", time.monotonic() + 1.0,
+                                 runner=native_runner)
+        self.assertEqual([candidate], seen)
+        self.assertEqual("INVALID", caught.exception.status)
+        self.assertIs(raw, caught.exception.raw_response)
 
     def test_no_alternatives_blocks_explicitly(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire], self.items)
