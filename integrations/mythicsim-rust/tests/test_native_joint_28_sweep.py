@@ -14,7 +14,7 @@ from native_l60_matrix import (
     CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
     SOURCES, apply_current_client_talent_override,
     CURRENT_CLIENT_TALENT_DONOR_PRESETS, current_client_talent_donor_fixtures,
-    fingerprint,
+    apply_current_client_talent_donor_source_overrides, fingerprint,
 )
 
 
@@ -377,6 +377,89 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
             "87fe551e2150ead167dbb5c2418f332bed02549c",
             metadata["source_blob_sha"],
         )
+
+    def test_paladin_holy_donor_fixtures_use_pinned_current_client_talent_preset(self):
+        expected = {
+            "fixtures/mage/prepared-v2/holy-paladin-blessing-of-light-oom.request.json":
+                "05321013025131251-503210302",
+            "fixtures/mage/prepared-v2/holy-paladin-fused-bonus-healing.request.json":
+                "01021011005121251-503000301",
+            "fixtures/mage/prepared-v2/holy-paladin-healing.request.json":
+                "25320213225131051-50323",
+        }
+        replacement = CURRENT_CLIENT_TALENT_OVERRIDES["paladin/holy"]["talents_string"]
+
+        def donor(path, talents_string, item_id):
+            return {
+                "source_path": path,
+                "source_sha256": f"fixture-sha-{item_id}",
+                "class_name": "ClassPaladin",
+                "item_count": 1,
+                "request": {
+                    "raid": {"parties": [{"players": [{
+                        "class": "ClassPaladin",
+                        "talentsString": talents_string,
+                        "equipment": {"items": [{"id": item_id}]},
+                        "rotation": {"priorityList": [{
+                            "action": {"castSpell": {
+                                "spellId": {"spellId": 20473},
+                            }},
+                        }]},
+                    }]}]},
+                    "encounter": {"duration": 180},
+                },
+            }
+
+        originals = {
+            path: donor(path, talents, 1000 + i)
+            for i, (path, talents) in enumerate(expected.items())
+        }
+        untouched = donor(
+            "fixtures/forever-gaps/protection-paladin-devotion-aura.request.json",
+            "050050002-05302102213301531-502",
+            2000,
+        )
+        result = apply_current_client_talent_donor_source_overrides(
+            [*originals.values(), untouched]
+        )
+        self.assertEqual(4, len(result))
+        for path, original in originals.items():
+            with self.subTest(path=path):
+                composed = next(item for item in result if item["source_path"] == path)
+                player = composed["request"]["raid"]["parties"][0]["players"][0]
+                original_player = original["request"]["raid"]["parties"][0]["players"][0]
+                self.assertEqual(replacement, player["talentsString"])
+                self.assertEqual(expected[path], composed["original_talents_string"])
+                self.assertEqual(replacement, composed["replacement_talents_string"])
+                self.assertEqual(original["source_sha256"], composed["source_sha256"])
+                self.assertEqual(original_player["equipment"], player["equipment"])
+                self.assertEqual(original_player["rotation"], player["rotation"])
+                self.assertEqual(original["request"]["encounter"], composed["request"]["encounter"])
+                self.assertEqual(
+                    "COMPOSED_SMOKE_FIXTURE_CURRENT_CLIENT_TALENT_PRESET",
+                    composed["source_type"],
+                )
+                self.assertEqual("wowsims/forever", composed["talent_source_repository"])
+                self.assertEqual(772, composed["talent_source_pull_request"])
+                self.assertEqual(
+                    "d608072a6db0197d58a073df7e3153c90f20f46c",
+                    composed["talent_source_commit"],
+                )
+                self.assertEqual(
+                    "sim/paladin/holy/holy_test.go", composed["talent_source_path"]
+                )
+                self.assertEqual(
+                    "bff116c8fe0727c96b51d51c97d637c4f189ba5c",
+                    composed["talent_source_blob_sha"],
+                )
+                self.assertEqual("StandardTalents (sim test)", composed["talent_preset_name"])
+                self.assertEqual("paladin/holy", composed["composed_over_profile"])
+
+        self.assertIs(result[-1], untouched)
+
+        changed = donor(next(iter(expected)), "wrong-source-talent-string", 3000)
+        with self.assertRaisesRegex(ValueError, "pinned source donor talent string mismatch"):
+            apply_current_client_talent_donor_source_overrides([changed])
 
     def test_unlisted_profile_is_left_untouched(self):
         request = {"raid": {"parties": [{"players": [{
