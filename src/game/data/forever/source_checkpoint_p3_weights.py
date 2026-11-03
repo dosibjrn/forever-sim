@@ -18,18 +18,8 @@ from src.game.data.forever.source_checkpoint_p3 import checkpoint_item_l0
 from src.game.data.forever.source_checkpoint_p3_ratings import (apply_source_item_stat_delta, forever_display_chance_fraction_per_raw_point, source_item_stat_to_combat)
 from src.rulesets.forever.items.runtime_selection import available_items, item_vector, catalogue_path
 from src.v2.source_persistent_joint_finalists import evaluate_persistent_candidate
+from src.game.stat_sensitivity import PROBE_STEPS
 
-# A source delta in the *input unit*, not a game-specific damage coefficient.
-# Stat-specific probe scales are input-unit perturbations, not combat effect coefficients.
-# Agility and weapon DPS must cross discrete 100-mob action/kill thresholds.
-# These are *minimum item-relevant steps*, not locally reliable derivatives.
-PROBE_STEPS = {
-    'strength': 5., 'agility': 20., 'stamina': 5., 'intellect': 5.,
-    'spirit': 5., 'attack_power': 10., 'spell_power': 10.,
-    'healing': 10., 'mp5': 5., 'armor': 100.,
-    'weapon_dps': 10., 'wand_dps': 2.,
-    'health_regeneration_per_5s': 5.,
-}
 SOURCE_RATINGS = ('hit', 'crit', 'defense', 'dodge')
 
 
