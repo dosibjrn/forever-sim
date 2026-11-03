@@ -111,20 +111,36 @@ def _new_cast(spells, predicates_by_spell, rng):
     return {"action": action}
 
 
+def _is_unconditional_cast(entry):
+    """Whether an entry is a castSpell action with no active condition."""
+    action = entry.get("action", {})
+    return (isinstance(action, dict)
+            and isinstance(action.get("castSpell"), dict)
+            and not action.get("condition"))
+
+
 def _has_fallback(actions):
-    return any("castSpell" in x.get("action", {})
-               and "condition" not in x.get("action", {}) for x in actions)
+    return any(_is_unconditional_cast(entry) for entry in actions)
 
 
 def _ensure_fallback(actions, source_actions):
     if _has_fallback(source_actions) and not _has_fallback(actions):
         fallback = next(copy.deepcopy(x) for x in source_actions
-                        if "castSpell" in x.get("action", {})
-                        and "condition" not in x["action"])
+                        if _is_unconditional_cast(x))
         # A missing unconditional cast is a termination hazard: repair it.
         if len(actions) >= 20:
             actions.pop()
         actions.append(fallback)
+
+    # APL priorities are first-match: an unconditional cast can shadow every
+    # lower-priority conditional action while it is castable. Keep all such
+    # casts as a stable suffix. Conditional casts and opaque native actions
+    # retain their original relative order and are evaluated first.
+    fallbacks = [entry for entry in actions if _is_unconditional_cast(entry)]
+    if fallbacks:
+        actions[:] = [
+            entry for entry in actions if not _is_unconditional_cast(entry)
+        ] + fallbacks
 
 
 def mutate_apl(actions, source_actions, rng, *, cold=False):
@@ -134,6 +150,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
     candidate; later elite mutations use the same operators. The grammar is
     deliberately restricted to expression trees and spell IDs present in the
     supplied frozen input. This is not full spellbook-level completeness.
+    Unconditional castSpell entries remain a stable fallback suffix.
     """
     spells, predicates_by_spell, allowed = _corpus(source_actions)
     if cold:
