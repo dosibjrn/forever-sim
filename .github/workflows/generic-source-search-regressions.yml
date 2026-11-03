@@ -13,6 +13,7 @@ on:
       - 'integrations/mythicsim-rust/p74_gear_search.py'
       - 'integrations/mythicsim-rust/p75_joint_search.py'
       - 'integrations/mythicsim-rust/p75_unrestricted_search.py'
+      - 'integrations/mythicsim-rust/apl_mutation.py'
       - 'integrations/mythicsim-rust/rotation_search.py'
       - 'integrations/mythicsim-rust/tests/test_p73_native_search_ci.py'
       - 'integrations/mythicsim-rust/tests/test_p75_joint_contract.py'
@@ -20,6 +21,10 @@ on:
       - 'integrations/mythicsim-rust/tests/test_native_gear_adapter.py'
       - 'integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py'
       - 'tests/test_work1_p7_balanced_native_world_rng.py'
+      - 'tests/test_work1_p7_1_live_entry.py'
+      - 'tools/wf_gate_p7_1_live.py'
+      - 'integrations/mythicsim-rust/live_world_probe.py'
+      - 'integrations/mythicsim-rust/verify_upstream_candidate.py'
       - 'tools/wf_gate_p7_3_live.py'
       - 'tools/wf_gate_p7_4_live.py'
       - 'tests/generic/runtime/test_source_maintenance_rank_reader.py'
@@ -33,6 +38,7 @@ on:
       - 'src/game/talent_execution_coverage.py'
       - 'src/game/talents.py'
       - 'src/game/talent_search.py'
+      - 'src/game/talent_subset_search.py'
       - 'src/optimization/**'
       - '.github/workflows/generic-source-search-regressions.yml'
 
@@ -73,6 +79,7 @@ jobs:
           tests/generic/search/test_v2_analytic_scorer_edges.py
           tests/generic/search/test_v2_analytic_frontier_extra.py
           tests/generic/search/test_generic_search_layout.py
+          tests/generic/search/test_wf390_generic_talent_subset_search.py
           tests/generic/runtime/test_source_maintenance_rank_reader.py
           tests/generic/runtime/test_source_stage_isolation.py
           tests/generic/runtime/test_source_ir_assembly_order.py
@@ -83,6 +90,8 @@ jobs:
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
           tests/test_work1_p7_balanced_native_world_rng.py
+          tests/test_work1_p7_1_live_entry.py
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_native_ledger_retains_replayable_request_and_rng_provenance
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_screen_survives_failed_balanced_probe
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_rerank_ledger_replays_all_finalist_evaluations
+          integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_cold_apl_can_generate_19_actions_from_10_action_source_grammar

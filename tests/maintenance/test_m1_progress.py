@@ -84,9 +84,14 @@ def test_partial_p2_is_visible_but_not_certified(monkeypatch, tmp_path, capsys):
         .2 + 4 * (83 / 103 - .8))
     assert score["measured_gate_equivalents"] == pytest.approx(83 / 103)
     assert score["measured_percent"] == pytest.approx(100 * 83 / 103 / 1628)
+    assert score["measured_fraction"] == pytest.approx((83 / 103) / 1628)
+    assert score["measured_percent"] == pytest.approx(100 * score["measured_fraction"])
     assert score["partial_gates"][0]["provisional"]
     assert m1.main(["--ledger", str(path)]) == 0
-    assert "83/103" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "83/103" in output
+    assert (f"M1 measured progress: {score['measured_percent']:.4f}% "
+            f"(float={score['measured_fraction']:.10f}; diagnostic, NOT PASS)") in output
 
 
 def test_solo_p2_exclusion_repair_updates_real_partial_without_fake_gate_pass(

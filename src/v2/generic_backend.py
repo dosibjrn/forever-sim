@@ -38,7 +38,7 @@ from src.game.evaluation import Evaluation, evaluation_from_combat_timeline, eva
 from src.game.recovery import recover_actor_to_full
 from src.game.gear import apply_gear_selection, EXECUTABLE_CASTER_GEAR_STATS
 from src.game.stat_sensitivity import measure_stat_sensitivities
-from src.game.fixed_point import run_optimizer_fixed_point
+from src.optimization.fixed_point import run_optimizer_fixed_point
 from src.game.talents import apply_talent_selection
 from src.game.talent_search import search_talent_allocations, talent_candidate_id
 from src.shared.leveling.objective import representative_hp
