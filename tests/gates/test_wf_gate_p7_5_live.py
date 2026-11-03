@@ -1,4 +1,4 @@
-"""P7.5 source-legal cold joint fixed-value mutation, not a fake PASS."""
+"""P7.5 native-authoritative candidate proposals, not a fake PASS."""
 import copy
 import inspect
 import random
@@ -56,7 +56,10 @@ def test_source_joint_keeps_same_name_distinct_ids_for_real_legality_check(
     pools = {i: [100 + i] for i in range(16)}
     names = {100 + i: f"distinct-{i}" for i in range(16)}
     names[110] = names[111] = "same-display-name-not-same-id"
-    monkeypatch.setattr(source, "random_build", lambda rng: "legal-ranks")
+    def native_random_build(rng, target=None, *, native_authoritative=False):
+        assert native_authoritative is True
+        return "native-proposal-ranks"
+    monkeypatch.setattr(source, "random_build", native_random_build)
     # The joint candidate generator must not import or call Python talent
     # legality: the selected Rust prepare/sim gate owns the outcome.
     assert not hasattr(source, "validate")
@@ -69,6 +72,74 @@ def test_source_joint_keeps_same_name_distinct_ids_for_real_legality_check(
     assert [items[10]["id"], items[11]["id"]] == [110, 111]
     assert [items[12]["id"], items[13]["id"]] == [112, 113]
     assert source.player(base)["talentsString"] == "reference"
+
+    # Duplicate IDs are proposals too; only the selected native engine may
+    # decide whether this exact ring/trinket combination is executable.
+    duplicate_pools = {i: [100 + i] for i in range(16)}
+    duplicate_pools[11] = [110]
+    duplicate_pools[13] = [112]
+    duplicate = source.make_candidate(
+        base, duplicate_pools, random.Random(4), item_names=names)
+    duplicate_items = source.player(duplicate)["equipment"]["items"]
+    assert [duplicate_items[10]["id"], duplicate_items[11]["id"]] == [110, 110]
+    assert [duplicate_items[12]["id"], duplicate_items[13]["id"]] == [112, 112]
+
+
+
+def test_p75_native_talent_proposals_skip_python_legality(monkeypatch):
+    """The P7.5 native mode must not call the local prerequisite validator."""
+    import importlib
+    from pathlib import Path
+
+    monkeypatch.syspath_prepend(str(
+        Path(__file__).resolve().parents[2] / "integrations/mythicsim-rust"))
+    p73 = importlib.import_module("p73_talent_search_v2")
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Python talent legality must not veto P7.5 proposals")
+
+    monkeypatch.setattr(p73, "legal_add", forbidden)
+    monkeypatch.setattr(p73, "validate", forbidden)
+    ranks = p73.random_build(random.Random(3), native_authoritative=True)
+    edited = p73.edit_neighbors(
+        ranks, random.Random(4), native_authoritative=True)
+    assert sum(sum(tree) for tree in ranks) == 51
+    assert sum(sum(tree) for tree in edited) == 51
+
+
+def test_p75_candidate_passes_native_authority_to_talent_operators(monkeypatch):
+    """Both cold talent builds and paid-neighbour edits are native proposals."""
+    import importlib
+    from pathlib import Path
+
+    monkeypatch.syspath_prepend(str(
+        Path(__file__).resolve().parents[2] / "integrations/mythicsim-rust"))
+    source = importlib.import_module("p75_joint_search")
+    base = _base()
+    player = source.player(base)
+    player["equipment"]["items"] = [{"id": 100 + i} for i in range(16)]
+    pools = {i: [100 + i] for i in range(16)}
+    calls = []
+
+    def random_build(rng, target=None, *, native_authoritative=False):
+        calls.append(("random", native_authoritative))
+        return [[1]]
+
+    def edit_neighbors(ranks, rng, *, native_authoritative=False):
+        calls.append(("edit", native_authoritative))
+        return [[2]]
+
+    monkeypatch.setattr(source, "random_build", random_build)
+    monkeypatch.setattr(source, "edit_neighbors", edit_neighbors)
+    monkeypatch.setattr(source, "parse", lambda _: [[0]])
+    monkeypatch.setattr(source, "encode", lambda _: "native-proposal")
+    monkeypatch.setattr(source, "mutate_apl", lambda *a, **kw: [1, 2, 3])
+
+    source.make_candidate(base, pools, random.Random(5))
+    elite = copy.deepcopy(base)
+    source.make_candidate(
+        base, pools, random.Random(6), elite=elite, repair_axes=("talents",))
+    assert calls == [("random", True), ("edit", True)]
 
 
 def test_unrelated_checkpoint_does_not_use_balance_ref(tmp_path):
@@ -214,9 +285,15 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
         p["rotation"]["priorityList"] = [3, 2, 1]
         return q
 
+    enchant_calls = []
+    def source_enchants(validator, pools, *, native_authoritative=False):
+        enchant_calls.append(native_authoritative)
+        assert native_authoritative is True
+        return {0: [None, 123], 1: [None]}
+
     source = SimpleNamespace(
         GearValidator=Validator, candidate_pool=pool,
-        source_enchant_pools=lambda validator, pools: {0: [None, 123], 1: [None]},
+        source_enchant_pools=source_enchants,
         make_candidate=make_candidate,
         player=player, RejectedGear=ValueError)
     calls = []
@@ -237,6 +314,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert pool_calls == [
         (None, {"native_authoritative": True, "independent_enchants": True})
     ]
+    assert enchant_calls == [True]
     assert [(a, b, c) for a, b, c, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
