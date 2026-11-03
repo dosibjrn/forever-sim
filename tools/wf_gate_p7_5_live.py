@@ -639,5 +639,6 @@ def run_live(root: Path, class_key: str, level: int, *,
         "cold_candidate_failures": failures[:4],
         "selected_validation": selected_validation,
         "search_rng_mode": "balanced",
+        "finalist_rng_mode": "balanced",
         "coverage_scope_complete": False,
     }
