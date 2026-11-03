@@ -412,7 +412,7 @@ def port_classes(source: str) -> str:
     if CLASSES_SIGNATURE_TYPED_OLD in source:
         if (source.count(CLASSES_SIGNATURE_TYPED_OLD) != 1
                 or source.count(CLASSES_CALL_OLD) != 9
-                or source.count("::fight(prepared, rng_mode)?") != 9):
+                or source.count("::fight(prepared, rng_mode)?.native_two_world_targets(target_count)") != 9):
             raise ValueError("RUST_NATIVE_PAID_RECOVERY_TYPED_CLASSES_ANCHOR_DRIFT")
         return source.replace(CLASSES_SIGNATURE_TYPED_OLD, CLASSES_SIGNATURE_TYPED_NEW, 1).replace(
             CLASSES_CALL_OLD, CLASSES_CALL_NEW)
