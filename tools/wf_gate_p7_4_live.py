@@ -19,7 +19,8 @@ import time
 
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_final_stochastic_mean_passes,
-                                    p7_required_dps)
+                                    p7_required_dps,
+                                    p7_search_deadline_completed)
 
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
                                      _source_native_world_parity, _executed_p7_runtime_proof)
@@ -260,6 +261,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     proposals = 0
     validator = gear_search.GearValidator(catalogue, items, enchants, base)
     search_start = time.monotonic()
+    search_deadline = search_start + 300.0
+    last_search_step_completed_at = search_start
     worst_screen_s = 0.0
     try:
         # The existing source+Rust item validator enumerates the pool once;
@@ -275,7 +278,7 @@ def run_live(root: Path, class_key: str, level: int, *,
             **({"independent_enchants": True} if full_search else {}))
         enchant_pools = (gear_search.source_enchant_pools(validator, pool)
                          if full_search else None)
-        while (time.monotonic() - search_start < 300.0
+        while (time.monotonic() < search_deadline
                if full_search else proposals < 3):
             if full_search and not _paid_step_has_budget(
                     search_start, worst_screen_s):
@@ -340,14 +343,23 @@ def run_live(root: Path, class_key: str, level: int, *,
             finally:
                 worst_screen_s = max(
                     worst_screen_s, time.perf_counter() - paid_start)
+                last_search_step_completed_at = time.monotonic()
     finally:
         validator.close()
     if full_search:
         # Unused tail time is too short for an observed paid native+2D step.
         # Complete the actual 300s independent wall-time window rather than
         # starting a long blocking call that can overrun it.
-        time.sleep(max(0.0, search_start + 300.0 - time.monotonic()))
-    search_wall_s = time.monotonic() - search_start
+        time.sleep(max(0.0, search_deadline - time.monotonic()))
+    search_observed_at = time.monotonic()
+    search_wall_s = search_observed_at - search_start
+    search_deadline_met = p7_search_deadline_completed(
+        full_search=full_search,
+        search_start=search_start,
+        search_deadline=search_deadline,
+        last_search_step_completed_at=last_search_step_completed_at,
+        observed_at=search_observed_at,
+    )
     if best is None:
         return {"status": "FAIL",
                 "reasons": ["P7_4_NO_SOURCE_LEGAL_NATIVE_WORLD_GEAR_CANDIDATE_EXECUTED"],
@@ -360,7 +372,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     score, live, candidate_sha, frozen_winner = best
     winner_screen_dps = score
     winner_selection = "best_balanced_live_screen"
-    complete_search = full_search and 300.0 <= search_wall_s <= 301.0
+    complete_search = search_deadline_met
     final = {}
     if complete_search:
         # Freeze the genuine paid winner BEFORE the independent stochastic
@@ -408,10 +420,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     reasons = []
     if not full_search:
         reasons.append("P7_4_FULL_INDEPENDENT_300S_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED")
-    elif search_wall_s < 300.0:
-        reasons.append("P7_4_300S_SEARCH_NOT_COMPLETED")
-    elif search_wall_s > 301.0:
-        reasons.append("P7_4_SEARCH_BUDGET_OVERRUN")
+    elif not search_deadline_met:
+        reasons.append("P7_4_300S_SEARCH_DEADLINE_NOT_MET")
     if "frozen_stochastic_iterations" not in final:
         reasons.append("P7_4_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED")
     elif not final["frozen_stochastic_reference_floor_met"]:
@@ -452,6 +462,10 @@ def run_live(root: Path, class_key: str, level: int, *,
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
         "independent_300s_search_completed": complete_search,
+        "search_deadline_met": search_deadline_met,
+        "search_deadline_seconds": 300.0,
+        "last_search_step_completed_elapsed_s": round(last_search_step_completed_at - search_start, 6),
+        "search_deadline_observed_elapsed_s": round(search_wall_s, 6),
         "cold_unique_source_requests": len(seen),
         **final,
         "world_damage_events": int(live["native_damage_events"]),
