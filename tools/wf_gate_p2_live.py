@@ -1729,10 +1729,22 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested, *, tree_key=None
     authoritative PREPARED / INVALID / UNSUPPORTED / ERROR result. This probe
     is diagnostic only and never contributes to P2 acceptance.
     """
-    before=tested.get('control_witness')
     after=tested.get('witness')
-    if not isinstance(before,dict) or not isinstance(after,dict):
-        return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_UNAVAILABLE'}
+    if not isinstance(after,dict):
+        return {'status':'BLOCKED','reason':'SOURCE_RANK_CANDIDATE_UNAVAILABLE'}
+    before=tested.get('control_witness')
+    if not isinstance(before,dict):
+        # A candidate is sufficient to construct its N-1 control. This only
+        # shapes the request; MythicSim still decides whether either build is
+        # legal, supported or executable.
+        target_value=after.get(talent_id,0)
+        if isinstance(target_value,bool) or not isinstance(target_value,int) or target_value!=int(rank):
+            return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_UNAVAILABLE'}
+        before=dict(after)
+        if int(rank)==1:
+            before.pop(talent_id,None)
+        else:
+            before[talent_id]=int(rank)-1
     scenario=_NATIVE_P2_TREE_SCENARIOS.get(str(tree_key or ''))
     if scenario is None:
         return {'status':'BLOCKED','reason':'NATIVE_P2_TREE_SCENARIO_UNAVAILABLE',
