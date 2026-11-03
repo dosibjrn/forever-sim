@@ -3,6 +3,8 @@
 
 Uses real native spell-result events, world-applied target HP, verified ACKs,
 and world-derived 2D range/facing before the next Rust scheduler decision.
+The optional mid-fight range intervention proves a world update is consumed
+after its ACK by a subsequent native decision. It is diagnostic, not P7 PASS.
 A sub-1000-fight run is diagnostic; a full run needs the P7 gate predicates.
 """
 from __future__ import annotations
@@ -25,9 +27,28 @@ from tools.wf_gsim_go_live_range_probe import (
 )
 from tools.wf_gate_coverage import P7_FINAL_STOCHASTIC_ITERATIONS, p7_required_dps
 
+
+def _set_stationary_target_distance_for_probe(world, distance_yards: float) -> None:
+    """Move the real single gsim target; never patch the native source request."""
+    if type(distance_yards) not in (int, float) or not math.isfinite(distance_yards) or distance_yards <= 0:
+        raise ValueError("RUST_WORLD_RANGE_SWITCH_DISTANCE_INVALID")
+    target_id = "m1"
+    if (target_id not in world.targets
+            or target_id not in world.enemy_positions_yards
+            or target_id not in world._pack_positions):
+        raise AssertionError("RUST_WORLD_RANGE_SWITCH_TARGET_MISSING")
+    if target_id in getattr(world, "_enemy_motion", {}):
+        raise AssertionError("RUST_WORLD_RANGE_SWITCH_TARGET_NOT_STATIONARY")
+    position = (float(distance_yards), 0.0)
+    world.enemy_positions_yards[target_id] = position
+    world._pack_positions[target_id] = position
+
+
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
+        distance_switch_at_s: float | None = None,
+        distance_after_switch_yards: float | None = None,
         rng_mode: str) -> dict:
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_WORLD_RNG_MODE_INVALID")
@@ -41,6 +62,16 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     if facing_switch_at_s is not None and (
             not math.isfinite(facing_switch_at_s) or facing_switch_at_s <= 0 or iterations != 1):
         raise ValueError("RUST_WORLD_FACING_SWITCH_INVALID")
+    if distance_switch_at_s is not None:
+        if (type(distance_switch_at_s) not in (int, float)
+                or not math.isfinite(distance_switch_at_s) or distance_switch_at_s <= 0
+                or iterations != 1 or facing_switch_at_s is not None
+                or type(distance_after_switch_yards) not in (int, float)
+                or not math.isfinite(distance_after_switch_yards)
+                or distance_after_switch_yards <= 0):
+            raise ValueError("RUST_WORLD_RANGE_SWITCH_INVALID")
+    elif distance_after_switch_yards is not None:
+        raise ValueError("RUST_WORLD_RANGE_SWITCH_WITHOUT_CLOCK")
     def new_world():
         world = diagnostic_gsim_world(
             target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
@@ -71,8 +102,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     iteration_precombat_damage = 0.
     total_ticks = 0
     facing_switch_clock_ns = None
+    range_switch_clock_ns = None
+    range_switch_before_yards = None
+    range_switch_after_yards = None
+    native_range_receipts_after_switch = []
+    world_causality_trace = []
     source_action_events_before = {}
     source_action_events_after = {}
+    source_direct_action_events_before = {}
+    source_direct_action_events_after = {}
     with tempfile.TemporaryDirectory() as folder:
         output = Path(folder) / "result.json"
         env = {k: v for k, v in os.environ.items() if k != "WOWSIM_RNG_MODE"} | {
@@ -132,6 +170,13 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     # puts the hero in front, whereas +X means behind.
                     world.targets["m1"].metadata["facing_xy_yards"] = (-1., 0.)
                     facing_switch_clock_ns = clock_ns
+                if (distance_switch_at_s is not None and range_switch_clock_ns is None
+                        and clock_ns >= round(distance_switch_at_s * 1e9)):
+                    range_switch_before_yards = float(distance)
+                    range_switch_after_yards = float(distance_after_switch_yards)
+                    _set_stationary_target_distance_for_probe(
+                        world, range_switch_after_yards)
+                    range_switch_clock_ns = clock_ns
                 tick = feed.next_tick()
                 assert tick["sequence"] == native["sequence"]
                 assert tick["native_clock_ns"] == clock_ns
@@ -153,11 +198,45 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 assert receipt["iteration_index"] == iteration
                 assert receipt["native_request_sha256"] == request_sha
                 assert receipt["native_process_id"] == proc.pid
-                feed.accept_range_receipt(receipt["native_range_receipt"])
+                range_receipt = receipt["native_range_receipt"]
+                feed.accept_range_receipt(range_receipt)
                 ack = applier.apply(tick, receipt)
+                perturbation_clock_ns = (
+                    range_switch_clock_ns if range_switch_clock_ns is not None
+                    else facing_switch_clock_ns
+                )
                 action_counter = (source_action_events_after
-                    if facing_switch_clock_ns is not None
+                    if perturbation_clock_ns is not None
                     else source_action_events_before)
+                direct_action_counter = (source_direct_action_events_after
+                    if perturbation_clock_ns is not None
+                    else source_direct_action_events_before)
+                if distance_switch_at_s is not None:
+                    direct_events = [
+                        event for event in receipt["native_damage_events"]
+                        if not event.get("periodic", False)
+                    ]
+                    trace_entry = {
+                        "sequence": tick["sequence"],
+                        "native_clock_ns": clock_ns,
+                        "world_distance_yards": float(tick["distance_yards"]),
+                        "native_applied_yards": float(range_receipt["applied_yards"]),
+                        "world_sha256": tick["world_sha256"],
+                        "previous_world_ack_id": tick["previous_world_ack_id"],
+                        "world_after_sha256": ack["world_after_sha256"],
+                        "direct_damage_event_count": len(direct_events),
+                        "damage_event_count": len(receipt["native_damage_events"]),
+                    }
+                    world_causality_trace.append(trace_entry)
+                    if range_switch_clock_ns is not None:
+                        native_range_receipts_after_switch.append({
+                            "native_clock_ns": clock_ns,
+                            "world_distance_yards": float(tick["distance_yards"]),
+                            "native_applied_yards": float(range_receipt["applied_yards"]),
+                            "world_sha256": tick["world_sha256"],
+                            "previous_world_ack_id": tick["previous_world_ack_id"],
+                            "world_after_sha256": ack["world_after_sha256"],
+                        })
                 for event in receipt["native_damage_events"]:
                     if event["native_caster_type"] == "pet":
                         pet_damage_events += 1
@@ -166,6 +245,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                         iteration_precombat_damage += event["damage"]
                     action = event["source_action_id"]
                     action_counter[action] = action_counter.get(action, 0) + 1
+                    if not event.get("periodic", False):
+                        direct_action_counter[action] = direct_action_counter.get(action, 0) + 1
                 ack["iteration_index"] = iteration
                 event_count += len(ack["applied_event_ids"])
                 # Millions of positive source-native events must not lose
@@ -203,6 +284,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             assert event_count > 0 or distance > 60
             assert native_dps >= 0 and duration > 0
             world_mean_dps = sum(s["world_dps"] for s in samples) / iterations
+            if distance_switch_at_s is not None:
+                if range_switch_clock_ns is None or not native_range_receipts_after_switch:
+                    raise AssertionError("RUST_WORLD_RANGE_SWITCH_NOT_ACKED")
+                if any(
+                    abs(entry["world_distance_yards"] - distance_after_switch_yards) > 1e-6
+                    or abs(entry["native_applied_yards"] - distance_after_switch_yards) > 1e-6
+                    for entry in native_range_receipts_after_switch
+                ):
+                    raise AssertionError("RUST_WORLD_RANGE_SWITCH_NOT_REFLECTED_BY_NATIVE")
             assert abs(native_dps - world_mean_dps) < 1e-5, (
                 "NATIVE_WORLD_STOCHASTIC_DPS_MISMATCH", native_dps, world_mean_dps)
             assert math.isclose(
@@ -221,13 +311,107 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "source_request_proto_sha256": request_sha,
                     "source_request_raw_sha256": raw_sha,
                     "facing_switch_clock_ns": facing_switch_clock_ns,
+                    "range_switch_clock_ns": range_switch_clock_ns,
+                    "range_switch_before_yards": range_switch_before_yards,
+                    "range_switch_after_yards": range_switch_after_yards,
+                    "native_range_receipts_after_switch": native_range_receipts_after_switch,
+                    "world_causality_trace": world_causality_trace,
                     "source_action_events_before": source_action_events_before,
                     "source_action_events_after": source_action_events_after,
+                    "source_direct_action_events_before": source_direct_action_events_before,
+                    "source_direct_action_events_after": source_direct_action_events_after,
                     "checkpoint_certified": False}
         finally:
             if proc.poll() is None:
                 proc.kill()
                 proc.wait(timeout=5)
+
+def run_range_perturbation_pair(binary: Path, request: Path) -> dict:
+    """Prove a live 2D range change reaches and changes a later Rust decision."""
+    source = json.loads(request.read_text())
+    player = source["raid"]["parties"][0]["players"][0]
+    if (player.get("class") != "ClassDruid" or "balanceDruid" not in player
+            or len(source["encounter"]["targets"]) != 1
+            or source["encounter"]["targets"][0]["level"] != 63):
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_REQUIRES_DRUID_BALANCE_L63")
+
+    initial_distance = float(player["distanceFromTarget"])
+    if not math.isfinite(initial_distance) or initial_distance <= 0:
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_INITIAL_RANGE_INVALID")
+    far_distance = max(80.0, initial_distance + 50.0)
+
+    # Both runs receive the same saved source request, Balanced RNG, initial
+    # range and switch clock. The control stays at its source-request range;
+    # only the perturbed gsim target moves well outside that range.
+    common = {
+        "distance": initial_distance,
+        "distance_switch_at_s": 5.0,
+        "rng_mode": "balanced",
+    }
+    control = run(
+        binary, request, **common,
+        distance_after_switch_yards=initial_distance)
+    perturbed = run(
+        binary, request, **common,
+        distance_after_switch_yards=far_distance)
+    if control["source_request_proto_sha256"] != perturbed["source_request_proto_sha256"]:
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_SOURCE_REQUEST_CHANGED")
+    if control["range_switch_clock_ns"] != perturbed["range_switch_clock_ns"]:
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_SWITCH_CLOCK_DIVERGED")
+    if control["source_action_events_before"] != perturbed["source_action_events_before"]:
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_CHANGED_PRE_SWITCH_ACTIONS")
+    if control["source_direct_action_events_before"] != perturbed["source_direct_action_events_before"]:
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_CHANGED_PRE_SWITCH_DIRECT_ACTIONS")
+
+    control_after = sum(control["source_direct_action_events_after"].values())
+    perturbed_after = sum(perturbed["source_direct_action_events_after"].values())
+    if control_after <= perturbed_after:
+        raise AssertionError((
+            "P7_WORLD_RANGE_PERTURBATION_DID_NOT_CHANGE_SUBSEQUENT_NATIVE_ACTIONS",
+            control_after, perturbed_after,
+        ))
+    if control["world_mean_dps"] <= perturbed["world_mean_dps"]:
+        raise AssertionError((
+            "P7_WORLD_RANGE_PERTURBATION_DID_NOT_CHANGE_WORLD_DAMAGE",
+            control["world_mean_dps"], perturbed["world_mean_dps"],
+        ))
+
+    trace = perturbed["world_causality_trace"]
+    switch_index = next((i for i, entry in enumerate(trace)
+                         if entry["native_clock_ns"] == perturbed["range_switch_clock_ns"]), None)
+    if switch_index is None or switch_index + 1 >= len(trace):
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_MISSING_NEXT_NATIVE_DECISION")
+    switched = trace[switch_index]
+    next_decision = trace[switch_index + 1]
+    if (abs(switched["world_distance_yards"] - far_distance) > 1e-6
+            or abs(switched["native_applied_yards"] - far_distance) > 1e-6
+            or abs(next_decision["world_distance_yards"] - far_distance) > 1e-6
+            or abs(next_decision["native_applied_yards"] - far_distance) > 1e-6):
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_NOT_SEEN_BY_NEXT_NATIVE_TICK")
+    if next_decision["previous_world_ack_id"] != switched["world_after_sha256"]:
+        raise AssertionError("P7_WORLD_RANGE_PERTURBATION_ACK_NOT_CONSUMED_BY_NEXT_TICK")
+
+    return {
+        "verdict": "REAL_RUST_GSIM2D_RANGE_PERTURBATION_CAUSALITY_VERIFIED",
+        "checkpoint_certified": False,
+        "m1_affected_gates": [],
+        "source_request_raw_sha256": perturbed["source_request_raw_sha256"],
+        "source_request_proto_sha256": perturbed["source_request_proto_sha256"],
+        "range_switch_clock_ns": perturbed["range_switch_clock_ns"],
+        "initial_range_yards": initial_distance,
+        "control_range_after_yards": initial_distance,
+        "perturbed_range_after_yards": far_distance,
+        "pre_switch_direct_action_events": sum(
+            perturbed["source_direct_action_events_before"].values()),
+        "control_post_switch_direct_action_events": control_after,
+        "perturbed_post_switch_direct_action_events": perturbed_after,
+        "control_world_dps": control["world_mean_dps"],
+        "perturbed_world_dps": perturbed["world_mean_dps"],
+        "native_ack_chain_verified": True,
+        "switch_trace": switched,
+        "next_native_decision_trace": next_decision,
+    }
+
 
 def native_source_control(binary: Path, request: Path, iterations: int, *,
                           rng_mode: str) -> dict:
@@ -282,7 +466,16 @@ def main() -> None:
     p.add_argument("--request", type=Path, required=True)
     p.add_argument("--reference-iterations", type=int, default=0,
                    help="on-demand native-vs-live stochastic reference run; 0=quick causal regression")
+    p.add_argument("--range-perturbation-only", action="store_true",
+                   help="run a Balanced control/80yd mid-fight range-perturbation causal pair")
     args = p.parse_args()
+    if args.range_perturbation_only:
+        if args.reference_iterations:
+            p.error("--range-perturbation-only cannot be combined with --reference-iterations")
+        result = run_range_perturbation_pair(args.binary, args.request)
+        print("P7_WORLD_RANGE_PERTURBATION_CAUSAL_PASS",
+              json.dumps(result, sort_keys=True), flush=True)
+        return
     if args.reference_iterations:
         source = json.loads(args.request.read_text())
         player = source["raid"]["parties"][0]["players"][0]
