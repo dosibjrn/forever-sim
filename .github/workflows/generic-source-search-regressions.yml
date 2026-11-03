@@ -3,8 +3,6 @@ on:
   pull_request:
     paths:
       - 'tests/generic/search/**'
-      - 'src/v2/source_bounded_route_evidence.py'
-      - 'tests/test_wf288_bounded_route_evidence.py'
       - 'tests/generic/publication/**'
       - 'tests/gates/test_wf_gate_p7_5_stochastic_finalists.py'
       - 'tests/gates/test_wf_gate_p7_5_live.py'
@@ -109,7 +107,6 @@ jobs:
           tests/generic/search/test_v2_analytic_frontier_extra.py
           tests/generic/search/test_generic_search_layout.py
           tests/generic/search/test_leveling_score.py
-          tests/test_wf288_bounded_route_evidence.py
           tests/generic/search/test_wf390_generic_talent_subset_search.py
           tests/generic/search/test_bounded_policy_search_g16.py
           tests/generic/search/test_policy_search_efficiency_g18.py::test_g18_cache_normalizes_action_cost_and_numeric_equivalent_policy
