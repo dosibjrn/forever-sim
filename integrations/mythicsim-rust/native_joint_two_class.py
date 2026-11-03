@@ -42,7 +42,7 @@ def _write_native_failure(outdir: Path, request_sha256: str,
         "error": str(exc)[-1200:],
     }
     raw = getattr(exc, "raw_response", None)
-    if isinstance(raw, dict):
+    if raw is not None:
         response_path = outdir / ("failed_" + request_sha256 + ".response.json")
         response_path.write_text(json.dumps(raw, indent=2) + "\n")
         record["raw_response_sha256"] = fingerprint(raw)

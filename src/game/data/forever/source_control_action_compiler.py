@@ -117,8 +117,7 @@ def source_control_actions(ir, *, class_key: str, level: int, db_path=None):
         known_ids.add(sid);actions.append(action)
         permissions.setdefault(r['required_mode_id'],[]).append(action.id)
         facts.append({'fact_kind':'source_indexed_executable_control',
-                      'spell_id':sid,'effect_type':'stun','source':source,
-                      'checkpoint_eligibility':'SOURCE_INCOMPLETE'})
+                      'spell_id':sid,'effect_type':'stun','source':source})
     updated_modes=tuple(replace(m,enabled_action_ids=(None if m.enabled_action_ids is None
                            else m.enabled_action_ids+tuple(permissions.get(m.id,())))) for m in ir.modes)
     return replace(ir,actions=ir.actions+tuple(actions),modes=updated_modes,

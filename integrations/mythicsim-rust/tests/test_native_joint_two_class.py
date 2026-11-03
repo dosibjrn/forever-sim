@@ -708,6 +708,7 @@ class NativeExecutionErrorReporting(unittest.TestCase):
             self.assertEqual(raw, json.loads(response_path.read_text()))
             self.assertEqual(fingerprint(raw), receipt["raw_response_sha256"])
             self.assertEqual(response_path.name, receipt["response_file"])
+            self.assertEqual("UNSCORED", receipt["native_status"])
             self.assertNotIn("score", receipt)
 
     def test_failed_native_execution_preserves_returncode_stdout_and_stderr(self):

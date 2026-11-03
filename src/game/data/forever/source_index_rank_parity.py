@@ -117,6 +117,5 @@ def indexed_rank_fact(*, class_key: str, name: str, required_level: int, effect_
        'captured_at':row['captured_at'],'index_batch_id':row['batch_id'],
        'raw_index_sha256':hashlib.sha256(row['raw_listview_json'].encode()).hexdigest(),
        'source_authority':parsed.get('source_authority','canonical_forever_source_index_after_tooltip'),
-       'detail_html_independently_verified':False,
-       'checkpoint_eligibility':parsed.get('checkpoint_eligibility','BLOCKED_INDEX_NOT_FULL_DETAIL_AUTHORITY')}
+       'detail_html_independently_verified':False}
 
