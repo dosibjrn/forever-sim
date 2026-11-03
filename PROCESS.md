@@ -30,7 +30,7 @@
 - Explicit owner instructions take precedence. Approved PROCESS governs implementation/acceptance; approved OVERALL PLAN governs product goals; [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md), issues and work plans may be freely reprioritized within those constraints.
 - **Only an explicit owner instruction/approval may substantively change PROCESS, its linked gate criteria, or OVERALL PLAN.** Update canonical files via reviewed Git commits; rely on Git history, not numbered sibling documents or repeated approval logs.
 - Any conflicting lower-level instructions lose. Do not silently change acceptance thresholds, source legality, backend rules, or the 148-checkpoint scope.
-- **Known unresolved conflict:** OVERALL_PLAN v5 still mentions the old Decisions P7 challenger; approved PROCESS v2.10 replaced it with MythicSim P7.1–P7.5. Disclose the discrepancy; do not silently rewrite OVERALL_PLAN.
+- **P7 authority:** active P7 acceptance is defined by [P7.1–P7.5](docs/gates/P7.md). OVERALL_PLAN v6's old-optimizer challenger wording is a separate optimizer comparison, not a replacement P7 gate; do not resurrect Decisions as a mandatory P7 reference.
 
 ## Acceptance contract
 
