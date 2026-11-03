@@ -4,6 +4,7 @@ on:
     branches: [work/work1-p75-revalidation-tests-20261103-0545]
 permissions:
   contents: read
+  actions: read
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -26,3 +27,27 @@ jobs:
           python -m pip install --disable-pip-version-check 'pytest==8.3.5'
           python -m compileall -q tools/wf_gate_p7_5_receipts.py tools/wf_gate_p7_5_prior.py
           python -m pytest -q tests/gates/test_wf_gate_p7_5_receipts.py tests/gates/test_wf_gate_p7_5_prior.py
+
+      - name: Confirm authentic newer same-native M1 P7.1 receipt against real GitHub Actions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from tools.wf_gate_p7_5_receipts import collect_accepted_receipts
+          old_pin = "87d16ecf5a4dbe2454fdc295af31ae5d60487dda"
+          prior = collect_accepted_receipts(
+              Path.cwd(), "dosibjrn/forever-sim", "druid", 60,
+              "balance", selected_engine=old_pin)
+          r = next(r for r in prior["receipts"] if r["gate"] == "P7.1")
+          assert r.get("m1_revalidated") is True, r
+          assert r["registered_run_url"].endswith("/41504411112"), r
+          assert r["run_url"].endswith("/41573601339"), r
+          p = r["report"]
+          assert p["status"] == "PASS" and p["reasons"] == [], p
+          assert p["native_source_revision"] == old_pin, p
+          assert p["iterations"] == p["sampled_source_fights"] == 1000, p
+          assert p["dps_objective_actual"] > p["dps_objective_required"], p
+          print("GENUINE_REGISTERED_OLD_AND_NEW_M1_RECEIPTS: PASS",
+                r["run_url"], p["dps_objective_actual"])
+          PY
