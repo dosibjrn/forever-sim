@@ -31,7 +31,7 @@ def _roots_action_matches_rank(action_id: str, rank: int) -> bool:
     if type(rank) is not int or not 1 <= rank <= 6:
         return False
     spell_id = _ROOTS_SPELL_IDS_BY_RANK[rank]
-    return re.search(rf"(?<!\\w)SpellID:\\s*{spell_id}(?!\\d)", action_id) is not None
+    return re.search(rf"(?<!\w)SpellID:\s*{spell_id}(?!\d)", action_id) is not None
 
 
 class GsimNativeDamageWorldApplier:
