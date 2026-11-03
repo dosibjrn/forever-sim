@@ -142,7 +142,9 @@ def build_source_slice(level: int, *, ability_db_path=None):
     )
     moon_eligible = [row for row in wh.MOONFIRE_RANKS if int(row[0]) <= level]
     if not moon_eligible:
-        return _with_sqlite_talents(source_enrich_armor(base_slice))
+        return _with_sqlite_talents(
+            source_enrich_armor(base_slice, db_path=ability_db_path),
+            ability_db_path=ability_db_path)
     (moon_level, moon_mana, moon_direct_min, moon_direct_max, moon_dot_total,
      moon_duration_s, moon_direct_coeff, moon_tick_coeff) = moon_eligible[-1]
     moon_source_url = wh.MOONFIRE_CURRENT_SOURCE_URLS[int(moon_level)]
@@ -1047,19 +1049,19 @@ def build_source_slice(level: int, *, ability_db_path=None):
             "healing_source_families": [x["family_key"] for x in healing_facts],
             "health_resource_status": health_resource.state_status,
         },
-    )
-    ))
+    ), db_path=ability_db_path),
+        ability_db_path=ability_db_path)
 
 
-def _with_sqlite_talents(ir):
+def _with_sqlite_talents(ir, *, ability_db_path=None):
     from src.game.data.forever.mode_resource_facts import apply_mode_resource_facts
-    ir = replace(ir, modes=apply_mode_resource_facts('druid', ir.modes))
+    ir = replace(ir, modes=apply_mode_resource_facts('druid', ir.modes, db_path=ability_db_path))
     from src.game.data.forever.source_ability_semantics import source_ability_actions
-    ir = source_ability_actions(ir, class_key='druid', level=int(ir.actor.metadata['level']))
+    ir = source_ability_actions(ir, class_key='druid', level=int(ir.actor.metadata['level']), db_path=ability_db_path)
     inventory = load_sqlite_talents(
         'druid', level=int(ir.actor.metadata['level']), action_families=(action.family_key for action in ir.actions),
         mode_labels={re.sub(r'[^a-z0-9]+', '_', mode.label.lower()).strip('_'): mode.id
-                     for mode in ir.modes})
+                     for mode in ir.modes}, db_path=ability_db_path)
     # Executing an armor stat in an isolated incoming-hit probe is not the
     # same as scoring that stat in the production policy/recovery objective.
     # Preserve these blockers until source form multipliers and enemy attack

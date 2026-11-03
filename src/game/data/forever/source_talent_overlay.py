@@ -13,7 +13,7 @@ from src.shared.identifiers import source_slug as _slug
 from .source_db_scope import DEFAULT_DB, active_ability_db
 
 
-def source_enrich_indexed_talents(ir):
+def source_enrich_indexed_talents(ir, *, db_path=None):
     if ir is None:
         return None
     # Only the real legacy IR enrichment path requires these temporary types.
@@ -21,7 +21,8 @@ def source_enrich_indexed_talents(ir):
     from src.game.model.ir import TalentDefinition, TalentModifier, TalentRankDefinition
     from .sqlite_talents import load_sqlite_talents
     class_key = str(ir.actor.metadata.get('class_key') or '').lower()
-    with sqlite3.connect(active_ability_db(DEFAULT_DB)) as conn:
+    selected_db = db_path if db_path is not None else active_ability_db(DEFAULT_DB)
+    with sqlite3.connect(selected_db) as conn:
         indexed = conn.execute('''SELECT spell_id,name,source_url
             FROM spell_index WHERE class_key=? AND kind='talents' ''', (class_key,)).fetchall()
         granted_actions = []
@@ -56,7 +57,7 @@ def source_enrich_indexed_talents(ir):
     if len(stage_rows)>1:raise ValueError('AMBIGUOUS_STAGED_TALENT_SOURCE')
     if stage_rows and json.loads(stage_rows[0][0]).get('replace_indexed_catalogue'):
         data=json.loads(stage_rows[0][0])
-        inventory=load_sqlite_talents(class_key,level=int(ir.actor.metadata['level']),
+        inventory=load_sqlite_talents(class_key,level=int(ir.actor.metadata['level']),db_path=selected_db,
             action_families=(a.family_key for a in ir.actions),
             mode_labels={m.label.lower().replace(' ','_'):m.id for m in ir.modes})
         talents=[]
@@ -91,7 +92,7 @@ def source_enrich_indexed_talents(ir):
     # Shared rank-capture loader already powers Druid. Reuse its full-rank
     # parser for native classes before the identity-only fallback; never
     # replace an existing verified native capture with a secondary source.
-    captured_inventory = load_sqlite_talents(class_key,
+    captured_inventory = load_sqlite_talents(class_key, db_path=selected_db,
         action_families=(a.family_key for a in ir.actions),
         mode_labels={m.label.lower().replace(' ','_'):m.id for m in ir.modes},
         level=int(ir.actor.metadata.get('level', 0)))

@@ -59,12 +59,19 @@ def assemble_source_ir(ir: GameIRSlice, *, class_key: str, level: int,
     # Preserve the legacy source-overlay order explicitly. Each step consumes
     # the previous slice; none is an alternative native Rust combat model.
     # Keep the DB override on the same primary-stat enrichment as before.
-    ir = source_enrich_action_ranks(ir)
-    ir = source_enrich_area_actions(ir)
-    ir = source_enrich_indexed_talents(ir)
+    if ability_db_path is None:
+        ir = source_enrich_action_ranks(ir)
+        ir = source_enrich_area_actions(ir)
+        ir = source_enrich_indexed_talents(ir)
+    else:
+        # Pass the selected catalogue explicitly through every SQLite overlay;
+        # no legacy overlay may silently fall back to the default LFS database.
+        ir = source_enrich_action_ranks(ir, db_path=ability_db_path)
+        ir = source_enrich_area_actions(ir, db_path=ability_db_path)
+        ir = source_enrich_indexed_talents(ir, db_path=ability_db_path)
     ir = source_enrich_primary_stats(ir, db_path=ability_db_path)
-    ir = source_enrich_target_combat(ir)
-    ir = source_enrich_incoming_world(ir)
+    ir = source_enrich_target_combat(ir, db_path=ability_db_path)
+    ir = source_enrich_incoming_world(ir, db_path=ability_db_path)
     from .source_enemy_melee_ap_debuff import source_enrich_enemy_melee_ap_incoming
     ir = source_enrich_enemy_melee_ap_incoming(ir)
     return attach_indexed_ability_coverage(ir, class_key=key, level=int(level), db_path=ability_db_path)
