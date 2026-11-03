@@ -137,7 +137,7 @@ def _validate_native_p2_diagnostics(e: dict) -> list[str]:
             seen.add(key)
 
         status = row.get("status")
-        if status not in counts:
+        if not isinstance(status, str) or status not in counts:
             errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_STATUS:" + str(status))
             continue
         counts[status] += 1
