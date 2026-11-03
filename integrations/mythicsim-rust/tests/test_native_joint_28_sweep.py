@@ -1,4 +1,4 @@
-"""Fail-closed 28-profile JOINT breadth/promotion contracts (mock rows only).
+"""28-profile JOINT diagnostic/reporting contracts (mock rows only).
 
 No fake metric from this file may be presented as native evidence.
 """
@@ -28,9 +28,9 @@ class SweepContracts(unittest.TestCase):
         calls = []
         def run(profile):
             calls.append(profile)
-            return {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+            return {"status": "NATIVE_JOINT_PAID",
                     "native_paid": 2, "three_axis_paid": 1,
-                    "full_source_legality_certified": False}
+                    "native_errors": 0, "replay_matches": True}
         rows = build_matrix(inventory(), stage=5, run=run)
         self.assertEqual(28, len(rows))
         self.assertEqual([x[0]["profile_id"] for x in inventory()],
@@ -43,8 +43,7 @@ class SweepContracts(unittest.TestCase):
         calls = []
         def run(profile):
             calls.append(profile)
-            return {"status": "BLOCKED_SOURCE_LEGALITY", "native_paid": 0,
-                    "full_source_legality_certified": False}
+            return {"status": "BLOCKED_CANDIDATE_DOMAIN", "native_paid": 0}
         results = build_matrix(rows, stage=5, run=run)
         self.assertEqual("BLOCKED_SOURCE", results[0]["status"])
         self.assertNotIn("druid/feral_cat", calls)
@@ -55,41 +54,40 @@ class SweepContracts(unittest.TestCase):
                                 ("priest/discipline", "BLOCKED_SPEC_IDENTITY")):
             self.assertEqual(status, preflight(profile, {}, {}, 5)[0])
 
-    def test_source_bounded_paid_rows_are_never_promotable(self):
-        rows = build_matrix(inventory(), stage=5,
-                            run=lambda _: {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
-                                           "native_paid": 10, "three_axis_paid": 5,
-                                           "replay_matches": True,
-                                           "full_source_legality_certified": False})
-        self.assertFalse(rows[0]["promotable"])
-        self.assertFalse(rows[0]["process_gate_pass"])
-        self.assertEqual("BLOCKED_FULL_SOURCE_LEGALITY", rows[0]["promotion_blocker"])
+    def test_native_paid_replay_is_sufficient_for_30_second_stage(self):
+        prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 100,
+                 "three_axis_paid": 10, "replay_matches": True, "native_errors": 0,
+                 "native_refusals": 50}
+        self.assertIsNone(preflight("druid/feral_cat", {}, {}, 30, prior))
 
-    def test_30_second_stage_rejects_partial_paid_prior(self):
-        prior = {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
-                 "native_paid": 100, "replay_matches": True,
-                 "full_source_legality_certified": False}
-        self.assertEqual("BLOCKED_FULL_SOURCE_LEGALITY",
+    def test_30_second_stage_rejects_prior_without_native_paid_replay(self):
+        prior = {"status": "BLOCKED_NATIVE_REFUSALS", "native_paid": 0,
+                 "three_axis_paid": 0, "replay_matches": False, "native_errors": 0,
+                 "native_refusals": 100}
+        self.assertEqual("BLOCKED_PRIOR_STAGE",
                          preflight("druid/feral_cat", {}, {}, 30, prior)[0])
 
-    def test_300_second_stage_requires_validated_30_second_prior(self):
+    def test_300_second_stage_requires_native_paid_replay_at_30_seconds(self):
         self.assertEqual("BLOCKED_PRIOR_STAGE",
                          preflight("druid/feral_cat", {}, {}, 300, None)[0])
-        prior = {"status": "FULL_SOURCE_NATIVE_JOINT",
-                 "native_paid": 10, "replay_matches": False,
-                 "full_source_legality_certified": True}
+        prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 10,
+                 "three_axis_paid": 5, "replay_matches": True, "native_errors": 0,
+                 "native_refusals": 4}
+        self.assertIsNone(preflight("druid/feral_cat", {}, {}, 300, prior))
+        prior["replay_matches"] = False
         self.assertEqual("BLOCKED_PRIOR_STAGE",
                          preflight("druid/feral_cat", {}, {}, 300, prior)[0])
 
-    def test_gaps_include_precise_root_cause_and_no_fake_scores(self):
+    def test_gaps_report_only_unresolved_profiles_not_legality_certificates(self):
         rows = build_matrix(inventory(), stage=5,
-                            run=lambda _: {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+                            run=lambda _: {"status": "NATIVE_JOINT_PAID",
                                            "native_paid": 1, "three_axis_paid": 1,
-                                           "full_source_legality_certified": False})
+                                           "native_errors": 0, "replay_matches": True})
         gaps = gap_summary(rows)
-        self.assertEqual(28, sum(g["count"] for g in gaps))
-        self.assertTrue(any(g["cause"] == "VERIFY_PER_RANK_TALENTS_AND_FULL_EQUIP_RULES"
-                            for g in gaps))
+        self.assertEqual(3, sum(g["count"] for g in gaps))
+        causes = {g["cause"] for g in gaps}
+        self.assertEqual({"VERIFY_NATIVE_HPS_TPS_OBJECTIVE",
+                          "VERIFY_DISCIPLINE_FIXTURE_IDENTITY"}, causes)
         self.assertTrue(all("score" not in row for row in rows))
 
     def test_report_contains_balanced_baseline_best_and_exact_provenance(self):
@@ -105,15 +103,16 @@ class SweepContracts(unittest.TestCase):
             out = root / "report"
             rows = [{
                 "profile_id": "druid/feral_cat",
-                "status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+                "status": "NATIVE_JOINT_PAID",
                 "native_paid": 2,
                 "baseline_paid": 1,
                 "native_paid_total": 3,
                 "baseline_balanced_score": 101.25,
                 "best_balanced_screen": 111.5,
                 "three_axis_paid": 1,
+                "native_errors": 0,
+                "replay_matches": True,
                 "blocker": None,
-                "promotion_blocker": "BLOCKED_FULL_SOURCE_LEGALITY",
             }]
 
             save_report(out, rows, stage=5, binary=binary, engine_src=engine_src)
@@ -122,31 +121,34 @@ class SweepContracts(unittest.TestCase):
             self.assertEqual("balanced", provenance["candidate_rng_mode"])
             self.assertEqual("stochastic", provenance["holdout_rng_mode"])
             self.assertEqual("NOT_RUN_STAGE_5", provenance["holdout_status"])
-            self.assertFalse(provenance["process_p7_pass"])
+            self.assertEqual("PINNED_NATIVE_CANDIDATE_DOMAIN", provenance["source_scope"])
+            self.assertNotIn("process_p7_pass", provenance)
             matrix = (out / "matrix.md").read_text()
             self.assertIn("Baseline balanced", matrix)
             self.assertIn("101.25", matrix)
             self.assertIn("111.5", matrix)
+            self.assertIn("diagnostic", matrix.lower())
+            self.assertNotIn("full legal", matrix.lower())
+            self.assertNotIn("promotion_blocker", matrix)
 
 
-class SourceBlockerClassification(unittest.TestCase):
-    def test_source_legal_gaps_are_split_by_actionable_root_cause(self):
+class CandidateDomainBlockerClassification(unittest.TestCase):
+    def test_candidate_pool_gaps_are_split_by_actionable_root_cause(self):
         rows = [
-            {"profile_id": "hunter/survival", "status": "BLOCKED_SOURCE_LEGALITY",
-             "blocker": "BLOCKED_GEAR_POOL: no source-bounded legal alternate item"},
-            {"profile_id": "mage/fire", "status": "BLOCKED_SOURCE_LEGALITY",
-             "blocker": "BLOCKED_TALENTS: need two independent full 51-point same-class source builds"},
-            {"profile_id": "rogue/assassination", "status": "BLOCKED_SOURCE_LEGALITY",
-             "blocker": "Not a two- or three-tree source talent allocation"},
-            {"profile_id": "priest/shadow", "status": "BLOCKED_SOURCE_LEGALITY",
+            {"profile_id": "hunter/survival", "status": "BLOCKED_CANDIDATE_DOMAIN",
+             "blocker": "BLOCKED_GEAR_POOL: no source-observed alternate item"},
+            {"profile_id": "mage/fire", "status": "BLOCKED_CANDIDATE_DOMAIN",
+             "blocker": "BLOCKED_TALENTS: need two distinct source-observed talent proposals"},
+            {"profile_id": "rogue/assassination", "status": "BLOCKED_CANDIDATE_DOMAIN",
+             "blocker": "No source-observed talent proposal in this candidate domain"},
+            {"profile_id": "priest/shadow", "status": "BLOCKED_CANDIDATE_DOMAIN",
              "blocker": "Unexpected source validation error"},
         ]
         categories = {entry["cause"]: entry["count"] for entry in gap_summary(rows)}
         self.assertEqual({
             "SOURCE_GEAR_POOL_MISSING": 1,
             "SOURCE_TALENT_DONORS_MISSING": 1,
-            "SOURCE_TALENT_ENCODING_INVALID": 1,
-            "INVESTIGATE_SOURCE_LEGALITY": 1,
+            "INVESTIGATE_CANDIDATE_DOMAIN": 2,
         }, categories)
 
 
@@ -220,9 +222,9 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
         })
         results = build_matrix(
             rows, stage=5,
-            run=lambda _: {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
-                           "native_paid": 1, "three_axis_paid": 0,
-                           "full_source_legality_certified": False},
+            run=lambda _: {"status": "NATIVE_JOINT_PAID",
+                           "native_paid": 1, "three_axis_paid": 1,
+                           "native_errors": 0, "replay_matches": True},
         )
         self.assertEqual("fixture-sha", results[0]["source_fixture_sha256"])
         self.assertEqual("effective-request-sha",

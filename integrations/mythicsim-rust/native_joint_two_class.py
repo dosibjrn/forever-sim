@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Source-bounded two-class REAL Rust JOINT smoke using the shared gsim search.
+"""Two-class native Rust JOINT diagnostic using the shared search core.
 
-This is an integration proof, not a PROCESS P7.5 PASS: talent choices are
-verified *whole 51-point source builds*, NOT an exhaustive per-rank tree;
-gear options are source-observed native DB items, NOT full equip-law parity.
-The class-neutral native_matrix.search_native remains the only search loop.
-No mocked scorer is permitted here.
+Python supplies a bounded proposal domain from observed requests and native
+item data. It does not certify game legality or P7.5; MythicSim Rust alone
+decides whether each exact candidate is valid and supported. No mocked scorer
+is permitted in this integration path.
 """
 from __future__ import annotations
 
@@ -21,12 +20,14 @@ from pathlib import Path
 
 from apl_mutation import mutate_apl
 from native_gear_adapter import GearRejected, NativeGearAdapter
-from native_joint_composition import CandidateAxis, JointCandidateAdapter, search_joint
+from native_joint_composition import (
+    MISSING_TALENT_STRING, CandidateAxis, JointCandidateAdapter, search_joint,
+)
 from native_l60_matrix import (
     ROOT, create_inventory, digest, fingerprint, legal_apl_only_request,
     load_native_item_index, player,
 )
-from p73_talent_search_v2 import encode, random_build, run, validate as validate_druid_talents
+from p73_talent_search_v2 import encode, random_build, run
 from native_source_donors import load_source_donor_fixtures
 
 
@@ -37,6 +38,7 @@ def _write_native_failure(outdir: Path, request_sha256: str,
     request_path.write_text(json.dumps(effective_request, indent=2) + "\n")
     record = {
         "effective_request_sha256": request_sha256,
+        "native_status": getattr(exc, "status", "ERROR"),
         "error": str(exc)[-1200:],
     }
     raw = getattr(exc, "raw_response", None)
@@ -152,29 +154,6 @@ def _ensure_native_damage_action(actions: list[dict],
     # native-positive fallback casts and any remaining utility actions.
     return conditional_or_opaque + existing_witnesses + unconditional
 
-def talent_points(talents: str) -> int:
-    """Count points in source-native two- or three-tree encodings.
-
-    The pinned Rust fixtures include two-tree 51-point strings (Assassination
-    Rogue and Holy Priest). Preserve the exact source bytes for native scoring:
-    accepting their encoding does NOT synthesize a missing tree or certify
-    per-rank talent legality.
-    """
-    if not isinstance(talents, str) or talents.count("-") not in (1, 2):
-        raise ValueError("Not a two- or three-tree source talent allocation")
-    trees = talents.split("-")
-    if any(any(c not in "0123456789" for c in t) for t in trees):
-        raise ValueError("Invalid talent encoding")
-    return sum(int(c) for t in trees for c in t)
-
-
-def _is_full_51_source_build(talents: object) -> bool:
-    try:
-        return talent_points(talents) == 51
-    except (TypeError, ValueError):
-        return False
-
-
 def native_payload(candidate: dict, iterations: int, seed: int) -> dict:
     payload = copy.deepcopy(candidate)
     payload["simOptions"]["iterations"] = iterations
@@ -216,6 +195,7 @@ def native_score_request(
         "iterations": iterations,
         "seed": seed,
         "native_duration_s": elapsed,
+        "native_status": "VALID",
         "raw_response_sha256": fingerprint(raw),
     }, raw
 
@@ -227,12 +207,12 @@ def _generate_native_druid_talent_donors(
     *, iterations: int, seed: int, existing_talents: set[str] | None = None,
     runner=run, max_attempts: int = 12,
 ) -> tuple[list[dict], list[dict], dict]:
-    """Find two distinct full Druid builds with a shared baseline-positive cast.
+    """Propose Druid talent candidates and let native Rust decide validity.
 
-    Builds come from the pinned source-derived Druid talent schema, then each
+    Candidates come from the existing source-derived proposal generator. Each
     exact request is executed through the selected native Rust binary in
-    Balanced mode. A donor is usable only when the baseline-positive cast also
-    deals native damage under that generated build.
+    Balanced mode. A donor is usable only when native execution succeeds and
+    the baseline-positive cast also deals native damage under that build.
     """
     source_player = player(reference)
     if source_player.get("class") != "ClassDruid":
@@ -265,10 +245,8 @@ def _generate_native_druid_talent_donors(
     for attempt in range(max_attempts):
         build_seed = seed + 1_000_003 + attempt
         ranks = random_build(random.Random(build_seed))
-        if not validate_druid_talents(ranks):
-            raise RuntimeError("Generated Druid talent build failed pinned source validation")
         talents = encode(ranks)
-        if talents in seen or not _is_full_51_source_build(talents):
+        if talents in seen:
             continue
         seen.add(talents)
 
@@ -337,7 +315,7 @@ def _generate_native_druid_talent_donors(
             "source_path": request_path.relative_to(outdir).as_posix(),
             "source_sha256": request_sha,
             "item_count": len(source_player.get("equipment", {}).get("items", [])),
-            "source_type": "NATIVE_VERIFIED_GENERATED_FULL_51_POINT_BUILD",
+            "source_type": "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE",
             "native_response_sha256": record["raw_response_sha256"],
             "native_positive_damage_witnesses": common,
             "native_score": record["score"],
@@ -356,8 +334,8 @@ def _generate_native_druid_talent_donors(
     ]
     if not supported:
         summary = {
-            "status": "BLOCKED_NO_TWO_NATIVE_VERIFIED_FULL_51_POINT_DONORS",
-            "build_provenance": "p73_talent_search_v2.random_build+encode+validate; pinned Rust native Balanced execution",
+            "status": "BLOCKED_NO_TWO_NATIVE_VERIFIED_TALENT_DONORS",
+            "build_provenance": "p73_talent_search_v2.random_build+encode; native Rust Balanced execution is the sole talent-validity authority",
             "native_iterations": iterations,
             "native_evaluations": native_evaluations,
             "native_failures": native_failures,
@@ -389,7 +367,7 @@ def _generate_native_druid_talent_donors(
 
     summary = {
         "status": "PASS",
-        "build_provenance": "p73_talent_search_v2.random_build+encode+validate; pinned Rust native Balanced execution",
+        "build_provenance": "p73_talent_search_v2.random_build+encode; native Rust Balanced execution is the sole talent-validity authority",
         "native_iterations": iterations,
         "native_evaluations": native_evaluations,
         "native_failures": native_failures,
@@ -429,7 +407,22 @@ def source_bounded_adapter(
     base_apl = copy.deepcopy(original["rotation"]["priorityList"])
     source_talents = set()
     talents = set()
-    source_casts_by_talentsString: dict[str, set[str]] = {}
+    source_casts_by_talentsString: dict[object, set[str]] = {}
+
+    def talent_sort_key(value):
+        if value == MISSING_TALENT_STRING:
+            return (0, "")
+        if value is None:
+            return (1, "")
+        return (2, str(value))
+
+    def talent_label(value):
+        if value == MISSING_TALENT_STRING:
+            return "<MISSING_TALENT_STRING>"
+        if value is None:
+            return "<NULL_TALENT_STRING>"
+        return value
+
     for request in source_requests:
         try:
             source_player = player(request)
@@ -437,30 +430,32 @@ def source_bounded_adapter(
             continue
         if source_player.get("class") != original["class"]:
             continue
-        source_talent = source_player.get("talentsString")
-        if isinstance(source_talent, str):
-            source_talents.add(source_talent)
-            source_casts = source_casts_by_talentsString.setdefault(source_talent, set())
-            rotation = source_player.get("rotation")
-            priority_list = rotation.get("priorityList", []) if isinstance(rotation, dict) else []
-            if isinstance(priority_list, list):
-                for entry in priority_list:
-                    action = entry.get("action", {}) if isinstance(entry, dict) else {}
-                    cast = action.get("castSpell") if isinstance(action, dict) else None
-                    if isinstance(cast, dict) and cast:
-                        source_casts.add(json.dumps(
-                            cast, sort_keys=True, separators=(",", ":")
-                        ))
-        if (_is_full_51_source_build(source_talent)
-                and (native_verified_talent_builds is None
-                     or source_talent in native_verified_talent_builds)):
-            talents.add(source_talent)
-    talents = sorted(talents)
+        source_talent = source_player.get("talentsString", MISSING_TALENT_STRING)
+        if not (isinstance(source_talent, str)
+                or source_talent is None
+                or source_talent == MISSING_TALENT_STRING):
+            continue
+        source_talents.add(source_talent)
+        source_casts = source_casts_by_talentsString.setdefault(source_talent, set())
+        rotation = source_player.get("rotation")
+        priority_list = rotation.get("priorityList", []) if isinstance(rotation, dict) else []
+        if isinstance(priority_list, list):
+            for entry in priority_list:
+                action = entry.get("action", {}) if isinstance(entry, dict) else {}
+                cast = action.get("castSpell") if isinstance(action, dict) else None
+                if isinstance(cast, dict) and cast:
+                    source_casts.add(json.dumps(
+                        cast, sort_keys=True, separators=(",", ":")
+                    ))
+        # Missing talentString is a source-observed candidate too. Preserve
+        # its absence in the request; only MythicSim can accept or refuse it.
+        talents.add(source_talent)
+    talents = sorted(talents, key=talent_sort_key)
     original_talents = original["talentsString"]
     if original_talents not in source_talents or len(talents) < 2:
         raise ValueError(
             "BLOCKED_TALENTS: need a source-observed baseline and two "
-            "independent full 51-point same-class source builds"
+            "same-class candidate talent strings"
         )
 
     native_damage_witnesses = [
@@ -474,8 +469,8 @@ def source_bounded_adapter(
         if key in original_source_casts and key not in native_witness_keys:
             native_witness_keys.append(key)
 
-    # Select the largest deterministic set of full source talent builds that
-    # shares at least one cast proven positive by the baseline native receipt.
+    # Select the largest source-observed proposal set sharing a baseline-positive
+    # cast. Native Rust, not this witness search, decides each build's validity.
     supported_build_sets = []
     for witness_key in native_witness_keys:
         builds = [
@@ -487,17 +482,16 @@ def source_bounded_adapter(
     if not supported_build_sets:
         raise ValueError(
             "BLOCKED_NATIVE_DAMAGE_WITNESS: no baseline-positive source cast "
-            "is present in the reference and at least two full 51-point "
-            "same-class source talent builds"
+            "is present in the reference and at least two same-class "
+            "source candidate talent strings"
         )
+    candidate_talents = set(talents)
     _support_count, selected_witness_key, selected_builds = max(
         supported_build_sets, key=lambda row: row[0]
     )
-    talents = sorted(selected_builds)
+    talents = sorted(selected_builds, key=talent_sort_key)
     excluded_talents = sorted(
-        set(source_talent for source_talent in source_casts_by_talentsString
-            if _is_full_51_source_build(source_talent))
-        - set(talents)
+        candidate_talents - set(talents), key=talent_sort_key
     )
     selected_talent_strings = list(dict.fromkeys(
         [original_talents] + [talent for talent in talents if talent != original_talents]
@@ -535,24 +529,25 @@ def source_bounded_adapter(
         }
         for fixture in extra_same_class
         if fixture.get("item_count") == len(base_gear)
-        and fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_FULL_51_POINT_BUILD"
+        and fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
     ]
-    talent_donor_fixtures = [
-        {
+    talent_donor_fixtures = []
+    for fixture in extra_same_class:
+        donor_player = player(fixture["request"])
+        has_talent_string = "talentsString" in donor_player
+        talent_donor_fixtures.append({
             "source_path": fixture["source_path"],
             "source_sha256": fixture["source_sha256"],
-            "talents_sha256": fingerprint(
-                player(fixture["request"]).get("talentsString")
+            "talent_string_present": has_talent_string,
+            "talentsString": donor_player.get("talentsString"),
+            "talents_sha256": (
+                fingerprint(donor_player.get("talentsString"))
+                if has_talent_string else None
             ),
             "source_type": fixture.get("source_type", "PINNED_SOURCE_FIXTURE"),
             "native_response_sha256": fixture.get("native_response_sha256"),
             "native_positive_damage_witnesses": fixture.get("native_positive_damage_witnesses", []),
-        }
-        for fixture in extra_same_class
-        if _is_full_51_source_build(
-            player(fixture["request"]).get("talentsString")
-        )
-    ]
+        })
 
     def make_gear(rng):
         request, _audit = gear.mutate_one(rng)
@@ -584,11 +579,10 @@ def source_bounded_adapter(
         return rng.choice(choices)
 
     def talent_legal(value):
-        # The exact source reference is a legal starting anchor even when it
-        # spends fewer than 51 points. Every mutated/cold talent candidate
-        # must still be one of the pinned full 51-point source builds.
-        return (value == original["talentsString"]
-                or (value in talents and _is_full_51_source_build(value)))
+        # This is only source-corpus membership, not a game-legality verdict.
+        # Native Rust decides whether the exact talent string can be prepared
+        # and scored when the candidate reaches the evaluator.
+        return value == original["talentsString"] or value in talents
 
     damage_witnesses = common_witnesses
 
@@ -649,7 +643,7 @@ def source_bounded_adapter(
 
     def joint_legal(candidate):
         candidate_player = player(candidate)
-        talent_string = candidate_player.get("talentsString")
+        talent_string = candidate_player.get("talentsString", MISSING_TALENT_STRING)
         source_casts = source_casts_by_talentsString.get(talent_string)
         if source_casts is None:
             return False
@@ -686,32 +680,35 @@ def source_bounded_adapter(
     )
     return result, {
         "gear_mutable_slots": list(gear.mutable_indices),
-        "talent_builds": talents,
-        "talent_builds_excluded_for_native_damage_witness": excluded_talents,
+        "talent_builds": [talent_label(value) for value in talents],
+        "talent_builds_excluded_for_native_damage_witness": [
+            talent_label(value) for value in excluded_talents
+        ],
         "source_donor_fixture_count": sum(
-            fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_FULL_51_POINT_BUILD"
+            fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
             for fixture in extra_same_class
         ),
         "native_generated_talent_donor_count": sum(
-            fixture.get("source_type") == "NATIVE_VERIFIED_GENERATED_FULL_51_POINT_BUILD"
+            fixture.get("source_type") == "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
             for fixture in extra_same_class
         ),
-        "native_verified_talent_builds": sorted(talents),
+        "native_verified_talent_builds": sorted(native_verified_talent_builds or set()),
         "gear_donor_fixtures_scanned": gear_donor_fixtures_scanned,
         "talent_donor_fixtures": talent_donor_fixtures,
         "source_casts_by_talentsString": {
-            talent: [
-                json.loads(key) for key in sorted(source_casts_by_talentsString[talent])
+            talent_label(talent): [
+                json.loads(key)
+                for key in sorted(source_casts_by_talentsString[talent])
             ]
-            for talent in sorted(source_casts_by_talentsString)
+            for talent in sorted(source_casts_by_talentsString, key=talent_sort_key)
         },
         "common_source_casts": [
             json.loads(key) for key in sorted(common_cast_keys)
         ],
         "native_positive_damage_witnesses_common_to_selected_talent_builds": common_witnesses,
-        "talent_validation": "SOURCE_OBSERVED_OR_PINNED_NATIVE_VERIFIED_WHOLE_51_POINT_BUILDS_NOT_RANKWISE",
-        "gear_validation": "PINNED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
-        "apl_validation": "CAST_IDENTITIES_BOUND_TO_TALENT_STRING_AND_COMMON_NATIVE_POSITIVE_WITNESS",
+        "talent_candidate_source": "SOURCE_OBSERVED_PROPOSALS_NATIVE_RUST_AUTHORITATIVE",
+        "gear_candidate_source": "PINNED_NATIVE_ITEM_DB_SOURCE_OBSERVED",
+        "apl_candidate_source": "SOURCE_CAST_IDENTITIES_WITH_COMMON_NATIVE_POSITIVE_WITNESS",
     }
 
 
@@ -719,7 +716,10 @@ def axis_delta(reference: dict, candidate: dict) -> dict[str, bool]:
     r, p = player(reference), player(candidate)
     return {
         "gear": p["equipment"]["items"] != r["equipment"]["items"],
-        "talents": p["talentsString"] != r["talentsString"],
+        "talents": (
+            p.get("talentsString", MISSING_TALENT_STRING)
+            != r.get("talentsString", MISSING_TALENT_STRING)
+        ),
         "apl": p["rotation"]["priorityList"] != r["rotation"]["priorityList"],
     }
 
@@ -740,10 +740,10 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         "baseline_iterations": None,
         "baseline_seed": None,
         "baseline_response_sha256": None,
-        "three_axis_paid": 0, "process_gate_pass": False,
+        "three_axis_paid": 0,
+        "native_errors": 0, "native_refusals": 0,
+        "native_invalid": 0, "native_unsupported": 0,
         "source_scope": "SMOKE_FIXTURE_OR_PINNED_REFERENCE",
-        "full_source_legality_certified": False,
-        "live_gsim_2d_rust_causality": False,
     }
     source = next(((inv, req) for inv, req in inventory
                    if inv["profile_id"] == profile_id), None)
@@ -861,7 +861,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
                     *[player(fixture["request"]).get("talentsString")
                       for fixture in generated_donors],
                 ]
-                if isinstance(talent, str) and _is_full_51_source_build(talent)
+                if isinstance(talent, str)
             }
             adapter, scope = source_bounded_adapter(
                 cls, reference, same_class, native_items,
@@ -871,7 +871,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
             )
             scope["native_generated_donor_summary"] = generated_summary
     except Exception as exc:
-        row["status"] = "BLOCKED_SOURCE_LEGALITY"
+        row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
         row["blocker"] = str(exc)[:500]
         row["native_paid_total"] = (
             row["baseline_paid"] + row["native_generated_donor_paid"]
@@ -885,7 +885,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         effective = native_payload(candidate, iterations, seed)
         key = fingerprint(effective)
         if not adapter.legal(candidate):
-            raise ValueError("JOINT_LEGALITY_REJECTED_BEFORE_NATIVE")
+            raise ValueError("JOINT_SEARCH_DOMAIN_REJECTED_BEFORE_NATIVE")
         try:
             native_record, raw = native_score_request(
                 binary, candidate, iterations, seed, rng_mode, deadline
@@ -919,10 +919,11 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
             "raw_response_sha256": native_record["raw_response_sha256"],
             "delta_from_reference": delta,
             "item_ids": [x.get("id", 0) for x in player(candidate)["equipment"]["items"]],
-            "talents": player(candidate)["talentsString"],
+            "talents_string_present": "talentsString" in player(candidate),
+            "talents": player(candidate).get("talentsString"),
             "apl_sha256": fingerprint(player(candidate)["rotation"]["priorityList"]),
-            "source_bounded_legality": True,
-            "full_source_legality_certified": False,
+            "candidate_domain_bounded": True,
+            "native_outcome": native_record.get("native_status", "VALID"),
         })
         return score
 
@@ -936,17 +937,36 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     )
     row["paid_unique"] = result["paid_candidates"]
     row["native_errors"] = result["engine_errors"]
+    row["native_refusals"] = result["native_refusals"]
+    row["native_invalid"] = result["native_invalid"]
+    row["native_unsupported"] = result["native_unsupported"]
+    row["native_refusal_samples"] = result["native_refusal_samples"]
     row["legal_rejections"] = result["legal_rejections"]
     row["search_elapsed_s"] = result["elapsed_s"]
     row["three_axis_paid"] = sum(all(e["delta_from_reference"].values()) for e in paid)
     row["best_balanced_screen"] = result["best_score"]
-    row["source_bounded_joint"] = row["three_axis_paid"] > 0
-    row["status"] = (
-        "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY"
-        if row["source_bounded_joint"] else "BLOCKED_NO_PAID_THREE_AXIS_JOINT"
-    )
-    row["blocker"] = None if row["source_bounded_joint"] else (
-        "No legal source-bounded Rust paid candidate changed gear, talents, and APL")
+    row["native_joint_paid"] = row["three_axis_paid"] > 0
+    if row["native_joint_paid"]:
+        row["status"] = (
+            "NATIVE_JOINT_PAID" if not row["native_errors"]
+            else "NATIVE_JOINT_PAID_WITH_EXECUTION_ERRORS"
+        )
+    elif row["native_errors"]:
+        row["status"] = "BLOCKED_NATIVE_EXECUTION_ERROR"
+    elif row["native_refusals"]:
+        row["status"] = "BLOCKED_NATIVE_REFUSALS"
+    else:
+        row["status"] = "BLOCKED_NO_NATIVE_ACCEPTED_THREE_AXIS_CANDIDATE"
+    if row["status"] == "NATIVE_JOINT_PAID":
+        row["blocker"] = None
+    elif row["status"] == "BLOCKED_NATIVE_REFUSALS":
+        row["blocker"] = "MythicSim refused every scored three-axis proposal in this screen"
+    elif row["status"] == "BLOCKED_NATIVE_EXECUTION_ERROR":
+        row["blocker"] = "Native execution/response errors prevented a usable three-axis score"
+    elif row["status"] == "NATIVE_JOINT_PAID_WITH_EXECUTION_ERRORS":
+        row["blocker"] = "Native execution/response errors occurred alongside paid candidates"
+    else:
+        row["blocker"] = "No native-accepted paid candidate changed gear, talents, and APL"
     row["native_failures"] = native_failures
 
     (outdir / "paid_trace.json").write_text(json.dumps(paid, indent=2) + "\n")
@@ -1025,12 +1045,11 @@ def main() -> None:
                           "source_donor_fixture_count":row.get("source_donor_fixture_count", 0),
                           "replay_matches":row.get("replay_matches")}), flush=True)
     (args.out / "joint_matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
-    # CI must fail if either class did NOT actually score and replay a
-    # three-axis-mutated legal source-bounded candidate on the real Rust.
-    if not all(r["status"] == "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY"
-               and r.get("replay_matches") and r["native_paid"] >= 1
+    # This is a native-paid/replay diagnostic, not a source-legality or P7 gate.
+    if not all(r["status"] == "NATIVE_JOINT_PAID"
+               and r.get("replay_matches") and r["three_axis_paid"] >= 1
                for r in rows):
-        raise SystemExit("BLOCKED: No completed two-class Rust JOINT proof; see artifacts")
+        raise SystemExit("BLOCKED: No native-paid two-class JOINT diagnostic with exact replay; see artifacts")
 
 
 if __name__ == "__main__":
