@@ -182,8 +182,20 @@ jobs:
                      and isinstance(w.get("native_combat_mana_regen_actual_gain"), (int, float))
                      and w["native_combat_mana_regen_actual_gain"] >= 0
                      for w in actual["native_windows"])
-          assert sum(w["native_combat_mana_regen_events"]
-                     for w in actual["native_windows"]) > 0
+          mana_receipts = [{
+              "target_index": w["index"],
+              "events": w["native_combat_mana_regen_events"],
+              "actual_gain": w["native_combat_mana_regen_actual_gain"],
+          } for w in actual["native_windows"]]
+          total_mana_events = sum(row["events"] for row in mana_receipts)
+          total_mana_actual_gain = sum(row["actual_gain"] for row in mana_receipts)
+          print("NATIVE_MANA_REGEN_MEASURED", json.dumps({
+              "per_target": mana_receipts,
+              "total_events": total_mana_events,
+              "total_actual_gain": total_mana_actual_gain,
+          }, sort_keys=True))
+          assert total_mana_events > 0
+          assert total_mana_actual_gain > 0
           assert actual["actual_2d_ack"] and actual["continuous_native_actor"]
           assert actual["native_movement_cast_legal"]
           assert actual["native_gsim_moving_ticks"] > 0
