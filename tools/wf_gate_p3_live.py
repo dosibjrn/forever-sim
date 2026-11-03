@@ -14,7 +14,7 @@ from uuid import uuid4
 
 
 def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: str):
-    """Use the actual P2/source-legal optimizer frontier as the P3 build.
+    """Use the actual source-legal talent optimizer frontier as the P3 build.
 
     Never substitute an unrestricted naked caster for a constrained profile,
     or a tree-name label for a real executable full-point talent allocation.
