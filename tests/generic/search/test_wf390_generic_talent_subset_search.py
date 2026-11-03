@@ -1,6 +1,5 @@
-"""Transitional GameIR talent-enumeration and budget regression."""
+"""Mage source-backed talent-enumeration and fail-closed budget regression."""
 from pathlib import Path
-from types import SimpleNamespace
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talent_subset_search import enumerate_executable_allocations
@@ -22,25 +21,14 @@ def test_mage_auto_discovers_all_21_source_executable_allocations_and_no_26():
 
 
 
-def test_large_source_talent_space_fails_closed_without_exhaustive_claim():
-    # Class-neutral synthetic ranks preserve the budget regression without
-    # depending on the retired staged Druid L30/P2 SQLite snapshot.
-    rank=SimpleNamespace(rank=1,modifiers=(object(),))
-    talents=tuple(
-        SimpleNamespace(id=f"synthetic_druid_{index}",ranks=(rank,),
-                        metadata={"row":0},tree_key="feral")
-        for index in range(10)
-    )
-    compiled=SimpleNamespace(
-        talents=talents,
-        provenance={"talent_tree_rules":{"points_per_row":1}},
-    )
+def test_mage_large_source_talent_space_fails_closed_without_exhaustive_claim():
+    ir=build_game_ir_slice(class_key='mage',level=30,ability_db_path=MAGE)
+    compiled,coverage=compile_talent_runtime(ir)
     allocations,proof=enumerate_executable_allocations(
-        compiled,level=30,max_enumerations=1000
+        compiled,level=30,max_enumerations=1
     )
     assert allocations==[]
-    assert proof['raw_combinations']==1024
-    assert proof['max_enumerations']==1000
+    assert proof['raw_combinations']>1
+    assert proof['max_enumerations']==1
     assert proof['status']=='BLOCKED_EXACT_SUBSPACE_ENUMERATION_BUDGET'
     assert not proof['complete_supported_subspace']
-
