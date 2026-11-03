@@ -17,6 +17,37 @@ def _candidate(label):
             }]}]}}
 
 
+
+def test_p75_paid_finalist_only_calls_balanced_native_and_world(monkeypatch, tmp_path):
+    """Original finalist helper used stochastic 24-fight candidate ranking."""
+    observed = []
+
+    def native(binary, path, n, *, rng_mode):
+        request = json.loads(path.read_text())
+        observed.append(("native", n, rng_mode, request["simOptions"]["randomSeed"]))
+        return {"native_dps": 750.0}
+
+    def world(binary, path, distance, iterations, *, rng_mode):
+        request = json.loads(path.read_text())
+        observed.append(("world", iterations, rng_mode,
+                         request["simOptions"]["randomSeed"]))
+        return {"world_mean_dps": 750.0, "iterations_done": iterations,
+                "native_damage_events": 2, "native_world_ticks": 3}
+
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *args, **kwargs: None)
+    engine = SimpleNamespace(native_source_control=native, run=world)
+    score, live = gate._paid_p75_balanced_finalist(
+        engine, tmp_path / "selected-engine", _candidate("legal"), 15,
+        seeds=("101", "202"))
+    assert score == 750.0
+    assert live["iterations_done"] == 3
+    assert observed == [("native", 3, "balanced", "101"),
+                        ("world", 3, "balanced", "101"),
+                        ("native", 3, "balanced", "202"),
+                        ("world", 3, "balanced", "202")]
+
+
 def test_p75_crossover_combines_two_distinct_paid_source_builds():
     """No saved reference seed: gear remains from newly built paid child.
 
@@ -209,13 +240,12 @@ def test_p75_paid_joint_axes_cycle_only_on_seventh_proposal():
             balanced, [], index, random.Random(9)) is None
 
 
-def test_p75_independent_stochastic_finalist_beats_balanced_spike(
+def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
         monkeypatch, tmp_path):
-    """Real production search routing with paid native/world interfaces injected.
+    """Paid selection uses balanced candidates, then a separate stochastic final.
 
-    Neither a 300-second wall-clock execution nor a real gate PASS is claimed.
-    Before this change the 900-point 3-balanced screen winner was frozen.
-    Its 1,000 stochastic DPS is only 650, versus contender B's 770.
+    Injected native/world interfaces do not establish real gate acceptance.
+    The lower-ranked stochastic B must not select the winner during search.
     """
     binary = tmp_path / "upstream/target/release/forever-engine"
     binary.parent.mkdir(parents=True)
@@ -255,7 +285,7 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
         label = player(request)["talentsString"]
         if rng_mode == "balanced":
             return {"A": 900.0, "B": 800.0}[label]
-        return {"A": 650.0, "B": 770.0}[label]
+        return {"A": 760.0, "B": 770.0}[label]
     def native(binary, path, n, *, rng_mode):
         req = json.loads(path.read_text())
         calls.append(("native", n, rng_mode, player(req)["talentsString"]))
@@ -268,9 +298,9 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
                 "native_damage_events": 10, "native_world_ticks": 20}
     production = SimpleNamespace(native_source_control=native, run=world)
     def paid_finalist(production, binary, request, distance, *, seeds):
-        calls.append(("stochastic_paid", 48, "stochastic",
+        calls.append(("balanced_paid", 6, "balanced",
                       player(request)["talentsString"]))
-        return score(request, 48, "stochastic"), {
+        return score(request, 6, "balanced"), {
             "native_damage_events": 10, "native_world_ticks": 20}
 
     monkeypatch.setattr(gate, "_source_module",
@@ -279,7 +309,7 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
     monkeypatch.setattr(gate, "_pinned_source_runtime",
                         lambda *args: (_candidate("reference"),
                                        {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_paid_gear_stochastic_finalist", paid_finalist)
+    monkeypatch.setattr(gate, "_paid_p75_balanced_finalist", paid_finalist)
     monkeypatch.setattr(gate, "_source_native_world_parity", lambda *a, **kw: None)
     monkeypatch.setattr(gate, "strongest_accepted_prior",
                         lambda *a, **kw: {"dps": 749.5392,
@@ -296,21 +326,21 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
     result = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert result["status"] == "PASS", result
     assert result["cold_balanced_screen_best_dps"] == 900.0
-    assert result["paid_joint_stochastic_finalists"] == 2
-    assert result["frozen_stochastic_world_dps"] == 770.0
+    assert result["paid_joint_balanced_finalists"] == 2
+    assert result["frozen_stochastic_world_dps"] == 760.0
     # Capture the actual source-paid frozen winner, not the balanced spike A.
     # The production gate can now compare real gear/talent/APL on a FAIL
     # without a duplicate 300s/1000-fight acceptance run.
     assert result["frozen_source_build"] == {
         "equipment": {"items": [{"id": 11}, {"id": 21}]},
-        "talentsString": "B",
+        "talentsString": "A",
         "rotation": {"priorityList": [3, 2, 1]},
     }
-    assert result["joint_cold_world_dps"] == 770.0
+    assert result["joint_cold_world_dps"] == 900.0
     assert result["selected_validation"] == (
-        "paid_2x24_stochastic_live_native_finalist")
-    assert ("native", 1000, "stochastic", "B") in calls
-    assert ("world", 1000, "stochastic", "A") not in calls
+        "paid_2x3_balanced_live_native_finalist")
+    assert ("native", 1000, "stochastic", "A") in calls
+    assert ("world", 1000, "stochastic", "B") not in calls
     assert result["source_legal_joint_candidates_paid"] == 2
 
 
@@ -437,7 +467,7 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
     monkeypatch.setattr(gate, "_pinned_source_runtime",
                         lambda *a: (_candidate("0"),
                                     {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_paid_gear_stochastic_finalist", paid_finalist)
+    monkeypatch.setattr(gate, "_paid_p75_balanced_finalist", paid_finalist)
     monkeypatch.setattr(gate, "_source_native_world_parity",
                         lambda *args, **kwargs: None)
     gear_block_calls = []
@@ -457,8 +487,8 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
     result = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert result["status"] == "PASS", result
     assert result["search_wall_s"] == 300.0
-    assert result["paid_joint_stochastic_confirmed"] >= 5
-    assert result["paid_joint_stochastic_deep_confirmed"] == 2
+    assert result["paid_joint_balanced_confirmed"] >= 5
+    assert result["paid_joint_balanced_deep_confirmed"] == 2
     # Production run_live must really transmit scheduled two-axis repairs
     # to the existing source legality generator using only a PAID elite.
     paid_repairs = {(index, axes) for index, elite, axes in joint_calls
@@ -477,7 +507,7 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
                if index % 5 == 0 or elite is None)
     assert paid_seeds.count(deep_seeds) == 2
     assert result["selected_validation"] == (
-        "paid_6x24_stochastic_live_native_deep_confirmed_finalist")
+        "paid_6x3_balanced_live_native_deep_confirmed_finalist")
     assert result["frozen_stochastic_iterations"] == 1000
     assert result["frozen_stochastic_world_dps"] == 760.0
 
