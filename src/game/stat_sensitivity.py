@@ -12,6 +12,19 @@ StateT = TypeVar("StateT")
 DEFAULT_PROBE_DELTAS = (1.0, 2.0, 5.0, 10.0, 20.0)
 
 
+# A source delta in the *input unit*, not a game-specific damage coefficient.
+# Stat-specific probe scales are input-unit perturbations, not combat effect coefficients.
+# Agility and weapon DPS must cross discrete 100-mob action/kill thresholds.
+# These are *minimum item-relevant steps*, not locally reliable derivatives.
+PROBE_STEPS = {
+    'strength': 5., 'agility': 20., 'stamina': 5., 'intellect': 5.,
+    'spirit': 5., 'attack_power': 10., 'spell_power': 10.,
+    'healing': 10., 'mp5': 5., 'armor': 100.,
+    'weapon_dps': 10., 'wand_dps': 2.,
+    'health_regeneration_per_5s': 5.,
+}
+
+
 @dataclass(frozen=True)
 class StatSensitivity:
     stat: str
