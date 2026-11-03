@@ -9,10 +9,11 @@ It does not assert that any checkpoint or native effect has already passed.
 P1 validates **what abilities the selected production simulator can do**;
 it does not require a particular code architecture.
 
-1. **Source inventory:** derive the (class, level, permitted spec/talents, ruleset)
-   legal spell/rank frontier independently of implementation. Use verified
-   acquisition and talent/rune grants to establish legality. Raw source-index
-   level hints are only *candidates*, never accepted evidence that the spell is learned.
+1. **Selected native inventory:** use the (class, level, spec, talents, ruleset)
+   candidate space and MythicSim's own native prepare/validation to decide
+   which spell/rank requests are valid or unsupported. Forever must not maintain
+   trainer, learned-spellbook, source-acquisition-batch or quest-proof checks.
+   Historical source-index lists may help diagnostics, but cannot override native.
 2. **Applicability:** keep the explicitly approved, scenario-specific
    `DOES_NOT_AFFECT_SIM` list separate from test results. Identify autoattacks,
    pet actions, passive/auxiliary spells and uncertain grants by their real roles;
@@ -30,7 +31,7 @@ it does not require a particular code architecture.
    demand a 2D wrapper for a native direct-damage/heal effect.
 5. **Outcome and candidate reachability:** label each source-legal applicable
    ability as executed behavior observed, not observed, unexecutable,
-   conditional trigger unresolved, or source acquisition unresolved. Confirm
+   or conditional trigger unresolved. Native INVALID and UNSUPPORTED remain distinct. Confirm
    actual selected-engine candidate usability as part of final P1, but never
    equate a missing Python GameIR action with a missing MythicSim ability.
 
@@ -57,14 +58,13 @@ spell is missing.
 
 ## Partial coverage and estimated effort (not P1 acceptance)
 
-[Draft PR #60](https://github.com/dosibjrn/forever-sim/pull/60) explored `observed/checked` and thresholds 50/80/85/88/91/93/95/97/99 %. Keep **the real measured coverage ratio**; optionally show a separate **Pareto-estimated work completed percentage**, under the stated hypothesis that the first 80% of comparable cases cost 20% of work and the last 20% cost 80%. See [the calculation and caveats](../planning/GATE_PROGRESS_80_20.md). **Do not use Pareto to change work ordering,** turn its estimate into a PASS gate, or chase artificial `effect_probe_progress_naksut` ticks. Toy-gsim results are not native PASS. On the **selected real production engine**, count actually observed effects over the currently classified relevant source-legal ability set. Show unresolved acquisition and conditional-trigger cases separately and mark percentages *provisional* until source scope is complete. Never silently shrink the denominator or equate 80% to P1 PASS.
+[Draft PR #60](https://github.com/dosibjrn/forever-sim/pull/60) explored `observed/checked` and thresholds 50/80/85/88/91/93/95/97/99 %. Keep **the real measured coverage ratio**; optionally show a separate **Pareto-estimated work completed percentage**, under the stated hypothesis that the first 80% of comparable cases cost 20% of work and the last 20% cost 80%. See [the calculation and caveats](../planning/GATE_PROGRESS_80_20.md). **Do not use Pareto to change work ordering,** turn its estimate into a PASS gate, or chase artificial `effect_probe_progress_naksut` ticks. Toy-gsim results are not native PASS. On the **selected real production engine**, count actually observed effects over the currently classified relevant source-legal ability set. Show native refusals and conditional-trigger cases separately; mark diagnostic coverage *provisional* until a real native ability inventory and execution are measured. Never silently shrink the denominator or equate 80% to P1 PASS.
 
 ## Next production task
 
 Expose/consume genuine spell-by-ID execution or other condition-appropriate
 native mechanism on pinned MythicSim, plus actual event/state observations.
-Run a positive and effect-neutral control through **that** engine. Complete
-source learned/talent legality and optimizer admission independently.
+Run a positive and effect-neutral control through **that** engine. Use selected MythicSim for spell/talent legality; test optimizer admission and actual effects without an independent acquisition proof.
 Only then allow `tools/wf_gate.py` to report native P1 PASS for the selected
 checkpoint. Do not invent missing mechanics in a Python test adapter and do
 not manually update PASS ledgers.

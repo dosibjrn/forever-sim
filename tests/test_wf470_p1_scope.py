@@ -41,19 +41,28 @@ def test_unknown_missing_ability_never_dismissed_by_scope():
     assert {'MISSING_GAME_IR_ACTION','P1_EFFECT_SCOPE_UNRESOLVED'} <= {p['code'] for p in report['problems']}
 
 
-def test_real_druid_l20_p1_staged_sourced_action_coverage(monkeypatch):
+def test_druid_l20_live_p1_keeps_real_effects_without_learned_spell_proof(monkeypatch):
+    """Removing a speculative admission filter must not manufacture a PASS.
+
+    The historical M1 P1 PASS remains on its original source revision. This
+    legacy GameIR diagnostic now reports extra rune/talent/obsolete source
+    entries as missing executor work until native MythicSim owns admission.
+    """
     monkeypatch.setenv('WOW_FOREVER_BUILD_AS_OF','2026-10-17')
-    result=run_live(ROOT,'druid',20)
-    assert result['status']=='PASS'
-    assert result['effect_scope_policy']=='damage_buff_debuff_cc_highest_rank_only'
-    assert result['problem_count']==0
-    assert not result['problems']
-    assert result['does_not_affect_sim_count']==2
-    assert {r['source_spell_id'] for r in result['does_not_affect_sim']}=={2637,18960}
-    assert result['matched_source_abilities']==18
-    assert result['production_runtime_exercises']==18  # includes *damage* on queued Maul
-    assert any(r['source_spell_id']==6807 and r['role']=='LOWER_LEARNED_RANK' for r in result['excluded_nonaction_or_inactive_rows'])
-    assert any(r['source_spell_id']==6795 and r['role']=='OUT_OF_P1_EFFECT_SCOPE' for r in result['excluded_nonaction_or_inactive_rows'])
+    report=run_live(ROOT,'druid',20)
+    assert report['production_runtime_exercises']>=18
+    assert report['does_not_affect_sim_count']==len(report['does_not_affect_sim'])
+    assert {2637,18960} <= {r['source_spell_id'] for r in report['does_not_affect_sim']}
+    assert all(r['basis']=='P1_USER_APPROVED_SCENARIO_DECISION'
+               for r in report['does_not_affect_sim'])
+    assert any(r['source_spell_id']==6807 and r['role']=='LOWER_LEARNED_RANK'
+               for r in report['excluded_nonaction_or_inactive_rows'])
+    assert not any('SOURCE_ACTION_LEGALITY_UNRESOLVED' in reason
+                   or 'EXACT_GAME_IR_ACTION_IS_NOT_ACQUISITION_EVIDENCE' in reason
+                   or 'INDEX_LEVEL_HINT_IS_NOT_ACQUISITION' in reason
+                   for reason in report['reasons'])
+    assert report['status']=='FAIL'
+    assert any(reason.startswith('MISSING_GAME_IR_ACTION:') for reason in report['reasons'])
 
 
 def test_role_evidence_is_versioned_and_source_id_bound():
@@ -66,13 +75,13 @@ def test_role_evidence_is_versioned_and_source_id_bound():
 
 
 def test_real_l30_spellbook_observations_resolve_source_roles_without_fake_ir():
-    from wf_gate_p1_live import (_source_rows, _source_legality,
+    from wf_gate_p1_live import (_source_rows, _p1_scope_metadata,
         _load_spellbook_observed_scope_facts)
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.data.forever.sqlite_talents import DEFAULT_DB
     rows=_source_rows(DEFAULT_DB,'druid',30)
     ir=build_game_ir_slice(class_key='druid',level=30,ability_db_path=DEFAULT_DB)
-    _,meta=_source_legality(ROOT,ir,'druid',30,DEFAULT_DB)
+    meta=_p1_scope_metadata(ROOT,'druid',30)
     facts=_load_spellbook_observed_scope_facts(ROOT,meta['spellbook_file'],rows)
     assert facts[740]['roles']==['healing']      # Tranquility: not P1 combat scope
     row740 = next(row for row in rows if row['spell_id'] == 740)

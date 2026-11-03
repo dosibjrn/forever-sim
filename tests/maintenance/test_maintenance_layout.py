@@ -36,7 +36,6 @@ class MaintenanceTestLayout(unittest.TestCase):
             "test_wowhead_capture_entrypoint_v0114831.py",
             "test_wowhead_capture_import_v0114837.py",
             "test_wowhead_abilities_capture_g39.py",
-            "test_audit_source_acquisition_cli.py",
         )
         target = ROOT / "tests" / "integration" / "source"
         for name in names:
@@ -45,10 +44,7 @@ class MaintenanceTestLayout(unittest.TestCase):
                 moved = target / name
                 self.assertTrue(moved.is_file(), f"missing source integration test: {moved}")
                 ast.parse(moved.read_text(encoding="utf-8"), filename=str(moved))
-        for name in (
-            "test_wowhead_capture_entrypoint_v0114831.py",
-            "test_audit_source_acquisition_cli.py",
-        ):
+        for name in ("test_wowhead_capture_entrypoint_v0114831.py",):
             source = (target / name).read_text(encoding="utf-8")
             self.assertIn("Path(__file__).resolve().parents[3]", source)
         from tools.validate_fast import TESTS
@@ -56,6 +52,12 @@ class MaintenanceTestLayout(unittest.TestCase):
             "tests/integration/source/test_wowhead_capture_i5prep_v0114830.py", TESTS
         )
         self.assertNotIn("tests/test_wowhead_capture_i5prep_v0114830.py", TESTS)
+
+    def test_obsolete_nine_class_acquisition_audit_has_no_live_entrypoint(self):
+        """The retired trainer/learned-spell audit cannot gate production."""
+        self.assertFalse((ROOT / "tools/audit_source_acquisition_gate.py").exists())
+        self.assertFalse((ROOT / "tests/integration/source/test_audit_source_acquisition_cli.py").exists())
+
 
     def test_wf243_heldout_fixture_lives_in_test_fixtures(self):
         old = ROOT / "fixtures" / "wf243_heldout_feral_l20.json"
@@ -109,9 +111,6 @@ class MaintenanceTestLayout(unittest.TestCase):
     def test_p1_p2_source_contracts_are_grouped_and_manually_runnable(self):
         """Retain the exact-HEAD P1/P2 suite after removing flat test paths."""
         names = (
-            "test_wf34_acquisition_snapshot_binding.py",
-            "test_wf34_p1_acquisition_ledger_fail_closed.py",
-            "test_wf34_p1_client_acquisition_proof.py",
             "test_wf35_product_spec_profile_contract.py",
         )
         workflow = (ROOT / ".github/workflows/manual-exact-pr-head.yml").read_text()
@@ -123,6 +122,17 @@ class MaintenanceTestLayout(unittest.TestCase):
                 ast.parse(target.read_text(encoding="utf-8"), filename=str(target))
                 self.assertIn(f"tests/gates/{name}", workflow)
                 self.assertNotIn(f"tests/{name}", workflow)
+        for retired in (
+            "test_wf34_acquisition_snapshot_binding.py",
+            "test_wf34_p1_acquisition_ledger_fail_closed.py",
+            "test_wf34_p1_client_acquisition_proof.py",
+        ):
+            self.assertFalse((ROOT / "tests/gates" / retired).exists())
+            self.assertNotIn(retired, workflow)
+        for active in ("tests/test_wf469_p1_alignment.py",
+                       "tests/test_wf470_p1_scope.py"):
+            self.assertTrue((ROOT / active).is_file())
+            self.assertIn(active, workflow)
         p2 = (ROOT / "tests/gates/test_wf35_product_spec_profile_contract.py").read_text()
         self.assertIn("ROOT = Path(__file__).resolve().parents[2]", p2)
 
