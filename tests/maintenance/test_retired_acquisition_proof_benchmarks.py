@@ -28,10 +28,19 @@ RETIRED_TOOLS = (
     "tools/wf356_legacy_l30_equipment_audit.py",
     "tools/wf344_source_equipment_merged_report.py",
     "tools/wf352_p3_reaudit.py",
+    "tools/ingest_source_acquisition_evidence_sqlite.py",
+    "tools/ingest_source_acquisition_entities_sqlite.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
     "src/game/data/forever/source_checkpoint_p7_legacy.py",
+    "src/game/data/forever/source_acquisition.py",
+    "src/game/data/forever/source_acquisition_entities.py",
+    "src/game/data/forever/source_acquisition_events.py",
+    "src/game/data/forever/source_world_acquisition.py",
+    "tests/test_wf290_source_acquisition_batch.py",
+    "tests/test_wf291_source_world_acquisition.py",
+    "tests/maintenance/test_source_acquisition_import_boundary.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf332_druid20_acquisition_evidence",
@@ -57,6 +66,12 @@ RETIRED_IMPORT_NAMES = (
     "wf356_legacy_l30_equipment_audit",
     "wf344_source_equipment_merged_report",
     "wf352_p3_reaudit",
+    "source_acquisition",
+    "source_acquisition_entities",
+    "source_acquisition_events",
+    "source_world_acquisition",
+    "ingest_source_acquisition_evidence_sqlite",
+    "ingest_source_acquisition_entities_sqlite",
 )
 
 
