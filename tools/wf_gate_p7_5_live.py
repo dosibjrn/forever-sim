@@ -20,7 +20,7 @@ import time
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps,
                                     p7_search_deadline_completed)
-from tools.wf_gate_p7_5_prior import strongest_accepted_prior
+from tools.wf_gate_p7_5_prior import p75_accepted_prior_floor
 # Shared native+2D balanced-finalist scheduling helpers from P7.4.
 from tools.wf_gate_p7_4_live import (
     _paid_step_has_budget,
@@ -692,17 +692,12 @@ def run_live(root: Path, class_key: str, level: int, *,
     # Compare the independent frozen P7.5 holdout against genuine compatible
     # previously accepted results, never against search-screen estimates.
     # Missing numeric receipts preserve the existing fail-closed BLOCKED state.
-    prior = (strongest_accepted_prior(
+    prior, prior_dps, required = p75_accepted_prior_floor(
         root, class_key, level, spec,
         engine_revision=meta.get("selected_engine_revision", PINNED_RUST),
         source_sha256=SAVED_BALANCE_RAW_SHA,
-        reference_dps=float(meta["reference_dps"]))
-        if complete_search else None)
-    prior_dps = prior["dps"] if prior is not None else None
-    required = (p7_required_dps(
-        "P7.5", float(meta["reference_dps"]),
-        strongest_accepted_compatible_prior=prior_dps)
-        if prior_dps is not None else None)
+        reference_dps=float(meta["reference_dps"]),
+    )
     reasons = ([] if prior is not None else [
         "P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"])
     if not full_search:
