@@ -116,6 +116,16 @@ source += (
 )
 source = early_retarget.port_source(source)
 source = port.port_fight(source)
+assert early_retarget.port_source(source) == source
+
+broken_early_retarget = source.replace(port.FIGHT_CLOCK_NEW, "            && false\\n", 1)
+try:
+    early_retarget.port_source(broken_early_retarget)
+except ValueError:
+    pass
+else:
+    raise AssertionError("EARLY_RETARGET_PORT_MUST_REJECT_PAID_RECOVERY_DRIFT")
+
 method_marker = "    pub(crate) fn begin_next_target(&mut self"
 method_new = persistent_target.FIGHT_METHOD + method_anchor
 assert persistent_target.replace_once(
