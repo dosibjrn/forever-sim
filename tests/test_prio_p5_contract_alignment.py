@@ -36,6 +36,16 @@ def test_one_below_approved_double_breadth_fails():
     assert "required>=2x" in errors[0]
 
 
+def test_unapproved_finite_space_flag_does_not_waive_doubled_paid_breadth():
+    # PROCESS v2.17/P4-P6 require 2×. The old diagnostic incorrectly
+    # accepted an arbitrary caller-supplied exhausted flag at 9/5.
+    record = _search_evidence(9, 300)
+    record["full_legal_space_exhausted"] = True
+    errors = _validate_p5(record, _prior_p4())
+    assert len(errors) == 1
+    assert "required>=2x" in errors[0]
+
+
 def test_double_breadth_does_not_waive_real_100mob_replay():
     record = _search_evidence(10, 300)
     record["complete_100mob_replays"] = 0
