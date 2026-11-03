@@ -78,6 +78,9 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/gates/test_wf_gate_class_cli.py
+          tests/gates/test_wf403_gate_level_red_green_refactor_tdd.py
+          tests/test_wf_druid_p2_probe.py
           tests/test_level_legality_p00c.py
           tests/test_wf290_source_acquisition_batch.py::test_level_state_does_not_require_separate_acquisition_proof
           tests/test_wf291_source_world_acquisition.py::test_real_spell_detail_and_npc_id_allow_synthetic_local_purchase
