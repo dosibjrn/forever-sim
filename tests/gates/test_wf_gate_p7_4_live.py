@@ -15,7 +15,7 @@ def test_cold_gear_requires_nonreference_legal_native_candidate():
     calls = []
     validator = SimpleNamespace(validate=lambda ids: calls.append(ids))
     search = SimpleNamespace(
-        candidate_pool=lambda v, limit: ({0: [11], 1: [21]}, {}),
+        candidate_pool=lambda v, limit, **kwargs: ({0: [11], 1: [21]}, {}),
         RejectedGear=ValueError,
         _swap=lambda req, ids: {
             **copy.deepcopy(req),
@@ -124,7 +124,7 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         def close(self):
             pass
 
-    def candidate_pool(validator, limit):
+    def candidate_pool(validator, limit, **kwargs):
         pool_calls.append(limit)
         return ({0: [11], 1: [21]}, {})
 
@@ -260,7 +260,7 @@ def test_late_paid_p74_gear_candidate_gets_stochastic_finalist_comparison(
 
     gear = SimpleNamespace(
         GearValidator=Validator,
-        candidate_pool=lambda v, limit: ({0: [11, 12, 13], 1: [20]}, {}),
+        candidate_pool=lambda v, limit, **kwargs: ({0: [11, 12, 13], 1: [20]}, {}),
         source_enchant_pools=lambda v, p: {0: [None], 1: [None]},
         _swap=swap,
         RejectedGear=ValueError)

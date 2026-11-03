@@ -91,3 +91,51 @@ def test_explicit_unenchanted_candidate_does_not_inherit_saved_enchant(monkeypat
     # reference enchant; this intentionally remains a distinct API mode.
     with pytest.raises(gear.RejectedGear, match="Saved reference enchant"):
         validator.validate(ids)
+
+
+def test_cold_gear_pool_admits_unenchanted_item_rejected_by_saved_enchant(monkeypatch):
+    """P7.4/P7.5 independently choose enchants, so a saved enchant cannot
+    reject an otherwise source/native-legal item before search starts.
+
+    Actual candidate_pool() SQL enumeration and RejectedGear path are used;
+    the tiny source validator models its documented None=reference behavior.
+    """
+    source = Path(__file__).resolve().parents[1] / "integrations/mythicsim-rust"
+    monkeypatch.syspath_prepend(str(source))
+    gear = importlib.import_module("p74_gear_search")
+
+    con = sqlite3.connect(":memory:")
+    con.row_factory = sqlite3.Row
+    try:
+        con.execute(
+            "CREATE TABLE items (item_id INTEGER, slot TEXT, spell_power REAL, "
+            "intellect REAL, hit REAL, crit REAL, spirit REAL)"
+        )
+        for index, slot in enumerate(gear.SLOTS):
+            source_slot = gear.SOURCE_SLOTS.get(slot, (slot,))[0]
+            con.execute("INSERT INTO items VALUES (?, ?, 1, 0, 0, 0, 0)",
+                        (100 + index, source_slot))
+        # Slot zero has a second source/Rust-legal item which cannot use
+        # the original saved-reference enchant, but is legal unenchanted.
+        con.execute("INSERT INTO items VALUES (999, ?, 100, 0, 0, 0, 0)",
+                    (gear.SOURCE_SLOTS.get(gear.SLOTS[0], (gear.SLOTS[0],))[0],))
+        calls = []
+        def item(slot_index, item_id, enchant_id=None):
+            calls.append((slot_index, item_id, enchant_id))
+            if slot_index == 0 and item_id == 999 and enchant_id is None:
+                raise gear.RejectedGear(
+                    "enchant_slot", "saved enchant rejects otherwise legal item")
+            return {"id": item_id}
+        validator = SimpleNamespace(connection=con, item=item)
+        # Preserve historical native-only search semantics when the search
+        # explicitly retains saved-reference enchants.
+        legacy, _ = gear.candidate_pool(validator, limit=None)
+        assert 999 not in legacy[0]
+        # Full independent-enchant live search must enumerate this item.
+        cold, _ = gear.candidate_pool(
+            validator, limit=None, independent_enchants=True)
+        assert 999 in cold[0]
+        assert (0, 999, 0) in calls
+        assert set(cold) == set(range(len(gear.SLOTS)))
+    finally:
+        con.close()

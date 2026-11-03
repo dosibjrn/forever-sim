@@ -118,7 +118,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         # later proposals and fresh independent cold discovery for 1/5.
         # Enchants and effects remain subject to source verification.
         pools, _ = source.candidate_pool(
-            validator, limit=None if full_search else 15)
+            validator, limit=None if full_search else 15,
+            **({"independent_enchants": True} if full_search else {}))
         enchant_pools = (source.source_enchant_pools(validator, pools)
                          if full_search else None)
         distance = source.player(base)["distanceFromTarget"]
