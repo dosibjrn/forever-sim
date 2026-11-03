@@ -5,6 +5,23 @@ on:
   pull_request:
     branches:
       - main
+    # Run the 28-profile matrix only when its actual inputs, implementation,
+    # tests, pinned-engine port or workflow change; unrelated integration PRs
+    # (for example paid world-recovery work) must not launch this sweep.
+    paths:
+      - .github/workflows/native-joint-28-sweep.yml
+      - integrations/mythicsim-rust/native_joint_28_sweep.py
+      - integrations/mythicsim-rust/native_joint_two_class.py
+      - integrations/mythicsim-rust/native_matrix.py
+      - integrations/mythicsim-rust/native_joint_composition.py
+      - integrations/mythicsim-rust/native_gear_adapter.py
+      - integrations/mythicsim-rust/native_l60_matrix.py
+      - integrations/mythicsim-rust/p73_talent_search_v2.py
+      - integrations/mythicsim-rust/apl_mutation.py
+      - integrations/mythicsim-rust/port_native_typed_rng.py
+      - integrations/mythicsim-rust/tests/**
+      - config/validation/checkpoint_148.json
+      - .gitmodules
   push:
     branches:
       - work/work2-native-joint-28-sweep-20261103
