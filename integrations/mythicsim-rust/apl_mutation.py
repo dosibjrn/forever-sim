@@ -1,10 +1,10 @@
 """Generic, typed APL mutation from a source-backed executable action corpus.
 
-Never invent spell IDs or expression opcodes: the frozen profile's castSpell
-identities and predicate ASTs are the grammar's admissible terminals. This
-admits new actions, predicate rewrites, and threshold changes beyond shuffling.
-It does NOT certify that a new spell/predicate combination is optimal, or that
-any particular talent/spec configuration can cast it: paid native runs decide.
+Never invent spell IDs or expression opcodes. A cast action and its predicate
+are an atomic source-backed pair: mutation may reorder pairs and tune numeric
+thresholds inside a pair, but may not attach one spell's predicate to another.
+This does NOT certify that a spell/talent/gear combination is optimal; paid
+native runs decide.
 """
 from __future__ import annotations
 
@@ -18,10 +18,33 @@ def _spell_key(spell):
     return json.dumps(spell, sort_keys=True, separators=(",", ":"))
 
 
+def _condition_shape(node):
+    """Normalize tunable numeric thresholds while preserving predicate structure."""
+    if isinstance(node, dict):
+        result = {}
+        for key, child in node.items():
+            if (key == "val" and isinstance(child, str)
+                    and re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:ms|s)?", child)):
+                result[key] = "<NUMERIC_LITERAL>"
+            else:
+                result[key] = _condition_shape(child)
+        return result
+    if isinstance(node, list):
+        return [_condition_shape(child) for child in node]
+    return node
+
+
+def _condition_key(condition):
+    if not isinstance(condition, dict) or not condition:
+        return None
+    return _spell_key(_condition_shape(condition))
+
+
 def _corpus(source_actions):
-    spells = {}
+    """Index complete source action/predicate pairs by their cast identity."""
+    source_casts = []
+    source_by_identity = {}
     allowed_casts = {}
-    predicates = []
     for entry in source_actions:
         action = entry.get("action", {})
         cast = action.get("castSpell")
@@ -29,24 +52,22 @@ def _corpus(source_actions):
             spell = cast.get("spellId")
             if isinstance(spell, dict):
                 # Native castSpell uses a oneof identity: spellId, itemId or
-                # otherId. Preserve all identities found in the frozen source,
-                # but only generate new cast actions from actual spell IDs.
+                # otherId. Preserve all identities, but generate new casts
+                # only from complete source entries with a numeric spellId.
                 identity = (
                     (isinstance(spell.get("spellId"), int) and spell["spellId"] > 0)
                     or (isinstance(spell.get("itemId"), int) and spell["itemId"] > 0)
                     or (isinstance(spell.get("otherId"), str) and bool(spell["otherId"]))
                 )
                 if identity:
-                    allowed_casts[_spell_key(spell)] = copy.deepcopy(spell)
+                    key = _spell_key(spell)
+                    allowed_casts[key] = copy.deepcopy(spell)
+                    source_by_identity.setdefault(key, []).append(copy.deepcopy(entry))
                     if isinstance(spell.get("spellId"), int) and spell["spellId"] > 0:
-                        spells[_spell_key(spell)] = copy.deepcopy(spell)
-        condition = action.get("condition")
-        if isinstance(condition, dict) and condition:
-            predicates.append(copy.deepcopy(condition))
-    if not spells:
+                        source_casts.append(copy.deepcopy(entry))
+    if not source_casts:
         raise ValueError("APL source action corpus contains no known castSpell identities")
-    return tuple(spells.values()), predicates, frozenset(allowed_casts)
-
+    return tuple(source_casts), source_by_identity, frozenset(allowed_casts)
 
 def _condition_literals(node, out):
     """Only alter literal RHS constants of comparisons, never spell IDs."""
@@ -87,32 +108,50 @@ def _tune_literal(condition, rng):
     return entry["val"] != old
 
 
-def _new_cast(spells, predicates, rng):
-    spell = copy.deepcopy(rng.choice(spells))
-    action = {"castSpell": {"spellId": spell}}
-    if predicates and rng.random() < 0.8:
-        condition = copy.deepcopy(rng.choice(predicates))
-        if rng.random() < 0.7:
-            _tune_literal(condition, rng)
-        action["condition"] = condition
-    return {"action": action}
+def _new_cast(source_casts, rng):
+    """Sample an atomic source cast/predicate pair; tune only its own predicate."""
+    entry = copy.deepcopy(rng.choice(source_casts))
+    condition = entry.get("action", {}).get("condition")
+    if isinstance(condition, dict) and condition and rng.random() < 0.7:
+        _tune_literal(condition, rng)
+    return entry
 
 
-def _has_fallback(actions):
-    return any("castSpell" in x.get("action", {})
-               and "condition" not in x.get("action", {}) for x in actions)
+def _source_fallback(source_actions):
+    """Return the last unconditional source spell, the original APL's filler."""
+    for entry in reversed(source_actions):
+        action = entry.get("action", {})
+        cast = action.get("castSpell")
+        spell = cast.get("spellId") if isinstance(cast, dict) else None
+        if (isinstance(spell, dict)
+                and isinstance(spell.get("spellId"), int)
+                and spell["spellId"] > 0
+                and "condition" not in action):
+            return entry
+    return None
+
+
+def _has_fallback(actions, fallback):
+    if fallback is None:
+        return True
+    fallback_spell = fallback["action"]["castSpell"]["spellId"]
+    fallback_key = _spell_key(fallback_spell)
+    return any(
+        "castSpell" in entry.get("action", {})
+        and "condition" not in entry.get("action", {})
+        and _spell_key(entry["action"]["castSpell"].get("spellId")) == fallback_key
+        for entry in actions
+    )
 
 
 def _ensure_fallback(actions, source_actions):
-    if _has_fallback(source_actions) and not _has_fallback(actions):
-        fallback = next(copy.deepcopy(x) for x in source_actions
-                        if "castSpell" in x.get("action", {})
-                        and "condition" not in x["action"])
-        # A missing unconditional cast is a termination hazard: repair it.
+    fallback = _source_fallback(source_actions)
+    if fallback is not None and not _has_fallback(actions, fallback):
+        # Keep the source APL's final unconditional spell as the actual
+        # fallback; never invent an unconditional copy of a conditional spell.
         if len(actions) >= 20:
             actions.pop()
-        actions.append(fallback)
-
+        actions.append(copy.deepcopy(fallback))
 
 def mutate_apl(actions, source_actions, rng, *, cold=False):
     """Return a new legal-grammar priority list, class/gate independent.
@@ -122,7 +161,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
     deliberately restricted to expression trees and spell IDs present in the
     supplied frozen input. This is not full spellbook-level completeness.
     """
-    spells, predicates, allowed = _corpus(source_actions)
+    source_casts, source_by_identity, allowed = _corpus(source_actions)
     if cold:
         # A cold search may READ the saved request as a source-backed grammar,
         # but must not initialize its policy from the saved priority list.
@@ -139,14 +178,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
             if opaque and rng.random() < 0.15:
                 result.append(copy.deepcopy(rng.choice(opaque)))
             else:
-                result.append(_new_cast(spells, predicates, rng))
-        # A fallback is a freshly sampled source spell, never a copied saved
-        # reference priority entry. Keep the real native action legality check.
-        if not _has_fallback(result):
-            if len(result) >= 20:
-                result.pop()
-            result.append({"action": {"castSpell": {
-                "spellId": copy.deepcopy(rng.choice(spells))}}})
+                result.append(_new_cast(source_casts, rng))
         rng.shuffle(result)
     else:
         result = copy.deepcopy(actions)
@@ -160,18 +192,23 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
             i, j = rng.sample(range(len(result)), 2)
             result[i], result[j] = result[j], result[i]
         elif mode == "insert_cast" and len(result) < 20:
-            result.insert(rng.randrange(len(result) + 1), _new_cast(spells, predicates, rng))
+            result.insert(rng.randrange(len(result) + 1), _new_cast(source_casts, rng))
         elif mode == "drop_action" and len(result) > 3:
             result.pop(rng.randrange(len(result)))
         elif mode == "replace_condition":
             casts = [a for a in result if "castSpell" in a.get("action", {})]
             if casts:
                 entry = rng.choice(casts)["action"]
-                if predicates and rng.random() < 0.80:
-                    entry["condition"] = copy.deepcopy(rng.choice(predicates))
-                    _tune_literal(entry["condition"], rng)
-                else:
-                    entry.pop("condition", None)
+                spell = entry.get("castSpell", {}).get("spellId")
+                templates = source_by_identity.get(_spell_key(spell), ()) if isinstance(spell, dict) else ()
+                if templates:
+                    template = rng.choice(templates)["action"]
+                    condition = template.get("condition")
+                    if isinstance(condition, dict) and condition:
+                        entry["condition"] = copy.deepcopy(condition)
+                        _tune_literal(entry["condition"], rng)
+                    else:
+                        entry.pop("condition", None)
         elif mode == "tune_condition":
             casts = [a for a in result if isinstance(a.get("action", {}).get("condition"), dict)]
             if casts:
@@ -188,8 +225,17 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
     for entry in result:
         action = entry.get("action", {})
         if "castSpell" in action:
-            if _spell_key(action["castSpell"].get("spellId")) not in allowed:
+            identity = action["castSpell"].get("spellId")
+            identity_key = _spell_key(identity)
+            if identity_key not in allowed:
                 raise ValueError("APL mutation created an unapproved cast identity")
+            source_variants = source_by_identity.get(identity_key, ())
+            allowed_conditions = {
+                _condition_key(source_entry.get("action", {}).get("condition"))
+                for source_entry in source_variants
+            }
+            if _condition_key(action.get("condition")) not in allowed_conditions:
+                raise ValueError("APL mutation created an unapproved spell-condition pair")
         elif _spell_key(action) not in source_noncast:
             raise ValueError("APL mutation created an unsupported non-cast action")
     return result
