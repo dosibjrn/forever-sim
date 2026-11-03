@@ -10,12 +10,15 @@ a genuinely new reusable mechanic is required.
 from collections.abc import Callable
 from dataclasses import replace
 from importlib import import_module
+from typing import TYPE_CHECKING
 
-from src.game.model.ir import GameIRSlice
 from .source_db_scope import ability_source_scope
 
+if TYPE_CHECKING:
+    from src.game.model.ir import GameIRSlice
 
-Provider = Callable[..., GameIRSlice | None]
+
+Provider = Callable[..., "GameIRSlice | None"]
 
 def _lazy_class_provider(class_key: str) -> Provider:
     """Keep source-specific GameIR builders off metadata/selection import paths."""
