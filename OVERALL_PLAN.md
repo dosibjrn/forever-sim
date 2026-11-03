@@ -1,8 +1,12 @@
-# WoW Forever — OVERALL PLAN v5 (APPROVED)
+# WoW Forever — OVERALL PLAN v6 (APPROVED)
 
-**Date:** 2026-10-15  
-**Status:** **APPROVED, IMMUTABLE.** The user approved this exact product scope and DONE DONE definition on 2026-10-15 ("Je, W"). Historical v4.2 and the original v5 proposed text remain unmodified.  
+**Date:** 2026-11-03 (v6 amendment to v5 approved 2026-10-15)  
+**Status:** **APPROVED, IMMUTABLE.** v5 product scope was approved 2026-10-15. v6 is the owner-approved 2026-11-03 amendment retiring P1/P2 formal acceptance; the prior v5 text remains in Git history.  
 **Purpose:** Define WHAT is built, the end-state and precisely when DONE DONE occurs. No gate implementation procedure or changeable milestone ordering belongs here; those live in PROCESS and milestone plans.
+
+## Owner-approved v6 scope amendment (2026-11-03)
+
+Retire P1 ability and P2 talent gates from formal checkpoint acceptance. The active acceptance set is P3–P6 plus P7.1–P7.5 (nine gates per checkpoint, 1,332 active checkpoint-gate pairs). The 148 checkpoint identities and user-facing product goal are unchanged. MythicSim remains the authority for spell/talent availability, legality and effects; those facts are consumed by active production paths without separate P1/P2 acceptance. Existing P1/P2 ledger entries remain historical and do not count toward current M1 or checkpoint completion. No other active gate threshold or scenario is relaxed.
 
 ## Product goal
 
@@ -12,7 +16,7 @@ A user must be able to inspect actual selected gear with item identities and sco
 
 ## Current first DONE DONE target — 148 certified checkpoints
 
-**148/148 checkpoints independently accepted under the approved PROCESS's P1–P7 gates**:
+**148/148 checkpoints independently accepted under the approved PROCESS's active P3–P7.5 gates (P3–P6 and P7.1–P7.5; nine per checkpoint)**:
 
 - Nine classes × levels **20, 30, 40, 60** unrestricted = **36**.
 - Druid **four** spec/profile constraints × four levels = **16**.
@@ -51,4 +55,5 @@ As of the source records inspected 2026-10-15, strictly certified coverage was *
 ## Approval record
 
 - This v5 text was drafted following the user's explicit governance instructions on 2026-10-15.
+- **v6 owner-approved 2026-11-03:** retire P1/P2 formal acceptance; keep 148 checkpoint identities and the remaining nine active gates.
 - **Approved explicitly by user 2026-10-15:** "Je, W" in reply to the assistant asking "Hyväksytkö Overall Plan v5:n uudeksi pyhäksi lähtötasoksi?". This approved copy is frozen; do not modify without new explicit permission.
