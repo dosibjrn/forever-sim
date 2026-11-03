@@ -87,7 +87,7 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
     if spec != "unrestricted":
         from hashlib import sha256
         from src.game.data.forever.sqlite_talents import DEFAULT_DB
-        from tools.wf_gate_p2_live import _load_product_spec_profile
+        from tools.wf_source_profile import _load_product_spec_profile
 
         source_db = Path(DEFAULT_DB)
         if not source_db.is_file():
