@@ -16,9 +16,18 @@ def test_talent_result_helpers_are_importable_without_gameir_or_legacy_validator
     source = """
 import sys
 
+from src.optimization.talent_search import (
+    talent_candidate_id as optimizer_talent_candidate_id,
+    TalentCandidateResult as OptimizerTalentCandidateResult,
+    TalentSearchResult as OptimizerTalentSearchResult,
+)
 from src.game.talent_search import (
     talent_candidate_id, TalentCandidateResult, TalentSearchResult,
 )
+
+assert optimizer_talent_candidate_id is talent_candidate_id
+assert OptimizerTalentCandidateResult is TalentCandidateResult
+assert OptimizerTalentSearchResult is TalentSearchResult
 
 assert 'src.game.model.ir' not in sys.modules
 assert 'src.game.talents' not in sys.modules

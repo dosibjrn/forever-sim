@@ -9,23 +9,18 @@ caller.  The caller is responsible for applying the allocation and running the
 same policy/runtime/Evaluation stack used by production.
 """
 
-from dataclasses import dataclass
-from typing import Any, Callable, Mapping, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-# Candidate identity and score/result formatting are generic optimizer logic.
-# Only the legacy IR talent enumerator requires these Python game-model types.
+from src.optimization.talent_search import (
+    TalentCandidateResult,
+    TalentEvaluator,
+    TalentSearchResult,
+    score_talent_allocations,
+    talent_candidate_id,
+)
+
 if TYPE_CHECKING:
     from src.game.model.ir import GameIRSlice, TalentDefinition
-
-
-TalentEvaluator = Callable[[Mapping[str, int]], tuple[float | None, Mapping[str, Any]]]
-
-
-def talent_candidate_id(selection: Mapping[str, int]) -> str:
-    normalized = sorted((str(k), int(v)) for k, v in selection.items() if int(v) > 0)
-    if not normalized:
-        return "talents:none"
-    return "talents:" + ";".join(f"{key}={rank}" for key, rank in normalized)
 
 
 def _definition_is_executable(definition: TalentDefinition) -> bool:
@@ -106,69 +101,6 @@ def enumerate_legal_talent_allocations(
     return tuple(candidates),truncated
 
 
-@dataclass(frozen=True)
-class TalentCandidateResult:
-    candidate_id: str
-    selection: Mapping[str, int]
-    spent_points: int
-    seconds_per_mob: float | None
-    valid: bool
-    detail: Mapping[str, Any]
-
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "candidate_id": self.candidate_id,
-            "selection": {str(k): int(v) for k, v in self.selection.items()},
-            "spent_points": int(self.spent_points),
-            "seconds_per_mob": self.seconds_per_mob,
-            "valid": bool(self.valid),
-            "detail": dict(self.detail),
-        }
-
-
-@dataclass(frozen=True)
-class TalentSearchResult:
-    selected_candidate_id: str | None
-    selected_selection: Mapping[str, int]
-    selected_seconds_per_mob: float | None
-    selected_detail: Mapping[str, Any]
-    candidates: tuple[TalentCandidateResult, ...]
-    truncated: bool
-    executable_talent_ids: tuple[str, ...]
-    blocked_talent_ids: tuple[str, ...] = ()
-    complete_source_talent_coverage: bool = False
-
-    @property
-    def candidate_count(self) -> int:
-        return len(self.candidates)
-
-    @property
-    def valid_candidate_count(self) -> int:
-        return sum(1 for x in self.candidates if x.valid)
-
-    def as_dict(self) -> dict[str, Any]:
-        return {
-            "search_performed": True,
-            "search_dimensions": [
-                "talent_rank_allocation",
-                "policy_action_inclusion_exclusion",
-                "policy_priority_order",
-                "policy_numeric_condition_thresholds",
-            ],
-            "candidate_count": self.candidate_count,
-            "valid_candidate_count": self.valid_candidate_count,
-            "truncated": bool(self.truncated),
-            "executable_talent_ids": list(self.executable_talent_ids),
-            "blocked_talent_ids": list(self.blocked_talent_ids),
-            "complete_source_talent_coverage": bool(self.complete_source_talent_coverage),
-            "selected_candidate_id": self.selected_candidate_id,
-            "selected_selection": {str(k): int(v) for k, v in self.selected_selection.items()},
-            "selected_seconds_per_mob": self.selected_seconds_per_mob,
-            "selected_detail": dict(self.selected_detail),
-            "candidates": [x.as_dict() for x in self.candidates],
-        }
-
-
 def search_talent_allocations(
     ir_slice: GameIRSlice,
     *,
@@ -180,42 +112,14 @@ def search_talent_allocations(
     allocations, truncated = enumerate_legal_talent_allocations(
         ir_slice, level=level, max_candidates=max_candidates, bonus_talent_points=bonus_talent_points,
     )
-    results: list[TalentCandidateResult] = []
-    for selection in allocations:
-        cid = talent_candidate_id(selection)
-        score: float | None
-        detail: Mapping[str, Any]
-        try:
-            score, detail = evaluate(selection)
-        except (ValueError, RuntimeError, KeyError) as exc:
-            score, detail = None, {"error": f"{type(exc).__name__}: {exc}"}
-        valid = score is not None
-        results.append(TalentCandidateResult(
-            candidate_id=cid,
-            selection=dict(selection),
-            spent_points=sum(int(v) for v in selection.values()),
-            seconds_per_mob=(None if score is None else float(score)),
-            valid=valid,
-            detail=dict(detail or {}),
-        ))
-
-    valid_rows = [row for row in results if row.valid and row.seconds_per_mob is not None]
-    if not valid_rows:
-        selected = None
-    else:
-        # Score is authoritative.  Equal-score ties prefer fewer spent points,
-        # then stable candidate identity so irrelevant/no-op points do not win.
-        selected = min(
-            valid_rows,
-            key=lambda row: (float(row.seconds_per_mob), int(row.spent_points), row.candidate_id),
-        )
+    results, selected = score_talent_allocations(allocations, evaluate=evaluate)
     definitions = executable_talent_definitions(ir_slice)
     return TalentSearchResult(
         selected_candidate_id=(None if selected is None else selected.candidate_id),
         selected_selection=({} if selected is None else dict(selected.selection)),
         selected_seconds_per_mob=(None if selected is None else float(selected.seconds_per_mob)),
         selected_detail=({} if selected is None else dict(selected.detail)),
-        candidates=tuple(results),
+        candidates=results,
         truncated=truncated,
         executable_talent_ids=tuple(t.id for t in definitions),
         blocked_talent_ids=tuple(t.id for t in ir_slice.talents if not _definition_is_executable(t)),
