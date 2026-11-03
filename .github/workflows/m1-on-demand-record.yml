@@ -93,11 +93,18 @@ jobs:
           done
           printf 'targets=%s\n' "$(IFS=' '; echo "${unique[*]}")" >> "$GITHUB_OUTPUT"
           printf 'heavy=%s\n' "$heavy" >> "$GITHUB_OUTPUT"
+          p1_needed=false
           p7_needed=false
           for entry in "${unique[@]}"; do
+            gate="${entry##*:}"
+            if [[ "$gate" == P1 ]]; then p1_needed=true; fi
             if [[ "$entry" == *:P7.* ]]; then p7_needed=true; fi
           done
+          rust_needed=false
+          if [[ "$p1_needed" == true || "$p7_needed" == true ]]; then rust_needed=true; fi
+          printf 'p1_needed=%s\n' "$p1_needed" >> "$GITHUB_OUTPUT"
           printf 'p7_needed=%s\n' "$p7_needed" >> "$GITHUB_OUTPUT"
+          printf 'rust_needed=%s\n' "$rust_needed" >> "$GITHUB_OUTPUT"
           echo "Accepted ${#unique[@]} production targets"
 
       - name: Checkout current main, without saved write credentials
@@ -113,11 +120,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Any P7 gate uses the exact SAME checked-in production gitlink as
-      # the native-world workflow plus its deterministic tracked typed-mode port.
-      # No floating branch or environment-selected RNG mode.
-      - name: Hydrate and verify production Rust fork gitlink for selected P7 gate
-        if: steps.targets.outputs.p7_needed == 'true'
+      # P1 now needs the exact selected Rust binary for its native effect canary;
+      # P7 additionally retains its typed-RNG source audit and tracked port.
+      - name: Hydrate and verify production Rust fork gitlink for selected P1/P7 gate
+        if: steps.targets.outputs.rust_needed == 'true'
+        env:
+          P1_NEEDED: ${{ steps.targets.outputs.p1_needed }}
+          P7_NEEDED: ${{ steps.targets.outputs.p7_needed }}
         shell: bash
         run: |
           set -euo pipefail
@@ -131,23 +140,31 @@ jobs:
           [[ "$(git -C "$engine" remote get-url origin)" == *"dosibjrn/mythicsim-forever-engine"* ]] ||
             { echo 'WRONG_RUST_FORK_REMOTE'; exit 1; }
           ln -s "$engine" upstream
-          python integrations/mythicsim-rust/wf659_rng_boolean_audit.py upstream/src
-          test -f upstream/src/core/fight/world_bridge.rs
-          # Production gitlink must itself already contain mandatory typed RNG.
-          # No CI-time patch may substitute for a published Rust commit.
-          grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
-          ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
-          grep -Fq 'pub(crate) fn new(mode: RngMode,' "$engine/src/core/rng.rs"
-          python integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
-          if ! git -C "$engine" diff --quiet; then
-            echo "M1_PINNED_RUST_NEEDS_UNPUBLISHED_TYPED_RNG_PATCH" >&2; exit 1
+          if [[ "$P1_NEEDED" == true ]]; then
+            # The P1 PreparedV2 adapter uses the selected fork's explicit
+            # balanced RNG interface; never substitute a floating upstream.
+            grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
+            grep -Fq 'SimRng::new(rng_mode,' "$engine/src/core/fight.rs"
           fi
-          ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
-          grep -Fq 'SimRng::new(rng_mode,' "$engine/src/core/fight.rs"
-          echo "M1 selected exact checked-in Rust fork revision $actual with typed RNG port"
+          if [[ "$P7_NEEDED" == true ]]; then
+            python integrations/mythicsim-rust/wf659_rng_boolean_audit.py upstream/src
+            test -f upstream/src/core/fight/world_bridge.rs
+            # Production gitlink must itself already contain mandatory typed RNG.
+            # No CI-time patch may substitute for a published Rust commit.
+            grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
+            ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
+            grep -Fq 'pub(crate) fn new(mode: RngMode,' "$engine/src/core/rng.rs"
+            python integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
+            if ! git -C "$engine" diff --quiet; then
+              echo "M1_PINNED_RUST_NEEDS_UNPUBLISHED_TYPED_RNG_PATCH" >&2; exit 1
+            fi
+            ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
+            grep -Fq 'SimRng::new(rng_mode,' "$engine/src/core/fight.rs"
+          fi
+          echo "M1 selected exact checked-in Rust fork revision $actual"
 
-      - name: Apply tracked typed RNG port and build exact fork-submodule production Rust engine
-        if: steps.targets.outputs.p7_needed == 'true'
+      - name: Build exact fork-submodule production Rust engine for selected P1/P7 gate
+        if: steps.targets.outputs.rust_needed == 'true'
         working-directory: upstream
         env:
           CARGO_PROFILE_RELEASE_LTO: "off"
