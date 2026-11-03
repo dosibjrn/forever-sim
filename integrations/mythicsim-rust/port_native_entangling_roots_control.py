@@ -158,6 +158,49 @@ WORLD_BRIDGE_PATCHES = [
         "NEXT_TARGET_PENDING",
     ),
     (
+        "        bridge.sequence > 0 && bridge.last_health == Some(0.0)\n"
+        "            && bridge.previous_ack_id.len() == 64 && bridge.pending.is_empty()",
+        "        bridge.sequence > 0 && bridge.last_health == Some(0.0)\n"
+        "            && bridge.previous_ack_id.len() == 64 && bridge.pending.is_empty()\n"
+        "            && bridge.pending_controls.is_empty()",
+        "LETHAL_PENDING_CONTROLS",
+    ),
+    (
+        "    let last = BRIDGE.with(|state| state.borrow().as_ref()\n"
+        "        .expect(\"RUST_WORLD_NOT_STARTED\").last_tick_ns);\n"
+        "    if acknowledged_lethal() {",
+        "    let (last, pending_controls) = BRIDGE.with(|state| {\n"
+        "        let state = state.borrow();\n"
+        "        let bridge = state.as_ref().expect(\"RUST_WORLD_NOT_STARTED\");\n"
+        "        (bridge.last_tick_ns, !bridge.pending_controls.is_empty())\n"
+        "    });\n"
+        "    if acknowledged_lethal() {",
+        "FINISH_PENDING_CONTROL_STATE",
+    ),
+    (
+        "    } else {\n"
+        "        let clock = ((duration_ns + 999_999) / 1_000_000) * 1_000_000;\n"
+        "        let clock = clock.max(last + 1_000_000);\n"
+        "        let _ = exchange(clock, duration_ns, cumulative_damage);\n"
+        "    }\n"
+        "    BRIDGE.with(|state| {",
+        "    } else if pending_controls && duration_ns == last {\n"
+        "        let _ = exchange(last, duration_ns, cumulative_damage);\n"
+        "    } else {\n"
+        "        let clock = ((duration_ns + 999_999) / 1_000_000) * 1_000_000;\n"
+        "        let clock = clock.max(last + 1_000_000);\n"
+        "        let _ = exchange(clock, duration_ns, cumulative_damage);\n"
+        "    }\n"
+        "    BRIDGE.with(|state| {",
+        "FINISH_SAME_CLOCK_CONTROL",
+    ),
+    (
+        "        assert!(bridge.pending.is_empty(), \"RUST_WORLD_FINISH_UNFLUSHED\");",
+        "        assert!(bridge.pending.is_empty(), \"RUST_WORLD_FINISH_UNFLUSHED\");\n"
+        "        assert!(bridge.pending_controls.is_empty(), \"RUST_WORLD_FINISH_UNFLUSHED_CONTROLS\");",
+        "FINISH_PENDING_ASSERT",
+    ),
+    (
         "        let boundary = if bridge.next_tick_ns == i64::MAX {\n"
         "            if next_native_ns < 0 || next_native_ns > end_ns {\n"
         "                return None;\n"
