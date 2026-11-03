@@ -66,13 +66,13 @@ def test_role_evidence_is_versioned_and_source_id_bound():
 
 
 def test_real_l30_spellbook_observations_resolve_source_roles_without_fake_ir():
-    from wf_gate_p1_live import (_source_rows, _source_legality,
+    from wf_gate_p1_live import (_source_rows, _p1_scope_metadata,
         _load_spellbook_observed_scope_facts)
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.data.forever.sqlite_talents import DEFAULT_DB
     rows=_source_rows(DEFAULT_DB,'druid',30)
     ir=build_game_ir_slice(class_key='druid',level=30,ability_db_path=DEFAULT_DB)
-    _,meta=_source_legality(ROOT,ir,'druid',30,DEFAULT_DB)
+    meta=_p1_scope_metadata(ROOT,'druid',30)
     facts=_load_spellbook_observed_scope_facts(ROOT,meta['spellbook_file'],rows)
     assert facts[740]['roles']==['healing']      # Tranquility: not P1 combat scope
     row740 = next(row for row in rows if row['spell_id'] == 740)
