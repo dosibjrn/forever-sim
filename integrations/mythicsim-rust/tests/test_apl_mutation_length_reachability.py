@@ -65,7 +65,7 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
         json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
         for predicate in source_predicates
     }
-    historical_shapes = set()
+    historical_compatible_shapes = []
     for action in historical_actions:
         condition = action.get("action", {}).get("condition")
         if not isinstance(condition, dict):
@@ -74,11 +74,11 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
         # Keep same-spell predicates and the historically proven cross-spell
         # predicates whose references all belong to source cast identities.
         if valid and set(refs) <= allowed_casts:
-            historical_shapes.add(json.dumps(
+            historical_compatible_shapes.append(json.dumps(
                 _predicate_shape(condition), sort_keys=True, separators=(",", ":")
             ))
-    assert len(historical_shapes) == 11
-    assert historical_shapes <= source_shapes
+    assert len(historical_compatible_shapes) == 11
+    assert set(historical_compatible_shapes) <= source_shapes
 
     saved_snapshot = json.loads(json.dumps(source_actions))
     generated = mutate_apl(None, source_actions, random.Random(29), cold=True)
