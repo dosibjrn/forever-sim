@@ -31,6 +31,17 @@ RETIRED_TOOLS = (
     "tools/wf352_p3_reaudit.py",
     "tools/ingest_source_acquisition_evidence_sqlite.py",
     "tools/ingest_source_acquisition_entities_sqlite.py",
+    "tools/wf_gate_p1_live.py",
+    "tools/wf_p1_native_effects.py",
+    "src/engine_client/native_p1_effect_probe.py",
+    "config/gates/p1_scenario_applicability_v1.json",
+    ".github/workflows/p1-native-validator-contract.yml",
+    "tests/test_wf466_p1_live.py",
+    "tests/test_wf469_p1_alignment.py",
+    "tests/test_wf470_p1_scope.py",
+    "tests/test_wf472_p1_gate_nonimpact.py",
+    "tests/gates/test_wf_p1_native_blackbox.py",
+    "integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -81,6 +92,9 @@ RETIRED_IMPORT_NAMES = (
     "import src.game.data.forever.source_world_acquisition",
     "ingest_source_acquisition_evidence_sqlite",
     "ingest_source_acquisition_entities_sqlite",
+    "wf_gate_p1_live",
+    "wf_p1_native_effects",
+    "native_p1_effect_probe",
 )
 
 
@@ -106,7 +120,7 @@ def test_no_live_python_imports_retired_source_proof_and_audit_clis():
         for relative in (*RETIRED_TOOLS, *RETIRED_SOURCE_PROOF_MODULES)
     }
     retired_modules.update(name for name in RETIRED_IMPORT_NAMES if name.isidentifier())
-    for root in (ROOT / "src", ROOT / "tools", ROOT / "tests"):
+    for root in (ROOT / "src", ROOT / "tools", ROOT / "tests", ROOT / "integrations"):
         for path in root.rglob("*.py"):
             if path == Path(__file__):
                 continue
@@ -144,7 +158,7 @@ def test_retired_checkpoint_acquisition_proof_and_l0_verdict_are_gone():
 
 
 def test_historical_p1_gameir_admission_toolchain_is_retired():
-    """The current P1 gate is native-facing; old L0 spellbook proof CLIs are not gates."""
+    """P1's old source/IR acceptance provider is retired; historical artifacts remain."""
     retired = (
         "src/game/data/forever/source_checkpoint_p1_acceptance.py",
         "tools/wf406_druid20_live_p1p2.py",
@@ -164,8 +178,8 @@ def test_historical_p1_gameir_admission_toolchain_is_retired():
     for relative in retired:
         assert not (ROOT / relative).exists(), relative
         assert relative not in workflow, f"retired path remains in maintenance workflow: {relative}"
-    # Keep the actual production P1 entrypoint and the still-live P2 caller.
-    assert (ROOT / "tools/wf_gate_p1_live.py").is_file()
+    # P1 has no separate live provider; the P2 helper remains an optimizer dependency.
+    assert not (ROOT / "tools/wf_gate_p1_live.py").exists()
     assert (ROOT / "src/game/data/forever/source_checkpoint_p2.py").is_file()
 
 
