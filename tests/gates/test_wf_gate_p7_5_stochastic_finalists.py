@@ -315,3 +315,30 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
         "paid_6x24_stochastic_live_native_deep_confirmed_finalist")
     assert result["frozen_stochastic_iterations"] == 1000
     assert result["frozen_stochastic_world_dps"] == 760.0
+
+
+def test_p75_cli_preserves_actual_frozen_paid_build(monkeypatch, capsys):
+    """A full M1 run must expose the paid winner, not only its opaque hash.
+
+    The P7.5 provider already returns this after the independent freezer;
+    the CLI is the artifact read by Work1 after a failed heavy acceptance.
+    This is reporting only and cannot turn a FAIL into a PASS.
+    """
+    from tools import wf_gate as cli
+
+    frozen = {
+        "equipment": {"items": [{"id": 11}, {"id": 21, "enchant": 17}]},
+        "talentsString": "legal-paid-winner",
+        "rotation": {"priorityList": [3, 2, 1]},
+    }
+    monkeypatch.setattr(cli, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR"],
+        "frozen_source_build": frozen,
+    })
+    rc = cli.main(["--class", "druid", "--level", "60",
+                   "--spec", "balance", "--gate", "P7.5"])
+    result = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert result["status"] == "FAIL"
+    assert result["results"][0]["frozen_source_build"] == frozen
