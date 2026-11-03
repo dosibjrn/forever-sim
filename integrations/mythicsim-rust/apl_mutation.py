@@ -114,7 +114,7 @@ def _ensure_fallback(actions, source_actions):
         actions.append(fallback)
 
 
-def mutate_apl(actions, source_actions, rng, *, cold=False):
+def mutate_apl(actions, source_actions, rng, *, cold=False, min_length=2):
     """Return a new legal-grammar priority list, class/gate independent.
 
     Cold generation samples a randomized action list, *not* a paid reference
@@ -122,6 +122,10 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
     deliberately restricted to expression trees and spell IDs present in the
     supplied frozen input. This is not full spellbook-level completeness.
     """
+    if type(min_length) is not int or not 2 <= min_length <= 20:
+        raise ValueError("APL_MIN_LENGTH_OUT_OF_RANGE")
+    if not cold and min_length != 2:
+        raise ValueError("APL_MIN_LENGTH_ONLY_APPLIES_TO_COLD_GENERATION")
     spells, predicates, allowed = _corpus(source_actions)
     if cold:
         # A cold search may READ the saved request as a source-backed grammar,
@@ -131,9 +135,11 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
         opaque = [entry for entry in source_actions
                   if "castSpell" not in entry.get("action", {})]
         # The saved request is a source vocabulary, not an APL length prior.
-        # Keep the full native action-list budget available to cold search:
+        # Keep the full native action-list budget available to cold search; a paid
+        # rotation rebuild may raise the lower bound while independent cold starts
+        # retain the default 2–20 range:
         # a 10-action source grammar must still admit 19-action legal policies.
-        length = rng.randint(2, 20)
+        length = rng.randint(min_length, 20)
         result = []
         for _ in range(length):
             if opaque and rng.random() < 0.15:
