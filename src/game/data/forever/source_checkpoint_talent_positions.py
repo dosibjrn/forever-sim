@@ -13,9 +13,6 @@ import math
 import re
 import sqlite3
 
-from src.game.model.ir import TalentRankDefinition
-
-
 def _rank_l0_provenance(observed: dict | None, rank: int):
     """Carry source observations as uncertain features, never executable mods."""
     if not observed or not all(len(f['rank_values']) >= rank for f in observed['features']):
@@ -102,6 +99,10 @@ def apply_staged_talent_positions(conn: sqlite3.Connection, class_key: str,
             if (predecessor['tree_key'] != entry['tree_key']
                     or int(predecessor['row']) >= row):
                 raise ValueError('STAGED_TALENT_INVALID_SOURCE_PREREQUISITE')
+    # Keep immutable source-position observations independent of transitional
+    # GameIR. Only live legacy rank construction needs this class.
+    from src.game.model.ir import TalentRankDefinition
+
     output = []
     for entry in catalogue:
         tid = entry['talent_id']
