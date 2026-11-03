@@ -28,9 +28,11 @@ from tools.wf_gate_coverage import P7_FINAL_STOCHASTIC_ITERATIONS, p7_required_d
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
-        rng_mode: str) -> dict:
+        rng_mode: str, enemy_move_speed_yards_s: float = 0.0) -> dict:
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_WORLD_RNG_MODE_INVALID")
+    if not math.isfinite(enemy_move_speed_yards_s) or enemy_move_speed_yards_s < 0:
+        raise ValueError("RUST_WORLD_ENEMY_MOVE_SPEED_INVALID")
     raw = request.read_bytes()
     source = json.loads(raw)
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
@@ -43,7 +45,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
         raise ValueError("RUST_WORLD_FACING_SWITCH_INVALID")
     def new_world():
         world = diagnostic_gsim_world(
-            target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
+            target_spawn_yards=distance, enemy_move_speed_yards_s=enemy_move_speed_yards_s,
             target_health=source_target_health_from_request(raw), source_single_target=True,
             source_in_front_of_target=players[0].get("inFrontOfTarget", False),
         )
