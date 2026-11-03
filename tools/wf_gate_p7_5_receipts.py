@@ -2,7 +2,10 @@
 
 No ledger writes or synthetic DPS. GitHub's authenticated M1 workflow retrieves
 the *original* registered run logs, never a reference build or an optimizer
-screen score. P7.5's existing receipt/engine/source validation remains final.
+screen score. The official recorder supplies a pre-run TSV snapshot so a P7.5
+target in a multi-gate batch cannot mistake its own in-progress P7.1-P7.4 run
+for a completed accepted prior. P7.5's existing receipt/engine/source validation
+remains final.
 """
 from __future__ import annotations
 
@@ -18,8 +21,13 @@ _PRIORS = ("P7.1", "P7.2", "P7.3", "P7.4")
 _WORKFLOW = "M1 - Merge-owned batch live gate recorder"
 
 
-def _approved_rows(root: Path, class_key: str, level: int, spec: str):
-    with (root / "docs/planning/M1_PASSES.tsv").open(newline="") as handle:
+def _approved_rows(root: Path, class_key: str, level: int, spec: str, *,
+                   ledger_path: Path | None = None):
+    # The M1 workflow snapshots this file before its target loop. Reading that
+    # immutable snapshot prevents a later P7.5 target from treating an earlier
+    # gate in the same still-running batch as a completed trusted M1 run.
+    source = ledger_path or (root / "docs/planning/M1_PASSES.tsv")
+    with source.open(newline="") as handle:
         rows = csv.DictReader(handle, delimiter="\t")
         return {
             row["gate"]: row
@@ -130,8 +138,10 @@ def _recent_successful_m1_run_ids(repository: str) -> list[int]:
 def collect_accepted_receipts(root: Path, repository: str, class_key: str,
                               level: int, spec: str, *, read_run=_read_approved_run,
                               selected_engine: str | None = None,
-                              recent_run_ids=None):
-    rows = _approved_rows(root, class_key, level, spec)
+                              recent_run_ids=None,
+                              ledger_path: Path | None = None):
+    rows = _approved_rows(root, class_key, level, spec,
+                          ledger_path=ledger_path)
     if not rows:
         raise ValueError("P75_NO_REGISTERED_ACCEPTED_PRIOR")
     receipts = []
@@ -206,6 +216,12 @@ def main() -> int:
     parser.add_argument("--level", required=True, type=int)
     parser.add_argument("--spec", required=True)
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument(
+        "--ledger", type=Path, default=None,
+        help=("Optional immutable pre-run M1_PASSES.tsv snapshot. The official "
+              "M1 workflow passes this so a P7.5 target cannot read its own "
+              "in-progress batch as an accepted prior."),
+    )
     args = parser.parse_args()
     if not os.environ.get("GH_TOKEN"):
         parser.error("GH_TOKEN needed to read accepted Actions logs")
@@ -218,7 +234,7 @@ def main() -> int:
     try:
         receipts = collect_accepted_receipts(
             root, args.repository, args.class_key, args.level, args.spec,
-            selected_engine=selected_engine)
+            selected_engine=selected_engine, ledger_path=args.ledger)
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError,
             json.JSONDecodeError) as exc:
         parser.error(f"Cannot supply genuine accepted prior receipts: {exc}")
