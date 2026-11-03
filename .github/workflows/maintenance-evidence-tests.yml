@@ -9,7 +9,7 @@ on:
       - 'tools/import_feral_p7_archives.py'
       - 'docs/evidence/druid-p7/recovered/raw/**'
       - 'src/game/evaluation.py'
-      - 'src/shared/evaluation.py'
+      - 'src/optimization/evaluation.py'
       - 'src/v2/class_model.py'
       - 'src/v2/generic_frontier.py'
       - 'src/v2/generic_melee_routes.py'
