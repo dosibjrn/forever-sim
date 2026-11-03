@@ -1,7 +1,7 @@
 """Retired source-proof and source-audit CLIs must not return as gates.
 
 MythicSim owns spell/rank acquisition legality and game-source facts.
-The real route and stable production gate entrypoints remain separate live code.
+Obsolete GameIR route products are deleted; active gate entrypoints remain.
 """
 import ast
 from pathlib import Path
@@ -10,6 +10,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 RETIRED_TOOLS = (
     "tools/wf332_druid20_acquisition_evidence.py",
+    "tools/wf288_real_contiguous_route_benchmark.py",
+    "tools/wf288_replay_route.py",
+    "tools/wf289_replay_parent_druid_corridor.py",
+    "tools/wf293_bounded_nine_class_groups.py",
+    "scripts/audit_product_coverage.py",
+    "tests/test_product_coverage_v2.py",
+    "tests/test_wf288_bounded_route_evidence.py",
+    "tests/generic/search/test_wf288_source_bounded_level_routes.py",
+    "tests/test_wf289_reference_route_attestation.py",
+    "tests/test_wf288_contiguous_source_stateful_route.py",
     "tools/wf291_source_acquisition_route_benchmark.py",
     "tools/audit_forever_source_coverage.py",
     "tools/audit_forever_source_rules.py",
@@ -47,6 +57,12 @@ RETIRED_TOOLS = (
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
+    "src/v2/source_budgeted_level_route.py",
+    "src/v2/source_stateful_level_route.py",
+    "src/v2/source_bounded_route_evidence.py",
+    "src/v2/source_reference_route_evidence.py",
+    "data/forever/source_bounded_level_routes_v1.json",
+    "data/forever/wf289_parent_druid_l1_60_replay.json",
     "src/game/data/forever/source_checkpoint_p7_legacy.py",
     "src/game/data/forever/source_acquisition.py",
     "src/game/data/forever/source_acquisition_entities.py",
@@ -105,8 +121,8 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
     for relative in RETIRED_TOOLS:
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
-    assert (ROOT / "src/v2/source_budgeted_level_route.py").is_file()
-    # These are the live native P2 interfaces, not the retired L0 proof CLIs.
+    assert not (ROOT / "src/v2/source_budgeted_level_route.py").exists()
+    # P2-only compatibility remains outside the deleted bounded-route chain.
     assert (ROOT / "tools/wf_gate_p2_live.py").is_file()
     assert (ROOT / "src/engine_client/native_p2_rank_probe.py").is_file()
 
