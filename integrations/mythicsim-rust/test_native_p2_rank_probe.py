@@ -123,7 +123,7 @@ def main() -> int:
             target_rank=1,
             iterations=100,
             seed=647003,
-            rng_mode="balanced",
+            rng_mode=NativeRngMode.BALANCED,
         ),
     }
     for name, result in results.items():
