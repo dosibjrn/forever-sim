@@ -103,8 +103,8 @@ class NativeGearAdapter:
             # identity and slot/type compatibility are decided by Rust.
             if entry != self.base[i] and entry not in self.variants.get(i, []):
                 raise GearRejected("SOURCE_SLOT", f"{iid} entry not observed at position {i}")
-        # Native Rust, not this proposal-domain adapter, checks unique
-        # items/categories, equip permissions and level requirements.
+        # Native Rust decides item identity/type, slot fit, armor, class,
+        # level, hand, uniqueness and all other equipment legality.
 
     def mutate_from(
         self, candidate: dict, rng: random.Random,
@@ -140,7 +140,7 @@ class NativeGearAdapter:
                     continue
                 return out, {
                     "source_slot_index": i, "from_id": old_id, "to_id": iid,
-                    "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_NATIVE_DB",
+                    "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_POSITION",
                 }
         raise GearRejected(
             "NO_SOURCE_OBSERVED_SWAP", "No further source-observed gear proposal"
@@ -152,7 +152,7 @@ class NativeGearAdapter:
         """Mutate one source-observed slot; exclude prior native-refused swaps."""
         excluded = excluded_swaps or set()
         if not self.mutable_indices:
-            raise GearRejected("NO_SOURCE_BOUNDED_ALTERNATIVE", "No compatible same-class fixture swap")
+            raise GearRejected("NO_SOURCE_BOUNDED_ALTERNATIVE", "No source-observed same-position item proposal")
         indices = list(self.mutable_indices)
         rng.shuffle(indices)
         for i in indices:
@@ -170,5 +170,5 @@ class NativeGearAdapter:
                 except GearRejected:
                     continue
                 return out, {"source_slot_index": i, "from_id": self.base[i]["id"],
-                             "to_id": iid, "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_NATIVE_DB"}
+                             "to_id": iid, "restriction_scope": "SAME_CLASS_SOURCE_FIXTURE_AND_POSITION"}
         raise GearRejected("NO_SOURCE_OBSERVED_SWAP", "All source-observed alternatives were already excluded")
