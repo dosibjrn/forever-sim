@@ -59,14 +59,31 @@ METHOD_MARKER = "    pub(crate) fn begin_next_target(&mut self, at_ns: i64, next
 TEST_ANCHOR = "    fn native_persistent_next_target_retains_actor_and_native_queue()"
 
 
+def _paid_recovery_descendant(source: str) -> bool:
+    try:
+        from port_native_persistent_target import FIGHT_TEST
+        from port_native_paid_recovery import is_composed_paid_recovery_source
+        return (
+            source.count(TEST_MARKER) == 1
+            and source.count(FIGHT_TEST.rstrip("\n")) == 1
+            and is_composed_paid_recovery_source(source)
+        )
+    except (ImportError, ValueError):
+        return False
+
+
 def port_source(source: str) -> str:
     if source.count("world_bridge::begin_next_target(at_ns)?;") != 1:
         raise ValueError("Rust early-world-target source anchors missing or ambiguous")
     if NEW_GUARD in source:
         if (source.count(NEW_GUARD) != 1 or source.count(HELPER) != 1
-                or source.count(TEST) != 1 or OLD_GUARD in source):
+                or OLD_GUARD in source):
             raise ValueError("Rust early-target port partially applied")
-        return source
+        if source.count(TEST) == 1:
+            return source
+        if _paid_recovery_descendant(source):
+            return source
+        raise ValueError("Rust early-target port partially applied")
     if (source.count(OLD_GUARD) != 1 or source.count(METHOD_MARKER) != 1
             or source.count(TEST_ANCHOR) != 1 or TEST_MARKER in source
             or HELPER in source):
