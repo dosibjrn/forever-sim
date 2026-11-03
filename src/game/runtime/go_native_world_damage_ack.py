@@ -30,6 +30,8 @@ class GsimNativeDamageWorldApplier:
         self._last_world_tick_ns = -1
         self._target_id = None
         self._native_target_identity = None
+        # A dead gsim mob alone is not evidence that the native actor killed it.
+        self._last_native_lethal_target_id = None
 
     def begin_next_world_target(self, next_target_id: str) -> None:
         """Retarget only after an ACKed lethal event, preserving PID/event clocks.
@@ -42,10 +44,13 @@ class GsimNativeDamageWorldApplier:
                 or self._runtime.targets[self._target_id].alive
                 or not self._runtime.targets[next_target_id].alive):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_READY")
+        if self._last_native_lethal_target_id != self._target_id:
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_NATIVE_LETHAL")
         world = snapshot_gsim_world(self._runtime)
         if world["selected_target_id"] != next_target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_SELECTED")
         self._target_id = next_target_id
+        self._last_native_lethal_target_id = None
 
     def apply(self, tick: Mapping, response: Mapping) -> dict:
         if not isinstance(tick, Mapping) or not isinstance(response, Mapping):
@@ -172,6 +177,11 @@ class GsimNativeDamageWorldApplier:
         if (damage > 0 and after_hash == digest) or (damage == 0 and after_hash != digest):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_WORLD_NOT_CHANGED_AS_EXPECTED")
         self._target_id = target_id
+        # Only THIS native ACK's applied effects may authorize switching mobs.
+        # An unrelated gsim/world health change must not satisfy causality.
+        self._last_native_lethal_target_id = (
+            target_id if damage > 0.0 and not target.alive else None
+        )
         self._native_target_identity = target_identity
         self._next_seq += 1
         self._previous_event_id = last_event_id
