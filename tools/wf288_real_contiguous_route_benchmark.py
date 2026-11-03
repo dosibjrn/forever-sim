@@ -44,7 +44,6 @@ def benchmark(*,end_level=20,max_l2_per_state=12):
       'accepted_source_complete_class_level_checkpoints':0,
       'required_source_complete_class_level_checkpoints':540,
       'validated_full_continuous_leveling_routes':0,
-      'all_route_acquisitions_verified':False,
     }
     return data
 
