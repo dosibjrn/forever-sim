@@ -160,6 +160,49 @@ class NativeRootsDotPortTest(unittest.TestCase):
         self.assertLess(after_expiry[0], while_rooted[0],
                         "enemy movement must resume when the native root duration expires")
 
+    def test_all_six_source_roots_ranks_control_world_and_reject_mismatched_ids(self):
+        # Source-native lower-level Roots ranks are not spell 9853. The world
+        # must admit the exact native rank/spell pair, not merely rank six.
+        for rank, spell_id in enumerate((339, 1062, 5195, 5196, 9852, 9853), 1):
+            with self.subTest(rank=rank, spell_id=spell_id):
+                world = self._moving_world()
+                world.advance_to(0.1)
+                digest = state_hash(snapshot_gsim_world(world))
+                tick = {
+                    "sequence": 0, "native_clock_ns": 100_000_000,
+                    "clock_ms": 100, "world_sha256": digest,
+                    "selected_target_id": "m0",
+                }
+                event = self._control_event()
+                event["rank"] = rank
+                event["source_action_id"] = f"SpellID: {spell_id}"
+                response = {
+                    "sequence": 0, "native_process_id": 12345,
+                    "observed_input_world_sha256": digest,
+                    "native_damage_events": [], "native_control_events": [event],
+                }
+                ack = GsimNativeDamageWorldApplier(world).apply(tick, response)
+                self.assertEqual(ack["applied_control_event_ids"], ["native-effect-1"])
+                self.assertIn("root", world.targets["m0"].active_controls)
+
+                for invalid_action in ("SpellID: 9853" if rank != 6 else "SpellID: 339",
+                                       f"SpellID: 1{spell_id}"):
+                    bad_world = self._moving_world()
+                    bad_world.advance_to(0.1)
+                    bad_digest = state_hash(snapshot_gsim_world(bad_world))
+                    bad_tick = dict(tick, world_sha256=bad_digest)
+                    bad_event = dict(event, source_action_id=invalid_action)
+                    bad_response = dict(response,
+                                        observed_input_world_sha256=bad_digest,
+                                        native_control_events=[bad_event])
+                    with self.assertRaisesRegex(
+                            NativeDamageWorldApplicationError,
+                            "WORLD_DAMAGE_ACK_CONTROL_EVENT_INVALID"):
+                        GsimNativeDamageWorldApplier(bad_world).apply(
+                            bad_tick, bad_response)
+                    self.assertNotIn("root", bad_world.targets["m0"].active_controls)
+                    self.assertEqual(state_hash(snapshot_gsim_world(bad_world)), bad_digest)
+
     def test_invalid_native_root_rank_is_rejected_before_world_mutation(self):
         world = self._moving_world()
         world.advance_to(0.1)
