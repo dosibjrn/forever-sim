@@ -13,8 +13,8 @@ import sqlite3
 from src.game.model.ir import (ActionDefinition, DamageEffect, PeriodicEffect,
     ResourceChangeEffect, ResourceCost, WeaponDamageEffect, ControlEffect, HealEffect,
     PeriodicHealEffect, ResourceScaledPeriodicEffect)
-from src.game.data.forever.sqlite_talents import DEFAULT_DB, _slug
-from .source_db_scope import active_ability_db
+from src.shared.identifiers import source_slug as _slug
+from .source_db_scope import DEFAULT_DB, active_ability_db
 
 _RESOURCE_SCALED_PERIODIC_HEADER = re.compile(
     r'Finishing move that causes damage over time\. Damage increases per combo point and by your Attack Power:',re.I)
