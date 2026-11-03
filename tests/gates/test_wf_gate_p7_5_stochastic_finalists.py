@@ -38,6 +38,13 @@ def test_p75_paid_joint_axes_cycle_only_on_seventh_proposal():
     assert gate._p75_paid_joint_axes(14) == ("gear", "rotation")
     assert gate._p75_paid_joint_axes(21) == ("talents", "rotation")
     assert gate._p75_paid_joint_axes(28) == ("gear", "talents")
+    # Every eleventh paid-parent proposal rebuilds one complete source axis;
+    # the seventh-proposal two-axis schedule still takes precedence at 77.
+    assert gate._p75_paid_rebuild_axes(1) is None
+    assert gate._p75_paid_rebuild_axes(11) == ("gear_rebuild",)
+    assert gate._p75_paid_rebuild_axes(22) == ("talents_rebuild",)
+    assert gate._p75_paid_rebuild_axes(33) == ("rotation_rebuild",)
+    assert gate._p75_paid_rebuild_axes(44) == ("gear_rebuild",)
     # Every fifth proposal is STILL an independent paid-parent-free restart.
     paid = _candidate("paid")
     balanced = (800.0, {}, "paid-sha", paid)
@@ -289,6 +296,10 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
     assert (7, ("gear", "talents")) in paid_repairs
     assert (14, ("gear", "rotation")) in paid_repairs
     assert (21, ("talents", "rotation")) in paid_repairs
+    assert (11, ("gear_rebuild",)) in paid_repairs
+    assert (22, ("talents_rebuild",)) in paid_repairs
+    # The virtual budget can finish before proposal 33; its rotation-rebuild
+    # schedule is covered by the pure scheduling assertion above.
     assert all(axes is None for index, elite, axes in joint_calls
                if index % 5 == 0 or elite is None)
     assert paid_seeds.count(deep_seeds) == 2
