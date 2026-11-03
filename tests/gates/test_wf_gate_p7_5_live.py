@@ -445,6 +445,102 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
 
 
 
+def test_p75_crossover_randomness_does_not_advance_candidate_search_rng(
+        monkeypatch, tmp_path):
+    """Donor-pool random draws must not perturb later cold candidate proposals."""
+
+    base = _base()
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    player(base)["distanceFromTarget"] = 15
+    original = copy.deepcopy(base)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("mock producer: never executed")
+    upstream = binary.parents[2]
+    (upstream / "data").mkdir()
+    (upstream / "data/items.jsonl").write_text("")
+    (upstream / "data/enchants.jsonl").write_text("")
+    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
+    catalogue.parent.mkdir(parents=True)
+    catalogue.write_text("injected validator")
+
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
+    clock = iter([0.0] + [0.1] * 13 + [300.0] * 3)
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
+    monkeypatch.setattr(gate.time, "sleep", lambda *_: None)
+    monkeypatch.setattr(
+        gate, "_pinned_source_runtime",
+        lambda *a: (base, {"reference_dps": 728.19}, binary))
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *a, **kw: None)
+
+    class Validator:
+        @staticmethod
+        def require_sqlite_catalogue(path):
+            assert path == catalogue
+        def __init__(self, *args):
+            pass
+        def close(self):
+            pass
+
+    candidate_rngs = []
+    candidate_rng_state_at_crossover = []
+    candidate_count = 0
+
+    def make_candidate(reference, pools, rng, elite=None, **kwargs):
+        nonlocal candidate_count
+        candidate_count += 1
+        candidate_rngs.append(rng)
+        request = copy.deepcopy(reference if elite is None else elite)
+        player(request)["talentsString"] = f"paid-candidate-{candidate_count}"
+        if candidate_count == 13:
+            candidate_rng_state_at_crossover.append(rng.getstate())
+        return request
+
+    source = SimpleNamespace(
+        GearValidator=Validator,
+        candidate_pool=lambda validator, limit, **kwargs: (
+            {i: [100 + i] for i in range(16)}, {}),
+        source_enchant_pools=lambda validator, pools: {
+            i: [None] for i in range(16)},
+        make_candidate=make_candidate,
+        player=player,
+        RejectedGear=ValueError,
+    )
+    producer = SimpleNamespace(
+        native_source_control=lambda binary, path, n, *, rng_mode: {
+            "native_dps": 700.0},
+        run=lambda binary, path, distance, iterations, *, rng_mode: {
+            "world_mean_dps": 700.0, "iterations_done": iterations,
+            "native_damage_events": 10, "native_world_ticks": 20},
+    )
+    monkeypatch.setattr(
+        gate, "_source_module",
+        lambda path, name: source if "joint_search" in str(path) else producer)
+
+    crossover_rngs = []
+
+    def consume_operator_randomness(candidate, parent, finalists,
+                                    balanced_elites, source, rng):
+        crossover_rngs.append(rng)
+        for _ in range(20):
+            rng.random()
+        return False
+
+    monkeypatch.setattr(gate, "_paid_p75_crossover",
+                        consume_operator_randomness)
+
+    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
+
+    assert report["source_legal_joint_candidates_paid"] == 13
+    assert len(candidate_rngs) == 13
+    assert len(crossover_rngs) == 1  # proposal 13 is the paid gear/talent/APL crossover
+    assert crossover_rngs[0] is not candidate_rngs[0]
+    assert candidate_rngs[-1].getstate() == candidate_rng_state_at_crossover[0]
+    assert report["status"] == "BLOCKED"  # missing accepted prior, not a gate PASS
+    assert base == original
+
+
 def test_full_search_sources_enchants_outside_reference_without_invented_rules(monkeypatch):
     """Only existing Rust/source item validation admits enchant alternatives."""
     import importlib.util
