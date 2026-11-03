@@ -39,3 +39,10 @@ def test_live_leveling_target_consumers_import_the_scenario_boundary():
     for relative in consumers:
         source = (ROOT / relative).read_text(encoding="utf-8")
         assert "src.scenarios.leveling_targets" in source, relative
+
+def test_legacy_objective_contains_no_second_target_curve_copy():
+    source = (ROOT / "src/shared/leveling/objective.py").read_text(encoding="utf-8")
+    assert "from src.scenarios.leveling_targets import MOB_BASE_HP, mob_hp, representative_hp" in source
+    assert "MOB_BASE_HP =" not in source
+    assert "def representative_hp(" not in source
+    assert "def mob_hp(" not in source
