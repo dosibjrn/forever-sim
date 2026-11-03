@@ -68,3 +68,59 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
     assert len(generated) >= len(historical_actions)
     assert len(generated) <= 20
     assert source_actions == saved_snapshot
+
+
+
+def test_cold_and_elite_cast_conditions_remain_bound_to_their_source_spell():
+    # The old global predicate pool could graft a Life Tap condition onto
+    # Curse of Elements (or even a potion condition onto either cast).
+    source_actions = [
+        {
+            "action": {
+                "castSpell": {"spellId": {"spellId": 11689}},
+                "condition": {"auraIsActive": {"auraId": {"spellId": 11689}}},
+            }
+        },
+        {
+            "action": {
+                "castSpell": {"spellId": {"spellId": 1311680}},
+                "condition": {"auraIsActive": {"auraId": {"spellId": 1311680}}},
+            }
+        },
+        {
+            "action": {
+                "useItem": {"itemId": 12662},
+                "condition": {"auraIsActive": {"auraId": {"spellId": 12662}}},
+            }
+        },
+    ]
+    source_conditions = {}
+    for item in source_actions:
+        action = item["action"]
+        cast = action.get("castSpell")
+        condition = action.get("condition")
+        if isinstance(cast, dict) and isinstance(cast.get("spellId"), dict):
+            key = json.dumps(cast["spellId"], sort_keys=True, separators=(",", ":"))
+            source_conditions.setdefault(key, set()).add(
+                json.dumps(condition, sort_keys=True, separators=(",", ":"))
+            )
+
+    for seed in range(128):
+        for cold in (True, False):
+            generated = mutate_apl(
+                None if cold else source_actions,
+                source_actions,
+                random.Random(seed),
+                cold=cold,
+            )
+            for item in generated:
+                action = item.get("action", {})
+                cast = action.get("castSpell")
+                condition = action.get("condition")
+                if not isinstance(cast, dict) or condition is None:
+                    continue
+                key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
+                observed = json.dumps(condition, sort_keys=True, separators=(",", ":"))
+                assert observed in source_conditions.get(key, set()), (
+                    f"seed={seed}, cold={cold}, spell={key}, condition={observed}"
+                )
