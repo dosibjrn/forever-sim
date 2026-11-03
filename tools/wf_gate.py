@@ -650,7 +650,7 @@ def main(argv=None) -> int:
                         "paid_stochastic_finalists",
                         "paid_stochastic_confirmed_finalists",
                         "source_legal_cold_candidates_paid",
-                        "native_scored_candidates_paid",
+                        "native_world_scored_candidates_paid",
                         "native_invalid_candidates",
                         "native_unsupported_candidates",
                         "native_unscored_candidates",
