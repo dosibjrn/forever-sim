@@ -15,6 +15,12 @@ on:
       - 'src/game/data/forever/**'
       - 'src/game/talent_execution_coverage.py'
       - 'src/game/talents.py'
+      - 'tools/wf_gate_p7_*_live.py'
+      - 'integrations/mythicsim-rust/*search*.py'
+      - 'tests/gates/test_balanced_optimization_contract.py'
+      - 'tests/gates/test_wf_gate_p7_*_live.py'
+      - 'integrations/mythicsim-rust/tests/test_p73_native_search_ci.py'
+      - 'integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py'
       - '.github/workflows/generic-source-search-regressions.yml'
 
 permissions:
@@ -58,3 +64,10 @@ jobs:
           tests/generic/runtime/test_source_ir_assembly_order.py
           tests/test_wf332_runes_default_off.py
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
+          tests/gates/test_balanced_optimization_contract.py
+          tests/gates/test_wf_gate_p7_3_live.py
+          tests/gates/test_wf_gate_p7_4_live.py
+          tests/gates/test_wf_gate_p7_5_live.py
+          tests/gates/test_wf_gate_class_cli.py
+          integrations/mythicsim-rust/tests/test_p73_native_search_ci.py
+          integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py
