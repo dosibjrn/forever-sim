@@ -3,7 +3,7 @@ from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from tools import wf_gate_p2_live as p2
+from tools import wf_talent_runtime as talent_runtime
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import apply_talent_selection, talented_bonus_for_level
@@ -32,20 +32,20 @@ def sample(talent_id, rank=1):
 
 def test_damage_moonfire_real_runtime_witness():
     a,b,mod=sample('improved_moonfire')
-    witness=p2._runtime_effect_witness(a,b,mod)
+    witness=talent_runtime._runtime_effect_witness(a,b,mod)
     assert witness and witness['after_amount'] > witness['before_amount']
     assert witness['metric']=='direct_damage'
 
 
 def test_second_rank_uses_cumulative_magnitude():
     a,b,mod=sample('improved_moonfire',2)
-    witness=p2._runtime_effect_witness(a,b,mod)
+    witness=talent_runtime._runtime_effect_witness(a,b,mod)
     assert witness and abs(witness['ir_factor'] - 1.1/1.05)<1e-6
 
 
 def test_periodic_real_runtime_tick_outcome():
     a,b,mod=sample('genesis')
-    witness=p2._runtime_effect_witness(a,b,mod)
+    witness=talent_runtime._runtime_effect_witness(a,b,mod)
     assert witness and witness['metric'] in ('periodic_damage','periodic_heal')
     assert witness['after_amount'] > witness['before_amount']
 
@@ -53,26 +53,26 @@ def test_periodic_real_runtime_tick_outcome():
 def test_incorrect_magnitude_must_not_pass():
     a,b,mod=sample('improved_moonfire')
     wrong=replace(mod,provenance={**mod.provenance,'_gate_relative_factor':1.99})
-    assert p2._runtime_effect_witness(a,b,wrong) is None
+    assert talent_runtime._runtime_effect_witness(a,b,wrong) is None
 
 
 def test_unrelated_action_does_not_pass():
     a,b,mod=sample('improved_moonfire')
     wrong=replace(mod,target_id='entangling_roots')
-    assert p2._runtime_effect_witness(a,b,wrong) is None
+    assert talent_runtime._runtime_effect_witness(a,b,wrong) is None
 
 
 def test_no_runtime_observation_must_not_pass():
     a,b,mod=sample('improved_moonfire')
     with patch.object(p2,'_action_runtime_probe',return_value=None):
-        assert p2._runtime_effect_witness(a,b,mod) is None
+        assert talent_runtime._runtime_effect_witness(a,b,mod) is None
 
 
 def test_no_actual_delta_must_not_pass():
     a,b,mod=sample('improved_moonfire')
     x={'direct_damage':20.,'periodic_damage':30.,'direct_heal':0.,'periodic_heal':0.}
     with patch.object(p2,'_action_runtime_probe',return_value=x):
-        assert p2._runtime_effect_witness(a,b,mod) is None
+        assert talent_runtime._runtime_effect_witness(a,b,mod) is None
 
 
 def test_wrong_direction_runtime_must_not_pass():
@@ -80,4 +80,4 @@ def test_wrong_direction_runtime_must_not_pass():
     old={'direct_damage':20.,'periodic_damage':10.,'direct_heal':0.,'periodic_heal':0.}
     new={'direct_damage':10.,'periodic_damage':10.,'direct_heal':0.,'periodic_heal':0.}
     with patch.object(p2,'_action_runtime_probe',side_effect=[old,new]*20):
-        assert p2._runtime_effect_witness(a,b,mod) is None
+        assert talent_runtime._runtime_effect_witness(a,b,mod) is None
