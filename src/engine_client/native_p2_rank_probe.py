@@ -28,9 +28,6 @@ from .native_candidate_client import (
 # import the neutral client directly.
 NativeP2ProbeError = NativeCandidateClientError
 
-
-
-
 _TREE_ARRAYS = (
     ("balance", "FOREVER_BALANCE"),
     ("feral", "FOREVER_FERAL_COMBAT"),
