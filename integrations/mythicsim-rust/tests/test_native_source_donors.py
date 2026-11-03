@@ -156,7 +156,12 @@ class SourceDonorAdapterTests(unittest.TestCase):
 
         self.assertEqual([0], scope["gear_mutable_slots"])
         self.assertEqual(
-            sorted(["99999-6", "7777777-2", "not-a-talent-build"]),
+            [
+                "<MISSING_TALENT_STRING>",
+                "7777777-2",
+                "99999-6",
+                "not-a-talent-build",
+            ],
             scope["talent_builds"],
         )
         self.assertEqual(3, scope["source_donor_fixture_count"])
@@ -172,10 +177,17 @@ class SourceDonorAdapterTests(unittest.TestCase):
             [
                 "fixtures/forever-gaps/druid-gear-and-talent.request.json",
                 "fixtures/mage/prepared-v2/druid-gear-only.request.json",
+                "fixtures/mage/prepared-v2/druid-missing-talents.request.json",
             ],
             [item["source_path"] for item in scope["talent_donor_fixtures"]],
         )
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))
+        missing_candidate = copy.deepcopy(reference)
+        missing_candidate["raid"]["parties"][0]["players"][0].pop("talentsString")
+        self.assertTrue(adapter.legal(missing_candidate))
+        self.assertFalse(
+            scope["talent_donor_fixtures"][-1]["talent_string_present"]
+        )
 
 
     def test_source_observed_non_51_reference_can_anchor_source_candidate_donors(self):
