@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_report
+from native_joint_two_class import objective_for_profile
 from native_l60_matrix import (
     CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
     apply_current_client_talent_override,
@@ -37,7 +38,10 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual(28, len(rows))
         self.assertEqual([x[0]["profile_id"] for x in inventory()],
                          [x["profile_id"] for x in rows])
-        self.assertEqual(25, len(calls))
+        self.assertEqual(27, len(calls))
+        self.assertEqual("DPS", rows[0]["objective"])
+        self.assertEqual("HPS", rows[1]["objective"])
+        self.assertEqual("TPS", rows[3]["objective"])
 
     def test_missing_source_is_isolated_without_running_scorer(self):
         rows = inventory()
@@ -50,11 +54,21 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual("BLOCKED_SOURCE", results[0]["status"])
         self.assertNotIn("druid/feral_cat", calls)
 
-    def test_non_dps_objectives_are_not_silently_scored_as_dps(self):
-        for profile, status in (("druid/restoration", "BLOCKED_OBJECTIVE"),
-                                ("warrior/protection", "BLOCKED_OBJECTIVE"),
-                                ("priest/discipline", "BLOCKED_SPEC_IDENTITY")):
-            self.assertEqual(status, preflight(profile, {}, {}, 5)[0])
+    def test_heal_and_tank_profiles_use_their_native_objectives(self):
+        cases = (
+            ("druid/restoration", "HPS"),
+            ("priest/holy", "HPS"),
+            ("warrior/protection", "TPS"),
+            ("mage/fire", "DPS"),
+        )
+        for profile, objective in cases:
+            with self.subTest(profile=profile):
+                self.assertEqual(objective, objective_for_profile(profile))
+                self.assertIsNone(preflight(profile, {}, {}, 5))
+        self.assertEqual(
+            "BLOCKED_SPEC_IDENTITY",
+            preflight("priest/discipline", {}, {}, 5)[0],
+        )
 
     def test_native_paid_replay_is_sufficient_for_30_second_stage(self):
         prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 100,
@@ -87,10 +101,9 @@ class SweepContracts(unittest.TestCase):
                                            "native_errors": 0, "native_unscored": 2,
                                            "replay_matches": True})
         gaps = gap_summary(rows)
-        self.assertEqual(3, sum(g["count"] for g in gaps))
+        self.assertEqual(1, sum(g["count"] for g in gaps))
         causes = {g["cause"] for g in gaps}
-        self.assertEqual({"VERIFY_NATIVE_HPS_TPS_OBJECTIVE",
-                          "VERIFY_DISCIPLINE_FIXTURE_IDENTITY"}, causes)
+        self.assertEqual({"VERIFY_DISCIPLINE_FIXTURE_IDENTITY"}, causes)
         self.assertNotIn("NATIVE_SCORE_UNAVAILABLE", causes)
         self.assertTrue(all("score" not in row for row in rows))
 
@@ -129,9 +142,10 @@ class SweepContracts(unittest.TestCase):
             self.assertEqual("PINNED_NATIVE_CANDIDATE_DOMAIN", provenance["source_scope"])
             self.assertNotIn("process_p7_pass", provenance)
             matrix = (out / "matrix.md").read_text()
+            self.assertIn("Objective", matrix)
             self.assertIn("Baseline balanced", matrix)
             self.assertIn("Unscored", matrix)
-            self.assertIn("| druid/feral_cat | NATIVE_JOINT_PAID | 101.25 | 111.5 | 2 | 1 | 1 | 2 |", matrix)
+            self.assertIn("| druid/feral_cat | DPS | NATIVE_JOINT_PAID | 101.25 | 111.5 | 2 | 1 | 1 | 2 |", matrix)
             self.assertIn("101.25", matrix)
             self.assertIn("111.5", matrix)
             self.assertIn("diagnostic", matrix.lower())

@@ -181,6 +181,66 @@ class SameSearchCoreAcrossClasses(unittest.TestCase):
                     bad["partyBuffs"]["frozen"] = False
                 self.assertFalse(adapter.legal(bad))
 
+    def test_candidate_aware_apl_receives_selected_talents_for_cold_and_mutation(self):
+        ref = fixture("ClassWarlock", 16, 1001, 2001)
+        observed = {}
+
+        def gear_cold(_rng):
+            return copy.deepcopy(player(ref)["equipment"]["items"])
+
+        def gear_mutate(current, _rng):
+            return copy.deepcopy(current)
+
+        def talents_cold(_rng):
+            return "donor-build-a"
+
+        def talents_mutate(_current, _rng):
+            return "donor-build-b"
+
+        def apl_cold(_rng, candidate):
+            selected = player(candidate)["talentsString"]
+            observed["cold"] = selected
+            return [selected]
+
+        def apl_mutate(_current, _rng, candidate):
+            selected = player(candidate)["talentsString"]
+            observed["mutate"] = selected
+            return [selected]
+
+        def joint_legal(candidate):
+            p = player(candidate)
+            return p["rotation"]["priorityList"] == [p["talentsString"]]
+
+        adapter = JointCandidateAdapter(
+            ref,
+            joint_legal=joint_legal,
+            gear=CandidateAxis(gear_cold, gear_mutate, lambda _items: True),
+            talents=CandidateAxis(
+                talents_cold, talents_mutate,
+                lambda value: value in {"donor-build-a", "donor-build-b"},
+            ),
+            apl=CandidateAxis(
+                apl_cold, apl_mutate,
+                lambda value: isinstance(value, list) and len(value) == 1,
+                candidate_aware=True,
+            ),
+        )
+        initial = adapter.propose(random.Random(1))
+        self.assertEqual("donor-build-a", observed["cold"])
+        self.assertTrue(adapter.legal(initial))
+
+        class ReverseThreeAxes:
+            def random(self):
+                return .99
+
+            def sample(self, sequence, count):
+                assert count == 3
+                return list(reversed(sequence))
+
+        updated = adapter.mutate(initial, ReverseThreeAxes())
+        self.assertEqual("donor-build-b", observed["mutate"])
+        self.assertTrue(adapter.legal(updated))
+
     def test_mutate_can_select_all_three_axes_simultaneously(self):
         adapter = adapters(fixture("ClassHunter", 18, 2001, 3001), 2001, 3001)
         initial = adapter.propose(random.Random(42))

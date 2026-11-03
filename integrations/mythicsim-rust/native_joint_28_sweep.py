@@ -15,11 +15,11 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
-from native_joint_two_class import execute
+from native_joint_two_class import execute, objective_for_profile
+from native_executor import objective_metric_path
 from native_source_donors import load_source_donor_fixtures
 from native_l60_matrix import (
-    HEAL, TANK, ROOT, create_inventory,
-    current_client_talent_donor_fixtures,
+    ROOT, create_inventory, current_client_talent_donor_fixtures,
 )
 
 STAGES = (5, 30, 300)
@@ -32,9 +32,6 @@ def preflight(profile: str, source: dict, request: dict | None, stage: int,
     if profile == "priest/discipline":
         return ("BLOCKED_SPEC_IDENTITY",
                 "Smite Priest fixture does not establish a Discipline spec identity")
-    if profile in HEAL or profile in TANK:
-        unit = "HPS" if profile in HEAL else "TPS"
-        return ("BLOCKED_OBJECTIVE", unit + " objective/extractor and compatible source not verified")
     if stage != 5:
         if previous is None:
             return ("BLOCKED_PRIOR_STAGE", "Missing completed prior-stage exact profile row")
@@ -59,16 +56,18 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
         profile = inv["profile_id"]
         previous = (prior_rows or {}).get(profile)
         block = preflight(profile, inv, request, stage, previous)
+        objective = objective_for_profile(profile)
         base = {
             "profile_id": profile,
             "stage_seconds": stage,
+            "objective": objective,
+            "native_metric_path": objective_metric_path(objective),
             "source_sha256": inv.get("source_sha256"),
             "source_fixture_sha256": inv.get("source_fixture_sha256", inv.get("source_sha256")),
             "effective_source_request_fingerprint": inv.get("effective_source_request_fingerprint"),
             "source_path": inv.get("source_path"),
             "source_type": inv.get("source_type"),
             "talent_override": inv.get("talent_override"),
-            "objective": "HPS" if profile in HEAL else ("TPS" if profile in TANK else "DPS"),
             "native_paid": 0,
             "baseline_paid": 0,
             "native_paid_total": 0,
@@ -104,8 +103,6 @@ def _cause(row: dict) -> str | None:
     status = row["status"]
     if status == "NATIVE_JOINT_PAID" and row.get("replay_matches"):
         return None
-    if status.startswith("BLOCKED_OBJECTIVE"):
-        return "VERIFY_NATIVE_HPS_TPS_OBJECTIVE"
     if status == "BLOCKED_SPEC_IDENTITY":
         return "VERIFY_DISCIPLINE_FIXTURE_IDENTITY"
     if status == "BLOCKED_CANDIDATE_DOMAIN":
@@ -249,14 +246,15 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
     (out / "gaps.json").write_text(json.dumps(gap_summary(rows), indent=2) + "\n")
     lines = ["# Native Rust L60 JOINT " + str(stage) + "s diagnostic",
              "", "Balanced native screen only; no stochastic holdout or PROCESS P7 claim.",
-             "", "| Profile | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Unscored | Outcome / blocker |",
-             "|---|---|---:|---:|---:|---:|---:|---:|---|"]
+             "", "| Profile | Objective | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Unscored | Outcome / blocker |",
+             "|---|---|---|---:|---:|---:|---:|---:|---:|---|"]
     for r in rows:
         def esc(value):
             return str(value if value is not None else "—").replace("|", "\\|").replace("\n", " ")
         lines.append("| " + " | ".join(map(esc, (
-            r["profile_id"], r["status"], r.get("baseline_balanced_score"),
-            r.get("best_balanced_screen"), r["native_paid"], r.get("baseline_paid", 0),
+            r["profile_id"], r.get("objective", "DPS"), r["status"],
+            r.get("baseline_balanced_score"), r.get("best_balanced_screen"),
+            r["native_paid"], r.get("baseline_paid", 0),
             r["three_axis_paid"], r.get("native_unscored", 0),
             r.get("blocker") or r.get("search_status") or r["status"],
         ))) + " |")

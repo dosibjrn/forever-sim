@@ -48,7 +48,7 @@ class NativeJointScoringContracts(unittest.TestCase):
         seen_talent_payloads = []
         raw = {"status": "VALID", "result": {"raidMetrics": {"dps": {"avg": 123.5}}}}
 
-        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline, objective="DPS"):
             calls.append((binary, iterations, seed, rng_mode, deadline))
             seen_talent_payloads.append(
                 candidate["raid"]["parties"][0]["players"][0]["talentsString"]
@@ -77,6 +77,32 @@ class NativeJointScoringContracts(unittest.TestCase):
         self.assertIs(raw, actual_raw)
 
 
+    def test_native_objective_is_passed_to_the_executor_and_recorded(self):
+        source = request()
+        raw = {"status": "VALID", "result": {"raidMetrics": {
+            "parties": [{"players": [{"hps": {"avg": 17.5}}]}],
+        }}}
+
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline,
+                     objective="DPS"):
+            self.assertEqual("HPS", objective)
+            return (
+                17.5, raw, 0.0123,
+                fingerprint(native_payload(candidate, iterations, seed)),
+            )
+
+        record, actual_raw = native_score_request(
+            Path("forever-engine"), source, 40, 731, "balanced",
+            time.monotonic() + 5.0, objective="HPS", runner=fake_run,
+        )
+        self.assertEqual(17.5, record["score"])
+        self.assertEqual("HPS", record["objective"])
+        self.assertEqual(
+            "result.raidMetrics.parties[0].players[0].hps.avg",
+            record["native_metric_path"],
+        )
+        self.assertIs(raw, actual_raw)
+
     def test_native_refusal_is_propagated_for_the_exact_talent_candidate(self):
         source = request()
         source["raid"]["parties"][0]["players"][0]["talentsString"] = (
@@ -94,7 +120,7 @@ class NativeJointScoringContracts(unittest.TestCase):
         )
         seen_talent_payloads = []
 
-        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline, objective="DPS"):
             seen_talent_payloads.append(
                 candidate["raid"]["parties"][0]["players"][0]["talentsString"]
             )
@@ -131,7 +157,7 @@ class NativeJointScoringContracts(unittest.TestCase):
         )
         seen_presence = []
 
-        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline, objective="DPS"):
             candidate_player = candidate["raid"]["parties"][0]["players"][0]
             seen_presence.append("talentsString" in candidate_player)
             raise refusal
@@ -514,6 +540,106 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         ]
         return value
 
+    def test_healing_witness_is_shared_by_source_builds_with_target_intact(self):
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassDruid"
+        baseline_player["talentsString"] = "restoration-build-a"
+        heal_cast = {
+            "spellId": {"spellId": 5185},
+            "target": {"type": "Self"},
+        }
+        donor_only_heal = {
+            "spellId": {"spellId": 774},
+            "target": {"type": "Self"},
+        }
+        baseline_player["rotation"]["priorityList"] = [
+            {"action": {"castSpell": copy.deepcopy(heal_cast)}}
+        ]
+        donor = copy.deepcopy(baseline)
+        donor_player = donor["raid"]["parties"][0]["players"][0]
+        donor_player["talentsString"] = "restoration-build-b"
+        donor_player["rotation"]["priorityList"].append(
+            {"action": {"castSpell": copy.deepcopy(donor_only_heal)}}
+        )
+
+        class FakeGear:
+            def __init__(self, class_key, reference, source_requests):
+                self.reference = reference
+                self.mutable_indices = [0]
+
+            def validate(self, request_value):
+                return None
+
+            def mutate_one(self, rng):
+                return copy.deepcopy(self.reference), {}
+
+            def mutate_from(self, request_value, rng):
+                return copy.deepcopy(request_value), {}
+
+        with patch.object(joint, "NativeGearAdapter", FakeGear):
+            adapter, scope = joint.source_bounded_adapter(
+                "druid", baseline, [baseline, donor],
+                native_objective_witnesses=[heal_cast], objective="HPS",
+            )
+
+        candidate = copy.deepcopy(baseline)
+        candidate_player = candidate["raid"]["parties"][0]["players"][0]
+        candidate_player["talentsString"] = "restoration-build-b"
+        self.assertTrue(adapter.legal(candidate))
+        self.assertEqual("HPS", scope["objective"])
+        self.assertEqual(
+            "result.raidMetrics.parties[0].players[0].hps.avg",
+            scope["native_metric_path"],
+        )
+        self.assertEqual(
+            [heal_cast],
+            scope["native_positive_objective_witnesses_common_to_selected_talent_builds"],
+        )
+
+        captured = {}
+
+        def fake_mutate(_current, source_actions, _rng, cold=False):
+            captured["source_actions"] = copy.deepcopy(source_actions)
+            self.assertTrue(cold)
+            return [
+                {"action": {"castSpell": copy.deepcopy(donor_only_heal)}},
+                {"action": {"castSpell": copy.deepcopy(heal_cast)}},
+            ]
+
+        with patch.object(joint, "mutate_apl", side_effect=fake_mutate):
+            generated = adapter.adapters["apl"].cold(random.Random(23), candidate)
+
+        source_casts = {
+            json.dumps(entry["action"]["castSpell"], sort_keys=True, separators=(",", ":"))
+            for entry in captured["source_actions"]
+            if isinstance(entry.get("action"), dict)
+            and isinstance(entry["action"].get("castSpell"), dict)
+        }
+        self.assertIn(
+            json.dumps(donor_only_heal, sort_keys=True, separators=(",", ":")),
+            source_casts,
+        )
+        self.assertEqual(
+            [
+                {"action": {"castSpell": heal_cast}},
+                {"action": {"castSpell": donor_only_heal}},
+            ],
+            generated,
+        )
+        self.assertEqual(
+            donor_only_heal["target"],
+            generated[1]["action"]["castSpell"]["target"],
+        )
+        candidate_player["rotation"]["priorityList"] = generated
+        self.assertTrue(adapter.legal(candidate))
+        candidate_player["talentsString"] = "restoration-build-a"
+        self.assertFalse(adapter.legal(candidate))
+        self.assertEqual(
+            2,
+            scope["source_apl_action_counts_by_talentsString"]["restoration-build-b"],
+        )
+
     def test_candidate_casts_and_damage_witness_are_bound_to_talent_string(self):
         baseline = self.source_request(
             "baseline-build", [18932, 11713, 17923, 25309]
@@ -629,10 +755,12 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         ]
         self.assertFalse(adapter.legal(candidate), "a build without a common native witness is excluded")
 
-        generated = adapter.adapters["apl"].cold(random.Random(23))
-        common_casts = {
+        cold_context = copy.deepcopy(baseline)
+        player(cold_context)["talentsString"] = donor_a_talents
+        generated = adapter.adapters["apl"].cold(random.Random(23), cold_context)
+        donor_a_casts = {
             json.dumps(value, sort_keys=True, separators=(",", ":"))
-            for value in scope["common_source_casts"]
+            for value in scope["source_casts_by_talentsString"][donor_a_talents]
         }
         generated_casts = {
             json.dumps(entry["action"]["castSpell"], sort_keys=True, separators=(",", ":"))
@@ -640,7 +768,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
             if isinstance(entry.get("action"), dict)
             and isinstance(entry["action"].get("castSpell"), dict)
         }
-        self.assertTrue(generated_casts <= common_casts)
+        self.assertTrue(generated_casts <= donor_a_casts)
         witness_key = json.dumps(
             {"spellId": {"spellId": 11713}}, sort_keys=True, separators=(",", ":")
         )
@@ -651,6 +779,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
             if isinstance(entry.get("action"), dict)
             and isinstance(entry["action"].get("castSpell"), dict)
         ))
+
 
 
 
@@ -685,13 +814,58 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         p["rotation"]["priorityList"] = [self.cast(11713), self.cast(17923)]
         self.assertTrue(
             adapter.legal(candidate),
-            "Baseline-only Python APL cast proof must not veto a donor-observed cast",
+            "A baseline-only Python APL cast proof must not veto a donor-observed cast",
         )
 
-        # The shared candidate boundary must still freeze non-search fields.
         candidate["simOptions"]["iterations"] += 1
         self.assertFalse(adapter.legal(candidate))
 
+
+class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
+    def test_hps_witness_uses_healing_or_shielding_and_preserves_target(self):
+        heal_cast = {
+            "spellId": {"spellId": 5185},
+            "target": {"type": "Self"},
+        }
+        source = [{"action": {"castSpell": copy.deepcopy(heal_cast)}}]
+        response = {"result": {"raidMetrics": {"parties": [{"players": [{
+            "actions": [{
+                "id": {"spellId": 5185},
+                "targets": [{"healing": 0.0, "shielding": 450.0}],
+            }],
+        }]}]}}}
+
+        witnesses = _native_positive_source_casts(source, response, objective="HPS")
+        self.assertEqual([heal_cast], witnesses)
+        candidate = [{"action": {"autocastOtherCooldowns": {}}}]
+        repaired = _ensure_native_damage_action(
+            candidate, witnesses, random.Random(1), objective="HPS"
+        )
+        self.assertEqual(heal_cast, repaired[1]["action"]["castSpell"])
+        self.assertEqual({"type": "Self"}, repaired[1]["action"]["castSpell"]["target"])
+
+    def test_tps_witness_uses_native_threat_and_preserves_source_cast(self):
+        threat_cast = {"spellId": {"spellId": 23922}}
+        source = [{"action": {"castSpell": copy.deepcopy(threat_cast)}}]
+        response = {"result": {"raidMetrics": {"parties": [{"players": [{
+            "actions": [{
+                "id": {"spellId": 23922},
+                "targets": [{"threat": 975.0}],
+            }],
+        }]}]}}}
+
+        witnesses = _native_positive_source_casts(source, response, objective="TPS")
+        self.assertEqual([threat_cast], witnesses)
+        repaired = _ensure_native_damage_action(
+            [], witnesses, random.Random(2), objective="TPS"
+        )
+        self.assertEqual(threat_cast, repaired[0]["action"]["castSpell"])
+
+    def test_profile_role_selects_the_matching_native_objective(self):
+        self.assertEqual("HPS", joint.objective_for_profile("druid/restoration"))
+        self.assertEqual("HPS", joint.objective_for_profile("priest/holy"))
+        self.assertEqual("TPS", joint.objective_for_profile("warrior/protection"))
+        self.assertEqual("DPS", joint.objective_for_profile("mage/fire"))
 
 
 class NativeExecutionErrorReporting(unittest.TestCase):
@@ -701,6 +875,88 @@ class NativeExecutionErrorReporting(unittest.TestCase):
         self.assertIs(p73.run, native_exec.run)
         self.assertIs(p73.NativeExecutionError, native_exec.NativeExecutionError)
         self.assertIs(p73.NativeScoreExtractionError, native_exec.NativeScoreExtractionError)
+
+    def test_native_objective_paths_read_per_player_hps_and_threat(self):
+        raw = {"result": {"raidMetrics": {
+            "parties": [{"players": [{
+                "hps": {
+                    "avg": 42.5,
+                    "aggregatorData": {"n": 40},
+                    "hist": {"42": 40},
+                },
+                "threat": {
+                    "avg": 987.25,
+                    "aggregatorData": {"n": 40},
+                    "hist": {"987": 40},
+                },
+            }]}],
+        }}}
+        self.assertEqual(
+            "result.raidMetrics.parties[0].players[0].hps.avg",
+            native_exec.objective_metric_path("HPS"),
+        )
+        self.assertEqual(
+            "result.raidMetrics.parties[0].players[0].threat.avg",
+            native_exec.objective_metric_path("TPS"),
+        )
+        self.assertEqual(42.5, native_exec.objective_value(raw, "HPS"))
+        self.assertEqual(987.25, native_exec.objective_value(raw, "TPS"))
+        self.assertTrue(native_exec._has_complete_distribution(raw, 40, "HPS"))
+        self.assertTrue(native_exec._has_complete_distribution(raw, 40, "TPS"))
+
+    def test_complete_hps_distribution_without_mean_is_unscored_not_dps(self):
+        raw = {"status": "VALID", "result": {"raidMetrics": {
+            "parties": [{"players": [{
+                "hps": {"aggregatorData": {"n": 40}, "hist": {"0": 40}},
+            }]}],
+        }}}
+
+        def write_output(args, **kwargs):
+            Path(args[args.index("--outfile") + 1]).write_text(json.dumps(raw))
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        with patch.object(native_exec.subprocess, "run", side_effect=write_output):
+            with self.assertRaises(native_exec.NativeScoreExtractionError) as raised:
+                native_exec.run(
+                    Path("native"), request(), 40, 731, "balanced",
+                    time.monotonic() + 5.0, objective="HPS",
+                )
+        self.assertEqual("HPS", raised.exception.objective)
+        self.assertIn(
+            "result.raidMetrics.parties[0].players[0].hps.avg",
+            str(raised.exception),
+        )
+        self.assertEqual(raw, raised.exception.raw_response)
+
+    def test_native_cli_scores_hps_and_tps_from_player_metrics(self):
+        cases = (
+            ("HPS", "hps", 31.25),
+            ("TPS", "threat", 812.5),
+        )
+        for objective, field, expected in cases:
+            with self.subTest(objective=objective):
+                raw = {"status": "VALID", "result": {"raidMetrics": {
+                    "parties": [{"players": [{
+                        field: {
+                            "avg": expected,
+                            "aggregatorData": {"n": 40},
+                            "hist": {str(int(expected)): 40},
+                        },
+                    }]}],
+                }}}
+
+                def write_output(args, **kwargs):
+                    Path(args[args.index("--outfile") + 1]).write_text(json.dumps(raw))
+                    return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+                with patch.object(native_exec.subprocess, "run", side_effect=write_output):
+                    score, response, _elapsed, request_sha = native_exec.run(
+                        Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0, objective=objective,
+                    )
+                self.assertEqual(expected, score)
+                self.assertEqual(raw, response)
+                self.assertTrue(request_sha)
 
     def test_incomplete_dps_distribution_is_execution_error_and_preserves_raw_response(self):
         source = request()
