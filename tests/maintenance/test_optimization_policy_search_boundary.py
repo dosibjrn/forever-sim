@@ -82,7 +82,7 @@ from src.game.policy_search import (
     PolicySearchResult as LegacyPolicySearchResult,
     search_priority_policy as legacy_search_priority_policy,
 )
-assert legacy_search_priority_search is search_priority_search
+assert legacy_search_priority_policy is search_priority_policy
 assert LegacyPolicySearchResult is PolicySearchResult
 assert PolicyLike is not None and PolicyRuleLike is not None
 """
