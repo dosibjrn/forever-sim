@@ -34,7 +34,7 @@ from src.game.policy import execute_priority_policy
 from src.optimization.policy_search import search_priority_policy
 from src.game.policy_threshold_search import search_policy_thresholds
 from src.game.policy_search_efficiency import PolicyEvaluationCache
-from src.shared.evaluation import Evaluation
+from src.optimization.evaluation import Evaluation
 from src.game.evaluation import evaluation_from_combat_timeline, evaluation_with_recovery
 from src.game.recovery import recover_actor_to_full
 from src.game.gear import apply_gear_selection, EXECUTABLE_CASTER_GEAR_STATS
