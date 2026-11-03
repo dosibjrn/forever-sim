@@ -236,6 +236,7 @@ def run_native_rank_pair(
     def execute(talents_string: str) -> dict[str, object]:
         request = copy.deepcopy(base_request)
         _druid_player(request)["talentsString"] = talents_string
+        request["simOptions"]["debugFirstIteration"] = False
         # The native runner writes iterations/seed and passes --rng-mode
         # explicitly to sim --request --gate.
         score, report, elapsed, payload_sha = _native_runner.run(
