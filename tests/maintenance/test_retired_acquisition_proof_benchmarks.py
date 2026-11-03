@@ -16,9 +16,11 @@ RETIRED_TOOLS = (
     "tools/wf330_druid_l20_queued_swing_evidence.py",
     "tools/wf331_druid20_web_l0_evidence.py",
     "tools/wf332_rune_policy_evidence.py",
+    "tools/wf355_p7_preflight.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
+    "src/game/data/forever/source_checkpoint_p7_legacy.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf332_druid20_acquisition_evidence",
@@ -30,6 +32,9 @@ RETIRED_IMPORT_NAMES = (
     "wf331_druid20_web_l0_evidence",
     "wf332_rune_policy_evidence",
     "source_checkpoint_acquisition",
+    "source_checkpoint_p7_legacy",
+    "wf355_p7_preflight",
+    "P7_LEGACY_HOLDOUT",
 )
 
 
@@ -111,3 +116,24 @@ def test_no_live_python_imports_retired_p1_gameir_admission_toolchain():
                 continue
             source = path.read_text(encoding="utf-8")
             assert not any(name in source for name in retired), path
+
+
+def test_unapproved_p7_legacy_holdout_preflight_is_retired():
+    """The approved P7 contract has five subgates, not a parallel legacy gate."""
+    retired = (
+        "tools/wf355_p7_preflight.py",
+        "src/game/data/forever/source_checkpoint_p7_legacy.py",
+        "tests/test_wf355_legacy_holdout_p7.py",
+        "evidence/wf355/WF355_P7_LEGACY_PREFLIGHT.json",
+    )
+    for relative in retired:
+        assert not (ROOT / relative).exists(), relative
+
+    workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
+    for relative in retired:
+        assert relative not in workflow, relative
+
+    p7 = (ROOT / "docs/gates/P7.md").read_text(encoding="utf-8")
+    for subgate in ("P7.1", "P7.2", "P7.3", "P7.4", "P7.5"):
+        assert subgate in p7, subgate
+    assert "P7_LEGACY_HOLDOUT" not in p7

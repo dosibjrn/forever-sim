@@ -225,7 +225,11 @@ def run_native_p1_direct_effect_probe(
         }
 
     deadline = time.monotonic() + float(timeout_seconds)
-    scenario = f"p1-druid-l60-single-action-{spell_id}"
+    player_class = str(_player(request).get("class") or "unknown").strip()
+    if player_class.startswith("Class"):
+        player_class = player_class[5:]
+    scenario_class = player_class.lower().replace(" ", "-") or "unknown"
+    scenario = f"p1-{scenario_class}-single-action-{spell_id}"
     try:
         positive_prepare = prepare_native_request(
             binary=binary_path,
@@ -299,6 +303,20 @@ def run_native_p1_direct_effect_probe(
             seed=seed,
             deadline=deadline,
         )
+        # A native refusal of the selected action is final. Do not spend a
+        # second native execution on an unrelated no-action control, or
+        # replace the selected action's refusal with a control failure.
+        if positive_sim.get("status") != "EXECUTED":
+            return {
+                "status": positive_sim.get("status", "ERROR"),
+                "stage": positive_sim.get("stage", "sim"),
+                "reason": positive_sim.get("reason", "NATIVE_P1_POSITIVE_SIM_NOT_EXECUTED"),
+                "positive_prepare": _compact(positive_prepare),
+                "control_prepare": _compact(control_prepare),
+                "positive_sim": _compact(positive_sim),
+                "native_executed": False, "effect_observed": False,
+                "p1_certified": False,
+            }
         # A no-action control can produce a valid native report with no
         # dps.avg. Accept zero only when the native report confirms all fights
         # completed; the positive action and all P2 callers stay strict.
@@ -320,12 +338,11 @@ def run_native_p1_direct_effect_probe(
             "native_executed": False, "effect_observed": False,
             "p1_certified": False,
         }
-    if positive_sim.get("status") != "EXECUTED" or control_sim.get("status") != "EXECUTED":
-        failed = positive_sim if positive_sim.get("status") != "EXECUTED" else control_sim
+    if control_sim.get("status") != "EXECUTED":
         return {
-            "status": failed.get("status", "ERROR"),
-            "stage": failed.get("stage", "sim"),
-            "reason": failed.get("reason", "NATIVE_P1_SIM_PAIR_NOT_EXECUTED"),
+            "status": control_sim.get("status", "ERROR"),
+            "stage": control_sim.get("stage", "sim"),
+            "reason": control_sim.get("reason", "NATIVE_P1_CONTROL_SIM_NOT_EXECUTED"),
             "positive_prepare": _compact(positive_prepare),
             "control_prepare": _compact(control_prepare),
             "positive_sim": _compact(positive_sim),
