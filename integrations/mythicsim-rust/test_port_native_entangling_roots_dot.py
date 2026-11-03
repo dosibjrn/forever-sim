@@ -39,6 +39,16 @@ class NativeRootsDotPortTest(unittest.TestCase):
             self.assertIn('"kind": "entangling_roots"', (root / "src/classes/druid/prepare/export.rs").read_text())
             self.assertIn('"entangling_roots",', (root / "src/classes/druid/prepared/coverage.rs").read_text())
 
+    def test_typed_rng_source_uses_explicit_mode_and_is_idempotent(self):
+        typed_source = (
+            "// typed RNG API already present in the selected engine" + chr(10)
+            + "let report = forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic);" + chr(10)
+        )
+        first = port.port_text("tests/classes/druid/prepare.rs", typed_source)
+        self.assertIn(port.RUST_RUNTIME_TEST_TYPED, first)
+        self.assertNotIn(port.RUST_RUNTIME_TEST, first)
+        self.assertEqual(first, port.port_text("tests/classes/druid/prepare.rs", first))
+
     def test_missing_native_anchor_is_not_silently_accepted(self):
         path = "src/classes/druid/agent.rs"
         initial = "\n".join(old for old, _, _ in port.AGENT_PATCHES)

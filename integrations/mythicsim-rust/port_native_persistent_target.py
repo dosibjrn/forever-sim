@@ -10,6 +10,37 @@ import sys
 from pathlib import Path
 
 
+def _paid_recovery_descendant(source: str) -> bool:
+    """Recognize only the exact persistent-target + early-retarget + paid-recovery composition."""
+    try:
+        from port_native_early_retarget import HELPER, NEW_GUARD, TEST, TEST_TYPED
+        from port_native_paid_recovery import (
+            FIGHT_CLOCK_OLD, FIGHT_CLOCK_NEW,
+            FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW,
+            port_fight as port_paid_recovery,
+        )
+        # Paid recovery deliberately tightens the early-retarget helper and
+        # its boundary test. Compare against those exact transformed forms,
+        # not the pre-recovery strings.
+        typed_rng = "crate::classes::druid::agent::DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)" in source
+        test_template = TEST_TYPED if typed_rng else TEST
+        fight_test = FIGHT_TEST_TYPED if typed_rng else FIGHT_TEST
+        if (HELPER.count(FIGHT_CLOCK_OLD) != 1
+                or test_template.count(FIGHT_CLOCK_TEST_OLD) != 1):
+            return False
+        paid_helper = HELPER.replace(FIGHT_CLOCK_OLD, FIGHT_CLOCK_NEW, 1)
+        paid_test = test_template.replace(FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW, 1)
+        return (
+            source.count(paid_helper) == 1
+            and source.count(NEW_GUARD) == 1
+            and source.count(paid_test) == 1
+            and source.count(fight_test.rstrip("\n")) == 1
+            and port_paid_recovery(source) == source
+        )
+    except (ImportError, ValueError):
+        return False
+
+
 def replace_once(source: str, old: str, new: str, marker: str) -> str:
     if marker in source:
         if source.count(marker) != 1:
@@ -18,15 +49,21 @@ def replace_once(source: str, old: str, new: str, marker: str) -> str:
             # Work2's later early-kill clock port is a verified descendant of
             # this source method, not a partially applied base migration.
             if marker == "    pub(crate) fn begin_next_target(&mut self":
-                from port_native_early_retarget import HELPER, NEW_GUARD, TEST
+                from port_native_early_retarget import HELPER, NEW_GUARD, TEST, TEST_TYPED
                 if (source.count(HELPER) == 1 and source.count(NEW_GUARD) == 1
-                        and source.count(TEST) == 1):
+                        and (source.count(TEST) == 1 or source.count(TEST_TYPED) == 1)):
+                    return source
+                if _paid_recovery_descendant(source):
                     return source
             if marker == "    fn native_persistent_next_target_retains_actor_and_native_queue()":
                 # Early-world clock adds an adjacent Rust test before this
                 # original test. Require both entire tests to be intact.
-                from port_native_early_retarget import TEST
-                if source.count(TEST) == 1 and source.count(FIGHT_TEST.rstrip("\n")) == 1:
+                from port_native_early_retarget import TEST, TEST_TYPED
+                if ((source.count(TEST) == 1 or source.count(TEST_TYPED) == 1)
+                        and (source.count(FIGHT_TEST.rstrip("\n")) == 1
+                             or source.count(FIGHT_TEST_TYPED.rstrip("\n")) == 1)):
+                    return source
+                if _paid_recovery_descendant(source):
                     return source
             raise ValueError(f"partial or ambiguous already-applied Rust port: {marker}")
         return source
@@ -142,6 +179,17 @@ FIGHT_TEST = """    #[test]
     }
 
 """
+
+# Typed RNG is an explicit API migration: source-native regression tests must
+# carry the same typed mode as the selected engine, not a legacy default call.
+def _typed_rng_variant(source: str) -> str:
+    return source.replace(
+        "crate::classes::druid::agent::DruidAgent::fight(&prepared)",
+        "crate::classes::druid::agent::DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)",
+    )
+
+
+FIGHT_TEST_TYPED = _typed_rng_variant(FIGHT_TEST)
 
 BRIDGE_TEST = """#[cfg(test)]
 mod persistent_next_target_tests {

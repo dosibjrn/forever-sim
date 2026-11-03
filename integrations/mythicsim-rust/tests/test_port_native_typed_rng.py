@@ -6,8 +6,16 @@ from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from port_native_typed_rng import (add_explicit_mode_to_test_calls, edit,
-                                   migrate_test_simulate_calls)
+from port_native_typed_rng import (
+    add_explicit_mode_to_test_calls, edit, migrate_test_simulate_calls,
+    one_or_paid_recovery_descendant,
+)
+from port_native_paid_recovery import (
+    CLASSES_SIGNATURE_TYPED_NEW,
+    PREPARED_SIGNATURE_TYPED_NEW,
+    PREPARED_CALL_TYPED_NEW,
+    CLI_TYPED_NEW,
+)
 
 
 class TypedRngTestCallMigrationTests(unittest.TestCase):
@@ -80,6 +88,52 @@ let second = forever_engine::simulate_prepared(
             self.assertIn("forever_engine::RngMode::Stochastic", migrated)
             self.assertEqual(migrate_test_simulate_calls(root), [])
             self.assertEqual(path.read_text(), migrated)
+
+    def test_accepts_only_exact_typed_paid_recovery_descendants(self):
+        """The final RNG audit runs after paid recovery and must remain fail-closed."""
+        cases = (
+            (
+                "classes.rs",
+                "    target_count: usize,\n) -> Result<serde_json::Value, String> {",
+                "    target_count: usize,\n    rng_mode: crate::core::rng::RngMode,\n) -> Result<serde_json::Value, String> {",
+                CLASSES_SIGNATURE_TYPED_NEW,
+            ),
+            (
+                "prepared-signature.rs",
+                "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize)",
+                "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode: crate::core::rng::RngMode)",
+                PREPARED_SIGNATURE_TYPED_NEW,
+            ),
+            (
+                "prepared-call.rs",
+                "crate::classes::native_two_world_targets(prepared, target_count)",
+                "crate::classes::native_two_world_targets(prepared, target_count, rng_mode)",
+                PREPARED_CALL_TYPED_NEW,
+            ),
+            (
+                "main-condition.rs",
+                'if args.len() != 5 || args[1] != "--infile" || args[3] != "--targets" {',
+                'if args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode" {',
+                CLI_TYPED_NEW,
+            ),
+            (
+                "main-call.rs",
+                "let report = native_two_world_targets(&prepared, target_count)",
+                "let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)",
+                CLI_TYPED_NEW,
+            ),
+        )
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, old, new, paid in cases:
+                path = root / name
+                path.write_text(paid)
+                one_or_paid_recovery_descendant(root, name, old, new, paid)
+                self.assertEqual(path.read_text(), paid)
+                forged = paid.replace("recovery_ns", "forged_recovery_ns", 1)
+                path.write_text(forged)
+                with self.assertRaises(RuntimeError):
+                    one_or_paid_recovery_descendant(root, name, old, new, paid)
 
 
 if __name__ == "__main__":

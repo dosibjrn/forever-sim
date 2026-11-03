@@ -345,8 +345,8 @@ def test_world_elapsed_reports_each_real_native_acked_target_delta():
          {"world_kill_clock_ns": 3_500_000_000},
          {"world_kill_clock_ns": 4_000_000_000}])
     assert measured["world_elapsed_seconds"] == pytest.approx(4.)
-    assert measured["world_seconds_per_target_without_paid_recovery"] == pytest.approx(4./3.)
-    assert measured["world_per_target_elapsed_seconds_without_paid_recovery"] == pytest.approx(
+    assert measured["world_seconds_per_target_including_paid_recovery"] == pytest.approx(4./3.)
+    assert measured["world_per_target_elapsed_seconds_including_paid_recovery"] == pytest.approx(
         [1., 2.5, 0.5])
 
 

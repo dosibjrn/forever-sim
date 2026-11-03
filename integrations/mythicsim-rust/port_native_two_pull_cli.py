@@ -14,6 +14,15 @@ FIGHT_MARKER = "    pub(crate) fn native_two_pull_windows(&mut self)"
 PREPARE_MARKER = "    fn prepare_first_native_pull(&mut self) {"
 CLI_MARKER = '    if args[0] == "native-pulls" {'
 ENGINE_MARKER = "pub fn native_two_pull_windows(prepared: &PreparedV2)"
+ENGINE_TYPED_MARKER = ENGINE_MARKER.replace(
+    "prepared: &PreparedV2)",
+    "prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode)",
+)
+ENGINE_CALL_OLD = "crate::classes::native_two_pull_windows(prepared).map_err(PreparedError::Invalid)"
+ENGINE_TYPED_CALL = "crate::classes::native_two_pull_windows(prepared, rng_mode).map_err(PreparedError::Invalid)"
+PREPARED_ANCHOR = "/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery."
+PREPARED_INSERTION_ANCHOR = "/// What gating a prepared v2 input and simulating it when supported came to."
+
 
 
 def replace_once(source: str, old: str, new: str, name: str) -> str:
@@ -92,11 +101,11 @@ def port_fight(source: str) -> str:
 
 
 def port_classes(source: str) -> str:
-    marker = "/// The class agent Rust preparation builds for a player:"
     if "pub(crate) fn native_two_pull_windows(" in source:
         if source.count("pub(crate) fn native_two_pull_windows(") != 1:
             raise ValueError("ambiguous class native two-pull dispatcher")
         return source
+    marker = "/// The class agent Rust preparation builds for a player:"
     pairs = (
         ("Mage", "mage", "Mage"), ("Druid", "druid", "Druid"),
         ("Warlock", "warlock", "Warlock"), ("Shaman", "shaman", "Shaman"),
@@ -120,13 +129,18 @@ def port_classes(source: str) -> str:
     )
     return replace_once(source, marker, method + marker, "class dispatcher")
 
-
 def port_prepared(source: str) -> str:
+    if ENGINE_TYPED_MARKER in source:
+        if (source.count(ENGINE_TYPED_MARKER) != 1
+                or source.count(ENGINE_TYPED_CALL) != 1
+                or ENGINE_MARKER in source
+                or ENGINE_CALL_OLD in source):
+            raise ValueError("typed prepared two-pull gateway drift")
+        return source
     if ENGINE_MARKER in source:
         if source.count(ENGINE_MARKER) != 1:
             raise ValueError("ambiguous prepared probe")
         return source
-    marker = "/// What gating a prepared v2 input and simulating it when supported came to."
     code = '''/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery.
 pub fn native_two_pull_windows(prepared: &PreparedV2)
     -> Result<serde_json::Value, PreparedError>
@@ -136,8 +150,10 @@ pub fn native_two_pull_windows(prepared: &PreparedV2)
 }
 
 '''
-    return replace_once(source, marker, code + marker, "prepared gateway")
-
+    return replace_once(
+        source, PREPARED_INSERTION_ANCHOR,
+        code + PREPARED_INSERTION_ANCHOR, "prepared gateway",
+    )
 
 def port_lib(source: str) -> str:
     marker = "    check as check_prepared, coverage as prepared_coverage, refusals as prepared_refusals,"
@@ -159,7 +175,7 @@ def port_main(source: str) -> str:
         "    contracts::prepared_v2::PreparedV2, native_two_pull_windows, prepare_json_with, prepared_refusals, simulate,",
         "main import",
     )
-    marker = '    if args == ["version"] {\n'
+    help_marker = '    if args.len() == 3 && args[0] == "check" && args[1] == "--infile" {\\n'
     code = '''    if args[0] == "native-pulls" {
         if args.len() != 5 || args[1] != "--infile"
             || args[3] != "--targets" || args[4] != "2" {
@@ -179,10 +195,7 @@ def port_main(source: str) -> str:
         return Ok(());
     }
 '''
-    # args may be empty, so this special branch must follow the help case.
-    help_marker = '    if args.len() == 3 && args[0] == "check" && args[1] == "--infile" {\n'
     return replace_once(source, help_marker, code + help_marker, "CLI command")
-
 
 def main(argv: list[str]) -> int:
     if len(argv) != 2:

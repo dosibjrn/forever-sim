@@ -207,6 +207,15 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): apply real gsim movement to native cast legality"
 fi
 
+# Charge explicit elapsed time on the retained Rust actor and execute only
+# already-scheduled native resource/HoT ticks during each between-mob interval.
+# This does not add an active direct-heal policy or certify P4-P6.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_paid_recovery.py" "$PWD"
+git add src/core/queue.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs src/main.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): charge source-native recovery time between world kills"
+fi
+
 # The canonical RNG contract is typed and required at the native boundary.
 # Never publish an environment-selected stochastic optimizer fallback.
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_typed_rng.py" "$PWD"
@@ -217,10 +226,12 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): require typed RNG mode throughout native combat"
 fi
 
-# Existing native retarget regressions and new live terminal predicate must
-# pass before publishing this selected Rust integration.
+# Existing native retarget, world terminal and queue regressions must pass
+# before publishing this selected Rust integration.
+cargo test --locked --lib typed_rng_api_tests
 cargo test --locked --lib persistent_next_target
 cargo test --locked --lib world_lethal_terminal
+cargo test --locked --lib pop_first_matching_before
 
 # This is an engine packaging update, not a gate or native reference test.
 check_engine_source

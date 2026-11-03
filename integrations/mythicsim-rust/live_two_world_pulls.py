@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Multiple *distinct* gsim 2D mob kills on one source-Rust actor/ACK timeline.
+"""Multiple distinct gsim 2D mob kills on one source-Rust actor/ACK timeline.
 
-This is a bounded production integration regression, not paid recovery,
-a 100-mob run, or P4/P5/P6 acceptance. Damage and Warcraft actions originate
-only in the pinned Rust engine; gsim applies them to real 2D world targets.
+This bounded diagnostic can charge an explicit native passive-regeneration
+interval. It is not an active heal policy, a 100-mob run, or P4/P5/P6 acceptance.
+Damage and Warcraft actions originate only in the pinned Rust engine; gsim
+applies them to real 2D world targets.
 """
 from __future__ import annotations
 
@@ -45,9 +46,9 @@ def _source_approach_radius(request: dict) -> float:
 def _verified_world_elapsed(windows: list[dict], world_kills: list[dict]) -> dict:
     """Measure time only from actual source-native kills ACKed by gsim 2D.
 
-    This is shared-clock combat+travel time, NOT a completed paid
-    recovery/100-mob leveling objective. Never infer cost from target count,
-    prepared duration or independent native one-shot fights.
+    This is shared-clock combat, travel and any explicit paid recovery time.
+    It is not a completed 100-mob leveling objective. Never infer cost from
+    target count, prepared duration or independent native one-shot fights.
     """
     if not windows or len(windows) != len(world_kills):
         raise AssertionError("RUST_WORLD_ELAPSED_TARGET_COUNT_MISMATCH")
@@ -68,8 +69,8 @@ def _verified_world_elapsed(windows: list[dict], world_kills: list[dict]) -> dic
     elapsed = last_ns / 1_000_000_000
     return {
         "world_elapsed_seconds": elapsed,
-        "world_seconds_per_target_without_paid_recovery": elapsed / len(windows),
-        "world_per_target_elapsed_seconds_without_paid_recovery": elapsed_per_target_s,
+        "world_seconds_per_target_including_paid_recovery": elapsed / len(windows),
+        "world_per_target_elapsed_seconds_including_paid_recovery": elapsed_per_target_s,
     }
 
 
@@ -242,6 +243,88 @@ def _native_health_damage_summary(windows: list[dict], *,
 
 
 
+def _native_recovery_contract_matches(result: dict, target_count: int,
+                                       recovery_ns: int) -> bool:
+    """Accept legacy no-recovery results; require exact fields when recovery is charged."""
+    if not isinstance(result, dict):
+        return False
+    if result.get("paid_recovery", False) is not (recovery_ns > 0):
+        return False
+    if result.get("paid_recovery_ns_per_gap", 0) != recovery_ns:
+        return False
+    if result.get("paid_recovery_ns_total", 0) != recovery_ns * (target_count - 1):
+        return False
+    if (recovery_ns > 0
+            and result.get("recovery_mode") != "native_scheduled_regeneration_only"):
+        return False
+    return True
+
+
+def _native_paid_recovery_summary(windows: list[dict] | None, target_count: int,
+                                  recovery_ns: int) -> dict:
+    """Validate charged intervals and resource ticks reported by the Rust actor."""
+    if (type(target_count) is not int or not 2 <= target_count <= 100
+            or type(recovery_ns) is not int or not 0 <= recovery_ns <= 300_000_000_000):
+        raise AssertionError("RUST_NATIVE_PAID_RECOVERY_INPUT_INVALID")
+    expected = target_count - 1
+    if recovery_ns == 0:
+        if windows not in (None, []):
+            raise AssertionError("RUST_NATIVE_PAID_RECOVERY_WINDOWS_INVALID")
+        return {
+            "paid_recovery": False,
+            "paid_recovery_ns_per_gap": 0,
+            "paid_recovery_ns_total": 0,
+            "paid_recovery_seconds": 0.0,
+            "native_paid_recovery": [],
+            "native_paid_recovery_events": {
+                "mana_tick_events": 0, "item_mana_tick_events": 0,
+                "health_regen_tick_events": 0, "self_heal_dot_tick_events": 0,
+            },
+        }
+    if not isinstance(windows, list) or len(windows) != expected:
+        raise AssertionError("RUST_NATIVE_PAID_RECOVERY_WINDOWS_INVALID")
+    totals = {
+        "mana_tick_events": 0, "item_mana_tick_events": 0,
+        "health_regen_tick_events": 0, "self_heal_dot_tick_events": 0,
+    }
+    previous_end = -1
+    for index, window in enumerate(windows):
+        if not isinstance(window, dict) or window.get("mode") != "native_scheduled_regeneration_only":
+            raise AssertionError("RUST_NATIVE_PAID_RECOVERY_RECEIPT_INVALID")
+        start_ns, end_ns, charged_ns = (
+            window.get("start_ns"), window.get("end_ns"), window.get("charged_ns"))
+        if (type(start_ns) is not int or type(end_ns) is not int
+                or type(charged_ns) is not int or start_ns < 0
+                or end_ns - start_ns != recovery_ns or charged_ns != recovery_ns
+                or start_ns <= previous_end):
+            raise AssertionError("RUST_NATIVE_PAID_RECOVERY_CLOCK_INVALID")
+        previous_end = end_ns
+        for resource in ("mana", "health"):
+            before, after, delta = (
+                window.get(f"{resource}_before"), window.get(f"{resource}_after"),
+                window.get(f"{resource}_delta"))
+            if (type(before) not in (int, float) or not isfinite(before) or before < 0
+                    or type(after) not in (int, float) or not isfinite(after) or after < 0
+                    or type(delta) not in (int, float) or not isfinite(delta)
+                    or abs(float(delta) - (float(after) - float(before))) > 1e-6):
+                raise AssertionError("RUST_NATIVE_PAID_RECOVERY_RESOURCE_INVALID")
+        for key in totals:
+            value = window.get(key)
+            if type(value) is not int or value < 0:
+                raise AssertionError("RUST_NATIVE_PAID_RECOVERY_EVENT_COUNT_INVALID")
+            totals[key] += value
+    total_ns = recovery_ns * expected
+    return {
+        "paid_recovery": True,
+        "paid_recovery_ns_per_gap": recovery_ns,
+        "paid_recovery_ns_total": total_ns,
+        "paid_recovery_seconds": total_ns / 1_000_000_000,
+        "native_paid_recovery": windows,
+        "native_paid_recovery_events": totals,
+    }
+
+
+
 def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
                                trace: list) -> tuple[list[dict], float]:
     """Measure actually elapsed gsim movement time before subsequent world kills.
@@ -320,18 +403,39 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
     return receipts, total_paid_s
 
 
-def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
-        target_count: int = 2, corrupt_ack: bool = False,
+def _native_world_pulls_command(binary: Path, prepared: Path,
+                                 target_count: int, recovery_ns: int, *,
+                                 rng_mode: str) -> list[str]:
+    """Build the typed native CLI call; RNG mode is always an explicit input."""
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_NATIVE_WORLD_PULLS_RNG_MODE_INVALID")
+    command = [
+        str(binary.resolve()), "native-world-pulls", "--infile",
+        str(prepared.resolve()), "--targets", str(target_count),
+        "--rng-mode", rng_mode,
+    ]
+    if recovery_ns > 0:
+        command.extend(["--recovery-ns", str(recovery_ns)])
+    return command
+
+
+def run(binary: Path, prepared: Path, *, rng_mode: str,
+        mob_health: float | None = None, target_count: int = 2,
+        corrupt_ack: bool = False, recovery_ns: int = 0,
         require_native_moving: bool = False,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
         require_native_zero_health_damage: bool = False) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_NATIVE_WORLD_PULLS_RNG_MODE_INVALID")
     if require_native_health_damage and require_native_zero_health_damage:
         raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
     if type(target_count) is not int or not 2 <= target_count <= 100:
         raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
+    if type(recovery_ns) is not int or not 0 <= recovery_ns <= 300_000_000_000:
+        raise ValueError("RUST_NATIVE_PAID_RECOVERY_DURATION_INVALID")
     request = json.loads(prepared.read_text())
     if require_native_health_damage and (not isinstance(request.get("enemy"), dict)
             or request.get("target", {}).get("auto_swing_melee") is not True):
@@ -340,8 +444,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     if not isinstance(source_hash, str) or len(source_hash) != 64:
         raise ValueError("RUST_TWO_WORLD_PREPARED_SOURCE_INVALID")
     approach_radius_yards = _source_approach_radius(request)
-    # One actual 2D world for the entire target sequence. This is the
-    # existing native combat/world ACK diagnostic, not paid travel/recovery.
+    # One actual 2D world for the entire target sequence. The Rust actor may
+    # charge a fixed native passive-regeneration interval after each lethal ACK.
     # Keep the real 20-yard grid. Start near the FIRST mob, not the
     # centroid of a growing field (which falsely strands the first pull
     # in a 100-target scenario). Subsequent range is earned by actual gsim
@@ -378,11 +482,13 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     native_moving_ticks = 0
     native_moving_receipts = 0
     native_report = None
-    env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1")
+    env = {k: v for k, v in os.environ.items() if k != "WOWSIM_RNG_MODE"} | {
+        "FOREVER_GSIM_WORLD_BRIDGE": "1",
+    }
     proc = subprocess.Popen(
-        [str(binary.resolve()), "native-world-pulls", "--infile",
-         str(prepared.resolve()), "--targets", str(target_count),
-         "--rng-mode", "stochastic"],
+        _native_world_pulls_command(
+            binary, prepared, target_count, recovery_ns, rng_mode=rng_mode
+        ),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
@@ -495,7 +601,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 or result["world_targets_killed"] != target_count
                 or not result["continuous_native_actor"]
                 or not result["actual_2d_ack"]
-                or result["paid_recovery"]
+                or not _native_recovery_contract_matches(result, target_count, recovery_ns)
                 or len(result["windows"]) != target_count
                 or any(b["native_kill_ns"] <= a["native_kill_ns"]
                        for a, b in zip(result["windows"], result["windows"][1:]))
@@ -513,6 +619,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         native_health_damage = _native_health_damage_summary(
             result["windows"], require_positive=require_native_health_damage,
             require_zero=require_native_zero_health_damage)
+        native_recovery = _native_paid_recovery_summary(
+            result.get("recovery_windows"), target_count, recovery_ns)
         if require_native_moving and walks and native_moving_ticks == 0:
             raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
         route_receipts, paid_world_movement_s = _paid_world_route_receipts(
@@ -537,7 +645,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "gsim_route_legs": walks,
             "gsim_route_paid_receipts": route_receipts,
             "gsim_route_paid_movement_s": paid_world_movement_s,
-            "paid_recovery": False, "checkpoint_certified": False,
+            **native_recovery,
+            "checkpoint_certified": False,
         }
     finally:
         if proc.poll() is None:
@@ -554,6 +663,9 @@ def main() -> None:
     target.add_argument("--classic-mob-level", type=int, default=None,
                         help="CMaNGOS ordinary-mob reference HP (Classic proxy, not Forever-verified)")
     parser.add_argument("--targets", type=int, default=2)
+    parser.add_argument("--rng-mode", choices=("balanced", "stochastic"), required=True)
+    parser.add_argument("--recovery-seconds", type=float, default=0.0,
+                        help="fixed native passive-regeneration time charged after each kill (0..300)")
     parser.add_argument("--require-native-moving", action="store_true")
     health_controls = parser.add_mutually_exclusive_group()
     health_controls.add_argument("--require-native-health-damage", action="store_true",
@@ -561,14 +673,20 @@ def main() -> None:
     health_controls.add_argument("--require-native-zero-health-damage", action="store_true",
                                  help="require selected Rust receipts with zero incoming damage")
     args = parser.parse_args()
-    valid = run(args.binary, args.prepared, mob_health=args.mob_health,
-                target_count=args.targets, require_native_moving=args.require_native_moving,
+    if not isfinite(args.recovery_seconds) or not 0 <= args.recovery_seconds <= 300:
+        raise ValueError("RUST_NATIVE_PAID_RECOVERY_DURATION_INVALID")
+    recovery_ns = round(args.recovery_seconds * 1_000_000_000)
+    valid = run(args.binary, args.prepared, rng_mode=args.rng_mode,
+                mob_health=args.mob_health, target_count=args.targets,
+                recovery_ns=recovery_ns,
+                require_native_moving=args.require_native_moving,
                 classic_mob_level=args.classic_mob_level,
                 require_native_health_damage=args.require_native_health_damage,
                 require_native_zero_health_damage=args.require_native_zero_health_damage)
     print("RUST_TWO_REAL_GSIM_WORLD_KILLS", json.dumps(valid, sort_keys=True), flush=True)
-    forged = run(args.binary, args.prepared, mob_health=args.mob_health,
-                 target_count=args.targets, corrupt_ack=True,
+    forged = run(args.binary, args.prepared, rng_mode=args.rng_mode,
+                 mob_health=args.mob_health, target_count=args.targets,
+                 corrupt_ack=True, recovery_ns=recovery_ns,
                  classic_mob_level=args.classic_mob_level)
     print("RUST_TWO_WORLD_FORGED_ACK_REJECTED", json.dumps(forged, sort_keys=True), flush=True)
 

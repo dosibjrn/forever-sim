@@ -11,7 +11,9 @@ from pathlib import Path
 
 FIGHT_ANCHOR = "    /// Callable two-window source-Rust continuation smoke, NOT a 100-mob/2D gate."
 CLASSES_ANCHOR = "/// Run the same native actor through two source-backed combat windows."
-PREPARED_ANCHOR = "/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery."
+# Keep the original prepared.rs anchor: the preceding two-pull port may already
+# own its diagnostic docstring, so that docstring is not a stable downstream seam.
+PREPARED_ANCHOR = "/// What gating a prepared v2 input and simulating it when supported came to."
 CLI_ANCHOR = '    if args[0] == "native-pulls" {'
 METHOD_MARKER = "pub(crate) fn native_two_world_targets(&mut self, target_count: usize)"
 CLASS_MARKER = "pub(crate) fn native_two_world_targets("
@@ -51,10 +53,155 @@ LEGACY_PORTS = {
 }
 
 
+def typed_rng_variant(marker: str, replacement: str) -> str:
+    """Exact published typed-RNG descendant of the original multi-world port."""
+    rng = "crate::core::rng::RngMode"
+    if marker == CLASS_MARKER:
+        return (replacement.replace(
+            "    target_count: usize,\n", "    target_count: usize,\n    rng_mode: " + rng + ",\n", 1)
+            .replace("::fight(prepared)?", "::fight(prepared, rng_mode)?"))
+    if marker == PREPARED_MARKER:
+        return (replacement.replace(
+            "target_count: usize)", "target_count: usize, rng_mode: " + rng + ")", 1)
+            .replace("native_two_world_targets(prepared, target_count)",
+                     "native_two_world_targets(prepared, target_count, rng_mode)", 1))
+    if marker == CLI_MARKER:
+        return (replacement.replace(
+            'args.len() != 5 || args[1] != "--infile" || args[3] != "--targets"',
+            'args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode"', 1)
+            .replace("let report = native_two_world_targets(&prepared, target_count)",
+                     "let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)", 1))
+    raise ValueError("RUST_WORLD_TYPED_RNG_VARIANT_UNSUPPORTED")
+
+
+
+def _typed_native_world_present(source: str, marker: str) -> bool:
+    if marker not in source:
+        return False
+    start = source.index(marker)
+    if marker == CLASS_MARKER:
+        end = source.find("\n/// Run the same native actor through two source-backed combat windows.", start)
+        block = source[start:end] if end >= 0 else source[start:]
+        common = (
+            "rng_mode: crate::core::rng::RngMode" in block
+            and block.count("::fight(prepared, rng_mode)?") == 9
+        )
+        if "recovery_ns" in block:
+            return (
+                common
+                and "recovery_ns: i64" in block
+                and block.count(".native_two_world_targets(target_count, recovery_ns)") == 9
+            )
+        return common and block.count(".native_two_world_targets(target_count)") == 9
+    if marker == PREPARED_MARKER:
+        end = source.find("\n" + PREPARED_ANCHOR, start)
+        block = source[start:end] if end >= 0 else source[start:]
+        common = "rng_mode: crate::core::rng::RngMode" in block
+        if "recovery_ns" in block:
+            return (
+                common
+                and "recovery_ns: i64" in block
+                and "crate::classes::native_two_world_targets(prepared, target_count, rng_mode, recovery_ns)" in block
+            )
+        return (
+            common
+            and "crate::classes::native_two_world_targets(prepared, target_count, rng_mode)" in block
+        )
+    if marker == CLI_MARKER:
+        end = source.find('    if args[0] == "native-pulls" {', start)
+        block = source[start:end] if end >= 0 else source[start:]
+        common = (
+            'args[5] != "--rng-mode"' in block
+            and "RngMode::parse_cli(&args[6])?" in block
+        )
+        if "recovery_ns" in block or "--recovery-ns" in block:
+            return (
+                common
+                and "if !matches!(args.len(), 7 | 9)" in block
+                and 'args[7] != "--recovery-ns"' in block
+                and "args[8].parse::<i64>()" in block
+                and "native_two_world_targets(&prepared, target_count, mode, recovery_ns)" in block
+            )
+        return (
+            common
+            and "args.len() != 7" in block
+            and "native_two_world_targets(&prepared, target_count, mode)" in block
+        )
+    return False
+
+
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if source.count(anchor) != 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
-    if source.count(replacement) == 1:
+    # Selected Rust source uses explicit typed RNG at the class, prepared and
+    # CLI layers. Insert that exact descendant, never the legacy untyped text.
+    typed = replacement
+    if marker in (CLASS_MARKER, PREPARED_MARKER, CLI_MARKER):
+        typed = typed_rng_variant(marker, replacement)
+        # Use the structural validator as the only idempotence fast path.
+        # Substring containment is unsafe: a typed base fragment can also be
+        # present inside a malformed paid-recovery descendant.
+        if _typed_native_world_present(source, marker):
+            return source
+        from port_native_paid_recovery import port_classes, port_prepared, port_main
+        transform = {
+            CLASS_MARKER: port_classes,
+            PREPARED_MARKER: port_prepared,
+            CLI_MARKER: port_main,
+        }[marker]
+        try:
+            paid_typed = transform(typed)
+            if source.count(paid_typed) == 1 and transform(source) == source:
+                return source
+        except ValueError:
+            pass
+    # Paid recovery extends every layer of the two-world API. Recognize each
+    # exact downstream signature before the base CLI port checks its old
+    # replacement, otherwise the second source-port pass mistakes the valid
+    # recovery extension for a partial method.
+    if marker == CLASS_MARKER:
+        from port_native_paid_recovery import CLASSES_SIGNATURE_NEW, port_classes
+        if CLASSES_SIGNATURE_NEW in source:
+            if port_classes(source) == source:
+                return source
+            raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_CLASSES_DRIFT")
+    if marker == PREPARED_MARKER:
+        from port_native_paid_recovery import PREPARED_SIGNATURE_NEW, port_prepared
+        if PREPARED_SIGNATURE_NEW in source:
+            if port_prepared(source) == source:
+                return source
+            raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_PREPARED_DRIFT")
+    if marker == CLI_MARKER:
+        from port_native_paid_recovery import CLI_NEW, port_main
+        if CLI_NEW in source:
+            if port_main(source) == source:
+                return source
+            raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_CLI_DRIFT")
+    if marker == METHOD_MARKER:
+        from port_native_paid_recovery import (
+            FIGHT_SIGNATURE_NEW, is_composed_paid_recovery_source,
+        )
+        if FIGHT_SIGNATURE_NEW in source:
+            if is_composed_paid_recovery_source(source):
+                return source
+            raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_DESCENDANT_DRIFT")
+    # Paid recovery changes the class/prepared/CLI signatures as well as the
+    # fight method. Reapplying the original source port must recognize only
+    # the exact composed descendant, never add duplicate entry points.
+    if marker in (CLASS_MARKER, PREPARED_MARKER, CLI_MARKER):
+        from port_native_paid_recovery import port_classes, port_prepared, port_main
+        transform = {
+            CLASS_MARKER: port_classes,
+            PREPARED_MARKER: port_prepared,
+            CLI_MARKER: port_main,
+        }[marker]
+        try:
+            expected = transform(replacement)
+            if source.count(expected) == 1 and transform(source) == source:
+                return source
+        except ValueError:
+            pass
+    if marker not in (CLASS_MARKER, PREPARED_MARKER, CLI_MARKER) and source.count(replacement) == 1:
         return source
     # The maintained two-world method may already have separately
     # source-validated native health-damage and mana-regeneration receipts.
@@ -85,10 +232,10 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
             older = source[start:end]
             if start >= end or any(token not in older for token in required):
                 raise ValueError(f"RUST_WORLD_MULTI_TARGET_LEGACY_DRIFT_{marker}")
-            return source[:start] + replacement + source[end:]
+            return source[:start] + typed + source[end:]
     if marker in source:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_PARTIAL_{marker}")
-    return source.replace(anchor, replacement + anchor, 1)
+    return source.replace(anchor, typed + anchor, 1)
 
 
 FIGHT_METHOD = """
