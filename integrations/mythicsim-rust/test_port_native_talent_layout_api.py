@@ -25,10 +25,12 @@ class NativeTalentLayoutApiPortTest(unittest.TestCase):
             for relative, patches in port.PATH_PATCHES.items():
                 path = root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(
-                    "\n".join(old for old, _, _ in patches) + "\n",
-                    encoding="utf-8",
-                )
+                initial = "\n".join(old for old, _, _ in patches) + "\n"
+                if relative == "src/lib.rs":
+                    # Reproduce the trailing blank line left by the composed
+                    # earlier Rust source ports on the selected engine.
+                    initial += "\n"
+                path.write_text(initial, encoding="utf-8")
 
             self.assertEqual(port.main([directory]), 0)
             first = {relative: (root / relative).read_bytes() for relative in port.PATHS}
@@ -43,7 +45,11 @@ class NativeTalentLayoutApiPortTest(unittest.TestCase):
             self.assertIn('"in_proto": talent.in_proto', prepare)
             self.assertIn("pub fn forever_druid_talent_layout()", library)
             self.assertIn("druid_talent_layout_api_tests", library)
+            self.assertTrue(library.endswith("\n"))
             self.assertFalse(library.endswith("\n\n"))
+            # The talent-layout port runs again after later ports; it must
+            # normalize an already-installed API if they leave a blank EOF.
+            self.assertEqual(port.port_text("src/lib.rs", library + "\n"), library)
             self.assertIn('args == ["talent-layout", "--class", "druid"]', main)
             self.assertIn("forever-engine talent-layout --class druid", main)
 
