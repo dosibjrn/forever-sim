@@ -276,6 +276,10 @@ print("RUST_TYPED_RNG_PAID_RECOVERY_COMPOSITION_PASS")
 # selected-engine chain. It must leave the original prepared.rs anchor for the
 # distinct world-kill gateway; the paid-recovery port then extends only that
 # world-kill method and remains idempotent.
+assert two_world_cli.PREPARED_ANCHOR == (
+    "/// What gating a prepared v2 input and simulating it when supported came to."
+)
+assert two_world_cli.PREPARED_ANCHOR != two_pull_cli.PREPARED_ANCHOR
 two_pull_prepared = two_pull_cli.port_prepared(two_world_cli.PREPARED_ANCHOR)
 assert two_pull_prepared.count(two_world_cli.PREPARED_ANCHOR) == 1
 assert two_pull_cli.PREPARED_ANCHOR in two_pull_prepared
@@ -285,6 +289,7 @@ combined_prepared = two_world_cli.insert(
 )
 assert "pub fn native_two_pull_windows(prepared: &PreparedV2)" in combined_prepared
 assert "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode:" in combined_prepared
+assert combined_prepared.index("pub fn native_two_pull_windows") < combined_prepared.index("pub fn native_two_world_targets")
 assert combined_prepared.count(two_world_cli.PREPARED_ANCHOR) == 1
 assert two_pull_cli.port_prepared(combined_prepared) == combined_prepared
 paid_combined = port.port_prepared(combined_prepared)
