@@ -54,6 +54,28 @@ LEGACY_PORTS = {
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if source.count(anchor) != 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
+    # Paid recovery extends every layer of the two-world API. Recognize each
+    # exact downstream signature before the base CLI port checks its old
+    # replacement, otherwise the second source-port pass mistakes the valid
+    # recovery extension for a partial method.
+    if marker == CLASS_MARKER:
+        from port_native_paid_recovery import CLASSES_SIGNATURE_NEW, port_classes
+        if CLASSES_SIGNATURE_NEW in source:
+            if port_classes(source) == source:
+                return source
+            raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_CLASSES_DRIFT")
+    if marker == PREPARED_MARKER:
+        from port_native_paid_recovery import PREPARED_SIGNATURE_NEW, port_prepared
+        if PREPARED_SIGNATURE_NEW in source:
+            if port_prepared(source) == source:
+                return source
+            raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_PREPARED_DRIFT")
+    if marker == CLI_MARKER:
+        from port_native_paid_recovery import CLI_NEW, port_main
+        if CLI_NEW in source:
+            if port_main(source) == source:
+                return source
+            raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_CLI_DRIFT")
     if marker == METHOD_MARKER:
         from port_native_paid_recovery import (
             FIGHT_SIGNATURE_NEW, is_composed_paid_recovery_source,
