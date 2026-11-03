@@ -243,6 +243,23 @@ def _native_health_damage_summary(windows: list[dict], *,
 
 
 
+def _native_recovery_contract_matches(result: dict, target_count: int,
+                                       recovery_ns: int) -> bool:
+    """Accept legacy no-recovery results; require exact fields when recovery is charged."""
+    if not isinstance(result, dict):
+        return False
+    if result.get("paid_recovery", False) is not (recovery_ns > 0):
+        return False
+    if result.get("paid_recovery_ns_per_gap", 0) != recovery_ns:
+        return False
+    if result.get("paid_recovery_ns_total", 0) != recovery_ns * (target_count - 1):
+        return False
+    if (recovery_ns > 0
+            and result.get("recovery_mode") != "native_scheduled_regeneration_only"):
+        return False
+    return True
+
+
 def _native_paid_recovery_summary(windows: list[dict] | None, target_count: int,
                                   recovery_ns: int) -> dict:
     """Validate charged intervals and resource ticks reported by the Rust actor."""
@@ -577,10 +594,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 or result["world_targets_killed"] != target_count
                 or not result["continuous_native_actor"]
                 or not result["actual_2d_ack"]
-                or result.get("paid_recovery") is not (recovery_ns > 0)
-                or result.get("paid_recovery_ns_per_gap") != recovery_ns
-                or result.get("paid_recovery_ns_total") != recovery_ns * (target_count - 1)
-                or result.get("recovery_mode") != "native_scheduled_regeneration_only"
+                or not _native_recovery_contract_matches(result, target_count, recovery_ns)
                 or len(result["windows"]) != target_count
                 or any(b["native_kill_ns"] <= a["native_kill_ns"]
                        for a, b in zip(result["windows"], result["windows"][1:]))
