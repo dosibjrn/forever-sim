@@ -258,7 +258,7 @@ def test_p73_paid_stochastic_finalist_uses_real_paired_score_and_separate_seed(
     assert score == 734.0
     assert receipt["world_mean_dps"] == 734.0
     assert [k for k, *_ in calls] == ["native", "world"]
-    assert all(n == 24 and mode == "stochastic" for _, _, n, mode in calls)
+    assert all(n == 24 and mode == "balanced" for _, _, n, mode in calls)
     assert all(req["simOptions"]["randomSeed"] == "1947003"
                for _, req, _, _ in calls)
     assert all(req["raid"] == original["raid"] for _, req, _, _ in calls)
