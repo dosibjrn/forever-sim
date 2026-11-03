@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded direct execution of the existing live P1-P7.5 production gates.
+"""Bounded direct execution of the existing active P3-P6 and P7.1-P7.5 production gates.
 
 This probes the SAME source-backed gate CLI; no cached evidence, ledger reads,
 alternative simulator, or PASS recording. A timeout is NOT partial success.
@@ -21,7 +21,10 @@ from tools.wf_gate import GATES
 
 def probe_gate(class_key: str, level: int, spec: str, gate: str,
                timeout_s: float, *, root: Path = ROOT) -> dict:
-    """Execute one REAL gate in an isolated process, with an absolute timeout."""
+    """Execute one active gate in an isolated process, with an absolute timeout."""
+    if gate not in GATES:
+        return {"gate": gate, "status": "RETIRED",
+                "reason": "GATE_NOT_IN_ACTIVE_ACCEPTANCE_SCOPE"}
     command = [sys.executable, str(root / "tools" / "wf_gate.py"),
                "--class", class_key, "--level", str(level),
                "--spec", spec, "--gate", gate]

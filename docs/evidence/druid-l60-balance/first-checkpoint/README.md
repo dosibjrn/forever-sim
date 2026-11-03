@@ -1,7 +1,9 @@
 # First complete checkpoint target: druid:L60:balance
 
+> **Historical plan note (2026-11-03):** P1/P2 were retired by owner-approved PROCESS v2.20. This document's former P1/P2 run instructions are superseded; active acceptance is P3–P6 and P7.1–P7.5 only.
+
 This work is the vertical slice toward **0/148 → 1/148**, not a claim that the
-checkpoint is accepted. The canonical approval contract is [PROCESS v2.10](../../../PROCESS.md),
+checkpoint is accepted. The canonical approval contract is [PROCESS v2.20](../../../PROCESS.md),
 not a historical six-gate release or a native-only diagnostic.
 
 ## Verified initial inventory (2026-10-30)
@@ -13,9 +15,7 @@ not a historical six-gate release or a native-only diagnostic.
 - PR #25 merged: independent Rust-only P7.5 joint search, 807.9191412484101
   4,000-fight frozen holdout mean. The PR explicitly records that this is NOT
   formal coupled P7.5 acceptance.
-- Actual P1 and P2 Python live providers exist as
-  `tools/wf_gate_p1_live.py`, `tools/wf_gate_p2_live.py`. Their Druid L60
-  results must be **run**, not assumed from older level 20/30 evidence.
+- The former P1/P2 Python providers are historical diagnostics only. Their Druid L60 runs are not part of current checkpoint acceptance and must not be scheduled or recorded.
 - The public gate CLI dispatches P3–P6 and P7.1–P7.5 to modules
   `tools.wf_gate_<gate>_live`. Those modules did not exist on main at
   the start of this work: **BLOCKED: LIVE_GATE_RUNNER_MISSING**.
@@ -37,7 +37,7 @@ python tools/wf_native_session_capability.py --binary engine-bin/forever-engine 
 ```
 
 The first command invokes `tools/wf_gate.py --class druid --level 60 --spec
-balance --gate all` **fresh**, enumerating P1–P6 + all five P7 gates. It rejects
+balance --gate all` **fresh**, enumerating P3–P6 + all five P7 gates. It rejects
 missing, malformed, or inconsistent reports, records real blockers, and never
 promotes its own output to a certified checkpoint. The second uses a real
 selected native executable; it fails closed if the session protocol is absent.

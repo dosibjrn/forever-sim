@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Class/level/spec-specific P1-P7 acceptance gates for WoW Forever.
+"""Class/level/spec-specific active P3-P7.5 acceptance gates for WoW Forever.
 
 Runtime-first acceptance: execute the source-backed gate implementation.
 Evidence JSON is OUTPUT ONLY, never an input authority to award PASS. Missing
@@ -7,7 +7,7 @@ executable gate implementations are BLOCKED (exit nonzero), even if a historical
 JSON claims PASS.
 
 Example:
-    python tools/wf_gate.py --class druid --level 20 --gate P2
+    python tools/wf_gate.py --class druid --level 20 --gate P3
     python tools/wf_gate.py --class druid --level 30 --spec feral-cat --gate all
 
 A gate provider runs the actual code and returns an auditable result. An optional
@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-GATES = tuple(f"P{i}" for i in range(1, 7)) + tuple(f"P7.{i}" for i in range(1, 6))
+GATES = tuple(f"P{i}" for i in range(3, 7)) + tuple(f"P7.{i}" for i in range(1, 6))
 ROOT = Path(__file__).resolve().parent.parent
 # The documented CLI works from a clean checkout without PYTHONPATH exports.
 if str(ROOT) not in sys.path:
@@ -426,6 +426,8 @@ def _validate_p7(e: dict, _: dict) -> list[str]:
     return errors
 
 
+# P1/P2 validators remain available only to the legacy JSON diagnostic helper.
+# They are not in GATES, the live CLI, or the M1 acceptance register.
 VALIDATORS = {"P1": _validate_p1, "P2": _validate_p2, "P3": _validate_p3,
               "P4": _validate_p4, "P5": _validate_p5, "P6": _validate_p6,
               "P7": _validate_p7}
@@ -484,37 +486,35 @@ def evaluate(evidence_dir: Path, class_key: str, level: int, spec: str, gate: st
 
 
 def _run_live_gate(root: Path, class_key: str, level: int, spec: str,
-                   gate: str, scenario_id: str) -> dict:
-    """Execute a real gate provider. Never award PASS from persisted JSON."""
-    if gate == "P1":
-        from tools.wf_gate_p1_live import run_live
-        kwargs = {"spec": spec, "scenario_id": scenario_id}
-    elif gate == "P2":
-        from tools.wf_gate_p2_live import run_live
-        kwargs = {"spec": spec}
-    else:
-        # Explicit provider naming contract for one-gate-sized implementations.
-        # A provider implements run_live(root, class_key, level, *, spec=...)
-        # and MUST execute/check the actual runtime and acceptance predicate.
-        module_name = "tools.wf_gate_" + gate.lower().replace(".", "_") + "_live"
-        try:
-            provider = importlib.import_module(module_name)
-        except ModuleNotFoundError as exc:
-            if exc.name == module_name:
-                return {"status": "BLOCKED", "reasons": [
-                    "LIVE_GATE_RUNNER_MISSING:" + module_name]}
-            return {"status": "BLOCKED", "reasons": [
-                "LIVE_GATE_DEPENDENCY_MISSING:" + str(exc.name)]}
-        except Exception as exc:
-            return {"status": "FAIL", "reasons": [
-                "LIVE_GATE_IMPORT_FAILED:" + type(exc).__name__]}
-        run_live = getattr(provider, "run_live", None)
-        if not callable(run_live):
-            return {"status": "BLOCKED", "reasons": [
-                "LIVE_GATE_RUNNER_NOT_CALLABLE:" + module_name]}
-        kwargs = {"spec": spec}
+                   gate: str, scenario_id: str = "") -> dict:
+    """Execute one active production gate; retired P1/P2 are not callable.
+
+    Keep the optional trailing scenario argument for existing P7 callers; it is
+    intentionally ignored because scenario-specific P1 execution is retired.
+    """
+    if gate not in GATES:
+        return {"status": "BLOCKED", "reasons": ["RETIRED_OR_UNKNOWN_GATE:" + gate]}
+    # Explicit provider naming contract for one-gate-sized implementations.
+    # A provider implements run_live(root, class_key, level, *, spec=...)
+    # and MUST execute/check the actual runtime and acceptance predicate.
+    module_name = "tools.wf_gate_" + gate.lower().replace(".", "_") + "_live"
     try:
-        report = run_live(root, class_key, level, **kwargs)
+        provider = importlib.import_module(module_name)
+    except ModuleNotFoundError as exc:
+        if exc.name == module_name:
+            return {"status": "BLOCKED", "reasons": [
+                "LIVE_GATE_RUNNER_MISSING:" + module_name]}
+        return {"status": "BLOCKED", "reasons": [
+            "LIVE_GATE_DEPENDENCY_MISSING:" + str(exc.name)]}
+    except Exception as exc:
+        return {"status": "FAIL", "reasons": [
+            "LIVE_GATE_IMPORT_FAILED:" + type(exc).__name__]}
+    run_live = getattr(provider, "run_live", None)
+    if not callable(run_live):
+        return {"status": "BLOCKED", "reasons": [
+            "LIVE_GATE_RUNNER_NOT_CALLABLE:" + module_name]}
+    try:
+        report = run_live(root, class_key, level, spec=spec)
     except Exception as exc:
         return {"status": "FAIL", "reasons": [
             "LIVE_GATE_EXECUTION_FAILED:" + type(exc).__name__ + ":" + str(exc)[:240]]}
@@ -528,9 +528,9 @@ def _run_live_gate(root: Path, class_key: str, level: int, spec: str,
         return {"status": "FAIL", "reasons": ["INCONSISTENT_LIVE_GATE_PASS"]}
     if report["status"] != "PASS" and not reasons:
         return {"status": "FAIL", "reasons": ["LIVE_GATE_FAILURE_WITHOUT_REASON"]}
-    # P3–P7 gate providers must identify a real executed engine and its run.
+    # Every active gate must identify a real executed engine and its run.
     # These are necessary metadata, NOT a substitute for testing real behavior.
-    if gate not in ("P1", "P2") and report["status"] == "PASS":
+    if report["status"] == "PASS":
         proof = report.get("runtime_proof")
         if not isinstance(proof, dict) or proof.get("executed") is not True or any(
                 not isinstance(proof.get(k), str) or not proof[k]
@@ -572,16 +572,13 @@ def _p6_replay_receipts(report: dict) -> list[dict] | None:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
-        description="Execute live source-backed WoW Forever P1–P7.5 gates")
+        description="Execute live source-backed WoW Forever active P3–P7.5 gates")
     parser.add_argument("--class", dest="class_key", required=True)
     parser.add_argument("--level", type=int, required=True)
     parser.add_argument("--spec", default="unrestricted")
     parser.add_argument("--gate", choices=(*GATES, "P7", "all"), required=True)
-    parser.add_argument("--p1-scenario", default="current_solo_leveling_100mob_v1")
     parser.add_argument("--evidence-dir", type=Path, default=ROOT / "gate_evidence",
                         help="Legacy compatibility only; never read for acceptance")
-    parser.add_argument("--refresh-p2-source-audit", action="store_true",
-                        help="Historical source diagnostics, not live acceptance")
     parser.add_argument("--out", type=Path,
                         help="Write the freshly executed results and provenance")
     parser.add_argument("--record-pass", "--record-progress", dest="record_pass",
@@ -593,22 +590,12 @@ def main(argv=None) -> int:
             parser.error(f"--{name} requires a lower-case source key")
     if not 1 <= a.level <= 60:
         parser.error("--level must be within 1..60")
-    if a.refresh_p2_source_audit:
-        parser.error("Source-audit refresh must use its dedicated tool; "
-                     "this CLI never consumes or regenerates acceptance inputs")
-    if a.gate in ("P1", "all"):
-        from datetime import date
-        from os import environ
-        if not environ.get("WOW_FOREVER_BUILD_AS_OF"):
-            environ["WOW_FOREVER_BUILD_AS_OF"] = date.today().isoformat()
-            environ["WOW_FOREVER_BUILD_SOURCE"] = "p1_live_current_date"
     targets = (GATES if a.gate == "all" else
                tuple(f"P7.{n}" for n in range(1, 6)) if a.gate == "P7"
                else (a.gate,))
     results = []
     for gate in targets:
-        report = _run_live_gate(ROOT, a.class_key, a.level, a.spec,
-                                gate, a.p1_scenario)
+        report = _run_live_gate(ROOT, a.class_key, a.level, a.spec, gate)
         if a.record_pass:
             from tools.m1_progress import record_partial, record_pass
             if report["status"] == "PASS":

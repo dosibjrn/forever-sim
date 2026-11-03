@@ -128,7 +128,7 @@ def test_fast_validator_targets_exist():
 
 
 def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
-    """Eleven compatible live PASS stamps count; incompatible stamps do not."""
+    """Nine compatible live PASS stamps count; incompatible stamps do not."""
     from src.game.checkpoint_acceptance_status import accepted_checkpoint_status
     from tools.m1_progress import FIELDS, GATES
 

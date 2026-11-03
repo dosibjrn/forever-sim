@@ -1,4 +1,4 @@
-"""Gate-level RED -> GREEN -> REFACTOR protocol: fail closed across all 7."""
+"""Gate-level RED -> GREEN -> REFACTOR protocol: fail closed across all 9."""
 from __future__ import annotations
 from copy import deepcopy
 from hashlib import sha256
@@ -11,7 +11,7 @@ H='1'*64
 C='druid:L30:unrestricted'
 
 
-def evidence(gate='P1',phase='COMPLETE'):
+def evidence(gate='P3',phase='COMPLETE'):
     criterion=f'{gate}_SOURCE_SCOPE_ACCEPTANCE'
     red={'outcome':'FAIL','criterion_id':criterion,'test_id':f'{gate}_REAL_ACCEPTANCE',
          'evidence_sha256':'2'*64}
@@ -31,7 +31,7 @@ def evidence(gate='P1',phase='COMPLETE'):
 
 
 @pytest.mark.parametrize('gate',GATES)
-def test_real_seven_gates_each_have_complete_lifecycle(gate):
+def test_real_nine_active_gates_each_have_complete_lifecycle(gate):
     assert validate_cycle(evidence(gate),checkpoint=C,source_sha256=H)=='COMPLETE'
 
 
@@ -42,7 +42,7 @@ def test_p3_red_is_a_first_class_nonpassing_state():
     assert not result['checkpoint_accepted']
 
 
-def test_all_seven_cycle_complete_is_still_not_semantic_acceptance():
+def test_all_nine_active_cycle_complete_is_still_not_semantic_acceptance():
     records=[evidence(gate) for gate in GATES]
     result=validate_gate_ledger({'checkpoint':C,'source_sha256':H,'gates':records})
     assert result['cycle_structure_complete'] and not result['process_evidence_complete']
@@ -52,12 +52,12 @@ def test_all_seven_cycle_complete_is_still_not_semantic_acceptance():
 @pytest.mark.parametrize('mutation',[
     lambda x:x.pop('red'),
     lambda x:x['red'].update(outcome='PASS'),
-    lambda x:x['green'].update(criterion_id='P1_CHANGED'),
+    lambda x:x['green'].update(criterion_id='P3_CHANGED'),
     lambda x:x['green'].update(test_id='DIFFERENT_TEST'),
     lambda x:x['green'].pop('gate_certificate_ref'),
     lambda x:x['refactor'].update(genericity_reviewed=False),
     lambda x:x['refactor'].update(post_refactor_gate_status='FAIL'),
-    lambda x:x['refactor'].update(criterion_id='P1_DIFFERENT'),
+    lambda x:x['refactor'].update(criterion_id='P3_DIFFERENT'),
     lambda x:x['refactor'].update(cross_context_regressions=[]),
     lambda x:x['refactor']['cross_context_regressions'][0].update(checkpoint=C),
     lambda x:x.update(source_sha256='6'*64),
@@ -132,7 +132,7 @@ def test_formal_complete_ledger_requires_actual_evidence_sha256(tmp_path):
 
 
 def test_evidence_path_cannot_escape_project(tmp_path):
-    records=[evidence('P1')]
+    records=[evidence('P3')]
     _with_files(records,tmp_path)
     records[0]['red']['evidence_file']='../outside.json'
     with pytest.raises(GateCycleError,match='EVIDENCE_PATH_ESCAPES_PROJECT'):

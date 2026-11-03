@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Verify Merge command and parse only allowed gate targets
+      - name: Verify Merge command and parse only active gate targets
         id: targets
         shell: bash
         env:
@@ -74,11 +74,11 @@ jobs:
           [[ "$targets" != *$'\n'* ]] || exit 2
           read -r -a entries <<< "$targets"
           (( ${#entries[@]} >= 1 && ${#entries[@]} <= 12 )) ||
-            { echo 'Choose 1-12 checkpoint:gate pairs' >&2; exit 2; }
+            { echo 'Choose 1-12 active checkpoint:gate pairs' >&2; exit 2; }
           declare -A seen=()
           unique=()
           for entry in "${entries[@]}"; do
-            [[ "$entry" =~ ^(druid|hunter|mage|paladin|priest|rogue|shaman|warlock|warrior):(20|30|40|60):[a-z][a-z0-9_-]*:(P[1-6]|P7\.[1-5])$ ]] ||
+            [[ "$entry" =~ ^(druid|hunter|mage|paladin|priest|rogue|shaman|warlock|warrior):(20|30|40|60):[a-z][a-z0-9_-]*:(P[3-6]|P7\.[1-5])$ ]] ||
               { echo "Invalid gate target: $entry" >&2; exit 2; }
             gate="${entry##*:}"
             # P7.1 supports a genuine short coupled-native diagnostic.
