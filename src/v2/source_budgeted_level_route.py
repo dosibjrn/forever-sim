@@ -13,7 +13,7 @@ from typing import Any
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.level_legality import LevelState, validate_level_state, validate_level_transition
-from src.game.talents import apply_talent_selection, validate_talent_selection
+from src.game.talents import apply_talent_selection
 from src.v2.source_legal_beam import legal_point_frontier
 from src.v2.source_stateful_budgeted import run_source_stateful_budgeted
 
@@ -28,13 +28,13 @@ class _Path:
 def _source_successors(ir, parent: LevelState | None, *, level: int,
                        max_children: int) -> list[dict[str, int]]:
     prior = dict(parent.talents) if parent else {}
-    # The unchanged allocation is a legal banked-points option.  Other moves
-    # are SOURCE-valid +1 point selections, not arbitrary respecs.
+    # The prior allocation came from an accepted L2 path. The source
+    # frontier already validates new +1 proposals, and L2 subsequently
+    # prepares each selected actor. Do not run a third game-rule check here.
     choices = [prior]
     choices.extend(legal_point_frontier(ir, prior, level=level, allow_transfers=False))
     legal = []
     for selection in choices:
-        validate_talent_selection(ir, selection, level=level)
         normalized = {k: int(v) for k, v in selection.items() if v}
         if normalized not in legal:
             legal.append(normalized)
@@ -145,11 +145,15 @@ def search_source_bounded_level_route(*, class_key: str, start_level: int = 10,
                 state = LevelState(class_key=class_key, level=level,
                                    race_key=ir.actor.metadata.get('race_key'),
                                    talents=talents, action_ids=action_ids)
-                # Retain only the bounded legacy scenario check here; it is
-                # not native game-legality evidence.
-                validate_level_state(state)
-                transition = (validate_level_transition(parent.state, state)
-                              if parent is not None else None)
+                # The root needs an independent legacy scenario check. Each
+                # continuation is already checked (parent AND child) by the
+                # transition function; avoid rebuilding GameIR a third time.
+                # Neither check certifies native game legality.
+                if parent is None:
+                    validate_level_state(state)
+                    transition = None
+                else:
+                    transition = validate_level_transition(parent.state, state)
                 score = float(winner['score_s_per_mob'])
                 step = {'level': level, 'source_scenario_race': state.race_key,
                         'talents': talents, 'source_action_ids': list(action_ids),

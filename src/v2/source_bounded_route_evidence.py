@@ -132,8 +132,14 @@ def checked_source_scenario_routes(root: Path, *, version: str, item_db_sha: str
                 state=LevelState(class_key=cls,level=level,
                     race_key=step.get('source_scenario_race'),
                     talents=step['talents'],action_ids=tuple(step['source_action_ids']))
-                validate_level_state(state)
-                legal=(validate_level_transition(parent,state) if parent else None)
+                # Continuation validation already checks both parent and
+                # child, including their source context. Do not repeat the
+                # independent GameIR check for every replayed route step.
+                if parent is None:
+                    validate_level_state(state)
+                    legal = None
+                else:
+                    legal = validate_level_transition(parent, state)
                 if legal!=step.get('source_legal_transition'):
                     raise ValueError(f'{cls}:bad_talent_or_acquisition_transition_L{level}')
                 if (step.get('scratch_verification_complete') is not True or
