@@ -51,7 +51,14 @@ jobs:
       - name: Checkout pinned source data
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           lfs: true
+      - name: Verify exact checkout head
+        run: |
+          expected="${{ github.event.pull_request.head.sha || github.sha }}"
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$expected"
+          echo "Exact source HEAD: $actual"
       - name: Python 3.11
         uses: actions/setup-python@v5
         with:
