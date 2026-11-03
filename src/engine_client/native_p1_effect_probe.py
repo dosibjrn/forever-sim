@@ -225,7 +225,11 @@ def run_native_p1_direct_effect_probe(
         }
 
     deadline = time.monotonic() + float(timeout_seconds)
-    scenario = f"p1-druid-l60-single-action-{spell_id}"
+    player_class = str(_player(request).get("class") or "unknown").strip()
+    if player_class.startswith("Class"):
+        player_class = player_class[5:]
+    scenario_class = player_class.lower().replace(" ", "-") or "unknown"
+    scenario = f"p1-{scenario_class}-single-action-{spell_id}"
     try:
         positive_prepare = prepare_native_request(
             binary=binary_path,
