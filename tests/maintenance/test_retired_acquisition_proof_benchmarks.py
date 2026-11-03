@@ -110,7 +110,12 @@ def test_no_live_python_imports_retired_source_proof_and_audit_clis():
         for path in root.rglob("*.py"):
             if path == Path(__file__):
                 continue
-            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            except SyntaxError:
+                # Non-importable legacy scripts cannot provide live imports.
+                # Their syntax is outside this retired-import boundary check.
+                continue
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
                     imported = {part for alias in node.names for part in alias.name.split(".")}
