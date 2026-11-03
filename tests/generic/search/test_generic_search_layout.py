@@ -15,6 +15,9 @@ MOVED = (
     "test_generic_level_frontier_g22.py",
     "test_generic_mode_g23.py",
     "test_generic_cross_mode_policy_g30.py",
+    "test_v2_analytic_scorer.py",
+    "test_v2_analytic_scorer_edges.py",
+    "test_v2_analytic_frontier_extra.py",
 )
 
 
