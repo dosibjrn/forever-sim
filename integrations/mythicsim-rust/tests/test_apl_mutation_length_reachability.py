@@ -50,7 +50,7 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
     assert len(source_actions) == 10
     assert len(historical_actions) == 19
 
-    source_spells, same_spell, allowed_casts, source_predicates = _corpus(source_actions)
+    source_spells, same_spell, allowed_casts, source_predicates, source_aura_keys = _corpus(source_actions)
     source_spell_keys = {
         json.dumps(spell, sort_keys=True, separators=(",", ":"))
         for spell in source_spells
@@ -75,8 +75,9 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
         identity = cast.get("spellId") if isinstance(cast, dict) else None
         if not isinstance(condition, dict) or not isinstance(identity, dict):
             continue
-        refs, valid = _condition_spell_identity_keys(condition)
-        if not valid or not set(refs) <= source_spell_keys:
+        spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
+        if (not valid or not set(spell_refs) <= source_spell_keys
+                or not set(aura_refs) <= source_aura_keys):
             continue
         shape = json.dumps(
             _predicate_shape(condition), sort_keys=True, separators=(",", ":")
@@ -88,11 +89,11 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
             historical_cross_cast_count += 1
             historical_cross_cast_shapes.add(shape)
 
-    # 11/16 historical conditions are source-compatible; 6 are cross-cast,
-    # including spell-agnostic predicates. The five conditions referencing
-    # aura 408255 are excluded because it is not in the saved source cast set.
-    assert historical_compatible_count == 11
-    assert historical_cross_cast_count == 6
+    # All 16 historical conditions are compatible with the two source
+    # vocabularies: spellId refs from source casts and auraId refs observed
+    # on source castSpell predicates. Seven conditions are cross-cast.
+    assert historical_compatible_count == 16
+    assert historical_cross_cast_count == 7
     assert historical_compatible_shapes <= source_shapes
     assert historical_cross_cast_shapes <= source_shapes
 
@@ -142,7 +143,7 @@ def test_cold_and_elite_cast_conditions_use_only_source_compatible_cast_predicat
         },
     ]
     source_snapshot = json.loads(json.dumps(source_actions))
-    spells, same_spell, _allowed_casts, compatible = _corpus(source_actions)
+    spells, same_spell, _allowed_casts, compatible, source_aura_keys = _corpus(source_actions)
     source_spell_keys = {
         json.dumps(spell, sort_keys=True, separators=(",", ":"))
         for spell in spells
@@ -170,9 +171,10 @@ def test_cold_and_elite_cast_conditions_use_only_source_compatible_cast_predicat
                 if not isinstance(cast, dict) or condition is None:
                     continue
                 key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
-                refs, valid = _condition_spell_identity_keys(condition)
+                spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
                 assert valid, (seed, cold, condition)
-                assert set(refs) <= source_spell_keys, (seed, cold, key, refs)
+                assert set(spell_refs) <= source_spell_keys, (seed, cold, key, spell_refs)
+                assert set(aura_refs) <= source_aura_keys, (seed, cold, key, aura_refs)
                 shape = json.dumps(
                     _predicate_shape(condition), sort_keys=True, separators=(",", ":")
                 )
@@ -225,7 +227,7 @@ def test_native_damage_witness_follows_conditional_opaque_prefix_and_precedes_ut
 
     witnesses = _native_positive_source_casts(source_actions, baseline)
     assert witnesses == [{"spellId": 11713}]
-    source_spells, same_spell, _allowed_casts, compatible = _corpus(source_actions)
+    source_spells, same_spell, _allowed_casts, compatible, source_aura_keys = _corpus(source_actions)
     source_spell_keys = {
         json.dumps(spell, sort_keys=True, separators=(",", ":"))
         for spell in source_spells
@@ -270,9 +272,10 @@ def test_native_damage_witness_follows_conditional_opaque_prefix_and_precedes_ut
                 if not isinstance(cast, dict) or condition is None:
                     continue
                 key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
-                refs, valid = _condition_spell_identity_keys(condition)
+                spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
                 assert valid
-                assert set(refs) <= source_spell_keys
+                assert set(spell_refs) <= source_spell_keys
+                assert set(aura_refs) <= source_aura_keys
                 shape = json.dumps(
                     _predicate_shape(condition), sort_keys=True, separators=(",", ":")
                 )
