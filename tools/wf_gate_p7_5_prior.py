@@ -138,15 +138,35 @@ def strongest_accepted_prior(root: Path, class_key: str, level: int,
         compatible = []
         for gate, row in approved.items():
             receipt = by_gate[gate]
-            if not row.get("run_url") or receipt.get("run_url") != row["run_url"]:
+            registered = row.get("run_url")
+            observed = receipt.get("run_url")
+            if not registered:
                 return None
+            if observed != registered:
+                # A new real M1 PASS on a changed Rust pin does not overwrite
+                # the historical one-row PASS ledger. The authenticated
+                # collector explicitly marks newer trusted workflow evidence,
+                # retaining the original registered-run identity. Reject
+                # arbitrary unregistered URLs or a stale/older run.
+                prefix, sep, original = registered.rpartition("/actions/runs/")
+                if (receipt.get("m1_revalidated") is not True
+                        or receipt.get("registered_run_url") != registered
+                        or not sep or not original.isdecimal()
+                        or not observed or not observed.startswith(prefix + "/actions/runs/")):
+                    return None
+                newer = observed[len(prefix + "/actions/runs/"):]
+                if not newer.isdecimal() or int(newer) <= int(original):
+                    return None
             report = receipt.get("report")
             value = _accepted_final(gate, report, reference_dps, source_sha256)
             if value is None:
                 return None
             if report.get("native_source_revision") != engine_revision:
                 continue
-            compatible.append((gate, value, row["run_url"]))
+            # A verified revalidation may replace the old-engine evidence
+            # for comparison without rewriting the registered PASS row.
+            # Report the exact run that supplied the compatible DPS.
+            compatible.append((gate, value, observed))
         if not compatible:
             return None
         return {"dps": max(x[1] for x in compatible),
