@@ -39,4 +39,6 @@ jobs:
           echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
       - name: Verify packaged Rust source compiles (not simulation validation)
         working-directory: integrations/mythicsim-rust/engine
-        run: cargo check --locked
+        run: |
+          cargo check --locked
+          cargo test --no-run --locked

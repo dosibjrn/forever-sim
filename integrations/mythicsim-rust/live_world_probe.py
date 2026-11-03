@@ -280,6 +280,8 @@ def main() -> None:
     p.add_argument("--request", type=Path, required=True)
     p.add_argument("--reference-iterations", type=int, default=0,
                    help="on-demand native-vs-live stochastic reference run; 0=quick causal regression")
+    p.add_argument("--rng-mode", choices=("balanced", "stochastic"), required=True,
+                   help="Required typed Rust mode; choose stochastic for this independent causal diagnostic")
     args = p.parse_args()
     if args.reference_iterations:
         source = json.loads(args.request.read_text())
@@ -287,10 +289,11 @@ def main() -> None:
         assert player["class"] == "ClassDruid" and "balanceDruid" in player
         assert len(source["encounter"]["targets"]) == 1
         assert source["encounter"]["targets"][0]["level"] == 63
-        baseline = native_source_control(args.binary, args.request, args.reference_iterations)
+        baseline = native_source_control(args.binary, args.request, args.reference_iterations,
+                                         rng_mode=args.rng_mode)
         coupled = run(args.binary, args.request,
                       distance=player["distanceFromTarget"],
-                      iterations=args.reference_iterations)
+                      iterations=args.reference_iterations, rng_mode=args.rng_mode)
         assert coupled["iterations_done"] == baseline["iterations"]
         assert abs(coupled["native_dps"] - baseline["native_dps"]) < 1e-6, (
             "LIVE_RUST_SOURCE_DPS_DIVERGENCE", coupled["native_dps"], baseline["native_dps"])
@@ -315,18 +318,20 @@ def main() -> None:
             "checkpoint_certified": False,
         }, sort_keys=True), flush=True)
         return
-    near = run(args.binary, args.request, distance=15.)
+    near = run(args.binary, args.request, distance=15., rng_mode=args.rng_mode)
     print("REAL_RUST_NEAR_WORLD", json.dumps(near, sort_keys=True), flush=True)
-    far = run(args.binary, args.request, distance=80.)
+    far = run(args.binary, args.request, distance=80., rng_mode=args.rng_mode)
     print("REAL_RUST_FAR_WORLD", json.dumps(far, sort_keys=True), flush=True)
     assert near["native_dps"] > far["native_dps"], (near, far)
     assert near["native_damage_events"] > far["native_damage_events"]
-    forged = run(args.binary, args.request, distance=15., forge_ack=True)
-    multi = run(args.binary, args.request, distance=15., iterations=3)
+    forged = run(args.binary, args.request, distance=15., forge_ack=True,
+                 rng_mode=args.rng_mode)
+    multi = run(args.binary, args.request, distance=15., iterations=3,
+                rng_mode=args.rng_mode)
     assert multi["iterations_done"] == len(multi["per_iteration"]) == 3
     assert multi["native_world_ticks"] > near["native_world_ticks"]
     assert multi["native_damage_events"] > near["native_damage_events"]
-    control = native_source_control(args.binary, args.request, 3)
+    control = native_source_control(args.binary, args.request, 3, rng_mode=args.rng_mode)
     print("REAL_RUST_THREE_FIGHT_NATIVE_SOURCE_CONTROL", json.dumps(control, sort_keys=True), flush=True)
     assert abs(multi["native_dps"] - control["native_dps"]) < 1e-6, (
         "STATIC_WORLD_CHANGED_SOURCE_NATIVE_DPS", multi["native_dps"], control["native_dps"])
@@ -335,7 +340,7 @@ def main() -> None:
     # RED against the old bridge: ignoring the real gsim next-world deadline
     # forces 100ms polling even for the static, event-free reference encounter.
     periodic = run(args.binary, args.request, distance=15., iterations=3,
-                   periodic_world_poll=True)
+                   periodic_world_poll=True, rng_mode=args.rng_mode)
     assert abs(multi["native_dps"] - periodic["native_dps"]) < 1e-6, (
         "EVENT_DRIVEN_NATIVE_DPS_CHANGED", multi["native_dps"], periodic["native_dps"])
     assert abs(multi["world_applied_damage"] - periodic["world_applied_damage"]) < 1e-4

@@ -62,6 +62,9 @@ jobs:
           python project/integrations/mythicsim-rust/port_typed_rng_mode.py upstream
           git -C upstream diff --check
           test -f upstream/src/core/fight/world_bridge.rs
+      - name: Compile every Rust unit and integration test target after typed API migration
+        working-directory: upstream
+        run: cargo test --no-run --locked
       - name: Verify actual Rust balanced quota and historical high-crit edge tests
         working-directory: upstream
         run: |
@@ -151,7 +154,7 @@ jobs:
           spec.loader.exec_module(probe)
           request=Path("docs/evidence/druid-l60-feral/p7.1/saved_811_request.json")
           binary=Path("../upstream/target/release/forever-engine")
-          result=probe.run(binary,request,distance=3.,facing_switch_at_s=10.)
+          result=probe.run(binary,request,distance=3.,facing_switch_at_s=10.,rng_mode="stochastic")
           before=result["source_action_events_before"]
           after=result["source_action_events_after"]
           print("SOURCE_FERAL_NATIVE_ACTIONS_BACK",before,flush=True)
@@ -177,7 +180,7 @@ jobs:
           spec.loader.exec_module(probe)
           binary=Path("../upstream/target/release/forever-engine")
           request=Path("../upstream/fixtures/mage/prepared-v2/fire-reference.request.json")
-          result=probe.run(binary,request,distance=20.)
+          result=probe.run(binary,request,distance=20.,rng_mode="stochastic")
           print("REAL_RUST_MAGE_L60_SOURCE_WORLD",result,flush=True)
           assert result["iterations_done"]==1
           assert result["native_damage_events"]>0
@@ -196,7 +199,7 @@ jobs:
           spec.loader.exec_module(probe)
           binary=Path("../upstream/target/release/forever-engine")
           request=Path("../upstream/fixtures/mage/prepared-v2/all-values-beast-mastery-hunter-labeled.request.json")
-          result=probe.run(binary,request,distance=12.)
+          result=probe.run(binary,request,distance=12.,rng_mode="stochastic")
           print("REAL_RUST_HUNTER_PET_SOURCE_WORLD",result,flush=True)
           assert result["native_damage_events"]>0
           assert result["native_pet_damage_events"]>0, "SOURCE_PET_EVENTS_MISATTRIBUTED_AS_PLAYER"
@@ -209,4 +212,5 @@ jobs:
         run: |
           python integrations/mythicsim-rust/live_world_probe.py \
             --binary ../upstream/target/release/forever-engine \
-            --request docs/evidence/druid-l60-balance/p7.3/saved_728_request.json
+            --request docs/evidence/druid-l60-balance/p7.3/saved_728_request.json \
+            --rng-mode stochastic
