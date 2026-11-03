@@ -419,3 +419,45 @@ assert 'src.game.data.forever.sqlite_talents' not in sys.modules
         f"source acquisition/GameIR import boundary failed: "
         f"{result.stdout}\\n{result.stderr}"
     )
+
+
+def test_source_checkpoint_readers_defer_legacy_game_ir_compiler():
+    """Independent source readers must not pull GameIR through DEFAULT_DB.
+
+    Existing legacy audits and spell compilers retain their own explicit
+    imports; this only isolates transitional source reads, not game legality.
+    """
+    import subprocess
+    import sys
+
+    source = """
+import sys
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever.source_checkpoint_acquisition import (
+    DEFAULT_DB as ACQUISITION_DB, acquisition_frontier,
+)
+from src.game.data.forever.source_checkpoint_p3_ratings import (
+    DEFAULT_DB as RATINGS_DB, displayed_percent_from_raw,
+    forever_display_chance_fraction_per_raw_point,
+)
+from src.game.data.forever.sqlite_rake import (
+    DEFAULT_DB as RAKE_DB, load_rake_facts,
+)
+assert ACQUISITION_DB is DEFAULT_DB
+assert RATINGS_DB is DEFAULT_DB
+assert RAKE_DB is DEFAULT_DB
+assert callable(acquisition_frontier) and callable(load_rake_facts)
+assert displayed_percent_from_raw('crit', 14.0) == 1.0
+assert forever_display_chance_fraction_per_raw_point('hit') == 0.01 / 10.0
+assert 'src.game.model.ir' not in sys.modules
+assert 'src.game.data.forever.sqlite_talents' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"source checkpoint/GameIR boundary failed: "
+        f"{result.stdout}\\n{result.stderr}"
+    )

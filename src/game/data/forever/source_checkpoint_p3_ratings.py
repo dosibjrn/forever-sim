@@ -20,7 +20,7 @@ from __future__ import annotations
 from dataclasses import replace
 from math import isfinite
 import sqlite3
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 
 SOURCE_STATUS='FOREVER_ITEM_SOURCE_RAW_TO_DISPLAY_PERCENT_70338'
 DISPLAY_RAW_PER_ONE_PERCENT={'crit':14.0,'hit':10.0,'dodge':12.0}

@@ -15,7 +15,7 @@ import sqlite3
 from pathlib import Path
 
 from .source_action_scope import classify_indexed_ability
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 
 
 

@@ -10,7 +10,7 @@ import re
 import sqlite3
 from pathlib import Path
 from math import isfinite
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 from .source_db_scope import active_ability_db
 
 _RAKE_TEXT = re.compile(r'^Rake the target for (\d+) damage and an additional (\d+) damage over (\d+) sec\. Awards 1 combo point\.$')
