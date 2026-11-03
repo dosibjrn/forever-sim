@@ -350,6 +350,95 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
     return False
 
 
+
+def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
+                                 balanced_elites, source, validator, rng):
+    """Combine gear and APL from two different, genuinely paid candidates.
+
+    Both donor identities must come from this independent cold search. The
+    gear donor supplies a validated multi-slot item/enchant block; a second
+    paid candidate supplies a distinct APL. Talents stay on the paid parent.
+    Do not mutate the proposal until both donors exist and gear validates.
+    """
+    candidate_player = source.player(candidate)
+    items = candidate_player["equipment"]["items"]
+    current_rotation = copy.deepcopy(candidate_player["rotation"])
+
+    gear_donors = []
+    seen_gear = set()
+
+    def collect_gear(rows, candidate_index, sha_index, limit):
+        added = 0
+        for row in sorted(rows, key=lambda row: row[0], reverse=True):
+            paid = row[candidate_index]
+            paid_sha = row[sha_index]
+            if paid == parent or paid_sha in seen_gear:
+                continue
+            other = source.player(paid)["equipment"]["items"]
+            if len(items) != len(other):
+                continue
+            different = [i for i in range(len(items)) if items[i] != other[i]]
+            if len(different) < 2:
+                continue
+            gear_donors.append((paid_sha, other, different))
+            seen_gear.add(paid_sha)
+            added += 1
+            if added >= limit:
+                break
+
+    # Finalist rows: (score, live, candidate_sha, candidate, screen_score).
+    # Elite rows: (score, candidate_sha, candidate).
+    collect_gear(finalists, 3, 2, 3)
+    collect_gear(balanced_elites, 2, 1, 6)
+
+    apl_donors = []
+    seen_apl_sha = set()
+
+    def collect_apl(rows, candidate_index, sha_index, limit):
+        added = 0
+        for row in sorted(rows, key=lambda row: row[0], reverse=True):
+            paid = row[candidate_index]
+            paid_sha = row[sha_index]
+            if paid == parent or paid_sha in seen_apl_sha:
+                continue
+            rotation = source.player(paid)["rotation"]
+            if rotation == current_rotation:
+                continue
+            apl_donors.append((paid_sha, rotation))
+            seen_apl_sha.add(paid_sha)
+            added += 1
+            if added >= limit:
+                break
+
+    collect_apl(finalists, 3, 2, 3)
+    collect_apl(balanced_elites, 2, 1, 3)
+
+    # Explicitly require different paid candidate identities for the two axes.
+    pairs = [(gear, apl) for gear in gear_donors for apl in apl_donors
+             if gear[0] != apl[0]]
+    if not pairs:
+        return False
+    rng.shuffle(pairs)
+
+    # Preserve the existing four bounded source-gear validation attempts.
+    for attempt in range(4):
+        (gear_sha, other, different), (apl_sha, rotation) = pairs[attempt % len(pairs)]
+        selected = rng.sample(
+            different, min(len(different), rng.randint(2, 5)))
+        mixed = copy.deepcopy(items)
+        for i in selected:
+            mixed[i] = copy.deepcopy(other[i])
+        try:
+            validator.validate(
+                [int(item["id"]) for item in mixed],
+                [int(item.get("enchant") or 0) for item in mixed])
+        except (source.RejectedGear, ValueError, KeyError, TypeError):
+            continue
+        candidate_player["equipment"]["items"][:] = mixed
+        candidate_player["rotation"] = copy.deepcopy(rotation)
+        return True
+    return False
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.5")
@@ -555,8 +644,18 @@ def run_live(root: Path, class_key: str, level: int, *,
                                      and proposals % 7 != 0
                                      and proposals % 11 != 0
                                      and not crossover and not gear_crossover)
+                    # Every twenty-third eligible paid-parent proposal
+                    # combines a paid gear block and a distinct paid APL.
+                    # No saved reference or previous-gate winner is a donor.
+                    gear_apl_crossover = (
+                        elite is not None and full_search
+                        and proposals % 23 == 0
+                        and proposals % 7 != 0 and proposals % 11 != 0
+                        and not crossover and not gear_crossover
+                        and not apl_crossover)
                     repair_axes = (("rotation",) if apl_crossover
-                                   else ("gear",) if crossover or gear_crossover
+                                   else ("gear",) if (crossover or gear_crossover
+                                                       or gear_apl_crossover)
                                    else _p75_paid_joint_axes(proposals)
                                    if elite is not None and full_search else None)
                     if (repair_axes is None and elite is not None
@@ -576,6 +675,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                             balanced_elites, source, rng)
                     elif gear_crossover:
                         _paid_p75_gear_block_crossover(
+                            candidate, elite, balanced_finalists,
+                            balanced_elites, source, validator, rng)
+                    elif gear_apl_crossover:
+                        _paid_p75_gear_apl_crossover(
                             candidate, elite, balanced_finalists,
                             balanced_elites, source, validator, rng)
                 candidate_sha = hashlib.sha256(json.dumps(
