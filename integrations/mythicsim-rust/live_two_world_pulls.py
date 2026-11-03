@@ -42,6 +42,32 @@ def _source_approach_radius(request: dict) -> float:
     return min(12.0, 0.9 * float(reach))
 
 
+def _verified_world_elapsed(windows: list[dict], world_kills: list[dict]) -> dict:
+    """Measure time only from actual source-native kills ACKed by gsim 2D.
+
+    This is shared-clock combat+travel time, NOT a completed paid
+    recovery/100-mob leveling objective. Never infer cost from target count,
+    prepared duration or independent native one-shot fights.
+    """
+    if not windows or len(windows) != len(world_kills):
+        raise AssertionError("RUST_WORLD_ELAPSED_TARGET_COUNT_MISMATCH")
+    last_ns = -1
+    for index, (native, world) in enumerate(zip(windows, world_kills)):
+        native_ns = native.get("native_kill_ns")
+        world_ns = world.get("world_kill_clock_ns")
+        if (type(native_ns) is not int or type(world_ns) is not int
+                or native.get("index") != index
+                or native_ns <= last_ns or native_ns <= 0
+                or native_ns != world_ns):
+            raise AssertionError("RUST_WORLD_KILL_CLOCK_NOT_CAUSAL")
+        last_ns = native_ns
+    elapsed = last_ns / 1_000_000_000
+    return {
+        "world_elapsed_seconds": elapsed,
+        "world_seconds_per_target_without_paid_recovery": elapsed / len(windows),
+    }
+
+
 def _queue_world_walk(world: CombatRuntime, target_id: str, *,
                       speed_yards_s: float,
                       approach_radius_yards: float = 12.0) -> dict:
@@ -395,6 +421,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             raise AssertionError("RUST_TWO_WORLD_DISTINCT_TARGET_IDS_INVALID")
         # Rust is the health authority; no invented gsim player damage.
         # A completed native-damage world kill must not hide a dead actor.
+        elapsed = _verified_world_elapsed(result["windows"], kills)
         min_native_health = _native_survival_min_health(
             result["windows"], target_count)
         native_health_damage = _native_health_damage_summary(
@@ -417,6 +444,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "native_movement_cast_legal": native_moving_receipts == ticks,
             "continuous_native_actor": True, "actual_2d_ack": True,
             "world_targets_killed": target_count,
+            **elapsed,
             "gsim_world_walk_steps": sum(
                 event.kind == "SpatialPlayerMoveStep" for event in world.trace),
             "gsim_route_legs": walks,
