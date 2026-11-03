@@ -147,9 +147,8 @@ def main() -> int:
     failed = [name for name, result in results.items() if result.get("status") != "PROBE_PASS"]
     if failed:
         raise SystemExit("NATIVE_P2_RANK_PAIR_DIAGNOSTIC_FAILED:" + ",".join(failed))
-    # Exercise the actual P2 provider with its staged Druid L30+ source
-    # catalogue. Moonkin Form has no captured checkpoint_source_l0 observation
-    # and is intentionally not emitted as a P2 receipt.
+    # Exercise the actual P2 provider's bounded selected-native diagnostic
+    # scope (Predatory Strikes ranks 1-3). These receipts are not acceptance.
     os.environ["FOREVER_MYTHICSIM_RUST_BIN"] = str(args.binary.resolve())
     from tools.wf_gate_p2_live import run_live
 
@@ -199,7 +198,7 @@ def main() -> int:
         "native_rank_probe_summary": p2_report.get("native_rank_probe_summary"),
         "native_rank_probe_results": [
             {"rank_key": row.get("rank_key"), "status": row.get("status"),
-             "source_rank_facts": row.get("source_rank_facts")}
+             "reason": row.get("reason")}
             for row in native_receipts
         ],
         "production_engine": p2_report.get("production_engine"),
