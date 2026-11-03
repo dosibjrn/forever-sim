@@ -42,7 +42,12 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
     assert len(source_actions) == 10
     assert len(historical_actions) == 19
 
-    _, source_predicates, allowed_casts = _corpus(source_actions)
+    _, predicates_by_spell, allowed_casts = _corpus(source_actions)
+    source_predicates = [
+        predicate
+        for predicates in predicates_by_spell.values()
+        for predicate in predicates
+    ]
     historical_casts = {
         json.dumps(action["action"]["castSpell"]["spellId"],
                    sort_keys=True, separators=(",", ":"))
