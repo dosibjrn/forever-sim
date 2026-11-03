@@ -31,20 +31,9 @@ jobs:
       - name: Verify grouped mechanics layout and preserved evidence assertions
         run: >-
           python -m pytest -q
-          tests/maintenance/test_maintenance_layout.py
-          tests/maintenance/test_architecture_boundaries.py
-          tests/maintenance/test_source_rune_world_boundary.py
-          tests/maintenance/test_source_acquisition_import_boundary.py
-          tests/maintenance/test_source_fact_readers_boundary.py
-          tests/maintenance/test_fixed_point_protocol_boundary.py
-          tests/maintenance/test_stat_sensitivity_native_boundary.py
-          tests/maintenance/test_talent_search_native_boundary.py
+          tests/maintenance
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_wf380_legacy_bonus_talent_budget.py
-          tests/maintenance/test_source_l0_frontier_boundary.py
-          tests/maintenance/test_import_feral_p7_archives.py
-          tests/maintenance/test_audit_feral_p7_holdout.py
-          tests/maintenance/test_recovered_feral_p7_raw.py
           tests/mechanics/druid/test_druid_mechanics_layout.py
           tests/mechanics/hunter/test_hunter_mechanics_layout.py
           tests/mechanics/mage/test_mage_extended_layout.py
