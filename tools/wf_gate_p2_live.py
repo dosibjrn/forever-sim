@@ -1755,25 +1755,26 @@ _NATIVE_P2_TREE_SCENARIOS = {'balance': 'balance', 'feral': 'cat'}
 _NATIVE_P2_DIAGNOSTIC_RANKS = {('predatory_strikes', 1), ('predatory_strikes', 2), ('predatory_strikes', 3)}
 
 
-def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
-    """Submit a proposed rank pair to MythicSim; never pre-judge game legality."""
+def _native_p2_rank_diagnostic(binary, talent_id, rank, tested, *,
+                               checkpoint_class, checkpoint_level, tree_key):
+    """Forward a checkpoint rank pair; source receipts are optional metadata."""
     source=tested.get('source_rank_facts')
-    if not isinstance(source,dict):
-        return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_RANK_FACTS_MISSING'}
-    # These are request/checkpoint identity and scenario-routing checks only.
-    # Rank caps, prerequisites, talent-point budgets and tier rules belong to
-    # the selected native prepare API. A refusal must come from MythicSim.
-    if (source.get('talent_id')!=talent_id or source.get('rank')!=int(rank)
-            or source.get('class_key')!='druid' or int(source.get('level') or 0)!=60):
-        return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_RANK_IDENTITY_MISMATCH'}
+    source=source if isinstance(source,Mapping) else {}
+    # Use the actual checkpoint arguments, not a second source-catalogue
+    # certificate, to route this request to the selected native engine.
+    # The native prepare result alone determines talent/rank legality.
+    if (checkpoint_class!='druid' or checkpoint_level!=60
+            or not isinstance(talent_id,str) or not talent_id
+            or type(rank) is not int or rank<1):
+        return {'status':'BLOCKED','reason':'NATIVE_P2_CHECKPOINT_IDENTITY_MISMATCH'}
     before=tested.get('control_witness')
     after=tested.get('witness')
     if not isinstance(before,dict) or not isinstance(after,dict):
         return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_UNAVAILABLE'}
-    scenario=_NATIVE_P2_TREE_SCENARIOS.get(str(source.get('tree_key') or ''))
+    scenario=_NATIVE_P2_TREE_SCENARIOS.get(str(tree_key or ''))
     if scenario is None:
         return {'status':'BLOCKED','reason':'NATIVE_P2_TREE_SCENARIO_UNAVAILABLE',
-                'tree_key':source.get('tree_key')}
+                'tree_key':tree_key}
     if not binary:
         return {'status':'BLOCKED','reason':'FOREVER_MYTHICSIM_RUST_BIN_NOT_SET'}
     binary_path=Path(binary)
@@ -1791,7 +1792,7 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
         # Python legality/prerequisite/tier-validation receipt.
         result['source_rank_facts']={
             'talent_id':talent_id,'rank':int(rank),
-            'tree_key':source.get('tree_key'),
+            'tree_key':tree_key,
             'source_build':source.get('source_build'),
             'source_url':source.get('source_url'),
             'source_sha256':source.get('source_sha256'),
@@ -1972,7 +1973,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                         and (talent.id,int(rank.rank)) in _NATIVE_P2_DIAGNOSTIC_RANKS):
                     native_probe=_native_p2_rank_diagnostic(
                         os.environ.get('FOREVER_MYTHICSIM_RUST_BIN'),
-                        talent.id, int(rank.rank), tested)
+                        talent.id, int(rank.rank), tested,
+                        checkpoint_class=class_key, checkpoint_level=level,
+                        tree_key=talent.tree_key)
                     native_probe['executor']='selected_mythicsim_rust'
                     native_probe['accepted_for_p2']=False
                     tested['native_rank_probe']=native_probe
