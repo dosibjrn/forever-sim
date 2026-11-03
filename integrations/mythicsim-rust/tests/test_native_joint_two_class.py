@@ -133,6 +133,55 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         self.assertEqual([11713, 11689],
                          [a["action"]["castSpell"]["spellId"]["spellId"] for a in repaired])
 
+    def test_full_conditional_apl_reserves_room_for_all_native_damage_witnesses(self):
+        # A full conditional prefix previously displaced native-positive casts:
+        # with 20 entries only one of two witnesses survived; with 22 entries
+        # the result could exceed the native 20-action limit entirely.
+        witnesses = [{"spellId": 3001}, {"spellId": 3002}]
+        for conditional_count in (20, 22):
+            source = [self.source(2000 + i, conditional=True)
+                      for i in range(conditional_count)]
+            snapshot = copy.deepcopy(source)
+            repaired = _ensure_native_damage_action(
+                source, witnesses, random.Random(7))
+            self.assertEqual(20, len(repaired))
+            self.assertEqual(
+                list(range(2000, 2018)) + [3001, 3002],
+                [entry["action"]["castSpell"]["spellId"]["spellId"]
+                 for entry in repaired],
+            )
+            self.assertTrue(all(
+                "condition" not in entry["action"]
+                for entry in repaired[-2:]
+            ))
+            self.assertEqual(snapshot, source)
+            self.assertEqual(repaired, _ensure_native_damage_action(
+                repaired, witnesses, random.Random(7)))
+
+    def test_present_empty_condition_is_not_an_unconditional_damage_witness(self):
+        witnesses = [{"spellId": 11713}]
+        source = [{
+            "action": {
+                "castSpell": {"spellId": {"spellId": 11713}},
+                "condition": {},
+            }
+        }]
+        snapshot = copy.deepcopy(source)
+
+        repaired = _ensure_native_damage_action(
+            source, witnesses, random.Random(8))
+
+        self.assertEqual(2, len(repaired))
+        self.assertEqual(snapshot, repaired[:1])
+        self.assertEqual(
+            {"spellId": 11713},
+            repaired[1]["action"]["castSpell"]["spellId"],
+        )
+        self.assertNotIn("condition", repaired[1]["action"])
+        self.assertEqual(snapshot, source)
+        self.assertEqual(repaired, _ensure_native_damage_action(
+            repaired, witnesses, random.Random(8)))
+
     def test_real_warlock_zero_dps_alternate_talent_needs_multiple_witnesses(self):
         # Stage-5 #41638113867 exact raw receipt 43a719fd...:
         # 40/40 zero DPS with APL [18932, 11689, 25309].
