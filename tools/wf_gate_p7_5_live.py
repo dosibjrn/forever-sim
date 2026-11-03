@@ -191,11 +191,13 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
     # the entire crossover even if another paid donor could form legal gear.
     # Keep the same four bounded validation attempts, rotating through
     # stochastic finalists first and then genuinely paid balanced candidates.
-    donors = (distinct_paid_gear(finalists, 3, 3)
-              + distinct_paid_gear(balanced_elites, 2, 6))
-    if not donors:
+    finalist_donors = distinct_paid_gear(finalists, 3, 3)
+    balanced_donors = distinct_paid_gear(balanced_elites, 2, 6)
+    if not finalist_donors and not balanced_donors:
         return False
-    rng.shuffle(donors)
+    rng.shuffle(finalist_donors)
+    rng.shuffle(balanced_donors)
+    donors = finalist_donors + balanced_donors
     for attempt in range(4):
         other, different = donors[attempt % len(donors)]
         selected = rng.sample(
