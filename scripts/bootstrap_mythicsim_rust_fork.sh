@@ -165,6 +165,14 @@ if ! git diff --cached --quiet; then
   git commit -m "fix(forever): end current world pull at confirmed native lethal ACK"
 fi
 
+# Use the selected Rust Fight, not a second simulator, for two actual gsim
+# target deaths and retained native world-ACK ancestry. Paid recovery is separate.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_two_world.py" "$PWD"
+git add src/core/fight.rs src/engine/prepared.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): couple retained native actor to two real gsim targets"
+fi
+
 # Existing native retarget regressions and new live terminal predicate must
 # pass before publishing this selected Rust integration.
 cargo test --locked --lib persistent_next_target
