@@ -128,31 +128,40 @@ def _p75_paid_rebuild_axes(proposal_index: int):
 
 
 def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, rng):
-    """Pair paid gear with another paid candidate's coherent talent + APL.
+    """Combine a paid candidate's gear with a distinct paid talent + APL.
 
-    No reference/prior winner enters the donor pool. Both parents must have
-    passed actual native+2D scoring in THIS independent cold search; the
-    source generator already validated the new gear and the donor's legal
-    talent/APL pair. The resulting combination is a NEW candidate and must
-    still pass the normal selected Rust source/2D paid scorer.
+    Use only separately scored parents from THIS independent P7.5 cold search.
+    A differently equipped donor with identical talents and rotation does not
+    supply a talent/APL crossover: it previously returned True but left both
+    axes unchanged, wasting a proposal and suppressing paid balanced donors.
+    Prefer meaningful stochastic finalists; fall back to meaningful balanced
+    elites rather than claiming a gear-only no-op as a crossover.
     """
-    # Prefer stronger paid stochastic evidence when it exists; otherwise use
-    # distinct actually paid balanced-screen candidates, never raw proposals.
-    donors = [row[3] for row in sorted(
-        finalists, key=lambda row: row[0], reverse=True)[:3]
-        if row[3] != parent]
+    player = source.player(candidate)
+
+    def distinct_paid_pairs(rows, candidate_index, limit):
+        eligible = []
+        for row in sorted(rows, key=lambda row: row[0], reverse=True)[:limit]:
+            paid = row[candidate_index]
+            if paid == parent:
+                continue
+            donor = source.player(paid)
+            if (donor["talentsString"] != player["talentsString"]
+                    or donor["rotation"] != player["rotation"]):
+                eligible.append(donor)
+        return eligible
+
+    # Every donor was actually paid by selected Rust + live 2D in this same
+    # search; neither the external reference nor previous P7 gates are donors.
+    donors = distinct_paid_pairs(finalists, 3, 3)
     if not donors:
-        donors = [row[2] for row in sorted(
-            balanced_elites, key=lambda row: row[0], reverse=True)[:6]
-            if row[2] != parent]
+        donors = distinct_paid_pairs(balanced_elites, 2, 6)
     if not donors:
         return False
-    donor = source.player(rng.choice(donors))
-    player = source.player(candidate)
+    donor = rng.choice(donors)
     player["talentsString"] = donor["talentsString"]
     player["rotation"] = copy.deepcopy(donor["rotation"])
     return True
-
 
 
 def _paid_p75_gear_block_crossover(candidate, parent, finalists,
