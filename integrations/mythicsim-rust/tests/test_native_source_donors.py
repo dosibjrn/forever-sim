@@ -207,6 +207,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
         adapter, scope = source_bounded_adapter(
             "druid", reference, [reference], items, donor_fixtures=donors,
             native_damage_witnesses=[{"spellId": 11281}],
+            native_verified_talent_builds={"99999-4"},
         )
 
         self.assertEqual(
@@ -216,6 +217,9 @@ class SourceDonorAdapterTests(unittest.TestCase):
         self.assertEqual(
             ["888888-3"], scope["talent_builds_excluded_for_native_damage_witness"]
         )
+        # Previously only the baseline survived this Python pre-filter.
+        # Native verification is provenance, never candidate admission.
+        self.assertEqual(["99999-4"], scope["native_verified_talent_builds"])
         self.assertEqual(
             "SOURCE_OBSERVED_CANDIDATE_STRINGS_NATIVE_RUST_AUTHORITATIVE",
             scope["talent_validation"],
