@@ -14,6 +14,9 @@ FIGHT_MARKER = "    pub(crate) fn native_two_pull_windows(&mut self)"
 PREPARE_MARKER = "    fn prepare_first_native_pull(&mut self) {"
 CLI_MARKER = '    if args[0] == "native-pulls" {'
 ENGINE_MARKER = "pub fn native_two_pull_windows(prepared: &PreparedV2)"
+ENGINE_TYPED_MARKER = ("pub fn native_two_pull_windows(prepared: &PreparedV2, "
+                       "rng_mode: crate::core::rng::RngMode)")
+ENGINE_TYPED_CALL = "crate::classes::native_two_pull_windows(prepared, rng_mode)"
 
 
 def replace_once(source: str, old: str, new: str, name: str) -> str:
@@ -122,6 +125,16 @@ def port_classes(source: str) -> str:
 
 
 def port_prepared(source: str) -> str:
+    # The published selected fork has a mandatory typed RNG argument. Its
+    # existing prepared gateway is not an absent legacy gateway to reinsert.
+    if ENGINE_TYPED_MARKER in source:
+        if (source.count(ENGINE_TYPED_MARKER) != 1
+                or source.count(ENGINE_TYPED_CALL) != 1
+                or ENGINE_MARKER in source):
+            raise ValueError("native two-pull typed prepared gateway drift")
+        return source
+    if "pub fn native_two_pull_windows(" in source and ENGINE_MARKER not in source:
+        raise ValueError("native two-pull prepared gateway unknown signature")
     if ENGINE_MARKER in source:
         if source.count(ENGINE_MARKER) != 1:
             raise ValueError("ambiguous prepared probe")
