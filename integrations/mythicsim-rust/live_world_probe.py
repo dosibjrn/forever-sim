@@ -28,9 +28,14 @@ from tools.wf_gate_coverage import P7_FINAL_STOCHASTIC_ITERATIONS, p7_required_d
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
-        rng_mode: str) -> dict:
+        rng_mode: str, allow_zero_damage: bool = False,
+        source_in_front_of_target: bool | None = None) -> dict:
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_WORLD_RNG_MODE_INVALID")
+    if type(allow_zero_damage) is not bool:
+        raise ValueError("RUST_WORLD_ZERO_DAMAGE_CONTROL_INVALID")
+    if source_in_front_of_target is not None and type(source_in_front_of_target) is not bool:
+        raise ValueError("RUST_WORLD_FACING_OVERRIDE_INVALID")
     raw = request.read_bytes()
     source = json.loads(raw)
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
@@ -45,7 +50,10 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
         world = diagnostic_gsim_world(
             target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
             target_health=source_target_health_from_request(raw), source_single_target=True,
-            source_in_front_of_target=players[0].get("inFrontOfTarget", False),
+            source_in_front_of_target=(
+                players[0].get("inFrontOfTarget", False)
+                if source_in_front_of_target is None else source_in_front_of_target
+            ),
         )
         return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeDamageWorldApplier(world)
     world = feed = applier = None
@@ -200,7 +208,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             duration = result["result"]["firstIterationDuration"]
             assert result["result"]["iterationsDone"] == iterations
             assert len(samples) == iterations
-            assert event_count > 0 or distance > 60
+            assert event_count > 0 or distance > 60 or allow_zero_damage
             assert native_dps >= 0 and duration > 0
             world_mean_dps = sum(s["world_dps"] for s in samples) / iterations
             assert abs(native_dps - world_mean_dps) < 1e-5, (
@@ -223,6 +231,11 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "facing_switch_clock_ns": facing_switch_clock_ns,
                     "source_action_events_before": source_action_events_before,
                     "source_action_events_after": source_action_events_after,
+                    "source_in_front_of_target": (
+                        players[0].get("inFrontOfTarget", False)
+                        if source_in_front_of_target is None else source_in_front_of_target
+                    ),
+                    "allow_zero_damage": allow_zero_damage,
                     "checkpoint_certified": False}
         finally:
             if proc.poll() is None:
