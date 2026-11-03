@@ -793,6 +793,24 @@ def test_p74_paid_step_guard_prevents_observed_302s_overrun(monkeypatch):
     assert not gate._paid_step_has_budget(0.0, 0.10)
 
 
+def test_paid_p74_fourth_late_leader_is_still_confirmable():
+    """Previously the first three attempts permanently exhausted confirmation.
+
+    A fourth newly reranked paid contender must be eligible in the same 300s
+    cold search, without relaxing the 295–300s fresh-candidate tail.
+    """
+    rows = [(float(800 - i), None, f"sha-{i}", {"candidate": i}, 850.)
+            for i in range(6)]
+    first_three = {"sha-0", "sha-1", "sha-2"}
+    assert gate._next_p74_confirmation(rows, first_three, 259.99) is None
+    choice = gate._next_p74_confirmation(rows, first_three, 290.)
+    assert choice[0] == 3
+    assert choice[1][2] == "sha-3"
+    assert gate._next_p74_confirmation(rows, first_three, 295.) is None
+    assert gate._next_p74_confirmation(rows, set(), 280.)[0] == 0
+    assert gate._next_p74_confirmation(rows[:2], set(), 280.) is None
+
+
 def test_paid_p74_confirmation_reverses_noisy_first_round_within_300s(
         monkeypatch, tmp_path):
     """Routing RED->GREEN: 48-fight high outlier loses after paid confirmation.
