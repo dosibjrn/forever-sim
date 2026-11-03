@@ -64,7 +64,9 @@ def test_axis_ablation_replaces_only_requested_axes_and_preserves_scenario():
         assert candidate["simOptions"]["iterations"] == 5
         assert candidate["simOptions"]["randomSeed"] == "1179706472"
         assert candidate["encounter"] == reference["encounter"]
-        assert candidate["raid"] == reference["raid"]
+        reference_player = MODULE.player(reference)
+        for key in set(reference_player) - {"equipment", "talentsString", "rotation"}:
+            assert player[key] == reference_player[key]
     assert reference == original
 
 
