@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse, copy, hashlib, json, math, random, subprocess, sys, tempfile, time
 from pathlib import Path
 from talent_schema_druid import TREES,LOOKUP,parse,encode,points,legal_add,validate
+from native_matrix import NativeCandidateRefusal
 
 REFERENCE_DPS=728.1936126415858
 
