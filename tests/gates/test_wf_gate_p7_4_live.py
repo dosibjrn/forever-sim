@@ -97,10 +97,10 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     catalogue.write_text("fake catalogue; validator injected")
 
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # These routing fixtures advance a synthetic clock by entire stages.
-    # Deadline guards are tested separately with measured paid-step latency.
+    # Routing clock: start, two paid candidates, then 300s observation.
+    # No per-final-step timestamp calls are required for gate acceptance.
     monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *a: True)
-    clock = iter([0.0, 0.0, 0.0, 0.0, 300.0, 300.0, 300.0, 300.0])
+    clock = iter([0.0, 0.0, 0.0, 300.0, 300.0, 300.0])
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
     monkeypatch.setattr(gate, "_pinned_source_runtime",
                         lambda *a: (base, {"reference_dps": 728.19}, binary))

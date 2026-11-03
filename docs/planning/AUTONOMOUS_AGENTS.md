@@ -1,5 +1,7 @@
 # Forever Sim — autonomous agent contracts
 
+**Owner-approved P7 search evidence correction (2026-11-03, PROCESS v2.19):** P7.2–P7.5 require the real 300-second independent cold search, not the invented extra per-candidate last-search-step exact-deadline proof. An actual production search wall-time receipt in `300–301 s` is adequate duration evidence, including historical runs without last-step stamps. Do not block or rerun a gate solely to obtain such a timestamp. Retain real native↔2D causality, frozen 1,000 Stochastic fights, compatible accepted prior, and the owner-approved 99%/93% P7 floors. Only Merge may record a genuine compatible PASS in M1.
+
 **Canonical repo:** `dosibjrn/forever-sim`, branch `main`. This is the **maintained source of truth for the five agents' roles**, not a second backlog, process or checkpoint register. The former private `mage-level-sim` is historical read-only material.
 
 **Purpose:** reach **148/148 genuinely certified checkpoints** in the least overall time.

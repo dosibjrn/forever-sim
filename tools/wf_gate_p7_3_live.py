@@ -22,7 +22,7 @@ import time
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_final_stochastic_mean_passes,
                                     p7_required_dps,
-                                    p7_search_deadline_completed)
+                                    p7_search_window_completed)
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
                                      _source_native_world_parity, _executed_p7_runtime_proof)
 from tools.wf_gate_p7_2_live import (_source_module, _pinned_source_runtime)
@@ -105,7 +105,6 @@ def run_live(root: Path, class_key: str, level: int, *,
     failures = []
     search_start = time.monotonic()
     search_deadline = search_start + 300.0
-    last_search_step_completed_at = search_start
     # Default: three real source/native/world bounded candidates. Heavy:
     # independent 300s cold search with the identical genuine evaluator.
     while (time.monotonic() < search_deadline
@@ -153,17 +152,11 @@ def run_live(root: Path, class_key: str, level: int, *,
         except (ValueError, RuntimeError, OSError, TypeError,
                 KeyError, subprocess.SubprocessError, AssertionError) as exc:
             failures.append(type(exc).__name__ + ":" + str(exc)[:180])
-        finally:
-            last_search_step_completed_at = time.monotonic()
 
     search_observed_at = time.monotonic()
     search_wall_s = search_observed_at - search_start
-    search_deadline_met = p7_search_deadline_completed(
-        full_search=full_search,
-        search_start=search_start,
-        search_deadline=search_deadline,
-        last_search_step_completed_at=last_search_step_completed_at,
-        observed_at=search_observed_at,
+    search_window_met = p7_search_window_completed(
+        full_search=full_search, elapsed_seconds=search_wall_s,
     )
     if best is None:
         return {"status": "FAIL",
@@ -171,9 +164,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "production_engine": "pinned_mythicsim_rust_gsim_2d",
                 "search_wall_s": search_wall_s,
                 "independent_300s_search_requested": full_search,
-                "independent_300s_search_completed": search_deadline_met,
-                "search_deadline_met": search_deadline_met,
-                "last_search_step_completed_elapsed_s": round(last_search_step_completed_at - search_start, 6),
+                "independent_300s_search_completed": search_window_met,
+                "search_window_met": search_window_met,
                 "search_deadline_observed_elapsed_s": round(search_wall_s, 6),
                 "cold_candidate_failures": failures[:4]}
 
@@ -182,7 +174,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     score, live, candidate_sha, frozen_winner = best
     screen_score = score
     winner_selection = "best_balanced_live_screen"
-    complete_search = search_deadline_met
+    complete_search = search_window_met
     final = {}
     if complete_search:
         # Freeze the winning source-legal request before an independent
@@ -230,8 +222,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     reasons = []
     if not full_search:
         reasons.append("P7_3_FULL_INDEPENDENT_300S_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED")
-    elif not search_deadline_met:
-        reasons.append("P7_3_SEARCH_DEADLINE_NOT_MET")
+    elif not search_window_met:
+        reasons.append("P7_3_300S_SEARCH_WINDOW_NOT_COMPLETED")
     if "frozen_stochastic_iterations" not in final:
         reasons.append("P7_3_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED")
     elif not final["frozen_stochastic_reference_floor_met"]:
@@ -267,9 +259,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
         "independent_300s_search_completed": complete_search,
-        "search_deadline_met": search_deadline_met,
-        "search_deadline_seconds": 300.0,
-        "last_search_step_completed_elapsed_s": round(last_search_step_completed_at - search_start, 6),
+        "search_window_met": search_window_met,
         "search_deadline_observed_elapsed_s": round(search_wall_s, 6),
         "cold_unique_source_requests": len(seen),
         **final,

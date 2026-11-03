@@ -20,7 +20,7 @@ import time
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     P7_5_FINAL_DPS_FLOOR_FRACTION,
                                     p7_required_dps,
-                                    p7_search_deadline_completed)
+                                    p7_search_window_completed)
 from tools.wf_gate_p7_5_prior import strongest_accepted_prior
 # Shared native+2D balanced-finalist scheduling helpers from P7.4.
 from tools.wf_gate_p7_4_live import (
@@ -502,7 +502,6 @@ def run_live(root: Path, class_key: str, level: int, *,
     failures = []
     search_start = time.monotonic()
     search_deadline = search_start + 300.0
-    last_search_step_completed_at = search_start
     try:
         # Full search uses every source/Rust-admitted catalogue item per slot,
         # not just the 80 highest heuristic scores. Cold generator explores
@@ -573,7 +572,6 @@ def run_live(root: Path, class_key: str, level: int, *,
                     finally:
                         worst_confirmation_s = max(
                             worst_confirmation_s, time.perf_counter() - started)
-                        last_search_step_completed_at = time.monotonic()
                     continue
                 pending = next((
                     row for row in balanced_elites
@@ -598,7 +596,6 @@ def run_live(root: Path, class_key: str, level: int, *,
                     finally:
                         worst_finalist_s = max(
                             worst_finalist_s, time.perf_counter() - started)
-                        last_search_step_completed_at = time.monotonic()
                     continue
             # Do not start an indivisible native+2D paid call in the tail
             # when measured subprocess cost would overrun the 300s search.
@@ -721,8 +718,6 @@ def run_live(root: Path, class_key: str, level: int, *,
             except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
                     TypeError, AssertionError, subprocess.SubprocessError) as exc:
                 failures.append(type(exc).__name__ + ":" + str(exc)[:180])
-            finally:
-                last_search_step_completed_at = time.monotonic()
     finally:
         validator.close()
     if full_search and elapsed < 300.0:
@@ -731,12 +726,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         time.sleep(max(0.0, search_deadline - time.monotonic()))
     search_observed_at = time.monotonic()
     search_wall_s = search_observed_at - search_start
-    search_deadline_met = p7_search_deadline_completed(
-        full_search=full_search,
-        search_start=search_start,
-        search_deadline=search_deadline,
-        last_search_step_completed_at=last_search_step_completed_at,
-        observed_at=search_observed_at,
+    search_window_met = p7_search_window_completed(
+        full_search=full_search, elapsed_seconds=search_wall_s,
     )
     if best is None:
         return {"status": "FAIL",
@@ -748,7 +739,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     (score, live, candidate_sha, frozen_winner,
      selected_balanced_score, selected_validation) = _freeze_paid_p75_balanced_winner(
         best, balanced_finalists, confirmed, deep_confirmed)
-    complete_search = search_deadline_met
+    complete_search = search_window_met
     final = {}
     if complete_search:
         # Freeze the winning legal request BEFORE independent stochastic
@@ -814,8 +805,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"])
     if not full_search:
         reasons.append("P7_5_FULL_300S_COLD_SEARCH_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED")
-    elif not search_deadline_met:
-        reasons.append("P7_5_300S_SEARCH_DEADLINE_NOT_MET")
+    elif not search_window_met:
+        reasons.append("P7_5_300S_SEARCH_NOT_COMPLETED")
     if "frozen_stochastic_iterations" not in final:
         reasons.append("P7_5_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED")
     elif not final["frozen_stochastic_external_only_floor_met"]:
@@ -881,9 +872,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
         "independent_300s_search_completed": complete_search,
-        "search_deadline_met": search_deadline_met,
-        "search_deadline_seconds": 300.0,
-        "last_search_step_completed_elapsed_s": round(last_search_step_completed_at - search_start, 6),
+        "search_window_met": search_window_met,
         "search_deadline_observed_elapsed_s": round(search_wall_s, 6),
         "cold_unique_source_requests": len(seen),
         **final,

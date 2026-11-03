@@ -393,12 +393,11 @@ def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
                         lambda *a, **kw: {"dps": 749.5392,
                                           "compatible_gates": ["P7.3"],
                                           "run_urls": ["https://example.test/accepted"]})
-    # Start; screen A; early paid rerank A; screen B; paid rerank B;
-    # then reach the same exact 300s deadline. Every completed paid step
-    # consumes its own monotonic timestamp; no production grace is added.
+    # Start; screen A and B; paid Balanced rerank A at 120s and B at
+    # 140s; then observe the completed 300s wall-clock window. No extra
+    # per-search-step timestamp reads are part of the gate contract.
     clock = iter((0.0, 0.0, 0.0, 120.0, 120.0,
-                  140.0, 140.0, 140.0, 140.0, 140.0,
-                  300.0, 300.0, 300.0))
+                  140.0, 140.0, 300.0, 300.0))
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
     monkeypatch.setattr(gate.time, "sleep", lambda seconds: None)
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
