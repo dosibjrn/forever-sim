@@ -46,3 +46,22 @@ def test_legacy_objective_contains_no_second_target_curve_copy():
     assert "MOB_BASE_HP =" not in source
     assert "def representative_hp(" not in source
     assert "def mob_hp(" not in source
+
+def test_mage_engines_reuse_the_canonical_scenario_target_curve():
+    from src.scenarios import leveling_targets
+    from src.rulesets.forever.classes.mage import engine as forever_mage
+    from src import classic_mage_leveling_optimizer_v10 as classic_mage
+
+    assert forever_mage.MOB_BASE_HP is leveling_targets.MOB_BASE_HP
+    assert classic_mage.MOB_BASE_HP is leveling_targets.MOB_BASE_HP
+    assert leveling_targets.MOB_BASE_HP[1] == 42
+    assert leveling_targets.MOB_BASE_HP[60] == 3052
+    assert leveling_targets.MOB_BASE_HP[62] == 3237
+
+    for relative in (
+        "src/rulesets/forever/classes/mage/engine.py",
+        "src/classic_mage_leveling_optimizer_v10.py",
+    ):
+        source = (ROOT / relative).read_text(encoding="utf-8")
+        assert "from src.scenarios.leveling_targets import MOB_BASE_HP" in source
+        assert "MOB_BASE_HP = {" not in source
