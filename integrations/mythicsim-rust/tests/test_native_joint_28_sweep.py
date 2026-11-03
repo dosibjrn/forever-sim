@@ -56,13 +56,13 @@ class SweepContracts(unittest.TestCase):
 
     def test_native_paid_replay_is_sufficient_for_30_second_stage(self):
         prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 100,
-                 "replay_matches": True, "native_errors": 0,
+                 "three_axis_paid": 10, "replay_matches": True, "native_errors": 0,
                  "native_refusals": 50}
         self.assertIsNone(preflight("druid/feral_cat", {}, {}, 30, prior))
 
     def test_30_second_stage_rejects_prior_without_native_paid_replay(self):
         prior = {"status": "BLOCKED_NATIVE_REFUSALS", "native_paid": 0,
-                 "replay_matches": False, "native_errors": 0,
+                 "three_axis_paid": 0, "replay_matches": False, "native_errors": 0,
                  "native_refusals": 100}
         self.assertEqual("BLOCKED_PRIOR_STAGE",
                          preflight("druid/feral_cat", {}, {}, 30, prior)[0])
@@ -71,7 +71,7 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual("BLOCKED_PRIOR_STAGE",
                          preflight("druid/feral_cat", {}, {}, 300, None)[0])
         prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 10,
-                 "replay_matches": True, "native_errors": 0,
+                 "three_axis_paid": 5, "replay_matches": True, "native_errors": 0,
                  "native_refusals": 4}
         self.assertIsNone(preflight("druid/feral_cat", {}, {}, 300, prior))
         prior["replay_matches"] = False
@@ -147,8 +147,8 @@ class CandidateDomainBlockerClassification(unittest.TestCase):
         categories = {entry["cause"]: entry["count"] for entry in gap_summary(rows)}
         self.assertEqual({
             "SOURCE_GEAR_POOL_MISSING": 1,
-            "SOURCE_TALENT_DONORS_MISSING": 2,
-            "INVESTIGATE_CANDIDATE_DOMAIN": 1,
+            "SOURCE_TALENT_DONORS_MISSING": 1,
+            "INVESTIGATE_CANDIDATE_DOMAIN": 2,
         }, categories)
 
 
