@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded direct execution of the existing live P1-P7.5 production gates.
+"""Bounded direct execution of the existing live P3-P7.5 production gates.
 
 This probes the SAME source-backed gate CLI; no cached evidence, ledger reads,
 alternative simulator, or PASS recording. A timeout is NOT partial success.
