@@ -372,7 +372,8 @@ def test_external_world_death_cannot_authorize_native_target_transfer():
     applier.apply(tick, reply)  # Real ACK, but native hit was nonlethal.
     assert rt.targets["m1"].alive
     # The world changes HP independently; the native effect did NOT kill it.
-    rt.targets["m1"].health = 0.0
+    rt.targets["m1"].apply_damage(rt.targets["m1"].health)
+    assert not rt.targets["m1"].alive
     rt.engage_target("m0")
     rt.select_target("m0")
     with pytest.raises(NativeDamageWorldApplicationError,
