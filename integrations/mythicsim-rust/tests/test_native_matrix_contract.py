@@ -546,5 +546,74 @@ class NativeGenericMatrixContract(unittest.TestCase):
                 )
         self.assertEqual("ERROR", caught.exception.status)
 
+    def test_native_tps_uses_player_threat_receipt_and_preserves_unscored_classification(self):
+        import subprocess
+        import time
+        from unittest.mock import patch
+        from native_executor import (
+            NativeExecutionError, NativeScoreExtractionError, run as native_run,
+        )
+
+        # Exact metric slice from native-joint-28-stage5 run #41706993587,
+        # selected engine deb366e986dbc156e2242ddac3ac8c4ac854c107.
+        # Original druid/balance baseline response SHA256:
+        # a72c7b2c0793ebd8cac4a3e5539d5a508c4fc48a395c06b765afbe2cc7601b9c
+        threat = {
+            "aggregatorData": {"n": 40, "sumSq": 24568391.625501726},
+            "avg": 783.1913066940036,
+            "hist": {
+                "710": 1, "740": 3, "750": 3, "760": 4, "770": 5, "780": 4,
+                "790": 5, "800": 5, "810": 4, "820": 3, "830": 1, "840": 2,
+            },
+            "max": 836.2631664018282, "maxSeed": "745",
+            "min": 713.4706976665329, "minSeed": "740",
+            "stdev": 28.656024785066382,
+        }
+        complete = {"result": {"raidMetrics": {"parties": [{"players": [{"threat": threat}]}]}}}
+
+        def fake_run(response):
+            def invoke(command, **_kwargs):
+                output = Path(command[command.index("--outfile") + 1])
+                output.write_text(json.dumps(response))
+                return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+            return invoke
+
+        with patch("native_executor.subprocess.run", side_effect=fake_run(complete)):
+            score, raw, _elapsed, _request_sha = native_run(
+                "unused-binary", {"simOptions": {}}, 40, 731, "balanced",
+                time.monotonic() + 5.0, objective="TPS",
+            )
+        self.assertEqual(threat["avg"], score)
+        self.assertEqual(complete, raw)
+
+        complete_without_mean = {
+            "result": {"raidMetrics": {"parties": [{"players": [{
+                "threat": {"aggregatorData": {"n": 40}, "hist": {"0": 40}},
+            }]}]}}
+        }
+        with patch("native_executor.subprocess.run",
+                   side_effect=fake_run(complete_without_mean)):
+            with self.assertRaises(NativeScoreExtractionError) as caught:
+                native_run(
+                    "unused-binary", {"simOptions": {}}, 40, 731, "balanced",
+                    time.monotonic() + 5.0, objective="TPS",
+                )
+        self.assertEqual("UNSCORED", caught.exception.status)
+        self.assertEqual("TPS", caught.exception.objective)
+        self.assertIn("players[0].threat.avg", str(caught.exception))
+
+        incomplete = {
+            "result": {"raidMetrics": {"parties": [{"players": [{
+                "threat": {"aggregatorData": {"n": 40}, "hist": {"0": 39}},
+            }]}]}}
+        }
+        with patch("native_executor.subprocess.run", side_effect=fake_run(incomplete)):
+            with self.assertRaises(NativeExecutionError) as caught:
+                native_run(
+                    "unused-binary", {"simOptions": {}}, 40, 731, "balanced",
+                    time.monotonic() + 5.0, objective="TPS",
+                )
+        self.assertEqual("ERROR", caught.exception.status)
+
 if __name__ == "__main__":
     unittest.main()
