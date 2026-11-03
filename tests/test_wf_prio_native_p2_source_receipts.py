@@ -342,7 +342,7 @@ def test_p2_source_db_diagnostics_report_same_process_file_identity(tmp_path):
     assert _sqlite_connection_path(":memory:") is None
 
 
-def test_live_p2_forwards_native_candidate_before_gameir_legality_veto(
+def test_live_p2_forwards_native_candidate_before_profile_and_gameir_veto(
         tmp_path, monkeypatch):
     import json
     import sqlite3
@@ -384,10 +384,10 @@ def test_live_p2_forwards_native_candidate_before_gameir_legality_veto(
     monkeypatch.setattr(p2, "build_game_ir_slice", lambda **kwargs: compiled)
     monkeypatch.setattr(p2, "compile_talent_runtime", lambda ir: (compiled, {}))
     monkeypatch.setattr(p2, "_load_product_spec_profile", lambda *args, **kwargs: None)
-    monkeypatch.setattr(
-        p2, "_source_spec_profile",
-        lambda *args, **kwargs: (None, {"source_spec_profile_verified": True}),
-    )
+    def reject_local_profile(*args, **kwargs):
+        raise ValueError("GAMEIR_PROFILE_LEGALITY_VETO")
+
+    monkeypatch.setattr(p2, "_source_spec_profile", reject_local_profile)
     monkeypatch.setattr(
         p2, "_witness",
         lambda *args, **kwargs: {"ferocity": 5, "predatory_strikes": 1},
@@ -422,5 +422,9 @@ def test_live_p2_forwards_native_candidate_before_gameir_legality_veto(
     assert report["native_rank_probe_results"][0]["reason"] == "NATIVE_TALENT_REFUSAL"
     assert report["native_rank_probe_results"][0]["accepted_for_p2"] is False
     assert report["native_rank_probe_summary"]["counted_in_p2_acceptance"] is False
+    assert report["source_spec_profile_verified"] is False
+    assert report["source_spec_profile_error"] == "ValueError:GAMEIR_PROFILE_LEGALITY_VETO"
+    assert report["rank_probe_scope"] == "NATIVE_DIAGNOSTIC_ONLY_SOURCE_PROFILE_FAILED"
+    assert "SPEC_PROFILE_CONSTRAINT_NOT_DEFINED" in report["reasons"]
     # The formal P2 predicate is intentionally unchanged by this diagnostic.
     assert report["status"] == "FAIL"
