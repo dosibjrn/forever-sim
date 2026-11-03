@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Source-bounded two-class REAL Rust JOINT smoke using the shared gsim search.
+"""Two-class native Rust JOINT diagnostic using the shared search core.
 
-This is an integration proof, not a PROCESS P7.5 PASS: talent strings are
-source-observed candidate proposals and MythicSim Rust alone decides whether
-they are valid. Gear options are source-observed native DB items, NOT full
-equip-law parity. The class-neutral native_matrix.search_native remains the
-only search loop. No mocked scorer is permitted here.
+Python supplies a bounded proposal domain from observed requests and native
+item data. It does not certify game legality or P7.5; MythicSim Rust alone
+decides whether each exact candidate is valid and supported. No mocked scorer
+is permitted in this integration path.
 """
 from __future__ import annotations
 
@@ -39,6 +38,7 @@ def _write_native_failure(outdir: Path, request_sha256: str,
     request_path.write_text(json.dumps(effective_request, indent=2) + "\n")
     record = {
         "effective_request_sha256": request_sha256,
+        "native_status": getattr(exc, "status", "ERROR"),
         "error": str(exc)[-1200:],
     }
     raw = getattr(exc, "raw_response", None)
@@ -195,6 +195,7 @@ def native_score_request(
         "iterations": iterations,
         "seed": seed,
         "native_duration_s": elapsed,
+        "native_status": "VALID",
         "raw_response_sha256": fingerprint(raw),
     }, raw
 
@@ -705,9 +706,9 @@ def source_bounded_adapter(
             json.loads(key) for key in sorted(common_cast_keys)
         ],
         "native_positive_damage_witnesses_common_to_selected_talent_builds": common_witnesses,
-        "talent_validation": "SOURCE_OBSERVED_CANDIDATE_STRINGS_NATIVE_RUST_AUTHORITATIVE",
-        "gear_validation": "PINNED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
-        "apl_validation": "CAST_IDENTITIES_BOUND_TO_TALENT_STRING_AND_COMMON_NATIVE_POSITIVE_WITNESS",
+        "talent_candidate_source": "SOURCE_OBSERVED_PROPOSALS_NATIVE_RUST_AUTHORITATIVE",
+        "gear_candidate_source": "PINNED_NATIVE_ITEM_DB_SOURCE_OBSERVED",
+        "apl_candidate_source": "SOURCE_CAST_IDENTITIES_WITH_COMMON_NATIVE_POSITIVE_WITNESS",
     }
 
 
@@ -739,10 +740,10 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         "baseline_iterations": None,
         "baseline_seed": None,
         "baseline_response_sha256": None,
-        "three_axis_paid": 0, "process_gate_pass": False,
+        "three_axis_paid": 0,
+        "native_errors": 0, "native_refusals": 0,
+        "native_invalid": 0, "native_unsupported": 0,
         "source_scope": "SMOKE_FIXTURE_OR_PINNED_REFERENCE",
-        "full_source_legality_certified": False,
-        "live_gsim_2d_rust_causality": False,
     }
     source = next(((inv, req) for inv, req in inventory
                    if inv["profile_id"] == profile_id), None)
@@ -870,7 +871,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
             )
             scope["native_generated_donor_summary"] = generated_summary
     except Exception as exc:
-        row["status"] = "BLOCKED_SOURCE_LEGALITY"
+        row["status"] = "BLOCKED_CANDIDATE_DOMAIN"
         row["blocker"] = str(exc)[:500]
         row["native_paid_total"] = (
             row["baseline_paid"] + row["native_generated_donor_paid"]
@@ -884,7 +885,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         effective = native_payload(candidate, iterations, seed)
         key = fingerprint(effective)
         if not adapter.legal(candidate):
-            raise ValueError("JOINT_LEGALITY_REJECTED_BEFORE_NATIVE")
+            raise ValueError("JOINT_SEARCH_DOMAIN_REJECTED_BEFORE_NATIVE")
         try:
             native_record, raw = native_score_request(
                 binary, candidate, iterations, seed, rng_mode, deadline
@@ -918,10 +919,11 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
             "raw_response_sha256": native_record["raw_response_sha256"],
             "delta_from_reference": delta,
             "item_ids": [x.get("id", 0) for x in player(candidate)["equipment"]["items"]],
-            "talents": player(candidate)["talentsString"],
+            "talents_string_present": "talentsString" in player(candidate),
+            "talents": player(candidate).get("talentsString"),
             "apl_sha256": fingerprint(player(candidate)["rotation"]["priorityList"]),
-            "source_bounded_legality": True,
-            "full_source_legality_certified": False,
+            "candidate_domain_bounded": True,
+            "native_outcome": native_record.get("native_status", "VALID"),
         })
         return score
 
@@ -935,17 +937,36 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     )
     row["paid_unique"] = result["paid_candidates"]
     row["native_errors"] = result["engine_errors"]
+    row["native_refusals"] = result["native_refusals"]
+    row["native_invalid"] = result["native_invalid"]
+    row["native_unsupported"] = result["native_unsupported"]
+    row["native_refusal_samples"] = result["native_refusal_samples"]
     row["legal_rejections"] = result["legal_rejections"]
     row["search_elapsed_s"] = result["elapsed_s"]
     row["three_axis_paid"] = sum(all(e["delta_from_reference"].values()) for e in paid)
     row["best_balanced_screen"] = result["best_score"]
-    row["source_bounded_joint"] = row["three_axis_paid"] > 0
-    row["status"] = (
-        "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY"
-        if row["source_bounded_joint"] else "BLOCKED_NO_PAID_THREE_AXIS_JOINT"
-    )
-    row["blocker"] = None if row["source_bounded_joint"] else (
-        "No legal source-bounded Rust paid candidate changed gear, talents, and APL")
+    row["native_joint_paid"] = row["three_axis_paid"] > 0
+    if row["native_joint_paid"]:
+        row["status"] = (
+            "NATIVE_JOINT_PAID" if not row["native_errors"]
+            else "NATIVE_JOINT_PAID_WITH_EXECUTION_ERRORS"
+        )
+    elif row["native_errors"]:
+        row["status"] = "BLOCKED_NATIVE_EXECUTION_ERROR"
+    elif row["native_refusals"]:
+        row["status"] = "BLOCKED_NATIVE_REFUSALS"
+    else:
+        row["status"] = "BLOCKED_NO_NATIVE_ACCEPTED_THREE_AXIS_CANDIDATE"
+    if row["status"] == "NATIVE_JOINT_PAID":
+        row["blocker"] = None
+    elif row["status"] == "BLOCKED_NATIVE_REFUSALS":
+        row["blocker"] = "MythicSim refused every scored three-axis proposal in this screen"
+    elif row["status"] == "BLOCKED_NATIVE_EXECUTION_ERROR":
+        row["blocker"] = "Native execution/response errors prevented a usable three-axis score"
+    elif row["status"] == "NATIVE_JOINT_PAID_WITH_EXECUTION_ERRORS":
+        row["blocker"] = "Native execution/response errors occurred alongside paid candidates"
+    else:
+        row["blocker"] = "No native-accepted paid candidate changed gear, talents, and APL"
     row["native_failures"] = native_failures
 
     (outdir / "paid_trace.json").write_text(json.dumps(paid, indent=2) + "\n")
@@ -1024,12 +1045,11 @@ def main() -> None:
                           "source_donor_fixture_count":row.get("source_donor_fixture_count", 0),
                           "replay_matches":row.get("replay_matches")}), flush=True)
     (args.out / "joint_matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
-    # CI must fail if either class did NOT actually score and replay a
-    # three-axis-mutated legal source-bounded candidate on the real Rust.
-    if not all(r["status"] == "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY"
+    # This is a native-paid/replay diagnostic, not a source-legality or P7 gate.
+    if not all(r["status"] == "NATIVE_JOINT_PAID"
                and r.get("replay_matches") and r["native_paid"] >= 1
                for r in rows):
-        raise SystemExit("BLOCKED: No completed two-class Rust JOINT proof; see artifacts")
+        raise SystemExit("BLOCKED: No native-paid two-class JOINT diagnostic with exact replay; see artifacts")
 
 
 if __name__ == "__main__":
