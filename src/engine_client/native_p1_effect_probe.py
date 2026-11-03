@@ -552,9 +552,38 @@ def run_native_p1_direct_effect_probe(
         }
 
     action_inventory = native_prepared_action_inventory(positive_prepare)
+    control_inventory = native_prepared_action_inventory(control_prepare)
+    inventory_parity = {
+        "status": "UNAVAILABLE",
+        "positive_spell_records_equal": False,
+        "positive_major_cooldowns_equal": False,
+    }
+    if action_inventory.get("status") == "AVAILABLE" and control_inventory.get("status") == "AVAILABLE":
+        spells_equal = action_inventory.get("spells") == control_inventory.get("spells")
+        cooldowns_equal = (
+            action_inventory.get("major_cooldowns")
+            == control_inventory.get("major_cooldowns")
+        )
+        inventory_parity = {
+            "status": "MATCH" if spells_equal and cooldowns_equal else "MISMATCH",
+            "positive_spell_records_equal": spells_equal,
+            "positive_major_cooldowns_equal": cooldowns_equal,
+            "positive_spell_count": action_inventory.get("spell_count"),
+            "control_spell_count": control_inventory.get("spell_count"),
+            "positive_major_cooldown_count": action_inventory.get("major_cooldown_count"),
+            "control_major_cooldown_count": control_inventory.get("major_cooldown_count"),
+        }
+
     if candidate_prepare_budget_seconds > 0:
+        now = time.monotonic()
+        candidate_budget = min(
+            float(candidate_prepare_budget_seconds),
+            max(0.1, float(timeout_seconds) * 0.1),
+        )
+        simulation_reserve = min(1.0, float(timeout_seconds) * 0.25)
         candidate_deadline = min(
-            deadline, time.monotonic() + float(candidate_prepare_budget_seconds)
+            deadline - simulation_reserve,
+            now + candidate_budget,
         )
         try:
             candidate_probe = probe_native_prepared_action_candidates(
@@ -581,6 +610,9 @@ def run_native_p1_direct_effect_probe(
             "reason": "NATIVE_P1_CANDIDATE_PREPARE_BUDGET_DISABLED",
             "p1_certified": False,
         }
+    if inventory_parity["status"] != "MATCH" and candidate_probe.get("status") == "AVAILABLE":
+        candidate_probe["status"] = "PARTIAL"
+        candidate_probe["reason"] = "NATIVE_PREPARED_ACTION_INVENTORY_NOT_STABLE_ACROSS_ACTION_CONTROL"
 
     try:
         positive_sim = _simulate_prepared(
@@ -670,6 +702,7 @@ def run_native_p1_direct_effect_probe(
         "positive_prepare": _compact(positive_prepare),
         "control_prepare": _compact(control_prepare),
         "native_prepared_action_inventory": action_inventory,
+        "native_action_inventory_parity": inventory_parity,
         "native_action_candidate_probe": candidate_probe,
         "positive_sim": _compact(positive_sim),
         "control_sim": _compact(control_sim),
