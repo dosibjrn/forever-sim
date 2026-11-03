@@ -85,11 +85,11 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
                   [e if rng.random()<0.86 else None for e in allowed_enchants])
         ranks=random_build(rng)
         actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
-    # Duplicate item IDs are forbidden. Equal catalogue display names are
-    # NOT a source unique-equipped rule: distinct item ranks/variants may be
-    # legal together. GearValidator.validate checks actual source/Rust item
-    # IDs and recorded unique-equipped limit categories after generation.
-    # Do not silently exclude legal builds using an unsourced name heuristic.
+    # Avoid an identical item ID in the paired ring/trinket slots only as a
+    # proposal-quality heuristic. The active P7.5 executor sends the complete
+    # candidate to selected native prepare/sim for all equipment legality,
+    # including duplicate IDs and unique-equipped categories. Never infer a
+    # unique-equipped rule from equal catalogue display names.
     for first,second in ((10,11),(12,13)):
         if ids[first]==ids[second]:
             alternatives=[x for x in pools[second] if x!=ids[first]]

@@ -33,7 +33,7 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
-def _cold_joint(base, source, validator, pools, rng, *, elite=None, enchant_pools=None, repair_axes=None):
+def _cold_joint(base, source, pools, rng, *, elite=None, enchant_pools=None, repair_axes=None):
     """Legal source build: cold discovery or mutation of this search's paid winner.
 
     The seed for a fresh search is always independent of the reference and of
@@ -579,7 +579,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                 if wf613 is not None:
                     elite, axes, family = wf613.propose(rng)
                     candidate = _cold_joint(
-                        base, source, validator, pools, rng,
+                        base, source, pools, rng,
                         elite=elite, repair_axes=axes,
                         enchant_pools=enchant_pools)
                 else:
@@ -635,7 +635,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                             and full_search):
                         repair_axes = _p75_paid_rebuild_axes(proposals)
                     candidate = _cold_joint(
-                        base, source, validator, pools, rng,
+                        base, source, pools, rng,
                         elite=elite, enchant_pools=enchant_pools,
                         repair_axes=repair_axes)
                     if crossover:

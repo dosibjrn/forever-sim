@@ -27,12 +27,9 @@ def test_cold_joint_changes_all_three_dimensions_and_does_not_seed_winner():
         p["talentsString"] = "new-legal-source"
         p["rotation"]["priorityList"] = [3, 2, 1]
         return q
-    v = SimpleNamespace(engine={11: {"name": "One"}, 21: {"name": "Two"}},
-                        validate=lambda *args: (_ for _ in ()).throw(
-                            AssertionError("duplicate Python gear veto executed")))
     source = SimpleNamespace(make_candidate=create, player=player,
                              RejectedGear=ValueError)
-    candidate = gate._cold_joint(original, source, v, {}, random.Random(1))
+    candidate = gate._cold_joint(original, source, {}, random.Random(1))
     assert player(candidate)["talentsString"] != player(original)["talentsString"]
     assert player(candidate)["rotation"] != player(original)["rotation"]
     assert player(candidate)["equipment"] != player(original)["equipment"]
@@ -43,8 +40,9 @@ def test_source_joint_keeps_same_name_distinct_ids_for_real_legality_check(
         monkeypatch):
     """RED before fix: name equality alone rejected source-admissible pairs.
 
-    The actual joint generator must leave recorded uniqueness/limit-category
-    legality to GearValidator.validate, not invent a display-name rule.
+    The actual joint generator preserves distinct source IDs regardless of
+    display-name equality. Selected native prepare/sim decides all equipment
+    legality, including unique-equipped categories; Forever invents no rule.
     """
     import importlib
     from pathlib import Path
@@ -352,12 +350,9 @@ def test_joint_cold_admits_independently_rediscovered_reference_axes():
             assert elite is None  # never seed candidate with a paid prior winner
             assert reference == original
             return copy.deepcopy(candidate)
-        validator = SimpleNamespace(
-            validate=lambda *args: (_ for _ in ()).throw(
-                AssertionError("native candidate pre-veto must not execute")))
         source = SimpleNamespace(make_candidate=generate, player=player,
                                  RejectedGear=ValueError)
-        selected = gate._cold_joint(original, source, validator, {}, random.Random(4))
+        selected = gate._cold_joint(original, source, {}, random.Random(4))
         assert selected == candidate, unchanged_axis
     assert original == _base()
 
