@@ -5,6 +5,8 @@ from hashlib import sha256
 import json
 from pathlib import Path
 
+from tools import m1_progress as m1
+
 ROOT=Path(__file__).resolve().parents[1]
 S=ROOT/'tools/wf_druid_p2_probe.py'
 spec=importlib.util.spec_from_file_location('druid_p2',S)
@@ -109,7 +111,7 @@ def test_p2_requires_an_approved_production_backend():
     assert gate._validate_p2(x,{})==[]
 
 
-def test_retired_p2_diagnostic_never_counts_as_m1_partial_coverage():
+def test_retired_p2_diagnostic_cannot_be_recorded_in_m1(tmp_path):
     report={'status':'FAIL','gate':'P2',
             'coverage_basis':'executed_behavior_or_checked_solo_exclusion',
             'pass_count':3,'reachability_count':10,
@@ -117,7 +119,11 @@ def test_retired_p2_diagnostic_never_counts_as_m1_partial_coverage():
             'production_engine':'live_game_ir_compiler_and_runtime'}
     assert coverage.measured_live_coverage(report) is None
     report['production_engine']='msim'
-    assert coverage.measured_live_coverage(report) is None
+    # Diagnostic coverage may be computed, but the M1 recorder rejects P2.
+    assert coverage.measured_live_coverage(report)['verified'] == 3
+    assert 'P2' not in m1.GATES
+    assert m1.record_partial(class_key='druid', level=60, spec='balance',
+                             gate='P2', report=report, path=tmp_path/'m1.tsv') is False
 
 
 def _native_p2_diagnostic_report():
