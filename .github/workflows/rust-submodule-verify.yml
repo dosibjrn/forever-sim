@@ -1,17 +1,12 @@
 name: Build selected Rust engine for Forever boundary tests (not M1 gate)
 on:
+  # The selected Rust pin is a trusted dependency for Forever-only changes.
+  # Rebuild it only when the submodule selection itself changes; Forever
+  # request/response changes use the focused Python contract workflows.
   pull_request:
     paths:
       - .gitmodules
       - integrations/mythicsim-rust/engine
-      - .github/workflows/rust-submodule-verify.yml
-      - .github/workflows/wf-gsim-rust-native-world.yml
-      - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
-      - src/engine_client/native_p2_rank_probe.py
-      - src/engine_client/native_p1_effect_probe.py
-      - tools/wf_p1_native_effects.py
-      - integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
-      - .github/workflows/m1-on-demand-record.yml
 
 permissions:
   contents: read
