@@ -256,8 +256,13 @@ def test_native_direct_effect_requires_positive_delta_and_real_world_ack(monkeyp
         }
 
     world_calls = []
-    def world(**kwargs):
-        world_calls.append(kwargs)
+    def world(binary_path, prepared, *, target_count, mob_health):
+        world_calls.append({
+            "binary_path": binary_path,
+            "prepared": prepared,
+            "target_count": target_count,
+            "mob_health": mob_health,
+        })
         return {
             "actual_2d_ack": True,
             "continuous_native_actor": True,
