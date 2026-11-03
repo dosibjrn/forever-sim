@@ -19,7 +19,8 @@ sys.path.insert(0, str(ROOT))
 
 from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApplier
 from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
-from tools.wf_gsim_go_live_range_probe import diagnostic_gsim_world
+from src.game.model import ActorDefinition, ResourceDefinition
+from src.game.runtime import ActorState, CombatRuntime, TargetState
 
 
 def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
@@ -33,10 +34,22 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
         raise ValueError("RUST_TWO_WORLD_PREPARED_SOURCE_INVALID")
     # Real two-target gsim CombatRuntime; first m1, then m0. Never replace
     # the world or actor between targets. Only the selected world mob changes.
-    world = diagnostic_gsim_world(
-        target_spawn_yards=15., enemy_move_speed_yards_s=0.,
-        target_health=mob_health, source_single_target=False,
+    actor = ActorState.from_ir(
+        ActorDefinition("hero", "player", base_stats={}),
+        (ResourceDefinition("health", "Health", "hero",
+                            initial_amount=500, capacity=500),), ())
+    world = CombatRuntime(
+        actor=actor, target=TargetState.with_health("m0", mob_health),
+        other_targets=(TargetState.with_health("m1", mob_health),),
+        spatial_positions_yards={"m0": (-15., 0.), "m1": (15., 0.)},
+        enemy_move_speed_yards_s=0., melee_radius_yards=5.,
     )
+    # Both targets have actual, nondegenerate 2D positions and headings.
+    # Rust requires the world-facing bit at every causal ACK boundary.
+    world.targets["m1"].metadata["facing_xy_yards"] = (-1., 0.)
+    world.targets["m0"].metadata["facing_xy_yards"] = (1., 0.)
+    world.engage_target("m1")
+    world.select_target("m1")
     feed = GsimGoRangeFeed(world, native_player_index=0)
     applier = GsimNativeDamageWorldApplier(world)
     targets = ("m1", "m0")
