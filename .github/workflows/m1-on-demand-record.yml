@@ -226,7 +226,7 @@ jobs:
             # intentionally stores only timestamp/run URL, so recover each
             # accepted report from its *registered* trusted M1 Actions log.
             # Never use a guessed prior or re-run an unchanged heavy gate.
-            if [[ "$gate" == P7.5 && "$ALLOW_HEAVY" == true ]]; then
+            if [[ "$gate" == P7.5 ]]; then
               accepted_receipts="$(mktemp)"
               if python tools/wf_gate_p7_5_receipts.py \
                 --repository "$GITHUB_REPOSITORY" --class "$class" \
