@@ -113,16 +113,14 @@ def encode_native_druid_talents(
     if not isinstance(selection, Mapping):
         raise NativeP2ProbeError("SOURCE_TALENT_SELECTION_NOT_A_MAPPING")
     layout = parse_native_druid_layout(engine_root)
-    fields: dict[str, tuple[int, int, int]] = {}
+    # This is only a wire encoder. The selected Rust prepare path, not
+    # Python, owns the talent rank ceiling and game-legality decision.
+    fields: dict[str, tuple[int, int]] = {}
     arrays: list[list[int]] = []
     for tree_index, (tree_key, entries) in enumerate(layout.items()):
         arrays.append([0] * len(entries))
         for index, entry in enumerate(entries):
-            fields[str(entry["field"])] = (
-                tree_index,
-                index,
-                int(entry["max_rank"]),
-            )
+            fields[str(entry["field"])] = (tree_index, index)
 
     for talent_id, raw_rank in selection.items():
         if type(raw_rank) is not int:
@@ -134,11 +132,14 @@ def encode_native_druid_talents(
             continue
         if talent_id not in fields:
             raise NativeP2ProbeError(f"NATIVE_TALENT_ID_UNMAPPED:{talent_id}")
-        tree_index, index, max_rank = fields[talent_id]
-        if rank > max_rank:
+        # The native talent-string wire format has one decimal digit per
+        # position. Reject only values that cannot be represented on the wire;
+        # a representable but illegal rank must reach native preparation.
+        if rank > 9:
             raise NativeP2ProbeError(
-                f"NATIVE_TALENT_RANK_EXCEEDS_CAP:{talent_id}:{rank}>{max_rank}"
+                f"NATIVE_TALENT_RANK_NOT_SINGLE_DIGIT:{talent_id}:{rank}"
             )
+        tree_index, index = fields[talent_id]
         arrays[tree_index][index] = rank
 
     return "-".join("".join(str(rank) for rank in tree) for tree in arrays)
@@ -228,7 +229,9 @@ def prepare_native_request(
                 details = details if isinstance(details, dict) else {}
                 code = details.get("code")
                 status = (
-                    "INVALID" if code == "request"
+                    # The Druid Rust preparation emits "talents" for
+                    # invalid layout/rank input, not unsupported mechanics.
+                    "INVALID" if code in {"request", "talents"}
                     else "ERROR" if code == "prepare_fault"
                     else "UNSUPPORTED"
                 )
