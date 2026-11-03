@@ -260,11 +260,6 @@ fn forever_roots_native_periodic_ticks_change_with_rank() {
         "native Roots control must retain source action and 27s source DoT duration: {landed_controls:?}");
 }
 """
-RUST_RUNTIME_TEST_TYPED = RUST_RUNTIME_TEST.replace(
-    "simulate_prepared(&prepared)",
-    "simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)",
-)
-
 
 
 def port_text(path: str, contents: str) -> str:
@@ -288,7 +283,7 @@ def port_text(path: str, contents: str) -> str:
             if section in contents:
                 continue
             if (test_name == "forever_roots_native_periodic_ticks_change_with_rank"
-                    and RUST_RUNTIME_TEST_TYPED in contents):
+                    and "a landed native Roots cast did not emit a world control event" in contents):
                 continue
             if f"fn {test_name}()" in contents:
                 if (test_name == "forever_roots_native_periodic_ticks_change_with_rank"
