@@ -145,7 +145,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     proposals = 0
     search_start = time.monotonic()
     search_deadline = search_start + 300.0
-    last_paid_step_completed_at = search_start
+    last_search_step_completed_at = search_start
     # Default = four real bounded coupled-world diagnostics. Explicit --heavy
     # = a separate independent 300-second wall-clock cold search using the
     # SAME source APL grammar and real Rust/gsim evaluator (no proxy engine).
@@ -153,7 +153,6 @@ def run_live(root: Path, class_key: str, level: int, *,
     while (time.monotonic() < search_deadline
            if full_search else proposals < 4):
         proposals += 1
-        paid_step_started = False
         try:
             # Four of five proposals explore one of this run's top paid
             # legal APLs, not only the current global best. The archive is
@@ -171,7 +170,6 @@ def run_live(root: Path, class_key: str, level: int, *,
             with tempfile.TemporaryDirectory(prefix="forever_p72_live_") as temp:
                 file = Path(temp) / "source-cold-candidate.json"
                 file.write_text(json.dumps(candidate))
-                paid_step_started = True
                 native = production.native_source_control(binary, file, 3,
                                                           rng_mode="balanced")
                 result = production.run(
@@ -197,15 +195,14 @@ def run_live(root: Path, class_key: str, level: int, *,
                 KeyError, TypeError, AssertionError) as exc:
             failures.append(type(exc).__name__ + ":" + str(exc)[:180])
         finally:
-            if paid_step_started:
-                last_paid_step_completed_at = time.monotonic()
+            last_search_step_completed_at = time.monotonic()
     search_observed_at = time.monotonic()
     search_wall_s = search_observed_at - search_start
     search_deadline_met = p7_search_deadline_completed(
         full_search=full_search,
         search_start=search_start,
         search_deadline=search_deadline,
-        last_paid_step_completed_at=last_paid_step_completed_at,
+        last_search_step_completed_at=last_search_step_completed_at,
         observed_at=search_observed_at,
     )
     if best is None:
@@ -216,7 +213,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "independent_300s_search_requested": full_search,
                 "independent_300s_search_completed": search_deadline_met,
                 "search_deadline_met": search_deadline_met,
-                "last_paid_step_completed_elapsed_s": round(last_paid_step_completed_at - search_start, 6),
+                "last_search_step_completed_elapsed_s": round(last_search_step_completed_at - search_start, 6),
                 "search_deadline_observed_elapsed_s": round(search_wall_s, 6),
                 "cold_candidate_failures": failures[:4]}
 
@@ -297,7 +294,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "independent_300s_search_completed": search_deadline_met,
         "search_deadline_met": search_deadline_met,
         "search_deadline_seconds": 300.0,
-        "last_paid_step_completed_elapsed_s": round(last_paid_step_completed_at - search_start, 6),
+        "last_search_step_completed_elapsed_s": round(last_search_step_completed_at - search_start, 6),
         "search_deadline_observed_elapsed_s": round(search_wall_s, 6),
         "cold_unique_source_requests": len(paid_or_rejected),
         **final,
