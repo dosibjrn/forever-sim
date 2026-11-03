@@ -74,8 +74,17 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
         "real_catalogue_slots_scored": result.get("real_catalogue_slots_scored"),
         "actual_search_result_status": result.get("actual_search_result_status"),
     }
-    assert result["status"] == "PASS", diagnostic
-    assert result["pass_count"] == result["reachability_count"], diagnostic
-    assert result["behavior_probes_executed"] > 0, diagnostic
-    assert result["production_engine"] == "gsim_CombatRuntime", diagnostic
-    assert result["real_catalogue_slots_scored"] > 0, diagnostic
+    detail = (
+        f"reasons={result.get('reasons')!r}; "
+        f"weights={result.get('real_measured_stat_weights')!r}; "
+        f"witnesses={witness_summary!r}; "
+        f"counts={result.get('pass_count')}/{result.get('reachability_count')}; "
+        f"probes={result.get('behavior_probes_executed')}; "
+        f"slots={result.get('real_catalogue_slots_scored')}; "
+        f"search={result.get('actual_search_result_status')}"
+    )
+    assert result["status"] == "PASS", detail
+    assert result["pass_count"] == result["reachability_count"], detail
+    assert result["behavior_probes_executed"] > 0, detail
+    assert result["production_engine"] == "gsim_CombatRuntime", detail
+    assert result["real_catalogue_slots_scored"] > 0, detail
