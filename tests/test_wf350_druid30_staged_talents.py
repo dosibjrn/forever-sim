@@ -4,7 +4,10 @@ import pytest
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.source_checkpoint_p2 import P2Checkpoint,evaluate_p2,evaluate_p2_allocation_l0
 from src.game.data.forever.source_checkpoint_talent_stage import apply_staged_talent_catalogue
-from tools.wf350_druid30_p2_acceptance import ROOT,DB,OBS,SPELL
+ROOT = Path(__file__).resolve().parents[1]
+DB = ROOT / 'data/forever/staged_druid_l30_talents_70338.sqlite'
+OBS = ROOT / 'evidence/wf350/druid_l30_source_talent_catalogue_70338.json'
+SPELL = ROOT / 'evidence/wf348/druid_spellbook_70338_level1_30.json'
 
 def test_staged_druid30_source_complete():
     ir=build_game_ir_slice(class_key='druid',level=30,ability_db_path=DB)

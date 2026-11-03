@@ -20,6 +20,9 @@ RETIRED_TOOLS = (
     "tools/wf336_druid_l20_p2_certificate.py",
     "tools/wf336_p2_optimizer_pilot.py",
     "tools/wf349_druid30_p2_diagnostic.py",
+    "tools/wf350_druid30_p2_acceptance.py",
+    "tools/wf387_atomic_source_talent_probe.py",
+    "tools/wf430_p2_gate_report.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -41,6 +44,9 @@ RETIRED_IMPORT_NAMES = (
     "wf336_druid_l20_p2_certificate",
     "wf336_p2_optimizer_pilot",
     "wf349_druid30_p2_diagnostic",
+    "wf350_druid30_p2_acceptance",
+    "wf387_atomic_source_talent_probe",
+    "wf430_p2_gate_report",
 )
 
 
