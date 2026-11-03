@@ -1,233 +1,150 @@
 #!/usr/bin/env python3
-"""P1 native MythicSim Rust behavioral diagnostic, NO GameIR dependency.
+"""Selected-Rust PreparedV2 single-action effect diagnostic; never a P1 PASS.
 
-Runs real pinned MythicSim Rust 'sim' CLI twice. An existing source-native APL
-cast is suppressed in the second request while EVERYTHING ELSE (character,
-gear, talents, encounter, seed, spell tables) remains the same. This is an
-available black-box diagnostic, not a claim that removing an APL entry holds
-cast timing exactly constant; full P1 requires observed actual applicability
-and optimizer use, as the approved PROCESS specifies.
+The native engine owns spell/rank validity and combat behavior. This adapter
+constructs one concrete Druid Cat request from the pinned Rust fixture, then
+compares its single selected castSpell action with an otherwise identical
+no-action control. It does not consult source spellbooks, acquisition ledgers,
+source eligibility classifiers, or GameIR effects.
 
-This tool never registers, emulates, or implements any ability. The Rust
-engine remains solely responsible for damage, heals, resources and auras.
+A live 2D bridge is opt-in only for an effect whose behavior is world-owned.
 """
 from __future__ import annotations
 
 import argparse
-import copy
-import hashlib
 import json
-import math
 from pathlib import Path
-import subprocess
 import sys
-import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from tools.p1_native_source_inventory import inventory
-from tools.p1_native_progress import native_p1_progress
+
+from src.engine_client.native_p1_effect_probe import (
+    native_single_action_pair,
+    run_native_p1_direct_effect_probe,
+)
+
+VERIFIED_EFFECT = "NATIVE_DIRECT_BEHAVIOR_VERIFIED"
+DRUID_CLAW_RANK1 = 1082
 
 
-def _player(req: dict) -> dict:
-    try:
-        return req["raid"]["parties"][0]["players"][0]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise ValueError("NATIVE_REQUEST_PLAYER_MISSING") from exc
+def build_druid_cat_action_request(engine_root: Path, spell_id: int) -> dict:
+    """Build a one-action request from the selected Rust Druid Cat fixture.
 
-
-def _spell_ids_in_apl(req: dict) -> list[int]:
-    spells = []
-    for row in _player(req).get("rotation", {}).get("priorityList", ()):
-        cast = row.get("action", {}).get("castSpell", {})
-        value = cast.get("spellId", {})
-        if isinstance(value, dict) and type(value.get("spellId")) is int:
-            spells.append(value["spellId"])
-    return spells
-
-
-def native_apl_pair(req: dict, spell_id: int) -> tuple[dict, dict]:
-    """Only remove source-native castSpell APL entries, no invented action stub.
-
-    Not a timed zero-effect ability: removing an APL action may change other
-    spells' scheduling. Native direct spell-control is preferable when exposed.
+    The source action ID selects the test only. No Forever-side spellbook or
+    acquisition check runs here; PreparedV2 decides whether the request is
+    valid, unsupported, and executable.
     """
     if type(spell_id) is not int or spell_id <= 0:
-        raise ValueError("INVALID_SOURCE_SPELL_ID")
-    original = copy.deepcopy(req)
-    control = copy.deepcopy(req)
-    rotation = _player(control).get("rotation")
-    if not isinstance(rotation, dict) or not isinstance(rotation.get("priorityList"), list):
-        raise ValueError("NATIVE_APL_NOT_AVAILABLE")
-    if spell_id not in _spell_ids_in_apl(req):
-        raise ValueError("SPELL_NOT_IN_SOURCE_NATIVE_APL:" + str(spell_id))
-    rotation["priorityList"] = [
-        row for row in rotation["priorityList"]
-        if (row.get("action", {}).get("castSpell", {}).get("spellId", {})
-            .get("spellId") != spell_id)
-    ]
-    if len(rotation["priorityList"]) == len(_player(req)["rotation"]["priorityList"]):
-        raise ValueError("NATIVE_APL_CONTROL_NOT_MUTATED")
-    # No other input mutation is permitted.
-    restored = copy.deepcopy(control)
-    _player(restored)["rotation"]["priorityList"] = copy.deepcopy(
-        _player(original)["rotation"]["priorityList"])
-    if restored != original:
-        raise ValueError("NATIVE_ABLATION_CHANGED_OTHER_INPUT_FIELDS")
-    return original, control
+        raise ValueError("NATIVE_P1_SELECTED_SPELL_ID_INVALID")
+    fixture = (
+        Path(engine_root) / "tests" / "classes" / "druid" / "prepare"
+        / "cat.request.json"
+    )
+    if not fixture.is_file():
+        raise FileNotFoundError("NATIVE_P1_DRUID_CAT_FIXTURE_MISSING:" + str(fixture))
+    request = json.loads(fixture.read_text(encoding="utf-8"))
+    try:
+        player = request["raid"]["parties"][0]["players"][0]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("NATIVE_P1_REQUEST_PLAYER_PATH_MISSING") from exc
+    if player.get("class") != "ClassDruid":
+        raise ValueError("NATIVE_P1_DRUID_FIXTURE_CLASS_CHANGED")
+    rotation = player.get("rotation")
+    if not isinstance(rotation, dict):
+        raise ValueError("NATIVE_P1_APL_ROTATION_MISSING")
+    rotation["priorityList"] = [{
+        "action": {"castSpell": {"spellId": {"spellId": spell_id}}}
+    }]
+    return request
 
 
-def sha(obj: dict) -> str:
-    return hashlib.sha256(json.dumps(obj, sort_keys=True,
-                      separators=(",", ":"), allow_nan=False).encode()).hexdigest()
-
-
-def _run(binary: Path, req: dict, *, timeout_s: float) -> dict:
-    with tempfile.TemporaryDirectory(prefix="p1-native-") as directory:
-        request_path = Path(directory) / "request.json"
-        output_path = Path(directory) / "result.json"
-        request_path.write_text(json.dumps(req, sort_keys=True, allow_nan=False))
-        cp = subprocess.run([str(binary), "sim", "--request", str(request_path),
-                             "--outfile", str(output_path), "--gate", "--rng-mode", "stochastic"],
-                            capture_output=True, text=True, timeout=timeout_s)
-        if cp.returncode == 5:
-            # Rust prepare_request prints the structured refusal to stdout and
-            # exits 5. Its stderr is normally empty; do not erase the actual
-            # native reason or conflate unsupported input with an engine crash.
-            try:
-                refused = json.loads(cp.stdout)
-            except (ValueError, TypeError):
-                refused = None
-            detail = refused.get("refusal") if isinstance(refused, dict) else None
-            if isinstance(detail, dict):
-                code, reason = detail.get("code"), detail.get("reason")
-                if isinstance(code, str) and isinstance(reason, str):
-                    raise ValueError(f"NATIVE_PREPARE_REFUSED:{code}:{reason}")
-        if cp.returncode == 3:
-            # A valid prepared request can be refused by the coverage gate.
-            # The refusal report lives on stdout, not in a result file.
-            try:
-                coverage = json.loads(cp.stdout)
-            except (ValueError, TypeError):
-                coverage = None
-            if isinstance(coverage, dict) and coverage.get("supported") is False:
-                refusals = coverage.get("refusals")
-                raise ValueError("NATIVE_COVERAGE_REFUSED:"
-                                 + json.dumps(refusals, sort_keys=True))
-        if cp.returncode != 0 or not output_path.is_file():
-            raise ValueError("REAL_NATIVE_EXECUTION_FAILED:"
-                             + cp.stderr[-700:] + ":exit=" + str(cp.returncode)
-                             + ":stdout=" + cp.stdout[-700:])
-        data = json.loads(output_path.read_text())
-    if data.get("identity", {}).get("engine") != "forever-engine":
-        raise ValueError("NON_RUST_FOREVER_ENGINE_RESULT")
-    if data.get("result", {}).get("iterationsDone", 0) < 1:
-        raise ValueError("NATIVE_RESULT_DID_NOT_EXECUTE_FIGHTS")
-    return data
-
-
-def _measure(report: dict) -> dict[str, float]:
-    """Read actual combat output; not fabricated cast counters or metadata."""
-    result = report.get("result") or {}
-    metrics = result.get("raidMetrics") or {}
-    observed = {}
-    for metric in ("dps", "hps", "dtps", "tps"):
-        block = metrics.get(metric)
-        if isinstance(block, dict) and type(block.get("avg")) in (int, float):
-            v = float(block["avg"])
-            if not math.isfinite(v):
-                raise ValueError("NONFINITE_NATIVE_COMBAT_METRIC")
-            observed[metric] = v
-    if not observed:
-        raise ValueError("REAL_NATIVE_COMBAT_METRICS_MISSING")
-    return observed
-
-
-def run_native(binary: Path, request: dict, *, class_key: str, level: int,
-               spell_id: int, timeout_s: float = 30.,
-               root: Path = ROOT, db_path: Path | None = None) -> dict:
-    """Native diagnostic, with source-only test universe and zero GameIR use."""
-    source = inventory(class_key, level, root=root, db_path=db_path)
-    selected = {r["spell_id"]: r for r in source["candidates"]}
-    other = {r["spell_id"]: r for r in source["separate"]}
-    source_role = other.get(spell_id, {}).get("status")
-    # The source-only inventory cannot decide Warcraft cast legality.
-    # A legacy "not proven castable" role is uncertainty, not a native
-    # refusal: if the requested spell is in the actual APL, let selected
-    # MythicSim prepare/execute it. Keep explicit scenario waivers, native
-    # auto/pet channels and lower-rank P1 scope separate from player casts.
-    if source_role is not None and source_role != "NOT_A_PROVEN_CASTABLE_ACTION":
-        return {"status": source_role, "spell_id": spell_id,
-                "effect_observed": False, "p1_certified": False,
-                "p1_native_progress": native_p1_progress(source)}
-    if spell_id not in selected and source_role != "NOT_A_PROVEN_CASTABLE_ACTION":
-        raise ValueError("SOURCE_SPELL_NOT_IN_P1_CANDIDATES:" + str(spell_id))
-    if not binary.is_file():
-        raise FileNotFoundError("PINNED_RUST_ENGINE_BINARY_MISSING")
-    baseline, no_action = native_apl_pair(request, spell_id)
-    fixed_options = baseline.get("simOptions", {})
-    if int(fixed_options.get("iterations") or 0) < 1:
-        raise ValueError("NATIVE_REQUEST_NO_ITERATIONS")
-    if not fixed_options.get("randomSeed"):
-        raise ValueError("NATIVE_REQUEST_NO_PINNED_SEED")
-    real = _run(binary, baseline, timeout_s=timeout_s)
-    without = _run(binary, no_action, timeout_s=timeout_s)
-    real_values = _measure(real)
-    no_values = _measure(without)
-    # A changed metric is a useful, fast real Rust black-box observation; it
-    # alone is not proof that the action actually cast or is correctly tuned.
-    diff = {k: {"with_action":real_values.get(k),
-                "without_action":no_values.get(k)}
-            for k in sorted(set(real_values)|set(no_values))
-            if real_values.get(k) != no_values.get(k)}
-    return {
-        "class": class_key, "level": level, "spell_id": spell_id,
-        "status": "NATIVE_APL_ABLATION_DIFFERENCE" if diff
-                  else "NO_COMBAT_METRIC_DIFFERENCE",
-        "native_executed": True,
-        # APL removal can perturb other casts/timing, so no directly verified
-        # per-ability effect is asserted here, even if native DPS/HPS changes.
-        "effect_observed": False,
-        "apl_metric_delta_observed": bool(diff),
+def run_native(
+    binary: Path,
+    request: dict,
+    *,
+    class_key: str,
+    level: int,
+    spell_id: int,
+    timeout_s: float = 120.0,
+    root: Path = ROOT,
+    world_required: bool = False,
+    scenario_label: str | None = None,
+    target_count: int = 2,
+    mob_health: float | None = 1200.0,
+    iterations: int = 10,
+    seed: int = 647003,
+) -> dict:
+    """Call the pinned native PreparedV2 adapter; preserve every native refusal."""
+    try:
+        report = run_native_p1_direct_effect_probe(
+            binary=binary,
+            engine_root=root / "integrations" / "mythicsim-rust" / "engine",
+            request=request,
+            spell_id=spell_id,
+            timeout_seconds=timeout_s,
+            iterations=iterations,
+            seed=seed,
+            target_count=target_count,
+            world_mob_health=mob_health,
+            world_required=world_required,
+            scenario_label=scenario_label or (
+                f"p1-{class_key}-checkpoint-{level}-single-action-{spell_id}"
+            ),
+        )
+    except Exception as exc:
+        report = {
+            "status": "ERROR",
+            "stage": "native_adapter",
+            "reason": f"{type(exc).__name__}:{exc}",
+            "native_executed": False,
+            "effect_observed": False,
+            "p1_certified": False,
+        }
+    report.update({
+        "class": class_key,
+        "checkpoint_level": level,
+        "spell_id": spell_id,
         "p1_certified": False,
-        "p1_native_progress": native_p1_progress(source, [{
-            "spell_id": spell_id, "status":
-                "NATIVE_APL_ABLATION_DIFFERENCE" if diff
-                else "NO_COMBAT_METRIC_DIFFERENCE",
-            "proof_kind": "RUST_APL_ABLATION_DIAGNOSTIC_NOT_ISOLATED_P1",
-            "native_executed": True,
-        }]),
-        "proof_kind": "RUST_APL_ABLATION_DIAGNOSTIC_NOT_ISOLATED_P1",
-        "engine_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
-        "real_request_sha256": sha(baseline),
-        "control_request_sha256": sha(no_action),
-        "combat_metrics_delta": diff,
-        "confounder": "Removing APL action does not preserve action timing; "
-                      "a real direct-cast capability would allow the exact no-effect control",
-    }
+    })
+    return report
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--binary", type=Path, required=True)
-    p.add_argument("--request", type=Path, required=True)
-    p.add_argument("--class", dest="class_key", required=True)
-    p.add_argument("--level", type=int, required=True)
-    p.add_argument("--spell-id", type=int, required=True)
-    p.add_argument("--timeout-s", type=float, default=30.)
-    args = p.parse_args(argv)
-    try:
-        report = run_native(args.binary.resolve(),
-                            json.loads(args.request.read_text()),
-                            class_key=args.class_key, level=args.level,
-                            spell_id=args.spell_id, timeout_s=args.timeout_s)
-        print(json.dumps(report, sort_keys=True, allow_nan=False))
-        return 0 if report.get("native_executed") else 2
-    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
-        print("NOT_TESTED: " + type(exc).__name__ + ": " + str(exc),
-              file=sys.stderr)
-        return 2
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--binary", type=Path, required=True)
+    parser.add_argument("--request", type=Path, required=True,
+                        help="Go RaidSimRequest JSON; not a PreparedV2 report")
+    parser.add_argument("--class", dest="class_key", required=True)
+    parser.add_argument("--level", type=int, required=True,
+                        help="Forever checkpoint selector; not a Rust player-level field")
+    parser.add_argument("--spell-id", type=int, required=True)
+    parser.add_argument("--timeout-s", type=float, default=120.0)
+    parser.add_argument("--iterations", type=int, default=10)
+    parser.add_argument("--seed", type=int, default=647003)
+    parser.add_argument("--world-required", action="store_true")
+    parser.add_argument("--scenario-label")
+    parser.add_argument("--targets", type=int, default=2)
+    parser.add_argument("--mob-health", type=float, default=1200.0)
+    args = parser.parse_args(argv)
+    request = json.loads(args.request.read_text(encoding="utf-8"))
+    report = run_native(
+        args.binary.resolve(),
+        request,
+        class_key=args.class_key,
+        level=args.level,
+        spell_id=args.spell_id,
+        timeout_s=args.timeout_s,
+        world_required=args.world_required,
+        scenario_label=args.scenario_label,
+        target_count=args.targets,
+        mob_health=args.mob_health,
+        iterations=args.iterations,
+        seed=args.seed,
+    )
+    print(json.dumps(report, sort_keys=True, allow_nan=False))
+    return 0 if report.get("status") == VERIFIED_EFFECT else 2
 
 
 if __name__ == "__main__":
