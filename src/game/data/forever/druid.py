@@ -17,7 +17,7 @@ from src.game.data.forever.healing_spells import (
     normalize_direct_heal_action, normalize_periodic_heal_action,
 )
 from src.game.data.forever.tuning_overlays import direct_damage_overlays
-from src.game.data.forever.source_index_rank_parity import indexed_rank_fact, indexed_rank_identity
+from src.game.data.forever.source_index_rank_parity import indexed_rank_fact
 from src.game.data.forever.sqlite_talents import load_sqlite_talents
 from src.game.model import (
     ActionDefinition, ArmorMitigationDefinition, AutoAttackDamageSource, AutoAttackDefinition, DamageEffect, IncomingAttackDefinition, IncomingEventProjection,
@@ -313,19 +313,16 @@ def build_source_slice(level: int, *, ability_db_path=None):
         if ht_index is not None:
             ht_mana, ht_cast = ht_index['mana'], ht_index['cast_s']
             ht_min, ht_max = ht_index['low'], ht_index['high']
-        ht_identity = indexed_rank_identity(class_key='druid', name='Healing Touch',
-            required_level=int(ht_level), db_path=selected_rank_db)
         ht_action, ht_raw = normalize_direct_heal_action(
             fact=DirectHealSourceFact(
                 family_key="healing_touch", name="Healing Touch", rank_level=int(ht_level),
                 resource_id="mana", resource_cost=float(ht_mana), cast_time_s=float(ht_cast),
                 heal_min=float(ht_min), heal_max=float(ht_max), spell_power_coefficient=float(ht_coeff),
-                source_url=ht_identity['source_url'] if ht_identity else wh.HEALING_TOUCH_SOURCE,
+                source_url=ht_index['source_url'] if ht_index else wh.HEALING_TOUCH_SOURCE,
                 provenance={
                     "ruleset": "forever", "source_kind": ht_index["source_authority"] if ht_index else "legacy_tooltip_unverified_index",
                     "source_module": "src.rulesets.forever.classes.druid.wowhead_facts", "confidence": "high",
                     "indexed_rank_fact": ht_index,
-                    **(ht_identity or {}),
                 },
             ),
             actor=actor, mana_resource=mana_resource, health_resource=health_resource,
@@ -340,20 +337,17 @@ def build_source_slice(level: int, *, ability_db_path=None):
         if rejuv_index is not None:
             r_mana, r_total, r_duration = (rejuv_index['mana'], rejuv_index['total'],
                                            rejuv_index['duration_s'])
-        r_identity = indexed_rank_identity(class_key='druid', name='Rejuvenation',
-            required_level=int(r_level), db_path=selected_rank_db)
         r_action, r_raw = normalize_periodic_heal_action(
             fact=PeriodicHealSourceFact(
                 family_key="rejuvenation", name="Rejuvenation", rank_level=int(r_level),
                 resource_id="mana", resource_cost=float(r_mana), total_heal=float(r_total),
                 duration_s=float(r_duration), tick_interval_s=float(wh.REJUVENATION_TICK_INTERVAL_S),
                 spell_power_coefficient_per_tick=float(r_tick_coeff),
-                source_url=r_identity['source_url'] if r_identity else wh.REJUVENATION_SOURCE,
+                source_url=rejuv_index['source_url'] if rejuv_index else wh.REJUVENATION_SOURCE,
                 provenance={
                     "ruleset": "forever", "source_kind": rejuv_index["source_authority"] if rejuv_index else "legacy_tooltip_unverified_index",
                     "source_module": "src.rulesets.forever.classes.druid.wowhead_facts", "confidence": "high",
                     "indexed_rank_fact": rejuv_index,
-                    **(r_identity or {}),
                 },
                 refresh_rule="replace",
             ),

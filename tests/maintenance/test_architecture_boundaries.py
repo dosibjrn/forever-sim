@@ -526,15 +526,20 @@ def test_index_rank_source_reader_remains_lightweight_without_game_ir():
     import subprocess
     import sys
 
+    druid_source = (ROOT / "src/game/data/forever/druid.py").read_text(encoding="utf-8")
+    assert "indexed_rank_identity" not in druid_source
+
     source = """
 import sys
 from src.game.data.forever.source_db_scope import DEFAULT_DB
+import src.game.data.forever.source_index_rank_parity as rank_source
 from src.game.data.forever.source_index_rank_parity import (
     DEFAULT_DB as INDEX_DB, IndexedRankParityError,
-    indexed_rank_fact, indexed_rank_identity, parse_index_after,
+    indexed_rank_fact, parse_index_after,
 )
 assert INDEX_DB is DEFAULT_DB
-assert callable(indexed_rank_fact) and callable(indexed_rank_identity)
+assert callable(indexed_rank_fact)
+assert not hasattr(rank_source, "indexed_rank_identity")
 parsed = parse_index_after({
     'cost': '30 Mana', 'cast': 'Instant',
     'text': 'Causes 12 to 24 Fire damage to the target.',

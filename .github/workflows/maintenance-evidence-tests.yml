@@ -70,6 +70,7 @@ jobs:
           tests/test_wf331_druid20_source_web_l0.py
           tests/test_wf332_runes_default_off.py
           tests/test_wf382_mage_l30_build_delta_p1_tdd.py
+          tests/test_wf319_druid_l20_canonical_numeric_authority.py::test_real_l20_druid_core_spell_amounts_match_canonical_sqlite
           tests/gates/test_wf_p1_native_blackbox.py
           tests/test_wf469_p1_alignment.py
           tests/test_wf470_p1_scope.py
