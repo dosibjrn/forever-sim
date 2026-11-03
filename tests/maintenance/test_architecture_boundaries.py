@@ -164,3 +164,32 @@ def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
     assert incompatible['accepted_checkpoints'] == '0/148'
     assert incompatible['full_checkpoint_certified'] is False
     assert incompatible['legacy_six_gate_accepted_checkpoints'] == '2/148'
+
+
+def test_registry_metadata_selection_defers_legacy_class_builder_imports(monkeypatch):
+    """Presentation/eligibility reads must not instantiate every GameIR provider."""
+    from types import SimpleNamespace
+    from src.game.data.forever import registry
+
+    imports = []
+
+    def load(module_name, *, package):
+        imports.append((module_name, package))
+        return SimpleNamespace(
+            build_source_slice=lambda level, ability_db_path=None:
+            (level, ability_db_path)
+        )
+
+    monkeypatch.setattr(registry, "import_module", load)
+    assert "druid" in registry.registered_class_keys()
+    assert registry.generic_default_ready_levels("druid") == ()
+    assert imports == []
+
+    assert registry._PROVIDERS["druid"](20) == (20, None)
+    assert registry._PROVIDERS["druid"](30, ability_db_path="stage.sqlite") == (
+        30, "stage.sqlite"
+    )
+    assert imports == [
+        (".druid", "src.game.data.forever"),
+        (".druid", "src.game.data.forever"),
+    ]
