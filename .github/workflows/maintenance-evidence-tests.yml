@@ -36,6 +36,7 @@ on:
       - 'src/v2/source_budgeted_level_route.py'
       - 'src/v2/source_bounded_route_evidence.py'
       - 'tests/test_wf288_bounded_route_evidence.py'
+      - 'tools/wf288_real_contiguous_route_benchmark.py'
       - 'tests/test_level_legality_p00c.py'
       - 'tests/generic/search/test_wf288_source_bounded_level_routes.py'
       - 'src/v2/generic_frontier.py'
