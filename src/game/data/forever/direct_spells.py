@@ -3,17 +3,12 @@ from __future__ import annotations
 """Forever source facts normalized into generic direct-spell Game IR."""
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
-from src.game.model.ir import (
-    ActionDefinition,
-    ActorDefinition,
-    DamageEffect,
-    GameIRSlice,
-    ResourceCost,
-    ResourceDefinition,
-)
 from src.game.model.overlay import FieldOverlay, apply_numeric_field_overlays
+
+if TYPE_CHECKING:
+    from src.game.model.ir import ActorDefinition, GameIRSlice, ResourceDefinition
 
 
 # Shared WoW spell GCD semantic used by the current Forever models.  G04 keeps
@@ -53,6 +48,12 @@ def normalize_direct_spell_slice(
     G05 may supply source-backed actor/resource starting state.  Without it the
     normalizer remains usable for definition-only slices.
     """
+    # Legacy GameIR construction is separate from reading source spell facts.
+    from src.game.model.ir import (
+        ActionDefinition, ActorDefinition, DamageEffect, GameIRSlice,
+        ResourceCost, ResourceDefinition,
+    )
+
     actor = actor or ActorDefinition(
         id="player",
         actor_type="player",
