@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -150,7 +151,41 @@ def main() -> int:
     failed = [name for name, result in results.items() if result.get("status") != "PROBE_PASS"]
     if failed:
         raise SystemExit("NATIVE_P2_RANK_PAIR_DIAGNOSTIC_FAILED:" + ",".join(failed))
-    print("SELECTED_RUST_NATIVE_P2_RANK_PAIR_DIAGNOSTICS_PASS_NOT_ACCEPTANCE")
+    # Exercise the actual P2 provider with its staged Druid L30+ source
+    # catalogue. Moonkin Form has no captured checkpoint_source_l0 observation
+    # and is intentionally not emitted as a P2 receipt.
+    os.environ["FOREVER_MYTHICSIM_RUST_BIN"] = str(args.binary.resolve())
+    from tools.wf_gate_p2_live import run_live
+
+    p2_report = run_live(ROOT, "druid", 60, spec="balance")
+    expected_rank_keys = {
+        "predatory_strikes:1",
+        "predatory_strikes:2",
+        "predatory_strikes:3",
+    }
+    native_receipts = p2_report.get("native_rank_probe_results", [])
+    if {row.get("rank_key") for row in native_receipts} != expected_rank_keys:
+        raise SystemExit("NATIVE_P2_LIVE_GATE_SOURCE_RANK_RECEIPTS_INCOMPLETE")
+    if any(row.get("status") != "PROBE_PASS" for row in native_receipts):
+        raise SystemExit("NATIVE_P2_LIVE_GATE_SOURCE_RANK_RECEIPT_FAILED")
+    if any(row.get("accepted_for_p2") is not False for row in native_receipts):
+        raise SystemExit("NATIVE_P2_LIVE_GATE_DIAGNOSTIC_MUST_NOT_ACCEPT")
+    if p2_report.get("source_db_kind") != "staged_druid_source_catalogue":
+        raise SystemExit("NATIVE_P2_LIVE_GATE_DID_NOT_USE_STAGED_SOURCE_CATALOGUE")
+    if p2_report.get("native_rank_probe_summary", {}).get("counted_in_p2_acceptance") is not False:
+        raise SystemExit("NATIVE_P2_LIVE_GATE_DIAGNOSTIC_COUNTED_AS_ACCEPTANCE")
+    print(json.dumps({
+        "p2_gate_status": p2_report.get("status"),
+        "source_db_kind": p2_report.get("source_db_kind"),
+        "native_rank_probe_summary": p2_report.get("native_rank_probe_summary"),
+        "native_rank_probe_results": [
+            {"rank_key": row.get("rank_key"), "status": row.get("status"),
+             "source_rank_facts": row.get("source_rank_facts")}
+            for row in native_receipts
+        ],
+        "production_engine": p2_report.get("production_engine"),
+    }, sort_keys=True, indent=2))
+    print("SELECTED_RUST_NATIVE_P2_SOURCE_BACKED_LIVE_GATE_DIAGNOSTICS_PASS_NOT_ACCEPTANCE")
     return 0
 
 
