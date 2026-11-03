@@ -344,3 +344,27 @@ for marker, anchor, method, transform in (
     assert two_world_cli.insert(paid_source, anchor, marker, method) == paid_source
 
 print("RUST_NATIVE_TWO_WORLD_TYPED_RNG_AND_PAID_RECOVERY_IDEMPOTENT")
+
+
+# Fresh source insertion must use typed RNG too; validating only already-typed
+# descendants would still let a clean bootstrap add legacy untyped gateways.
+for marker, anchor, method, transform, expected in (
+    (two_world_cli.CLASS_MARKER, two_world_cli.CLASSES_ANCHOR,
+     two_world_cli.CLASS_METHOD, port.port_classes,
+     "rng_mode: crate::core::rng::RngMode"),
+    (two_world_cli.PREPARED_MARKER, two_world_cli.PREPARED_ANCHOR,
+     two_world_cli.PREPARED_METHOD, port.port_prepared,
+     "rng_mode: crate::core::rng::RngMode"),
+    (two_world_cli.CLI_MARKER, two_world_cli.CLI_ANCHOR,
+     two_world_cli.CLI_METHOD, port.port_main,
+     'args[5] != "--rng-mode"'),
+):
+    inserted = two_world_cli.insert(anchor, anchor, marker, method)
+    assert expected in inserted, marker
+    assert two_world_cli._typed_native_world_present(inserted, marker), marker
+    assert two_world_cli.insert(inserted, anchor, marker, method) == inserted
+    paid_inserted = transform(inserted)
+    assert transform(paid_inserted) == paid_inserted
+    assert two_world_cli.insert(paid_inserted, anchor, marker, method) == paid_inserted
+
+print("RUST_NATIVE_TWO_WORLD_FRESH_INSERTION_EXPLICIT_BALANCED_MODE_PASS")
