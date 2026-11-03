@@ -5,14 +5,9 @@ where a versioned source row and a clearly qualified actor scenario exist.
 Uncaptured actions remain coverage gaps, never implied no-ops.
 """
 from __future__ import annotations
-from dataclasses import replace
 import json, sqlite3
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
-from src.game.model import (ActionDefinition, ActorDefinition, AutoAttackDamageSource,
-    AutoAttackDefinition, DamageEffect, GameIRSlice, HealEffect, ModeDefinition,
-    PeriodicEffect, PolicyDefinition, PolicyRuleDefinition, PolicyCondition,
-    ResourceCost, ResourceDefinition, WeaponDamageEffect)
-from src.rulesets.forever.shared.defense import representative_player_hp
+
+from .source_db_scope import DEFAULT_DB
 
 
 def build_source_slice(class_key: str, level: int):
@@ -24,6 +19,14 @@ def build_source_slice(class_key: str, level: int):
             return None
         actions=db.execute('SELECT * FROM verified_native_class_actions WHERE class_key=? AND min_level<=? ORDER BY family_key,min_level DESC',(key,level)).fetchall()
         indexed=db.execute("SELECT COUNT(*) FROM spell_index WHERE class_key=? AND kind='abilities' AND (level_hint IS NULL OR level_hint<=?)",(key,level)).fetchone()[0]
+    # Source-only imports and out-of-range lookups do not need the retiring
+    # Python GameIR compiler. Its types remain local to this live legacy build.
+    from src.game.model import (ActionDefinition, ActorDefinition, AutoAttackDamageSource,
+        AutoAttackDefinition, DamageEffect, GameIRSlice, HealEffect, ModeDefinition,
+        PeriodicEffect, PolicyDefinition, PolicyRuleDefinition,
+        ResourceCost, ResourceDefinition, WeaponDamageEffect)
+    from src.rulesets.forever.shared.defense import representative_player_hp
+
     scenario=json.loads(row['mana_scenario_json']); auto=json.loads(row['auto_json'])
     if scenario['kind']=='pinned_class_level_fixture':
         from pathlib import Path
