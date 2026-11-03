@@ -175,6 +175,7 @@ COVERAGE_PATCHES = [
 ]
 
 
+
 ROOT_CONTROL_BLOCK = """
 // The native Druid agent reports only a landed Roots dot's actual expiry.
 // Keep this separate from damage events: it is a typed world-control receipt.
@@ -182,11 +183,13 @@ ROOT_CONTROL_BLOCK = """
 struct RootControlState {
     expires_at_ns: Option<i64>,
     changed_at_ns: Option<i64>,
+    acknowledged_expires_at_ns: Option<i64>,
 }
 thread_local! {
     static ROOT_CONTROL: RefCell<RootControlState> = const { RefCell::new(RootControlState {
         expires_at_ns: None,
         changed_at_ns: None,
+        acknowledged_expires_at_ns: None,
     }) };
 }
 fn root_control_snapshot() -> RootControlState {
@@ -195,8 +198,31 @@ fn root_control_snapshot() -> RootControlState {
 fn reset_root_control() {
     ROOT_CONTROL.with(|state| *state.borrow_mut() = RootControlState::default());
 }
-fn clear_root_control_change() {
-    ROOT_CONTROL.with(|state| state.borrow_mut().changed_at_ns = None);
+fn root_control_for_receipt(clock_ns: i64) -> (RootControlState, bool) {
+    let state = root_control_snapshot();
+    let change_due = state.changed_at_ns
+        .map(|changed_at_ns| changed_at_ns <= clock_ns)
+        .unwrap_or(false);
+    if change_due {
+        (state, true)
+    } else {
+        (RootControlState {
+            expires_at_ns: state.acknowledged_expires_at_ns,
+            changed_at_ns: None,
+            acknowledged_expires_at_ns: state.acknowledged_expires_at_ns,
+        }, false)
+    }
+}
+fn acknowledge_root_control(receipt: RootControlState) {
+    ROOT_CONTROL.with(|state| {
+        let mut state = state.borrow_mut();
+        if state.expires_at_ns == receipt.expires_at_ns
+            && state.changed_at_ns == receipt.changed_at_ns
+        {
+            state.acknowledged_expires_at_ns = state.expires_at_ns;
+            state.changed_at_ns = None;
+        }
+    });
 }
 pub(crate) fn record_root_control(at_ns: i64, expires_at_ns: Option<i64>) {
     // No bridge means no world-side effect. Ordinary native-only fights remain unchanged.
@@ -217,27 +243,27 @@ pub(crate) fn record_root_control(at_ns: i64, expires_at_ns: Option<i64>) {
 
 WORLD_BRIDGE_PATCHES = [
     (
-        "thread_local! {\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\n}\n",
-        "thread_local! {\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\n}\n\n" + ROOT_CONTROL_BLOCK,
+        "thread_local! {\\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\\n}\\n",
+        "thread_local! {\\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\\n}\\n\\n" + ROOT_CONTROL_BLOCK,
         "ROOT_STATE",
     ),
     (
-        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\n        pending: Vec::new(),\n    }));\n}",
-        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\n        pending: Vec::new(),\n    }));\n    reset_root_control();\n}",
+        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\\n        pending: Vec::new(),\\n    }));\\n}",
+        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\\n        pending: Vec::new(),\\n    }));\\n    reset_root_control();\\n}",
         "ROOT_START_RESET",
     ),
     (
-        "        bridge.event_ordinal = 0;\n    });\n}",
-        "        bridge.event_ordinal = 0;\n        reset_root_control();\n    });\n}",
+        "        bridge.event_ordinal = 0;\\n    });\\n}",
+        "        bridge.event_ordinal = 0;\\n        reset_root_control();\\n    });\\n}",
         "ROOT_ITERATION_RESET",
     ),
     (
-        "        bridge.next_tick_ns = at_ns;\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
-        "        bridge.next_tick_ns = at_ns;\n        reset_root_control();\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
+        "        bridge.next_tick_ns = at_ns;\\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
+        "        bridge.next_tick_ns = at_ns;\\n        reset_root_control();\\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
         "ROOT_TARGET_RESET",
     ),
     (
-        "        (boundary >= 0 && boundary > bridge.last_tick_ns\n            && boundary <= next_native_ns && boundary <= end_ns)\n            .then_some(boundary)",
+        "        (boundary >= 0 && boundary > bridge.last_tick_ns\\n            && boundary <= next_native_ns && boundary <= end_ns)\\n            .then_some(boundary)",
         """        // A source-native Roots gain/expiry is a real world boundary. Round
         // upward to gsim's millisecond clock and never jump over an earlier
         // independent world deadline.
@@ -260,16 +286,16 @@ WORLD_BRIDGE_PATCHES = [
     ),
     (
         "    let events = std::mem::take(&mut bridge.pending);",
-        "    let root_control = root_control_snapshot();\n    let events = std::mem::take(&mut bridge.pending);",
+        "    let (root_control, root_control_change_due) = root_control_for_receipt(clock_ns);\\n    let events = std::mem::take(&mut bridge.pending);",
         "ROOT_EXCHANGE_SNAPSHOT",
     ),
     (
-        "            \"native_encounter_damage\": cumulative_damage,\n            \"facing_applied\": true, \"in_front_of_target\": front",
-        "            \"native_encounter_damage\": cumulative_damage,\n            \"native_rooted_until_ns\": root_control.expires_at_ns,\n            \"native_root_control_changed_at_ns\": root_control.changed_at_ns,\n            \"facing_applied\": true, \"in_front_of_target\": front",
+        "            \\"native_encounter_damage\\": cumulative_damage,\\n            \\"facing_applied\\": true, \\"in_front_of_target\\": front",
+        "            \\"native_encounter_damage\\": cumulative_damage,\\n            \\"native_rooted_until_ns\\": root_control.expires_at_ns,\\n            \\"native_root_control_changed_at_ns\\": root_control.changed_at_ns,\\n            \\"facing_applied\\": true, \\"in_front_of_target\\": front",
         "ROOT_RECEIPT",
     ),
     (
-        "    let ack = receive();\n    assert!(ack[\"type\"] == \"gsim_native_damage_applied_ack\"",
+        "    let ack = receive();\\n    assert!(ack[\\"type\\"] == \\"gsim_native_damage_applied_ack\\"",
         """    let ack = receive();
     assert!(ack.get("native_rooted_until_ns").is_some()
         && ack["native_rooted_until_ns"].as_i64() == root_control.expires_at_ns,
@@ -285,9 +311,9 @@ WORLD_BRIDGE_PATCHES = [
         "ROOT_ACK",
     ),
     (
-        "    bridge.next_tick_ns = next_world_boundary_ns;\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
-        "    bridge.next_tick_ns = next_world_boundary_ns;\n    clear_root_control_change();\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
-        "ROOT_CLEAR_CHANGE",
+        "    bridge.next_tick_ns = next_world_boundary_ns;\\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
+        "    bridge.next_tick_ns = next_world_boundary_ns;\\n    if root_control_change_due { acknowledge_root_control(root_control); }\\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
+        "ROOT_ACKNOWLEDGE_CHANGE",
     ),
 ]
 
@@ -297,7 +323,7 @@ mod native_root_control_bridge_tests {
     use super::*;
 
     #[test]
-    fn landed_root_gain_and_expiry_force_world_boundaries() {
+    fn landed_root_gain_and_expiry_force_world_boundaries_without_future_leakage() {
         BRIDGE.with(|slot| *slot.borrow_mut() = Some(Bridge {
             iteration: 0, sequence: 0, next_tick_ns: 100_000_000,
             last_tick_ns: -1, last_health: None, previous_ack_id: String::new(),
@@ -305,11 +331,22 @@ mod native_root_control_bridge_tests {
         }));
         reset_root_control();
 
-        record_root_control(50_000_000, Some(27_050_000_000));
-        assert_eq!(root_control_snapshot().expires_at_ns, Some(27_050_000_000));
-        assert_eq!(due(100_000_000, 60_000_000_000), Some(50_000_000));
+        // No landed native dot (the miss negative control) means no world CC.
+        let (miss, changed) = root_control_for_receipt(0);
+        assert!(!changed);
+        assert_eq!(miss.expires_at_ns, None);
+        assert_eq!(due(100_000_000, 60_000_000_000), Some(100_000_000));
 
-        clear_root_control_change();
+        record_root_control(50_000_000, Some(27_050_000_000));
+        assert_eq!(due(100_000_000, 60_000_000_000), Some(50_000_000));
+        let (before_gain, changed) = root_control_for_receipt(49_000_000);
+        assert!(!changed);
+        assert_eq!(before_gain.expires_at_ns, None);
+        let (gain_receipt, changed) = root_control_for_receipt(50_000_000);
+        assert!(changed);
+        assert_eq!(gain_receipt.expires_at_ns, Some(27_050_000_000));
+        acknowledge_root_control(gain_receipt);
+
         BRIDGE.with(|slot| {
             let mut slot = slot.borrow_mut();
             let bridge = slot.as_mut().unwrap();
@@ -325,8 +362,15 @@ mod native_root_control_bridge_tests {
             bridge.next_tick_ns = 27_100_000_000;
         });
         record_root_control(27_050_000_000, None);
-        assert_eq!(root_control_snapshot().expires_at_ns, None);
         assert_eq!(due(27_100_000_000, 60_000_000_000), Some(27_050_000_000));
+        let (before_expiry, changed) = root_control_for_receipt(27_049_000_000);
+        assert!(!changed);
+        assert_eq!(before_expiry.expires_at_ns, Some(27_050_000_000));
+        let (expiry_receipt, changed) = root_control_for_receipt(27_050_000_000);
+        assert!(changed);
+        assert_eq!(expiry_receipt.expires_at_ns, None);
+        acknowledge_root_control(expiry_receipt);
+        assert_eq!(root_control_snapshot().acknowledged_expires_at_ns, None);
 
         reset_root_control();
         BRIDGE.with(|slot| *slot.borrow_mut() = None);
@@ -428,8 +472,13 @@ def port_text(path: str, contents: str) -> str:
         return contents
     if path == "src/core/fight/world_bridge.rs":
         for old, new, label in WORLD_BRIDGE_PATCHES:
-            if label == "ROOT_RECEIPT" and "native_rooted_until_ns" in contents:
-                continue  # The later gsim-moving port appends its own receipt field.
+            if label == "ROOT_RECEIPT":
+                has_expiry = "native_rooted_until_ns" in contents
+                has_change = "native_root_control_changed_at_ns" in contents
+                if has_expiry and has_change:
+                    continue  # The later gsim-moving port appends its own receipt field.
+                if has_expiry or has_change:
+                    raise ValueError("NATIVE_ROOTS_RECEIPT_PARTIAL_SOURCE_DRIFT")
             contents = replace_once(contents, old, new, label)
         if RUST_ROOT_CONTROL_TEST not in contents:
             if "fn landed_root_gain_and_expiry_force_world_boundaries()" in contents:
