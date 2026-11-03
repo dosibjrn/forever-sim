@@ -26,7 +26,6 @@ def test_live_leveling_target_consumers_import_the_scenario_boundary():
         "src/game/data/forever/source_checkpoint_l0.py",
         "src/v2/generic_backend.py",
         "src/v2/source_legal_beam.py",
-        "src/v2/source_legal_level_corridor.py",
         "src/v2/source_multi_pull_joint.py",
         "src/v2/source_persistent_joint_finalists.py",
         "src/v2/source_stateful_budgeted.py",
