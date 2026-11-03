@@ -11,6 +11,8 @@ on:
       - src/engine_client/native_p1_effect_probe.py
       - tools/wf_p1_native_effects.py
       - integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
+      - tools/wf_gate_p1_live.py
+      - tests/test_wf466_p1_live.py
       - .github/workflows/m1-on-demand-record.yml
 
 permissions:
@@ -42,6 +44,8 @@ jobs:
       - name: Build selected engine binary for Forever boundary invocation
         working-directory: integrations/mythicsim-rust/engine
         run: cargo build --locked --bin forever-engine
+      - name: Exercise P1 formal-provider migration contracts
+        run: python -m pytest -q tests/test_wf466_p1_live.py
       - name: Exercise selected-Rust P2 prepare response adapter
         env:
           FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
@@ -49,4 +53,5 @@ jobs:
       - name: Exercise selected-Rust P1 direct action and live 2D world bridge
         env:
           FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         run: python3 integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
