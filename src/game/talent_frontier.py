@@ -7,25 +7,10 @@ module, chooses which legal state receives an expensive simulation.
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass
 from typing import Mapping
 
 from src.game.source_objective_relevance import solo_threat_exclusion
-
-
-def allocation_key(selection: Mapping[str, int]) -> tuple[tuple[str, int], ...]:
-    return tuple(sorted((str(k), int(v)) for k, v in selection.items() if int(v) > 0))
-
-
-@dataclass(frozen=True)
-class Neighbor:
-    allocation: tuple[tuple[str, int], ...]
-    operation: str
-    changed_ids: tuple[str, ...]
-
-    def as_dict(self):
-        return {'allocation': dict(self.allocation), 'operation': self.operation,
-                'changed_ids': list(self.changed_ids)}
+from src.optimization.talent_frontier import Neighbor, allocation_key
 
 
 def source_legal_talent_neighbors(ir, allocation: Mapping[str, int], *, level: int, bonus_talent_points: int = 0) -> dict:
