@@ -4,7 +4,7 @@ from functools import lru_cache
 import math
 
 from src.shared.leveling import objective as leveling
-from src.shared.leveling.timing import between_pull_travel_s
+from src.scenarios.timing import between_pull_travel_s
 from src.rulesets.forever.data.rules import default_rules
 from src.rulesets.forever.data.catalogue import default_catalogue
 from .gear import GearSetup, archetypes, gear_snapshot, gear_curve_status, reroll_body_items, apply_body_item_names
