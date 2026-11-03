@@ -88,31 +88,50 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
         )
 
 
-    def test_over_cap_rank_is_encoded_for_native_validation(self):
-        # The wire adapter must not implement the engine's talent rank caps.
-        # An out-of-cap but single-digit candidate is sent to Rust, which
-        # owns the authoritative refusal.
+    def test_wire_encoder_does_not_reject_native_owned_talent_rank(self):
+        # Check only that the adapter can serialize a single-digit rank;
+        # MythicSim alone decides whether that rank is game-legal.
         encoded = encode_native_druid_talents({"moonkin_form": 2}, ENGINE_ROOT)
         self.assertEqual(encoded.split("-")[0][-1], "2")
 
-    def test_native_prepare_rejects_over_cap_rank_as_invalid(self):
-        binary = Path(os.environ.get("FOREVER_ENGINE_BINARY", ""))
-        if not binary.is_file():
-            self.skipTest("FOREVER_ENGINE_BINARY is not built in this test run")
+    def test_prepare_adapter_preserves_structured_native_refusal_category(self):
+        # These are synthetic *native response envelopes*. Do not retest
+        # MythicSim's Warcraft legality, e.g. a specific talent rank cap.
         fixture = ENGINE_ROOT / "tests/classes/druid/prepare/balance.request.json"
         request = json.loads(fixture.read_text(encoding="utf-8"))
-        request["raid"]["parties"][0]["players"][0]["talentsString"] = (
-            encode_native_druid_talents({"moonkin_form": 2}, ENGINE_ROOT)
+        cases = (
+            ("talents", "INVALID"),
+            ("request", "INVALID"),
+            ("rotation_unsupported", "UNSUPPORTED"),
+            ("prepare_fault", "ERROR"),
         )
-        result = prepare_native_request(
-            binary=binary,
-            request=request,
-            scenario="native-rank-cap-negative",
-            deadline=time.monotonic() + 60,
-        )
-        self.assertEqual(result["status"], "INVALID", result)
-        self.assertEqual(result["refusal"]["code"], "talents")
-        self.assertIn("Moonkin Form", result["reason"])
+        for native_code, expected in cases:
+            with self.subTest(native_code=native_code):
+                native_refusal = {
+                    "prepared": False,
+                    "refusal": {
+                        "code": native_code,
+                        "reason": "native-owned reason",
+                    },
+                }
+                with patch(
+                    "src.engine_client.native_p2_rank_probe.subprocess.run",
+                    return_value=subprocess.CompletedProcess(
+                        args=["forever-engine", "prepare"],
+                        returncode=3,
+                        stdout=json.dumps(native_refusal),
+                        stderr="",
+                    ),
+                ):
+                    result = prepare_native_request(
+                        binary=Path("/selected/engine/forever-engine"),
+                        request=request,
+                        scenario="native-refusal-wire-contract",
+                        deadline=time.monotonic() + 60,
+                    )
+                self.assertEqual(result["status"], expected, result)
+                self.assertEqual(result["refusal"]["code"], native_code)
+                self.assertEqual(result["reason"], "native-owned reason")
 
     def _simulate_with_cli_result(self, returncode, report):
         with patch(
