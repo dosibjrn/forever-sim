@@ -1408,13 +1408,19 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
     # from a Rust field name.
     source_l0=r.provenance.get('checkpoint_source_l0')
     metadata=talent.metadata if isinstance(talent.metadata,Mapping) else {}
-    prerequisite=talent.prerequisite if isinstance(talent.prerequisite,Mapping) else None
+    source_prerequisite=(source_l0.get('prerequisite')
+                         if isinstance(source_l0,Mapping) else None)
+    if not isinstance(source_prerequisite,Mapping):
+        source_prerequisite=None
     source_url=(source_l0.get('source_url') if isinstance(source_l0,Mapping) else None)
     source_url=(source_url or metadata.get('checkpoint_source_url')
                 or r.provenance.get('source_url'))
-    source_build=(metadata.get('checkpoint_source_build')
+    source_build=(source_l0.get('source_build') if isinstance(source_l0,Mapping) else None)
+    source_build=(source_build or metadata.get('checkpoint_source_build')
                   or r.provenance.get('source_build'))
     source_row=metadata.get('row')
+    tree_members=[str(t.id) for t in compiled.talents if t.tree_key==talent.tree_key]
+    points_per_row=int((compiled.provenance.get('talent_tree_rules') or {}).get('points_per_row') or 0)
     result['source_rank_facts']={
         'class_key':str(compiled.actor.metadata.get('class_key') or ''),
         'level':int(compiled.actor.metadata.get('level') or 0),
@@ -1422,11 +1428,13 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
         'tree_key':str(talent.tree_key),
         'tree_row':int(source_row) if source_row is not None else None,
         'rank_cap':int(talent.max_rank),
+        'tree_members':tree_members,
+        'points_per_row':points_per_row,
         'source_build':str(source_build or ''),
         'source_url':str(source_url or ''),
         'source_sha256':str(metadata.get('checkpoint_source_stage_sha256')
                              or metadata.get('checkpoint_source_sha256') or ''),
-        'prerequisite':dict(prerequisite) if prerequisite is not None else None,
+        'prerequisite':dict(source_prerequisite) if source_prerequisite is not None else None,
         'checkpoint_source_l0':dict(source_l0) if isinstance(source_l0,Mapping) else None,
     }
     exclusion = solo_threat_exclusion(compiled, r) if not r.modifiers else None
@@ -1744,7 +1752,7 @@ def _source_spec_rank_witness(population, talent_id, rank):
 
 
 _NATIVE_P2_TREE_SCENARIOS = {'balance': 'balance', 'feral': 'cat'}
-_NATIVE_P2_DIAGNOSTIC_RANKS = {('moonkin_form', 1), ('predatory_strikes', 1)}
+_NATIVE_P2_DIAGNOSTIC_RANKS = {('predatory_strikes', 1), ('predatory_strikes', 2), ('predatory_strikes', 3)}
 
 
 def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
@@ -1780,9 +1788,17 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
                                 'condition':l0.get('condition'),'source':source_url})
     expected=l0.get('expected_clause_count')
     if not effects or (expected is not None and
-            (isinstance(expected,bool) or int(expected)!=len(effects))):
+            (isinstance(expected,bool) or not isinstance(expected,int)
+             or expected!=len(effects))):
         return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_EFFECT_CLAUSES_INCOMPLETE'}
+    if (l0.get('prerequisite_rank_build_bridge_unverified')
+            or l0.get('unsupported_prerequisite_rank_bridge_unverified')):
+        return {'status':'BLOCKED','reason':'CANONICAL_P2_PREREQUISITE_BUILD_BRIDGE_UNVERIFIED'}
+    if l0.get('source_build') and str(l0['source_build'])!=source_build:
+        return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_BUILD_MISMATCH'}
     for effect in effects:
+        if not isinstance(effect,Mapping):
+            return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_EFFECT_CLAUSE_INVALID'}
         value=effect.get('sourced_value',effect.get('value'))
         effect_source=str(effect.get('source') or source_url)
         if (not effect.get('domain') or not effect.get('target')
@@ -1805,6 +1821,24 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
         if any(int(selection.get(required_id,0))<required_rank
                for selection in (before,after)):
             return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_PREREQUISITE_NOT_SATISFIED'}
+    tree_row=source.get('tree_row')
+    points_per_row=source.get('points_per_row')
+    tree_members=source.get('tree_members')
+    if (isinstance(tree_row,bool) or not isinstance(tree_row,int) or tree_row<0
+            or isinstance(points_per_row,bool) or not isinstance(points_per_row,int)
+            or points_per_row<=0 or not isinstance(tree_members,list) or not tree_members
+            or len(set(tree_members))!=len(tree_members) or talent_id not in tree_members):
+        return {'status':'BLOCKED','reason':'CANONICAL_P2_TREE_TIER_FACTS_INCOMPLETE'}
+    required_tree_points=tree_row*points_per_row
+    for selection in (before,after):
+        tree_points=0
+        for member in tree_members:
+            value=selection.get(member,0)
+            if isinstance(value,bool) or not isinstance(value,int) or value<0:
+                return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_TREE_ALLOCATION_INVALID'}
+            tree_points+=value
+        if tree_points<required_tree_points:
+            return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_TIER_NOT_SATISFIED'}
     scenario=_NATIVE_P2_TREE_SCENARIOS.get(str(source.get('tree_key') or ''))
     if scenario is None:
         return {'status':'BLOCKED','reason':'NATIVE_P2_TREE_SCENARIO_UNAVAILABLE',
@@ -1827,7 +1861,9 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
             'tree_key':source['tree_key'],'tree_row':source.get('tree_row'),
             'rank_cap':source['rank_cap'],'source_build':source_build,
             'source_url':source_url,'source_sha256':source.get('source_sha256'),
-            'prerequisite':prerequisite,
+            'prerequisite':prerequisite,'points_per_row':points_per_row,
+            'required_tree_points':required_tree_points,
+            'tree_members_count':len(tree_members),
             'effect_domains':[str(effect['domain']) for effect in effects],
             'checkpoint_source_l0_sha256':sha256(
                 json.dumps(l0,sort_keys=True,separators=(',',':')).encode()).hexdigest(),
@@ -1839,6 +1875,17 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
                 'reason': f'NATIVE_P2_DIAGNOSTIC_FAILED:{type(exc).__name__}:{exc}'}
 
 
+def _default_p2_source_db(root, class_key, level, source_db=None):
+    if source_db is not None:
+        return Path(source_db)
+    if str(class_key).lower()=='druid' and int(level)>=30:
+        staged=Path(root)/'data'/'forever'/'staged_druid_l30_talents_70338.sqlite'
+        if not staged.is_file():
+            raise ValueError('DRUID_P2_STAGED_SOURCE_DB_MISSING')
+        return staged
+    return Path(DEFAULT_DB)
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
              source_db: Path | None=None, bonus_points: int | None=None):
     """One P2 gate execution; fast, class-neutral and fail-closed."""
@@ -1848,12 +1895,32 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
             'native_rank_probe_results':[],
             'native_rank_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE'}
     try:
-        source_db=Path(source_db or DEFAULT_DB)
+        source_db=_default_p2_source_db(root,class_key,level,source_db)
         if not source_db.is_file():raise ValueError('CANONICAL_SOURCE_DB_MISSING')
-        # Avoid silently using a source database belonging to another class.
+        source_db_kind='default_canonical'
+        # Druid L30+ uses the version-pinned staged catalogue that owns its
+        # checkpoint_source_l0 rank curves; DEFAULT_DB intentionally lacks it.
         with sqlite3.connect(f'file:{source_db.resolve()}?mode=ro',uri=True) as db:
             if db.execute("SELECT count(*) FROM talent_tree_row_facts WHERE class_key=?",(class_key,)).fetchone()[0]==0:
                 raise ValueError('CANONICAL_CLASS_TALENT_ROWS_MISSING')
+            if str(class_key).lower()=='druid' and int(level)>=30:
+                table=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='checkpoint_talent_source_catalogue'").fetchone()
+                if not table:
+                    raise ValueError('DRUID_P2_SOURCE_CATALOGUE_TABLE_MISSING')
+                rows=db.execute(
+                    "SELECT source_build,source_json,min_level FROM checkpoint_talent_source_catalogue WHERE class_key=? AND min_level<=?",
+                    ('druid',int(level))).fetchall()
+                if not rows:
+                    raise ValueError('DRUID_P2_SOURCE_CATALOGUE_ROW_MISSING')
+                best_level=max(int(row[2]) for row in rows)
+                best=[row for row in rows if int(row[2])==best_level]
+                if len(best)!=1:
+                    raise ValueError('DRUID_P2_SOURCE_CATALOGUE_ROW_AMBIGUOUS')
+                source_doc=json.loads(best[0][1])
+                expected_build=P2Checkpoint(class_key,level,profile=spec).source_build
+                if best[0][0]!=expected_build or source_doc.get('source_build')!=expected_build:
+                    raise ValueError('DRUID_P2_SOURCE_CATALOGUE_BUILD_MISMATCH')
+                source_db_kind='staged_druid_source_catalogue'
         ir=build_game_ir_slice(class_key=class_key,level=level,ability_db_path=source_db)
         if ir is None:raise ValueError('CLASS_GAME_IR_NOT_AVAILABLE')
         if ir.actor.metadata.get('class_key')!=class_key or ir.actor.metadata.get('level')!=level:
@@ -1863,6 +1930,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
         bonus=talented_bonus_for_level(level) if bonus_points is None else bonus_points
         points=available_talent_points(level,bonus_talent_points=bonus)
         result.update(source_id=sha256(source_db.read_bytes()).hexdigest(),
+            source_db_kind=source_db_kind,
             engine_id='live_game_ir_compiler_and_runtime',
             production_engine='live_game_ir_compiler_and_runtime',talent_points=points,
             source_talent_count=len(compiled.talents),
@@ -1935,7 +2003,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
         native_probes=result['native_rank_probe_results']
         result['native_rank_probe_summary']={
-            'scope':'druid:60:balance; moonkin_form:1 and predatory_strikes:1',
+            'scope':'druid:60:balance; source-backed predatory_strikes:1-3; moonkin_form remains engine-smoke-only',
             'attempted':len(native_probes),
             'pass_count':sum(p.get('status')=='PROBE_PASS' for p in native_probes),
             'fail_count':sum(p.get('status')=='PROBE_FAIL' for p in native_probes),
