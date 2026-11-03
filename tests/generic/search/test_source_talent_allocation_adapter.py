@@ -24,9 +24,14 @@ def test_mage_source_allocation_enumeration_uses_executable_ranks_only():
     assert proof["all_source_talent_ranks_covered"] is False
     assert allocations
     assert all(sum(allocation.values()) == 21 for allocation in allocations)
+    executable_ranks = {
+        talent.id: {int(rank.rank) for rank in talent.ranks if rank.modifiers}
+        for talent in compiled.talents
+    }
     assert all(
-        all(1 <= rank <= 4 for rank in allocation.values())
+        rank in executable_ranks[talent_id]
         for allocation in allocations
+        for talent_id, rank in allocation.items()
     )
 
 
