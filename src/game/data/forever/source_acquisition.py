@@ -1,9 +1,7 @@
-"""Source-backed acquisition evidence and fail-closed learned-action legality.
+"""Historical source-acquisition evidence reader for still-live legacy consumers.
 
-A listview level, source code or training price is NOT evidence that a character
-learned an action.  Verified spell detail pages can establish an acquisition
-*method*, but not trainer reachability, purchase, quest completion or possession.
-The explicit learned-state contract below is shared by all nine class providers.
+This is source provenance only, never a Warcraft spell-legality verdict.
+The selected MythicSim Rust engine owns acquisition and legal learned ranks.
 """
 from __future__ import annotations
 
@@ -63,80 +61,3 @@ def read_acquisition_evidence(*, class_key: str, spell_ids: Iterable[int],
         }
     return results
 
-
-def audit_learned_action_legality(ir, *, level: int, action_ids: Iterable[str],
-                                  acquired_spell_ids: Iterable[int] = (),
-                                  db_path: str | Path | None = None,
-                                  world_anchor_id: str | None = None,
-                                  world_events: Iterable[dict] = ()) -> dict:
-    """A real route must supply acquired ranks and separate acquisition events.
-
-    This function deliberately NEVER concludes world acquisition from an index
-    hint or a Taught-by page. Even a proven trainer method requires a separate
-    validated route event; no such event verifier is implemented yet.
-    """
-    # Legacy GameIR rank trace is only needed by this legacy audit path.
-    # Source-only evidence readers must not eagerly load the IR coverage layer.
-    from .source_indexed_action_coverage import _source_spell_ids
-    actions = {a.id: a for a in ir.actions}
-    acquired = set(int(x) for x in acquired_spell_ids)
-    verified_trace = None
-    if world_anchor_id is not None:
-        from .source_world_acquisition import verify_acquisition_trace
-        verified_trace = verify_acquisition_trace(
-            class_key=ir.actor.metadata['class_key'], level=level,
-            anchor_id=world_anchor_id, events=world_events, db_path=db_path)
-        # Claims do not grant spells; the verified trace is the only authority.
-        acquired = set(verified_trace['verified_learned_spell_ids'])
-    selected = tuple(action_ids)
-    all_ids = {sid for aid in selected if aid in actions
-               for sid in _source_spell_ids(actions[aid])}
-    evidence = read_acquisition_evidence(class_key=ir.actor.metadata['class_key'],
-                                         spell_ids=all_ids, db_path=db_path)
-    records = []
-    for aid in selected:
-        action = actions.get(aid)
-        if action is None:
-            records.append({'action_id': aid, 'status': 'BLOCKED_NOT_IN_EXECUTABLE_IR'})
-            continue
-        ids = sorted(_source_spell_ids(action))
-        if not ids:
-            records.append({'action_id': aid, 'status': 'BLOCKED_MISSING_SOURCE_SPELL_ID'})
-            continue
-        matching = [sid for sid in ids if sid in acquired]
-        if not matching:
-            records.append({'action_id': aid, 'source_spell_ids': ids,
-                            'status': 'BLOCKED_NOT_LEARNED_IN_CHARACTER_STATE'})
-            continue
-        if len(matching) != 1 or len(ids) != 1:
-            records.append({'action_id': aid, 'source_spell_ids': ids,
-                            'status': 'BLOCKED_AMBIGUOUS_SOURCE_RANK'})
-            continue
-        sid = matching[0]
-        row = evidence.get(sid)
-        if not row or row['status'] != 'CURRENT_SOURCE_EVIDENCE':
-            records.append({'action_id': aid, 'source_spell_ids': ids,
-                            'status': 'BLOCKED_MISSING_OR_STALE_SOURCE_ACQUISITION'})
-            continue
-        if row['required_level_hint'] is None or int(row['required_level_hint']) > level:
-            records.append({'action_id': aid, 'source_spell_ids': ids,
-                            'status': 'BLOCKED_SOURCE_LEVEL_UNKNOWN_OR_TOO_HIGH'})
-            continue
-        # A claimed learned ID is not evidence, only an independently replayed
-        # trainer/world transaction allows action acquisition to pass.
-        if verified_trace is not None:
-            records.append({'action_id':aid,'source_spell_ids':ids,
-                            'status':'VERIFIED_WORLD_ACQUISITION'})
-        else:
-            records.append({'action_id': aid, 'source_spell_ids': ids,
-                            'status': 'BLOCKED_ACQUISITION_EVENT_NOT_VERIFIED',
-                            'methods_observed': row['methods_observed'],
-                            'evidence_status': row['evidence_status']})
-    blockers = [r for r in records if r['status'] != 'VERIFIED_WORLD_ACQUISITION']
-    completed = bool(records) and not blockers
-    return {'status': ('WORLD_ACQUISITION_VERIFIED' if completed else
-                       'ACQUISITION_UNVERIFIED' if records else 'NO_ACTIONS'),
-            'level': int(level), 'source_action_count':len(records),
-            'verified_world_acquisition_count':len(records)-len(blockers),
-            'blockers':blockers,'records':records,'complete':completed,
-            'world_trace':verified_trace}

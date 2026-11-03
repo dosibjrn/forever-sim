@@ -7,7 +7,7 @@ import pytest
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.source_acquisition import (
-    audit_learned_action_legality, read_acquisition_evidence,
+    read_acquisition_evidence,
 )
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.level_legality import LevelState, validate_level_state
@@ -25,30 +25,10 @@ def test_all_nine_class_source_rows_and_hashes():
     for key in CLASSES:
         ir = build_game_ir_slice(class_key=key,level=20)
         assert ir is not None
-        report = audit_learned_action_legality(ir, level=20, action_ids=(a.id for a in ir.actions))
-        assert not report['complete']
-        assert report['source_action_count'] == len(ir.actions)
-        assert report['verified_world_acquisition_count'] == 0
-        assert report['blockers']
         coverage = next(f for f in ir.source_facts if f.get('fact_kind')=='canonical_indexed_ability_coverage')
         assert all(r['acquisition_evidence_status'] not in
                    ('MISSING_ACQUISITION_EVIDENCE','STALE_SOURCE_REINGEST_REQUIRED')
                    for r in coverage['records'])
-
-
-def test_claimed_learned_rank_still_needs_world_event():
-    ir=build_game_ir_slice(class_key='mage',level=20)
-    from src.game.data.forever.source_indexed_action_coverage import _source_spell_ids
-    action=next(a for a in ir.actions if _source_spell_ids(a))
-    ids=_source_spell_ids(action)
-    result=audit_learned_action_legality(ir,level=20,action_ids=[action.id],
-                                          acquired_spell_ids=ids)
-    assert not result['complete']
-    assert result['blockers'][0]['status'] in (
-        'BLOCKED_ACQUISITION_EVENT_NOT_VERIFIED',
-        'BLOCKED_MISSING_OR_STALE_SOURCE_ACQUISITION',
-        'BLOCKED_AMBIGUOUS_SOURCE_RANK',
-        'BLOCKED_SOURCE_LEVEL_UNKNOWN_OR_TOO_HIGH')
 
 
 def test_level_state_does_not_require_separate_acquisition_proof():
