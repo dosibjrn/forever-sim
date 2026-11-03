@@ -14,19 +14,32 @@ OLD = """        if !bridge.pending.is_empty() {
             return Err("RUST_WORLD_UNACKNOWLEDGED_DAMAGE");
         }
         if at_ns <= bridge.last_tick_ns || at_ns < 0 {
-"""
+            return Err("RUST_WORLD_NEXT_TARGET_CLOCK_REWOUND");
+        }
+        bridge.iteration ="""
 NEW = """        if !bridge.pending.is_empty() {
             return Err("RUST_WORLD_UNACKNOWLEDGED_DAMAGE");
         }
-        // A free world-target switch would silently turn time-bounded fights
-        // into fabricated mob kills. The preceding real source damage must
-        // have received a gsim HP/death/hash ACK before a new target is legal.
+        if at_ns <= bridge.last_tick_ns || at_ns < 0 {
+            return Err("RUST_WORLD_NEXT_TARGET_CLOCK_REWOUND");
+        }
+        // Expiring a duration does not kill a distinct gsim world mob.
+        // Only the previous source-native effects' committed HP/death/hash ACK
+        // can authorize this retained Rust actor to acquire its next target.
         if bridge.sequence == 0 || bridge.previous_ack_id.len() != 64
             || bridge.last_health != Some(0.0) {
             return Err("RUST_WORLD_NEXT_TARGET_NOT_NATIVE_LETHAL");
         }
-        if at_ns <= bridge.last_tick_ns || at_ns < 0 {
-"""
+        bridge.iteration ="""
+
+# The existing native-world continuation regression must use a true lethal
+# acknowledgement, not the former duration-only handoff fixture.
+LEGACY_TEST_OLD = """last_tick_ns: 120_000_000, last_health: Some(40.0),
+            previous_ack_id: "ack-from-first-target".into(),"""
+LEGACY_TEST_NEW = """last_tick_ns: 120_000_000, last_health: Some(0.0),
+            previous_ack_id: "a".repeat(64),"""
+LEGACY_ACK_OLD = 'assert_eq!(bridge.previous_ack_id, "ack-from-first-target");'
+LEGACY_ACK_NEW = 'assert_eq!(bridge.previous_ack_id, "a".repeat(64));'
 TEST_MARKER = "mod persistent_next_target_world_lethal_ack_tests"
 TESTS = """#[cfg(test)]
 mod persistent_next_target_world_lethal_ack_tests {
@@ -80,14 +93,20 @@ BEFORE_TEST = "pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64
 def port_source(source: str) -> str:
     if NEW in source:
         if (source.count(NEW) != 1 or source.count(TEST_MARKER) != 1
-                or source.count(TESTS) != 1):
+                or source.count(TESTS) != 1
+                or source.count(LEGACY_TEST_NEW) != 1
+                or source.count(LEGACY_ACK_NEW) != 1):
             raise ValueError("Rust lethal-ACK port partially applied")
         return source
     if source.count(OLD) != 1:
         raise ValueError("Rust world retarget source anchor missing or ambiguous")
-    if TEST_MARKER in source or source.count(BEFORE_TEST) != 1:
+    if (TEST_MARKER in source or source.count(BEFORE_TEST) != 1
+            or source.count(LEGACY_TEST_OLD) != 1
+            or source.count(LEGACY_ACK_OLD) != 1):
         raise ValueError("Rust world retarget tests/entry anchor changed")
     updated = source.replace(OLD, NEW, 1)
+    updated = updated.replace(LEGACY_TEST_OLD, LEGACY_TEST_NEW, 1)
+    updated = updated.replace(LEGACY_ACK_OLD, LEGACY_ACK_NEW, 1)
     return updated.replace(BEFORE_TEST, TESTS + BEFORE_TEST, 1)
 
 
