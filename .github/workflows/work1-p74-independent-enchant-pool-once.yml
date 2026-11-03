@@ -26,3 +26,5 @@ jobs:
         run: |
           python -m pytest -q tests/test_work1_p7_full_gear_pool.py tests/gates/test_wf_gate_p7_4_live.py tests/gates/test_wf_gate_p7_5_live.py
           python -m compileall -q integrations/mythicsim-rust/p74_gear_search.py tools/wf_gate_p7_4_live.py tools/wf_gate_p7_5_live.py
+
+# Focused GREEN verification after both source and fixture updates.
