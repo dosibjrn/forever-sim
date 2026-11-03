@@ -14,13 +14,14 @@ This file contains only rules that apply to all five agents. Read it together wi
 
 ## Owner decision #1: MythicSim owns Warcraft mechanics
 
-Forever must not recreate or require trainer/quest/rank acquisition certificates, source-acquisition ledgers, versioned spellbook proofs, index-to-client identity certificates, or an independent Warcraft legality/semantic proof in any P1–P7.5 gate, optimizer or route.
+Forever must not recreate or require trainer/quest/rank acquisition certificates, source-acquisition ledgers, versioned spellbook proofs, index-to-client identity certificates, or an independent Warcraft legality/semantic proof in any active P3–P7.5 gate, optimizer or route.
 
 **MythicSim Rust is authoritative** for Warcraft source facts, spell/rank acquisition, talent/gear/enchant/APL legality, combat effects and game-world execution. Forever defines scenarios, generates/optimizes candidates, calls and observes the native engine, and records the existing gates.
 
 - Before every Prio/Work1/Work2/Clean implementation cycle, read current [WORK_PRIORITY](../WORK_PRIORITY.md) and owner decisions [#357](https://github.com/dosibjrn/forever-sim/issues/357) and [#359](https://github.com/dosibjrn/forever-sim/issues/359). Check the selected MythicSim fork and other proven production modules before adding functionality.
 - Never add or extend GameIR, a parallel Python game model, a Forever game-legality/source catalogue, or a Python workaround for missing Rust behavior.
 - Migrate each live caller to the native boundary before removing its replaced Python implementation. Preserve real effects, candidate reachability, native refusals, world/2D/100-mob semantics, approved gates and historical M1/PASS records.
+- Owner decision #2 (2026-11-03): P1 ability and P2 talent gates are retired from formal acceptance. Active gates are P3–P6 and P7.1–P7.5 (nine per checkpoint); preserve historical P1/P2 ledger rows but ignore them in M1 and reject new P1/P2 records. Do not schedule or recreate P1/P2 work.
 - The default first task is removing a meaningful live GameIR dependency. Change the Rust fork only for a specifically reproduced missing interface or execution capability required by that caller. Use an ordinary fork branch/PR; `/rust-fork-sync` is only the privileged sync path.
 
 ## Trusted-engine boundary: do not validate MythicSim
@@ -57,9 +58,9 @@ Use existing workflows first. Prefer focused, economical runs. Do not repeat unc
 
 ## M1 reporting and ownership
 
-When reporting M1 status, lead with **`M1 measured: X.XXXX% (float=0.XXXXXXXXXX)`**, read from latest `main` using `python tools/m1_progress.py` and its `measured_percent` / `measured_fraction` values. This is partial-inclusive diagnostic coverage, **not** certified checkpoint percentage, acceptance or forecast. Do not derive it from `C/148`, an SVG, CI or a previous conversation. If the live scoreboard is unavailable, say so. Avoid repeating unchanged `0/148` boilerplate. The official certified `C/148` checkpoint and `N/1628` PASS-gate counts are separate facts; report them only when they change, the user asks, or a specific gate issue needs them.
+When reporting M1 status, lead with **`M1 measured: X.XXXX% (float=0.XXXXXXXXXX)`**, read from latest `main` using `python tools/m1_progress.py` and its `measured_percent` / `measured_fraction` values. This is partial-inclusive diagnostic coverage, **not** certified checkpoint percentage, acceptance or forecast. Do not derive it from `C/148`, an SVG, CI or a previous conversation. If the live scoreboard is unavailable, say so. Avoid repeating unchanged `0/148` boilerplate. The official certified `C/148` checkpoint and `N/1332` active PASS-gate counts are separate facts; report them only when they change, the user asks, or a specific gate issue needs them.
 
-**Only Merge** launches the trusted M1 recorder and writes, invalidates or commits `docs/planning/M1_PASSES.tsv`. A true PASS requires an accepted production run and PROCESS predicate; PARTIAL remains diagnostic and never increments the certified gate count. Keep one ledger row per genuine PASS / bounded PARTIAL as defined by the production script: no per-gate evidence documents or secondary registers. A missing trustworthy compatibility identity cannot certify a full 11/11 checkpoint. Prio, Work1, Work2 and Clean must not edit the ledger, invoke the recorder or promise a numerical increase.
+**Only Merge** launches the trusted M1 recorder and writes, invalidates or commits `docs/planning/M1_PASSES.tsv`. A true PASS requires an accepted production run and PROCESS predicate; PARTIAL remains diagnostic and never increments the certified gate count. Keep one ledger row per genuine PASS / bounded PARTIAL as defined by the production script: no per-gate evidence documents or secondary registers. A missing trustworthy compatibility identity cannot certify a full 9/9 active-gate checkpoint. Prio, Work1, Work2 and Clean must not edit the ledger, invoke the recorder or promise a numerical increase.
 
 Every production-code PR must contain `M1 affected gates: class:level:spec:gate ...` for concrete affected gates, or `M1 affected gates: none` when no gate behavior changed. This is an execution hint, not a manually assigned verdict. Merge's exact dispatch and recording procedure is in [MERGE](MERGE.md).
 
