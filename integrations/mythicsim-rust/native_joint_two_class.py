@@ -227,8 +227,9 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     row = {
         "profile_id": profile_id, "status": "BLOCKED_SOURCE",
         "dimensions_requested": ["gear", "talents", "apl"],
-        "native_paid": 0, "baseline_paid": 0, "native_paid_total": 0,
-        "baseline_balanced_score": None,
+        "native_paid": 0, "baseline_paid": 0, "replay_paid": 0,
+        "native_paid_total": 0, "baseline_attempted": 0,
+        "replay_attempted": 0, "baseline_balanced_score": None,
         "baseline_effective_request_sha256": None,
         "baseline_native_duration_s": None,
         "baseline_rng_mode": None,
@@ -244,18 +245,29 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         "full_source_legality_certified": False,
         "live_gsim_2d_rust_causality": False,
     }
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    def finish() -> dict:
+        row["native_paid_total"] = (
+            int(row.get("baseline_paid", 0))
+            + int(row.get("native_paid", 0))
+            + int(row.get("replay_paid", 0))
+        )
+        (outdir / "report.json").write_text(json.dumps(row, indent=2) + "\n")
+        return row
+
     source = next(((inv, req) for inv, req in inventory
                    if inv["profile_id"] == profile_id), None)
     if source is None:
         row["blocker"] = "Profile absent from canonical inventory"
-        return row
+        return finish()
     inv, reference = source
     row["source_sha256"] = inv["source_sha256"]
     row["source_type"] = inv["source_type"]
     row["source_path"] = inv["source_path"]
     if reference is None:
         row["blocker"] = inv["blocker"]
-        return row
+        return finish()
 
     cls = profile_id.split("/", 1)[0]
     same_class = [req for entry, req in inventory if req is not None
@@ -265,7 +277,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     except Exception as exc:
         row["status"] = "BLOCKED_SOURCE_LEGALITY"
         row["blocker"] = str(exc)[:500]
-        return row
+        return finish()
     row.update(scope)
     outdir.mkdir(parents=True, exist_ok=True)
     paid_dir = outdir / "paid"
@@ -275,6 +287,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     paid = []
     native_failures = []
     baseline_effective = native_payload(reference, iterations, seed)
+    row["baseline_attempted"] = 1
     try:
         baseline_record, baseline_raw = native_score_request(
             binary, reference, iterations, seed, "balanced",
@@ -284,7 +297,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         row["status"] = "BLOCKED_NATIVE_BASELINE"
         row["blocker"] = "Balanced native reference baseline failed: " + str(exc)[-700:]
         row["native_failures"] = [{"stage": "baseline", "error": str(exc)[-1200:]}]
-        return row
+        return finish()
     row["baseline_paid"] = 1
     row["baseline_balanced_score"] = baseline_record["score"]
     row["baseline_effective_request_sha256"] = baseline_record["effective_request_sha256"]
@@ -351,7 +364,6 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         seconds=seconds, iterations=iterations, seed=seed)
     row["search_status"] = result["status"]
     row["native_paid"] = len(paid)
-    row["native_paid_total"] = row["baseline_paid"] + row["native_paid"]
     row["paid_unique"] = result["paid_candidates"]
     row["native_errors"] = result["engine_errors"]
     row["legal_rejections"] = result["legal_rejections"]
@@ -386,11 +398,13 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
         row["best_effective_request_sha256"] = fingerprint(winner)
         (outdir / "best_effective_request.json").write_text(json.dumps(winner, indent=2) + "\n")
         # Independent exact-byte native replay with the same seed and RNG mode.
+        row["replay_attempted"] = 1
         try:
             replay_record, replay_raw = native_score_request(
                 binary, selected_candidate, iterations, seed,
                 "balanced", time.monotonic() + 30.0,
             )
+            row["replay_paid"] = 1
             replay = replay_record["score"]
             replay_sha = replay_record["effective_request_sha256"]
             row["replay_score"] = replay
@@ -412,8 +426,7 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     else:
         row["replay_matches"] = False
 
-    (outdir / "report.json").write_text(json.dumps(row, indent=2) + "\n")
-    return row
+    return finish()
 
 
 def main() -> None:
@@ -448,7 +461,10 @@ def main() -> None:
             seed=args.seed + idx, outdir=outdir)
         rows.append(row)
         print(json.dumps({"profile":profile, "status":row["status"],
-                          "paid":row["native_paid"],
+                          "baseline_paid":row.get("baseline_paid", 0),
+                          "search_paid":row["native_paid"],
+                          "replay_paid":row.get("replay_paid", 0),
+                          "native_paid_total":row["native_paid_total"],
                           "three_axis_paid":row["three_axis_paid"],
                           "replay_matches":row.get("replay_matches")}), flush=True)
     (args.out / "joint_matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
