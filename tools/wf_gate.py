@@ -517,6 +517,7 @@ def main(argv=None) -> int:
             for key in ("search_wall_s", "cold_unique_source_requests",
                         "winner_live_dps", "winner_screen_dps",
                         "paid_stochastic_finalists",
+                        "paid_stochastic_confirmed_finalists",
                         "source_legal_cold_candidates_paid",
                         "frozen_stochastic_iterations",
                         "frozen_stochastic_native_dps",
