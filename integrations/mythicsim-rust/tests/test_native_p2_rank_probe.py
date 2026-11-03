@@ -195,6 +195,59 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
                     result["reason"], "NATIVE_SIM_FAILED_WITHOUT_STRUCTURED_COVERAGE"
                 )
 
+    def test_prepare_pair_preserves_native_refusal_classification(self):
+        """A failed native prepare must not become a generic BLOCKED result."""
+        fixture = {
+            "raid": {"parties": [{"players": [
+                {"class": "ClassDruid", "talentsString": ""}
+            ]}]},
+            "simOptions": {"iterations": 1},
+        }
+        cases = (
+            ("INVALID", "PREPARED", "INVALID"),
+            ("PREPARED", "UNSUPPORTED", "UNSUPPORTED"),
+            ("ERROR", "INVALID", "ERROR"),
+            ("BLOCKED", "PREPARED", "BLOCKED"),
+        )
+        with tempfile.TemporaryDirectory(prefix="native-p2-pair-wire-") as directory:
+            root = Path(directory)
+            binary = root / "forever-engine"
+            binary.touch()
+            request_path = root / "tests/classes/druid/prepare/cat.request.json"
+            request_path.parent.mkdir(parents=True)
+            request_path.write_text(json.dumps(fixture), encoding="utf-8")
+            for before_status, after_status, expected in cases:
+                with self.subTest(before=before_status, after=after_status):
+                    receipts = [
+                        {"status": status, "stage": "prepare",
+                         "reason": "native-owned reason",
+                         "refusal": {"code": "talents"}}
+                        if status != "PREPARED" else {"status": "PREPARED"}
+                        for status in (before_status, after_status)
+                    ]
+                    with patch(
+                        "src.engine_client.native_p2_rank_probe.encode_native_druid_talents",
+                        side_effect=["0", "1"],
+                    ), patch(
+                        "src.engine_client.native_p2_rank_probe.prepare_native_request",
+                        side_effect=receipts,
+                    ) as native:
+                        result = run_native_prepare_pair(
+                            binary=binary, engine_root=root, scenario="cat",
+                            before_selection={},
+                            after_selection={"predatory_strikes": 1},
+                            target_talent_id="predatory_strikes", target_rank=1,
+                        )
+                    self.assertEqual(native.call_count, 2)
+                    self.assertEqual(result["status"], expected, result)
+                    self.assertEqual(result["before"]["status"], before_status)
+                    self.assertEqual(result["after"]["status"], after_status)
+                    self.assertFalse(result["accepted_for_p2"])
+                    for receipt in (result["before"], result["after"]):
+                        if receipt["status"] != "PREPARED":
+                            self.assertEqual(receipt["reason"], "native-owned reason")
+                            self.assertEqual(receipt["refusal"]["code"], "talents")
+
     def test_rank_pair_rejects_changes_outside_the_target_rank_before_execution(self):
         before = {
             "ferocity": 5,
