@@ -118,7 +118,10 @@ def _validate_native_p2_diagnostics(e: dict) -> list[str]:
         errors.append("MISSING_NATIVE_P2_DIAGNOSTIC_SUMMARY")
         return errors
 
-    counts = {"PROBE_PASS": 0, "PROBE_FAIL": 0, "BLOCKED": 0}
+    counts = {
+        "PROBE_PASS": 0, "PROBE_FAIL": 0, "BLOCKED": 0,
+        "INVALID": 0, "UNSUPPORTED": 0, "ERROR": 0,
+    }
     seen: set[str] = set()
     for row in results:
         if not isinstance(row, dict):
@@ -146,9 +149,23 @@ def _validate_native_p2_diagnostics(e: dict) -> list[str]:
         if row.get("executor") != "selected_mythicsim_rust":
             errors.append("INVALID_NATIVE_P2_DIAGNOSTIC_EXECUTOR:" + str(key))
 
-        if status == "BLOCKED":
+        if status in {"BLOCKED", "INVALID", "UNSUPPORTED", "ERROR"}:
             if not isinstance(row.get("reason"), str) or not row["reason"]:
                 errors.append("NATIVE_P2_DIAGNOSTIC_BLOCK_REASON_MISSING:" + str(key))
+            # Native terminal refusals must retain both side receipts. A
+            # pre-native BLOCKED diagnostic may legitimately have no receipts.
+            if status in {"INVALID", "UNSUPPORTED", "ERROR"}:
+                receipt_statuses = {
+                    "PREPARED", "INVALID", "UNSUPPORTED", "ERROR", "BLOCKED",
+                    "EXECUTED",
+                }
+                for side in ("before", "after"):
+                    receipt = row.get(side)
+                    if (not isinstance(receipt, dict)
+                            or receipt.get("status") not in receipt_statuses):
+                        errors.append(
+                            "INCOMPLETE_NATIVE_P2_REFUSAL_RECEIPT:" + str(key) + ":" + side
+                        )
             continue
 
         if (row.get("rng_mode") != "balanced"
@@ -180,9 +197,14 @@ def _validate_native_p2_diagnostics(e: dict) -> list[str]:
 
     if summary.get("attempted") != len(results):
         errors.append("NATIVE_P2_DIAGNOSTIC_ATTEMPT_COUNT_MISMATCH")
-    for status, field in (("PROBE_PASS", "pass_count"),
-                          ("PROBE_FAIL", "fail_count"),
-                          ("BLOCKED", "blocked_count")):
+    for status, field in (
+        ("PROBE_PASS", "pass_count"),
+        ("PROBE_FAIL", "fail_count"),
+        ("BLOCKED", "blocked_count"),
+        ("INVALID", "invalid_count"),
+        ("UNSUPPORTED", "unsupported_count"),
+        ("ERROR", "error_count"),
+    ):
         if summary.get(field) != counts[status]:
             errors.append("NATIVE_P2_DIAGNOSTIC_SUMMARY_MISMATCH:" + field)
     if (summary.get("rng_mode") != "balanced"
