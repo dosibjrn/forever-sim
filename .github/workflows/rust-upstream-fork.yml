@@ -183,7 +183,7 @@ jobs:
           python3 integrations/mythicsim-rust/live_two_world_pulls.py \
             --binary /tmp/forever-selected-rust/target/debug/forever-engine \
             --prepared /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
-            --mob-health 1200 --targets 3 --require-native-moving --recovery-seconds 5 > /tmp/forever-rust-moving-3world.jsonl
+            --mob-health 1200 --targets 3 --recovery-seconds 5 > /tmp/forever-rust-moving-3world.jsonl
           python3 - <<'PY'
           import json
           with open("/tmp/forever-rust-moving-3world.jsonl") as f:
@@ -199,8 +199,16 @@ jobs:
           assert sum(w["native_combat_mana_regen_events"]
                      for w in actual["native_windows"]) > 0
           assert actual["actual_2d_ack"] and actual["continuous_native_actor"]
-          assert actual["native_movement_cast_legal"]
-          assert actual["native_gsim_moving_ticks"] > 0
+          # Paid recovery advances the Rust clock internally; gsim movement is
+          # charged and acknowledged before each next kill, while native
+          # movement-state parity is independently required by the no-recovery
+          # world-ACK workflow.
+          assert actual["native_moving_receipts"] == actual["world_ticks"]
+          assert actual["gsim_world_walk_steps"] > 0
+          assert len(actual["gsim_route_paid_receipts"]) == 2
+          assert all(r["arrival_reached_before_kill"]
+                     and r["actual_paid_world_movement_s"] > 0
+                     for r in actual["gsim_route_paid_receipts"])
           # The prepared Balance DPS reference has no enemy attacker. Read
           # actual native damage accounting: no synthetic incoming attack.
           assert all(w["native_health_damage_taken"] == 0
