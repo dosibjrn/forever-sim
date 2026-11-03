@@ -15,7 +15,7 @@ from pathlib import Path
 import re
 import sqlite3
 
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 
 # Entire tooltip must match one of the exact source-observed phrasings.
 _TEXT = re.compile(
