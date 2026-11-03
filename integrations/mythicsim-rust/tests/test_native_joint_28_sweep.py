@@ -12,6 +12,8 @@ from native_joint_28_sweep import build_matrix, preflight, gap_summary, save_rep
 from native_l60_matrix import (
     CURRENT_CLIENT_BUILD, CURRENT_ENGINE_PIN, CURRENT_CLIENT_TALENT_OVERRIDES,
     apply_current_client_talent_override,
+    CURRENT_CLIENT_TALENT_DONOR_PRESETS, current_client_talent_donor_fixtures,
+    fingerprint,
 )
 
 
@@ -154,6 +156,61 @@ class CandidateDomainBlockerClassification(unittest.TestCase):
 
 
 class CurrentClientTalentOverrideContracts(unittest.TestCase):
+
+    def test_alternate_upstream_presets_expand_four_no_three_axis_donor_domains(self):
+        baselines = {
+            "druid/feral_cat": ("ClassDruid", "050022-35200032123010125011-055"),
+            "mage/arcane": ("ClassMage", "050205223101311531-5500003-003"),
+            "mage/fire": ("ClassMage", "0502052001001-55500001230133031-003"),
+            "mage/frost": ("ClassMage", "0502052011003--053500021100331251"),
+        }
+        inventory_rows = []
+        original_requests = {}
+        for profile, (class_name, talents) in baselines.items():
+            request = {
+                "raid": {"parties": [{"players": [{
+                    "class": class_name,
+                    "talentsString": talents,
+                    "equipment": {"items": [{"id": 123}, {"id": 456}]},
+                    "rotation": {"priorityList": [{"action": {"castSpell": {"spellId": 133}}}]},
+                }]}]},
+                "encounter": {"duration": 60},
+                "simOptions": {"iterations": 40, "randomSeed": "731"},
+            }
+            original_requests[profile] = request
+            inventory_rows.append(({"profile_id": profile}, request))
+
+        donors = current_client_talent_donor_fixtures(inventory_rows)
+        self.assertEqual(7, len(donors))
+        expected = {
+            ("druid/feral_cat", "Hybrid"),
+            ("mage/arcane", "Arcane Fire"), ("mage/arcane", "FFB"),
+            ("mage/fire", "Arcane Fire"), ("mage/fire", "FFB"),
+            ("mage/frost", "Arcane Fire"), ("mage/frost", "FFB"),
+        }
+        self.assertEqual(expected, {
+            (donor["composed_over_profile"], donor["talent_preset_name"])
+            for donor in donors
+        })
+        for donor in donors:
+            profile = donor["composed_over_profile"]
+            original = original_requests[profile]
+            donor_player = donor["request"]["raid"]["parties"][0]["players"][0]
+            original_player = original["raid"]["parties"][0]["players"][0]
+            self.assertEqual(original_player["equipment"], donor_player["equipment"])
+            self.assertEqual(original_player["rotation"], donor_player["rotation"])
+            self.assertEqual(original["encounter"], donor["request"]["encounter"])
+            self.assertEqual(original["simOptions"], donor["request"]["simOptions"])
+            self.assertEqual(donor["talent_string"], donor_player["talentsString"])
+            self.assertEqual("PINNED_UPSTREAM_CURRENT_CLIENT_TALENT_PRESET_DONOR", donor["source_type"])
+            self.assertEqual("wowsims/forever", donor["talent_source_repository"])
+            self.assertEqual("43df34d7fb8145fab89199654cc49aba72f04f02",
+                             donor["talent_source_commit"])
+            self.assertTrue(donor["talent_source_blob_sha"])
+            self.assertEqual(fingerprint(donor["request"]), donor["source_sha256"])
+            self.assertEqual(CURRENT_CLIENT_BUILD, donor["client_build"])
+            self.assertEqual(CURRENT_ENGINE_PIN, donor["engine_pin"])
+
     def test_five_stale_smoke_rows_use_pinned_upstream_presets(self):
         expected = {
             "druid/feral_cat": "ClassDruid",
