@@ -84,6 +84,77 @@ def test_p75_crossover_combines_two_distinct_paid_source_builds():
 
 
 
+def test_p75_crossover_reaches_distinct_paid_balanced_axes_with_finalist_present():
+    """A legal paid finalist must not mask a different paid balanced donor.
+
+    Previous selection only admitted balanced donors when NO finalist donor
+    survived. This is a candidate-generation reachability regression, not
+    evidence of a P7.5 gate PASS or an improved stochastic holdout.
+    """
+    parent, finalist, balanced, child = (
+        _candidate(label) for label in ("parent", "finalist", "balanced", "child"))
+    player = lambda request: request["raid"]["parties"][0]["players"][0]
+    player(finalist)["rotation"]["priorityList"] = [1, 2]
+    player(balanced)["rotation"]["priorityList"] = [8, 9]
+    source = SimpleNamespace(player=player)
+    balanced_before = copy.deepcopy(balanced)
+    finalist_before = copy.deepcopy(finalist)
+
+    class PickLastDistinct:
+        def choice(self, rows):
+            # Both distinct source-paid routes must remain available.
+            assert len(rows) == 2
+            assert [row["talentsString"] for row in rows] == [
+                "finalist", "balanced"]
+            return rows[-1]
+
+    assert gate._paid_p75_crossover(
+        child, parent,
+        [(800.0, {}, "confirmed-sha", finalist, 810.0)],
+        [(790.0, "balanced-sha", balanced),
+         (780.0, "duplicate-finalist", copy.deepcopy(finalist))],
+        source, PickLastDistinct())
+    assert player(child)["talentsString"] == "balanced"
+    assert player(child)["rotation"]["priorityList"] == [8, 9]
+    assert finalist == finalist_before
+    assert balanced == balanced_before
+
+
+def test_p75_crossover_duplicate_paid_axes_do_not_exhaust_distinct_donor_cap():
+    """Repeated paid gear variants must not hide later distinct paid axes."""
+    parent, child = (_candidate(x) for x in ("parent", "child"))
+    source = SimpleNamespace(
+        player=lambda q: q["raid"]["parties"][0]["players"][0])
+    candidates = {label: _candidate(label) for label in
+                  ("f1", "f2", "f3", "f4", "b1", "b2")}
+    # All rows represent genuinely paid builds with distinct request labels.
+    # The top three of either queue repeat the same talent/APL axes.
+    finalists = [
+        (900 - n, {}, f"final-{n}", copy.deepcopy(candidates["f1"]), 910.0)
+        for n in range(3)
+    ]
+    finalists.extend(
+        [(897.0, {}, "final-3", candidates["f2"], 907.0),
+         (896.0, {}, "final-4", candidates["f3"], 906.0),
+         (895.0, {}, "final-5", candidates["f4"], 905.0)])
+    balanced = [
+        (880 - n, f"balance-{n}", copy.deepcopy(candidates["b1"]))
+        for n in range(3)
+    ]
+    balanced.append((877.0, "balance-3", candidates["b2"]))
+
+    class CheckDistinctPaidDonors:
+        def choice(self, rows):
+            # Strongest three DISTINCT finalist axes and two balanced axes.
+            assert [row["talentsString"] for row in rows] == [
+                "f1", "f2", "f3", "b1", "b2"]
+            return rows[-1]
+
+    assert gate._paid_p75_crossover(
+        child, parent, finalists, balanced, source, CheckDistinctPaidDonors())
+    assert source.player(child)["talentsString"] == "b2"
+
+
 def test_p75_gear_block_crossover_preserves_paid_enchants_and_source_validation():
     """Copy intact slots from another PAID build; reject illegal new loadouts."""
     parent, donor, child = (_candidate(x) for x in ("parent", "donor", "child"))

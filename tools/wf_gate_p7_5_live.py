@@ -189,32 +189,50 @@ def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, r
     A differently equipped donor with identical talents and rotation does not
     supply a talent/APL crossover: it previously returned True but left both
     axes unchanged, wasting a proposal and suppressing paid balanced donors.
-    Prefer meaningful stochastic finalists; fall back to meaningful balanced
-    elites rather than claiming a gear-only no-op as a crossover.
+    Preserve both meaningful paid finalist and balanced-elite talent/APL
+    donors rather than suppressing the latter as soon as one finalist exists.
     """
     player = source.player(candidate)
 
     def distinct_paid_pairs(rows, candidate_index, limit):
         eligible = []
-        # Keep the best *eligible* paid donors, not the first N raw rows:
-        # identical-axis leaders must not hide a distinct paid contender.
+        seen_axes = set()
+        # Cap AFTER both candidate-eligibility and distinct-axis filtering.
+        # Repeated paid gear variants with the same talent/APL must not crowd
+        # out a lower-scored, genuinely paid distinct talent/APL donor.
         for row in sorted(rows, key=lambda row: row[0], reverse=True):
             paid = row[candidate_index]
             if paid == parent:
                 continue
             donor = source.player(paid)
-            if (donor["talentsString"] != player["talentsString"]
-                    or donor["rotation"] != player["rotation"]):
-                eligible.append(donor)
-                if len(eligible) >= limit:
-                    break
+            axes = (donor["talentsString"],
+                    json.dumps(donor["rotation"], sort_keys=True))
+            if (donor["talentsString"] == player["talentsString"]
+                    and donor["rotation"] == player["rotation"]):
+                continue
+            if axes in seen_axes:
+                continue
+            eligible.append(donor)
+            seen_axes.add(axes)
+            if len(eligible) >= limit:
+                break
         return eligible
 
     # Every donor was actually paid by selected Rust + live 2D in this same
     # search; neither the external reference nor previous P7 gates are donors.
-    donors = distinct_paid_pairs(finalists, 3, 3)
-    if not donors:
-        donors = distinct_paid_pairs(balanced_elites, 2, 6)
+    # A paid finalist must not hide *all* distinct balanced-elite talent/APL
+    # combinations. Retain the three strongest eligible of each, deduplicated
+    # by the actual axes being copied, so both paid search lineages are reachable.
+    finalists_paid = distinct_paid_pairs(finalists, 3, 3)
+    balanced_paid = distinct_paid_pairs(balanced_elites, 2, 3)
+    donors = []
+    seen_axes = set()
+    for candidate in finalists_paid + balanced_paid:
+        axes = (candidate["talentsString"],
+                json.dumps(candidate["rotation"], sort_keys=True))
+        if axes not in seen_axes:
+            donors.append(candidate)
+            seen_axes.add(axes)
     if not donors:
         return False
     donor = rng.choice(donors)
