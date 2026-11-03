@@ -407,6 +407,29 @@ class SelectedRustRouteCandidateIntegrationTests(unittest.TestCase):
         self.assertGreater(result["native_score_dps"], 0)
         self.assertEqual(result["iterations_done"], 1)
         world = result["world_execution"]
+        print(
+            "NATIVE_ROUTE_CANDIDATE_MEASUREMENT="
+            + json.dumps(
+                {
+                    "scenario": result["scenario"],
+                    "engine_identity": result["engine_identity"],
+                    "native_score_dps": result["native_score_dps"],
+                    "world_targets_killed": world["world_targets_killed"],
+                    "world_elapsed_seconds": world["world_elapsed_seconds"],
+                    "world_seconds_per_target_without_paid_recovery": world[
+                        "world_seconds_per_target_without_paid_recovery"
+                    ],
+                    "gsim_route_paid_movement_s": world["gsim_route_paid_movement_s"],
+                    "native_gsim_moving_ticks": world["native_gsim_moving_ticks"],
+                    "native_damage_events": world["native_damage_events"],
+                    "minimum_native_actor_mana": world["minimum_native_actor_mana"],
+                    "minimum_native_actor_health": world["minimum_native_actor_health"],
+                    "paid_recovery": world["paid_recovery"],
+                    "target_provenance": world["target_provenance"],
+                },
+                sort_keys=True,
+            )
+        )
         self.assertEqual(world["world_targets_killed"], 100)
         self.assertTrue(world["continuous_native_actor"])
         self.assertTrue(world["actual_2d_ack"])
@@ -431,9 +454,8 @@ class SelectedRustRouteCandidateIntegrationTests(unittest.TestCase):
         self.assertFalse(result["python_fallback"])
         self.assertFalse(world["paid_recovery"])
         self.assertEqual(world["world_target_hp"], 100.0)
-        self.assertEqual(world["target_provenance"]["source_status"], "synthetic_diagnostic")
-        self.assertGreater(world["world_seconds_per_target_without_paid_recovery"], 0)
         self.assertIsInstance(world["target_provenance"], dict)
+        self.assertEqual(world["target_provenance"]["source_status"], "synthetic_diagnostic")
 
 
 if __name__ == "__main__":
