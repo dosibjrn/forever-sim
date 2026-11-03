@@ -298,7 +298,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         **(_executed_p7_runtime_proof(
             "P7.5", final["frozen_request_raw_sha256"],
             engine_revision=meta.get("selected_engine_revision", PINNED_RUST))
-           if complete_search and "frozen_request_raw_sha256" in final else {}),
+           if complete_search and not reasons and "frozen_request_raw_sha256" in final else {}),
         "world_damage_events": int(live["native_damage_events"]),
         "world_boundaries": int(live["native_world_ticks"]),
         "source_legal_joint_candidates_paid": executed,
