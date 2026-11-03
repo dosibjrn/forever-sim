@@ -188,7 +188,8 @@ def prepare_native_request(
     payload = copy.deepcopy(request)
     player = _druid_player(payload)
     options = payload["simOptions"]
-    options["iterations"] = 1
+    if isinstance(options.get("iterations"), bool) or not isinstance(options.get("iterations"), int) or options["iterations"] < 1:
+        raise NativeP2ProbeError("NATIVE_P2_PREPARE_ITERATIONS_INVALID")
     options["debugFirstIteration"] = False
 
     with tempfile.TemporaryDirectory(prefix="forever-native-p2-") as directory:
@@ -297,6 +298,8 @@ def run_native_prepare_pair(
     target_talent_id: str,
     target_rank: int,
     timeout_seconds: float = 120.0,
+    iterations: int = 1,
+    seed: int = 647003,
 ) -> dict[str, object]:
     """Return structured selected-Rust PreparedV2 receipts for a rank pair.
 
@@ -306,6 +309,8 @@ def run_native_prepare_pair(
     """
     if scenario not in {"balance", "cat"}:
         raise NativeP2ProbeError(f"NATIVE_P2_SCENARIO_UNSUPPORTED:{scenario}")
+    if isinstance(iterations, bool) or int(iterations) < 1:
+        raise NativeP2ProbeError("NATIVE_P2_ITERATIONS_INVALID")
     _selection_delta(before_selection, after_selection, target_talent_id, int(target_rank))
 
     root = Path(engine_root)
@@ -337,6 +342,10 @@ def run_native_prepare_pair(
     after_request = copy.deepcopy(base_request)
     _druid_player(before_request)["talentsString"] = before_string
     _druid_player(after_request)["talentsString"] = after_string
+    for request in (before_request, after_request):
+        request["simOptions"]["iterations"] = int(iterations)
+        request["simOptions"]["randomSeed"] = str(int(seed))
+        request["simOptions"]["debugFirstIteration"] = False
     deadline = time.monotonic() + timeout_seconds
     before = prepare_native_request(
         binary=binary_path,
@@ -388,6 +397,8 @@ def run_native_prepare_pair(
         "reason": "SELECTED_RUST_PREPARE_PAIR_EXECUTED",
         "target_talent_id": target_talent_id,
         "target_rank": int(target_rank),
+        "iterations": int(iterations),
+        "seed": int(seed),
         "talents_string_before": before_string,
         "talents_string_after": after_string,
         "before": before,
@@ -422,50 +433,85 @@ def _selection_delta(
         raise NativeP2ProbeError("NATIVE_P2_CANDIDATE_RANK_MISMATCH")
 
 
-def _prepare_request(binary_path: Path, request: dict) -> dict[str, object]:
-    """Run the selected Rust prepare command on the exact paired request."""
-    with tempfile.TemporaryDirectory(prefix="forever-p2-native-prepare-") as temp:
-        temp_root = Path(temp)
-        request_path = temp_root / "request.json"
-        prepared_path = temp_root / "prepared.json"
-        request_path.write_text(
-            json.dumps(request, sort_keys=True), encoding="utf-8"
+def _simulate_prepared(
+    *,
+    binary_path: Path,
+    prepared: dict,
+    rng_mode: NativeRngMode,
+    deadline: float,
+) -> dict[str, object]:
+    """Execute one PreparedV2 input through the selected Rust simulator."""
+    with tempfile.TemporaryDirectory(prefix="forever-p2-native-sim-") as directory:
+        root = Path(directory)
+        prepared_path = root / "prepared.json"
+        report_path = root / "report.json"
+        prepared_path.write_text(
+            json.dumps(prepared, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
         )
+        remaining = deadline - time.monotonic()
+        if remaining <= 0.05:
+            return {"status": "ERROR", "stage": "sim",
+                    "reason": "NATIVE_P2_SIM_DEADLINE_EXPIRED"}
         started = time.monotonic()
-        completed = subprocess.run(
-            [
-                str(binary_path),
-                "prepare",
-                "--request",
-                str(request_path),
-                "--outfile",
-                str(prepared_path),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-        )
-        elapsed = time.monotonic() - started
-        if completed.returncode != 0:
-            detail = (completed.stderr or completed.stdout or "").strip()[-1200:]
-            raise NativeP2ProbeError(
-                f"NATIVE_PREPARE_REFUSED:{completed.returncode}:{detail}"
-            )
-        if not prepared_path.is_file():
-            raise NativeP2ProbeError("NATIVE_PREPARE_OUTPUT_MISSING")
-        prepared_bytes = prepared_path.read_bytes()
         try:
-            prepared = json.loads(prepared_bytes)
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise NativeP2ProbeError("NATIVE_PREPARE_OUTPUT_INVALID_JSON") from exc
-        if not isinstance(prepared, dict):
-            raise NativeP2ProbeError("NATIVE_PREPARE_OUTPUT_NOT_OBJECT")
+            completed = subprocess.run(
+                [
+                    str(binary_path), "sim", "--infile", str(prepared_path),
+                    "--outfile", str(report_path), "--gate",
+                    "--rng-mode", rng_mode.value,
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=max(0.001, deadline - time.monotonic()),
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return {"status": "ERROR", "stage": "sim",
+                    "reason": f"NATIVE_SIM_CLI_FAILED:{type(exc).__name__}:{exc}"}
+        elapsed = round(time.monotonic() - started, 6)
+        if completed.returncode != 0:
+            refusal = _json_object(completed.stdout or "")
+            if refusal is not None and "supported" in refusal:
+                return {
+                    "status": "UNSUPPORTED",
+                    "stage": "sim",
+                    "reason": "NATIVE_PREPARED_GATE_REFUSED",
+                    "coverage": refusal,
+                    "elapsed_seconds": elapsed,
+                }
+            return {
+                "status": "ERROR",
+                "stage": "sim",
+                "reason": "NATIVE_SIM_FAILED_WITHOUT_STRUCTURED_COVERAGE",
+                "returncode": completed.returncode,
+                "stdout_tail": (completed.stdout or "")[-700:],
+                "stderr_tail": (completed.stderr or "")[-700:],
+                "elapsed_seconds": elapsed,
+            }
+        if not report_path.is_file():
+            return {"status": "ERROR", "stage": "sim",
+                    "reason": "NATIVE_SIM_REPORT_MISSING",
+                    "elapsed_seconds": elapsed}
+        try:
+            report = json.loads(report_path.read_bytes())
+            score = float(_native_runner.dps(report))
+        except (UnicodeDecodeError, ValueError, KeyError, TypeError, OverflowError) as exc:
+            return {"status": "ERROR", "stage": "sim",
+                    "reason": f"NATIVE_SIM_REPORT_INVALID:{type(exc).__name__}:{exc}",
+                    "elapsed_seconds": elapsed}
+        if not math.isfinite(score):
+            return {"status": "ERROR", "stage": "sim",
+                    "reason": "NATIVE_SIM_DPS_NONFINITE",
+                    "elapsed_seconds": elapsed}
         return {
-            "prepared_sha256": hashlib.sha256(prepared_bytes).hexdigest(),
-            "prepare_elapsed_seconds": float(elapsed),
-            "prepared_top_level_keys": sorted(prepared),
+            "status": "EXECUTED",
+            "stage": "sim",
+            "dps": score,
+            "elapsed_seconds": elapsed,
+            "report": report,
         }
+
 
 
 def run_native_rank_pair(
@@ -481,131 +527,71 @@ def run_native_rank_pair(
     iterations: int = 100,
     seed: int = 647003,
 ) -> dict[str, object]:
-    """Run a DPS-only diagnostic for a source-validated native Druid rank pair.
+    """Run a DPS-only diagnostic through explicit prepare then prepared sim.
 
     The balanced RNG mode is a required call argument, never an environment
     default. A positive DPS delta is diagnostic only; it is not a P2 PASS.
-    Use run_native_prepare_pair for structured PreparedV2 receipts.
     """
     if rng_mode is not NativeRngMode.BALANCED:
         raise NativeP2ProbeError("NATIVE_P2_REQUIRES_EXPLICIT_BALANCED_RNG")
-    if scenario not in {"balance", "cat"}:
-        raise NativeP2ProbeError(f"NATIVE_P2_SCENARIO_UNSUPPORTED:{scenario}")
     if isinstance(iterations, bool) or int(iterations) < 1:
         raise NativeP2ProbeError("NATIVE_P2_ITERATIONS_INVALID")
     if isinstance(target_rank, bool) or int(target_rank) < 1:
         raise NativeP2ProbeError("NATIVE_P2_TARGET_RANK_INVALID")
-    _selection_delta(before_selection, after_selection, target_talent_id, int(target_rank))
 
     binary_path = Path(binary)
     root = Path(engine_root)
-    if not binary_path.is_file():
-        return {
-            "status": "BLOCKED",
-            "reason": "SELECTED_RUST_BINARY_MISSING",
-            "scenario": scenario,
-            "rng_mode": rng_mode.value,
-        }
-    request_path = (
-        root / "tests" / "classes" / "druid" / "prepare" / f"{scenario}.request.json"
+    pair = run_native_prepare_pair(
+        binary=binary_path,
+        engine_root=root,
+        scenario=scenario,
+        before_selection=before_selection,
+        after_selection=after_selection,
+        target_talent_id=target_talent_id,
+        target_rank=int(target_rank),
+        iterations=int(iterations),
+        seed=int(seed),
     )
-    if not request_path.is_file():
+    if pair.get("status") != "PREPARED":
         return {
+            **pair,
             "status": "BLOCKED",
-            "reason": f"NATIVE_DRUID_REQUEST_FIXTURE_MISSING:{scenario}",
-            "scenario": scenario,
-            "rng_mode": rng_mode,
-        }
-
-    base_request = json.loads(request_path.read_text(encoding="utf-8"))
-    _druid_player(base_request)
-    before_string = encode_native_druid_talents(before_selection, root)
-    after_string = encode_native_druid_talents(after_selection, root)
-    if before_string == after_string:
-        raise NativeP2ProbeError("NATIVE_P2_TALENT_STRINGS_IDENTICAL")
-
-    def execute(talents_string: str) -> dict[str, object]:
-        request = copy.deepcopy(base_request)
-        _druid_player(request)["talentsString"] = talents_string
-        request["simOptions"]["debugFirstIteration"] = False
-        # The native runner writes iterations/seed and passes --rng-mode
-        # explicitly to sim --request --gate.
-        prepared_receipt = _prepare_request(binary_path, request)
-        score, report, elapsed, payload_sha = _native_runner.run(
-            str(binary_path),
-            request,
-            int(iterations),
-            int(seed),
-            rng_mode.value,
-            time.monotonic() + 120.0,
-        )
-        if not isinstance(score, (int, float)):
-            raise NativeP2ProbeError("NATIVE_P2_DPS_NOT_NUMERIC")
-        return {
-            "dps": float(score),
-            "elapsed_seconds": float(elapsed),
-            "request_sha256": str(payload_sha),
-            "engine_identity": report.get("identity"),
-            **prepared_receipt,
-        }
-
-    try:
-        before = execute(before_string)
-        after = execute(after_string)
-    except Exception as exc:
-        return {
-            "status": "BLOCKED",
-            "reason": f"NATIVE_SIM_EXECUTION_FAILED:{type(exc).__name__}:{exc}",
             "scenario": scenario,
             "target_talent_id": target_talent_id,
             "target_rank": int(target_rank),
-            "talents_string_before": before_string,
-            "talents_string_after": after_string,
-            "rng_mode": rng_mode,
+            "rng_mode": rng_mode.value,
             "iterations": int(iterations),
             "seed": int(seed),
+            "accepted_for_p2": False,
         }
 
-    before_identity = before.get("engine_identity")
-    after_identity = after.get("engine_identity")
-    if not before_identity or not after_identity:
+    deadline = time.monotonic() + 120.0
+    before = _simulate_prepared(
+        binary_path=binary_path,
+        prepared=pair["before"]["prepared"],
+        rng_mode=rng_mode,
+        deadline=deadline,
+    )
+    after = _simulate_prepared(
+        binary_path=binary_path,
+        prepared=pair["after"]["prepared"],
+        rng_mode=rng_mode,
+        deadline=deadline,
+    )
+    if before.get("status") != "EXECUTED" or after.get("status") != "EXECUTED":
         return {
             "status": "BLOCKED",
-            "reason": "NATIVE_ENGINE_IDENTITY_MISSING",
+            "reason": "NATIVE_P2_SIM_PAIR_NOT_EXECUTED",
             "scenario": scenario,
             "target_talent_id": target_talent_id,
             "target_rank": int(target_rank),
             "before": before,
             "after": after,
-            "rng_mode": rng_mode,
+            "prepare_pair": pair,
+            "rng_mode": rng_mode.value,
             "iterations": int(iterations),
             "seed": int(seed),
-        }
-    if before.get("request_sha256") == after.get("request_sha256"):
-        return {
-            "status": "BLOCKED",
-            "reason": "NATIVE_PAIRED_REQUEST_PAYLOADS_IDENTICAL",
-            "scenario": scenario,
-            "target_talent_id": target_talent_id,
-            "target_rank": int(target_rank),
-            "before": before,
-            "after": after,
-            "rng_mode": rng_mode,
-            "iterations": int(iterations),
-            "seed": int(seed),
-        }
-    if before_identity != after_identity:
-        return {
-            "status": "BLOCKED",
-            "reason": "NATIVE_ENGINE_IDENTITY_CHANGED_BETWEEN_PAIRED_RUNS",
-            "scenario": scenario,
-            "target_talent_id": target_talent_id,
-            "target_rank": int(target_rank),
-            "before": before,
-            "after": after,
-            "rng_mode": rng_mode,
-            "iterations": int(iterations),
-            "seed": int(seed),
+            "accepted_for_p2": False,
         }
 
     delta = float(after["dps"]) - float(before["dps"])
@@ -617,16 +603,21 @@ def run_native_rank_pair(
         "scenario": scenario,
         "target_talent_id": target_talent_id,
         "target_rank": int(target_rank),
-        "talents_string_before": before_string,
-        "talents_string_after": after_string,
-        "before": before,
-        "after": after,
+        "talents_string_before": pair["talents_string_before"],
+        "talents_string_after": pair["talents_string_after"],
+        "before": {
+            "prepared": pair["before"],
+            "simulation": before,
+        },
+        "after": {
+            "prepared": pair["after"],
+            "simulation": after,
+        },
         "delta_dps": delta,
-        "rng_mode": rng_mode,
+        "engine_identity": pair["engine_identity"],
+        "source_layout_sha256": pair["source_layout_sha256"],
+        "rng_mode": rng_mode.value,
         "iterations": int(iterations),
         "seed": int(seed),
-        "source_layout_sha256": hashlib.sha256(
-            (root / "src" / "classes" / "druid" / "prepare.rs").read_bytes()
-        ).hexdigest(),
         "accepted_for_p2": False,
     }
