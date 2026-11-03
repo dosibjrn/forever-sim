@@ -421,7 +421,8 @@ def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
     rng.shuffle(pairs)
 
     # Preserve the existing four bounded source-gear validation attempts.
-    for (gear_sha, other, different), (apl_sha, rotation) in pairs[:4]:
+    for attempt in range(4):
+        (gear_sha, other, different), (apl_sha, rotation) = pairs[attempt % len(pairs)]
         selected = rng.sample(
             different, min(len(different), rng.randint(2, 5)))
         mixed = copy.deepcopy(items)
