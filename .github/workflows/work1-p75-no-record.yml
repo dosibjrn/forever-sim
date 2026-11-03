@@ -11,7 +11,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: work1-p75-no-record-\${{ github.event.pull_request.head.sha }}
+  group: work1-p75-no-record-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -26,12 +26,12 @@ jobs:
       CARGO_PROFILE_RELEASE_LTO: "off"
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
       FOREVER_P7_FULL_SOURCE_SEARCH: "1"
-      FOREVER_MYTHICSIM_RUST_BIN: \${{ github.workspace }}/upstream/target/release/forever-engine
+      FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
     steps:
       - name: Checkout exact PR HEAD without write credentials
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: \${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
           lfs: true
           persist-credentials: false
@@ -76,7 +76,7 @@ jobs:
       - name: Collect accepted compatible P7.1-P7.4 M1 receipts (read-only)
         shell: bash
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           accepted_receipts="$RUNNER_TEMP/p75-accepted-priors.json"
@@ -104,12 +104,11 @@ jobs:
           for row in compatible:
               print(row["gate"], row["run_url"])
           PY
-          cp "$accepted_receipts" "$RUNNER_TEMP/p75-accepted-priors.json"
 
       - name: Run full P7.5 production gate without M1 recording
         shell: bash
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           export FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS="$RUNNER_TEMP/p75-accepted-priors.json"
@@ -119,7 +118,7 @@ jobs:
           timeout 1500s python tools/wf_gate.py \
             --class druid --level 60 --spec balance --gate P7.5 \
             --out "$report" 2>&1 | tee "$log"
-          rc=\${PIPESTATUS[0]}
+          rc=${PIPESTATUS[0]}
           set -e
           python - "$report" "$rc" <<'PY'
           import json, sys
@@ -149,6 +148,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: work1-p75-no-record-\${{ github.event.pull_request.head.sha }}
-          path: \${{ runner.temp }}/p75-artifact/
+          name: work1-p75-no-record-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/p75-artifact/
           if-no-files-found: warn
