@@ -482,7 +482,7 @@ def test_source_enricher_sqlite_and_fail_closed_behavior(tmp_path):
                 evidence_text TEXT
             );
             CREATE TABLE companion_family_source_facts (
-                class_key TEXT, min_level INTEGER, max_level INTEGER
+                family_key TEXT, class_key TEXT, min_level INTEGER, max_level INTEGER
             );
         """)
 
