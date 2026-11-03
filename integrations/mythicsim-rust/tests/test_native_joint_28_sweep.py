@@ -50,11 +50,12 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual("BLOCKED_SOURCE", results[0]["status"])
         self.assertNotIn("druid/feral_cat", calls)
 
-    def test_non_dps_objectives_are_not_silently_scored_as_dps(self):
+    def test_hps_and_unverified_spec_identity_stay_blocked_while_tps_is_supported(self):
         for profile, status in (("druid/restoration", "BLOCKED_OBJECTIVE"),
-                                ("warrior/protection", "BLOCKED_OBJECTIVE"),
                                 ("priest/discipline", "BLOCKED_SPEC_IDENTITY")):
             self.assertEqual(status, preflight(profile, {}, {}, 5)[0])
+        self.assertIsNone(preflight("warrior/protection", {}, {}, 5))
+        self.assertIsNone(preflight("druid/feral_bear", {}, {}, 5))
 
     def test_native_paid_replay_is_sufficient_for_30_second_stage(self):
         prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 100,
@@ -89,7 +90,7 @@ class SweepContracts(unittest.TestCase):
         gaps = gap_summary(rows)
         self.assertEqual(3, sum(g["count"] for g in gaps))
         causes = {g["cause"] for g in gaps}
-        self.assertEqual({"VERIFY_NATIVE_HPS_TPS_OBJECTIVE",
+        self.assertEqual({"VERIFY_NATIVE_HPS_OBJECTIVE",
                           "VERIFY_DISCIPLINE_FIXTURE_IDENTITY"}, causes)
         self.assertNotIn("NATIVE_SCORE_UNAVAILABLE", causes)
         self.assertTrue(all("score" not in row for row in rows))
@@ -107,6 +108,7 @@ class SweepContracts(unittest.TestCase):
             out = root / "report"
             rows = [{
                 "profile_id": "druid/feral_cat",
+                "objective": "DPS",
                 "status": "NATIVE_JOINT_PAID",
                 "native_paid": 2,
                 "baseline_paid": 1,
@@ -131,7 +133,7 @@ class SweepContracts(unittest.TestCase):
             matrix = (out / "matrix.md").read_text()
             self.assertIn("Baseline balanced", matrix)
             self.assertIn("Unscored", matrix)
-            self.assertIn("| druid/feral_cat | NATIVE_JOINT_PAID | 101.25 | 111.5 | 2 | 1 | 1 | 2 |", matrix)
+            self.assertIn("| druid/feral_cat | DPS | NATIVE_JOINT_PAID | 101.25 | 111.5 | 2 | 1 | 1 | 2 |", matrix)
             self.assertIn("101.25", matrix)
             self.assertIn("111.5", matrix)
             self.assertIn("diagnostic", matrix.lower())
