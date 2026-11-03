@@ -6,6 +6,7 @@ and the unchanged gear stat applicator: no mock scores or fabricated epsilon.
 from pathlib import Path
 
 from src.game.data.forever.registry import build_game_ir_slice
+from src.game.gear import executable_gear_stats
 from src.v2.source_budgeted_gear import paid_source_policy_stat_witness
 from tools.wf_gate_p3_live import _source_profile_build_ir, run_live
 
@@ -71,6 +72,9 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
         "reachability_count": result.get("reachability_count"),
         "weights": result.get("real_measured_stat_weights"),
         "witnesses": witness_summary,
+        "source_policy_applicability": result.get("source_policy_applicability"),
+        "source_executable_stat_axes": result.get("source_executable_stat_axes"),
+        "catalogue_stat_axes": result.get("catalogue_stat_axes"),
         "behavior_probes_executed": result.get("behavior_probes_executed"),
         "real_catalogue_slots_scored": result.get("real_catalogue_slots_scored"),
         "actual_search_result_status": result.get("actual_search_result_status"),
@@ -79,6 +83,9 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
     detail = (
         f"reasons={result.get('reasons')!r}; "
         f"weights={result.get('real_measured_stat_weights')!r}; "
+        f"source_policy={result.get('source_policy_applicability')!r}; "
+        f"executable_axes={result.get('source_executable_stat_axes')!r}; "
+        f"catalogue_axes={result.get('catalogue_stat_axes')!r}; "
         f"witnesses={witness_summary!r}; "
         f"counts={result.get('pass_count')}/{result.get('reachability_count')}; "
         f"probes={result.get('behavior_probes_executed')}; "
