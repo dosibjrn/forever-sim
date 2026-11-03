@@ -89,7 +89,10 @@ def main(argv=None) -> int:
     parser.add_argument("--timeout-s", type=float, default=120.0)
     parser.add_argument("--iterations", type=int, default=10)
     parser.add_argument("--seed", type=int, default=647003)
-    parser.add_argument("--targets", type=int, default=2)
+    parser.add_argument(
+        "--targets", type=int, default=2,
+        help="sequential 2D world targets; use 100 for the full P1 world scenario",
+    )
     parser.add_argument("--mob-health", type=float, default=1200.0)
     args = parser.parse_args(argv)
     try:
