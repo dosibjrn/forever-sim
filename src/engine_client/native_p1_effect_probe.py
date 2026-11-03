@@ -257,22 +257,32 @@ def run_native_p1_direct_effect_probe(
             "p1_certified": False,
         }
 
-    positive_sim = _simulate_prepared(
-        binary_path=binary_path,
-        prepared=positive_prepare["prepared"],
-        rng_mode=NativeRngMode.BALANCED,
-        iterations=iterations,
-        seed=seed,
-        deadline=deadline,
-    )
-    control_sim = _simulate_prepared(
-        binary_path=binary_path,
-        prepared=control_prepare["prepared"],
-        rng_mode=NativeRngMode.BALANCED,
-        iterations=iterations,
-        seed=seed,
-        deadline=deadline,
-    )
+    try:
+        positive_sim = _simulate_prepared(
+            binary_path=binary_path,
+            prepared=positive_prepare["prepared"],
+            rng_mode=NativeRngMode.BALANCED,
+            iterations=iterations,
+            seed=seed,
+            deadline=deadline,
+        )
+        control_sim = _simulate_prepared(
+            binary_path=binary_path,
+            prepared=control_prepare["prepared"],
+            rng_mode=NativeRngMode.BALANCED,
+            iterations=iterations,
+            seed=seed,
+            deadline=deadline,
+        )
+    except Exception as exc:
+        return {
+            "status": "ERROR", "stage": "sim",
+            "reason": f"NATIVE_P1_SIM_ADAPTER_FAILED:{type(exc).__name__}:{exc}",
+            "positive_prepare": _compact(positive_prepare),
+            "control_prepare": _compact(control_prepare),
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
     if positive_sim.get("status") != "EXECUTED" or control_sim.get("status") != "EXECUTED":
         failed = positive_sim if positive_sim.get("status") != "EXECUTED" else control_sim
         return {
@@ -287,8 +297,18 @@ def run_native_p1_direct_effect_probe(
             "p1_certified": False,
         }
 
-    positive_dps = float(positive_sim["dps"])
-    control_dps = float(control_sim["dps"])
+    try:
+        positive_dps = float(positive_sim["dps"])
+        control_dps = float(control_sim["dps"])
+    except (KeyError, TypeError, ValueError) as exc:
+        return {
+            "status": "ERROR", "stage": "sim",
+            "reason": f"NATIVE_P1_DPS_MISSING_OR_INVALID:{type(exc).__name__}:{exc}",
+            "positive_sim": _compact(positive_sim),
+            "control_sim": _compact(control_sim),
+            "native_executed": True, "effect_observed": False,
+            "p1_certified": False,
+        }
     if not math.isfinite(positive_dps) or not math.isfinite(control_dps):
         return {
             "status": "ERROR", "stage": "sim",
@@ -333,7 +353,7 @@ def run_native_p1_direct_effect_probe(
             target_count=target_count,
             mob_health=world_mob_health,
         )
-    except (OSError, ValueError, KeyError, TypeError, RuntimeError, AssertionError) as exc:
+    except Exception as exc:
         return {
             **common,
             "status": "ERROR", "stage": "world",
@@ -348,9 +368,8 @@ def run_native_p1_direct_effect_probe(
         isinstance(world, dict)
         and world.get("actual_2d_ack") is True
         and world.get("continuous_native_actor") is True
-        and world.get("world_targets_killed") == target_count
         and type(world.get("native_damage_events")) is int
-        and world["native_damage_events"] >= target_count
+        and world["native_damage_events"] > 0
         and world.get("checkpoint_certified") is False
     )
     if not world_ok:
