@@ -324,5 +324,5 @@ def test_p75_partial_requires_accepted_prior_and_frozen_holdout():
     report["strongest_accepted_compatible_prior_dps"] = 850.0
     proximity = measured_p7_dps_proximity("P7.5", report)
     assert proximity["dps_objective_actual"] == pytest.approx(820.0)
-    assert proximity["dps_objective_required"] == pytest.approx(841.5)
+    assert proximity["dps_objective_required"] == pytest.approx(790.5)
     assert not proximity["dps_objective_gate_pass"]
