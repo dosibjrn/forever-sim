@@ -42,7 +42,11 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
     assert len(source_actions) == 10
     assert len(historical_actions) == 19
 
-    _, _same_spell_predicates, allowed_casts, source_predicates = _corpus(source_actions)
+    source_spells, _same_spell_predicates, allowed_casts, source_predicates = _corpus(source_actions)
+    source_spell_keys = {
+        json.dumps(spell, sort_keys=True, separators=(",", ":"))
+        for spell in source_spells
+    }
     historical_casts = {
         json.dumps(action["action"]["castSpell"]["spellId"],
                    sort_keys=True, separators=(",", ":"))
@@ -55,13 +59,34 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
         json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
         for predicate in source_predicates
     }
-    historical_shapes = {
-        json.dumps(_predicate_shape(action["action"]["condition"]),
-                   sort_keys=True, separators=(",", ":"))
-        for action in historical_actions
-        if isinstance(action.get("action", {}).get("condition"), dict)
-    }
-    assert historical_shapes <= source_shapes
+    historical_compatible_shapes = set()
+    historical_cross_spell_shapes = set()
+    for action in historical_actions:
+        action_body = action.get("action", {})
+        condition = action_body.get("condition")
+        cast = action_body.get("castSpell", {})
+        identity = cast.get("spellId") if isinstance(cast, dict) else None
+        if not isinstance(condition, dict) or not isinstance(identity, dict):
+            continue
+        refs, valid = _condition_spell_identity_keys(condition)
+        if not valid or not set(refs) <= source_spell_keys:
+            continue
+        shape = json.dumps(
+            _predicate_shape(condition), sort_keys=True, separators=(",", ":")
+        )
+        historical_compatible_shapes.add(shape)
+        target_spell_id = identity.get("spellId")
+        ref_spell_ids = {
+            json.loads(ref).get("spellId") for ref in refs
+        }
+        if any(spell_id != target_spell_id for spell_id in ref_spell_ids):
+            historical_cross_spell_shapes.add(shape)
+
+    # Historical conditions that reference an aura outside the saved source
+    # cast set (for example 408255) are deliberately not reusable.
+    assert historical_compatible_shapes <= source_shapes
+    assert historical_cross_spell_shapes
+    assert historical_cross_spell_shapes <= source_shapes
 
     saved_snapshot = json.loads(json.dumps(source_actions))
     generated = mutate_apl(None, source_actions, random.Random(29), cold=True)
