@@ -23,6 +23,7 @@ on:
       - 'tests/test_work1_p7_1_live_entry.py'
       - 'tools/wf_gate_p7_1_live.py'
       - 'integrations/mythicsim-rust/live_world_probe.py'
+      - 'integrations/mythicsim-rust/verify_upstream_candidate.py'
       - 'tools/wf_gate_p7_3_live.py'
       - 'tools/wf_gate_p7_4_live.py'
       - 'tests/generic/runtime/test_source_maintenance_rank_reader.py'
