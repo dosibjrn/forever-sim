@@ -519,6 +519,20 @@ def test_p75_full_budget_spends_on_unique_paid_candidates_without_reranks(
             "native_damage_events": 20, "native_world_ticks": 40}
 
     production = SimpleNamespace(native_source_control=native, run=world)
+    original_crossover = gate._paid_p75_crossover
+
+    def observe_crossover(candidate, parent, finalists, balanced_elites,
+                          source, rng):
+        operator_rngs.append(rng)
+        assert rng is not candidate_rngs[-1]
+        search_state = candidate_rngs[-1].getstate()
+        for _ in range(20):
+            rng.random()
+        assert candidate_rngs[-1].getstate() == search_state
+        return original_crossover(
+            candidate, parent, finalists, balanced_elites, source, rng)
+
+    monkeypatch.setattr(gate, "_paid_p75_crossover", observe_crossover)
     monkeypatch.setattr(gate, "_source_module",
                         lambda path, name: source if "joint_search" in str(path)
                         else production)
