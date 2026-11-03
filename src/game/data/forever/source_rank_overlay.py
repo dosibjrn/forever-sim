@@ -11,8 +11,6 @@ import re
 import sqlite3
 from typing import Any
 
-from src.game.model.ir import (ControlEffect, DamageEffect, HealEffect, PeriodicEffect,
-                               PeriodicHealEffect, ResourceCost)
 from src.shared.identifiers import source_slug as _slug
 from .source_db_scope import DEFAULT_DB, active_ability_db
 
@@ -37,6 +35,10 @@ def _source_range_match(raw: str):
 
 def _parsed_effect(template, tooltip: str, source: dict[str, Any]):
     """Parse the *entire* effect from a sourced tooltip; no damage fallback."""
+    # The legacy GameIR classes are needed only for an executable effect parse.
+    from src.game.model.ir import (
+        ControlEffect, DamageEffect, HealEffect, PeriodicEffect, PeriodicHealEffect,
+    )
     ref = (source,)
     if isinstance(template, DamageEffect):
         school = re.escape(template.school)
@@ -97,6 +99,7 @@ def _parsed_effect(template, tooltip: str, source: dict[str, Any]):
 
 
 def _parse_rank(action, row):
+    from src.game.model.ir import ResourceCost
     spell_id, rank, level, batch_id, url, raw = row
     payload = json.loads(raw)
     change = payload.get('envChange') or {}
@@ -142,6 +145,9 @@ def source_enrich_action_ranks(ir):
     """
     if ir is None:
         return None
+    # Keep real legacy promotion semantics until its native Rust caller exists,
+    # without importing that duplicate model for source-only module users.
+    from src.game.model.ir import ControlEffect, DamageEffect, PeriodicEffect
     class_key = str(ir.actor.metadata.get('class_key') or '').lower()
     level = int(ir.actor.metadata.get('level') or 0)
     with sqlite3.connect(active_ability_db(DEFAULT_DB)) as conn:
