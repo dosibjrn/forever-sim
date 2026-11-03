@@ -579,3 +579,92 @@ def test_source_enricher_sqlite_and_fail_closed_behavior(tmp_path):
     world = SimpleNamespace(incoming_attacks=(), resources=())
     assert source_enrich_incoming_world(world) is world
 
+
+def test_source_action_overlay_imports_do_not_load_talent_compiler():
+    """Live GameIR overlays need a SQLite path, not the legacy talent compiler."""
+    code = """
+import sys
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever import (
+    source_area_overlay, source_reactive_control,
+    source_stealth_actions, source_timed_auras,
+)
+
+for overlay in (
+    source_area_overlay, source_reactive_control,
+    source_stealth_actions, source_timed_auras,
+):
+    assert overlay.DEFAULT_DB is DEFAULT_DB, overlay.__name__
+
+# These overlays are still live GameIR consumers. This check only proves
+# the independent legacy compiler is no longer loaded just for a path.
+assert 'src.game.model.ir' in sys.modules
+assert 'src.game.data.forever.sqlite_talents' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+
+from src.game.data.forever.sqlite_talents import DEFAULT_DB as LEGACY_DB
+assert LEGACY_DB is DEFAULT_DB
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_source_action_overlays_keep_selected_sqlite_and_fail_closed(tmp_path):
+    """A source-path refactor preserves no-op and invalid-fact behavior."""
+    from types import SimpleNamespace
+    import pytest
+
+    from src.game.data.forever.source_db_scope import ability_source_scope
+    from src.game.data.forever.source_area_overlay import source_enrich_area_actions
+    from src.game.data.forever.source_reactive_control import source_reactive_control_actions
+    from src.game.data.forever.source_stealth_actions import source_stealth_actions
+    from src.game.data.forever.source_timed_auras import source_enrich_timed_auras
+
+    db = tmp_path / "selected_source.sqlite"
+    with sqlite3.connect(db) as connection:
+        connection.executescript("""
+            CREATE TABLE spell_index (
+                class_key TEXT, kind TEXT, level_hint INTEGER, spell_id INTEGER,
+                name TEXT, raw_listview_json TEXT, source_url TEXT
+            );
+            CREATE TABLE sourced_timed_aura_actions (
+                class_key TEXT, min_level INTEGER, family_key TEXT
+            );
+            CREATE TABLE sourced_aura_consumers (
+                class_key TEXT, min_level INTEGER, family_key TEXT
+            );
+        """)
+    ir = SimpleNamespace(
+        actor=SimpleNamespace(metadata={"class_key": "druid", "level": 20}),
+        actions=(),
+    )
+
+    # These real SQLite readers must not synthesize game effects from absent
+    # rows, and the three scope-aware readers must honor the selected DB.
+    with ability_source_scope(db):
+        assert source_enrich_area_actions(ir) is ir
+        assert source_reactive_control_actions(
+            ir, class_key="druid", level=20,
+        ) is ir
+        assert source_stealth_actions(
+            ir, class_key="druid", level=20,
+        ) is ir
+    assert source_enrich_timed_auras(ir, db_path=db) is ir
+
+    # Existing malformed source evidence must still fail closed.
+    with sqlite3.connect(db) as connection:
+        connection.executescript("""
+            CREATE TABLE verified_spell_area_facts (
+                spell_id INTEGER, radius_yards REAL, center TEXT,
+                source_url TEXT, source_build TEXT
+            );
+            INSERT INTO verified_spell_area_facts VALUES (
+                100, -2.0, 'actor', 'https://example.invalid/spell', 'fixture'
+            );
+        """)
+    with ability_source_scope(db):
+        with pytest.raises(ValueError, match="INVALID_VERIFIED_SOURCE_AREA_FACT"):
+            source_enrich_area_actions(ir)
