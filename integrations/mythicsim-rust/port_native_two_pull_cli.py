@@ -20,6 +20,12 @@ ENGINE_TYPED_MARKER = ENGINE_MARKER.replace(
 )
 ENGINE_CALL_OLD = "crate::classes::native_two_pull_windows(prepared).map_err(PreparedError::Invalid)"
 ENGINE_TYPED_CALL = "crate::classes::native_two_pull_windows(prepared, rng_mode).map_err(PreparedError::Invalid)"
+ENGINE_TYPED_MARKER = ENGINE_MARKER.replace(
+    "prepared: &PreparedV2)",
+    "prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode)",
+)
+ENGINE_CALL_OLD = "crate::classes::native_two_pull_windows(prepared).map_err(PreparedError::Invalid)"
+ENGINE_TYPED_CALL = "crate::classes::native_two_pull_windows(prepared, rng_mode).map_err(PreparedError::Invalid)"
 
 
 def replace_once(source: str, old: str, new: str, name: str) -> str:
@@ -104,7 +110,7 @@ def port_classes(source: str) -> str:
         if source.count(function_marker) != 1:
             raise ValueError("ambiguous class native two-pull dispatcher")
         start = source.index(function_marker)
-        end = source.find("\\npub(crate) fn ", start + len(function_marker))
+        end = source.find("\npub(crate) fn ", start + len(function_marker))
         block = source[start:end] if end >= 0 else source[start:]
         if ("rng_mode: crate::core::rng::RngMode" not in block
                 or block.count("::fight(prepared, rng_mode)?") != 9
@@ -118,22 +124,24 @@ def port_classes(source: str) -> str:
         ("Rogue", "rogue", "Rogue"), ("Warrior", "warrior", "Warrior"),
         ("Hunter", "hunter", "Hunter"),
     )
-    cases = "\\n".join(
+    cases = "\n".join(
         f'        "Class{key}" => {module}::agent::{agent}Agent::fight(prepared, rng_mode)?.native_two_pull_windows().map_err(str::to_string),'
         for key, module, agent in pairs
     )
     method = (
-        "/// Run the same native actor through two source-backed combat windows.\\n"
-        "/// This is a bounded diagnostic, not a live-2D or leveling gate.\\n"
-        "pub(crate) fn native_two_pull_windows(\\n"
-        "    prepared: &crate::contracts::prepared_v2::PreparedV2,\\n"
-        "    rng_mode: crate::core::rng::RngMode,\\n"
-        ") -> Result<serde_json::Value, String> {\\n"
-        "    match prepared.player.class.as_str() {\\n" + cases + "\\n"
-        '        other => Err(format!("class {other} has no native fight agent")),\\n'
-        "    }\\n}\\n\\n"
+        "/// Run the same native actor through two source-backed combat windows.\n"
+        "/// This is a bounded diagnostic, not a live-2D or leveling gate.\n"
+        "pub(crate) fn native_two_pull_windows(\n"
+        "    prepared: &crate::contracts::prepared_v2::PreparedV2,\n"
+        "    rng_mode: crate::core::rng::RngMode,\n"
+        ") -> Result<serde_json::Value, String> {\n"
+        "    match prepared.player.class.as_str() {\n" + cases + "\n"
+        '        other => Err(format!("class {other} has no native fight agent")),\n'
+        "    }\n}\n\n"
     )
-    return replace_once(source, marker, method + marker, "typed class dispatcher")def port_prepared(source: str) -> str:
+    return replace_once(source, marker, method + marker, "typed class dispatcher")
+
+def port_prepared(source: str) -> str:
     if ENGINE_TYPED_MARKER in source:
         if (source.count(ENGINE_TYPED_MARKER) != 1
                 or source.count(ENGINE_TYPED_CALL) != 1
@@ -156,7 +164,9 @@ pub fn native_two_pull_windows(prepared: &PreparedV2, rng_mode: crate::core::rng
 }
 
 '''
-    return replace_once(source, marker, code + marker, "typed prepared gateway")def port_lib(source: str) -> str:
+    return replace_once(source, marker, code + marker, "typed prepared gateway")
+
+def port_lib(source: str) -> str:
     marker = "    check as check_prepared, coverage as prepared_coverage, refusals as prepared_refusals,"
     if "native_two_pull_windows" in source:
         if source.count("native_two_pull_windows") != 1:
@@ -181,7 +191,7 @@ def port_main(source: str) -> str:
         "    contracts::prepared_v2::PreparedV2, native_two_pull_windows, prepare_json_with, prepared_refusals, simulate,",
         "main import",
     )
-    help_marker = '    if args.len() == 3 && args[0] == "check" && args[1] == "--infile" {\\n'
+    help_marker = '    if args.len() == 3 && args[0] == "check" && args[1] == "--infile" {\n'
     code = '''    if args[0] == "native-pulls" {
         if args.len() != 7 || args[1] != "--infile"
             || args[3] != "--targets" || args[4] != "2"
@@ -193,17 +203,19 @@ def port_main(source: str) -> str:
         let prepared = prepared_v2(&input)?
             .ok_or("native-pulls requires a prepared v2 input")?;
         let windows = native_two_pull_windows(&prepared, mode).map_err(|err| err.to_string())?;
-        println!("{{}}", serde_json::json!({{
+        println!("{}", serde_json::json!({
             "engine": "forever-engine",
             "source_sha256": prepared.request_sha256,
             "scenario_id": prepared.scenario_id,
             "result": windows,
             "checkpoint_certified": false,
-        }}));
+        }));
         return Ok(());
-    }}
+    }
 '''
-    return replace_once(source, help_marker, code + help_marker, "typed CLI command")def main(argv: list[str]) -> int:
+    return replace_once(source, help_marker, code + help_marker, "typed CLI command")
+
+def main(argv: list[str]) -> int:
     if len(argv) != 2:
         raise SystemExit("usage: port_native_two_pull_cli.py RUST_ENGINE_ROOT")
     root = Path(argv[1])
