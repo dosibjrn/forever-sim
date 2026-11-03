@@ -3,6 +3,7 @@ import importlib.util
 from pathlib import Path
 import port_native_early_retarget as early_retarget
 import port_native_persistent_target as persistent_target
+import port_native_two_world_cli as two_world_cli
 
 spec = importlib.util.spec_from_file_location(
     "native_paid_recovery_port",
@@ -148,6 +149,36 @@ except ValueError:
     pass
 else:
     raise AssertionError("PERSISTENT_TARGET_PORT_MUST_REJECT_PAID_RECOVERY_DRIFT")
+
+
+
+# The base two-world CLI port must preserve the paid-recovery extension at
+# each Rust API layer on its second source-port pass.
+classes = (
+    two_world_cli.CLASSES_ANCHOR + "\n"
+    + port.CLASSES_SIGNATURE_NEW + "\n"
+    + port.CLASSES_CALL_NEW * 9
+)
+assert two_world_cli.insert(
+    classes, two_world_cli.CLASSES_ANCHOR, two_world_cli.CLASS_MARKER,
+    two_world_cli.CLASS_METHOD,
+) == classes
+
+prepared = (
+    two_world_cli.PREPARED_ANCHOR + "\n"
+    + port.PREPARED_SIGNATURE_NEW + "\n"
+    + port.PREPARED_COUNT_NEW + port.PREPARED_CALL_NEW
+)
+assert two_world_cli.insert(
+    prepared, two_world_cli.PREPARED_ANCHOR, two_world_cli.PREPARED_MARKER,
+    two_world_cli.PREPARED_METHOD,
+) == prepared
+
+cli_source = two_world_cli.CLI_ANCHOR + "\n" + port.CLI_NEW
+assert two_world_cli.insert(
+    cli_source, two_world_cli.CLI_ANCHOR, two_world_cli.CLI_MARKER,
+    two_world_cli.CLI_METHOD,
+) == cli_source
 
 print("RUST_PERSISTENT_TARGET_PORT_ACCEPTS_EXACT_PAID_RECOVERY_DESCENDANT")
 
