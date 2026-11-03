@@ -9,7 +9,7 @@ from pathlib import Path
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import apply_talent_selection
-from tools.wf_gate_p2_live import (
+from tools.wf_talent_runtime import (
     _behavior_fixtures, _critical_resource_gain_runtime_witness,
 )
 
