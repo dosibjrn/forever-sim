@@ -236,13 +236,20 @@ def _next_p74_confirmation(reranked, attempted, elapsed_s):
 
 
 def _freeze_paid_p74_winner(screen_best, reranked, confirmed=()):
-    """Freeze genuinely paid stochastic winner; never use the 1k holdout to rank."""
+    """Freeze a paid independent finalist before the separate 1k holdout.
+
+    Confirmed leaders have 4x24 genuinely paid non-holdout stochastic fights;
+    unconfirmed late entrants have only 2x24. Once confirmations exist, do
+    not let the noisier half-sample winner's curse override their ranking.
+    If none completed, retain the best genuinely paid provisional finalist.
+    """
     if reranked:
+        confirmed_rows = [row for row in reranked if row[2] in confirmed]
         score, live, sha, request, screen_score = max(
-            reranked, key=lambda row: row[0])
+            confirmed_rows or reranked, key=lambda row: row[0])
         return (score, live, sha, request, screen_score,
                 ("paid_4x24_stochastic_live_native_confirmed_finalist"
-                 if sha in confirmed else
+                 if confirmed_rows else
                  "paid_2x24_stochastic_live_native_finalist"))
     score, live, sha, request = screen_best
     return (score, live, sha, request, score,
@@ -329,7 +336,8 @@ def run_live(root: Path, class_key: str, level: int, *,
             # higher unconfirmed finalist. From 260–295s, keep confirming the
             # strongest yet-unconfirmed paid contender, subject to the SAME
             # measured 300s call budget. Preserve 295–300s for late genuinely
-            # paid screens/reranks (which remain eligible to win).
+            # paid screens/reranks. At freeze a provisional 2x24 candidate
+            # wins only if no independently confirmed 4x24 finalist exists.
             if full_search and time.monotonic() - search_start >= 240.0:
                 next_confirmation = (
                     _next_p74_confirmation(
