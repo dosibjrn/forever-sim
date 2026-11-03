@@ -25,7 +25,6 @@ from src.game.talents import apply_talent_selection, talented_bonus_for_level, a
 from src.game.talent_frontier import source_legal_talent_neighbors
 from src.optimization.talent_frontier import allocation_key
 from src.game.source_objective_relevance import solo_threat_exclusion
-from src.engine_client.native_p2_rank_probe import NativeRngMode, run_native_rank_pair
 from tools.wf_source_profile import _load_product_spec_profile, _source_spec_profile
 
 
@@ -1570,58 +1569,6 @@ def _source_spec_rank_witness(population, talent_id, rank):
     return next((dict(a) for a in population if a.get(talent_id)==rank),None)
 
 
-_NATIVE_P2_TREE_SCENARIOS = {'balance': 'balance', 'feral': 'cat'}
-_NATIVE_P2_DIAGNOSTIC_RANKS = {('predatory_strikes', 1), ('predatory_strikes', 2), ('predatory_strikes', 3)}
-
-
-def _native_p2_candidate_pair(witness, talent_id, rank):
-    """Build a one-rank candidate pair; native prepare owns legality."""
-    after = dict(witness) if isinstance(witness, Mapping) else {}
-    after[talent_id] = int(rank)
-    before = dict(after)
-    if int(rank) == 1:
-        before.pop(talent_id, None)
-    else:
-        before[talent_id] = int(rank) - 1
-    return {'control_witness': before, 'witness': after}
-
-
-def _native_p2_rank_diagnostic(binary, talent_id, rank, tested, *,
-                               checkpoint_class, checkpoint_level, tree_key):
-    """Forward a checkpoint rank pair; source receipts are optional metadata."""
-    # Use the actual checkpoint arguments, not a second source-catalogue
-    # certificate, to route this request to the selected native engine.
-    # The native prepare result alone determines talent/rank legality.
-    if (checkpoint_class!='druid' or checkpoint_level!=60
-            or not isinstance(talent_id,str) or not talent_id
-            or type(rank) is not int or rank<1):
-        return {'status':'BLOCKED','reason':'NATIVE_P2_CHECKPOINT_IDENTITY_MISMATCH'}
-    before=tested.get('control_witness')
-    after=tested.get('witness')
-    if not isinstance(before,dict) or not isinstance(after,dict):
-        return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_UNAVAILABLE'}
-    scenario=_NATIVE_P2_TREE_SCENARIOS.get(str(tree_key or ''))
-    if scenario is None:
-        return {'status':'BLOCKED','reason':'NATIVE_P2_TREE_SCENARIO_UNAVAILABLE',
-                'tree_key':tree_key}
-    if not binary:
-        return {'status':'BLOCKED','reason':'FOREVER_MYTHICSIM_RUST_BIN_NOT_SET'}
-    binary_path=Path(binary)
-    if not binary_path.is_file():
-        return {'status':'BLOCKED','reason':'SELECTED_RUST_BINARY_MISSING'}
-    try:
-        engine_root=binary_path.resolve().parents[2]
-        result=run_native_rank_pair(
-            binary=binary_path, engine_root=engine_root,
-            scenario=scenario,
-            before_selection=before, after_selection=after,
-            target_talent_id=talent_id, target_rank=int(rank),
-            iterations=100, seed=647003, rng_mode=NativeRngMode.BALANCED)
-        return result
-    except Exception as exc:
-        return {'status':'ERROR',
-                'reason':f'NATIVE_P2_DIAGNOSTIC_FAILED:{type(exc).__name__}:{exc}'}
-
 
 def _default_p2_source_db(root, class_key, level, source_db=None):
     if source_db is not None:
@@ -1664,9 +1611,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
     """One P2 gate execution; fast, class-neutral and fail-closed."""
     result={'class':class_key,'level':level,'spec':spec,'gate':'P2',
             'status':'FAIL','reasons':[],'ranks':[], 'unreachable':[],
-            'unresolved':[], 'behavior_probes_executed':0,
-            'native_rank_probe_results':[],
-            'native_rank_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE'}
+            'unresolved':[], 'behavior_probes_executed':0}
     source_db = None
     sqlite_connection_paths = []
     try:
@@ -1783,34 +1728,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
             row=talent.metadata.get('row')
             for rank in talent.ranks:
                 key=f'{talent.id}:{rank.rank}'
-                native_target=(class_key=='druid' and level==60 and spec=='balance'
-                    and (talent.id,int(rank.rank)) in _NATIVE_P2_DIAGNOSTIC_RANKS)
                 witness=None
                 if row is not None and int(row)*step+int(rank.rank)<=points:
                     witness=_witness(talent,rank.rank,compiled.talents,points,step)
                 profile_full=(_source_spec_rank_witness(
                     population,talent.id,int(rank.rank))
-                    if population is not None and (native_target or witness is not None)
+                    if population is not None and witness is not None
                     else None)
                 if profile_full is not None:
                     witness=profile_full
-                native_probe=None
-                if native_target:
-                    # Submit the candidate before any Forever-side reachability,
-                    # structural-allocation or GameIR behavior check can veto it.
-                    # If no local witness exists, submit the minimal rank pair;
-                    # native prepare decides whether that proposal is valid.
-                    candidate_pair=_native_p2_candidate_pair(
-                        witness,talent.id,int(rank.rank))
-                    native_probe=_native_p2_rank_diagnostic(
-                        os.environ.get('FOREVER_MYTHICSIM_RUST_BIN'),
-                        talent.id,int(rank.rank),candidate_pair,
-                        checkpoint_class=class_key,checkpoint_level=level,
-                        tree_key=talent.tree_key)
-                    native_probe['executor']='selected_mythicsim_rust'
-                    native_probe['accepted_for_p2']=False
-                    result['native_rank_probe_results'].append(
-                        {'rank_key':key,**native_probe})
                 if row is None:
                     result['unresolved'].append({'rank_key':key,'reason':'REACHABILITY_UNRESOLVED:MISSING_TREE_ROW'})
                     continue
@@ -1840,23 +1766,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                                    profile_tree=(spec if profile_full is not None else None))
                 if population is not None:
                     tested['spec_full_point_exact_rank_witness']=profile_full is not None
-                if native_probe is not None:
-                    tested['native_rank_probe']=native_probe
                 result['ranks'].append(tested)
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
-        native_probes=result['native_rank_probe_results']
-        result['native_rank_probe_summary']={
-            'scope':'druid:60:balance; selected-native predatory_strikes ranks 1-3',
-            'attempted':len(native_probes),
-            'pass_count':sum(p.get('status')=='PROBE_PASS' for p in native_probes),
-            'fail_count':sum(p.get('status')=='PROBE_FAIL' for p in native_probes),
-            'blocked_count':sum(p.get('status')=='BLOCKED' for p in native_probes),
-            'invalid_count':sum(p.get('status')=='INVALID' for p in native_probes),
-            'unsupported_count':sum(p.get('status')=='UNSUPPORTED' for p in native_probes),
-            'error_count':sum(p.get('status')=='ERROR' for p in native_probes),
-            'rng_mode':'balanced',
-            'counted_in_p2_acceptance':False,
-        }
         fail=[r for r in result['ranks'] if r['status']!='PASS']
         result['reachability_count']=len(result['ranks'])
         result['pass_count']=len(result['ranks'])-len(fail)
