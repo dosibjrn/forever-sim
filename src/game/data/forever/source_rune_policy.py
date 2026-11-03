@@ -7,7 +7,7 @@ from dataclasses import replace
 from pathlib import Path
 import sqlite3
 
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 from .source_indexed_action_coverage import _source_spell_ids
 from .source_action_scope import classify_indexed_ability
 from .source_checkpoint_web_l0 import load_observations
