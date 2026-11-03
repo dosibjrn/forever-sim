@@ -9,7 +9,6 @@ from dataclasses import replace
 from pathlib import Path
 import hashlib, json, re, sqlite3
 from math import isfinite
-from src.game.model.ir import ActionDefinition, ResourceCost, TargetStatDebuffEffect
 from .source_indexed_action_coverage import _source_spell_ids
 from .source_db_scope import DEFAULT_DB, active_ability_db
 from src.shared.identifiers import source_slug as _slug
@@ -76,6 +75,9 @@ def source_enemy_melee_ap_debuff_actions(ir, *, class_key:str,level:int,db_path=
               ON i.class_key=f.class_key AND i.spell_id=f.spell_id AND i.kind='abilities'
             WHERE f.class_key=? AND f.rank_level<=? ORDER BY f.rank_level,f.spell_id''',
             (class_key,int(level))).fetchall()
+    # Only the executable legacy action builder needs GameIR types. Source-only
+    # observation parsing and SQLite ingestion must not initialize that model.
+    from src.game.model.ir import ActionDefinition, ResourceCost, TargetStatDebuffEffect
     known={sid for a in ir.actions for sid in _source_spell_ids(a)}
     modes={m.id for m in ir.modes}; resources={r.id for r in ir.resources}
     actions=[]; permissions={}
