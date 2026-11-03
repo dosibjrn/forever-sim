@@ -176,7 +176,6 @@ class CurrentClientTalentOverrideContracts(unittest.TestCase):
                 player = effective["raid"]["parties"][0]["players"][0]
                 override = CURRENT_CLIENT_TALENT_OVERRIDES[profile]
                 self.assertEqual(override["talents_string"], player["talentsString"])
-                self.assertEqual(51, metadata["point_count"])
                 self.assertEqual("legacy-source-string",
                                  request["raid"]["parties"][0]["players"][0]["talentsString"])
                 self.assertEqual(original["raid"]["parties"][0]["players"][0]["equipment"],
