@@ -49,17 +49,27 @@ def run_native(
     seed: int = 647003,
 ) -> dict:
     """Run native first; source inventory can annotate progress but cannot veto."""
-    report = run_native_p1_direct_effect_probe(
-        binary=binary,
-        engine_root=root / "integrations" / "mythicsim-rust" / "engine",
-        request=request,
-        spell_id=spell_id,
-        timeout_seconds=timeout_s,
-        iterations=iterations,
-        seed=seed,
-        target_count=target_count,
-        world_mob_health=mob_health,
-    )
+    try:
+        report = run_native_p1_direct_effect_probe(
+            binary=binary,
+            engine_root=root / "integrations" / "mythicsim-rust" / "engine",
+            request=request,
+            spell_id=spell_id,
+            timeout_seconds=timeout_s,
+            iterations=iterations,
+            seed=seed,
+            target_count=target_count,
+            world_mob_health=mob_health,
+        )
+    except Exception as exc:
+        report = {
+            "status": "ERROR",
+            "stage": "native_adapter",
+            "reason": f"{type(exc).__name__}:{exc}",
+            "native_executed": False,
+            "effect_observed": False,
+            "p1_certified": False,
+        }
     report.update({
         "class": class_key,
         "level": level,
@@ -89,7 +99,7 @@ def run_native(
                 "observable_effects": report.get("observable_effects") or {},
             })
         report["p1_native_progress"] = native_p1_progress(scope, runtime_results)
-    except (OSError, ValueError, KeyError, TypeError) as exc:
+    except Exception as exc:
         # A diagnostic denominator failure is not a native execution veto.
         report["p1_native_progress_error"] = (
             f"{type(exc).__name__}:{exc}"
@@ -126,7 +136,7 @@ def main(argv=None) -> int:
         )
         print(json.dumps(report, sort_keys=True, allow_nan=False))
         return 0 if report.get("status") == VERIFIED_EFFECT else 2
-    except (OSError, ValueError, KeyError, TypeError) as exc:
+    except Exception as exc:
         print(
             "NOT_TESTED: " + type(exc).__name__ + ": " + str(exc),
             file=sys.stderr,
