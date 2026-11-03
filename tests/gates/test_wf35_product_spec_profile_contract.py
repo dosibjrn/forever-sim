@@ -68,10 +68,10 @@ def test_product_profile_is_legal_full_point_frontier_not_external_url(monkeypat
     ("authority", "FOREVER_GAME_MECHANIC"),
 ])
 def test_wrong_contract_schema_fails_closed(tmp_path, field, value):
-    config = ROOT / "config/validation/p2_spec_profiles.json"
+    config = ROOT / "config/validation/source_spec_profiles.json"
     data = json.loads(config.read_text())
     data[field] = value
-    target = tmp_path / "config/validation/p2_spec_profiles.json"
+    target = tmp_path / "config/validation/source_spec_profiles.json"
     target.parent.mkdir(parents=True)
     target.write_text(json.dumps(data))
     with pytest.raises(ValueError, match="SOURCE_PRODUCT_PROFILE_"):
@@ -80,18 +80,18 @@ def test_wrong_contract_schema_fails_closed(tmp_path, field, value):
 
 
 def test_duplicate_product_profile_fails_closed(tmp_path):
-    data = json.loads((ROOT / "config/validation/p2_spec_profiles.json").read_text())
+    data = json.loads((ROOT / "config/validation/source_spec_profiles.json").read_text())
     data["profiles"].append(dict(data["profiles"][0]))
-    target = tmp_path / "config/validation/p2_spec_profiles.json"
+    target = tmp_path / "config/validation/source_spec_profiles.json"
     target.parent.mkdir(parents=True)
     target.write_text(json.dumps(data))
-    with pytest.raises(ValueError, match="P2_PRODUCT_PROFILE_DUPLICATE"):
+    with pytest.raises(ValueError, match="SOURCE_PRODUCT_PROFILE_DUPLICATE"):
         p2._load_product_spec_profile(tmp_path, "druid", 60, "balance",
                                       source_sha256="a" * 64)
 
 
 def test_source_hash_is_required_not_invented():
-    with pytest.raises(ValueError, match="P2_PRODUCT_PROFILE_SOURCE_SHA"):
+    with pytest.raises(ValueError, match="SOURCE_PRODUCT_PROFILE_SOURCE_SHA"):
         p2._load_product_spec_profile(ROOT, "druid", 60, "balance",
                                       source_sha256="not-a-hash")
 
