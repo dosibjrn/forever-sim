@@ -113,9 +113,9 @@ def test_p72_p75_shared_cold_apl_samples_grammar_not_saved_policy(monkeypatch):
     generated = []
     original_new_cast = module._new_cast
 
-    def traced_new_cast(spells, predicates, compatible_predicates, rng):
+    def traced_new_cast(spells, predicates, compatible_predicates, rng, **kwargs):
         action = original_new_cast(
-            spells, predicates, compatible_predicates, rng)
+            spells, predicates, compatible_predicates, rng, **kwargs)
         generated.append(action)
         return action
 

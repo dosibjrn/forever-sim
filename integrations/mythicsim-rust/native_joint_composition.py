@@ -24,9 +24,10 @@ MISSING_TALENT_STRING = ("__FOREVER_MISSING_TALENT_STRING__",)
 @dataclass(frozen=True)
 class CandidateAxis:
     """One candidate axis; native Rust, not this callback, decides game legality."""
-    cold: Callable[[Any], Any]
-    mutate: Callable[[Any, Any], Any]
+    cold: Callable[..., Any]
+    mutate: Callable[..., Any]
     legal: Callable[[Any], bool]
+    candidate_aware: bool = False
 
 
 def _player(request: dict) -> dict:
@@ -109,7 +110,12 @@ class JointCandidateAdapter:
         # Cold generates all three axes; never initialize from a saved winner.
         candidate = copy.deepcopy(self.reference)
         for axis in self.AXES:
-            _put(candidate, axis, self.adapters[axis].cold(rng))
+            op = self.adapters[axis]
+            value = (
+                op.cold(rng, copy.deepcopy(candidate))
+                if op.candidate_aware else op.cold(rng)
+            )
+            _put(candidate, axis, value)
         if not self.legal(candidate):
             raise ValueError("Cold JOINT candidate is outside the candidate domain")
         return candidate
@@ -123,8 +129,17 @@ class JointCandidateAdapter:
         roll = rng.random()
         count = 1 if roll < .65 else (2 if roll < .90 else 3)
         axes = rng.sample(self.AXES, count)
+        if any(self.adapters[axis].candidate_aware for axis in axes):
+            # Apply dependent axes in declaration order so later axes see
+            # earlier choices (notably APL mutation sees the selected donor).
+            axes = sorted(axes, key=self.AXES.index)
         for axis in axes:
-            value = self.adapters[axis].mutate(copy.deepcopy(_get(candidate, axis)), rng)
+            op = self.adapters[axis]
+            current_value = copy.deepcopy(_get(candidate, axis))
+            value = (
+                op.mutate(current_value, rng, copy.deepcopy(candidate))
+                if op.candidate_aware else op.mutate(current_value, rng)
+            )
             _put(candidate, axis, value)
         if not self.legal(candidate):
             raise ValueError("Mutated JOINT candidate is outside the candidate domain")
