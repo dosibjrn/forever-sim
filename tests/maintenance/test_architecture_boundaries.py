@@ -263,24 +263,18 @@ assert 'src.game.model.ir' not in sys.modules
     )
 
 
-def test_model_overlay_import_does_not_load_legacy_game_ir():
-    """Independent source overlays must not require GameIR model definitions.
-
-    Explicit existing src.game.model public exports stay compatible while the
-    actual legacy runtime and gate consumers migrate incrementally to Rust.
-    """
+def test_shared_overlay_import_does_not_load_legacy_game_ir():
+    """Shared numeric overlays stay backend-neutral without a GameIR namespace shim."""
+    assert not (ROOT / "src/game/model/overlay.py").exists()
     import subprocess
     import sys
 
     source = """
 import sys
-from src.shared.field_overlays import FieldOverlay as SharedFieldOverlay
+from src.shared.field_overlays import FieldOverlay
+assert FieldOverlay.__name__ == 'FieldOverlay'
 assert not any(name == 'src.game' or name.startswith('src.game.') for name in sys.modules)
 import src.game.model as model
-assert 'src.game.model.ir' not in sys.modules
-from src.game.model.overlay import FieldOverlay
-assert FieldOverlay is SharedFieldOverlay
-assert FieldOverlay.__name__ == 'FieldOverlay'
 assert 'src.game.model.ir' not in sys.modules
 from src.game.model import GameIRSlice, ActionDefinition
 from src.game.model.ir import GameIRSlice as direct_slice, ActionDefinition as direct_action
@@ -726,3 +720,12 @@ def test_optimizer_package_has_no_gameplay_or_ruleset_dependencies():
 def test_empty_classic_shared_ruleset_package_is_not_retained():
     """Do not keep an empty shared namespace under the legacy Classic adapter."""
     assert not (ROOT / "src/rulesets/classic/shared").exists()
+
+
+def test_no_production_imports_use_retired_game_model_overlay_shim():
+    offenders = []
+    for root in ("src", "tools", "integrations"):
+        for path in _python_files(root):
+            if "src.game.model.overlay" in path.read_text(encoding="utf-8"):
+                offenders.append(path.relative_to(ROOT).as_posix())
+    assert offenders == []
