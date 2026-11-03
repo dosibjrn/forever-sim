@@ -1931,12 +1931,41 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
         if step<=0:raise ValueError('CANONICAL_TALENT_TIER_RULE_MISSING')
         product_rule=_load_product_spec_profile(
             root,class_key,level,spec,source_sha256=result['source_id'])
-        population,profile_info=_source_spec_profile(
-            compiled,spec,level=level,bonus=bonus,step=step,
-            source_sha256=result['source_id'],profile_rule=product_rule)
+        try:
+            population,profile_info=_source_spec_profile(
+                compiled,spec,level=level,bonus=bonus,step=step,
+                source_sha256=result['source_id'],profile_rule=product_rule)
+        except (ValueError,TypeError,KeyError) as exc:
+            # A parallel GameIR profile validator must not prevent a concrete
+            # candidate from reaching native prepare. Keep the formal report
+            # FAIL, but still run the selected-native diagnostic below.
+            native_scope=(class_key=='druid' and level==60 and spec=='balance'
+                and any((t.id,int(rank.rank)) in _NATIVE_P2_DIAGNOSTIC_RANKS
+                        for t in compiled.talents for rank in t.ranks))
+            if not native_scope:
+                raise
+            population=None
+            profile_info={
+                'source_spec_profile_verified':False,
+                'source_spec_profile_game_fact_claimed':False,
+                'source_spec_profile_contract_verified':False,
+                'source_spec_tree':spec,
+                'source_spec_structural_tier_floor':None,
+                'source_spec_required_points':None,
+                'source_spec_candidate_count':0,
+                'source_spec_candidate_frontier_exhaustive':False,
+                'source_spec_profile_kind':'UNVERIFIED_SOURCE_TREE_ONLY',
+                'source_spec_profile_authority':'UNVERIFIED_SOURCE_TREE_ONLY',
+                'source_spec_profile_contract_version':None,
+                'source_spec_frontier_evidence':None,
+                'source_spec_profile_error':f'{type(exc).__name__}:{exc}',
+            }
         result.update(profile_info)
-        result['rank_probe_scope']=('UNRESTRICTED_SOURCE_RANKS' if population is None
-            else 'SOURCE_TREE_FULL_POINT_SPEC_CANDIDATES')
+        result['rank_probe_scope']=(
+            'NATIVE_DIAGNOSTIC_ONLY_SOURCE_PROFILE_FAILED'
+            if 'source_spec_profile_error' in profile_info else
+            'UNRESTRICTED_SOURCE_RANKS' if population is None else
+            'SOURCE_TREE_FULL_POINT_SPEC_CANDIDATES')
         if not profile_info['source_spec_profile_verified']:
             # Without an explicit source rule or versioned product profile,
             # a tree label alone cannot define the user's constrained search.
