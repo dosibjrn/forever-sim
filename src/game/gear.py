@@ -14,7 +14,7 @@ import re
 from typing import Any, Mapping, Sequence
 
 from src.game.data.forever.player_state import classic_mana_bonus_from_intellect
-from src.game.data.forever.primary_stat_conversions import converted_stat_amount
+from src.shared.stat_math import converted_stat_amount
 from src.game.model.ir import GameIRSlice, ModeStatModifier, ModeResourceCapacityModifier, WeaponDamageEffect
 from src.game.data.forever.stat_conversions import (load_mode_stat_conversions,
     load_mode_resource_capacity_conversions)
