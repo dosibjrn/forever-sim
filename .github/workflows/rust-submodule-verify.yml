@@ -6,6 +6,8 @@ on:
       - integrations/mythicsim-rust/engine
       - .github/workflows/rust-submodule-verify.yml
       - .github/workflows/wf-gsim-rust-native-world.yml
+      - integrations/mythicsim-rust/port_native_typed_rng.py
+      - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
       - .github/workflows/m1-on-demand-record.yml
 
 permissions:
@@ -29,9 +31,15 @@ jobs:
           test -n "$expected" && test "$expected" = "$actual"
           grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
           test -f "$engine/src/core/fight/world_bridge.rs"
-          grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
+          python3 integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
+          grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
+          if grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"; then
+            echo "ENVIRONMENT_SELECTED_RNG_REMAINS_IN_SELECTED_RUST" >&2; exit 1
+          fi
           grep -Fq 'RandomRequest::Bernoulli' "$engine/src/core/rng.rs"
           echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
-      - name: Verify packaged Rust source compiles (not simulation validation)
+      - name: Verify typed RNG API and packaged Rust source compile (not simulation validation)
         working-directory: integrations/mythicsim-rust/engine
-        run: cargo check --locked
+        run: |
+          cargo test --locked --lib typed_rng_api_tests
+          cargo check --locked

@@ -12,17 +12,123 @@ def edit(root, name, transformations):
     path = root / name
     src = path.read_text()
     for old, new, count in transformations:
-        if src.count(new) == count:
-            continue
         actual = src.count(old)
+        if actual == 0 and src.count(new) >= count:
+            continue
         if actual != count:
             raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: expected {count} of {old[:80]!r}, got {actual}")
         src = src.replace(old, new)
+        if src.count(old) != 0:
+            raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: old call sites remain after migration")
     if src != path.read_text():
         path.write_text(src)
 
 def one(root, name, old, new):
     edit(root, name, [(old, new, 1)])
+
+def add_explicit_mode_to_test_calls(source):
+    """Add a typed stochastic mode to every legacy one-argument test call.
+
+    Integration tests previously inherited the library's stochastic default.
+    The public API has no default now, so preserve those semantics explicitly.
+    The small balanced-delimiter scanner handles nested argument calls.
+    """
+    marker = "simulate_prepared("
+    insertions = []
+    cursor = 0
+    while True:
+        start = source.find(marker, cursor)
+        if start < 0:
+            break
+        open_at = start + len("simulate_prepared")
+        prefix = source[max(0, start - 12):start]
+        if prefix.rstrip().endswith("fn"):
+            cursor = open_at + 1
+            continue
+        parens, brackets, braces, commas = 1, 0, 0, 0
+        state = "code"
+        block_depth = 0
+        escaped = False
+        i = open_at + 1
+        close_at = None
+        while i < len(source):
+            ch = source[i]
+            nxt = source[i:i + 2]
+            if state == "line_comment":
+                if ch == "\\n":
+                    state = "code"
+            elif state == "block_comment":
+                if nxt == "/*":
+                    block_depth += 1
+                    i += 1
+                elif nxt == "*/":
+                    block_depth -= 1
+                    i += 1
+                    if block_depth == 0:
+                        state = "code"
+            elif state in ("string", "char"):
+                if escaped:
+                    escaped = False
+                elif ch == "\\\\":
+                    escaped = True
+                elif (state == "string" and ch == '"') or (state == "char" and ch == "'"):
+                    state = "code"
+            else:
+                if nxt == "//":
+                    state = "line_comment"
+                    i += 1
+                elif nxt == "/*":
+                    state = "block_comment"
+                    block_depth = 1
+                    i += 1
+                elif ch == '"':
+                    state = "string"
+                elif ch == "'" and source.find("'", i + 1, min(len(source), i + 5)) >= 0:
+                    state = "char"
+                elif ch == "(":
+                    parens += 1
+                elif ch == ")":
+                    parens -= 1
+                    if parens == 0:
+                        close_at = i
+                        break
+                elif ch == "[":
+                    brackets += 1
+                elif ch == "]":
+                    brackets = max(0, brackets - 1)
+                elif ch == "{":
+                    braces += 1
+                elif ch == "}":
+                    braces = max(0, braces - 1)
+                elif ch == "," and parens == 1 and brackets == 0 and braces == 0:
+                    commas += 1
+            i += 1
+        if close_at is None:
+            raise RuntimeError("RNG_TEST_CALL_PARSE_FAILED: simulate_prepared")
+        if commas == 0:
+            insertions.append(close_at)
+        cursor = close_at + 1
+    for position in reversed(insertions):
+        source = source[:position] + ", forever_engine::RngMode::Stochastic" + source[position:]
+    return source, len(insertions)
+
+
+def migrate_test_simulate_calls(root):
+    """Migrate every selected-Rust integration test, not a hand-picked subset."""
+    tests_root = root / "tests"
+    if not tests_root.is_dir():
+        raise RuntimeError("RNG_TEST_TREE_MISSING")
+    changed = []
+    for path in sorted(tests_root.rglob("*.rs")):
+        original = path.read_text()
+        updated, count = add_explicit_mode_to_test_calls(original)
+        if count:
+            path.write_text(updated)
+            changed.append((str(path.relative_to(root)), count))
+    if not changed:
+        raise RuntimeError("RNG_TEST_CALLS_NOT_FOUND")
+    return changed
+
 
 def migrate(root):
     one(root, "src/core/rng.rs",
@@ -194,21 +300,10 @@ mod typed_rng_api_tests {
     one(root, main,
         'let windows = native_two_pull_windows(&prepared)',
         'let mode = RngMode::parse_cli(&args[6])?;\n        let windows = native_two_pull_windows(&prepared, mode)')
-    edit(root, "tests/classes/mage/prepared_v2.rs", [
-        ("forever_engine::simulate_prepared(&prepared)",
-         "forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)", 3),
-    ])
-    # Integration-test callers must also select a mode explicitly. Preserve
-    # their pre-port stochastic semantics; no library default is retained.
-    edit(root, "tests/healers.rs", [
-        ("simulate_prepared(&prepared)", "simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)", 7),
-    ])
-    one(root, "tests/release.rs",
-        "simulate_prepared(&serde_json::from_value(value).unwrap())",
-        "simulate_prepared(&serde_json::from_value(value).unwrap(), forever_engine::RngMode::Stochastic)")
-    one(root, "tests/autocast.rs",
-        "forever_engine::simulate_prepared(&prepared)",
-        "forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)")
+    # Every integration test keeps its pre-port stochastic semantics, but
+    # must now pass that choice explicitly to the no-default public API.
+    migrated = migrate_test_simulate_calls(root)
+    print("RUST_TYPED_RNG_TEST_CALLS_MIGRATED", migrated)
     # The old v1 frostbolt prototype does not use SimRng; its explicit mode
     # is nevertheless mandatory at the CLI. No false claim of balanced v1.
     print("RUST_TYPED_RNG_PORT_APPLIED")

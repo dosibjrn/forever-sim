@@ -202,8 +202,8 @@ fi
 # Never publish an environment-selected stochastic optimizer fallback.
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_typed_rng.py" "$PWD"
 git add src/core/rng.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs \
-  src/lib.rs src/main.rs src/classes/*/agent.rs src/classes/*/prepared.rs \
-  tests/classes/mage/prepared_v2.rs tests/healers.rs tests/release.rs tests/autocast.rs
+  src/lib.rs src/main.rs src/classes/*/agent.rs src/classes/*/prepared.rs
+git add tests/
 if ! git diff --cached --quiet; then
   git commit -m "feat(forever): require typed RNG mode throughout native combat"
 fi
