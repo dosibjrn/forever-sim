@@ -137,6 +137,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
                 raise AssertionError("RUST_TWO_WORLD_CLOCK_SOURCE_OR_SEQUENCE_INVALID")
             world.advance_to(clock_ns / 1e9)
             tick = feed.next_tick()
+            # Source of truth: gsim live 2D route, not queued-step inference
+            # or a native movement guess. Rust applies its own cast legality.
+            tick["gsim_player_moving"] = bool(world._player_is_moving())
             if tick["native_clock_ns"] != clock_ns or tick["sequence"] != ticks:
                 raise AssertionError("RUST_TWO_WORLD_RANGE_FEED_MISMATCH")
             tick["iteration_index"] = iteration
@@ -154,6 +157,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
                     or receipt["iteration_index"] != iteration
                     or receipt["native_process_id"] != proc.pid):
                 raise AssertionError("RUST_TWO_WORLD_RECEIPT_INVALID")
+            if receipt["native_range_receipt"].get("gsim_player_moving") is not tick["gsim_player_moving"]:
+                raise AssertionError("RUST_TWO_WORLD_MOVING_RECEIPT_MISMATCH")
             feed.accept_range_receipt(receipt["native_range_receipt"])
             ack = applier.apply(tick, receipt)
             ack["iteration_index"] = iteration
