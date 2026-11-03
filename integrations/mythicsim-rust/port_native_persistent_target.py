@@ -36,6 +36,9 @@ FIGHT_METHOD = """    /// Begin a second distinct world target on the SAME nativ
         self.advance_to(at_ns);
         // Target auras/armor are new; player, pets, timers and queued
         // native actions remain exactly those of the preceding encounter.
+        // A defeated target can still have active debuffs. End ONLY its aura
+        // lifetime before reset; never call global cleanup on the actor.
+        self.aura_done_iteration(Side::Target);
         self.reset_unit(Side::Target);
         self.pull_started_at = at_ns;
         self.duration = next_end_ns;
@@ -81,6 +84,12 @@ FIGHT_TEST = """    #[test]
                 "/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json"))
         ).unwrap();
         let mut fight = crate::classes::druid::agent::DruidAgent::fight(&prepared).unwrap();
+        if !fight.extra_targets_built {
+            fight.build_extra_targets();
+            fight.build_exclusive_tracking();
+            fight.apply_enemy_slow_priorities();
+        }
+        eprintln!("NATIVE_NEXT_TARGET_STAGE=initial_reset");
         fight.reset();
         fight.schedule(0, PRIORITY_PREPULL + 1, Action::EncounterStart);
         let mut steps = 0;
@@ -89,6 +98,7 @@ FIGHT_TEST = """    #[test]
             assert!(steps < 100_000, "first native pull did not terminate");
         }
         assert!(steps > 1, "native combat did not execute");
+        eprintln!("NATIVE_NEXT_TARGET_STAGE=first_pull_done");
         let first_end = fight.end_of_combat;
         let kept_mana = fight.config.max_mana * 0.37;
         let kept_health = fight.config.max_health * 0.61;
@@ -100,6 +110,7 @@ FIGHT_TEST = """    #[test]
         assert_eq!(fight.begin_next_target(first_end - 1, first_end + 2_000_000_000),
             Err("RUST_NEXT_TARGET_CLOCK_INVALID"));
         assert_eq!(fight.now, old_now);
+        eprintln!("NATIVE_NEXT_TARGET_STAGE=transition");
         fight.begin_next_target(first_end, first_end + 2_000_000_000).unwrap();
         assert_eq!(fight.player.mana, kept_mana);
         assert_eq!(fight.player.health, kept_health);
