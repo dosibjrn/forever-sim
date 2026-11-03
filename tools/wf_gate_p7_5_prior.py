@@ -163,7 +163,10 @@ def strongest_accepted_prior(root: Path, class_key: str, level: int,
                 return None
             if report.get("native_source_revision") != engine_revision:
                 continue
-            compatible.append((gate, value, row["run_url"]))
+            # A verified revalidation may replace the old-engine evidence
+            # for comparison without rewriting the registered PASS row.
+            # Report the exact run that supplied the compatible DPS.
+            compatible.append((gate, value, observed))
         if not compatible:
             return None
         return {"dps": max(x[1] for x in compatible),
