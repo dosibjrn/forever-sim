@@ -461,13 +461,13 @@ def main():
             dps,_,elapsed,_=run(a.binary,q,a.screen_iterations,seed,"balanced",end_screen)
             record=paid_candidate_record(spec,q,dps,screen_mode,elapsed)
             # The screen was a real paid native evaluation. Persist it BEFORE
-            # the optional stochastic probe, which can fail or time out.
+            # the optional balanced probe, which can fail or time out.
             # A probe failure must never erase the successful screen result.
             paid.append(record)
             current=elites[spec][0][0] if elites[spec] else -math.inf
             if (len(elites[spec])<8 or dps>=current-45 or rng.random()<.05) and time.monotonic()<end_screen-.3:
                 measured,_,_,_=run(a.binary,q,24,seed+554433,"balanced",end_screen)
-                record["stochastic_probe_dps"]=require_finite_native_dps(measured,"probe");probes+=1
+                record["balanced_probe_dps"]=require_finite_native_dps(measured,"probe");probes+=1
                 elites[spec].append((measured,q))
                 elites[spec].sort(key=lambda x:-x[0]);elites[spec]=elites[spec][:20]
                 allbest=[(x[0],s,x[1]) for s,rows in elites.items() for x in rows]
@@ -505,7 +505,7 @@ def main():
     # advertised spec/form was really paid and scored by pinned native Rust.
     # Preserve raw evidence first, then block the diagnostic if any are absent.
     paid_per_spec=require_paid_spec_coverage(a.specs,paid)
-    if not reranked:raise RuntimeError("No native stochastic finalists; inspect errors")
+    if not reranked:raise RuntimeError("No native balanced finalists; inspect errors")
     best_score,winner_spec,winner=max(reranked,key=lambda t:t[0])
     p=player(winner)
     winner_gear_ids=[x["id"] for x in p["equipment"]["items"]]
