@@ -16,7 +16,8 @@ from math import isfinite
 from time import process_time_ns
 
 from src.game.data.forever.registry import build_game_ir_slice
-from src.game.talent_frontier import allocation_key, source_legal_talent_neighbors
+from src.optimization.talent_frontier import allocation_key
+from src.game.talent_frontier import source_legal_talent_neighbors
 from src.game.data.forever.source_checkpoint_p2_optimizer import (rank_opportunity_frontier,
     proposal_l0_opportunity)
 from src.game.talents import apply_talent_selection, validate_talent_selection
