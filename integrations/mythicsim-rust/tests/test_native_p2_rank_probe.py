@@ -150,7 +150,7 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
             ),
         ):
             return _simulate_prepared(
-                binary_path=Path("/selected/engine/target/debug/forever-engine"),
+                binary_path=Path(__file__).resolve(),
                 prepared={"sim": {"iterations": 1, "seed": 647003}},
                 rng_mode=NativeRngMode.BALANCED,
                 iterations=1,
