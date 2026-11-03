@@ -248,7 +248,7 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         self.assertEqual(record["candidate_request"],expected)
         self.assertEqual(record["key"],key("cat",expected))
         self.assertEqual(record["rerank_dps"],812.75)
-        self.assertEqual(record["rng_mode"],"stochastic")
+        self.assertEqual(record["rng_mode"],"balanced")
         self.assertEqual(record["seed"],105123)
         self.assertEqual(record["iterations"],1800)
         self.assertEqual(json.loads(json.dumps(record))["candidate_request"],expected)
