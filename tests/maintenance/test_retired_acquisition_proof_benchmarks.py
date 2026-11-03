@@ -393,3 +393,12 @@ def test_retired_p2_gate_and_checkpoint_chain_has_no_code_or_actions():
     assert "test_wf_p2_cross_tree_source_witness.py" not in generic
     assert "test_wf_p2_source_witness_priority.py" not in generic
     assert "cargo build --locked --bin forever-engine" in submodule_workflow
+
+
+def test_legacy_evidence_reader_rejects_retired_p1_p2(tmp_path):
+    from tools.wf_gate import evaluate
+
+    for gate in ("P1", "P2"):
+        report = evaluate(tmp_path, "druid", 20, "unrestricted", gate, {})
+        assert report["status"] == "FAIL"
+        assert report["reasons"] == ["RETIRED_OR_UNKNOWN_GATE:" + gate]
