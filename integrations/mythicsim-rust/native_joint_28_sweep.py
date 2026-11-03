@@ -16,6 +16,7 @@ from collections import Counter
 from pathlib import Path
 
 from native_joint_two_class import execute
+from native_source_donors import load_source_donor_fixtures
 from native_l60_matrix import (
     HEAL, TANK, ROOT, create_inventory, load_native_item_index,
 )
@@ -171,7 +172,8 @@ def _git_diff_sha(path: Path) -> str | None:
 
 
 def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
-                engine_src: Path) -> None:
+                engine_src: Path,
+                donor_inventory: dict | None = None) -> None:
     out.mkdir(parents=True, exist_ok=True)
     db = {name: _sha(engine_src / "data" / (name + ".jsonl"))
           for name in ("items", "enchants", "spells")}
@@ -192,6 +194,26 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
         "source_scope": "PINNED_NATIVE_SOURCE_BOUNDED_PARTIAL_LEGALITY",
         "process_p7_pass": False,
     }
+    if donor_inventory is not None:
+        donor_manifest = [
+            {
+                "source_path": item["source_path"],
+                "source_sha256": item["source_sha256"],
+                "class_name": item["class_name"],
+                "item_count": item["item_count"],
+            }
+            for item in donor_inventory.get("fixtures", [])
+        ]
+        manifest_bytes = json.dumps(
+            donor_manifest, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        provenance["source_donor_corpus"] = {
+            "directories": donor_inventory.get("directories", []),
+            "loaded_count": len(donor_manifest),
+            "skipped_count": len(donor_inventory.get("skipped", [])),
+            "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+            "skipped_sources": donor_inventory.get("skipped", []),
+        }
     for row in rows:
         row.setdefault("baseline_paid", 0)
         row.setdefault("native_paid_total",
@@ -237,6 +259,8 @@ def main() -> None:
     inventory = create_inventory(ROOT / "config/validation/checkpoint_148.json",
                                  args.engine_src)
     native_items = load_native_item_index(args.engine_src)
+    donor_inventory = load_source_donor_fixtures(args.engine_src)
+    donor_fixtures = donor_inventory["fixtures"]
     previous = ({r["profile_id"]: r for r in json.loads(args.prior.read_text())}
                 if args.prior else None)
 
@@ -248,18 +272,20 @@ def main() -> None:
             seed=args.seed + next(i for i, (r, _) in enumerate(inventory)
                                   if r["profile_id"] == profile),
             outdir=args.out / "profiles" / profile.replace("/", "__"),
+            donor_fixtures=donor_fixtures,
         )
 
     rows = build_matrix(inventory, stage=args.stage, run=pay_native,
                         prior_rows=previous)
     save_report(args.out, rows, stage=args.stage, binary=args.binary,
-                engine_src=args.engine_src)
+                engine_src=args.engine_src, donor_inventory=donor_inventory)
     print(json.dumps({"stage_seconds": args.stage, "profiles": len(rows),
                       "statuses": dict(Counter(r["status"] for r in rows)),
                       "baseline_paid": sum(r.get("baseline_paid", 0) for r in rows),
                       "search_native_paid": sum(r["native_paid"] for r in rows),
                       "native_paid_total": sum(r.get("native_paid_total", r["native_paid"]) for r in rows),
                       "three_axis_paid": sum(r["three_axis_paid"] for r in rows),
+                      "source_donor_fixtures": len(donor_fixtures),
                       "promotable": sum(bool(r["promotable"]) for r in rows)},
                      sort_keys=True), flush=True)
 
