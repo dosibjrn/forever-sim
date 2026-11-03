@@ -30,6 +30,10 @@ class GsimNativeDamageWorldApplier:
         self._last_world_tick_ns = -1
         self._target_id = None
         self._native_target_identity = None
+        # A dead gsim mob alone is not evidence that the native actor killed it.
+        self._last_native_lethal_target_id = None
+        # Damage for a later mob must not be dated before its live world handoff.
+        self._target_handoff_ns = None
 
     def begin_next_world_target(self, next_target_id: str) -> None:
         """Retarget only after an ACKed lethal event, preserving PID/event clocks.
@@ -42,10 +46,17 @@ class GsimNativeDamageWorldApplier:
                 or self._runtime.targets[self._target_id].alive
                 or not self._runtime.targets[next_target_id].alive):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_READY")
+        if self._last_native_lethal_target_id != self._target_id:
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_NATIVE_LETHAL")
         world = snapshot_gsim_world(self._runtime)
         if world["selected_target_id"] != next_target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_NOT_SELECTED")
+        handoff_ns = world["clock_ms"] * 1_000_000
+        if handoff_ns < self._last_world_tick_ns:
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NEXT_TARGET_CLOCK_REWIND")
         self._target_id = next_target_id
+        self._target_handoff_ns = handoff_ns
+        self._last_native_lethal_target_id = None
 
     def apply(self, tick: Mapping, response: Mapping) -> dict:
         if not isinstance(tick, Mapping) or not isinstance(response, Mapping):
@@ -149,6 +160,12 @@ class GsimNativeDamageWorldApplier:
                     or (caster_type == "" and (caster_index != 0 or caster_label != ""))
                     or (target_identity is not None and current_native_target != target_identity)):
                 raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_SOURCE_EVENT_INVALID")
+            # The old target's native damage journal cannot leak into a new
+            # gsim mob during paid travel/recovery after its world handoff.
+            if (self._target_handoff_ns is not None
+                    and timestamp < self._target_handoff_ns):
+                raise NativeDamageWorldApplicationError(
+                    "WORLD_DAMAGE_ACK_EVENT_BEFORE_TARGET_HANDOFF")
             ids.append(event_id)
             damage += float(value)
             last_event_id = ordinal
@@ -172,6 +189,11 @@ class GsimNativeDamageWorldApplier:
         if (damage > 0 and after_hash == digest) or (damage == 0 and after_hash != digest):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_WORLD_NOT_CHANGED_AS_EXPECTED")
         self._target_id = target_id
+        # Only THIS native ACK's applied effects may authorize switching mobs.
+        # An unrelated gsim/world health change must not satisfy causality.
+        self._last_native_lethal_target_id = (
+            target_id if damage > 0.0 and not target.alive else None
+        )
         self._native_target_identity = target_identity
         self._next_seq += 1
         self._previous_event_id = last_event_id
