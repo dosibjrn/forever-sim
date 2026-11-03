@@ -8,11 +8,11 @@ Game IR: resource thresholds and periodic-action target-health cutoffs.
 """
 
 from dataclasses import dataclass, replace
-from itertools import product
-from typing import Any, Callable, Mapping
+from typing import Any, Mapping
 
 from src.game.model import ActionDefinition, PeriodicEffect, PolicyCondition, PolicyDefinition, PolicyRuleDefinition
 from src.optimization.policy_search import PolicyEvaluator, PolicySearchResult
+from src.optimization.threshold_candidates import iter_threshold_candidates
 
 
 @dataclass(frozen=True)
@@ -97,11 +97,6 @@ def _apply_thresholds(policy: PolicyDefinition, mutations: tuple[ThresholdMutati
     return replace(policy, rules=tuple(rules))
 
 
-def _threshold_identity(structural_id: str, mutations: tuple[ThresholdMutation, ...], values: tuple[float, ...]) -> str:
-    parts = [f"{m.key}={float(v):g}" for m, v in zip(mutations, values)]
-    return structural_id + ("|thresholds:" + ";".join(parts) if parts else "|thresholds:none")
-
-
 def search_policy_thresholds(
     seed_policy: PolicyDefinition,
     *,
@@ -119,16 +114,14 @@ def search_policy_thresholds(
     for structural_row in structural_search.candidates:
         structural_policy = _rebuild_structural_policy(seed_policy, structural_row)
         mutations = _mutations_for_policy(structural_policy, action_map)
-        value_sets = [m.values for m in mutations] or [()]
-        combos = product(*value_sets) if mutations else [()]
-        for values in combos:
-            if len(rows) >= max_candidates:
-                break
-            values = tuple(float(x) for x in values)
+        structural_id = str(structural_row.get("candidate_id") or "priority:unknown")
+        for combination in iter_threshold_candidates(
+            structural_id, mutations, limit=max_candidates - len(rows),
+        ):
+            values = combination.values
             policy = _apply_thresholds(structural_policy, mutations, values)
-            structural_id = str(structural_row.get("candidate_id") or "priority:unknown")
-            candidate_id = _threshold_identity(structural_id, mutations, values)
-            thresholds = {m.key: float(v) for m, v in zip(mutations, values)}
+            candidate_id = combination.candidate_id
+            thresholds = combination.thresholds
             policy = replace(
                 policy,
                 id=f"{seed_policy.id}::threshold-search::{candidate_id}",
@@ -153,8 +146,8 @@ def search_policy_thresholds(
                 "rule_ids": [str(rule.id) for rule in policy.rules if str(rule.phase) == "combat"],
                 "action_ids": [str(rule.action_id) for rule in policy.rules if str(rule.phase) == "combat"],
                 "threshold_values": thresholds,
-                "is_seed": bool(structural_row.get("is_seed")) and all(abs(v - m.baseline_value) < 1e-12 for m, v in zip(mutations, values)),
-                "threshold_distance": sum(abs(v - m.baseline_value) / (abs(m.baseline_value) + 1.0) for m, v in zip(mutations, values)),
+                "is_seed": bool(structural_row.get("is_seed")) and combination.is_baseline,
+                "threshold_distance": combination.distance,
                 "valid": score is not None,
                 "seconds_per_mob": None if score is None else float(score),
                 **dict(detail or {}),
