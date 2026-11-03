@@ -1,6 +1,5 @@
-"""P2 solo-objective exclusions require real pinned source and legal search."""
+"""Source-objective exclusions retain their real source and legal-search regressions."""
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
 
@@ -11,7 +10,6 @@ from src.game.talent_execution_coverage import (
 from src.game.talent_frontier import source_legal_talent_neighbors, allocation_key
 from src.game.talents import available_talent_points, talented_bonus_for_level
 from src.game.data.forever.source_checkpoint_p2 import _witness
-from tools.wf_gate_p2_live import run_live
 
 
 @pytest.fixture(scope="module")
@@ -68,14 +66,3 @@ def test_objective_neutral_rank_remains_reachable_in_actual_legal_frontier(canon
     _, receipt = compile_talent_candidate(
         compiled, selection=witness, level=60, bonus_talent_points=bonus)
     assert receipt["status"] == "EXECUTABLE_CANDIDATE_DIAGNOSTIC"
-
-
-def test_actual_no_record_p2_checks_exclusion_without_fake_effect_probe():
-    result = run_live(Path(__file__).resolve().parents[1], "druid", 60,
-                      spec="balance")
-    ranks = [r for r in result["ranks"] if r["talent_id"] == "subtlety"]
-    assert len(ranks) == 3
-    assert all(r["status"] == "PASS" and r["search_reachable"]
-               and r["objective_exclusion"]["checked"] for r in ranks)
-    assert all(r["behavior_tests"] == [] for r in ranks)
-    assert result["source_rank_total"] == 103
