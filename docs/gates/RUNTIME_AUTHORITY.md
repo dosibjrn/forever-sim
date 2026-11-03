@@ -1,5 +1,7 @@
 # Gate CLI: live execution is authoritative
 
+**Owner-approved v2.20 (2026-11-03):** P1 abilities and P2 talents are retired from formal acceptance. The active CLI and M1 recorder expose only P3–P6 and P7.1–P7.5 (nine gates per checkpoint). Historical P1/P2 validators and probes are diagnostic archaeology only; they cannot be invoked by this CLI or recorded in M1.
+
 **Owner-approved acceptance cadence (2026-11-02):** The gate CLI is an **on-demand** way to earn or revalidate a PASS, not a mandatory continuously executing test suite. An acceptance test may be a heavy direct CLI/integration run of actual production code (not necessarily a unit/pytest test). Run each gate successfully **once** to record `PASS` and a timestamp; rerun only when relevant functional changes invalidate it. Keep fast regression checks independent from heavy formal gate acceptance. A persistent PASS timestamp needs no separate evidence JSON or committed run bundle. A stored PASS is historical acceptance, **not** authority for a new unexecuted CLI PASS.
 
 **P7 owner-approved stochastic acceptance (2026-11-02):** On-demand P7.1–P7.5 final comparisons use **1,000 stochastic native Rust/Go iterations** with real causal 2D coupling where required and a **0.99× DPS comparator** on all gates, including P7.1 and P7.5. P7.2–P7.5 candidate searches instead use **deterministic low-repeat balanced RNG**, preserving their independent 300-second search budgets. Compare via the common `p7_required_dps` / `p7_final_stochastic_mean_passes` functions in `tools/wf_gate_coverage.py`. Missing actual P7.2–P7.5 production providers remain BLOCKED; a correct numeric helper is not gate acceptance. Historical source request iteration counts remain provenance only.
@@ -9,15 +11,14 @@ The following describes the current live-provider implementation; providers must
 `python tools/wf_gate.py --class druid --level 60 --spec balance --gate P7.2`
 now calls a **Python live provider** rather than reading a prewritten PASS JSON.
 
-- P1: `tools.wf_gate_p1_live.run_live(...)` (existing).
-- P2: `tools.wf_gate_p2_live.run_live(...)` (existing).
+- P1/P2: retired; historical providers are not part of active acceptance.
 - P3–P6 and P7.1–P7.5: `tools.wf_gate_<gate>_live.run_live(root, class_key, level, *, spec=...)`.
-- `--gate P7` aggregates five P7 subgates; `--gate all` includes P1–P6 and P7.1–P7.5.
+- `--gate P7` aggregates five P7 subgates; `--gate all` includes P3–P6 and P7.1–P7.5.
 - Missing provider: `BLOCKED`, nonzero exit. Crashed provider: `FAIL`, nonzero exit. Generated JSON is never consulted for a pass verdict.
-- A passing P3+ live report must include `runtime_proof = {executed: true, engine_revision, source_revision, run_id}`. This is **necessary but not sufficient**: provider code must genuinely execute a pinned runtime and check the formal PROCESS gate predicate; metadata alone is not a test.
+- A passing active live report must include `runtime_proof = {executed: true, engine_revision, source_revision, run_id}`. This is **necessary but not sufficient**: provider code must genuinely execute a pinned runtime and check the formal PROCESS gate predicate; metadata alone is not a test.
 - `--out` writes a fresh result, it is not an evidence source. Existing `--evidence-dir` option is retained for CLI compatibility but ignored by acceptance.
 - Historical `evaluate()` JSON validators remain for diagnostic schema tests, **not** gate certification.
-- Existing standalone P1/P2 live probes still execute directly. Their independently produced detailed outputs can be recorded for audit.
+- Legacy standalone P1/P2 probes may remain for repository archaeology, but they are not an acceptance path and cannot be recorded in M1.
 
 [GitHub Actions gate runtime authority](../../.github/workflows/gate-runtime-authority.yml) tests forged JSON rejection, code dispatch, exception handling and legacy schema rules on PRs. It is a **unit/contract CI**, not a P3–P7 gate PASS.
 

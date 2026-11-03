@@ -74,7 +74,7 @@ def inspect_certificate(cert: Mapping, root: Path, *, expected_gate: str,
     """Validate a cached evidence *reference*, not its gameplay truth.
 
     A caller cannot claim PASS by providing a syntactically green JSON file.
-    The actual P1..P7 semantic verifier must be run independently.
+    The actual P3–P6 and P7.1–P7.5 semantic verifiers must be run independently.
     """
     try:
         if cert.get('gate') != expected_gate or cert.get('checkpoint') != checkpoint:
@@ -176,9 +176,9 @@ def run_preflight(checkpoint: str, *, item_db: Path, certificate_dir: Path,
                 existing[gate]={'status':'STALE','semantic_pass':False}
     # This cheap preflight has no source-bound build weights or APL, so it
     # cannot execute the semantic P3 smoke or certify downstream searches.
-    for gate in ('P4','P5','P6','P7'):
+    for gate in ('P4','P5','P6', *(f'P7.{i}' for i in range(1, 6))):
         statuses[gate]='BLOCKED_BY_P3_SMOKE_NOT_RUN'
-    # No P1/P2/other automatic acceptance just because a historical JSON exists.
+    # Retired P1/P2 and other cached JSON never grant automatic acceptance.
     result={'checkpoint':checkpoint,'accepted':False,'source_item_verified':source_ok,
             'source_item_db_sha256':item_hash,'gate_status':statuses,
             'certificate_evidence':existing,'expensive_search_launched':False,

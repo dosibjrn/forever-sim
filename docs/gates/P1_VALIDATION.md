@@ -1,8 +1,8 @@
-# P1 — validate source-legal ability effects on the selected production engine
+> **Retired by owner-approved PROCESS v2.20 on 2026-11-03.** P1 is not an active acceptance gate. This guide is retained for historical context only; do not run it for acceptance or record P1 progress in M1. The active gates are P3–P6 and P7.1–P7.5.
 
-**Status:** Approved P1 validation contract, 2026-11-01. This guide explains
-[PROCESS v2.11](../../PROCESS.md), not a second competing gate specification.
-It does not assert that any checkpoint or native effect has already passed.
+# P1 — historical native ability validation guide (retired)
+
+**Historical status:** This guide described the former P1 validation contract under PROCESS v2.11. P1 was retired by PROCESS v2.20 on 2026-11-03; this file is no longer an acceptance guide and does not authorize P1 runs or M1 records.
 
 ## Boundary
 

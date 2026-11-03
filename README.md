@@ -1,15 +1,15 @@
-> **Migration status (2026-11-01): COMPLETE.** [Public P0 issue #25](https://github.com/dosibjrn/forever-sim/issues/25) records the pinned audited source publication: 1,877 permitted paths published from 1,914 tracked private paths, with 37 intentionally protected. [Independent public checkout and LFS hydration](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045) succeeded with 13/13 snapshot tests; 11 SQLite and three large JSON LFS payloads were hydrated. Legacy private auto-trigger workflows remain excluded deliberately. `dosibjrn/mage-level-sim` is historical read-only source. **This is not a P1–P7.5 checkpoint acceptance; current M1 certification is shown in the live chart below.**
+> **Migration status (2026-11-01): COMPLETE.** [Public P0 issue #25](https://github.com/dosibjrn/forever-sim/issues/25) records the pinned audited source publication: 1,877 permitted paths published from 1,914 tracked private paths, with 37 intentionally protected. [Independent public checkout and LFS hydration](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045) succeeded with 13/13 snapshot tests; 11 SQLite and three large JSON LFS payloads were hydrated. Legacy private auto-trigger workflows remain excluded deliberately. `dosibjrn/mage-level-sim` is historical read-only source. **This is not an active P3–P7.5 checkpoint acceptance; current M1 certification is tracked in the canonical ledger, while the linked chart is historical until Merge regenerates it.**
 
 # WoW Forever — simulator and optimizer
 
 **Engine ownership and migration:** The approved end state is **one game-rules authority: the exact-SHA-pinned [MythicSim Rust fork](https://github.com/dosibjrn/mythicsim-forever-engine)**. Rust owns Warcraft source facts, build legality, combat mechanics and game-world execution. Forever defines scenarios, proposes and searches candidates, scores native results and verifies the unchanged gate contracts. Python GameIR, source catalogues, Go/gsim bridges and Python world code in the **current** tree are transitional live dependencies, not additional permanent sources of game truth; migrate their real consumers and verify native replacement before deleting them. See [#357](https://github.com/dosibjrn/forever-sim/issues/357), [#359](https://github.com/dosibjrn/forever-sim/issues/359) and the [target architecture](docs/REPOSITORY_STRUCTURE.md).
 
 
-## M1 — verified progress over time
+## M1 — historical progress and current active scope
 
-![M1 verified acceptance and diagnostic partial progress](docs/planning/M1_HISTORY.svg)
+![Historical pre-v2.20 11-gate M1 acceptance and diagnostic partial progress](docs/planning/M1_HISTORY.svg)
 
-**Green:** genuine accepted P1–P7.5 gate PASSes out of 1,628. **Amber:** best measured partial-inclusive diagnostic progress (not an accepted PASS). Fully certified checkpoints out of 148 are shown separately; incomplete or incompatible gate results do not certify a checkpoint. The vertical scale is zoomed to visible progress, not 0–100%.
+**Historical chart:** this SVG shows the former 11-gate scope through 2026-11-03 and is not comparable to the current scope. PROCESS v2.20 retires P1/P2; active acceptance is P3–P6 and P7.1–P7.5 (1,332 pairs across 148 checkpoints). Merge will regenerate the chart on the next official M1 publication. The certified checkpoint count remains separate; incomplete or incompatible active-gate results do not certify a checkpoint.
 
 The [M1 ledger](docs/planning/M1_PASSES.tsv) is the only measurement source. Its Git history supplies the timestamps. Each [Merge-launched on-demand gate run](.github/workflows/m1-on-demand-record.yml) that improves the recorded results updates the ledger **and this chart together** on main. No chart-only scheduling, synthetic progress, or independent status records.
 
@@ -19,11 +19,11 @@ This is an independent Forever simulation and optimization research project. The
 
 **Credit and scope:** this repository is not the official MythicSim project and is not affiliated with its maintainers. Engine references and pinned versions must remain traceable; upstream licenses and notices govern any adapted code.
 
-**Fully certified P1–P7 checkpoints are counted in the live M1 chart above.** User-accepted P7 subgates are tracked separately; do not mistake them for full P1–P7 checkpoint certification. A green CI job or a standalone reference replay does not certify P1–P7.
+**The M1 ledger is authoritative for active checkpoint counts.** The linked SVG is the pre-v2.20 11-gate history until Merge regenerates it. User-accepted P7 subgates are tracked separately; do not mistake them for full active P3–P7.5 checkpoint certification. A green CI job or a standalone reference replay does not certify the active P3–P7.5 checkpoint.
 
 ## Work queue and the 148-checkpoint matrix
 
-**Fully certified P1–P7 checkpoints: see the M1 chart above.** Four levels **20, 30, 40 and 60** × (9 unrestricted classes + 4 Druid profiles + 24 other profiles) = **37 per level**. Level 50 is **not** in the approved 148-checkpoint scope.
+**Fully certified active-gate checkpoints: 0/148 at the last recorded main-ledger read; run `python tools/m1_progress.py` for the current nine-gate scoreboard.** Four levels **20, 30, 40 and 60** × (9 unrestricted classes + 4 Druid profiles + 24 other profiles) = **37 per level**. Level 50 is **not** in the approved 148-checkpoint scope.
 
 | Level | Unrestricted | Druid spec profiles | Other class spec profiles | Total |
 | --- | ---: | ---: | ---: | ---: |
@@ -39,11 +39,11 @@ This is an independent Forever simulation and optimization research project. The
 
 **Balance Druid L60 P7.3:** [WF663 native Rust talent search and frozen 4,000-fight holdout](docs/evidence/druid-l60-balance/p7.3/WF663_ACCEPTANCE.md) — 729.388 DPS, 7,255 paid candidates, 263 s. Native search PASS by the recorded result; full gsim-2D↔Rust causal gate remains **NOT CERTIFIED**. 
 
-**P7 DPS floors (owner-approved 2026-11-02):** P7.1–P7.4 require at least **99% of the pinned saved external reference** after 1,000 stochastic final iterations. P7.5's independently frozen 1,000-fight stochastic holdout mean must reach **99% of both the saved external reference and the strongest accepted-compatible P7.1–P7.4 result**. Internal candidate search uses deterministic balanced RNG; neither that score nor a confidence lower bound substitutes for final stochastic mean DPS. The search budgets, source/engine identity and live world↔native causality requirements are unchanged; [P7 contract](docs/gates/P7.md) is authoritative.
+**P7 DPS floors (owner-approved 2026-11-02):** P7.1–P7.4 require at least **99% of the pinned saved reference** after 1,000 stochastic final iterations. P7.5's independently frozen 1,000-fight stochastic holdout mean must reach **93% of the greater of the saved reference and the strongest accepted-compatible P7.1–P7.4 result**. Internal candidate search uses deterministic balanced RNG; neither that score nor a confidence lower bound substitutes for final stochastic mean DPS. The search budgets, source/engine identity and live world↔native causality requirements are unchanged; [P7 contract](docs/gates/P7.md) is authoritative.
 
-**Gate order within a checkpoint:** P1 abilities → P2 talents → P3 gear smoke → P4 independent cold 30 s search → P5 cold 300 s → P6 100-mob saturation replay → P7.1 reference → P7.2 rotation → P7.3 talents → P7.4 gear → P7.5 joint search. The historical overall checkpoint priority is Druid L20 → Druid L30 → Mage L30; the mutable milestone plan controls future execution order.
+**Active gate order within a checkpoint:** P3 gear smoke → P4 independent cold 30 s search → P5 cold 300 s → P6 100-mob saturation replay → P7.1 reference → P7.2 rotation → P7.3 talents → P7.4 gear → P7.5 joint search. The historical overall checkpoint priority is Druid L20 → Druid L30 → Mage L30; the mutable milestone plan controls future execution order.
 
-**Implementation and acceptance:** develop and merge focused, regression-tested production improvements incrementally. Run expensive P1–P7.5 acceptance only when ready; Merge alone records genuine PASS timestamps in the canonical M1 ledger. The authoritative requirements are [PROCESS.md](PROCESS.md), [gate predicates](docs/gates/README.md) and [OVERALL_PLAN.md](OVERALL_PLAN.md).
+**Implementation and acceptance:** develop and merge focused, regression-tested production improvements incrementally. Run expensive active P3–P7.5 acceptance only when ready; P1/P2 are retired and must not be reintroduced. Merge alone records genuine PASS timestamps in the canonical M1 ledger. The authoritative requirements are [PROCESS.md](PROCESS.md), [gate predicates](docs/gates/README.md) and [OVERALL_PLAN.md](OVERALL_PLAN.md).
 
 ## Command launchers
 

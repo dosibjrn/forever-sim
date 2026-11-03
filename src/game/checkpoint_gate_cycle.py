@@ -1,6 +1,6 @@
-"""Seven-gate RED -> GREEN -> REFACTOR evidence contract.
+"""Nine-active-gate RED -> GREEN -> REFACTOR evidence contract.
 
-A workflow certificate is NOT a substitute for the actual P1..P7 validators.
+A workflow certificate is NOT a substitute for the actual P3–P6 and P7.1–P7.5 validators.
 It verifies that acceptance claims are backed by reproducible gate-level red,
 green, genericity review, and post-refactor cross-context evidence. A green
 unit test alone cannot promote a checkpoint. No game/class-specific logic.
@@ -12,7 +12,7 @@ from hashlib import sha256
 from pathlib import Path
 from collections.abc import Mapping
 
-GATES = tuple(f"P{i}" for i in range(1, 8))
+GATES = tuple(f"P{i}" for i in range(3, 7)) + tuple(f"P7.{i}" for i in range(1, 6))
 PHASES = ("PENDING", "RED", "GREEN", "REFACTOR", "COMPLETE")
 HASH = re.compile(r"^[0-9a-f]{64}$")
 DISPOSITIONS = frozenset(("GENERALIZED_ENGINE", "MOVED_TO_SOURCE_DATA", "REMOVED_DUPLICATE"))
@@ -118,7 +118,7 @@ def validate_cycle(record: Mapping, *, checkpoint: str, source_sha256: str) -> s
 def validate_gate_ledger(ledger: Mapping, *, project_root: Path | None = None) -> dict:
     """Audit completeness of gate process, not gameplay truth.
 
-    Even 7/7 COMPLETE does not imply actual checkpoint acceptance: each gate's
+    Even 9/9 COMPLETE does not imply actual checkpoint acceptance: each gate's
     own semantic verifier, source-catalogue authority and runtime parity must
     separately establish that. No gate or evidence may disappear silently.
     """
@@ -143,13 +143,13 @@ def validate_gate_ledger(ledger: Mapping, *, project_root: Path | None = None) -
         "checkpoint": checkpoint,
         "evidence_sha256_verified": integrity,
         "cycle_structure_complete": not incomplete,
-        "process_contract": "P1_P7_GATE_LEVEL_RED_GREEN_REFACTOR_V1",
+        "process_contract": "P3_P7_5_GATE_LEVEL_RED_GREEN_REFACTOR_V1",
         "gate_phases": {gate: by_gate.get(gate, "MISSING") for gate in GATES},
         "missing_gates": missing,
         "incomplete_gates": incomplete,
         "process_evidence_complete": not incomplete and integrity,
         "checkpoint_accepted": False,
-        "acceptance_requires": "SEPARATE_P1_P7_SEMANTIC_CERTIFICATES",
+        "acceptance_requires": "SEPARATE_P3_P7_5_SEMANTIC_CERTIFICATES",
     }
 
 
