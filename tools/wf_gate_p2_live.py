@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from math import isclose, isfinite
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 from dataclasses import replace
 import sqlite3
@@ -25,6 +26,7 @@ from src.game.talents import apply_talent_selection, talented_bonus_for_level, a
 from src.game.talent_frontier import source_legal_talent_neighbors
 from src.optimization.talent_frontier import allocation_key
 from src.game.source_objective_relevance import solo_threat_exclusion
+from src.game.native_p2_rank_probe import NativeRngMode, run_native_rank_pair
 
 
 def _runtime_actor_state_delta(before, after):
@@ -1464,6 +1466,7 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
                                             bonus_talent_points=bonus)
             witness=trial
             result['witness']=dict(witness)
+            result['control_witness']=dict(prior)
             break
         except (ValueError,TypeError) as exc:
             last_error=str(exc)
@@ -1713,12 +1716,40 @@ def _source_spec_rank_witness(population, talent_id, rank):
     return next((dict(a) for a in population if a.get(talent_id)==rank),None)
 
 
+_NATIVE_P2_RANK_SCENARIOS = {'moonkin_form': 'balance', 'predatory_strikes': 'cat'}
+
+
+def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
+    if not binary:
+        return {'status': 'BLOCKED', 'reason': 'FOREVER_MYTHICSIM_RUST_BIN_NOT_SET'}
+    binary_path=Path(binary)
+    if not binary_path.is_file():
+        return {'status': 'BLOCKED', 'reason': 'SELECTED_RUST_BINARY_MISSING'}
+    before=tested.get('control_witness')
+    after=tested.get('witness')
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        return {'status': 'BLOCKED', 'reason': 'SOURCE_LEGAL_RANK_PAIR_UNAVAILABLE'}
+    try:
+        engine_root=binary_path.resolve().parents[2]
+        return run_native_rank_pair(
+            binary=binary_path, engine_root=engine_root,
+            scenario=_NATIVE_P2_RANK_SCENARIOS[talent_id],
+            before_selection=before, after_selection=after,
+            target_talent_id=talent_id, target_rank=int(rank),
+            iterations=100, seed=647003, rng_mode=NativeRngMode.BALANCED)
+    except Exception as exc:
+        return {'status': 'BLOCKED',
+                'reason': f'NATIVE_P2_DIAGNOSTIC_FAILED:{type(exc).__name__}:{exc}'}
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
              source_db: Path | None=None, bonus_points: int | None=None):
     """One P2 gate execution; fast, class-neutral and fail-closed."""
     result={'class':class_key,'level':level,'spec':spec,'gate':'P2',
             'status':'FAIL','reasons':[],'ranks':[], 'unreachable':[],
-            'unresolved':[], 'behavior_probes_executed':0}
+            'unresolved':[], 'behavior_probes_executed':0,
+            'native_rank_probe_results':[],
+            'native_rank_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE'}
     try:
         source_db=Path(source_db or DEFAULT_DB)
         if not source_db.is_file():raise ValueError('CANONICAL_SOURCE_DB_MISSING')
@@ -1793,8 +1824,29 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                                    profile_tree=(spec if profile_full is not None else None))
                 if population is not None:
                     tested['spec_full_point_exact_rank_witness']=profile_full is not None
+                if (class_key=='druid' and level==60 and spec=='balance'
+                        and talent.id in _NATIVE_P2_RANK_SCENARIOS
+                        and int(rank.rank)==1):
+                    native_probe=_native_p2_rank_diagnostic(
+                        os.environ.get('FOREVER_MYTHICSIM_RUST_BIN'),
+                        talent.id, int(rank.rank), tested)
+                    native_probe['executor']='selected_mythicsim_rust'
+                    native_probe['accepted_for_p2']=False
+                    tested['native_rank_probe']=native_probe
+                    result['native_rank_probe_results'].append(
+                        {'rank_key':key, **native_probe})
                 result['ranks'].append(tested)
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
+        native_probes=result['native_rank_probe_results']
+        result['native_rank_probe_summary']={
+            'scope':'druid:60:balance; moonkin_form:1 and predatory_strikes:1',
+            'attempted':len(native_probes),
+            'pass_count':sum(p.get('status')=='PROBE_PASS' for p in native_probes),
+            'fail_count':sum(p.get('status')=='PROBE_FAIL' for p in native_probes),
+            'blocked_count':sum(p.get('status')=='BLOCKED' for p in native_probes),
+            'rng_mode':'balanced',
+            'counted_in_p2_acceptance':False,
+        }
         fail=[r for r in result['ranks'] if r['status']!='PASS']
         result['reachability_count']=len(result['ranks'])
         result['pass_count']=len(result['ranks'])-len(fail)
