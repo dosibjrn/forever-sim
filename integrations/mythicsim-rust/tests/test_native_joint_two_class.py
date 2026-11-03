@@ -619,6 +619,16 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         candidate_player["rotation"]["priorityList"] = [self.cast(17923)]
         self.assertFalse(adapter.legal(candidate), "a non-witness-only APL is not promotable")
 
+        empty_condition_witness = self.cast(11713)
+        empty_condition_witness["action"]["condition"] = {}
+        candidate_player["rotation"]["priorityList"] = [
+            empty_condition_witness, self.cast(17923)
+        ]
+        self.assertFalse(
+            adapter.legal(candidate),
+            "an explicitly present empty condition is not an unconditional native witness",
+        )
+
         candidate_player["talentsString"] = donor_b_talents
         candidate_player["rotation"]["priorityList"] = [
             self.cast(11713), self.cast(25309)

@@ -1,10 +1,12 @@
 """On-demand P7.1 entry into the existing pinned MythicSim Rust/gsim 2D path.
 
 No new engine or score implementation: live_world_probe runs the native
-baseline and genuine world-ACKed fight. A bounded source-fight sample
-measures coupled DPS but does not measure the fraction of functioning
-gate assertions. The exact original saved report request was recovered
-by WF648; a duplicate Settings UI capture is not mandatory.
+baseline and genuine world-ACKed fight. Full P7.1 acceptance also requires a
+mid-fight 2D range perturbation whose changed range is consumed by the next
+native tick after the gsim ACK. A bounded source-fight sample measures coupled
+DPS but does not measure the fraction of functioning gate assertions. The
+exact original saved report request was recovered by WF648; a duplicate
+Settings UI capture is not mandatory.
 """
 from __future__ import annotations
 
@@ -256,6 +258,34 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     if parity_failure is not None:
         return {"status": "FAIL", "reasons": [parity_failure],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d", **actual}
+
+    # The P7.1 2D path must be causally two-way, not merely range-compatible
+    # at fight start: move the real saved-request target out of range after
+    # an ACK, then require the next native tick to consume that ACK and show
+    # fewer direct native actions than the same-range control.
+    try:
+        world_range_perturbation = module.run_range_perturbation_pair(binary, request)
+    except (AssertionError, KeyError, TypeError, ValueError, OSError,
+            RuntimeError, subprocess.SubprocessError) as exc:
+        return {
+            "status": "FAIL",
+            "reasons": ["P7_1_WORLD_RANGE_PERTURBATION_CAUSALITY_FAILED"],
+            "world_range_perturbation_error": str(exc),
+            "production_engine": "pinned_mythicsim_rust_gsim_2d",
+            **actual,
+        }
+    if (world_range_perturbation.get("native_ack_chain_verified") is not True
+            or world_range_perturbation.get("source_request_raw_sha256") != raw_sha):
+        return {
+            "status": "FAIL",
+            "reasons": ["P7_1_WORLD_RANGE_PERTURBATION_SOURCE_OR_ACK_MISMATCH"],
+            "world_range_perturbation": world_range_perturbation,
+            "production_engine": "pinned_mythicsim_rust_gsim_2d",
+            **actual,
+        }
+    actual["world_range_perturbation"] = world_range_perturbation
+    actual["p7_1_world_range_causality_verified"] = True
+
     if full_validation and (not p7_final_stochastic_mean_passes(
             "P7.1", native["native_dps"], reference,
             iterations=iterations, stochastic=True)
