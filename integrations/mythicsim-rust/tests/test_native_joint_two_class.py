@@ -15,7 +15,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import p73_talent_search_v2 as p73
 import native_joint_two_class as joint
-from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast
+from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast, mutate_apl
 from native_joint_two_class import (
     _ensure_native_damage_action, _native_positive_source_casts,
     _write_native_failure, fingerprint, native_payload, native_score_request,
@@ -197,6 +197,170 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         self.assertEqual(11713, repaired[2]["action"]["castSpell"]["spellId"]["spellId"])
         self.assertNotIn("condition", repaired[2]["action"])
         self.assertEqual(11689, repaired[3]["action"]["castSpell"]["spellId"]["spellId"])
+
+
+    def test_exact_warlock_lifetap_zero_dps_receipt_is_sanitized_before_fallback(self):
+        # Reduced exact reproducer from stage-5 run #41655733807, artifact
+        # #13241065075: the failed non-paid request had Life Tap 11689 guarded
+        # by dotRemainingTime(25309) <= spellCastTime(25309); its response was
+        # hist={"0": 40}, 3,280 Life Tap casts, and zero damage.
+        refresh_25309 = {
+            "cmp": {
+                "lhs": {"dotRemainingTime": {"spellId": {"spellId": 25309}}},
+                "op": "OpLe",
+                "rhs": {"spellCastTime": {"spellId": {"spellId": 25309}}},
+            }
+        }
+        refresh_11713 = {
+            "cmp": {
+                "lhs": {"dotRemainingTime": {"spellId": {"spellId": 11713}}},
+                "op": "OpLe",
+                "rhs": {"spellCastTime": {"spellId": {"spellId": 11713}}},
+            }
+        }
+        source = [
+            {"action": {"castSpell": {"spellId": {"spellId": 11689}},
+                        "condition": copy.deepcopy(refresh_25309)}},
+            {"action": {"castSpell": {"spellId": {"spellId": 25309}},
+                        "condition": copy.deepcopy(refresh_25309)}},
+            {"action": {"castSpell": {"spellId": {"spellId": 11689}},
+                        "condition": copy.deepcopy(refresh_11713)}},
+            {"action": {"castSpell": {"spellId": {"spellId": 11713}},
+                        "condition": copy.deepcopy(refresh_11713)}},
+            self.source(17923),
+        ]
+        raw_response = {
+            "result": {"raidMetrics": {
+                "dps": {"hist": {"0": 40}},
+                "parties": [{"players": [{"actions": [{
+                    "id": {"spellId": 11689},
+                    "targets": [{"casts": 3280, "damage": 0.0}],
+                }]}]}],
+            }}
+        }
+        self.assertEqual({"0": 40}, raw_response["result"]["raidMetrics"]["dps"]["hist"])
+        life_tap_receipt = raw_response["result"]["raidMetrics"]["parties"][0]["players"][0]["actions"][0]
+        self.assertEqual(3280, sum(t["casts"] for t in life_tap_receipt["targets"]))
+        self.assertEqual(0.0, sum(t["damage"] for t in life_tap_receipt["targets"]))
+
+        source_snapshot = copy.deepcopy(source)
+
+        class TuneOnlyRng:
+            def choices(self, _values, _weights):
+                return ["tune_condition"]
+
+            def choice(self, values):
+                return values[0]
+
+        mutated = mutate_apl(copy.deepcopy(source), source, TuneOnlyRng(), cold=False)
+        self.assertEqual(source_snapshot, source, "source APL must remain immutable")
+        self.assertTrue(all(
+            "condition" not in entry["action"]
+            for entry in mutated
+            if entry["action"].get("castSpell", {}).get("spellId", {}).get("spellId") == 11689
+        ))
+        repaired = _ensure_native_damage_action(
+            mutated, [{"spellId": 17923}], random.Random(5)
+        )
+        ids = [
+            entry["action"]["castSpell"]["spellId"]["spellId"]
+            for entry in repaired
+        ]
+        self.assertEqual([25309, 11713, 17923, 11689, 11689], ids)
+        self.assertNotIn("condition", repaired[2]["action"])
+
+    def test_dot_self_refresh_predicate_is_not_grafted_from_dot_to_life_tap(self):
+        condition = {
+            "cmp": {
+                "lhs": {"dotRemainingTime": {"spellId": {"spellId": 25309}}},
+                "op": "OpLe",
+                "rhs": {"spellCastTime": {"spellId": {"spellId": 25309}}},
+            }
+        }
+        source = [
+            self.source(11689),
+            {
+                "action": {
+                    "castSpell": {"spellId": {"spellId": 25309}},
+                    "condition": copy.deepcopy(condition),
+                }
+            },
+        ]
+        spells, predicates_by_spell, _allowed, compatible, _auras = _corpus(source)
+        self.assertIn(condition, compatible)
+
+        class TargetRng:
+            def __init__(self, target):
+                self.target = target
+
+            def choice(self, values):
+                if values is spells:
+                    return next(item for item in values
+                                if item.get("spellId") == self.target)
+                return values[0]
+
+            def random(self):
+                return 0.0
+
+        life_tap = _new_cast(
+            spells, predicates_by_spell, compatible, TargetRng(11689)
+        )
+        dot = _new_cast(
+            spells, predicates_by_spell, compatible, TargetRng(25309)
+        )
+        self.assertNotIn("condition", life_tap["action"])
+        self.assertEqual(condition, dot["action"]["condition"])
+
+    def test_valid_cross_spell_dot_refresh_predicate_remains_eligible(self):
+        condition = {
+            "and": {"vals": [
+                {
+                    "cmp": {
+                        "lhs": {"dotRemainingTime": {"spellId": {"spellId": 24977}}},
+                        "op": "OpLt",
+                        "rhs": {"spellCastTime": {"spellId": {"spellId": 25298}}},
+                    }
+                },
+                {
+                    "cmp": {
+                        "lhs": {"dotRemainingTime": {"spellId": {"spellId": 9835}}},
+                        "op": "OpLt",
+                        "rhs": {"spellCastTime": {"spellId": {"spellId": 25298}}},
+                    }
+                },
+            ]}
+        }
+        source = [
+            self.source(24977),
+            self.source(9835),
+            {
+                "action": {
+                    "castSpell": {"spellId": {"spellId": 9912}},
+                    "condition": copy.deepcopy(condition),
+                }
+            },
+            self.source(25298),
+        ]
+        spells, predicates_by_spell, _allowed, compatible, _auras = _corpus(source)
+        self.assertIn(condition, compatible)
+
+        class TargetRng:
+            def choice(self, values):
+                if values is spells:
+                    return next(item for item in values
+                                if item.get("spellId") == 9912)
+                return values[0]
+
+            def random(self):
+                return 0.0
+
+        generated = _new_cast(
+            spells, predicates_by_spell, compatible, TargetRng()
+        )
+        self.assertEqual(
+            9912, generated["action"]["castSpell"]["spellId"]["spellId"]
+        )
+        self.assertEqual(condition, generated["action"]["condition"])
 
 
 class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):

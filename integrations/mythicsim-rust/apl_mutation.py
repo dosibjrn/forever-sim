@@ -60,6 +60,73 @@ def _condition_spell_identity_keys(node):
     visit(node)
     return tuple(spell_refs), tuple(aura_refs), valid
 
+
+def _condition_metric_spell_ids(node, metric):
+    """Return the spell IDs referenced by a DoT/cast-time metric."""
+    spell_ids = []
+    valid = True
+
+    def visit(value):
+        nonlocal valid
+        if isinstance(value, dict):
+            if metric in value:
+                metric_value = value[metric]
+                identity = (metric_value.get("spellId")
+                            if isinstance(metric_value, dict) else None)
+                spell_id = (identity.get("spellId")
+                            if isinstance(identity, dict) else identity)
+                if (not isinstance(spell_id, int)
+                        or isinstance(spell_id, bool) or spell_id <= 0):
+                    valid = False
+                else:
+                    spell_ids.append(spell_id)
+            for key, child in value.items():
+                if key != metric:
+                    visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(node)
+    return tuple(spell_ids), valid
+
+
+def _condition_is_safe_for_cast(condition, cast_spell):
+    """Reject a DoT's self-refresh predicate when attached to another cast.
+
+    For example, dotRemainingTime(25309) <= spellCastTime(25309) is safe on
+    cast 25309, but unsafe on Life Tap 11689: it is true while the DoT is
+    absent and can starve a later positive-damage fallback. Cross-spell
+    predicates whose DoT and cast-time spell IDs differ remain eligible.
+    """
+    dot_ids, dot_valid = _condition_metric_spell_ids(condition, "dotRemainingTime")
+    cast_time_ids, cast_time_valid = _condition_metric_spell_ids(
+        condition, "spellCastTime"
+    )
+    if not dot_valid or not cast_time_valid:
+        return False
+    if not dot_ids or not cast_time_ids:
+        return True
+    action_spell_id = (
+        cast_spell.get("spellId") if isinstance(cast_spell, dict) else None
+    )
+    if (not isinstance(action_spell_id, int)
+            or isinstance(action_spell_id, bool) or action_spell_id <= 0):
+        return False
+    return not any(
+        dot_id == cast_time_id and dot_id != action_spell_id
+        for dot_id in dot_ids
+        for cast_time_id in cast_time_ids
+    )
+
+
+def _predicates_for_spell(predicates, spell):
+    return tuple(
+        condition for condition in predicates
+        if _condition_is_safe_for_cast(condition, spell)
+    )
+
+
 def _corpus(source_actions):
     spells = {}
     allowed_casts = {}
@@ -90,9 +157,10 @@ def _corpus(source_actions):
         if isinstance(spell_id, int) and not isinstance(spell_id, bool) and spell_id > 0:
             spells[key] = copy.deepcopy(spell)
             condition = action.get("condition")
-            if isinstance(condition, dict) and condition:
-                # Only a source castSpell contributes a predicate. Compatibility
-                # is checked after the complete source cast-identity set is known.
+            if (isinstance(condition, dict) and condition
+                    and _condition_is_safe_for_cast(condition, spell)):
+                # Keep source-bound cross-spell predicates, but not a DoT's
+                # self-refresh predicate grafted onto an unrelated utility cast.
                 source_predicates.append((key, copy.deepcopy(condition)))
     if not spells:
         raise ValueError("APL source action corpus contains no known castSpell identities")
@@ -175,12 +243,15 @@ def _tune_literal(condition, rng):
 def _new_cast(spells, predicates_by_spell, compatible_predicates, rng):
     spell = copy.deepcopy(rng.choice(spells))
     action = {"castSpell": {"spellId": spell}}
-    preferred = predicates_by_spell.get(_spell_key(spell), ())
+    preferred = _predicates_for_spell(
+        predicates_by_spell.get(_spell_key(spell), ()), spell
+    )
+    cross_spell = _predicates_for_spell(compatible_predicates, spell)
     predicates = preferred
-    # Prefer same-spell source predicates, but retain compatible cross-spell
-    # predicates when all of their exact spell references are source casts.
+    # Same-spell remains a preference; compatible cross-spell predicates
+    # remain eligible unless their self-refresh test is unsafe for this cast.
     if not preferred or rng.random() >= 0.8:
-        predicates = compatible_predicates
+        predicates = cross_spell
     if predicates and rng.random() < 0.8:
         condition = copy.deepcopy(rng.choice(predicates))
         if rng.random() < 0.7:
@@ -276,7 +347,8 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
             spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
             if (not valid
                     or not set(spell_refs).issubset(source_spell_keys)
-                    or not set(aura_refs).issubset(source_aura_keys)):
+                    or not set(aura_refs).issubset(source_aura_keys)
+                    or not _condition_is_safe_for_cast(condition, spell)):
                 action.pop("condition", None)
     if len(result) < 2:
         raise ValueError("APL requires at least two priority actions")
@@ -297,10 +369,13 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
                 entry = rng.choice(casts)["action"]
                 cast = entry.get("castSpell", {})
                 spell = cast.get("spellId") if isinstance(cast, dict) else None
-                preferred = predicates_by_spell.get(_spell_key(spell), ())
+                preferred = _predicates_for_spell(
+                    predicates_by_spell.get(_spell_key(spell), ()), spell
+                )
+                cross_spell = _predicates_for_spell(compatible_predicates, spell)
                 predicates = preferred
                 if not preferred or rng.random() >= 0.8:
-                    predicates = compatible_predicates
+                    predicates = cross_spell
                 if predicates and rng.random() < 0.80:
                     entry["condition"] = copy.deepcopy(rng.choice(predicates))
                     _tune_literal(entry["condition"], rng)
