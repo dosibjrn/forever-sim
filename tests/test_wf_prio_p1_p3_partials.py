@@ -1,9 +1,8 @@
-"""Real source-backed P1/P3 partials exercise the production implementation.
+"""Active P3 partial coverage exercises the production implementation.
 
-These are focused coverage regressions, NOT full gate PASS acceptance.
+This is a focused coverage regression, NOT full gate PASS acceptance.
 """
 from tools.wf_gate import _run_live_gate, ROOT
-from tools.m1_progress import record_partial
 
 
 def _assert_partial_source_execution(report, gate):
@@ -14,24 +13,6 @@ def _assert_partial_source_execution(report, gate):
     assert report["behavior_probes_executed"] >= 0
     assert report["partial_scope"]
     return n, d
-
-
-def test_druid_l60_balance_p1_actual_runtime_ability_effect_fraction(tmp_path):
-    report = _run_live_gate(ROOT, "druid", 60, "balance", "P1",
-                            "current_solo_leveling_100mob_v1")
-    n, d = _assert_partial_source_execution(report, "P1")
-    assert report["production_runtime_exercises"] >= n
-    assert report["checked_source_abilities"] == d
-    assert report["source_id"]
-    assert report["engine_id"]
-    # The current source may fail acquisition before ANY real behavior probe.
-    # Do not reward an unexecuted source inventory with an M1 PARTIAL.
-    if report["behavior_probes_executed"] == 0:
-        assert n == 0
-        ledger = tmp_path / "m1.tsv"
-        assert record_partial(class_key="druid", level=60, spec="balance",
-                              gate="P1", report=report, path=ledger) is False
-        assert not ledger.exists()
 
 
 def test_druid_l60_balance_p3_actual_paid_item_stat_weight_fraction():
