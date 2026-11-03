@@ -217,27 +217,27 @@ pub(crate) fn record_root_control(at_ns: i64, expires_at_ns: Option<i64>) {
 
 WORLD_BRIDGE_PATCHES = [
     (
-        "thread_local! {\\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\\n}\\n",
-        "thread_local! {\\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\\n}\\n\\n" + ROOT_CONTROL_BLOCK,
+        "thread_local! {\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\n}\n",
+        "thread_local! {\n    static BRIDGE: RefCell<Option<Bridge>> = const { RefCell::new(None) };\n}\n\n" + ROOT_CONTROL_BLOCK,
         "ROOT_STATE",
     ),
     (
-        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\\n        pending: Vec::new(),\\n    }));\\n}",
-        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\\n        pending: Vec::new(),\\n    }));\\n    reset_root_control();\\n}",
+        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\n        pending: Vec::new(),\n    }));\n}",
+        "        source_hash: source_hash.to_owned(), event_ordinal: 0,\n        pending: Vec::new(),\n    }));\n    reset_root_control();\n}",
         "ROOT_START_RESET",
     ),
     (
-        "        bridge.event_ordinal = 0;\\n    });\\n}",
-        "        bridge.event_ordinal = 0;\\n        reset_root_control();\\n    });\\n}",
+        "        bridge.event_ordinal = 0;\n    });\n}",
+        "        bridge.event_ordinal = 0;\n        reset_root_control();\n    });\n}",
         "ROOT_ITERATION_RESET",
     ),
     (
-        "        bridge.next_tick_ns = at_ns;\\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
-        "        bridge.next_tick_ns = at_ns;\\n        reset_root_control();\\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
+        "        bridge.next_tick_ns = at_ns;\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
+        "        bridge.next_tick_ns = at_ns;\n        reset_root_control();\n        // Deliberately preserve sequence, previous_ack_id, last_tick_ns,",
         "ROOT_TARGET_RESET",
     ),
     (
-        "        (boundary >= 0 && boundary > bridge.last_tick_ns\\n            && boundary <= next_native_ns && boundary <= end_ns)\\n            .then_some(boundary)",
+        "        (boundary >= 0 && boundary > bridge.last_tick_ns\n            && boundary <= next_native_ns && boundary <= end_ns)\n            .then_some(boundary)",
         """        // A source-native Roots gain/expiry is a real world boundary. Round
         // upward to gsim's millisecond clock and never jump over an earlier
         // independent world deadline.
@@ -260,16 +260,16 @@ WORLD_BRIDGE_PATCHES = [
     ),
     (
         "    let events = std::mem::take(&mut bridge.pending);",
-        "    let root_control = root_control_snapshot();\\n    let events = std::mem::take(&mut bridge.pending);",
+        "    let root_control = root_control_snapshot();\n    let events = std::mem::take(&mut bridge.pending);",
         "ROOT_EXCHANGE_SNAPSHOT",
     ),
     (
-        "            \\"native_encounter_damage\\": cumulative_damage,\\n            \\"facing_applied\\": true, \\"in_front_of_target\\": front",
-        "            \\"native_encounter_damage\\": cumulative_damage,\\n            \\"native_rooted_until_ns\\": root_control.expires_at_ns,\\n            \\"native_root_control_changed_at_ns\\": root_control.changed_at_ns,\\n            \\"facing_applied\\": true, \\"in_front_of_target\\": front",
+        "            \"native_encounter_damage\": cumulative_damage,\n            \"facing_applied\": true, \"in_front_of_target\": front",
+        "            \"native_encounter_damage\": cumulative_damage,\n            \"native_rooted_until_ns\": root_control.expires_at_ns,\n            \"native_root_control_changed_at_ns\": root_control.changed_at_ns,\n            \"facing_applied\": true, \"in_front_of_target\": front",
         "ROOT_RECEIPT",
     ),
     (
-        "    let ack = receive();\\n    assert!(ack[\\"type\\"] == \\"gsim_native_damage_applied_ack\\"",
+        "    let ack = receive();\n    assert!(ack[\"type\"] == \"gsim_native_damage_applied_ack\"",
         """    let ack = receive();
     assert!(ack.get("native_rooted_until_ns").is_some()
         && ack["native_rooted_until_ns"].as_i64() == root_control.expires_at_ns,
@@ -285,8 +285,8 @@ WORLD_BRIDGE_PATCHES = [
         "ROOT_ACK",
     ),
     (
-        "    bridge.next_tick_ns = next_world_boundary_ns;\\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
-        "    bridge.next_tick_ns = next_world_boundary_ns;\\n    clear_root_control_change();\\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
+        "    bridge.next_tick_ns = next_world_boundary_ns;\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
+        "    bridge.next_tick_ns = next_world_boundary_ns;\n    clear_root_control_change();\n    BRIDGE.with(|state| *state.borrow_mut() = Some(bridge));",
         "ROOT_CLEAR_CHANGE",
     ),
 ]
