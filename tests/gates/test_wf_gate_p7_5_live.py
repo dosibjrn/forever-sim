@@ -448,9 +448,9 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
 def test_p75_crossover_randomness_does_not_advance_candidate_search_rng(
         monkeypatch, tmp_path):
     """Donor-pool random draws must not perturb later cold candidate proposals."""
-    import json
 
     base = _base()
+    original = copy.deepcopy(base)
     player = lambda q: q["raid"]["parties"][0]["players"][0]
     player(base)["distanceFromTarget"] = 15
     binary = tmp_path / "upstream/target/release/forever-engine"
@@ -538,7 +538,7 @@ def test_p75_crossover_randomness_does_not_advance_candidate_search_rng(
     assert crossover_rngs[0] is not candidate_rngs[0]
     assert candidate_rngs[-1].getstate() == candidate_rng_state_at_crossover[0]
     assert report["status"] == "BLOCKED"  # missing accepted prior, not a gate PASS
-    assert base == _base()
+    assert base == original
 
 
 def test_full_search_sources_enchants_outside_reference_without_invented_rules(monkeypatch):
