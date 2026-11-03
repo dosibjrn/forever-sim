@@ -158,6 +158,30 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
             self.assertEqual(repaired, _ensure_native_damage_action(
                 repaired, witnesses, random.Random(7)))
 
+    def test_present_empty_condition_is_not_an_unconditional_damage_witness(self):
+        witnesses = [{"spellId": 11713}]
+        source = [{
+            "action": {
+                "castSpell": {"spellId": {"spellId": 11713}},
+                "condition": {},
+            }
+        }]
+        snapshot = copy.deepcopy(source)
+
+        repaired = _ensure_native_damage_action(
+            source, witnesses, random.Random(8))
+
+        self.assertEqual(2, len(repaired))
+        self.assertEqual(snapshot, repaired[:1])
+        self.assertEqual(
+            {"spellId": 11713},
+            repaired[1]["action"]["castSpell"]["spellId"],
+        )
+        self.assertNotIn("condition", repaired[1]["action"])
+        self.assertEqual(snapshot, source)
+        self.assertEqual(repaired, _ensure_native_damage_action(
+            repaired, witnesses, random.Random(8)))
+
     def test_real_warlock_zero_dps_alternate_talent_needs_multiple_witnesses(self):
         # Stage-5 #41638113867 exact raw receipt 43a719fd...:
         # 40/40 zero DPS with APL [18932, 11689, 25309].
