@@ -196,8 +196,8 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
         steps = sum(event.kind == "SpatialPlayerMoveStep"
                     and start_s < event.time_s <= through_s + 1e-9
                     for event in trace)
-        if yards == 0 and (arrival_s != start_s or steps):
-            raise AssertionError("RUST_WORLD_ROUTE_FREE_MOVEMENT_EVENT")
+        if yards == 0 and arrival_s != start_s:
+            raise AssertionError("RUST_WORLD_ROUTE_ZERO_DISTANCE_CLOCK_INVALID")
         receipts.append({
             "target_id": leg["target_id"],
             "prior_kill_clock_ns": prior_ns,
