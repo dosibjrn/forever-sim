@@ -908,11 +908,20 @@ def source_bounded_adapter(
             witness_key(witness)
             for witness in objective_witnesses_by_talent.get(talent_string, [])
         }
-        has_unconditional_native_witness = any(
-            isinstance(entry, dict)
-            and isinstance(entry.get("action"), dict)
-            and "condition" not in entry["action"]
-            and cast_identity_key(entry["action"].get("castSpell")) in eligible_witness_keys
+        source_witness_action_keys = set()
+        for entry in source_apl_by_talentsString.get(talent_string, []):
+            action = entry.get("action", {}) if isinstance(entry, dict) else None
+            cast = action.get("castSpell") if isinstance(action, dict) else None
+            if not isinstance(cast, dict):
+                continue
+            witness_identity = cast.get("spellId") if objective == "DPS" else cast
+            if witness_key(witness_identity) in eligible_witness_keys:
+                source_witness_action_keys.add(
+                    json.dumps(entry, sort_keys=True, separators=(",", ":"))
+                )
+        has_exact_source_native_witness = any(
+            json.dumps(entry, sort_keys=True, separators=(",", ":"))
+            in source_witness_action_keys
             for entry in candidate_apl
         )
         return (
@@ -920,7 +929,7 @@ def source_bounded_adapter(
             and gear_legal(candidate_player["equipment"]["items"])
             and talent_legal(talent_string)
             and apl_legal(candidate_apl)
-            and has_unconditional_native_witness
+            and has_exact_source_native_witness
         )
 
     result = JointCandidateAdapter(
