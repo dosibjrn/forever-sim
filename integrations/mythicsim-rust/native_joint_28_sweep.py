@@ -71,6 +71,9 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             "native_paid": 0,
             "baseline_paid": 0,
             "native_paid_total": 0,
+            "native_donor_probe_attempts": 0,
+            "native_donor_probe_paid": 0,
+            "native_donor_probe_positive_builds": 0,
             "baseline_balanced_score": None,
             "three_axis_paid": 0,
             "native_errors": 0,
@@ -111,6 +114,10 @@ def _cause(row: dict) -> str | None:
             return "SOURCE_GEAR_POOL_MISSING"
         if detail.startswith("BLOCKED_TALENTS:"):
             return "SOURCE_TALENT_DONORS_MISSING"
+        if detail.startswith("BLOCKED_NATIVE_HPS_WITNESS:"):
+            return "SOURCE_HPS_DONOR_WITNESSES_MISSING"
+        if detail.startswith("BLOCKED_NATIVE_TPS_WITNESS:"):
+            return "SOURCE_TPS_DONOR_WITNESSES_MISSING"
         return "INVESTIGATE_CANDIDATE_DOMAIN"
     if status == "BLOCKED_NATIVE_REFUSALS":
         return "NATIVE_CANDIDATE_REFUSALS"
