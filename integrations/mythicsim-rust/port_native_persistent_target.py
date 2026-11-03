@@ -10,6 +10,22 @@ import sys
 from pathlib import Path
 
 
+def _paid_recovery_descendant(source: str) -> bool:
+    """Recognize only the exact persistent-target + early-retarget + paid-recovery composition."""
+    try:
+        from port_native_early_retarget import HELPER, NEW_GUARD, TEST_MARKER
+        from port_native_paid_recovery import port_fight as port_paid_recovery
+        return (
+            source.count(HELPER) == 1
+            and source.count(NEW_GUARD) == 1
+            and source.count(TEST_MARKER) == 1
+            and source.count(FIGHT_TEST.rstrip("\n")) == 1
+            and port_paid_recovery(source) == source
+        )
+    except (ImportError, ValueError):
+        return False
+
+
 def replace_once(source: str, old: str, new: str, marker: str) -> str:
     if marker in source:
         if source.count(marker) != 1:
@@ -22,11 +38,15 @@ def replace_once(source: str, old: str, new: str, marker: str) -> str:
                 if (source.count(HELPER) == 1 and source.count(NEW_GUARD) == 1
                         and source.count(TEST) == 1):
                     return source
+                if _paid_recovery_descendant(source):
+                    return source
             if marker == "    fn native_persistent_next_target_retains_actor_and_native_queue()":
                 # Early-world clock adds an adjacent Rust test before this
                 # original test. Require both entire tests to be intact.
                 from port_native_early_retarget import TEST
                 if source.count(TEST) == 1 and source.count(FIGHT_TEST.rstrip("\n")) == 1:
+                    return source
+                if _paid_recovery_descendant(source):
                     return source
             raise ValueError(f"partial or ambiguous already-applied Rust port: {marker}")
         return source
