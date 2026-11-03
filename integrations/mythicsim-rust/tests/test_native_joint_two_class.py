@@ -1360,6 +1360,73 @@ class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
         )
         self.assertEqual([source_actions[0]], repaired)
 
+    def test_joint_legal_accepts_exact_guarded_hps_witness_not_unconditional_clone(self):
+        guard = {
+            "not": {
+                "auraIsActive": {
+                    "auraId": {"spellId": 10463},
+                },
+            },
+        }
+        heal_cast = {
+            "spellId": {"spellId": 10463},
+            "target": {"type": "Self"},
+        }
+        source_actions = [
+            {"action": {
+                "castSpell": copy.deepcopy(heal_cast),
+                "condition": copy.deepcopy(guard),
+            }},
+            {"action": {
+                "castSpell": {"spellId": {"spellId": 324}},
+            }},
+        ]
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassShaman"
+        baseline_player["talentsString"] = "restoration-build-a"
+        baseline_player["rotation"]["priorityList"] = copy.deepcopy(source_actions)
+
+        donor = copy.deepcopy(baseline)
+        donor_player = donor["raid"]["parties"][0]["players"][0]
+        donor_player["talentsString"] = "restoration-build-b"
+
+        class FakeGear:
+            def __init__(self, class_key, reference, source_requests):
+                self.mutable_indices = [0]
+
+            def validate(self, candidate):
+                return None
+
+        with patch.object(joint, "NativeGearAdapter", FakeGear):
+            adapter, _scope = joint.source_bounded_adapter(
+                "shaman",
+                baseline,
+                [baseline, donor],
+                native_objective_witnesses_by_talentsString={
+                    "restoration-build-a": [heal_cast],
+                    "restoration-build-b": [heal_cast],
+                },
+                objective="HPS",
+            )
+
+        self.assertTrue(
+            adapter.legal(copy.deepcopy(baseline)),
+            "the exact guarded source witness is a valid candidate witness",
+        )
+
+        unconditional_clone = copy.deepcopy(baseline)
+        unconditional_clone["raid"]["parties"][0]["players"][0]["rotation"][
+            "priorityList"
+        ] = [
+            {"action": {"castSpell": copy.deepcopy(heal_cast)}},
+            copy.deepcopy(source_actions[1]),
+        ]
+        self.assertFalse(
+            adapter.legal(unconditional_clone),
+            "matching cast identity is insufficient when the source guard was dropped",
+        )
+
     def test_hps_witness_uses_healing_or_shielding_and_preserves_target(self):
         heal_cast = {
             "spellId": {"spellId": 5185},
