@@ -95,7 +95,7 @@ def test_native_candidate_refusals_are_classified_without_world_fallback(
     assert report["native_unscored_candidates"] == 0
     assert report["native_execution_errors"] == 1
     assert report["world_execution_errors"] == 0
-    assert report["native_scored_candidates_paid"] == 0
+    assert report["native_world_scored_candidates_paid"] == 0
     assert report["status"] == "FAIL"
 
 
@@ -157,7 +157,7 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
     # hash alone cannot distinguish unchanged-effective-rank hypotheses.
     assert report["source_original_talents"] == "5532220115501351--505"
     assert report["cold_winner_talents"] == "cold-native-proposal"
-    assert report["native_scored_candidates_paid"] == 1
+    assert report["native_world_scored_candidates_paid"] == 1
     assert report["independent_300s_search_completed"] is True
     assert report["frozen_stochastic_iterations"] == 1000
     assert report["frozen_stochastic_reference_floor_met"] is True
