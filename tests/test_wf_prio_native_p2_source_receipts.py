@@ -1,73 +1,80 @@
-"""Fail-closed source fact validation for native P2 rank receipts."""
+"""Native P2 rank-pair forwarding; game legality belongs to MythicSim."""
 from tools import wf_gate_p2_live as p2
 
 
-def test_native_rank_diagnostic_requires_checkpoint_source_l0_before_execution():
+def test_native_rank_diagnostic_requires_candidate_identity_before_execution():
     result = p2._native_p2_rank_diagnostic(
         None, "moonkin_form", 1,
         {"source_rank_facts": {"talent_id": "moonkin_form"}},
     )
     assert result["status"] == "BLOCKED"
-    assert result["reason"] == "CANONICAL_CHECKPOINT_SOURCE_L0_MISSING"
+    assert result["reason"] == "CANONICAL_P2_SOURCE_RANK_IDENTITY_MISMATCH"
 
 
-def test_native_rank_diagnostic_checks_source_prerequisite_on_both_pair_members():
-    source_url = "https://example.invalid/druid-talent-source"
-    prerequisite = {
-        "talent_id": "feral_swiftness",
-        "required_rank": 2,
-    }
+def test_native_rank_diagnostic_delegates_rank_legality_to_native(tmp_path, monkeypatch):
+    control = {"ferocity": 5}
+    candidate = {**control, "predatory_strikes": 1}
+    binary = tmp_path / "engine" / "target" / "debug" / "forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"selected-engine-test-double")
+    calls = []
+
+    def fake_run_native_rank_pair(**kwargs):
+        calls.append(kwargs)
+        return {
+            "status": "INVALID",
+            "reason": "NATIVE_TALENT_REFUSAL",
+            "accepted_for_p2": False,
+        }
+
+    monkeypatch.setattr(p2, "run_native_rank_pair", fake_run_native_rank_pair)
+    # Deliberately contradictory source metadata: the target rank exceeds
+    # the stated cap, its prerequisite is unmet, and its tier is not reached.
+    # None of these Python facts may veto the candidate before native prepare.
     source = {
         "class_key": "druid",
         "level": 60,
         "talent_id": "predatory_strikes",
         "rank": 1,
         "tree_key": "feral",
-        "tree_row": 3,
-        "rank_cap": 3,
+        "rank_cap": 0,
         "source_build": "1.60.1.70338",
-        "source_url": source_url,
-        "prerequisite": prerequisite,
-        "tree_members": ["ferocity", "feral_swiftness", "predatory_strikes"],
+        "source_url": "https://example.invalid/druid-talent-source",
+        "prerequisite": {"talent_id": "feral_swiftness", "required_rank": 99},
+        "tree_row": 99,
         "points_per_row": 5,
-        "checkpoint_source_l0": {
-            "source_url": source_url,
-            "prerequisite": prerequisite,
-            "expected_clause_count": 1,
-            "effects": [{
-                "domain": "form_melee_attack_power_from_level",
-                "target": "attack_power",
-                "sourced_value": 0.02,
-                "condition": "cat_form",
-                "source": source_url,
-            }],
-        },
+        "tree_members": ["ferocity", "feral_swiftness", "predatory_strikes"],
     }
-    # Independently reject an invalid control and an invalid candidate. A
-    # single pair where both sides fail would not prove that both are checked.
-    invalid_pairs = (
-        (
-            {"ferocity": 5, "feral_swiftness": 1},
-            {"ferocity": 5, "feral_swiftness": 2, "predatory_strikes": 1},
-        ),
-        (
-            {"ferocity": 5, "feral_swiftness": 2},
-            {"ferocity": 5, "feral_swiftness": 1, "predatory_strikes": 1},
-        ),
+    result = p2._native_p2_rank_diagnostic(
+        str(binary), "predatory_strikes", 1,
+        {
+            "source_rank_facts": source,
+            "control_witness": control,
+            "witness": candidate,
+        },
     )
-    for control_witness, witness in invalid_pairs:
-        result = p2._native_p2_rank_diagnostic(
-            None,
-            "predatory_strikes",
-            1,
-            {
-                "source_rank_facts": source,
-                "control_witness": control_witness,
-                "witness": witness,
-            },
-        )
-        assert result["status"] == "BLOCKED"
-        assert result["reason"] == "SOURCE_RANK_PAIR_PREREQUISITE_NOT_SATISFIED"
+
+    assert len(calls) == 1
+    assert calls[0]["scenario"] == "cat"
+    assert calls[0]["before_selection"] == control
+    assert calls[0]["after_selection"] == candidate
+    assert calls[0]["target_talent_id"] == "predatory_strikes"
+    assert calls[0]["target_rank"] == 1
+    assert result["status"] == "INVALID"
+    assert result["reason"] == "NATIVE_TALENT_REFUSAL"
+    assert result["accepted_for_p2"] is False
+    assert result["source_rank_facts"] == {
+        "talent_id": "predatory_strikes",
+        "rank": 1,
+        "tree_key": "feral",
+        "source_build": "1.60.1.70338",
+        "source_url": "https://example.invalid/druid-talent-source",
+        "source_sha256": None,
+    }
+    assert "rank_cap" not in result["source_rank_facts"]
+    assert "prerequisite" not in result["source_rank_facts"]
+    assert "tree_row" not in result["source_rank_facts"]
+    assert "source_pair_validated_by" not in result["source_rank_facts"]
 
 
 def test_druid_l30_plus_defaults_to_the_staged_source_catalogue(tmp_path):
@@ -130,7 +137,7 @@ def test_native_rank_diagnostic_requires_source_tree_tier_points_in_both_pair_me
     assert result["reason"] == "SOURCE_RANK_PAIR_TIER_NOT_SATISFIED"
 
 
-def test_native_rank_diagnostic_preserves_bridge_flags_without_gating(tmp_path, monkeypatch):
+def test_native_rank_diagnostic_remains_diagnostic_only(tmp_path, monkeypatch):
     source_url = "https://example.invalid/druid-talent-source"
     control = {
         "ferocity": 5,
@@ -165,29 +172,11 @@ def test_native_rank_diagnostic_preserves_bridge_flags_without_gating(tmp_path, 
                 "talent_id": "predatory_strikes",
                 "rank": 1,
                 "tree_key": "feral",
-                "tree_row": 3,
-                "rank_cap": 3,
                 "source_build": "1.60.1.70338",
                 "source_url": source_url,
-                "prerequisite": None,
-                "tree_members": [
-                    "ferocity", "feral_swiftness", "feral_instinct",
-                    "thick_hide", "predatory_strikes",
-                ],
-                "points_per_row": 5,
-                "checkpoint_source_l0": {
-                    "source_url": source_url,
-                    "expected_clause_count": 1,
-                    "prerequisite_rank_build_bridge_unverified": True,
-                    "unsupported_prerequisite_rank_bridge_unverified": True,
-                    "effects": [{
-                        "domain": "form_melee_attack_power_from_level",
-                        "target": "attack_power",
-                        "sourced_value": 0.02,
-                        "condition": "cat_form",
-                        "source": source_url,
-                    }],
-                },
+                "source_sha256": "source-sha",
+                # No L0, acquisition, prerequisite, rank-cap or tier proof
+                # is required to submit this candidate to native prepare.
             },
             "control_witness": control,
             "witness": candidate,
@@ -196,8 +185,16 @@ def test_native_rank_diagnostic_preserves_bridge_flags_without_gating(tmp_path, 
 
     assert result["status"] == "PROBE_PASS"
     assert result["accepted_for_p2"] is False
-    assert result["source_rank_facts"]["prerequisite_rank_build_bridge_unverified"] is True
-    assert result["source_rank_facts"]["unsupported_prerequisite_rank_bridge_unverified"] is True
+    assert result["source_rank_facts"] == {
+        "talent_id": "predatory_strikes",
+        "rank": 1,
+        "tree_key": "feral",
+        "source_build": "1.60.1.70338",
+        "source_url": source_url,
+        "source_sha256": "source-sha",
+    }
+    assert "checkpoint_source_l0_sha256" not in result["source_rank_facts"]
+    assert "prerequisite_rank_build_bridge_unverified" not in result["source_rank_facts"]
 
 
 def test_source_assembly_keeps_selected_sqlite_for_shared_scenario_overlays(monkeypatch, tmp_path):
