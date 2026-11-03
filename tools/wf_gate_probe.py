@@ -21,7 +21,10 @@ from tools.wf_gate import GATES
 
 def probe_gate(class_key: str, level: int, spec: str, gate: str,
                timeout_s: float, *, root: Path = ROOT) -> dict:
-    """Execute one REAL gate in an isolated process, with an absolute timeout."""
+    """Execute one active gate in an isolated process, with an absolute timeout."""
+    if gate not in GATES:
+        return {"gate": gate, "status": "RETIRED",
+                "reason": "GATE_NOT_IN_ACTIVE_ACCEPTANCE_SCOPE"}
     command = [sys.executable, str(root / "tools" / "wf_gate.py"),
                "--class", class_key, "--level", str(level),
                "--spec", spec, "--gate", gate]
