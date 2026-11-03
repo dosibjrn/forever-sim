@@ -136,8 +136,8 @@ mod persistent_next_target_tests {
     fn world_persistent_next_target_preserves_ack_and_monotonic_clock() {
         BRIDGE.with(|state| *state.borrow_mut() = Some(Bridge {
             iteration: 0, sequence: 4, next_tick_ns: 130_000_000,
-            last_tick_ns: 120_000_000, last_health: Some(0.0),
-            previous_ack_id: "a".repeat(64),
+            last_tick_ns: 120_000_000, last_health: Some(40.0),
+            previous_ack_id: "ack-from-first-target".into(),
             source_hash: "a".repeat(64), event_ordinal: 3, pending: Vec::new(),
         }));
         assert_eq!(begin_next_target(120_000_000),
@@ -150,7 +150,7 @@ mod persistent_next_target_tests {
             assert_eq!(bridge.sequence, 4);
             assert_eq!(bridge.last_tick_ns, 120_000_000);
             assert_eq!(bridge.next_tick_ns, 121_000_000);
-            assert_eq!(bridge.previous_ack_id, "a".repeat(64));
+            assert_eq!(bridge.previous_ack_id, "ack-from-first-target");
             assert_eq!(bridge.event_ordinal, 3);
             assert_eq!(bridge.last_health, None);
         });
