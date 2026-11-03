@@ -1,9 +1,10 @@
 """Class-neutral three-axis candidate composition for the EXISTING gsim/native search.
 
-This module is NOT another optimizer. It supplies propose/mutate/legal callbacks
-to native_matrix.search_native; that single kernel still owns exploration.
-Class-dependent gear, full 51-point talents, APL and cross-axis legality are
-provided by separately verified adapters. Mock callbacks are NEVER native proof.
+This module is NOT another optimizer. It supplies propose/mutate/candidate-domain
+callbacks to native_matrix.search_native; that single kernel still owns
+exploration. Class-dependent gear, talent and APL axes constrain candidate
+proposals only. MythicSim Rust is authoritative for build legality and native
+request evaluation. Mock callbacks are NEVER native proof.
 
 The player/request paths below are the documented MythicSim Rust request schema,
 not a per-class or fixed-16-slot schema.
@@ -17,9 +18,12 @@ from typing import Any, Callable
 from native_matrix import search_native
 
 
+MISSING_TALENT_STRING = ("__FOREVER_MISSING_TALENT_STRING__",)
+
+
 @dataclass(frozen=True)
 class CandidateAxis:
-    """One independently source-validated axis; never silently allow all."""
+    """One candidate axis; native Rust, not this callback, decides game legality."""
     cold: Callable[[Any], Any]
     mutate: Callable[[Any, Any], Any]
     legal: Callable[[Any], bool]
@@ -34,7 +38,7 @@ def _get(request: dict, axis: str) -> Any:
     if axis == "gear":
         return player["equipment"]["items"]
     if axis == "talents":
-        return player["talentsString"]
+        return player.get("talentsString", MISSING_TALENT_STRING)
     if axis == "apl":
         return player["rotation"]["priorityList"]
     raise ValueError("Unknown candidate axis: " + axis)
@@ -45,7 +49,10 @@ def _put(request: dict, axis: str, value: Any) -> None:
     if axis == "gear":
         player["equipment"]["items"] = copy.deepcopy(value)
     elif axis == "talents":
-        player["talentsString"] = copy.deepcopy(value)
+        if value == MISSING_TALENT_STRING:
+            player.pop("talentsString", None)
+        else:
+            player["talentsString"] = copy.deepcopy(value)
     elif axis == "apl":
         player["rotation"]["priorityList"] = copy.deepcopy(value)
     else:
@@ -55,10 +62,10 @@ def _put(request: dict, axis: str, value: Any) -> None:
 class JointCandidateAdapter:
     """Compose the three axes without embedding class-dependent search logic.
 
-    Each axis MUST reject illegal values; joint_legal MUST validate class,
-    spec, cross-axis restrictions (including equip/talents interactions), and
-    source legality in a COMPLETE candidate. A native score is never itself a
-    proof of source legality. Non-axis fields are frozen from the source request.
+    Axis callbacks constrain the optimizer's source-bounded candidate domain;
+    they do not prove game legality. joint_legal may enforce request shape,
+    class identity and search-domain invariants, but MythicSim Rust validates
+    the exact complete request. Non-axis fields are frozen from the source request.
     """
 
     AXES = ("gear", "talents", "apl")
@@ -73,7 +80,7 @@ class JointCandidateAdapter:
         joint_legal: Callable[[dict], bool],
     ):
         if not callable(joint_legal):
-            raise TypeError("A source-backed joint legality callback is required")
+            raise TypeError("A joint candidate-domain callback is required")
         self.reference = copy.deepcopy(reference)
         self.adapters = {"gear": gear, "talents": talents, "apl": apl}
         for axis in self.AXES:
@@ -104,12 +111,12 @@ class JointCandidateAdapter:
         for axis in self.AXES:
             _put(candidate, axis, self.adapters[axis].cold(rng))
         if not self.legal(candidate):
-            raise ValueError("Cold JOINT candidate is not source legal")
+            raise ValueError("Cold JOINT candidate is outside the candidate domain")
         return candidate
 
     def mutate(self, previous: dict, rng) -> dict:
         if not self.legal(previous):
-            raise ValueError("Cannot mutate an illegal previous candidate")
+            raise ValueError("Cannot mutate a candidate outside the candidate domain")
         candidate = copy.deepcopy(previous)
         # One shared scheduler for EVERY class; both multi-axis and individual
         # local moves are possible. No per-class path or fixed slot assumptions.
@@ -120,7 +127,7 @@ class JointCandidateAdapter:
             value = self.adapters[axis].mutate(copy.deepcopy(_get(candidate, axis)), rng)
             _put(candidate, axis, value)
         if not self.legal(candidate):
-            raise ValueError("Mutated JOINT candidate is not source legal")
+            raise ValueError("Mutated JOINT candidate is outside the candidate domain")
         return candidate
 
 
