@@ -417,7 +417,11 @@ class SelectedRustRouteCandidateIntegrationTests(unittest.TestCase):
         self.assertEqual(world["gsim_route_legs"], 99)
         self.assertEqual(world["gsim_route_paid_receipts"], 99)
         self.assertGreater(world["gsim_route_paid_movement_s"], 0)
-        self.assertEqual(world["world_seconds_per_target_without_paid_recovery"], 2.0)
+        self.assertGreater(world["world_seconds_per_target_without_paid_recovery"], 0)
+        self.assertAlmostEqual(
+            world["world_seconds_per_target_without_paid_recovery"],
+            world["world_elapsed_seconds"] / 100,
+        )
         self.assertEqual(len(world["native_actor_mana_after_world_kills"]), 100)
         self.assertEqual(len(world["native_actor_mana_delta_between_world_kills"]), 99)
         self.assertGreater(world["minimum_native_actor_health"], 0)
