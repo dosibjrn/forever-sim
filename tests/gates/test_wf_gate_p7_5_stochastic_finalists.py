@@ -507,3 +507,44 @@ def test_p75_cli_preserves_actual_frozen_paid_build(monkeypatch, capsys):
     assert rc == 1
     assert result["status"] == "FAIL"
     assert result["results"][0]["frozen_source_build"] == frozen
+
+def test_paid_p75_talent_apl_crossover_skips_gear_only_finalist_for_paid_apl():
+    """A differently geared paid finalist is not an APL/talent donor.
+
+    Regression for the actual P7.5 paid search operator: an unchanged
+    talent+rotation transplant used to return True, suppressing the
+    independently paid balanced candidate with a genuinely different pair.
+    These injected candidates represent paid rows, not a P7 acceptance run.
+    """
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    parent = _candidate("reference")
+    candidate = copy.deepcopy(parent)
+    gear_only = copy.deepcopy(parent)
+    player(gear_only)["equipment"]["items"][0]["id"] = 30
+    paid_apl = copy.deepcopy(parent)
+    player(paid_apl)["talentsString"] = "different-legal-paid-ranks"
+    player(paid_apl)["rotation"] = {"priorityList": [3, 1, 2]}
+    source = SimpleNamespace(player=player)
+
+    changed = gate._paid_p75_crossover(
+        candidate, parent, [(900., {}, "gear-only", gear_only)],
+        [(850., "paid-apl", paid_apl)], source, random.Random(23))
+    assert changed is True
+    assert player(candidate)["talentsString"] == player(paid_apl)["talentsString"]
+    assert player(candidate)["rotation"] == player(paid_apl)["rotation"]
+    assert player(parent)["talentsString"] == "reference"
+
+
+def test_paid_p75_talent_apl_crossover_reports_noop_when_only_gear_differs():
+    """No real talent/APL donor means no crossover, even with paid gear diversity."""
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    parent = _candidate("reference")
+    candidate = copy.deepcopy(parent)
+    gear_only = copy.deepcopy(parent)
+    player(gear_only)["equipment"]["items"][0]["id"] = 30
+    snapshot = copy.deepcopy(candidate)
+    changed = gate._paid_p75_crossover(
+        candidate, parent, [(900., {}, "gear-only", gear_only)],
+        [], SimpleNamespace(player=player), random.Random(23))
+    assert changed is False
+    assert candidate == snapshot
