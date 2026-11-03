@@ -381,17 +381,20 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
 def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    probe_deltas: tuple[float, ...] = (5., 20.),
                                    max_evaluations: int = 4,
-                                   schedule_incoming_attacks: bool = True) -> dict:
+                                   schedule_incoming_attacks: bool = True,
+                                   baseline_cache: dict | None = None) -> dict:
     """Find a *measured* beneficial stat delta on an existing legal policy.
 
     A bounded cold gear search may select a policy that does not use a stat at
     all (e.g. Cat Form on a Balance talent build). That measured zero proves
     only non-use by THAT policy. The generic gear scorer can also consume
     source-authored, executable alternative policies for the *same* talent IR.
-    This is not an optimality claim, epsilon, class exception or synthetic
-    simulator: every admitted slope comes from two paid CombatRuntime
-    combat+recovery evaluations of the SAME policy before/after the stat.
-    A negative first-policy weight remains negative; callers must not use this
+    Every admitted slope uses a paid CombatRuntime baseline and a paid
+    perturbation of the SAME policy. A successful baseline can be reused
+    across stat axes within a caller-owned cache because the unperturbed
+    policy evaluation is independent of which stat is changed. This is not an
+    optimality claim, epsilon, class exception or synthetic simulator. A
+    negative first-policy weight remains negative; callers must not use this
     function to hide it.
     """
     from src.game.gear import apply_stat_delta
@@ -402,25 +405,37 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
         raise ValueError('INVALID_SOURCE_POLICY_STAT_WITNESS_REQUEST')
     used = 0
     attempted_policies = []
+    baseline_reused_any = False
+    cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
     for policy in ir.policies:
-        if used >= max_evaluations:
-            break
         if not policy.provenance:
             continue
-        used += 1
-        try:
-            before, execution, details = _policy_combat_evaluation(
-                ir, level=level, policy_override=policy,
-                schedule_incoming_attacks=schedule_incoming_attacks)
-        except (ValueError, RuntimeError, EventTransitionBudgetExceeded,
-                ComputeDeadlineExceeded):
-            continue
-        if (before is None or execution is None or
-                not execution.timeline.target_defeated or
-                not isfinite(float(before.seconds_per_mob)) or
-                before.seconds_per_mob <= 0):
-            continue
-        baseline = float(before.seconds_per_mob)
+        cache_key = (*cache_prefix, str(policy.id))
+        cached_baseline = (baseline_cache.get(cache_key)
+                           if baseline_cache is not None else None)
+        policy_baseline_reused = cached_baseline is not None
+        if policy_baseline_reused:
+            baseline = float(cached_baseline)
+            baseline_reused_any = True
+        else:
+            if used >= max_evaluations:
+                break
+            used += 1
+            try:
+                before, execution, details = _policy_combat_evaluation(
+                    ir, level=level, policy_override=policy,
+                    schedule_incoming_attacks=schedule_incoming_attacks)
+            except (ValueError, RuntimeError, EventTransitionBudgetExceeded,
+                    ComputeDeadlineExceeded):
+                continue
+            if (before is None or execution is None or
+                    not execution.timeline.target_defeated or
+                    not isfinite(float(before.seconds_per_mob)) or
+                    before.seconds_per_mob <= 0):
+                continue
+            baseline = float(before.seconds_per_mob)
+            if baseline_cache is not None:
+                baseline_cache[cache_key] = baseline
         attempted_policies.append(str(policy.id))
         for delta in probe_deltas:
             if used >= max_evaluations:
@@ -448,6 +463,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'baseline_seconds_per_mob': baseline,
                     'perturbed_seconds_per_mob': float(after.seconds_per_mob),
                     'delta': float(delta), 'paid_evaluations': used,
+                    'baseline_reused': policy_baseline_reused,
                     'attempted_policies': attempted_policies,
                     'source_ir_id': str(ir.id),
                     'engine': 'gsim_CombatRuntime',
@@ -456,5 +472,6 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     return {
         'status': 'NO_POSITIVE_SOURCE_POLICY_WITNESS',
         'stat': stat, 'paid_evaluations': used,
+        'baseline_reused': baseline_reused_any,
         'attempted_policies': attempted_policies,
     }
