@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 import sqlite3
-from src.game.model.ir import ModeDefinition, ModeResourceRule
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.game.model.ir import ModeDefinition
 from .source_db_scope import DEFAULT_DB
 
 
