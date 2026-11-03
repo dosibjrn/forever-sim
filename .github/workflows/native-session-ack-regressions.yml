@@ -59,12 +59,14 @@ jobs:
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
+            --rng-mode stochastic \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
             --classic-mob-level 60 --targets 2 --require-native-moving --require-native-zero-health-damage
       - name: Real source-native incoming health damage on retained gsim 2D actor (not gate)
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
+            --rng-mode stochastic \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/feral-bear-druid-defensives.prepared.json \
             --mob-health 1200 --targets 2 --require-native-health-damage
