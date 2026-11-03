@@ -48,11 +48,33 @@ class NativeGearAdapterTests(unittest.TestCase):
         self.assertIn(audit["source_slot_index"], (0, 1))
         adapter.validate(candidate)
 
-    def test_class_allowlist_filters_cross_class_source(self):
+    def test_native_class_allowlist_does_not_prevent_source_proposal(self):
         items = copy.deepcopy(self.items)
         items[11]["class_allowlist"] = ["ClassWarrior"]
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
-        self.assertNotIn(11, adapter.pools.get(0, {}))
+        self.assertIn(11, adapter.pools[0])
+        candidate = copy.deepcopy(self.fire)
+        candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
+        adapter.validate(candidate)  # proposal only; MythicSim owns the verdict
+
+        from native_joint_two_class import native_score_request, native_payload, fingerprint
+        from native_matrix import NativeCandidateRefusal
+        import time
+        seen = []
+        raw = {"status": "INVALID", "error": "native equipment refusal"}
+        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline):
+            seen.append(copy.deepcopy(request))
+            raise NativeCandidateRefusal(
+                "INVALID", raw_response=raw, reason=raw["error"],
+                request_sha256=fingerprint(native_payload(request, iterations, seed)),
+            )
+        with self.assertRaises(NativeCandidateRefusal) as caught:
+            native_score_request(Path("forever-engine"), candidate, 4, 731,
+                                 "balanced", time.monotonic() + 1.0,
+                                 runner=native_runner)
+        self.assertEqual([candidate], seen)
+        self.assertEqual("INVALID", caught.exception.status)
+        self.assertIs(raw, caught.exception.raw_response)
 
     def test_source_observed_same_id_enchant_variant_is_mutable(self):
         # RED before fix: ID-only pools reported no mutable gear even though
@@ -107,15 +129,14 @@ class NativeGearAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(GearRejected, "NO_SOURCE_BOUNDED_ALTERNATIVE"):
             adapter.mutate_one(random.Random(1))
 
-    def test_unique_limit_category_rejected(self):
+    def test_native_unique_category_is_not_a_python_legality_veto(self):
         items = copy.deepcopy(self.items)
         items[11]["limit_category"] = 55
         items[20]["limit_category"] = 55
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
         candidate = copy.deepcopy(self.fire)
         candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
-        with self.assertRaisesRegex(GearRejected, "UNIQUE_CATEGORY"):
-            adapter.validate(candidate)
+        adapter.validate(candidate)
 
     def test_unverified_position_and_talent_change_rejected(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)
@@ -148,8 +169,7 @@ class NativeGearAdapterTests(unittest.TestCase):
         adapter.validate(copy.deepcopy(source))
         items[40]["unique"] = True
         unique_adapter = NativeGearAdapter("mage", source, [source], items)
-        with self.assertRaisesRegex(GearRejected, "UNIQUE_ITEM"):
-            unique_adapter.validate(copy.deepcopy(source))
+        unique_adapter.validate(copy.deepcopy(source))  # native decides uniqueness
 
     def test_candidate_cannot_mutate_encounter_or_buffs_during_gear_probe(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)
@@ -159,12 +179,16 @@ class NativeGearAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(GearRejected, "NON_GEAR_CHANGED"):
             adapter.validate(candidate)
 
-    def test_source_pool_never_crosses_unverified_armor_subtype(self):
+    def test_source_observed_armor_subtype_is_forwarded_to_native(self):
         items = copy.deepcopy(self.items)
         items[10]["armor_type"] = "ArmorTypeCloth"
         items[11]["armor_type"] = "ArmorTypePlate"
+        items[11]["required_level"] = 61
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
-        self.assertNotIn(11, adapter.pools.get(0, {}))
+        self.assertIn(11, adapter.pools[0])
+        candidate = copy.deepcopy(self.fire)
+        candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
+        adapter.validate(candidate)  # no Python armor or level legality verdict
 
     def test_distinct_source_bounded_swaps_can_be_retried_after_native_failure(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)

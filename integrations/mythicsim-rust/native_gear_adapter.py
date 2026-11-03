@@ -1,14 +1,13 @@
-"""Source-bounded, class-neutral native Rust equipment probe adapter.
+"""Source-observed, class-neutral equipment proposal adapter for MythicSim.
 
-Only items observed at the SAME position in pinned SAME-CLASS request fixtures
-may enter a pool. This is an engineering diagnostic, not a proof of full
-class/item legality or a cold JOINT optimizer. Native Rust remains the scorer.
+Only same-class fixtures at the same request position supply candidates.
+Python constrains the optimizer's proposal domain, not Warcraft equipment
+legality: the selected MythicSim Rust evaluator accepts/refuses exact builds.
 """
 from __future__ import annotations
 
 import copy
 import random
-from collections import Counter
 
 
 class GearRejected(ValueError):
@@ -65,16 +64,9 @@ class NativeGearAdapter:
                 is_weapon_or_ranged = native.get("type") in ("ItemTypeWeapon", "ItemTypeRanged")
                 if is_weapon_or_ranged and iid != original_id:
                     continue  # keep weapon/ranged identity fixed; same-ID observed variants do not alter hand rules
-                # A source donor of the same broad slot type is insufficient:
-                # e.g. a Mage cloth head cannot silently become a plate head.
-                if native.get("armor_type") != original.get("armor_type"):
-                    continue
-                allow = native.get("class_allowlist") or []
-                if allow and self.expected_class not in allow:
-                    continue
-                required_level = native.get("required_level")
-                if required_level is not None and int(required_level) > 60:
-                    continue
+                # Same-position/source-observed candidates are proposals.
+                # Armor subtype, class allowance and required level are
+                # Warcraft rules; only the native evaluator may refuse them.
                 # Keep weapon/ranged entries out of generic item-ID pools.
                 # Their same-ID enchant variants are carried only as exact entries.
                 if not is_weapon_or_ranged:
@@ -106,8 +98,6 @@ class NativeGearAdapter:
         entries = p.get("equipment", {}).get("items", [])
         if len(entries) != len(self.base):
             raise GearRejected("SLOT_COUNT", "Candidate equipment shape changed")
-        used_ids = []
-        limit_categories = []
         for i, entry in enumerate(entries):
             iid = entry.get("id", 0)
             if not isinstance(iid, int) or iid < 0:
@@ -119,28 +109,16 @@ class NativeGearAdapter:
             native = self.items.get(iid)
             if native is None:
                 raise GearRejected("ITEM_IDENTITY", f"{iid} absent from native Rust DB")
-            allow = native.get("class_allowlist") or []
-            if allow and self.expected_class not in allow:
-                raise GearRejected("CLASS_ALLOWLIST", f"{iid} excludes {self.expected_class}")
-            level = native.get("required_level")
-            if level is not None and int(level) > 60:
-                raise GearRejected("REQUIRED_LEVEL", f"{iid} requires level {level}")
             if entry != self.base[i] and entry not in self.variants.get(i, []):
                 raise GearRejected("SOURCE_SLOT", f"{iid} entry not observed at position {i}")
-            used_ids.append(iid)
-            cat = native.get("limit_category") or 0
-            if int(cat) > 0:
-                limit_categories.append(int(cat))
-        if any(n > 1 and self.items[iid].get("unique") for iid, n in Counter(used_ids).items()):
-            raise GearRejected("UNIQUE_ITEM", "Duplicate native unique item ID")
-        if any(n > 1 for n in Counter(limit_categories).values()):
-            raise GearRejected("UNIQUE_CATEGORY", "Duplicate native limit_category")
+        # Native Rust, not this proposal-domain adapter, checks unique
+        # items/categories, equip permissions and level requirements.
 
     def mutate_from(
         self, candidate: dict, rng: random.Random,
         *, excluded_swaps: set[tuple[int, int]] | None = None,
     ) -> tuple[dict, dict]:
-        """Add one more source-bounded legal item to an existing candidate.
+        """Add one more source-observed item proposal to an existing candidate.
 
         Never mutate the caller's request or reset an already searched slot
         to the reference item. The source fixture, native item identity and
@@ -179,7 +157,7 @@ class NativeGearAdapter:
     def mutate_one(
         self, rng: random.Random, *, excluded_swaps: set[tuple[int, int]] | None = None
     ) -> tuple[dict, dict]:
-        """Mutate one source-bounded slot; exclude prior native-failed swaps."""
+        """Mutate one source-observed slot; exclude prior native-refused swaps."""
         excluded = excluded_swaps or set()
         if not self.mutable_indices:
             raise GearRejected("NO_SOURCE_BOUNDED_ALTERNATIVE", "No compatible same-class fixture swap")
