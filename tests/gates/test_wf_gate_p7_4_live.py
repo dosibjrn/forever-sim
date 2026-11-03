@@ -443,6 +443,36 @@ def test_p74_source_paid_elite_archive_preserves_native_diversity_and_cold_resta
     assert len(paid) == 24  # sampling never mutates the measured archive
 
 
+def test_p74_stochastic_feedback_focuses_actual_paid_leaders_without_warm_start():
+    """Stochastic-guided local moves prefer measured top three, not a preset.
+
+    The sparse top-15 exploration remains reachable and balanced-score
+    parents keep the original diversity. This tests search routing, not gate
+    acceptance or an inferred increase in the 1,000-fight DPS.
+    """
+    paid = [(100.0 - i, {"paid_candidate": i}) for i in range(24)]
+    visited_sizes = []
+
+    class PickLast:
+        def choice(self, options):
+            visited_sizes.append(len(options))
+            return options[-1]
+
+    rng = PickLast()
+    assert gate._paid_gear_elite_choice(
+        paid, rng, 1, focus_top=True) == {"paid_candidate": 2}
+    assert gate._paid_gear_elite_choice(
+        paid, rng, 2, focus_top=True) == {"paid_candidate": 2}
+    assert gate._paid_gear_elite_choice(
+        paid, rng, 4, focus_top=True) == {"paid_candidate": 14}
+    assert gate._paid_gear_elite_choice(
+        paid, rng, 1, focus_top=False) == {"paid_candidate": 14}
+    assert gate._paid_gear_elite_choice(
+        paid, rng, 5, focus_top=True) is None
+    assert visited_sizes == [3, 3, 15, 15]
+    assert paid[0] == (100.0, {"paid_candidate": 0})
+
+
 def test_source_ranked_p74_samples_high_stat_sources_without_truncating_pool():
     """Actual complete sorted candidate pool stays reachable, unlike top-N."""
     source_items = list(range(1000))  # ascending ids stand for source rank
