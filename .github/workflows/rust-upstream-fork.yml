@@ -9,6 +9,7 @@ on:
       - .github/workflows/rust-upstream-fork.yml
       - scripts/bootstrap_mythicsim_rust_fork.sh
       - docs/RUST_UPSTREAM_FORK.md
+      - integrations/mythicsim-rust/port_native_two_pull_cli.py
 
 permissions:
   contents: read
@@ -33,6 +34,7 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_upstream_paladin_typed_rng.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_pull_queue.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_persistent_target.py
+          python3 -m py_compile integrations/mythicsim-rust/port_native_two_pull_cli.py
           python3 integrations/mythicsim-rust/test_port_native_pull_queue.py
           python3 - <<'PY'
           from pathlib import Path
@@ -69,14 +71,37 @@ jobs:
           # The source port must work both before and after the fork is pinned.
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_persistent_target.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_two_pull_cli.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
-          first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs | sha256sum)"
+          first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs | sha256sum)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_persistent_target.py /tmp/forever-selected-rust
-          second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs | sha256sum)"
+          python3 integrations/mythicsim-rust/port_native_two_pull_cli.py /tmp/forever-selected-rust
+          second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs | sha256sum)"
           test "$first_hash" = "$second_hash"
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib persistent_next_target
+          cargo run --quiet --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml -- native-pulls --infile /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json --targets 2 > /tmp/forever-native-two-window.json
+          python3 - <<'PY'
+          import json, math
+          with open("/tmp/forever-native-two-window.json") as f:
+              actual = json.load(f)
+          result = actual["result"]
+          assert result["scope"] == "NATIVE_TWO_DURATION_WINDOWS_DIAGNOSTIC_NOT_GATE"
+          assert result["continuous_actor"] and result["selected_native_combat"]
+          assert not result["actual_2d_ack"] and not result["paid_recovery"]
+          assert actual["checkpoint_certified"] is False
+          first, second = result["windows"]
+          assert first["index"] == 0 and second["index"] == 1
+          assert 0 < first["end_ns"] < second["end_ns"]
+          assert all(math.isfinite(x["actor_mana"]) and math.isfinite(x["actor_health"])
+                     for x in (first, second))
+          print("NATIVE_TWO_WINDOW_REAL_SELECTED_RUST_ACTOR_SMOKE_PASS")
+          PY
+          if cargo run --quiet --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml -- native-pulls --infile /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json --targets 3 >/tmp/forever-native-invalid.json 2>&1; then
+            echo "Unsupported 3-target CLI returned false success" >&2
+            exit 1
+          fi
 
   sync-fork:
     if: >-
