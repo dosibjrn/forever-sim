@@ -13,7 +13,7 @@ FIGHT_ANCHOR = "    /// Callable two-window source-Rust continuation smoke, NOT 
 CLASSES_ANCHOR = "/// Run the same native actor through two source-backed combat windows."
 PREPARED_ANCHOR = "/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery."
 CLI_ANCHOR = '    if args[0] == "native-pulls" {'
-METHOD_MARKER = "pub(crate) fn native_two_world_targets(&mut self)"
+METHOD_MARKER = "pub(crate) fn native_two_world_targets(&mut self, target_count: usize)"
 CLASS_MARKER = "pub(crate) fn native_two_world_targets("
 PREPARED_MARKER = "pub fn native_two_world_targets("
 CLI_MARKER = '    if args[0] == "native-world-pulls" {'
