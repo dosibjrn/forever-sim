@@ -29,6 +29,23 @@ def test_p75_paid_stochastic_parent_and_independent_cold_restarts():
     assert gate._paid_p75_parent(None, paid, 1, rng) is None
 
 
+def test_p75_paid_joint_axes_cycle_only_on_seventh_proposal():
+    """Both-axis paid neighborhoods extend the one-axis search, not cold starts."""
+    assert gate._p75_paid_joint_axes(1) is None
+    assert gate._p75_paid_joint_axes(5) is None
+    assert gate._p75_paid_joint_axes(6) is None
+    assert gate._p75_paid_joint_axes(7) == ("gear", "talents")
+    assert gate._p75_paid_joint_axes(14) == ("gear", "rotation")
+    assert gate._p75_paid_joint_axes(21) == ("talents", "rotation")
+    assert gate._p75_paid_joint_axes(28) == ("gear", "talents")
+    # Every fifth proposal is STILL an independent paid-parent-free restart.
+    paid = _candidate("paid")
+    balanced = (800.0, {}, "paid-sha", paid)
+    for index in (5, 10, 15, 20, 35):
+        assert gate._paid_p75_parent(
+            balanced, [], index, random.Random(9)) is None
+
+
 def test_p75_independent_stochastic_finalist_beats_balanced_spike(
         monkeypatch, tmp_path):
     """Real production search routing with paid native/world interfaces injected.
@@ -197,11 +214,14 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
 
     now = [0.0]
     requests = [0]
+    joint_calls = []
     paid_seeds = []
     deep_seeds = ("1955181", "1955207")
 
     def make_candidate(base, pools, rng, **kwargs):
         requests[0] += 1
+        joint_calls.append((requests[0], kwargs.get("elite"),
+                            kwargs.get("repair_axes")))
         if requests[0] > 40:
             # An unexpected nonterminating mock search must fail assertions,
             # not hang CI on a virtual clock.
@@ -262,6 +282,15 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
     assert result["search_wall_s"] == 300.0
     assert result["paid_joint_stochastic_confirmed"] >= 5
     assert result["paid_joint_stochastic_deep_confirmed"] == 2
+    # Production run_live must really transmit scheduled two-axis repairs
+    # to the existing source legality generator using only a PAID elite.
+    paid_repairs = {(index, axes) for index, elite, axes in joint_calls
+                    if elite is not None and axes is not None}
+    assert (7, ("gear", "talents")) in paid_repairs
+    assert (14, ("gear", "rotation")) in paid_repairs
+    assert (21, ("talents", "rotation")) in paid_repairs
+    assert all(axes is None for index, elite, axes in joint_calls
+               if index % 5 == 0 or elite is None)
     assert paid_seeds.count(deep_seeds) == 2
     assert result["selected_validation"] == (
         "paid_6x24_stochastic_live_native_deep_confirmed_finalist")
