@@ -16,17 +16,48 @@ from native_matrix import NativeCandidateRefusal, NativeUnscoredCandidate
 def _request_sha(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
+_OBJECTIVE_PATHS = {
+    "DPS": (("raidMetrics", "dps"), "result.raidMetrics.dps"),
+    "TPS": (
+        ("raidMetrics", "parties", 0, "players", 0, "threat"),
+        "result.raidMetrics.parties[0].players[0].threat",
+    ),
+}
+
+
+def _objective_path_label(objective):
+    name = str(objective).upper()
+    if name not in _OBJECTIVE_PATHS:
+        raise ValueError("Unsupported native objective: " + name)
+    return name, _OBJECTIVE_PATHS[name][1]
+
+
+def _objective_metric_node(out, objective):
+    name, _label = _objective_path_label(objective)
+    node = out
+    for part in ("result",) + _OBJECTIVE_PATHS[name][0]:
+        node = node[part]
+    if not isinstance(node, dict):
+        raise TypeError("Native objective metric is not an object")
+    return node
+
+
+def objective_score(out, objective="DPS"):
+    """Extract only the requested metric from the selected native response."""
+    return float(_objective_metric_node(out, objective)["avg"])
+
+
 def dps(out):
-    return float(out['result']['raidMetrics']['dps']['avg'])
+    return objective_score(out, "DPS")
 
 
-def _has_complete_dps_distribution(out, iterations):
-    """Check response completeness without deriving or inventing a score."""
+def _has_complete_objective_distribution(out, iterations, objective):
+    """Check the requested native metric's complete distribution without scoring it."""
     try:
-        metrics = out["result"]["raidMetrics"]["dps"]
+        metrics = _objective_metric_node(out, objective)
         aggregator = metrics.get("aggregatorData")
         histogram = metrics.get("hist")
-    except (KeyError, TypeError):
+    except (KeyError, TypeError, ValueError):
         return False
     if not isinstance(aggregator, dict) or not isinstance(histogram, dict) or not histogram:
         return False
@@ -39,6 +70,10 @@ def _has_complete_dps_distribution(out, iterations):
             return False
         bucket_counts.append(value)
     return sum(bucket_counts) == iterations
+
+
+def _has_complete_dps_distribution(out, iterations):
+    return _has_complete_objective_distribution(out, iterations, "DPS")
 
 
 class NativeExecutionError(RuntimeError):
@@ -58,14 +93,17 @@ class NativeExecutionError(RuntimeError):
 
 
 class NativeScoreExtractionError(NativeUnscoredCandidate):
-    """Native completed with a full iteration distribution but no usable DPS mean."""
+    """Native completed a full distribution but returned no usable objective mean."""
 
-    def __init__(self, cause, *, raw_response, elapsed_s, request_sha256):
+    def __init__(self, cause, *, raw_response, elapsed_s, request_sha256,
+                 objective="DPS"):
+        _name, metric_path = _objective_path_label(objective)
         super().__init__(
-            "Native response has no usable result.raidMetrics.dps.avg: " + str(cause),
+            "Native response has no usable " + metric_path + ".avg: " + str(cause),
             raw_response=raw_response, elapsed_s=elapsed_s,
             request_sha256=request_sha256,
         )
+        self.objective = _name
 
 
 def _json_object(text):
@@ -182,7 +220,8 @@ def _raise_structured_native_outcome(raw, *, returncode, stdout, stderr,
         )
 
 
-def run(binary, req, iterations, seed, rng_mode, deadline):
+def run(binary, req, iterations, seed, rng_mode, deadline, objective="DPS"):
+    objective, _metric_path = _objective_path_label(objective)
     remaining = deadline - time.monotonic()
     if remaining <= 0.05:
         raise TimeoutError("No remaining time before native execution")
@@ -266,12 +305,12 @@ def run(binary, req, iterations, seed, rng_mode, deadline):
         )
 
     try:
-        score = dps(output)
+        score = objective_score(output, objective)
     except (KeyError, TypeError, ValueError, OverflowError) as exc:
-        if _has_complete_dps_distribution(output, iterations):
+        if _has_complete_objective_distribution(output, iterations, objective):
             raise NativeScoreExtractionError(
                 exc, raw_response=output, elapsed_s=elapsed,
-                request_sha256=request_sha,
+                request_sha256=request_sha, objective=objective,
             ) from exc
         _raise_execution_error(
             returncode=res.returncode, stdout=stdout,
@@ -280,15 +319,15 @@ def run(binary, req, iterations, seed, rng_mode, deadline):
             output_exists=True,
         )
     if not math.isfinite(score):
-        if _has_complete_dps_distribution(output, iterations):
+        if _has_complete_objective_distribution(output, iterations, objective):
             raise NativeScoreExtractionError(
-                "result.raidMetrics.dps.avg is non-finite",
+                _objective_path_label(objective)[1] + ".avg is non-finite",
                 raw_response=output, elapsed_s=elapsed,
-                request_sha256=request_sha,
+                request_sha256=request_sha, objective=objective,
             )
         _raise_execution_error(
             returncode=res.returncode, stdout=stdout,
-            stderr=stderr or "Native DPS mean is non-finite", raw_response=output,
+            stderr=stderr or f"Native {objective} mean is non-finite", raw_response=output,
             elapsed_s=elapsed, request_sha256=request_sha,
             output_exists=True,
         )
