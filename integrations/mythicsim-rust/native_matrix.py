@@ -16,6 +16,29 @@ import time
 from typing import Any, Callable
 
 
+class NativeCandidateRefusal(RuntimeError):
+    """A structured native INVALID/UNSUPPORTED result for one candidate.
+
+    This is a transport-neutral outcome shared by the generic search kernel
+    and the selected-engine adapter. It is deliberately distinct from an
+    execution/transport error: MythicSim has authoritatively refused this
+    candidate, but the search may continue with another proposal.
+    """
+
+    def __init__(self, status: str, *, raw_response=None, reason=None,
+                 returncode=None, request_sha256=None, elapsed_s=None):
+        normalized = str(status).upper()
+        if normalized not in {"INVALID", "UNSUPPORTED"}:
+            raise ValueError("Native candidate refusal status must be INVALID or UNSUPPORTED")
+        self.status = normalized
+        self.raw_response = raw_response
+        self.reason = str(reason or normalized)
+        self.returncode = returncode
+        self.request_sha256 = request_sha256
+        self.elapsed_s = elapsed_s
+        super().__init__(f"MythicSim {normalized}: {self.reason}")
+
+
 def enumerate_l60_profiles(registry: dict, *, include_unrestricted: bool = False) -> list[tuple[str, str]]:
     """Follow the canonical checkpoint registry order; no hardcoded class list."""
     rows = [
