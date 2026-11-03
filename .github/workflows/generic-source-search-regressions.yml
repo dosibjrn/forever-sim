@@ -87,6 +87,7 @@ jobs:
           tests/generic/search/test_leveling_score.py
           tests/generic/search/test_wf390_generic_talent_subset_search.py
           tests/generic/search/test_bounded_policy_search_g16.py
+          tests/generic/search/test_policy_threshold_search_g17.py::test_g17_threshold_search_selects_numeric_condition_that_beats_g16_structure
           tests/generic/search/test_policy_search_efficiency_g18.py::test_g18_cache_normalizes_action_cost_and_numeric_equivalent_policy
           tests/generic/runtime/test_source_maintenance_rank_reader.py
           tests/generic/runtime/test_source_stage_isolation.py
