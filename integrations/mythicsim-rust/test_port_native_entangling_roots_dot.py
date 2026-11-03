@@ -18,6 +18,8 @@ class NativeRootsDotPortTest(unittest.TestCase):
             "src/classes/druid/prepare/balance.rs": port.PREP_PATCHES,
             "src/classes/druid/agent.rs": port.AGENT_PATCHES,
             "src/classes/druid/prepared/coverage.rs": port.COVERAGE_PATCHES,
+            "src/contracts/prepared_v2.rs": port.CONTRACT_PATCHES,
+            "src/classes/druid/prepare/export.rs": port.EXPORT_PATCHES,
         }
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -33,6 +35,9 @@ class NativeRootsDotPortTest(unittest.TestCase):
             self.assertEqual(port.main(["port", tmp]), 0)
             self.assertEqual(first, {p: (root / p).read_bytes() for p in port.PATHS})
             self.assertIn("0.25 * f64::from", (root / list(patches)[0]).read_text())
+            self.assertIn("EntanglingRoots {}", (root / "src/contracts/prepared_v2.rs").read_text())
+            self.assertIn('"kind": "entangling_roots"', (root / "src/classes/druid/prepare/export.rs").read_text())
+            self.assertIn('"entangling_roots",', (root / "src/classes/druid/prepared/coverage.rs").read_text())
 
     def test_missing_native_anchor_is_not_silently_accepted(self):
         path = "src/classes/druid/agent.rs"

@@ -108,6 +108,7 @@ python3 "$PROJECT/integrations/mythicsim-rust/port_native_entangling_roots_dot.p
 # Stage every actual Rust source and regression file changed by these two ports.
 # Staging only talents.rs silently omitted Roots behavior from the published fork.
 git add src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs \
+  src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs \
   src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs \
   tests/classes/druid/prepare.rs
 if ! git diff --cached --quiet; then

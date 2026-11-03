@@ -115,7 +115,21 @@ AGENT_PATCHES = [
      "            }", "DOT_TICK"),
 ]
 
+CONTRACT_PATCHES = [
+    ("    InsectSwarm {\n        rank: FireballRank,\n        debuff_aura: String,\n    },\n    /// Innervate's cast",
+     "    InsectSwarm {\n        rank: FireballRank,\n        debuff_aura: String,\n    },\n    /// Source-native Forever Entangling Roots: timed periodic combat occurs in the Druid agent.\n    EntanglingRoots {},\n    /// Innervate's cast", "VARIANT"),
+    ("            Effect::InsectSwarm { .. } => \"insect_swarm\",\n            Effect::Innervate",
+     "            Effect::InsectSwarm { .. } => \"insect_swarm\",\n            Effect::EntanglingRoots {} => \"entangling_roots\",\n            Effect::Innervate", "KIND"),
+]
+
+EXPORT_PATCHES = [
+    ("        let target = env.encounter.targets[0];\n        if self.tal.insect_swarm {",
+     "        // A real, registered Forever-only native Druid spell; this typed\n        // capability authorizes the existing Rust cast/DoT handler.\n        if sim.rules == crate::prepare::sim::Rules::Forever {\n            effects.push(json!({\"kind\": \"entangling_roots\"}));\n        }\n        let target = env.encounter.targets[0];\n        if self.tal.insect_swarm {", "EXPORT"),
+]
+
 COVERAGE_PATCHES = [
+    ("    \"enrage\",\n    \"faerie_fire\",",
+     "    \"enrage\",\n    \"entangling_roots\",\n    \"faerie_fire\",", "CAPABILITY"),
     ('        "insect_swarm" if spell.dot.is_some() => Some("insect_swarm"),',
      '        "insect_swarm" if spell.dot.is_some() => Some("insect_swarm"),\n'
      '        "entangling_roots" if spell.dot.is_some() => Some("entangling_roots"),', "COVERAGE"),
@@ -151,22 +165,79 @@ fn forever_roots_preparation_uses_native_spell_data_and_improved_rank() {
 """
 
 
+RUST_RUNTIME_TEST = """
+#[test]
+fn forever_roots_native_periodic_ticks_change_with_rank() {
+    // Production Rust executor, not a GameIR/source-catalogue assertion.
+    // Same encounter, seed and rotation; only the legally allocated rank changes.
+    fn run(rank: i32) -> (f64, String) {
+        let mut request: Value = serde_json::from_slice(
+            &fs::read(directory().join("balance-every-talent-at-max.request.json")).unwrap()
+        ).unwrap();
+        let player = &mut request["raid"]["parties"][0]["players"][0];
+        player["talentsString"] = Value::String(format!("000000{rank}"));
+        player["rotation"]["priorityList"] = serde_json::json!([
+            {"action": {
+                "castSpell": {"spellId": {"spellId": 9853}},
+                "condition": {"not": {"val": {
+                    "dotIsActive": {"spellId": {"spellId": 9853}}
+                }}}
+            }},
+            {"action": {"castSpell": {"spellId": {"spellId": 9912}}}}
+        ]);
+        request["simOptions"]["iterations"] = serde_json::json!(32);
+        request["encounter"]["duration"] = serde_json::json!(60.0);
+        request["encounter"]["durationVariation"] = serde_json::json!(0.0);
+        let prepared = forever_engine::prepare_json(
+            &serde_json::to_vec(&request).unwrap(), "native-roots-periodic-control"
+        ).expect("Forever source-native request prepares");
+        let prepared: forever_engine::contracts::prepared_v2::PreparedV2 =
+            serde_json::from_value(prepared).expect("native prepared contract");
+        let report = forever_engine::simulate_prepared(&prepared)
+            .expect("selected genuine Rust combat executes Roots");
+        let dps = report.result["raidMetrics"]["dps"]["avg"].as_f64()
+            .expect("native real combat DPS");
+        let first_log = report.result["logs"].as_str().unwrap_or("").to_owned();
+        (dps, first_log)
+    }
+
+    let (base, base_log) = run(0);
+    let (improved, improved_log) = run(3);
+    assert!(base_log.contains("Casting {SpellID: 9853}"),
+        "native Roots must actually cast, not merely be prepared: {base_log}");
+    assert!(improved_log.contains("Casting {SpellID: 9853}"),
+        "rank-3 build must actually cast Roots: {improved_log}");
+    assert!(base.is_finite() && base > 0.0 && improved.is_finite(),
+        "native combat must produce finite positive damage: {base}, {improved}");
+    assert!(improved > base,
+        "same-seed native combat with +75% Roots tick damage should improve DPS: {base} -> {improved}");
+}
+"""
+
+
 def port_text(path: str, contents: str) -> str:
     patches = {
         "src/classes/druid/prepare/balance.rs": PREP_PATCHES,
         "src/classes/druid/agent.rs": AGENT_PATCHES,
         "src/classes/druid/prepared/coverage.rs": COVERAGE_PATCHES,
+        "src/contracts/prepared_v2.rs": CONTRACT_PATCHES,
+        "src/classes/druid/prepare/export.rs": EXPORT_PATCHES,
     }
     if path in patches:
         for old, new, label in patches[path]:
             contents = replace_once(contents, old, new, label)
         return contents
     if path == "tests/classes/druid/prepare.rs":
-        if RUST_TEST in contents:
-            return contents
-        if "fn forever_roots_preparation_uses_native_spell_data_and_improved_rank()" in contents:
-            raise ValueError("NATIVE_ROOTS_TEST_SOURCE_DRIFT")
-        return contents.rstrip() + "\n" + RUST_TEST
+        for test_name, section in (
+            ("forever_roots_preparation_uses_native_spell_data_and_improved_rank", RUST_TEST),
+            ("forever_roots_native_periodic_ticks_change_with_rank", RUST_RUNTIME_TEST),
+        ):
+            if section in contents:
+                continue
+            if f"fn {test_name}()" in contents:
+                raise ValueError("NATIVE_ROOTS_TEST_SOURCE_DRIFT:" + test_name)
+            contents = contents.rstrip() + "\n" + section
+        return contents
     raise ValueError("unsupported port target " + path)
 
 
@@ -174,6 +245,8 @@ PATHS = [
     "src/classes/druid/prepare/balance.rs",
     "src/classes/druid/agent.rs",
     "src/classes/druid/prepared/coverage.rs",
+    "src/contracts/prepared_v2.rs",
+    "src/classes/druid/prepare/export.rs",
     "tests/classes/druid/prepare.rs",
 ]
 
