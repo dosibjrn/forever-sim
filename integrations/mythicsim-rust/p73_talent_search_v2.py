@@ -7,6 +7,7 @@ live gsim 2D ↔ Rust causality or certify a PROCESS P7.3 gate.
 from __future__ import annotations
 import argparse, copy, hashlib, json, math, random, subprocess, sys, tempfile, time
 from pathlib import Path
+from native_matrix import NativeCandidateRejected
 from talent_schema_druid import TREES,LOOKUP,parse,encode,points,legal_add,validate
 
 REFERENCE_DPS=728.1936126415858
@@ -97,12 +98,39 @@ class NativeScoreExtractionError(RuntimeError):
         self.request_sha256 = request_sha256
 
 
+def _structured_native_refusal(text):
+    """Read only an explicit native prepare refusal; never infer game rules."""
+    if not isinstance(text, str) or not text.strip():
+        return None
+    candidates = [text.strip(), *(line.strip() for line in reversed(text.splitlines()))]
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            raw = json.loads(candidate)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(raw, dict) or raw.get("prepared") is not False:
+            continue
+        refusal = raw.get("refusal")
+        if not isinstance(refusal, dict):
+            continue
+        code = str(refusal.get("code") or "unknown")
+        reason = str(refusal.get("reason") or "Native refused the candidate")
+        status = str(refusal.get("status") or raw.get("status") or "").upper()
+        if status not in {"INVALID", "UNSUPPORTED"}:
+            status = "UNSUPPORTED" if "unsupported" in code.lower() else "INVALID"
+        return status, code, reason, raw
+    return None
+
+
 def run(binary,req,iterations,seed,rng_mode,deadline):
     remaining=deadline-time.monotonic()
     if remaining<=0.05:raise TimeoutError('No remaining time before native execution')
     payload=copy.deepcopy(req)
     payload['simOptions']['iterations']=iterations
     payload['simOptions']['randomSeed']=str(seed)
+    request_sha=sha(payload)
     with tempfile.TemporaryDirectory() as d:
         inp=Path(d)/'req.json'; out=Path(d)/'out.json'
         inp.write_text(json.dumps(payload,separators=(',',':')))
@@ -110,6 +138,18 @@ def run(binary,req,iterations,seed,rng_mode,deadline):
         res=subprocess.run([str(binary),'sim','--request',str(inp),'--outfile',str(out),'--gate','--rng-mode',rng_mode],
                            stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
                            timeout=max(0.001,deadline-time.monotonic()))
+        elapsed=round(time.monotonic()-st,6)
+        output_text=out.read_text() if out.exists() else ""
+        for response_text in (output_text, res.stdout or ""):
+            refusal=_structured_native_refusal(response_text)
+            if refusal is not None:
+                status,code,reason,raw=refusal
+                raise NativeCandidateRejected(
+                    status=status, code=code, reason=reason, raw_response=raw,
+                    elapsed_s=elapsed, request_sha256=request_sha,
+                    returncode=res.returncode, stdout=res.stdout or "",
+                    stderr=res.stderr or "",
+                )
         if res.returncode!=0 or not out.exists():
             raise RuntimeError(
                 "native Rust failed "
@@ -117,9 +157,7 @@ def run(binary,req,iterations,seed,rng_mode,deadline):
                 f"stdout={(res.stdout or '')[-700:]!r}; "
                 f"stderr={(res.stderr or '')[-700:]!r}"
             )
-        output=json.loads(out.read_text())
-    elapsed=round(time.monotonic()-st,6)
-    request_sha=sha(payload)
+        output=json.loads(output_text)
     try:
         score=dps(output)
     except (KeyError, TypeError, ValueError, OverflowError) as exc:
