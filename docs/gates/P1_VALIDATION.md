@@ -41,31 +41,15 @@ An APL entry removal is useful as a *diagnostic* but can change timing and
 other action selection; it does not alone prove a spell's isolated effect.
 No backend union of incomplete implementations can be treated as P1 PASS.
 
-## Current small implementation
+## Retirement
 
-| Component | Purpose | Acceptance authority |
-| --- | --- | --- |
-| `src/engine_client/native_p1_effect_probe.py` | Builds a selected-Rust PreparedV2 single-action/no-action pair and returns native outcomes; supports the existing 2D bridge where needed | **Diagnostic only**, not a formal P1 PASS |
-| `tools/wf_p1_native_effects.py` | CLI for the selected-Rust native effect probe | **Diagnostic only** |
-| `tests/gates/test_wf_p1_native_blackbox.py` | Tests Forever-owned request/response and native-refusal handling, not Rust game-rule correctness | **None** |
-| `tools/wf_gate.py --gate P1` | Existing historical selected-gsim provider | Not silently replaced by this experiment |
+The P1-specific runtime stack was removed on 2026-11-03 after P1 was retired
+from formal acceptance by PROCESS v2.20. This includes the Forever GameIR
+source/inventory provider, the separate selected-Rust P1 diagnostic client and
+CLI, their P1-only tests, the P1-native workflow, and its scenario-applicability
+configuration.
 
-The existing gsim-specific diagnostic remains useful for gsim backend
-regressions. **Its `2/61` Hunter L20 action count is not native MythicSim P1
-coverage.** A missing gsim GameIR slice at L60 does not mean a native L60
-spell is missing.
-
-## Progress and acceptance
-
-The source-only candidate inventory, 18-case scope matrix and shadow P1 progress sidecar are retired. Do not recreate a Python source denominator or a second P1 progress register. A successful native probe remains diagnostic evidence only; formal P1 acceptance follows the approved gate contract, and only Merge records a genuine compatible PASS in M1.
-
-## Next production task
-
-The selected-Rust PreparedV2 single-action/no-action path now provides the
-native request/response boundary for direct effect probes, with a 2D bridge
-available for world-dependent behavior. Expand the actual Forever caller and
-observation path to the remaining P1 scope without filtering candidate requests
-through a Forever source inventory. Native VALID/INVALID/UNSUPPORTED and
-execution outcomes remain authoritative. The historical selected-gsim
-provider stays unchanged until its approved replacement is complete. Do not
-invent missing mechanics in a Python adapter or manually update PASS ledgers.
+No P1 runner or native P1 diagnostic is maintained. Do not recreate these
+entrypoints or schedule P1 runs. Historical source data, retained evidence and
+P1 ledger rows remain unchanged; historical P1 rows are excluded from the
+active M1 score. The active gates are P3–P6 and P7.1–P7.5.
