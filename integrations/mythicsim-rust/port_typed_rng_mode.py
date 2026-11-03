@@ -25,7 +25,53 @@ def patch(path: Path, edits: list[tuple[str, str]]) -> None:
     path.write_text(source)
 
 
+
+def patch_test_callers(root: Path) -> None:
+    """Keep Rust-only healer fixtures explicitly stochastic after the API change.
+
+    These tests compare historical stochastic fixture outputs; they must opt in,
+    not inherit a constructor default. This helper is safe on both fresh and
+    already-ported fork branches.
+    """
+    targets = (
+        (
+            "tests/healer_talents.rs",
+            "use forever_engine::{check_prepared, prepare_json_with, simulate_prepared, Rules};",
+            1,
+        ),
+        (
+            "tests/healers.rs",
+            "use forever_engine::{check_prepared, prepare, prepare_json_with, simulate_prepared, Rules};",
+            7,
+        ),
+    )
+    old_call = "simulate_prepared(&prepared)"
+    new_call = "simulate_prepared(&prepared, RngMode::Stochastic)"
+    for relative, old_import, expected_calls in targets:
+        path = root / relative
+        source = path.read_text()
+        new_import = old_import.replace(
+            "simulate_prepared,", "simulate_prepared, RngMode,")
+        if source.count(old_import) == 1:
+            source = source.replace(old_import, new_import, 1)
+        elif source.count(new_import) != 1:
+            raise AssertionError(f"{path}: expected one known healer-test import")
+        old_count = source.count(old_call)
+        new_count = source.count(new_call)
+        if old_count == expected_calls and new_count == 0:
+            source = source.replace(old_call, new_call)
+        elif old_count == 0 and new_count == expected_calls:
+            pass
+        else:
+            raise AssertionError(
+                f"{path}: expected {expected_calls} explicit simulation callsites; "
+                f"found old={old_count}, typed={new_count}")
+        path.write_text(source)
+
 def port(root: Path) -> None:
+    # Run before the idempotent fast path so a partially completed prior port
+    # still repairs these public-API test callers.
+    patch_test_callers(root)
     rng = root / "src/core/rng.rs"
     existing = rng.read_text()
     if "pub enum RngMode { Balanced, Stochastic }" in existing:
