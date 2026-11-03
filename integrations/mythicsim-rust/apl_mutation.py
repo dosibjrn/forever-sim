@@ -137,6 +137,8 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
     candidate; later elite mutations use the same operators. The grammar is
     deliberately restricted to expression trees and spell IDs present in the
     supplied frozen input. This is not full spellbook-level completeness.
+    Unconditional castSpell actions are kept as a stable fallback suffix so
+    they cannot shadow conditional actions earlier in the priority list.
     """
     spells, predicates, allowed = _corpus(source_actions)
     if cold:
