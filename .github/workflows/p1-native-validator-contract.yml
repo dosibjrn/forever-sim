@@ -5,6 +5,7 @@ on:
       - tools/p1_native_source_inventory.py
       - tools/wf_p1_native_scope_matrix.py
       - tools/wf_p1_native_effects.py
+      - src/engine_client/native_p1_effect_probe.py
       - tests/gates/test_wf_p1_native_blackbox.py
       - docs/gates/P1_VALIDATION.md
       - config/gates/p1_scenario_applicability_v1.json

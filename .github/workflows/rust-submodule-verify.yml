@@ -10,6 +10,9 @@ on:
       - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
       - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
       - src/engine_client/native_p2_rank_probe.py
+      - src/engine_client/native_p1_effect_probe.py
+      - tools/wf_p1_native_effects.py
+      - integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
       - .github/workflows/m1-on-demand-record.yml
 
 permissions:
@@ -23,6 +26,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install minimal live 2D world bridge dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Require exact Git submodule commit and our actual Rust source patch
         shell: bash
         run: |
@@ -71,3 +79,7 @@ jobs:
         env:
           FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         run: python3 integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
+      - name: Exercise selected-Rust P1 direct action and live 2D world bridge
+        env:
+          FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        run: python3 integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py
