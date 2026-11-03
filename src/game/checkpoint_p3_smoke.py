@@ -93,9 +93,9 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
             source = getattr(effect, 'damage_source', None)
             if source is None:
                 raise ValueError('P3_UNRESOLVED_WEAPON_DAMAGE_SOURCE:' + str(action.id))
-            if getattr(source, 'dps_stat_id', None) in _EQUIPPED_WEAPON_DPS_AXES:
-                equipped_dps = True
-                equipped_mean_hit = True
+            # A stat-named actor field alone is not evidence that an
+            # equipped item can replace this damage source. Only the canonical
+            # mode/source facts shared with gear application establish that link.
             for fact, mode_id in facts:
                 if (mode_id in action_modes
                         and source.kind == fact.damage_source_kind
@@ -111,8 +111,9 @@ def _policy_equipped_weapon_dependencies(ir, policy) -> tuple[bool, bool]:
         source = getattr(attack, 'damage_source', None)
         if source is None:
             raise ValueError('P3_UNRESOLVED_AUTO_DAMAGE_SOURCE:' + str(attack.id))
-        if getattr(source, 'dps_stat_id', None) in _EQUIPPED_WEAPON_DPS_AXES:
-            equipped_dps = True
+        # Do not infer an equipped item from dps_stat_id alone: qualified
+        # wand proxies carry wand_dps without any named/equipped wand. The
+        # canonical mode/source-fact match below is the authority.
         for fact, mode_id in facts:
             if (mode == mode_id
                     and source.kind == fact.damage_source_kind
