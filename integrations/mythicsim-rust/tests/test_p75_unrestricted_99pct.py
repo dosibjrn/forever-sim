@@ -166,10 +166,12 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
                  "rotation":{"priorityList":[{"action":"cast","spellId":42}]},
              }]}]}}
         expected=copy.deepcopy(req)
-        record=paid_candidate_record("cat",req,812.5,"stochastic_fallback",0.3)
+        record=paid_candidate_record("cat",req,812.5,"balanced",0.3)
         self.assertEqual(record["candidate_request"],expected)
         self.assertEqual(record["key"],key("cat",expected))
-        self.assertEqual(record["screen_mode"],"stochastic_fallback")
+        self.assertEqual(record["screen_mode"],"balanced")
+        with self.assertRaisesRegex(ValueError,"OPTIMIZER_RNG_MUST_BE_BALANCED"):
+            paid_candidate_record("cat",req,812.5,"stochastic",0.3)
         self.assertEqual(json.loads(json.dumps(record))["candidate_request"],expected)
         req["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]=999
         self.assertEqual(record["candidate_request"],expected,
@@ -177,9 +179,9 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         src=inspect.getsource(main)
         self.assertIn("record=paid_candidate_record(spec,q,dps,screen_mode,elapsed)",src)
         self.assertIn('"candidate_request":copy.deepcopy(q)',src)
-        for field in ("search_rng_seed","screen_rng_seed","stochastic_probe_seed",
+        for field in ("search_rng_seed","screen_rng_seed","balanced_probe_seed",
                       "rerank_seed","holdout_seed","screen_iterations",
-                      "stochastic_probe_iterations","rerank_iterations"):
+                      "balanced_probe_iterations","rerank_iterations"):
             self.assertIn('"'+field+'":',src)
 
     def test_paid_screen_survives_failed_stochastic_probe(self):
@@ -194,7 +196,7 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         probe=src.index('run(a.binary,q,24,seed+554433,"balanced",end_screen)')
         self.assertLess(screen,append)
         self.assertLess(append,probe,
-                        "A failed paid stochastic probe must not erase a completed screen result")
+                        "A failed paid balanced probe must not erase a completed screen result")
         self.assertEqual(src.count("paid.append(record)"),1)
 
     def test_paid_evidence_is_persisted_before_holdout(self):
@@ -244,13 +246,13 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
                  "rotation":{"priorityList":[{"action":"cast","spellId":42}]},
              }]}]}}
         expected=copy.deepcopy(req)
-        record=paid_rerank_record("cat",req,812.75,105123,1800)
+        record=paid_rerank_record("cat",req,812.75,105123,24)
         self.assertEqual(record["candidate_request"],expected)
         self.assertEqual(record["key"],key("cat",expected))
         self.assertEqual(record["rerank_dps"],812.75)
         self.assertEqual(record["rng_mode"],"balanced")
         self.assertEqual(record["seed"],105123)
-        self.assertEqual(record["iterations"],1800)
+        self.assertEqual(record["iterations"],24)
         self.assertEqual(json.loads(json.dumps(record))["candidate_request"],expected)
         req["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]=999
         self.assertEqual(record["candidate_request"],expected)
