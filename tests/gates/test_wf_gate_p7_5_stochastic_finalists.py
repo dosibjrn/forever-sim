@@ -794,3 +794,32 @@ def test_p75_cli_exposes_balanced_paid_confirmation_receipt(monkeypatch, capsys)
     assert all(len(e) <= 180 for e in record["balanced_finalist_failures"])
     assert record["frozen_stochastic_iterations"] == 1000
     assert record["frozen_stochastic_world_dps"] == 698.8
+
+
+def _run_sibling_gate_policy_regression(filename, test_name, monkeypatch, tmp_path):
+    """Run the P7.3/P7.4 optimizer-policy fixture in this existing CI suite."""
+    from importlib.util import module_from_spec, spec_from_file_location
+    from pathlib import Path
+
+    path = Path(__file__).with_name(filename)
+    spec = spec_from_file_location("_work1_" + filename.removesuffix(".py"), path)
+    assert spec is not None and spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    getattr(module, test_name)(monkeypatch, tmp_path)
+
+
+def test_p73_optimizer_search_is_balanced_before_frozen_stochastic_holdout(
+        monkeypatch, tmp_path):
+    _run_sibling_gate_policy_regression(
+        "test_wf_gate_p7_3_live.py",
+        "test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout",
+        monkeypatch, tmp_path)
+
+
+def test_p74_optimizer_search_is_balanced_before_frozen_stochastic_holdout(
+        monkeypatch, tmp_path):
+    _run_sibling_gate_policy_regression(
+        "test_wf_gate_p7_4_live.py",
+        "test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout",
+        monkeypatch, tmp_path)
