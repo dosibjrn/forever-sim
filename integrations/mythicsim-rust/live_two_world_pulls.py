@@ -91,7 +91,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
                 clock_ns + 100_000_000 if world.queue or world._enemy_motion else None)
             proc.stdin.write(json.dumps(tick, sort_keys=True, allow_nan=False) + "\n")
             proc.stdin.flush()
-            receipt = json.loads(proc.stdout.readline())
+            receipt_line = proc.stdout.readline()
+            if not receipt_line:
+                raise AssertionError(("RUST_TWO_WORLD_NATIVE_EXIT_BEFORE_RECEIPT",
+                                      proc.stderr.read()[-4000:]))
+            receipt = json.loads(receipt_line)
             if (receipt["type"] != "native_rust_world_receipt"
                     or receipt["iteration_index"] != iteration
                     or receipt["native_process_id"] != proc.pid):
