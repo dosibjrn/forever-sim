@@ -196,18 +196,26 @@ def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, r
 
     def distinct_paid_pairs(rows, candidate_index, limit):
         eligible = []
-        # Keep the best *eligible* paid donors, not the first N raw rows:
-        # identical-axis leaders must not hide a distinct paid contender.
+        seen_axes = set()
+        # Cap AFTER both candidate-eligibility and distinct-axis filtering.
+        # Repeated paid gear variants with the same talent/APL must not crowd
+        # out a lower-scored, genuinely paid distinct talent/APL donor.
         for row in sorted(rows, key=lambda row: row[0], reverse=True):
             paid = row[candidate_index]
             if paid == parent:
                 continue
             donor = source.player(paid)
-            if (donor["talentsString"] != player["talentsString"]
-                    or donor["rotation"] != player["rotation"]):
-                eligible.append(donor)
-                if len(eligible) >= limit:
-                    break
+            axes = (donor["talentsString"],
+                    json.dumps(donor["rotation"], sort_keys=True))
+            if (donor["talentsString"] == player["talentsString"]
+                    and donor["rotation"] == player["rotation"]):
+                continue
+            if axes in seen_axes:
+                continue
+            eligible.append(donor)
+            seen_axes.add(axes)
+            if len(eligible) >= limit:
+                break
         return eligible
 
     # Every donor was actually paid by selected Rust + live 2D in this same
