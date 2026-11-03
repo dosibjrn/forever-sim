@@ -5,6 +5,14 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from src.game.model import ActorDefinition, ResourceDefinition
+from src.game.runtime import ActorState, CombatRuntime, TargetState
+from src.game.runtime.go_native_world_damage_ack import (
+    GsimNativeDamageWorldApplier,
+    NativeDamageWorldApplicationError,
+)
+from src.game.runtime.native_step_protocol import snapshot_gsim_world, state_hash
+
 ROOT = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location(
     "native_roots_dot", ROOT / "port_native_entangling_roots_dot.py")
@@ -20,6 +28,7 @@ class NativeRootsDotPortTest(unittest.TestCase):
             "src/classes/druid/prepared/coverage.rs": port.COVERAGE_PATCHES,
             "src/contracts/prepared_v2.rs": port.CONTRACT_PATCHES,
             "src/classes/druid/prepare/export.rs": port.EXPORT_PATCHES,
+            "src/core/fight/world_bridge.rs": port.WORLD_BRIDGE_PATCHES,
         }
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -38,6 +47,12 @@ class NativeRootsDotPortTest(unittest.TestCase):
             self.assertIn("EntanglingRoots {}", (root / "src/contracts/prepared_v2.rs").read_text())
             self.assertIn('"kind": "entangling_roots"', (root / "src/classes/druid/prepare/export.rs").read_text())
             self.assertIn('"entangling_roots",', (root / "src/classes/druid/prepared/coverage.rs").read_text())
+            agent = (root / "src/classes/druid/agent.rs").read_text()
+            bridge = (root / "src/core/fight/world_bridge.rs").read_text()
+            self.assertIn("world_bridge::record_control", agent)
+            self.assertIn('control_id: Some("root".to_owned())', bridge)
+            self.assertIn('"native_control_events": control_events', bridge)
+            self.assertIn("RUST_WORLD_CONTROL_ACK_EVENTS_MISMATCH", bridge)
 
     def test_missing_native_anchor_is_not_silently_accepted(self):
         path = "src/classes/druid/agent.rs"
