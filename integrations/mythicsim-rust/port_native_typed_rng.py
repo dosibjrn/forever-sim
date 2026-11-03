@@ -73,6 +73,10 @@ impl RngMode {
     one(root, "src/core/fight.rs",
         "rng: SimRng::new(prepared.sim.labeled_rng, prepared.sim.seed as u64),",
         "rng: SimRng::new(rng_mode, prepared.sim.labeled_rng, prepared.sim.seed as u64),")
+    # Existing source-native Druid tests intentionally exercise stochastic mode.
+    edit(root, "src/core/fight.rs", [
+        ("DruidAgent::fight(&prepared)", "DruidAgent::fight(&prepared, RngMode::Stochastic)", 3),
+    ])
     for cls in ("mage", "druid", "warlock", "shaman", "paladin", "priest", "rogue", "warrior", "hunter"):
         agent = f"src/classes/{cls}/agent.rs"
         prepared = f"src/classes/{cls}/prepared.rs"
