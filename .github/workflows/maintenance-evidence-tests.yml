@@ -82,6 +82,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/test_wf382_mage_l30_build_delta_p1_tdd.py
           tests/gates/test_p1_native_progress.py
           tests/gates/test_wf_p1_native_blackbox.py
           tests/test_wf469_p1_alignment.py
