@@ -161,7 +161,7 @@ EXPORT_PATCHES = [
 
 WORLD_BRIDGE_PATCHES = [
     ("#[derive(Clone, Serialize)]\nstruct Bridge {",
-     "#[derive(Clone, Serialize)]\nstruct ControlEvent {\n    event_id: String,\n    native_time_ns: i64,\n    duration_ns: i64,\n    control_id: String,\n    source_action_id: String,\n    rank: u32,\n    landed: bool,\n    native_target_index: u32,\n    native_target_unit_index: u32,\n    native_target_label: String,\n}\n\nstruct Bridge {", "CONTROL_EVENT"),
+     "#[derive(Clone, Serialize)]\nstruct ControlEvent {\n    event_id: String,\n    native_time_ns: i64,\n    duration_ns: i64,\n    control_id: String,\n    source_action_id: String,\n    rank: u32,\n    landed: bool,\n    native_target_index: u32,\n    native_target_unit_index: u32,\n    native_target_label: String,\n}\n\n#[derive(Clone, Serialize)]\nstruct Bridge {", "CONTROL_EVENT"),
     ("    event_ordinal: u64,\n    pending: Vec<DamageEvent>,",
      "    event_ordinal: u64,\n    pending: Vec<DamageEvent>,\n    control_event_ordinal: u64,\n    pending_controls: Vec<ControlEvent>,", "BRIDGE_FIELDS"),
     ("        source_hash: source_hash.to_owned(), event_ordinal: 0,\n        pending: Vec::new(),",
