@@ -90,6 +90,9 @@ def test_engine_registry_points_at_ruleset_owned_packages_except_frozen_classic_
     defined = {(d.ruleset, d.class_name): d.engine_module for d in definitions()}
     assert registry._ENGINE_MODULES == defined
     assert defined[('classic', 'mage')] == 'src.classic_mage_leveling_optimizer_v10'
+    # The old ruleset-tree adapter is unused; Classic Mage remains registered
+    # directly to its frozen canonical legacy engine module.
+    assert not (ROOT / 'src/rulesets/classic').exists()
 
     for definition in definitions():
         key = (definition.ruleset, definition.class_name)
