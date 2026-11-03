@@ -21,7 +21,7 @@ from src.game.data.forever import build_game_ir_slice
 from src.game.data.forever.registry import generic_planning_levels
 from src.game.talents import apply_talent_selection, available_talent_points
 from src.game.talent_search import search_talent_allocations, talent_candidate_id
-from src.shared.evaluation import Evaluation
+from src.optimization.evaluation import Evaluation
 from src.version import SOFTWARE_VERSION
 from .class_model import CandidateResult, LevelFrontier
 from .generic_frontier import (GenericTalentBuild, GenericTalentRouteModel,
