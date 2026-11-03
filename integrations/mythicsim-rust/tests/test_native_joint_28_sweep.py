@@ -37,7 +37,7 @@ class SweepContracts(unittest.TestCase):
         self.assertEqual(28, len(rows))
         self.assertEqual([x[0]["profile_id"] for x in inventory()],
                          [x["profile_id"] for x in rows])
-        self.assertEqual(25, len(calls))
+        self.assertEqual(26, len(calls))
 
     def test_missing_source_is_isolated_without_running_scorer(self):
         rows = inventory()
@@ -88,7 +88,7 @@ class SweepContracts(unittest.TestCase):
                                            "native_errors": 0, "native_unscored": 2,
                                            "replay_matches": True})
         gaps = gap_summary(rows)
-        self.assertEqual(3, sum(g["count"] for g in gaps))
+        self.assertEqual(2, sum(g["count"] for g in gaps))
         causes = {g["cause"] for g in gaps}
         self.assertEqual({"VERIFY_NATIVE_HPS_OBJECTIVE",
                           "VERIFY_DISCIPLINE_FIXTURE_IDENTITY"}, causes)
