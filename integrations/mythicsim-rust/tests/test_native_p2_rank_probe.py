@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import time
+from unittest.mock import patch
 from pathlib import Path
 import sys
 import unittest
@@ -14,6 +16,8 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from src.engine_client.native_p2_rank_probe import (  # noqa: E402
     NativeP2ProbeError,
+    NativeRngMode,
+    _simulate_prepared,
     encode_native_druid_talents,
     prepare_native_request,
     parse_native_druid_layout,
@@ -109,6 +113,60 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
         self.assertEqual(result["status"], "INVALID", result)
         self.assertEqual(result["refusal"]["code"], "talents")
         self.assertIn("Moonkin Form", result["reason"])
+
+    def _simulate_with_cli_result(self, returncode, report):
+        with patch(
+            "src.engine_client.native_p2_rank_probe.subprocess.run",
+            return_value=subprocess.CompletedProcess(
+                args=["forever-engine", "sim"], returncode=returncode,
+                stdout=json.dumps(report), stderr="",
+            ),
+        ):
+            return _simulate_prepared(
+                binary_path=Path("/selected/engine/target/debug/forever-engine"),
+                prepared={"sim": {"iterations": 1, "seed": 647003}},
+                rng_mode=NativeRngMode.BALANCED,
+                iterations=1,
+                seed=647003,
+                deadline=time.monotonic() + 60,
+            )
+
+    def test_sim_unsupported_requires_native_refusal_exit_and_complete_coverage(self):
+        report = {
+            "scenario_id": "native-p2-test",
+            "supported": False,
+            "reasons": ["rotation_unsupported: test fixture"],
+            "refusals": [{"code": "rotation_unsupported", "reason": "test fixture"}],
+        }
+        result = self._simulate_with_cli_result(3, report)
+        self.assertEqual(result["status"], "UNSUPPORTED", result)
+        self.assertEqual(result["coverage"], report)
+
+    def test_sim_does_not_infer_unsupported_from_malformed_or_wrong_exit(self):
+        explicit_refusal = {
+            "scenario_id": "native-p2-test",
+            "supported": False,
+            "reasons": ["rotation_unsupported: test fixture"],
+            "refusals": [{"code": "rotation_unsupported", "reason": "test fixture"}],
+        }
+        cases = (
+            (1, explicit_refusal),  # process fault, not the Rust gate-refusal exit
+            (3, {  # refusal exit with a contradictory supported result
+                "scenario_id": "native-p2-test", "supported": True,
+                "reasons": [], "refusals": [],
+            }),
+            (3, {  # incomplete coverage envelope
+                "scenario_id": "native-p2-test", "supported": False,
+                "reasons": ["rotation_unsupported: test fixture"],
+            }),
+        )
+        for returncode, report in cases:
+            with self.subTest(returncode=returncode, report=report):
+                result = self._simulate_with_cli_result(returncode, report)
+                self.assertEqual(result["status"], "ERROR", result)
+                self.assertEqual(
+                    result["reason"], "NATIVE_SIM_FAILED_WITHOUT_STRUCTURED_COVERAGE"
+                )
 
     def test_rank_pair_rejects_changes_outside_the_target_rank_before_execution(self):
         before = {
