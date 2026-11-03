@@ -200,6 +200,7 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
                 "source_path": item["source_path"],
                 "source_sha256": item["source_sha256"],
                 "class_name": item["class_name"],
+                "profile_id_hint": item["profile_id_hint"],
                 "item_count": item["item_count"],
             }
             for item in donor_inventory.get("fixtures", [])
