@@ -53,6 +53,27 @@ class NativeGearAdapterTests(unittest.TestCase):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
         self.assertNotIn(11, adapter.pools.get(0, {}))
 
+    def test_source_observed_same_id_enchant_variant_is_mutable(self):
+        # RED before fix: ID-only pools reported no mutable gear even though
+        # the pinned same-class request had a different exact item entry.
+        source = copy.deepcopy(self.fire)
+        donor = copy.deepcopy(self.fire)
+        donor["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {
+            "id": 10, "enchant": {"effectId": 123}
+        }
+        adapter = NativeGearAdapter("mage", source, [source, donor], self.items)
+        self.assertEqual((0,), adapter.mutable_indices)
+        candidate, audit = adapter.mutate_one(random.Random(2))
+        entry = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]
+        self.assertEqual({"id": 10, "enchant": {"effectId": 123}}, entry)
+        self.assertEqual(10, audit["from_id"])
+        self.assertEqual(10, audit["to_id"])
+        adapter.validate(candidate)
+        unobserved = copy.deepcopy(candidate)
+        unobserved["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["enchant"]["effectId"] = 124
+        with self.assertRaisesRegex(GearRejected, "SOURCE_SLOT"):
+            adapter.validate(unobserved)
+
     def test_no_alternatives_blocks_explicitly(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire], self.items)
         with self.assertRaisesRegex(GearRejected, "NO_SOURCE_BOUNDED_ALTERNATIVE"):
