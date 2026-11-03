@@ -254,8 +254,19 @@ def native_source_control(binary: Path, request: Path, iterations: int, *,
                  if k not in ("FOREVER_GSIM_WORLD_BRIDGE", "FOREVER_GSIM_WORLD_ITERATIONS")}
                  | {"WOWSIM_RNG_MODE": rng_mode},
         )
-        assert completed.returncode == 0, (
-            "NATIVE_SOURCE_CONTROL_FAILED", completed.stderr[-2000:])
+        if completed.returncode != 0:
+            # A real P7.5 source-paid candidate returned nonzero with empty
+            # stderr (M1 #41592501859); the old assertion hid the exit code,
+            # any stdout diagnostic and which source request actually failed.
+            # Preserve the failed candidate's identity for reproducible
+            # debugging; do not relabel it legal, retry, or award a gate PASS.
+            diagnostic = (completed.stderr or completed.stdout or "").strip()
+            raise RuntimeError(
+                "NATIVE_SOURCE_CONTROL_FAILED "
+                f"exit={completed.returncode} "
+                f"request_sha256={hashlib.sha256(reduced.read_bytes()).hexdigest()} "
+                f"output={diagnostic[-800:] or '<empty>'}"
+            )
         result = json.loads(output.read_text())
         assert result["identity"]["engine"] == "forever-engine"
         measured = result["result"]
