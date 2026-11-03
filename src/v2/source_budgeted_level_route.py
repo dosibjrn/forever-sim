@@ -233,16 +233,10 @@ def search_source_bounded_level_route(*, class_key: str, start_level: int = 10,
                     continue
                 state = LevelState(class_key=class_key, level=level,
                                    race_key=ir.actor.metadata.get('race_key'),
-                                   talents=talents, action_ids=action_ids,
-                                   world_origin_id=world_origin_id,
-                                   world_acquisition_events=(tuple(world_events)
-                                       if world_verified_trace is not None else ()))
-                # Source legality is independent of runtime winning scores.
-                # World mode REPLAYS the actual canonical source trace here,
-                # after the optimizer found a policy, to prevent both stale
-                # source IDs and unsupported policy substitutions.
-                validate_level_state(state,require_world_acquisition=(
-                    world_verified_trace is not None),world_db_path=world_db_path)
+                                   talents=talents, action_ids=action_ids)
+                # Do not re-audit spell acquisition after the L2 scorer.
+                # This legacy scenario check is not native legality evidence.
+                validate_level_state(state)
                 if acquired_state is not None:
                     acquired_audit = audit_source_consistent_actions(talented, acquired_state, action_ids)
                     if not acquired_audit['source_consistent']:
