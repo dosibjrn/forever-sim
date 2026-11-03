@@ -2,6 +2,9 @@ name: Work2 — Native Rust joint 28-profile stage-5 sweep
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - work/work2-native-joint-28-sweep-20261103
