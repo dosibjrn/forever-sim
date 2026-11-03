@@ -417,11 +417,11 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         self.assertEqual(11689, repaired[3]["action"]["castSpell"]["spellId"]["spellId"])
 
 
-    def test_exact_warlock_lifetap_zero_dps_receipt_is_sanitized_before_fallback(self):
+    def test_exact_warlock_lifetap_source_conditions_survive_mutation_before_fallback(self):
         # Reduced exact reproducer from stage-5 run #41655733807, artifact
-        # #13241065075: the failed non-paid request had Life Tap 11689 guarded
-        # by dotRemainingTime(25309) <= spellCastTime(25309); its response was
-        # hist={"0": 40}, 3,280 Life Tap casts, and zero damage.
+        # #13241065075: Life Tap 11689 carries source guards referencing other
+        # DoTs. Preserve those exact source action/condition pairs; never turn
+        # a native-positive witness into an unconditional synthetic cast.
         refresh_25309 = {
             "cmp": {
                 "lhs": {"dotRemainingTime": {"spellId": {"spellId": 25309}}},
