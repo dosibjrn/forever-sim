@@ -411,7 +411,7 @@ def run_live(root: Path, class_key: str, level: int, *,
             if full_search and (rerank_elapsed >= 240.0 or early_rerank):
                 next_deep = _next_p74_deep_confirmation(
                     reranked, confirmed, deep_confirmation_attempted,
-                    time.monotonic() - search_start) if full_search else None
+                    rerank_elapsed) if full_search else None
                 next_confirmation = next_deep or (
                     _next_p74_confirmation(
                         reranked, confirmation_attempted,
