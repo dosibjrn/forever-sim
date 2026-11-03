@@ -23,8 +23,7 @@ from .source_checkpoint_web_l0 import load_observations
 from .source_checkpoint_detail_observations import load_detail_observations
 from .source_checkpoint_acquisition import acquisition_frontier
 from .source_indexed_action_coverage import _source_spell_ids
-from .sqlite_talents import DEFAULT_DB
-from src.game.runtime.effect_capabilities import effect_role
+from .source_db_scope import DEFAULT_DB
 from src.shared.leveling.objective import representative_hp
 
 
@@ -55,6 +54,9 @@ def _features_from_atoms(atoms: list[dict]) -> dict:
 
 def _ir_proxy(action) -> dict:
     """Shape-aware optimizer priors from EXISTING GameIR (no class dispatch)."""
+    # The source-only L0 frontier must not load the legacy GameIR runtime until
+    # an executable IR action is actually passed for proxy scoring.
+    from src.game.runtime.effect_capabilities import effect_role
     roles = sorted({effect_role(e) or 'UNSUPPORTED_EFFECT' for e in action.effects})
     numeric = {'direct_damage':0., 'periodic_damage_total':0., 'direct_healing':0.,
                'resource_gain':0., 'on_next_swing_bonus_damage':0.}
