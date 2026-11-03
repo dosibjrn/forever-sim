@@ -127,13 +127,13 @@ fn forever_roots_preparation_uses_native_spell_data_and_improved_rank() {
     let original: Value = serde_json::from_slice(
         &fs::read(directory().join("balance-every-talent-at-max.request.json")).unwrap()
     ).unwrap();
-    for (rank, multiplier) in [('0', 1.0), ('1', 1.25), ('2', 1.5), ('3', 1.75)] {
+    for (rank, multiplier) in [(0, 1.0), (1, 1.25), (2, 1.5), (3, 1.75)] {
         let mut request = original.clone();
         let player = &mut request["raid"]["parties"][0]["players"][0];
-        let mut digits: Vec<char> = player["talentsString"].as_str().unwrap().chars().collect();
-        assert_eq!(digits[6], '3');
-        digits[6] = rank;
-        player["talentsString"] = Value::String(digits.iter().collect());
+        // The all-talents-max fixture is intentionally illegal under Forever:
+        // Predatory Discipline has one rank, not the three in that Go fixture.
+        // Exercise the real legal Forever talent layout with only Roots selected.
+        player["talentsString"] = Value::String(format!("000000{rank}"));
         let prepared = forever_engine::prepare_json(
             &serde_json::to_vec(&request).unwrap(),
             "native-roots-rank",
