@@ -91,8 +91,11 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             raise ValueError("Unverified full-source legality or P7 certification")
         base.update(measured)
         base.setdefault("baseline_paid", 0)
-        base.setdefault("native_paid_total",
-                        base.get("native_paid", 0) + base.get("baseline_paid", 0))
+        base.setdefault("replay_paid", 0)
+        base["native_paid_total"] = (
+            base.get("native_paid", 0) + base.get("baseline_paid", 0)
+            + base.get("replay_paid", 0)
+        )
         base["full_source_legality_certified"] = False
         base["process_gate_pass"] = False
         base["promotable"] = False
@@ -194,8 +197,11 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
     }
     for row in rows:
         row.setdefault("baseline_paid", 0)
-        row.setdefault("native_paid_total",
-                       row.get("native_paid", 0) + row.get("baseline_paid", 0))
+        row.setdefault("replay_paid", 0)
+        row["native_paid_total"] = (
+            row.get("native_paid", 0) + row.get("baseline_paid", 0)
+            + row.get("replay_paid", 0)
+        )
         row["repo_git_sha"] = repo_sha
         row["engine_git_sha"] = engine_sha
         row["native_binary_sha256"] = provenance["binary_sha256"]
@@ -205,8 +211,8 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
     (out / "gaps.json").write_text(json.dumps(gap_summary(rows), indent=2) + "\n")
     lines = ["# Native Rust L60 source-bounded JOINT " + str(stage) + "s",
              "", "Not full legal JOINT, not stochastic holdout, not PROCESS P7.",
-             "", "| Profile | Status | Baseline balanced | Best search candidate | Selected best | Winner | Search paid | Baseline paid | 3-axis paid | Gap |",
-             "|---|---|---:|---:|---:|---|---:|---:|---:|---|"]
+             "", "| Profile | Status | Baseline balanced | Best search candidate | Selected best | Winner | Search paid | Baseline paid | Replay paid | 3-axis paid | Gap |",
+             "|---|---|---:|---:|---:|---|---:|---:|---:|---:|---|"]
     for r in rows:
         def esc(value):
             return str(value if value is not None else "—").replace("|", "\\|").replace("\n", " ")
@@ -214,7 +220,8 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
             r["profile_id"], r["status"], r.get("baseline_balanced_score"),
             r.get("best_search_balanced_screen"), r.get("best_balanced_screen"),
             r.get("selected_winner_source"), r["native_paid"], r.get("baseline_paid", 0),
-            r["three_axis_paid"], r.get("blocker") or r.get("promotion_blocker"),
+            r.get("replay_paid", 0), r["three_axis_paid"],
+            r.get("blocker") or r.get("promotion_blocker"),
         ))) + " |")
     (out / "matrix.md").write_text("\n".join(lines) + "\n")
 
@@ -259,6 +266,7 @@ def main() -> None:
                       "statuses": dict(Counter(r["status"] for r in rows)),
                       "baseline_paid": sum(r.get("baseline_paid", 0) for r in rows),
                       "search_native_paid": sum(r["native_paid"] for r in rows),
+                      "replay_paid": sum(r.get("replay_paid", 0) for r in rows),
                       "native_paid_total": sum(r.get("native_paid_total", r["native_paid"]) for r in rows),
                       "three_axis_paid": sum(r["three_axis_paid"] for r in rows),
                       "promotable": sum(bool(r["promotable"]) for r in rows)},
