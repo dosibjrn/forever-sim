@@ -601,14 +601,14 @@ def test_native_prepared_action_inventory_preserves_native_records_without_filte
             "action_id": {"spell_id": 14282},
             "rank": 1,
             "class_spell": "AimedShot",
-            "flags": ["APL"],
+            "flags": ["SpellFlagAPL"],
             "cast_kind": "cast",
         },
         {
             "action_id": {"spell_id": 13550},
             "rank": 2,
             "class_spell": "SerpentSting",
-            "flags": ["APL"],
+            "flags": ["SpellFlagAPL"],
             "cast_kind": "instant",
         },
         {
@@ -687,13 +687,13 @@ def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypat
             "action_id": {"spell_id": 14282},
             "rank": 1,
             "class_spell": "AimedShot",
-            "flags": ["APL"],
+            "flags": ["SpellFlagAPL"],
         },
         {
             "action_id": {"spell_id": 13550},
             "rank": 2,
             "class_spell": "SerpentSting",
-            "flags": ["APL"],
+            "flags": ["SpellFlagAPL"],
         },
         {
             "action_id": None,
