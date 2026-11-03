@@ -573,6 +573,186 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         self.assertEqual(condition, generated["action"]["condition"])
 
 
+class NativeObjectiveDonorProbeContracts(unittest.TestCase):
+    @staticmethod
+    def cast(spell_id):
+        return {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": spell_id},
+                    "target": {"type": "Self"},
+                }
+            }
+        }
+
+    @staticmethod
+    def native_heal_response(spell_id):
+        return {
+            "result": {
+                "raidMetrics": {
+                    "parties": [{
+                        "players": [{
+                            "actions": [{
+                                "id": {"spellId": spell_id},
+                                "targets": [{"unitIndex": 1, "healing": 125.0}],
+                            }]
+                        }]
+                    }]
+                }
+            }
+        }
+
+    def test_donor_probe_uses_native_hps_receipt_per_talent_build(self):
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassDruid"
+        baseline_player["talentsString"] = "restoration-build-a"
+        baseline_cast = self.cast(5185)
+        baseline_player["rotation"]["priorityList"] = [copy.deepcopy(baseline_cast)]
+
+        donor = copy.deepcopy(baseline)
+        donor_player = donor["raid"]["parties"][0]["players"][0]
+        donor_player["talentsString"] = "restoration-build-b"
+        donor_cast = self.cast(774)
+        donor_player["rotation"]["priorityList"] = [copy.deepcopy(donor_cast)]
+        original = copy.deepcopy(baseline)
+        seen = []
+
+        def fake_score_request(
+            binary, candidate, iterations, seed, rng_mode, deadline, *, objective
+        ):
+            candidate_player = candidate["raid"]["parties"][0]["players"][0]
+            seen.append(copy.deepcopy(candidate))
+            self.assertEqual("HPS", objective)
+            self.assertEqual("balanced", rng_mode)
+            self.assertEqual("restoration-build-b", candidate_player["talentsString"])
+            self.assertEqual(
+                baseline["raid"]["parties"][0]["players"][0]["equipment"],
+                candidate_player["equipment"],
+            )
+            self.assertEqual(baseline["encounter"], candidate["encounter"])
+            self.assertEqual(baseline["simOptions"], candidate["simOptions"])
+            spell_id = candidate_player["rotation"]["priorityList"][0]["action"][
+                "castSpell"
+            ]["spellId"]["spellId"]
+            raw = self.native_heal_response(spell_id)
+            effective = native_payload(candidate, iterations, seed)
+            return ({
+                "score": 42.0,
+                "effective_request_sha256": fingerprint(effective),
+                "raw_response_sha256": fingerprint(raw),
+            }, raw)
+
+        witnesses, receipts = joint._probe_native_objective_donor_witnesses(
+            Path("forever-engine"),
+            baseline,
+            [{"request": donor, "source_path": "fixtures/druid-healer.request.json"}],
+            [baseline_cast["action"]["castSpell"]],
+            iterations=40,
+            seed=731,
+            objective="HPS",
+            score_request=fake_score_request,
+        )
+
+        self.assertEqual(1, len(seen))
+        self.assertEqual(1, len(receipts))
+        self.assertEqual("VALID", receipts[0]["status"])
+        self.assertEqual("fixtures/druid-healer.request.json", receipts[0]["source_path"])
+        self.assertEqual(42.0, receipts[0]["score"])
+        self.assertEqual(
+            [baseline_cast["action"]["castSpell"]],
+            witnesses["restoration-build-a"],
+        )
+        self.assertEqual(
+            [donor_cast["action"]["castSpell"]],
+            witnesses["restoration-build-b"],
+        )
+        self.assertEqual(original, baseline, "Donor probing mutated the reference request")
+        self.assertEqual("restoration-build-b", donor_player["talentsString"])
+
+
+class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
+    @staticmethod
+    def cast(spell_id):
+        return {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": spell_id},
+                    "target": {"type": "Self"},
+                }
+            }
+        }
+
+    def test_hps_candidates_keep_their_own_native_positive_source_cast(self):
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassDruid"
+        baseline_player["talentsString"] = "restoration-build-a"
+        baseline_cast = self.cast(5185)
+        donor_cast = self.cast(774)
+        baseline_player["rotation"]["priorityList"] = [copy.deepcopy(baseline_cast)]
+        donor = copy.deepcopy(baseline)
+        donor_player = donor["raid"]["parties"][0]["players"][0]
+        donor_player["talentsString"] = "restoration-build-b"
+        donor_player["rotation"]["priorityList"] = [copy.deepcopy(donor_cast)]
+
+        class FakeGear:
+            def __init__(self, class_key, reference, source_requests):
+                self.reference = reference
+                self.mutable_indices = [0]
+
+            def validate(self, request_value):
+                return None
+
+            def mutate_one(self, rng):
+                return copy.deepcopy(self.reference), {}
+
+            def mutate_from(self, request_value, rng):
+                return copy.deepcopy(request_value), {}
+
+        witness_map = {
+            "restoration-build-a": [baseline_cast["action"]["castSpell"]],
+            "restoration-build-b": [donor_cast["action"]["castSpell"]],
+        }
+        with patch.object(joint, "NativeGearAdapter", FakeGear):
+            adapter, scope = joint.source_bounded_adapter(
+                "druid",
+                baseline,
+                [baseline, donor],
+                native_objective_witnesses=[baseline_cast["action"]["castSpell"]],
+                native_objective_witnesses_by_talentsString=witness_map,
+                objective="HPS",
+            )
+
+        candidate = copy.deepcopy(baseline)
+        candidate_player = candidate["raid"]["parties"][0]["players"][0]
+        candidate_player["talentsString"] = "restoration-build-b"
+        self.assertFalse(adapter.legal(candidate))
+        self.assertEqual([], scope[
+            "native_positive_objective_witnesses_common_to_selected_talent_builds"
+        ])
+        self.assertEqual(
+            [donor_cast["action"]["castSpell"]],
+            scope["native_positive_objective_witnesses_by_talentsString"][
+                "restoration-build-b"
+            ],
+        )
+
+        with patch.object(joint, "mutate_apl", return_value=[]):
+            generated = adapter.adapters["apl"].cold(random.Random(23), candidate)
+        self.assertEqual(
+            [{"action": {"castSpell": donor_cast["action"]["castSpell"]}}],
+            generated,
+        )
+        candidate_player["rotation"]["priorityList"] = generated
+        self.assertTrue(adapter.legal(candidate))
+
+        candidate_player["rotation"]["priorityList"] = [
+            copy.deepcopy(baseline_cast)
+        ]
+        self.assertFalse(adapter.legal(candidate))
+
+
 class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
     @staticmethod
     def cast(spell_id):
