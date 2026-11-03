@@ -241,16 +241,18 @@ def _probe_native_objective_donor_witnesses(
     iterations: int,
     seed: int,
     objective: str,
+    baseline_apl_source_path: str | None = None,
     outdir: Path | None = None,
     max_probes: int = 12,
     max_variants_per_talent: int = 2,
     score_request=native_score_request,
-) -> tuple[dict, list[dict]]:
-    """Pay exact source-donor APL probes to learn objective-positive casts per build.
+) -> tuple[dict, list[dict], dict]:
+    """Pay native probes for source APLs across source-observed talent builds.
 
-    Each probe keeps the reference scenario and gear, replacing only the talent
-    string and APL with an exact same-class source request. MythicSim remains the
-    sole authority for preparation, legality and the measured objective.
+    First cross each alternate source talent build with the reference's exact
+    source APL. Then try each donor's own APL as a fallback. APL/talent
+    combinations enter the candidate domain only after MythicSim accepts the
+    exact request and returns an objective-positive action receipt.
     """
     objective = str(objective).upper()
     objective_metric_path(objective)
@@ -264,18 +266,66 @@ def _probe_native_objective_donor_witnesses(
     seen = set()
     attempts_by_talent = {}
     probes = []
+    positive_apls_by_talent = {}
     probe_dir = None
     if outdir is not None:
         probe_dir = Path(outdir) / "donor_probes"
         probe_dir.mkdir(parents=True, exist_ok=True)
 
-    for source_record in source_request_records:
+    # The baseline APL is a source-observed axis in its own right. Probe it
+    # against each alternate source talent build before donor-specific APLs;
+    # otherwise damage-oriented donor APLs can hide reachable healing builds.
+    cross_build_records = []
+    cross_build_talents = set()
+    if isinstance(baseline_apl, list) and baseline_apl:
+        for source_record in source_request_records:
+            if isinstance(source_record, dict) and isinstance(source_record.get("request"), dict):
+                source_request = source_record["request"]
+                source_path = source_record.get("source_path")
+            else:
+                source_request = source_record
+                source_path = None
+            if not isinstance(source_request, dict):
+                continue
+            try:
+                source_player = player(source_request)
+            except (KeyError, IndexError, TypeError, ValueError):
+                continue
+            if source_player.get("class") != original.get("class"):
+                continue
+            talent = source_player.get("talentsString", MISSING_TALENT_STRING)
+            if not (isinstance(talent, str) or talent is None
+                    or talent == MISSING_TALENT_STRING):
+                continue
+            if talent == baseline_talent or talent in cross_build_talents:
+                continue
+            cross_build_talents.add(talent)
+            cross_request = copy.deepcopy(reference)
+            cross_player = player(cross_request)
+            if talent == MISSING_TALENT_STRING:
+                cross_player.pop("talentsString", None)
+            else:
+                cross_player["talentsString"] = copy.deepcopy(talent)
+            cross_player["rotation"]["priorityList"] = copy.deepcopy(baseline_apl)
+            cross_build_records.append({
+                "request": cross_request,
+                "source_path": source_path,
+                "apl_source_path": baseline_apl_source_path or "REFERENCE_SOURCE_APL",
+                "probe_kind": "REFERENCE_APL_CROSS_BUILD",
+            })
+
+    ordered_source_records = cross_build_records + source_request_records
+    for source_record in ordered_source_records:
         if isinstance(source_record, dict) and isinstance(source_record.get("request"), dict):
             source_request = source_record["request"]
             source_path = source_record.get("source_path")
+            apl_source_path = source_record.get("apl_source_path", source_path)
+            probe_kind = source_record.get("probe_kind", "SOURCE_DONOR_APL")
         else:
             source_request = source_record
             source_path = None
+            apl_source_path = None
+            probe_kind = "SOURCE_DONOR_APL"
         if not isinstance(source_request, dict):
             continue
         try:
@@ -340,12 +390,23 @@ def _probe_native_objective_donor_witnesses(
                 if key not in known:
                     selected.append(copy.deepcopy(witness))
                     known.add(key)
+            if witnesses:
+                known_apls = {
+                    fingerprint(actions)
+                    for actions in positive_apls_by_talent.get(talent, [])
+                }
+                if apl_sha not in known_apls:
+                    positive_apls_by_talent.setdefault(talent, []).append(
+                        copy.deepcopy(source_actions)
+                    )
             if probe_dir is not None:
                 (probe_dir / (request_sha + ".response.json")).write_text(
                     json.dumps(raw, indent=2) + "\n"
                 )
             probes.append({
                 "source_path": source_path,
+                "apl_source_path": apl_source_path,
+                "probe_kind": probe_kind,
                 "talentsString": (
                     "<MISSING_TALENT_STRING>"
                     if talent == MISSING_TALENT_STRING else talent
@@ -365,6 +426,8 @@ def _probe_native_objective_donor_witnesses(
             )
             probes.append({
                 "source_path": source_path,
+                "apl_source_path": apl_source_path,
+                "probe_kind": probe_kind,
                 "talentsString": (
                     "<MISSING_TALENT_STRING>"
                     if talent == MISSING_TALENT_STRING else talent
@@ -373,7 +436,7 @@ def _probe_native_objective_donor_witnesses(
                 "error": str(exc)[-500:],
                 "failure_receipt": failure,
             })
-    return witnesses_by_talent, probes
+    return witnesses_by_talent, probes, positive_apls_by_talent
 
 
 def source_bounded_adapter(
@@ -382,6 +445,7 @@ def source_bounded_adapter(
     native_objective_witnesses: list[dict] | None = None,
     native_damage_witnesses: list[dict] | None = None,
     native_objective_witnesses_by_talentsString: dict | None = None,
+    native_objective_source_apls_by_talentsString: dict | None = None,
     objective: str = "DPS",
 ) -> tuple[JointCandidateAdapter, dict]:
     """Use same-class source proposals; Rust owns all build legality."""
@@ -463,6 +527,44 @@ def source_bounded_adapter(
         # Missing talentString is a source-observed candidate too. Preserve
         # its absence in the request; only MythicSim can accept or refuse it.
         talents.add(source_talent)
+
+    # Add only source APL variants that were paid and returned a native-positive
+    # objective witness for this exact talent build. This permits an independently
+    # observed APL axis to combine with a talent donor without guessing legality.
+    native_objective_source_apl_hashes = {}
+    for source_talent, apl_variants in (
+        native_objective_source_apls_by_talentsString or {}
+    ).items():
+        if source_talent not in source_talents or not isinstance(apl_variants, list):
+            continue
+        hashes = []
+        source_casts = source_casts_by_talentsString.setdefault(source_talent, set())
+        source_apl = source_apl_by_talentsString.setdefault(source_talent, [])
+        source_apl_keys = source_apl_keys_by_talentsString.setdefault(source_talent, set())
+        for priority_list in apl_variants:
+            if not isinstance(priority_list, list) or not priority_list:
+                continue
+            apl_sha = fingerprint(priority_list)
+            if apl_sha not in hashes:
+                hashes.append(apl_sha)
+            for entry in priority_list:
+                if not isinstance(entry, dict):
+                    continue
+                action = entry.get("action", {})
+                if not isinstance(action, dict):
+                    continue
+                entry_key = json.dumps(entry, sort_keys=True, separators=(",", ":"))
+                if entry_key not in source_apl_keys:
+                    source_apl.append(copy.deepcopy(entry))
+                    source_apl_keys.add(entry_key)
+                cast = action.get("castSpell")
+                if isinstance(cast, dict) and cast:
+                    source_casts.add(json.dumps(
+                        cast, sort_keys=True, separators=(",", ":")
+                    ))
+        if hashes:
+            native_objective_source_apl_hashes[source_talent] = hashes
+
     talents = sorted(talents, key=talent_sort_key)
     original_talents = original["talentsString"]
     if original_talents not in source_talents or len(talents) < 2:
@@ -808,6 +910,13 @@ def source_bounded_adapter(
             talent_label(talent): len(source_apl_by_talentsString[talent])
             for talent in sorted(source_apl_by_talentsString, key=talent_sort_key)
         },
+        "native_positive_objective_source_apl_sha256_by_talentsString": {
+            talent_label(talent): hashes
+            for talent, hashes in sorted(
+                native_objective_source_apl_hashes.items(),
+                key=lambda row: talent_sort_key(row[0]),
+            )
+        },
         "common_source_casts": [
             json.loads(key) for key in sorted(common_cast_keys)
         ],
@@ -860,6 +969,7 @@ def execute(profile_id: str, inventory: list, *,
         "native_paid": 0, "baseline_paid": 0, "native_paid_total": 0,
         "native_donor_probe_attempts": 0, "native_donor_probe_paid": 0,
         "native_donor_probe_positive_builds": 0,
+        "native_donor_probe_positive_apl_builds": 0,
         "native_donor_probe_receipts": [],
         "baseline_balanced_score": None,
         "baseline_effective_request_sha256": None,
@@ -973,15 +1083,18 @@ def execute(profile_id: str, inventory: list, *,
             if fixture.get("class_name") == player(reference).get("class")
             and isinstance(fixture.get("request"), dict)
         )
-        witnesses_by_talent, probe_receipts = _probe_native_objective_donor_witnesses(
-            binary,
-            reference,
-            source_request_records,
-            native_objective_witnesses,
-            iterations=iterations,
-            seed=seed,
-            objective=objective,
-            outdir=outdir,
+        witnesses_by_talent, probe_receipts, source_apls_by_talent = (
+            _probe_native_objective_donor_witnesses(
+                binary,
+                reference,
+                source_request_records,
+                native_objective_witnesses,
+                iterations=iterations,
+                seed=seed,
+                objective=objective,
+                baseline_apl_source_path=inv.get("source_path"),
+                outdir=outdir,
+            )
         )
         probe_paid = sum(item.get("status") == "VALID" for item in probe_receipts)
         row["native_donor_probe_attempts"] = len(probe_receipts)
@@ -995,7 +1108,9 @@ def execute(profile_id: str, inventory: list, *,
             if talent != baseline_talent
         )
         row["native_donor_probe_receipts"] = probe_receipts
+        row["native_donor_probe_positive_apl_builds"] = len(source_apls_by_talent)
         adapter_kwargs["native_objective_witnesses_by_talentsString"] = witnesses_by_talent
+        adapter_kwargs["native_objective_source_apls_by_talentsString"] = source_apls_by_talent
         try:
             adapter, scope = source_bounded_adapter(
                 cls, reference, same_class, **adapter_kwargs
