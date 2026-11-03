@@ -27,6 +27,19 @@ def patch(path: Path, edits: list[tuple[str, str]]) -> None:
 
 def port(root: Path) -> None:
     rng = root / "src/core/rng.rs"
+    existing = rng.read_text()
+    if "pub enum RngMode { Balanced, Stochastic }" in existing:
+        # The authorized fork-sync Action may run again on an already patched
+        # integration branch. Accept only the COMPLETE typed runtime contract.
+        main = (root / "src/main.rs").read_text()
+        fight = (root / "src/core/fight.rs").read_text()
+        if ("WOWSIM_RNG_MODE" in existing
+                or "fn new(labeled: bool, seed: u64, mode: RngMode)" not in existing
+                or "rng_mode: crate::core::rng::RngMode" not in fight
+                or "sim and bench require explicit --rng-mode" not in main):
+            raise AssertionError("PARTIAL_RUST_TYPED_RNG_PATCH")
+        print("RUST_EXPLICIT_REQUIRED_RNG_PORT_ALREADY_PRESENT")
+        return
     patch(rng, [
         ("pub(crate) enum SimRng {", """#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RngMode { Balanced, Stochastic }
