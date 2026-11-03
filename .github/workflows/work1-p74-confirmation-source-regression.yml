@@ -1,4 +1,4 @@
-name: Work1 P7.4 confirmation source regression (one-shot)
+name: Work1 P7.4 confirmation source regression (one-shot rerun)
 on:
   push:
     branches:
