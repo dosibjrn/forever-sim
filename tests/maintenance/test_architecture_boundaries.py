@@ -297,3 +297,46 @@ else:
         f"model import boundary / legacy public exports failed: "
         f"{result.stdout}\\n{result.stderr}"
     )
+
+def test_runtime_package_lightweight_events_defer_legacy_simulator():
+    """Event-only imports stay independent; public legacy API still resolves."""
+    import subprocess
+    import sys
+
+    source = """
+import sys
+import src.game.runtime as runtime
+from src.game.runtime.events import CombatEvent, EventQueue
+assert 'src.game.runtime.simulator' not in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+assert runtime.CombatEvent is CombatEvent
+assert runtime.EventQueue is EventQueue
+assert 'src.game.runtime.simulator' not in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+
+from src.game.runtime import ActorState, TargetState
+from src.game.runtime.state import ActorState as StateActor, TargetState as StateTarget
+assert ActorState is StateActor and TargetState is StateTarget
+assert 'src.game.runtime.simulator' not in sys.modules
+
+from src.game.runtime import CombatRuntime, execute_action
+from src.game.runtime.simulator import CombatRuntime as DirectRuntime, execute_action as direct_action
+assert CombatRuntime is DirectRuntime and execute_action is direct_action
+assert 'src.game.runtime.simulator' in sys.modules
+assert 'src.game.model.ir' in sys.modules
+assert {'CombatEvent', 'EventQueue', 'ActorState', 'TargetState', 'CombatRuntime'}.issubset(dir(runtime))
+try:
+    runtime.NotAnExport
+except AttributeError:
+    pass
+else:
+    raise AssertionError('unknown runtime export must raise AttributeError')
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"runtime event import / compatibility exports failed: "
+        f"{result.stdout}\\n{result.stderr}"
+    )
