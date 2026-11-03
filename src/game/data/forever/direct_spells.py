@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
-from src.game.model.overlay import FieldOverlay, apply_numeric_field_overlays
+from src.shared.field_overlays import FieldOverlay, apply_numeric_field_overlays
 
 if TYPE_CHECKING:
     from src.game.model.ir import ActorDefinition, GameIRSlice, ResourceDefinition
