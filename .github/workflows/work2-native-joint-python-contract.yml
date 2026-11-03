@@ -1,0 +1,35 @@
+name: Work2 — Native JOINT Python contract
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/work2-native-joint-python-contract.yml
+      - integrations/mythicsim-rust/native_joint_two_class.py
+      - integrations/mythicsim-rust/tests/test_native_joint_two_class.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work2-native-joint-python-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-joint-python:
+    name: Exact-head native JOINT Python regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run native JOINT wrapper unit tests
+        run: python integrations/mythicsim-rust/tests/test_native_joint_two_class.py -v
