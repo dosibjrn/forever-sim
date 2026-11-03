@@ -3,6 +3,8 @@ on:
   push:
     branches: [work/work1-p74-deep-paid-confirmation-20261103]
     paths: [.github/workflows/work1-p74-deep-full-once.yml]
+# Focused exact-source 30/30 PASS: Actions #41564422776 at 77ad25e71f68db65c507d8c318e73ada824c486d.
+# Run this full gate only once on the fixed producer; no M1 writes.
 permissions:
   contents: read
 jobs:
