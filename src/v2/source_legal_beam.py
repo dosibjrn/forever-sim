@@ -16,7 +16,7 @@ from src.game.talent_search import executable_talent_definitions
 from src.game.talents import validate_talent_selection, available_talent_points
 from src.optimization.point_frontier import generate_point_frontier
 from src.optimization.talent_search import TalentAllocationOption, talent_candidate_id
-from src.shared.leveling.objective import representative_hp
+from src.scenarios.leveling_targets import representative_hp
 from src.v2.source_joint_discovery import _gear_envelope
 from src.v2.source_staged_joint_search import _diverse_gear_indices
 

@@ -17,7 +17,7 @@ from src.game.gear import apply_gear_selection
 from src.game.multi_pull import evaluate_repeated_pulls
 from src.game.talent_search import enumerate_legal_talent_allocations, talent_candidate_id
 from src.game.talents import apply_talent_selection, validate_talent_selection
-from src.shared.leveling.objective import representative_hp
+from src.scenarios.leveling_targets import representative_hp
 from src.v2.source_joint_discovery import _gear_envelope
 from src.v2.source_mode_search import discover_mode_paths
 from src.v2.source_policy_search import synthesize_source_policies

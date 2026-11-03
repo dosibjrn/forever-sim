@@ -12,6 +12,8 @@ Normally collected tests for repository structure and command integration.
 | `test_import_feral_p7_archives.py` | Historical raw ZIP import and path traversal safety |
 | `test_audit_feral_p7_holdout.py` | Historical stochastic holdout and provenance audit invariants |
 | `test_recovered_feral_p7_raw.py` | Exact raw evidence bytes and non-certification safeguards |
+| `test_scenario_leveling_targets_boundary.py` | Scenario-owned Classic-proxy target HP and compatibility imports |
+| `test_scenario_timing_boundary.py` | Scenario-owned solo-leveling travel policy and compatibility imports |
 
 The original four launcher/layout tests retain their assertions; the only source change
 in each is `ROOT = Path(__file__).resolve().parents[2]` (was `parents[1]`).

@@ -14,7 +14,7 @@ from time import monotonic
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_search import talent_candidate_id
 from src.game.talents import validate_talent_selection
-from src.shared.leveling.objective import representative_hp
+from src.scenarios.leveling_targets import representative_hp
 from src.v2.generic_frontier import GenericTalentBuild, GenericTalentRouteModel
 from src.v2.path_dp import LevelNode, solve_path_dp
 from src.v2.source_joint_discovery import _gear_envelope

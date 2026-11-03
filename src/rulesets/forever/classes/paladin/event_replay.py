@@ -18,6 +18,7 @@ from typing import Any
 
 from src.shared.combat import EventQueue
 from src.shared.leveling import objective as leveling
+from src.scenarios.leveling_targets import representative_hp
 from .gear import GearSetup, archetypes, apply_body_item_names
 from .policy import ManaPlan, PriorityPolicy, MANA_PLANS, POLICIES
 from .talents import Talents
@@ -222,7 +223,7 @@ def replay_pack(level:int,talents:Talents,profile:str,gear:GearSetup,pull_size:i
         hp=float(player_hp if start_hp is None else min(player_hp,max(0.0,start_hp))),
         mana=float(mana_pool if start_mana is None else min(mana_pool,max(0.0,start_mana))),
         mana_pool=float(mana_pool),
-        mobs=[float(leveling.representative_hp(level)) for _ in range(n)],
+        mobs=[float(representative_hp(level)) for _ in range(n)],
     )
     floor=float(player_hp*policy.min_hp_fraction if min_hp is None else max(0.0,min(player_hp,min_hp)))
     heal_model=smooth._heal_model(level,talents,gear,incoming["landed_swings_per_mob"]*((n+1)/2.0))

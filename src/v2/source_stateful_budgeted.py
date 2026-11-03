@@ -157,7 +157,7 @@ def _resource_flow_proxy(candidate, action_map, ir, filler_count):
 
 
 def _l0_proxy(candidate, action_map, ir, level, *, actor_state=None):
-    from src.shared.leveling.objective import representative_hp
+    from src.scenarios.leveling_targets import representative_hp
     spell_power = float(ir.actor.base_stats.get('spell_power', 0.0))
     actions = [action_map[a] for a in candidate.prefix]
     if actor_state is None:
@@ -305,7 +305,7 @@ def source_execution_context(ir, *, schedule_incoming_attacks: bool = True) -> s
     RNG semantics all participate. Never reuse previous L2 evidence after any
     of these inputs changes.
     """
-    from src.shared.leveling.objective import representative_hp
+    from src.scenarios.leveling_targets import representative_hp
     level = int(ir.actor.metadata['level'])
     return sha256(dumps({'ir': ir.as_dict(), 'engine': SOFTWARE_VERSION,
                          'scenario': 'representative_hp+incoming+combat_recovery_survival',
@@ -645,7 +645,7 @@ def run_source_stateful_budgeted(*, class_key: str, level: int,
                             'events': events, 'cpu_ns': cpu}
                 hp = float(details['target_health_remaining'])
                 elapsed = max(.05, float(details['actor_time_s']))
-                from src.shared.leveling.objective import representative_hp
+                from src.scenarios.leveling_targets import representative_hp
                 start_hp = float(representative_hp(level))
                 dealt = max(0.0, start_hp - hp)
                 filler = _analytic_fallback(candidate.fallback, action_map, ir,

@@ -42,7 +42,7 @@ from src.game.stat_sensitivity import measure_stat_sensitivities
 from src.optimization.fixed_point import run_optimizer_fixed_point
 from src.game.talents import apply_talent_selection
 from src.game.talent_search import search_talent_allocations, talent_candidate_id
-from src.shared.leveling.objective import representative_hp
+from src.scenarios.leveling_targets import representative_hp
 from src.version import SOFTWARE_VERSION
 from .backend_decision import DecisionRecord
 
@@ -157,7 +157,7 @@ def _policy_combat_evaluation(ir_slice, *, level: int, policy_override=None,
         f"canonical_leveling_target_L{int(level)}", target_hp,
         **defense,
         source_status="source_backed_canonical_leveling_reference",
-        authority="src.shared.leveling.objective.MOB_BASE_HP",
+        authority="src.scenarios.leveling_targets.MOB_BASE_HP",
         source_basis="CMaNGOS warrior-class BaseHealthExp0 ordinary melee target curve",
         level=int(level),
     )
@@ -856,7 +856,7 @@ def _fixed_action_combat_evaluation(ir_slice, *, level: int):
     target = TargetState.with_health(
         f"canonical_leveling_target_L{int(level)}", target_hp,
         source_status="source_backed_canonical_leveling_reference",
-        authority="src.shared.leveling.objective.MOB_BASE_HP",
+        authority="src.scenarios.leveling_targets.MOB_BASE_HP",
         source_basis="CMaNGOS warrior-class BaseHealthExp0 ordinary melee target curve",
         level=int(level),
     )

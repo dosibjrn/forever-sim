@@ -19,7 +19,7 @@ from src.game.policy import execute_priority_policy, opening_for_persistent_acto
 from src.game.recovery import recover_actor_to_full
 from src.game.recovery_between_pulls import BetweenPullPolicy, between_pull_recovery
 from src.game.data.forever.target_combat_source import target_combat_metadata
-from src.shared.leveling.objective import representative_hp
+from src.scenarios.leveling_targets import representative_hp
 from src.v2.source_stateful_budgeted import _make_policy, _condition_from_record
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_budgeted_joint_talents import run_source_budgeted_joint_talents
@@ -429,7 +429,7 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
                               for aid in long_actions}
         target=TargetState.with_health('canonical_leveling_target_L%d_mob%d'%(level, layout.path_indices[index]),float(representative_hp(level)),
             **metadata,source_status='source_backed_canonical_leveling_reference',
-            authority='src.shared.leveling.objective.MOB_BASE_HP',
+            authority='src.scenarios.leveling_targets.MOB_BASE_HP',
             source_basis='CMaNGOS warrior-class BaseHealthExp0 ordinary melee target curve',level=level)
         carried_hot_ticks_at_pull+=sum(e.kind=='PeriodicTick' for e in actor.pending_actor_periodic_events)
         runtime=CombatRuntime(actor=actor,target=target,
