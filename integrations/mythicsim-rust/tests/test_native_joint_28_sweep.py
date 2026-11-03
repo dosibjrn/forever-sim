@@ -51,6 +51,17 @@ class SweepContracts(unittest.TestCase):
                                 ("priest/discipline", "BLOCKED_SPEC_IDENTITY")):
             self.assertEqual(status, preflight(profile, {}, {}, 5)[0])
 
+    def test_native_paid_total_counts_baseline_search_and_replay(self):
+        rows = build_matrix(
+            inventory(), stage=5,
+            run=lambda _: {
+                "status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
+                "native_paid": 2, "baseline_paid": 1, "replay_paid": 1,
+                "three_axis_paid": 1, "full_source_legality_certified": False,
+            },
+        )
+        self.assertEqual(4, rows[0]["native_paid_total"])
+
     def test_source_bounded_paid_rows_are_never_promotable(self):
         rows = build_matrix(inventory(), stage=5,
                             run=lambda _: {"status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
@@ -104,7 +115,7 @@ class SweepContracts(unittest.TestCase):
                 "status": "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY",
                 "native_paid": 2,
                 "baseline_paid": 1,
-                "native_paid_total": 3,
+                "replay_paid": 1,
                 "baseline_balanced_score": 101.25,
                 "best_search_balanced_screen": 111.5,
                 "best_balanced_screen": 111.5,
@@ -121,8 +132,12 @@ class SweepContracts(unittest.TestCase):
             self.assertEqual("stochastic", provenance["holdout_rng_mode"])
             self.assertEqual("NOT_RUN_STAGE_5", provenance["holdout_status"])
             self.assertFalse(provenance["process_p7_pass"])
+            matrix_rows = json.loads((out / "matrix.json").read_text())
+            self.assertEqual(4, matrix_rows[0]["native_paid_total"])
+            self.assertEqual(1, matrix_rows[0]["replay_paid"])
             matrix = (out / "matrix.md").read_text()
             self.assertIn("Baseline balanced", matrix)
+            self.assertIn("Replay paid", matrix)
             self.assertIn("Best search candidate", matrix)
             self.assertIn("Selected best", matrix)
             self.assertIn("search", matrix)
