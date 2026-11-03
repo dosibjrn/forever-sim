@@ -34,7 +34,7 @@ from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
 def _cold_joint(base, source, pools, rng, *, elite=None, enchant_pools=None, repair_axes=None):
-    """Legal source build: cold discovery or mutation of this search's paid winner.
+    """Native candidate proposal: cold discovery or mutation of this search's paid winner.
 
     The seed for a fresh search is always independent of the reference and of
     P7.1-P7.4 winners. Later elite mutations derive only from candidates that
@@ -451,7 +451,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     validator = source.GearValidator(catalogue, items, enchants, base)
     rng = random.Random(670)
     best = None  # three-fight balanced top result, only a diagnostic
-    balanced_elites = []  # 24 distinct source-legal paid joint candidates
+    balanced_elites = []  # 24 distinct native-accepted paid joint candidates
     balanced_finalists = []  # 2x3 balanced paid native+2D screens
     rerank_seen = set()
     confirmed = set()
@@ -469,21 +469,22 @@ def run_live(root: Path, class_key: str, level: int, *,
     search_start = time.monotonic()
     search_deadline = search_start + 300.0
     try:
-        # Full search uses every source/Rust-admitted catalogue item per slot,
-        # not just the 80 highest heuristic scores. Cold generator explores
-        # this pool without seeding the saved build. After the first actually
-        # paid winner, use its existing source mutation operator for 4/5 of
-        # later proposals and fresh independent cold discovery for 1/5.
+        # Full search uses every source-catalogue item ID per slot as a proposal,
+        # not just the 80 highest heuristic scores. Cold generation never seeds
+        # the saved build. MythicSim --gate alone admits or rejects complete
+        # gear, enchant and talent combinations.
         # The item pool is proposal-only: the selected native --gate call
         # decides candidate legality. Source slot/stat columns shape proposals;
         # no Python item validator may remove a candidate before native prepare.
-        # Enchant options remain sourced from the pinned engine metadata.
+        # Every pinned-engine enchant ID is a proposal; native prepare/sim
+        # decides slot compatibility and supported effects.
         pools, _ = source.candidate_pool(
             validator, limit=None if full_search else 15,
             native_authoritative=True,
             **({"independent_enchants": True} if full_search else {}))
-        enchant_pools = (source.source_enchant_pools(validator, pools)
-                         if full_search else None)
+        enchant_pools = (source.source_enchant_pools(
+            validator, pools, native_authoritative=True)
+            if full_search else None)
         distance = source.player(base)["distanceFromTarget"]
         while True:
             elapsed = time.monotonic() - search_start if full_search else 0.0
