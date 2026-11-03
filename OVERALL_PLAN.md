@@ -1,8 +1,16 @@
-# WoW Forever — OVERALL PLAN v6 (APPROVED)
+# WoW Forever — OVERALL PLAN v7 (APPROVED)
 
-**Date:** 2026-11-03 (v6 amendment to v5 approved 2026-10-15)  
-**Status:** **APPROVED, IMMUTABLE.** v5 product scope was approved 2026-10-15. v6 is the owner-approved 2026-11-03 amendment retiring P1/P2 formal acceptance; the prior v5 text remains in Git history.  
+**Date:** 2026-11-04 (v7 architecture amendment to v6 approved 2026-11-03)  
+**Status:** **APPROVED, IMMUTABLE.** v5 product scope was approved 2026-10-15; v6 retired P1/P2 formal acceptance on 2026-11-03. v7 is the owner's explicit 2026-11-04 architectural amendment defining the single source of game data and optimizer alternatives. Previous versions remain in Git history.  
 **Purpose:** Define WHAT is built, the end-state and precisely when DONE DONE occurs. No gate implementation procedure or changeable milestone ordering belongs here; those live in PROCESS and milestone plans.
+
+## Owner-approved v7 single-source architecture amendment (2026-11-04)
+
+**MythicSim Rust is the source of game facts and available optimization choices.** Its pinned, maintained fork owns items/equipment and enchants, spells and ranks, class talent trees/rank limits and eligibility, available APL actions/conditions, full-build legality and Warcraft mechanics. These data and relevant preparation/spellbook information already exist in Rust; reuse them rather than copy them into Forever. Their existence does **not** imply that an exhaustive legal-options enumeration API is already implemented or that all restrictions are verified: implement any *actually needed* missing option/capability or legality in the Rust fork, test it there and promote a tested exact SHA.
+
+**Forever owns the scenario and generic optimizer only:** it requests native available alternatives for the class/level/spec/scenario, proposes and recombines gear × enchants × talents × APL candidates, asks the selected pinned native engine to prepare/validate/execute whole builds, and scores/searches actual results. No permanent Python GameIR, copied SQLite item source, class-specific Python talent eligibility or duplicate Warcraft game-rule catalogue. Retired P1/P2-only code is deleted, not rebuilt as a new Rust/Python proof pipeline. Migrate *live* P3–P7.5/optimizer consumers without breaking them before deleting transitional dependencies. The currently approved Go execution alternative is not silently outlawed by the Rust-owned target architecture.
+
+**This is an ownership/architecture decision, not a new completion gate.** The existing 148 checkpoints, nine P3–P7.5 gates per checkpoint, 30/300-second searches, real world/100-mob execution, P7 native↔2D causality and 1,000-fight stochastic holdout remain exactly as approved. Missing options APIs are implementation work, not an additional proof requirement or a reason to rerun already accepted, unaffected gates.
 
 ## Owner-approved v6 scope amendment (2026-11-03)
 
@@ -12,7 +20,7 @@ Retire P1 ability and P2 talent gates from formal checkpoint acceptance. The act
 
 Build a generic, source-driven WoW Forever 1–60 solo leveling simulator/optimizer for all nine classes. Given class, level, legal constraints and a pinned Forever ruleset, automatically discover and explain the best **known executable** combination of talents, equipment, combat/rotation policy, pull strategy and paid recovery/survival. Optimize comparable **real elapsed time per mob/route**, not only DPS, arbitrary XP proxies, or a preset guide build.
 
-A user must be able to inspect actual selected gear with item identities and scored alternatives; talent ranks and next talent; the actual legal actions/rotations and their measured score; stat weights; encounter, survival and recovery; and why the chosen configuration beat benchmark alternatives. The engine must be generic; game facts come from canonical pinned source data rather than class-specific hardcoded winner builds.
+A user must be able to inspect actual selected gear with item identities and scored alternatives; talent ranks and next talent; the actual legal actions/rotations and their measured score; stat weights; encounter, survival and recovery; and why the chosen configuration beat benchmark alternatives. The engine must be generic; game facts and the optimizer's available alternatives come from the exact-SHA-pinned MythicSim Rust source of truth, not class-specific Python catalogues or hardcoded winner builds.
 
 ## Current first DONE DONE target — 148 certified checkpoints
 
@@ -39,6 +47,7 @@ Eventually enable coherent outputs for **all nine classes × levels 1–60** (**
 4. Comparisons are on consistent character level, target/encounter, ruleset version, scenario and scorer; legacy references held out from search.
 5. The final result must be inspectable and independently reproducible.
 6. Completion is a counted validated *user-facing capability*, not release number, elapsed engineering hours, test count or source-scrape volume.
+7. One Warcraft game-data/rules authority: pinned MythicSim Rust supplies candidate options and decides whole-build legality; Forever owns generic exploration and scoring without a replacement GameIR.
 
 ## Subordinate editable execution instruments
 
@@ -56,4 +65,5 @@ As of the source records inspected 2026-10-15, strictly certified coverage was *
 
 - This v5 text was drafted following the user's explicit governance instructions on 2026-10-15.
 - **v6 owner-approved 2026-11-03:** retire P1/P2 formal acceptance; keep 148 checkpoint identities and the remaining nine active gates.
+- **v7 owner-approved 2026-11-04:** pinned MythicSim Rust supplies available optimizer alternatives and owns game-data/legality; Forever handles scenario/search/scoring, removes GameIR and redundant source rules without changing any gate.
 - **Approved explicitly by user 2026-10-15:** "Je, W" in reply to the assistant asking "Hyväksytkö Overall Plan v5:n uudeksi pyhäksi lähtötasoksi?". This approved copy is frozen; do not modify without new explicit permission.
