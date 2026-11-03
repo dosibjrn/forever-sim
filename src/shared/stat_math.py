@@ -8,9 +8,10 @@ from math import isfinite
 
 
 def converted_stat_amount(fact: dict, value: float) -> float:
-    v = max(0.0, float(value))
-    if not isfinite(v):
+    raw_value = float(value)
+    if not isfinite(raw_value):
         raise ValueError('NONFINITE_SOURCE_STAT_CONVERSION_INPUT')
+    v = max(0.0, raw_value)
     coefficient = float(fact['coefficient'])
     if not isfinite(coefficient) or coefficient <= 0:
         raise ValueError('INVALID_SOURCE_STAT_CONVERSION_COEFFICIENT')
