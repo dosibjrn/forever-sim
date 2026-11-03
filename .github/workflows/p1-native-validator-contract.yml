@@ -5,7 +5,7 @@ on:
       - tools/p1_native_source_inventory.py
       - tools/wf_p1_native_scope_matrix.py
       - tools/wf_p1_native_effects.py
-      - tests/test_wf_p1_native_blackbox.py
+      - tests/gates/test_wf_p1_native_blackbox.py
       - docs/gates/P1_VALIDATION.md
       - config/gates/p1_scenario_applicability_v1.json
       - PROCESS.md
@@ -25,6 +25,6 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Validate native source inventory and black-box request contracts (NO native spell PASS)
-        run: python -m pytest -q tests/test_wf_p1_native_blackbox.py
+        run: python -m pytest -q tests/gates/test_wf_p1_native_blackbox.py
       - name: Generate 18 class/level source-only native test inputs (NO GameIR)
         run: python tools/wf_p1_native_scope_matrix.py --levels 20 60

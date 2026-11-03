@@ -11,7 +11,7 @@ import pytest
 from tools.p1_native_source_inventory import inventory
 from tools.wf_p1_native_effects import native_apl_pair, run_native
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def _sample_request():
