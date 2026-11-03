@@ -363,6 +363,14 @@ def source_bounded_adapter(
             "source_type": fixture.get("source_type", "PINNED_SOURCE_FIXTURE"),
             "native_response_sha256": fixture.get("native_response_sha256"),
             "native_positive_damage_witnesses": fixture.get("native_positive_damage_witnesses", []),
+            "talent_source_repository": fixture.get("talent_source_repository"),
+            "talent_source_pull_request": fixture.get("talent_source_pull_request"),
+            "talent_source_commit": fixture.get("talent_source_commit"),
+            "talent_source_path": fixture.get("talent_source_path"),
+            "talent_source_blob_sha": fixture.get("talent_source_blob_sha"),
+            "talent_source_url": fixture.get("talent_source_url"),
+            "talent_preset_name": fixture.get("talent_preset_name"),
+            "composed_over_profile": fixture.get("composed_over_profile"),
         })
 
     def make_gear(rng):
