@@ -70,6 +70,40 @@ def test_no_fake_gear_acquisition_or_illegal_level_jump():
         validate_level_state(replace(a,action_ids=('fake_spell:999999',)))
 
 
+def test_route_does_not_repeat_gameir_legality_checks_after_source_frontier_and_l2(monkeypatch):
+    from src.v2 import source_budgeted_level_route as route
+    from src.game.data.forever.registry import build_game_ir_slice
+
+    ir = build_game_ir_slice(class_key='druid', level=10)
+    assert ir is not None
+
+    def redundant_validation(*_args, **_kwargs):
+        raise AssertionError('route must not revalidate source frontier candidates')
+
+    # The source frontier already validates its candidates. The L2 scorer
+    # evaluates the selected talent-adjusted actor; this is NOT a native PASS.
+    monkeypatch.setattr(route, 'validate_talent_selection',
+                        redundant_validation, raising=False)
+    assert route._source_successors(ir, None, level=10, max_children=2)
+
+    checked_levels = []
+    original = route.validate_level_state
+
+    def count_initial_state_checks(state):
+        checked_levels.append(state.level)
+        return original(state)
+
+    monkeypatch.setattr(route, 'validate_level_state', count_initial_state_checks)
+    result = route.search_source_bounded_level_route(
+        class_key='druid', start_level=10, end_level=11,
+        max_active_paths=1, max_children_per_path=2,
+        max_l2_per_state=8, max_total_events=6000)
+    assert result['last_contiguous_level'] == 11, result['failures']
+    # Later steps are checked by validate_level_transition, which already
+    # validates both parent and child. Avoid a third GameIR rebuild.
+    assert checked_levels and set(checked_levels) == {10}
+
+
 def test_route_compute_cap_not_promoted_to_complete():
     result=search_source_bounded_level_route(class_key='druid',start_level=10,
         end_level=13,max_active_paths=1,max_children_per_path=2,
