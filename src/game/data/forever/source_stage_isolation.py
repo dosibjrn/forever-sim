@@ -6,8 +6,10 @@ boundary for legacy GameIR. It does not invent or execute combat effects.
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
-from src.game.model.ir import GameIRSlice
+if TYPE_CHECKING:
+    from src.game.model.ir import GameIRSlice
 
 
 def strip_precompiled_source_actions(ir: GameIRSlice) -> GameIRSlice:
