@@ -14,7 +14,6 @@ import pytest
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
-from src.game.data.forever.source_acquisition import audit_learned_action_legality
 from src.game.data.forever.source_world_acquisition import (
     UnverifiedWorldEvent, verify_acquisition_trace,
 )
@@ -80,11 +79,6 @@ def test_real_spell_detail_and_npc_id_allow_synthetic_local_purchase(sourced_db)
     assert receipt['remaining_copper']==99600  # canonical spell index cost
     assert receipt['world_route_complete'] is False
     ir=build_game_ir_slice(class_key='mage',level=10)
-    result=audit_learned_action_legality(ir,level=10,
-        action_ids=['frost_nova:122'],world_anchor_id='TEST_ANCHOR',
-        world_events=(_trainer(npc),),db_path=path)
-    assert result['complete'] is True
-    assert result['verified_world_acquisition_count']==1
     # A synthetic trainer trace is never a native game-legality certificate.
     # The legacy LevelState boundary no longer independently audits it.
     state=LevelState(class_key='mage',level=10,race_key=ir.actor.metadata.get('race_key'),

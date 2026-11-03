@@ -381,8 +381,8 @@ assert callable(source_enrich_target_combat)
 def test_source_acquisition_metadata_imports_do_not_load_legacy_game_rules():
     """Source-only acquisition readers may be imported without GameIR/talent compilation.
 
-    The active legacy IR audit remains callable; only its module-import
-    dependency on the transitional talent compiler is removed here.
+    The historical source reader remains importable without restoring the
+    retired Python GameIR learned-action legality audit.
     """
     import subprocess
     import sys
@@ -396,7 +396,6 @@ from src.game.data.forever.source_indexed_action_coverage import (
 )
 from src.game.data.forever.source_acquisition import (
     DEFAULT_DB as ACQUISITION_DB, read_acquisition_evidence,
-    audit_learned_action_legality,
 )
 assert INDEX_DB is DEFAULT_DB and ACQUISITION_DB is DEFAULT_DB
 assert 'src.game.model.ir' not in sys.modules
@@ -407,7 +406,9 @@ action = SimpleNamespace(
 )
 assert _source_spell_ids(action) == {123, 456}
 assert read_acquisition_evidence(class_key='druid', spell_ids=[]) == {}
-assert callable(indexed_ability_coverage) and callable(audit_learned_action_legality)
+assert callable(indexed_ability_coverage)
+from src.game.data.forever import source_acquisition
+assert not hasattr(source_acquisition, 'audit_learned_action_legality')
 assert 'src.game.model.ir' not in sys.modules
 assert 'src.game.data.forever.sqlite_talents' not in sys.modules
 """
