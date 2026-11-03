@@ -140,6 +140,14 @@ if ! git diff --cached --quiet; then
   git commit -m "fix(forever): require native lethal world ACK before Rust retarget"
 fi
 
+# A gsim source-native lethal ACK may finish a mob earlier than the fixed
+# duration cap; only the existing live-world bridge can authorize the handoff.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_early_retarget.py" "$PWD"
+git add src/core/fight.rs
+if ! git diff --cached --quiet; then
+  git commit -m "fix(forever): allow early live-world target kill clock without native reset"
+fi
+
 # The two-target native state and world ACK regressions must pass before
 # a new fork revision is published; compilation alone is insufficient.
 cargo test --locked --lib persistent_next_target
