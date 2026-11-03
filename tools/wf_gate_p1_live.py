@@ -8,6 +8,7 @@ owns spell/rank legality; actual applicable effects must still be executed.
 from __future__ import annotations
 
 import json
+import os
 import hashlib
 from math import isfinite
 from pathlib import Path
@@ -411,20 +412,23 @@ def _load_p1_scenario_nonimpact(root: Path, class_key: str, level: int,
 
 
 def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builder,
-                    scratch_builder, executor, higher_level_rows=(), max_errors=10000,
-                    effect_checker=None, source_inactive_ids=None,
-                    scope_facts=None, context_exclusions=None, scenario_nonimpact=None,
+                    scratch_builder, executor, max_errors=10000,
+                    effect_checker=None, native_source_spell_ids=(), native_executor=None,
+                    scope_facts=None, context_exclusions=None, scenario_exclusions=None,
                     scenario_id=P1_DEFAULT_SCENARIO):
-    """PROCESS P1 gate: all source actions are traceable, legal, and offered.
+    """PROCESS P1 live inventory with an incremental native-owned action path.
 
-    A recognized unmet conditional prerequisite is reported but cannot PASS
-    without observed applicable execution (PROCESS v2.11). Unknown/no-op/broken
-    effects and silent optimizer omissions are not accepted.
+    Source rows select candidate action identities; they are not acquisition
+    proof. IDs in native_source_spell_ids bypass Forever/GameIR legality and
+    effect checks and must be decided by native_executor. Candidate reachability
+    remains checked separately. Other legacy actions retain the transitional
+    GameIR runtime path until migrated.
     """
     problems: list[dict[str,Any]] = []
     conditional: list[dict[str,str]] = []
     exercised: list[str] = []
-    source_inactive_ids = source_inactive_ids or {}
+    native_action_results: list[dict[str,Any]] = []
+    native_source_spell_ids = {int(sid) for sid in (native_source_spell_ids or ())}
     scope_facts = scope_facts or {}
     context_exclusions = context_exclusions or {}
     scenario_nonimpact = scenario_nonimpact or {}
@@ -437,25 +441,23 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
     actions = tuple(a for a in ir.actions if a.owner_actor_id == ir.actor.id)
     indexed: dict[int,list] = {}
     for action in actions:
-        if not isinstance(getattr(action,'effects',None),(list,tuple)):
+        action_source_ids = {int(sid) for sid in _source_ids(action, parser)}
+        if (not isinstance(getattr(action,'effects',None),(list,tuple))
+                and not action_source_ids.intersection(native_source_spell_ids)):
             issue('INVALID_TYPED_ACTION', detail=action.id)
-        for sid in _source_ids(action, parser):
+        for sid in action_source_ids:
             indexed.setdefault(sid,[]).append(action)
     if not actions:
         issue('EMPTY_GAME_IR')
-    for row in higher_level_rows:
-        if indexed.get(int(row['spell_id'])):
-            issue('ILLEGAL_HIGH_LEVEL_ACTION_IN_GAME_IR',row)
-
     eligible: list[dict] = []
     ignored: list[dict] = []
     for row in source_rows:
         sid = int(row['spell_id'])
-        if sid in source_inactive_ids:
-            reason = source_inactive_ids[sid]
-            ignored.append({'source_spell_id':sid,'role':'CONDITIONALLY_INACTIVE', 'reason':reason})
-            if indexed.get(sid):
-                issue('INACTIVE_SOURCE_ACTION_ENTERED_GAME_IR',row, reason)
+        # The selected native action is a test selector only. Do not let a
+        # Forever source classifier, learned-state flag, level hint, or
+        # spellbook scope record veto the native prepare/execute response.
+        if sid in native_source_spell_ids:
+            eligible.append(row)
             continue
         try:
             classification = source_classifier(row, row['raw_listview_json'])
@@ -477,20 +479,24 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
             ignored.append({'source_spell_id':sid,'role':'ZERO_LEVEL_NONACTION_RANK',
                             'reason':'source level zero, no actionable GameIR mapping'})
             continue
-        if row.get('level_hint') is None:
-            issue('UNRESOLVED_SOURCE_REQUIRED_LEVEL',row)
-            continue
         eligible.append(row)
 
-    # Rank reduction is an inventory optimisation, not proof of acquisition.
-    highest = _highest_usable_ranks(eligible)
+    # Legacy candidates retain the historical highest-rank inventory shape.
+    # Native-owned IDs are passed through unchanged: the selected engine, not
+    # Forever's rank/level hints, decides their validity.
+    native_rows = [row for row in eligible if int(row['spell_id']) in native_source_spell_ids]
+    legacy_rows = [row for row in eligible if int(row['spell_id']) not in native_source_spell_ids]
+    highest = _highest_usable_ranks(legacy_rows) + native_rows
     checked = []
     for row in eligible:
-        if row not in highest:
+        if row not in highest and int(row['spell_id']) not in native_source_spell_ids:
             ignored.append({'source_spell_id':int(row['spell_id']), 'role':'LOWER_LEARNED_RANK',
-                            'reason':'P1_CHECKS_HIGHEST_USABLE_RANK_ONLY'})
+                            'reason':'P1_CHECKS_HIGHEST_SOURCE_RANK_ONLY'})
     for row in highest:
         sid=int(row['spell_id'])
+        if sid in native_source_spell_ids:
+            checked.append(row)
+            continue
         decision=scenario_nonimpact.get(sid)
         if decision is not None:
             if decision.get('name') != row['name']:
@@ -530,42 +536,33 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
         if len(matches)>1:
             issue('DUPLICATE_GAME_IR_SOURCE_MATCH',row,','.join(a.id for a in matches))
         for action in matches:
-            for err in _requirements_well_formed(action):
-                issue('INVALID_OR_UNSUPPORTED_PREREQUISITE',row,f'{action.id}:{err}')
-            known_modes = {m.id for m in ir.modes}
-            known_resources = {r.id for r in ir.resources}
-            for req in action.requirements:
-                if not hasattr(req, 'get'):
-                    continue  # already reported as INVALID_OR_UNSUPPORTED_PREREQUISITE
-                if req.get('kind') == 'mode_is' and req.get('value') not in known_modes:
-                    issue('UNKNOWN_PREREQUISITE_MODE', row, f"{action.id}:{req.get('value')}")
-                if req.get('kind') in ('resource_min','resource_below_capacity') and req.get('resource_id') not in known_resources:
-                    issue('UNKNOWN_PREREQUISITE_RESOURCE', row, f"{action.id}:{req.get('resource_id')}")
-            req_levels = [int(r['value']) for r in action.requirements
-                          if hasattr(r, 'get') and r.get('kind')=='minimum_level' and r.get('value') is not None
-                          and str(r['value']).isdigit()]
-            if any(l > int(row['level_hint']) for l in req_levels):
-                issue('WRONG_MINIMUM_LEVEL',row,f'{action.id}:{req_levels}')
-            # Only an exact source-ID action is required to have this rank's
-            # earliest level. A shared family action may legitimately map
-            # multiple ranks and be promoted by the source rank overlay.
-            if (action.id == f"source_spell:{int(row['spell_id'])}" and req_levels
-                    and min(req_levels) < int(row['level_hint'])):
-                issue('ACTION_AVAILABLE_BEFORE_SOURCE_LEVEL',row,f'{action.id}:{req_levels}')
-            if not action.effects:
-                issue('EMPTY_GAME_IR_EFFECT',row,action.id)
-            if not getattr(action,'provenance',None) and not getattr(action,'metadata',{}).get('source_semantic_type'):
-                issue('ACTION_MISSING_SOURCE_TRACE',row,action.id)
-            if effect_checker is None:
-                issue('MISSING_PRODUCTION_EFFECT_DISPATCH_CHECKER',row,action.id)
-            else:
-                for index, effect in enumerate(action.effects):
-                    try:
-                        kind = effect_checker(effect)
-                        if not isinstance(kind,str) or not kind or kind in ('unsupported','unknown','noop','not_implemented'):
-                            issue('UNSUPPORTED_EFFECT_DISPATCH',row,f'{action.id}:effect[{index}]={kind}')
-                    except (ValueError, TypeError, KeyError, NotImplementedError) as exc:
-                        issue('UNSUPPORTED_EFFECT_DISPATCH',row,f'{action.id}:effect[{index}]:{exc}')
+            native_action = sid in native_source_spell_ids
+            if not native_action:
+                for err in _requirements_well_formed(action):
+                    issue('INVALID_OR_UNSUPPORTED_PREREQUISITE',row,f'{action.id}:{err}')
+                known_modes = {m.id for m in ir.modes}
+                known_resources = {r.id for r in ir.resources}
+                for req in action.requirements:
+                    if not hasattr(req, 'get'):
+                        continue  # already reported as INVALID_OR_UNSUPPORTED_PREREQUISITE
+                    if req.get('kind') == 'mode_is' and req.get('value') not in known_modes:
+                        issue('UNKNOWN_PREREQUISITE_MODE', row, f"{action.id}:{req.get('value')}")
+                    if req.get('kind') in ('resource_min','resource_below_capacity') and req.get('resource_id') not in known_resources:
+                        issue('UNKNOWN_PREREQUISITE_RESOURCE', row, f"{action.id}:{req.get('resource_id')}")
+                if not action.effects:
+                    issue('EMPTY_GAME_IR_EFFECT',row,action.id)
+                if not getattr(action,'provenance',None) and not getattr(action,'metadata',{}).get('source_semantic_type'):
+                    issue('ACTION_MISSING_SOURCE_TRACE',row,action.id)
+                if effect_checker is None:
+                    issue('MISSING_PRODUCTION_EFFECT_DISPATCH_CHECKER',row,action.id)
+                else:
+                    for index, effect in enumerate(action.effects):
+                        try:
+                            kind = effect_checker(effect)
+                            if not isinstance(kind,str) or not kind or kind in ('unsupported','unknown','noop','not_implemented'):
+                                issue('UNSUPPORTED_EFFECT_DISPATCH',row,f'{action.id}:effect[{index}]={kind}')
+                        except (ValueError, TypeError, KeyError, NotImplementedError) as exc:
+                            issue('UNSUPPORTED_EFFECT_DISPATCH',row,f'{action.id}:effect[{index}]:{exc}')
             try:
                 p=policy_builder(ir,((action.id,()),))
                 if not any(rule.action_id==action.id for rule in p.rules):
@@ -586,7 +583,62 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                 issue('OPTIMIZER_OMITS_LEGAL_ACTION',row,action.id)
 
     for row in eligible:
-        for action in indexed.get(int(row['spell_id']),()):
+        sid = int(row['spell_id'])
+        for action in indexed.get(sid,()):
+            if sid in native_source_spell_ids:
+                if native_executor is None:
+                    outcome = {
+                        'status':'BLOCKED', 'native_status':'BLOCKED',
+                        'reason':'NATIVE_P1_EXECUTOR_MISSING',
+                        'effect_observed':False,
+                    }
+                else:
+                    try:
+                        outcome = native_executor(ir, action, row)
+                    except Exception as exc:
+                        outcome = {
+                            'status':'ERROR', 'native_status':'ERROR',
+                            'reason':f'{type(exc).__name__}:{exc}',
+                            'effect_observed':False,
+                        }
+                if not isinstance(outcome, dict):
+                    outcome = {
+                        'status':'ERROR', 'native_status':'ERROR',
+                        'reason':'NATIVE_P1_EXECUTOR_RETURNED_NON_OBJECT',
+                        'effect_observed':False,
+                    }
+                native_result = outcome.get('native_result')
+                if not isinstance(native_result, dict):
+                    native_result = {}
+                native_status = str(
+                    outcome.get('native_status') or native_result.get('status')
+                    or outcome.get('status') or 'ERROR'
+                )
+                observable = native_result.get('observable_effects')
+                if not isinstance(observable, dict):
+                    observable = {}
+                native_action_results.append({
+                    'action_id':action.id,
+                    'source_spell_id':sid,
+                    'status':native_status,
+                    'reason':outcome.get('reason') or native_result.get('reason'),
+                    'effect_observed':outcome.get('effect_observed') is True,
+                    'engine_identity':native_result.get('engine_identity'),
+                    'scenario':native_result.get('scenario'),
+                    'dps_delta':observable.get('dps_delta'),
+                    'world_required':native_result.get('world_required'),
+                })
+                if outcome.get('status')=='executed' and outcome.get('effect_observed') is True:
+                    exercised.append(action.id)
+                else:
+                    code = (
+                        f'NATIVE_{native_status}'
+                        if native_status in {'INVALID','UNSUPPORTED','ERROR','BLOCKED',
+                                             'NO_DIRECT_EFFECT_OBSERVED'}
+                        else 'NATIVE_ACTION_NOT_EXECUTED'
+                    )
+                    issue(code,row,f'{action.id}:{outcome.get("reason") or native_status}')
+                continue
             try:
                 outcome=executor(ir,action)
             except Exception as exc:
@@ -596,20 +648,16 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
                 exercised.append(action.id)
             elif (outcome.get('status')=='conditional' and
                   _legitimate_conditional(action, str(outcome.get('reason') or ''))):
-                # A recognized prerequisite is a useful diagnostic, but it
-                # does not demonstrate the ability's applicable effect.
-                # PROCESS v2.11 requires a suitable triggered real-runtime
-                # test before a source-legal conditional action can PASS P1.
                 conditional.append({'action_id':action.id,'ability':_id_label(row),
                                     'reason':str(outcome['reason'])})
                 issue('CONDITIONAL_EFFECT_NOT_EXECUTED',row,
                       f"{action.id}:{outcome['reason']}")
             else:
                 issue('COMBAT_ACTION_NOT_EXECUTED',row,f'{action.id}:{outcome}')
-    # PARTIAL diagnostic: numerator and denominator are the same real
-    # source-eligible highest-rank ability units. Only a source action whose
-    # observable effect executed in CombatRuntime contributes to the numerator.
-    # No independent spell acquisition proof is required.
+    # PARTIAL diagnostic: the denominator is the selected source-action
+    # candidate set. Native-owned IDs count only after PreparedV2 observes a
+    # positive controlled effect; remaining legacy actions use the transitional
+    # GameIR runtime path. No independent spell acquisition proof is required.
     observed_source_abilities = sum(
         bool({action.id for action in indexed.get(int(row['spell_id']), ())}
              & set(exercised))
@@ -622,8 +670,7 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
             'partial_scope':'OBSERVED_SOURCE_ELIGIBLE_ABILITY_EFFECTS',
             'coverage_basis':'executed_behavior_assertions',
             'coverage_scope_complete':not any(
-                p['code'] in ('UNRESOLVED_SOURCE_REQUIRED_LEVEL',
-                              'P1_EFFECT_SCOPE_UNRESOLVED')
+                p['code'] == 'P1_EFFECT_SCOPE_UNRESOLVED'
                 for p in problems),
             'total_source_rows_at_or_below_level_or_unknown':len(source_rows),
             'excluded_nonaction_or_inactive_rows':ignored,
@@ -636,6 +683,8 @@ def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builde
             'does_not_affect_sim_count':len(nonimpact),
             'matched_source_abilities':sum(bool(indexed.get(int(r['spell_id']))) for r in eligible),
             'production_runtime_exercises':len(exercised),
+            'native_action_results':native_action_results,
+            'native_source_spell_ids':sorted(native_source_spell_ids),
             'conditional_actions':conditional,
             'actual_scratch_policy_count':len(generated),
             'problems':problems,
@@ -759,32 +808,6 @@ def _runtime_exercise(ir,action,level):
     return {'status':'conditional','reason':first_ineligibility or 'NO_EXECUTABLE_SOURCE_LEGAL_MODE_OR_PRECONDITION'}
 
 
-def _source_disabled_rune_ids(db_path: Path, class_key: str, level: int) -> dict[int,str]:
-    """Mirror the production registry's default rune-off legality decision.
-
-    Do not special-case a class or spell. Only recorded unverified rune grants
-    without a level-legal, verified talent grant are conditionally inactive.
-    """
-    from src.game.data.forever.source_checkpoint_web_l0 import load_observations
-    with sqlite3.connect(f'file:{db_path.resolve()}?mode=ro',uri=True) as db:
-        db.row_factory = sqlite3.Row
-        observations = load_observations(db, class_key)
-        tables = {r[0] for r in db.execute("select name from sqlite_master where type='table'")}
-        talent_grants = set()
-        if 'verified_talent_granted_action_facts' in tables:
-            for sid, raw in db.execute('SELECT spell_id, action_json FROM verified_talent_granted_action_facts WHERE class_key=?', (class_key,)):
-                required = json.loads(raw).get('required_level')
-                if required is not None and int(required) <= level:
-                    talent_grants.add(int(sid))
-    return {int(sid):'rune_grant_unverified_default_off'
-            for sid, obs in observations.items()
-            if 'rune_grant_unverified' in obs.get('source_flags',())
-            and int(sid) not in talent_grants}
-
-
-
-
-
 def _p1_scope_metadata(root: Path, class_key: str, level: int) -> dict:
     """Read optional effect-role observations, never acquisition permissions.
 
@@ -834,9 +857,6 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
         if not source_db.is_absolute():source_db=root/source_db
         if not source_db.is_file():raise P1SetupError('SOURCE_DB_NOT_FOUND:'+str(source_db))
         rows=_source_rows(source_db,class_key,level)
-        inactive_ids=_source_disabled_rune_ids(source_db,class_key,level)
-        excluded_high_level=[r for r in _source_rows(source_db,class_key,None)
-                              if r["level_hint"] is not None and int(r["level_hint"])>level]
         ir=build_game_ir_slice(class_key=class_key,level=level,ability_db_path=source_db)
         if ir is None:raise P1SetupError('CLASS_LEVEL_NOT_SUPPORTED_BY_LIVE_SOURCE_PROVIDER')
         scope_meta = _p1_scope_metadata(root,class_key,level)
@@ -847,12 +867,56 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
         report['engine_id']=_source_code_fingerprint(root)
         report['ir_id']=ir.id
         nonimpact=_load_p1_scenario_nonimpact(root,class_key,level,scenario_id)
+        native_source_spell_ids = {1082} if class_key.lower() == 'druid' and level == 20 else set()
+        native_executor = None
+        if native_source_spell_ids:
+            from tools.wf_p1_native_effects import (
+                DRUID_CLAW_RANK1, VERIFIED_EFFECT,
+                build_druid_cat_action_request, run_native,
+            )
+            engine_root = root / 'integrations' / 'mythicsim-rust' / 'engine'
+            binary = Path(
+                os.environ.get('FOREVER_ENGINE_BINARY')
+                or os.environ.get('FOREVER_MYTHICSIM_RUST_BIN')
+                or str(engine_root / 'target' / 'debug' / 'forever-engine')
+            )
+
+            def native_executor(_ir, action, row):
+                spell_id = int(row['spell_id'])
+                if spell_id != DRUID_CLAW_RANK1 or action.id != 'claw:20':
+                    return {
+                        'status':'INVALID', 'native_status':'INVALID',
+                        'reason':'P1_NATIVE_CLAW_SELECTOR_MISMATCH',
+                        'effect_observed':False,
+                    }
+                request = build_druid_cat_action_request(engine_root, spell_id)
+                result = run_native(
+                    binary, request, class_key=class_key, level=level,
+                    spell_id=spell_id, root=root, world_required=False,
+                    scenario_label=f'p1-druid-l{level}-feral-claw-{spell_id}',
+                )
+                if result.get('status') == VERIFIED_EFFECT and result.get('effect_observed') is True:
+                    return {
+                        'status':'executed',
+                        'native_status':result.get('status'),
+                        'effect_observed':True,
+                        'native_result':result,
+                    }
+                return {
+                    'status':result.get('status','ERROR'),
+                    'native_status':result.get('status','ERROR'),
+                    'reason':result.get('reason') or result.get('stage'),
+                    'effect_observed':False,
+                    'native_result':result,
+                }
+
         check=audit_inventory(rows,ir,parser=_source_spell_ids,
                   source_classifier=classify_indexed_ability,
                   policy_builder=from_source_rules,scratch_builder=scratch_policies,
                   executor=lambda i,a:_runtime_exercise(i,a,level),
-                  higher_level_rows=excluded_high_level, effect_checker=effect_execution_kind,
-                  source_inactive_ids=inactive_ids,
+                  effect_checker=effect_execution_kind,
+                  native_source_spell_ids=native_source_spell_ids,
+                  native_executor=native_executor,
                   scope_facts={**_load_spellbook_observed_scope_facts(root,
                       scope_meta.get('spellbook_file'),rows),
                       **_load_source_scope_facts(source_db,class_key)},
