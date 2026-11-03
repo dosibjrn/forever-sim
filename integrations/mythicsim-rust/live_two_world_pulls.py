@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from math import hypot
+from math import hypot, isfinite
 import os
 from pathlib import Path
 import subprocess
@@ -80,6 +80,30 @@ def _target_health_profile(mob_health: float | None, classic_mob_level: int | No
         "source_status": "synthetic_diagnostic",
         "source_basis": "explicit world-only HP fixture",
     }
+
+
+def _native_survival_min_health(windows: list[dict], target_count: int) -> float:
+    """Require actual selected-Rust player survival after EVERY acknowledged kill.
+
+    The native actor owns health, enemy attacks, healing and regeneration. A
+    real gsim world kill does not imply that its native player survived it.
+    This only validates Rust's existing per-target receipt; it does not
+    manufacture incoming damage or award a paid leveling gate.
+    """
+    if (type(target_count) is not int or not isinstance(windows, list)
+            or len(windows) != target_count):
+        raise AssertionError("RUST_MULTI_WORLD_NATIVE_SURVIVAL_WINDOWS_INVALID")
+    health_values = []
+    for index, window in enumerate(windows):
+        if (not isinstance(window, dict) or type(window.get("index")) is not int
+                or window["index"] != index):
+            raise AssertionError("RUST_MULTI_WORLD_NATIVE_SURVIVAL_WINDOWS_INVALID")
+        health = window.get("actor_health")
+        if (type(health) not in (int, float) or not isfinite(health)
+                or health <= 0):
+            raise AssertionError("RUST_MULTI_WORLD_NATIVE_ACTOR_NOT_ALIVE")
+        health_values.append(float(health))
+    return min(health_values)
 
 
 def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
@@ -255,6 +279,10 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             raise AssertionError("RUST_TWO_WORLD_NATIVE_RESULT_INVALID")
         if [k["target_id"] for k in kills] != list(targets):
             raise AssertionError("RUST_TWO_WORLD_DISTINCT_TARGET_IDS_INVALID")
+        # Rust is the health authority; no invented gsim player damage.
+        # A completed native-damage world kill must not hide a dead actor.
+        min_native_health = _native_survival_min_health(
+            result["windows"], target_count)
         if require_native_moving and walks and native_moving_ticks == 0:
             raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
         return {
@@ -262,6 +290,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "world_target_hp": mob_health,
             "world_target_provenance": target_metadata,
             "native_windows": result["windows"], "world_kills": kills,
+            "minimum_native_actor_health": min_native_health,
             "native_damage_events": events, "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
             "native_moving_receipts": native_moving_receipts,
