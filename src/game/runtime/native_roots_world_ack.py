@@ -61,6 +61,7 @@ class GsimNativeRootsWorldApplier:
             landed = event.get("landed")
             expiry_ns = event.get("expires_at_ns")
             action_id = event.get("source_action_id")
+            rank_spell_id = event.get("source_rank_spell_id")
             label = event.get("native_target_label")
             if (ordinal != last_id + 1 or event_id != f"native-control-{ordinal}"
                     or type(timestamp) is not int
@@ -72,8 +73,9 @@ class GsimNativeRootsWorldApplier:
                     or event["native_target_index"] != 0
                     or type(event.get("native_target_unit_index")) is not int
                     or event["native_target_unit_index"] != 0
-                    or not isinstance(label, str) or not label
-                    or not isinstance(action_id, str) or not action_id):
+                    or label != "Target"
+                    or type(rank_spell_id) is not int or rank_spell_id <= 0
+                    or not isinstance(action_id, str) or action_id != f"spell:{rank_spell_id}"):
                 raise NativeDamageWorldApplicationError("WORLD_CONTROL_SOURCE_EVENT_INVALID")
             if not target.alive and kind != "expire":
                 raise NativeDamageWorldApplicationError("WORLD_CONTROL_TARGET_ALREADY_DEAD")
@@ -120,10 +122,8 @@ class GsimNativeRootsWorldApplier:
             if kind == "attempt":
                 continue
             if kind == "apply":
-                # A simultaneous lethal native hit makes control irrelevant to
-                # the already-dead world mob, but the source event is still ACKed.
-                if not target.alive:
-                    continue
+                # Preserve the source control state even if a simultaneous
+                # lethal native hit has already made the world mob inert.
                 expiry_s = float(event["expires_at_ns"]) / 1e9
                 old_expiry = target.active_controls.get("root")
                 new_expiry = max(expiry_s, float(old_expiry or 0.0))
@@ -135,7 +135,7 @@ class GsimNativeRootsWorldApplier:
                     "breaks_on_damage": False,
                     "break_chance_on_damage": None,
                 }
-                if self._runtime.multi_target:
+                if target.alive and self._runtime.multi_target:
                     self._runtime._freeze_enemy_approach(target_id)
             else:
                 old_expiry = target.active_controls.pop("root", None)
@@ -152,7 +152,21 @@ class GsimNativeRootsWorldApplier:
             raise NativeDamageWorldApplicationError("WORLD_CONTROL_UNEXPECTED_MUTATION")
         ack["world_after_sha256"] = after_control_hash
         ack["applied_control_event_ids"] = ids
-        ack["applied_control_events"] = copied
+        ack["applied_control_events"] = [
+            {**event, "gsim_target_id": target_id} for event in copied
+        ]
+        active = "root" in target.active_controls
+        expiry_ns = (int(round(float(target.active_controls["root"]) * 1e9))
+                     if active else None)
+        ack["world_control_state"] = {
+            "target_id": target_id,
+            "control_id": "root",
+            "native_target_index": 0,
+            "native_target_unit_index": 0,
+            "native_target_label": "Target",
+            "active": active,
+            "expires_at_ns": expiry_ns,
+        }
         self._next_control_event = last_id + 1
         self._last_control_time_ns = last_time
         self._damage._last_native_time_ns = max(
