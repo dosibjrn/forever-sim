@@ -118,71 +118,108 @@ def _native_positive_source_casts(source_actions: list[dict],
 
 def _ensure_native_objective_action(actions: list[dict],
                                      witnesses: list[dict], rng,
-                                     objective: str = "DPS") -> list[dict]:
-    """Keep source-observed objective-positive casts in the fallback block.
+                                     objective: str = "DPS", *,
+                                     source_actions: list[dict]) -> list[dict]:
+    """Retain native-positive source actions without stripping their guards.
 
-    DPS retains its historical spell-identity witness shape. HPS/TPS witnesses
-    retain the full source cast (including target) so healing targets survive
-    insertion. Conditional and opaque source actions retain priority; native
-    positive fallbacks are unconditional and the final APL stays within 20.
+    The native receipt identifies a positive cast identity, not permission to
+    rewrite that source action. Reinsert the exact source action (including its
+    condition and target) when the candidate omits or mutates it. Conditional
+    witnesses remain conditional; an unguarded fallback is allowed only when
+    the source APL itself contains that exact unguarded action.
     """
     if not witnesses:
         return actions
     objective = str(objective).upper()
-    actions = copy.deepcopy(actions)
-
-    def witness_cast(witness):
-        return ({"spellId": copy.deepcopy(witness)}
-                if objective == "DPS" else copy.deepcopy(witness))
 
     def action_identity(cast):
         return cast.get("spellId") if objective == "DPS" else cast
 
-    allowed = {json.dumps(x, sort_keys=True, separators=(",", ":"))
-               for x in witnesses}
+    allowed = {
+        json.dumps(witness, sort_keys=True, separators=(",", ":"))
+        for witness in witnesses
+    }
+    source_entries_by_identity = {}
+    source_entry_keys_by_identity = {}
+    for entry in source_actions:
+        action = entry.get("action", {}) if isinstance(entry, dict) else None
+        cast = action.get("castSpell") if isinstance(action, dict) else None
+        if not isinstance(cast, dict):
+            continue
+        identity_key = json.dumps(
+            action_identity(cast), sort_keys=True, separators=(",", ":")
+        )
+        if identity_key not in allowed:
+            continue
+        entry_key = json.dumps(entry, sort_keys=True, separators=(",", ":"))
+        known = source_entry_keys_by_identity.setdefault(identity_key, set())
+        if entry_key in known:
+            continue
+        known.add(entry_key)
+        source_entries_by_identity.setdefault(identity_key, []).append(
+            copy.deepcopy(entry)
+        )
+
+    missing = allowed - set(source_entries_by_identity)
+    if missing:
+        raise ValueError(
+            "NATIVE_OBJECTIVE_WITNESS_NOT_PRESENT_IN_EXACT_SOURCE_APL"
+        )
+
     conditional_or_opaque = []
-    existing_witnesses = []
-    seen_witnesses = set()
+    source_witness_actions = []
     unconditional = []
+    seen_witness_actions = set()
     for entry in actions:
-        action = entry.get("action", {})
+        action = entry.get("action", {}) if isinstance(entry, dict) else {}
         cast = action.get("castSpell")
         is_cast = isinstance(cast, dict)
-        identity = action_identity(cast) if is_cast else None
-        identity_key = json.dumps(identity, sort_keys=True, separators=(",", ":"))
-        is_witness = (is_cast and "condition" not in action
-                      and identity_key in allowed)
-        if is_witness:
-            if identity_key not in seen_witnesses:
-                existing_witnesses.append(entry)
-                seen_witnesses.add(identity_key)
-        elif not is_cast or "condition" in action:
-            conditional_or_opaque.append(entry)
-        else:
-            unconditional.append(entry)
-
-    # Keep existing positive casts first, then add missing baseline-positive
-    # source casts in receipt order. Never synthesize a spell or target.
-    for witness in witnesses:
-        identity_key = json.dumps(witness, sort_keys=True, separators=(",", ":"))
-        if identity_key in seen_witnesses:
+        identity_key = json.dumps(
+            action_identity(cast) if is_cast else None,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        if is_cast and identity_key in allowed:
+            # Keep only exact source action/condition variants. A changed or
+            # unguarded witness is discarded and restored from source below.
+            entry_key = json.dumps(entry, sort_keys=True, separators=(",", ":"))
+            if (entry_key in source_entry_keys_by_identity[identity_key]
+                    and entry_key not in seen_witness_actions):
+                source_witness_actions.append(copy.deepcopy(entry))
+                seen_witness_actions.add(entry_key)
             continue
-        existing_witnesses.append({"action": {"castSpell": witness_cast(witness)}})
-        seen_witnesses.add(identity_key)
+        if not is_cast or "condition" in action:
+            conditional_or_opaque.append(copy.deepcopy(entry))
+        else:
+            unconditional.append(copy.deepcopy(entry))
 
-    existing_witnesses = existing_witnesses[:20]
-    prefix_room = 20 - len(existing_witnesses)
+    # A positive source action may have been dropped by structural mutation.
+    # Restore every exact source variant for the witnessed cast identity.
+    for witness in witnesses:
+        identity_key = json.dumps(
+            witness, sort_keys=True, separators=(",", ":")
+        )
+        for entry in source_entries_by_identity[identity_key]:
+            entry_key = json.dumps(entry, sort_keys=True, separators=(",", ":"))
+            if entry_key not in seen_witness_actions:
+                source_witness_actions.append(copy.deepcopy(entry))
+                seen_witness_actions.add(entry_key)
+
+    source_witness_actions = source_witness_actions[:20]
+    prefix_room = 20 - len(source_witness_actions)
     conditional_or_opaque = conditional_or_opaque[:prefix_room]
-    utility_room = 20 - len(conditional_or_opaque) - len(existing_witnesses)
+    utility_room = 20 - len(conditional_or_opaque) - len(source_witness_actions)
     unconditional = unconditional[:utility_room]
-    return conditional_or_opaque + existing_witnesses + unconditional
+    return conditional_or_opaque + source_witness_actions + unconditional
 
 
 def _ensure_native_damage_action(actions: list[dict], witnesses: list[dict],
-                                 rng, objective: str = "DPS") -> list[dict]:
+                                 rng, objective: str = "DPS", *,
+                                 source_actions: list[dict]) -> list[dict]:
     """Compatibility alias for the historical DPS-named helper."""
     return _ensure_native_objective_action(
-        actions, witnesses, rng, objective=objective
+        actions, witnesses, rng, objective=objective,
+        source_actions=source_actions,
     )
 
 
@@ -827,6 +864,7 @@ def source_bounded_adapter(
                 objective_witnesses_by_talent.get(talent_string, []),
                 rng,
                 objective=objective,
+                source_actions=source_actions,
             )
             if actions != current_apl:
                 return actions
@@ -847,6 +885,7 @@ def source_bounded_adapter(
             objective_witnesses_by_talent.get(talent_string, []),
             rng,
             objective=objective,
+            source_actions=source_actions,
         )
 
     def apl_legal(value):
