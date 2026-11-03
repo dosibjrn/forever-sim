@@ -1,10 +1,11 @@
-"""Source-bound spec-profile P2 adapter: no false acceptance by name only."""
+"""Shared source-bound spec-profile adapter plus legacy P2 rank regressions."""
 from types import SimpleNamespace as N
 from unittest.mock import patch
 
 import pytest
 
 from tools import wf_gate_p2_live as p2
+from tools import wf_source_profile as profile
 
 
 def _ir(rule=None):
@@ -36,8 +37,8 @@ def _allocation():
 
 
 def _build_with(builder, spec="balance", rule=None):
-    with patch.object(p2,"available_talent_points",return_value=51):
-        return p2._source_spec_profile(_ir(rule),spec,level=60,bonus=0,
+    with patch.object(profile,"available_talent_points",return_value=51):
+        return profile._source_spec_profile(_ir(rule),spec,level=60,bonus=0,
                                        step=5,source_sha256="a"*64,
                                        frontier_builder=builder)
 
@@ -97,8 +98,8 @@ def test_bounded_frontier_must_not_forge_full_point_or_tree_membership():
 
 
 def test_unrestricted_profile_is_unchanged_without_invoking_frontier():
-    with patch.object(p2,"available_talent_points",side_effect=AssertionError):
-        population,meta=p2._source_spec_profile(_ir(),"unrestricted",
+    with patch.object(profile,"available_talent_points",side_effect=AssertionError):
+        population,meta=profile._source_spec_profile(_ir(),"unrestricted",
                                                 level=60,bonus=0,step=5)
     assert population is None
     assert meta["source_spec_profile_verified"] is True
