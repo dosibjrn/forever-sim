@@ -45,12 +45,26 @@ jobs:
           echo "SELECTED_RUST_SHA=$actual"
           python integrations/mythicsim-rust/port_native_typed_rng.py integrations/mythicsim-rust/engine
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
-      - name: Prove a mid-fight gsim range change reaches the next native decision
+      - name: Require P7.1 saved-request world range causality before full stochastic acceptance
+        env:
+          FOREVER_MYTHICSIM_RUST_BIN: integrations/mythicsim-rust/engine/target/debug/forever-engine
+          FOREVER_P7_LIVE_PROBE_ITERATIONS: "1"
         run: |
-          python integrations/mythicsim-rust/live_world_probe.py \
-            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
-            --request integrations/mythicsim-rust/engine/tests/classes/druid/prepare/balance.request.json \
-            --range-perturbation-only
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from tools.wf_gate_p7_1_live import run_live
+
+          report = run_live(Path.cwd(), "druid", 60, spec="balance")
+          assert report["status"] == "FAIL", report
+          assert report["reasons"] == ["P7_1_BOUNDED_DIAGNOSTIC_NOT_FULL_SAVED_REFERENCE"], report
+          causal = report["world_range_perturbation"]
+          assert report["p7_1_world_range_causality_verified"] is True
+          assert causal["native_ack_chain_verified"] is True
+          assert causal["source_request_raw_sha256"] == report["source_request_raw_sha256"]
+          assert causal["control_post_switch_direct_action_events"] > causal["perturbed_post_switch_direct_action_events"]
+          print("P7_1_WORLD_RANGE_PERTURBATION_CAUSAL_PASS", json.dumps(causal, sort_keys=True))
+          PY
       - name: Download the exact Stage-5 artifact
         env:
           GH_TOKEN: ${{ github.token }}
