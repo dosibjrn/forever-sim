@@ -13,8 +13,7 @@ import re
 import sqlite3
 
 from src.game.model import ActionDefinition, ControlEffect, PeriodicEffect, ResourceCost, StatusAuraEffect, TriggerDefinition
-from .sqlite_talents import DEFAULT_DB
-from .source_db_scope import active_ability_db
+from .source_db_scope import DEFAULT_DB, active_ability_db
 from .source_indexed_action_coverage import _source_spell_ids
 
 _REACTIVE = re.compile(r'^The next 1 melee attack that strikes the caster will afflict the attacker with (?P<name>.+?) \(Rank (?P<rank>\d+)\)\. Castable while shapeshifted\. Lasts (?P<duration>\d+) sec\.$')

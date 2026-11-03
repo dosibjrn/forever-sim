@@ -5,7 +5,7 @@ No game-specific names, ranks or coefficients live in this adapter.
 from __future__ import annotations
 from dataclasses import replace
 import sqlite3,json
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 from src.game.model import (ActionDefinition,ResourceCost,DamageEffect,TriggerDefinition,
                             StatusAuraEffect,EventEmitEffect,WeaponDamageEffect,TargetSchoolPowerEffect)
 
