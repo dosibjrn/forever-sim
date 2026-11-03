@@ -62,7 +62,8 @@ class NativeGearAdapter:
                 original = items.get(original_id)
                 if not native or not original or native.get("type") != original.get("type"):
                     continue
-                if native.get("type") in ("ItemTypeWeapon", "ItemTypeRanged") and iid != original_id:
+                is_weapon_or_ranged = native.get("type") in ("ItemTypeWeapon", "ItemTypeRanged")
+                if is_weapon_or_ranged and iid != original_id:
                     continue  # keep weapon/ranged identity fixed; same-ID observed variants do not alter hand rules
                 # A source donor of the same broad slot type is insufficient:
                 # e.g. a Mage cloth head cannot silently become a plate head.
@@ -74,7 +75,10 @@ class NativeGearAdapter:
                 required_level = native.get("required_level")
                 if required_level is not None and int(required_level) > 60:
                     continue
-                self.pools.setdefault(index, {})[iid] = copy.deepcopy(entry)
+                # Keep weapon/ranged entries out of generic item-ID pools.
+                # Their same-ID enchant variants are carried only as exact entries.
+                if not is_weapon_or_ranged:
+                    self.pools.setdefault(index, {})[iid] = copy.deepcopy(entry)
                 variants = self.variants.setdefault(index, [])
                 if entry not in variants:
                     variants.append(copy.deepcopy(entry))
