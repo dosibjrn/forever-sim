@@ -160,9 +160,9 @@ def port_prepared(source: str) -> str:
                 or source.count(PREPARED_INSERTION_ANCHOR) != 1):
             raise ValueError("untyped prepared two-pull gateway drift")
         return source
-    if (ENGINE_TYPED_MARKER in source
-            or ENGINE_MARKER in source
-            or PREPARED_METHOD_DOC in source):
+    if ENGINE_TYPED_MARKER in source:
+        raise ValueError("typed prepared two-pull gateway drift")
+    if ENGINE_MARKER in source or PREPARED_METHOD_DOC in source:
         raise ValueError("partial or ambiguous prepared two-pull gateway")
     return replace_once(
         source,
