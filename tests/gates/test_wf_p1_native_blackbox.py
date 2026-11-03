@@ -340,7 +340,13 @@ def test_native_positive_sim_refusal_skips_control_and_world(
     assert result["p1_certified"] is False
 
 
-def test_native_direct_effect_requires_positive_delta_and_real_world_ack(monkeypatch, tmp_path):
+@pytest.mark.parametrize(
+    ("completed_targets", "expected_status"),
+    [(100, "NATIVE_DIRECT_BEHAVIOR_VERIFIED"), (99, "ERROR")],
+)
+def test_native_direct_effect_requires_all_requested_world_targets(
+    monkeypatch, tmp_path, completed_targets, expected_status
+):
     from src.engine_client import native_p1_effect_probe as probe
 
     engine_root = tmp_path / "engine"
@@ -381,8 +387,10 @@ def test_native_direct_effect_requires_positive_delta_and_real_world_ack(monkeyp
         return {
             "actual_2d_ack": True,
             "continuous_native_actor": True,
-            "world_targets_killed": 2,
-            "native_damage_events": 2,
+            "world_targets_killed": completed_targets,
+            "world_kills": [{"target_id": i} for i in range(completed_targets)],
+            "native_windows": [{"target_id": i} for i in range(completed_targets)],
+            "native_damage_events": completed_targets,
             "checkpoint_certified": False,
             "world_elapsed_seconds": 3.0,
         }
@@ -392,19 +400,27 @@ def test_native_direct_effect_requires_positive_delta_and_real_world_ack(monkeyp
     monkeypatch.setattr(probe, "_run_world_bridge", world)
     result = probe.run_native_p1_direct_effect_probe(
         binary=binary, engine_root=engine_root, request=_druid_request(),
-        spell_id=14282, timeout_seconds=5, iterations=1,
+        spell_id=14282, timeout_seconds=5, iterations=1, target_count=100,
     )
     assert prepare_count == 2
     assert len(world_calls) == 1
-    assert result["status"] == "NATIVE_DIRECT_BEHAVIOR_VERIFIED"
+    assert world_calls[0]["target_count"] == 100
     assert result["dps_delta"] == 14.0
     assert result["positive_action_count"] == 1
     assert result["control_action_count"] == 0
-    assert result["effect_observed"] is True
-    assert result["controlled_behavior_assertion_passed"] is True
-    assert result["observable_effects"]["actual_2d_ack"] is True
-    assert result["world_bridge"]["checkpoint_certified"] is False
     assert result["p1_certified"] is False
+    if expected_status == "NATIVE_DIRECT_BEHAVIOR_VERIFIED":
+        assert result["status"] == expected_status
+        assert result["effect_observed"] is True
+        assert result["controlled_behavior_assertion_passed"] is True
+        assert result["observable_effects"]["actual_2d_ack"] is True
+        assert result["observable_effects"]["world_targets_requested"] == 100
+        assert result["observable_effects"]["world_targets_killed"] == 100
+        assert result["world_bridge"]["checkpoint_certified"] is False
+    else:
+        assert result["status"] == "ERROR"
+        assert result["reason"] == "NATIVE_P1_WORLD_BRIDGE_CAUSALITY_NOT_CONFIRMED"
+        assert result["effect_observed"] is False
 
 
 def test_native_nonspatial_direct_effect_skips_unneeded_world_bridge(monkeypatch, tmp_path):

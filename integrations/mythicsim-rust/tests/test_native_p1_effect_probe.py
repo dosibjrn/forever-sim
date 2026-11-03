@@ -55,6 +55,7 @@ def _run_case(*, name: str, fixture: Path, expected_class: str, spell_id: int,
         timeout_seconds=120.0,
         iterations=10,
         seed=647003,
+        target_count=100 if requires_2d_world else 0,
         requires_2d_world=requires_2d_world,
     )
     expected_status = (
@@ -84,9 +85,13 @@ def _run_case(*, name: str, fixture: Path, expected_class: str, spell_id: int,
         assert result["world_bridge_required"] is True
         assert world["actual_2d_ack"] is True
         assert world["continuous_native_actor"] is True
-        assert world["native_damage_events"] > 0
+        assert world["world_targets_killed"] == 100
+        assert len(world["world_kills"]) == 100
+        assert len(world["native_windows"]) == 100
+        assert world["native_damage_events"] >= 100
         assert world["checkpoint_certified"] is False
         output.update({
+            "world_targets_requested": 100,
             "world_targets_killed": world["world_targets_killed"],
             "native_damage_events": world["native_damage_events"],
             "actual_2d_ack": world["actual_2d_ack"],

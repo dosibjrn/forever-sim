@@ -452,8 +452,14 @@ def run_native_p1_direct_effect_probe(
         isinstance(world, dict)
         and world.get("actual_2d_ack") is True
         and world.get("continuous_native_actor") is True
+        and type(world.get("world_targets_killed")) is int
+        and world["world_targets_killed"] == target_count
+        and isinstance(world.get("world_kills"), list)
+        and len(world["world_kills"]) == target_count
+        and isinstance(world.get("native_windows"), list)
+        and len(world["native_windows"]) == target_count
         and type(world.get("native_damage_events")) is int
-        and world["native_damage_events"] > 0
+        and world["native_damage_events"] >= target_count
         and world.get("checkpoint_certified") is False
     )
     if not world_ok:
@@ -472,6 +478,7 @@ def run_native_p1_direct_effect_probe(
         "dps_with_action": positive_dps,
         "dps_without_action": control_dps,
         "dps_delta": dps_delta,
+        "world_targets_requested": target_count,
         "world_targets_killed": world["world_targets_killed"],
         "native_damage_events": world["native_damage_events"],
         "actual_2d_ack": world["actual_2d_ack"],
