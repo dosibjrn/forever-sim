@@ -168,6 +168,32 @@ def _paid_gear_elite_choice(elites, rng, proposal_index):
     return rng.choice(elites[:min(15, len(elites))])[1]
 
 
+def _p74_paid_parent_pool(balanced_elites, stochastic_finalists, proposal_index):
+    """Prefer real paid stochastic native+2D evaluations for local gear edits.
+
+    The three-fight balanced screen can rank gear differently from the
+    stochastic objective (seen in full P7.4 runs). Once a finalist is paid,
+    reuse its original source-legal request, NOT the seed-mutated rerank
+    request. Every third exploitation proposal retains balanced diversity;
+    every fifth outer-loop proposal remains an independent cold restart.
+    """
+    if not stochastic_finalists or proposal_index % 3 == 0:
+        return balanced_elites
+    return sorted(
+        ((row[0], row[3]) for row in stochastic_finalists),
+        key=lambda entry: entry[0], reverse=True)
+
+
+def _p74_early_rerank_due(elapsed_s, reranked_count):
+    """Spend up to six early paid stochastic screens before the 240s phase.
+
+    One opportunity per 20 seconds from 120s through 220s. All paid calls
+    remain guarded by the existing measured per-step 300s deadline.
+    """
+    return (120.0 <= elapsed_s < 240.0 and reranked_count < 6
+            and elapsed_s >= 120.0 + 20.0 * reranked_count)
+
+
 def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: float, *,
                                     seeds=("1947004", "1947047")):
     """Paid independent stochastic seed pairs reduce 24-fight winner's curse.
@@ -294,6 +320,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     elites = []  # top 24 source-legal loadouts actually scored by native+2D
     reranked = []  # separate paid 24-fight stochastic native+2D finalists
     rerank_seen = set()
+    early_stochastic_finalists_paid = 0
+    stochastic_parent_proposals = 0
     confirmed = set()  # successful independent 24+24 confirmations
     confirmation_attempted = set()  # avoid retrying a failed paid candidate
     rerank_failures = []
@@ -338,12 +366,21 @@ def run_live(root: Path, class_key: str, level: int, *,
             # measured 300s call budget. Preserve 295–300s for late genuinely
             # paid screens/reranks. At freeze a provisional 2x24 candidate
             # wins only if no independently confirmed 4x24 finalist exists.
-            if full_search and time.monotonic() - search_start >= 240.0:
+            # Do not let three-fight balanced winner's curse select every
+            # exploitation parent until the last minute. Pay a small number
+            # of real stochastic native+2D finalists earlier, then mutate
+            # their independently scored, immutable source-legal requests.
+            # The 240-300s confirmation/finalist phase stays available.
+            rerank_elapsed = (time.monotonic() - search_start
+                              if full_search else 0.0)
+            early_rerank = _p74_early_rerank_due(
+                rerank_elapsed, len(reranked)) if full_search else False
+            if full_search and (rerank_elapsed >= 240.0 or early_rerank):
                 next_confirmation = (
                     _next_p74_confirmation(
                         reranked, confirmation_attempted,
                         time.monotonic() - search_start)
-                    if len(reranked) >= 3 else None)
+                    if rerank_elapsed >= 240.0 and len(reranked) >= 3 else None)
                 if next_confirmation is not None:
                     if _paid_step_has_budget(
                             search_start, max(worst_finalist_s,
@@ -388,6 +425,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                             production, binary, contender, player["distanceFromTarget"])
                         reranked.append((stochastic_score, stochastic_live,
                                          contender_sha, contender, screen_score))
+                        if early_rerank:
+                            early_stochastic_finalists_paid += 1
                     except (ValueError, RuntimeError, OSError, KeyError,
                             TimeoutError, TypeError, AssertionError,
                             subprocess.SubprocessError) as exc:
@@ -406,8 +445,12 @@ def run_live(root: Path, class_key: str, level: int, *,
                 # Local exploitation uses only a winner already paid in THIS
                 # cold run; every fifth draw is independently cold. The saved
                 # gear and other gates' winners are never injected as elites.
-                elite = (_paid_gear_elite_choice(elites, rng, proposals)
+                paid_parent_pool = (_p74_paid_parent_pool(elites, reranked, proposals)
+                                    if full_search else elites)
+                elite = (_paid_gear_elite_choice(paid_parent_pool, rng, proposals)
                          if full_search else None)
+                if elite is not None and paid_parent_pool is not elites:
+                    stochastic_parent_proposals += 1
                 candidate = _cold_gear(
                     base, validator, gear_search, rng, pool=pool,
                     enchant_pools=enchant_pools, elite=elite,
@@ -562,6 +605,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "winner_selection": winner_selection,
         "paid_stochastic_finalists": len(reranked),
         "paid_stochastic_confirmed_finalists": len(confirmed),
+        "early_stochastic_finalists_paid": early_stochastic_finalists_paid,
+        "stochastic_parent_proposals": stochastic_parent_proposals,
         "paid_stochastic_finalist_failures": rerank_failures[:4],
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
