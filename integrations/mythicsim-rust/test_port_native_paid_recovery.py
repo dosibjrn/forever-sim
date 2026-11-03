@@ -279,3 +279,29 @@ except ValueError:
 else:
     raise AssertionError("TYPED_TWO_WINDOW_PREPARED_GATEWAY_DRIFT_ACCEPTED")
 print("RUST_TYPED_TWO_WINDOW_PREPARED_GATEWAY_IDEMPOTENT")
+
+
+# Structural typed-RNG acceptance is deliberately narrower than a marker-only
+# no-op: all native class calls, prepared bridge and explicit CLI mode must agree.
+for marker, anchor, method, transform in (
+    (two_world_cli.CLASS_MARKER, two_world_cli.CLASSES_ANCHOR,
+     two_world_cli.CLASS_METHOD, port.port_classes),
+    (two_world_cli.PREPARED_MARKER, two_world_cli.PREPARED_ANCHOR,
+     two_world_cli.PREPARED_METHOD, port.port_prepared),
+    (two_world_cli.CLI_MARKER, two_world_cli.CLI_ANCHOR,
+     two_world_cli.CLI_METHOD, port.port_main),
+):
+    typed = two_world_cli.typed_rng_variant(marker, method)
+    # Harmless fixture-only comment ensures the structural path, not an exact
+    # whole-block byte match, is what proves the known typed descendant.
+    typed = typed.replace("\n", "\n// typed fixture line\n", 1)
+    base_source = typed + anchor
+    assert two_world_cli._typed_native_world_present(base_source, marker)
+    assert two_world_cli.insert(base_source, anchor, marker, method) == base_source
+    paid = transform(two_world_cli.typed_rng_variant(marker, method))
+    paid = paid.replace("\n", "\n// paid typed fixture line\n", 1)
+    paid_source = paid + anchor
+    assert two_world_cli._typed_native_world_present(paid_source, marker)
+    assert two_world_cli.insert(paid_source, anchor, marker, method) == paid_source
+
+print("RUST_NATIVE_TWO_WORLD_TYPED_RNG_AND_PAID_RECOVERY_IDEMPOTENT")

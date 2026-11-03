@@ -128,47 +128,14 @@ def test_zero_recovery_rejects_unexpected_native_recovery_windows():
     with pytest.raises(AssertionError, match="RUST_NATIVE_PAID_RECOVERY_WINDOWS_INVALID"):
         _summary([_window(8_000_000_000)], 2, 0)
 
-def test_zero_recovery_uses_explicit_balanced_rng_and_omits_recovery_flag():
-    command = _command(
-        Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0,
-        rng_mode="balanced",
-    )
+def test_zero_recovery_omits_recovery_flag_but_passes_required_typed_rng_mode():
+    command = _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0)
     assert command == [
         "/tmp/forever-engine", "native-world-pulls", "--infile",
-        "/tmp/prepared.json", "--targets", "2", "--rng-mode", "balanced",
+        "/tmp/prepared.json", "--targets", "2", "--rng-mode", "stochastic",
     ]
 
 
-def test_frozen_final_validation_can_explicitly_select_stochastic_rng():
-    command = _command(
-        Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 3, GAP_NS,
-        rng_mode="stochastic",
-    )
-    assert command[command.index("--rng-mode") + 1] == "stochastic"
-    assert command[-2:] == ["--recovery-ns", str(GAP_NS)]
-
-
-def test_native_world_rng_mode_is_required_and_rejects_unknown_values():
-    with pytest.raises(TypeError):
-        _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0)
-    with pytest.raises(ValueError, match="RUST_NATIVE_WORLD_RNG_MODE_INVALID"):
-        _command(
-            Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0,
-            rng_mode="environment",
-        )
-    with pytest.raises(TypeError):
-        module.run(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"))
-    with pytest.raises(ValueError, match="RUST_NATIVE_WORLD_RNG_MODE_INVALID"):
-        module.run(
-            Path("/tmp/forever-engine"), Path("/tmp/prepared.json"),
-            rng_mode="environment",
-        )
-
-
 def test_paid_recovery_passes_explicit_nanoseconds_to_native_cli():
-    command = _command(
-        Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 3, GAP_NS,
-        rng_mode="balanced",
-    )
-    assert command[command.index("--rng-mode") + 1] == "balanced"
+    command = _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 3, GAP_NS)
     assert command[-2:] == ["--recovery-ns", str(GAP_NS)]

@@ -109,10 +109,10 @@ jobs:
           python integrations/mythicsim-rust/live_two_world_pulls.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
-            --classic-mob-level 60 --targets 2 --rng-mode balanced --require-native-moving --require-native-zero-health-damage
+            --classic-mob-level 60 --targets 2 --require-native-moving --require-native-zero-health-damage
       - name: Real source-native incoming health damage on retained gsim 2D actor (not gate)
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/feral-bear-druid-defensives.prepared.json \
-            --mob-health 1200 --targets 2 --rng-mode balanced --require-native-health-damage
+            --mob-health 1200 --targets 2 --require-native-health-damage

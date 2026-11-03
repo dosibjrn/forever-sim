@@ -72,6 +72,56 @@ def typed_rng_variant(marker: str, replacement: str) -> str:
     raise ValueError("RUST_WORLD_TYPED_RNG_VARIANT_UNSUPPORTED")
 
 
+
+def _typed_native_world_present(source: str, marker: str) -> bool:
+    """Recognize the selected typed-RNG native-world API, including paid recovery."""
+    if source.count(marker) != 1:
+        return False
+    start = source.index(marker)
+    if marker == CLASS_MARKER:
+        end = source.find("\n/// Run the same native actor through two source-backed combat windows.", start)
+        block = source[start:end] if end >= 0 else source[start:]
+        return (
+            "rng_mode: crate::core::rng::RngMode" in block
+            and block.count("::fight(prepared, rng_mode)?") == 9
+            and (
+                block.count(".native_two_world_targets(target_count)") == 9
+                or (
+                    "recovery_ns: i64" in block
+                    and block.count(".native_two_world_targets(target_count, recovery_ns)") == 9
+                )
+            )
+        )
+    if marker == PREPARED_MARKER:
+        end = source.find("\n/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery.", start)
+        block = source[start:end] if end >= 0 else source[start:]
+        return (
+            "rng_mode: crate::core::rng::RngMode" in block
+            and (
+                "crate::classes::native_two_world_targets(prepared, target_count, rng_mode)" in block
+                or (
+                    "recovery_ns: i64" in block
+                    and "crate::classes::native_two_world_targets(prepared, target_count, rng_mode, recovery_ns)" in block
+                )
+            )
+        )
+    if marker == CLI_MARKER:
+        end = source.find('    if args[0] == "native-pulls" {', start)
+        block = source[start:end] if end >= 0 else source[start:]
+        return (
+            'args[5] != "--rng-mode"' in block
+            and "RngMode::parse_cli(&args[6])?" in block
+            and (
+                "native_two_world_targets(&prepared, target_count, mode)" in block
+                or (
+                    "--recovery-ns" in block
+                    and "native_two_world_targets(&prepared, target_count, mode, recovery_ns)" in block
+                )
+            )
+        )
+    return False
+
+
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if source.count(anchor) != 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
@@ -80,7 +130,7 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     # idempotent outcomes; a partial signature/call-site change is not.
     if marker in (CLASS_MARKER, PREPARED_MARKER, CLI_MARKER):
         typed = typed_rng_variant(marker, replacement)
-        if source.count(typed) == 1:
+        if source.count(typed) == 1 or _typed_native_world_present(source, marker):
             return source
         from port_native_paid_recovery import port_classes, port_prepared, port_main
         transform = {
