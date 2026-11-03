@@ -3,17 +3,12 @@ from __future__ import annotations
 """Forever source facts normalized into generic direct+periodic Actions."""
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
-from src.game.model.ir import (
-    ActionDefinition,
-    ActorDefinition,
-    DamageEffect,
-    PeriodicEffect,
-    ResourceCost,
-    ResourceDefinition,
-)
 from .direct_spells import DEFAULT_FOREVER_SPELL_GCD_S
+
+if TYPE_CHECKING:
+    from src.game.model.ir import ActionDefinition, ActorDefinition, ResourceDefinition
 
 
 @dataclass(frozen=True)
@@ -48,6 +43,8 @@ def normalize_direct_periodic_action(
     Refresh is data on the periodic effect. The generic runtime interprets the
     rule; this source adapter never implements class-specific ticking logic.
     """
+    from src.game.model.ir import ActionDefinition, DamageEffect, PeriodicEffect, ResourceCost
+
     if resource.id != fact.resource_id:
         raise ValueError(f"periodic spell resource mismatch: {resource.id!r} != {fact.resource_id!r}")
     source = {
