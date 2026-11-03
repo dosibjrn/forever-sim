@@ -281,6 +281,15 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         source_actions = request["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
         self.assertEqual(len(source_actions), 10)
 
+        unconditional_action = next(
+            entry["action"] for entry in source_actions
+            if "condition" not in entry["action"]
+            and isinstance(entry["action"].get("castSpell"), dict)
+        )
+        unconditional_spell_id = (
+            unconditional_action["castSpell"]["spellId"]["spellId"]
+        )
+
         class ForceNineteen(random.Random):
             def randint(self, lower, upper):
                 if upper < 19:
@@ -290,7 +299,17 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
                 return 19
 
             def random(self):
-                return 0.99  # no opaque actions or invented predicate forms
+                return 0.99  # no opaque actions
+
+            def choice(self, values):
+                if values and isinstance(values[0], dict) and "spellId" in values[0]:
+                    return next(
+                        value for value in values
+                        if value.get("spellId") == unconditional_spell_id
+                    )
+                if values and isinstance(values[0], dict) and "castSpell" in values[0]:
+                    return next(value for value in values if "condition" not in value)
+                return super().choice(values)
 
         candidate = mutate_apl(None, source_actions, ForceNineteen(670), cold=True)
         self.assertEqual(len(candidate), 19)
