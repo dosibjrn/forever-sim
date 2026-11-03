@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/p1-native-validator-contract.yml
+      - config/gates/p1_scenario_applicability_v1.json
       - src/engine_client/native_p1_effect_probe.py
       - src/engine_client/native_p2_rank_probe.py
       - tools/wf_p1_native_effects.py
