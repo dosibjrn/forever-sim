@@ -109,9 +109,9 @@ def _paid_stochastic_finalist(production, binary, request: dict, distance: float
         path = Path(tmp) / "source-legal-talent-finalist.json"
         path.write_text(json.dumps(rerank_request))
         native = production.native_source_control(
-            binary, path, 24, rng_mode="stochastic")
+            binary, path, 24, rng_mode="balanced")
         live = production.run(binary, path, distance=distance, iterations=24,
-                              rng_mode="stochastic")
+                              rng_mode="balanced")
         failure = _source_native_world_parity(native, live, 24)
         if failure is not None:
             raise ValueError("P73_FINALIST_NATIVE_WORLD_PARITY:" + failure)
@@ -355,5 +355,6 @@ def run_live(root: Path, class_key: str, level: int, *,
         "cold_candidate_failures": failures[:4],
         "selected_validation": "3_native_world_fights_per_cold_talent_candidate",
         "search_rng_mode": "balanced",
+        "finalist_rng_mode": "balanced",
         "coverage_scope_complete": False,
     }
