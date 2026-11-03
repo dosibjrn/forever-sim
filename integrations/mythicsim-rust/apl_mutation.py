@@ -24,7 +24,7 @@ def _condition_shape(node):
         result = {}
         for key, child in node.items():
             if (key == "val" and isinstance(child, str)
-                    and re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:ms|s)?", child)):
+                    and re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:ms|s)?", child)):
                 result[key] = "<NUMERIC_LITERAL>"
             else:
                 result[key] = _condition_shape(child)
@@ -156,17 +156,18 @@ def _ensure_fallback(actions, source_actions):
 def mutate_apl(actions, source_actions, rng, *, cold=False):
     """Return a new legal-grammar priority list, class/gate independent.
 
-    Cold generation samples a randomized action list, *not* a paid reference
-    candidate; later elite mutations use the same operators. The grammar is
-    deliberately restricted to expression trees and spell IDs present in the
-    supplied frozen input. This is not full spellbook-level completeness.
+    Cold generation samples complete source cast/predicate pairs, not the
+    saved priority order; later elite mutations use the same operators.
+    Numeric threshold changes preserve predicate structure, and a final pair
+    guard rejects cross-spell condition assignment. This is not full
+    spellbook-level completeness.
     """
     source_casts, source_by_identity, allowed = _corpus(source_actions)
     if cold:
         # A cold search may READ the saved request as a source-backed grammar,
         # but must not initialize its policy from the saved priority list.
-        # Independently sample new casts/predicates and optional opaque native
-        # actions; an identical policy can still arise by chance and is legal.
+        # Sample complete source cast/predicate pairs and optional opaque
+        # native actions; never form a cross-product of unrelated casts and tests.
         opaque = [entry for entry in source_actions
                   if "castSpell" not in entry.get("action", {})]
         # The saved request is a source vocabulary, not an APL length prior.
