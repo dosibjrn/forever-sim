@@ -75,7 +75,7 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     from src.game.data.forever.registry import build_game_ir_slice
-    from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
+    from src.game.checkpoint_p3_smoke import fast_p3_smoke, fast_p3_smoke_for_policy
     from src.game.gear import executable_gear_stats
     from src.v2.source_budgeted_gear import (run_source_budgeted_gear,
         paid_source_policy_stat_witness)
@@ -99,14 +99,22 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "src.v2.source_bounded_joint_frontier.source_spec_talent_frontier"}
     max_p3_evaluations = 44
     schedule_incoming_attacks = True
+    # Allocate the fixed P3 budget to axes actually present in the selected
+    # top-five legal catalogue and executable by this source IR. This includes
+    # wand/ranged DPS when sourced, without spending calls on absent axes.
+    catalogue_probe = fast_p3_smoke(
+        class_key=class_key, level=level, weights={},
+        weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+        weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+        defensive_positive_required=False)
+    catalogue_axes = set(catalogue_probe["catalogue_stat_axes"])
+    executable_axes = set(executable_gear_stats(ir))
+    probe_stats = tuple(sorted(catalogue_axes & executable_axes))
     result = run_source_budgeted_gear(
         class_key=class_key, level=level, ir_slice=ir,
         max_evaluations=max_p3_evaluations, initial_search=12, search_per_gear=3,
         max_gear_states=1, probe_deltas=(5., 20.),
-        probe_stats=("armor", "stamina", "strength", "agility", "intellect",
-                     "spirit", "spell_power", "attack_power", "mp5",
-                     "crit", "hit", "dodge", "parry",
-                     "health_regeneration_per_5s", "weapon_dps"),
+        probe_stats=probe_stats,
         schedule_incoming_attacks=schedule_incoming_attacks)
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
@@ -207,6 +215,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "source_policy_applicability": dict(item_check.get("source_policy") or {}),
         "source_executable_stat_axes": sorted(executable_gear_stats(ir)),
         "catalogue_stat_axes": item_check["catalogue_stat_axes"],
+        "p3_probe_stats": list(probe_stats),
         "real_measured_stat_weights": dict(sorted(weights.items())),
         "real_catalogue_legal_items": item_check["legal_item_count"],
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
