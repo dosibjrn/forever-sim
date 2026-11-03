@@ -35,7 +35,8 @@ class NativeGearAdapterTests(unittest.TestCase):
         self.assertEqual((0, 1), adapter.mutable_indices)
         self.assertEqual({10, 11}, set(adapter.pools[0]))
         self.assertEqual({20, 21}, set(adapter.pools[1]))
-        self.assertNotIn(2, adapter.pools)  # no weapon/offhand guesswork
+        self.assertEqual({30}, set(adapter.pools[2]))  # only the observed base weapon ID
+        self.assertNotIn(2, adapter.mutable_indices)  # no same-ID variant in this fixture
 
     def test_native_mutation_preserves_reference_talents_apl_and_weapon(self):
         original = copy.deepcopy(self.fire)
