@@ -12,15 +12,12 @@ from typing import Any, Callable, Generic, Hashable, Mapping, TypeVar
 
 
 CandidateT = TypeVar("CandidateT")
-EvaluationFunction = Callable[[CandidateT], tuple[float | None, Mapping[str, Any]]]
-
-
 @dataclass
 class EvaluationCache(Generic[CandidateT]):
     """Memoize expensive candidate evaluations by a caller-supplied key."""
 
     key_for: Callable[[CandidateT], Hashable]
-    expensive_evaluate: EvaluationFunction
+    expensive_evaluate: Callable[[CandidateT], tuple[float | None, Mapping[str, Any]]]
     _cache: dict[Hashable, tuple[float | None, Mapping[str, Any]]] = field(
         default_factory=dict,
         repr=False,
@@ -63,4 +60,4 @@ class EvaluationCache(Generic[CandidateT]):
         }
 
 
-__all__ = ("EvaluationCache", "EvaluationFunction")
+__all__ = ("EvaluationCache",)
