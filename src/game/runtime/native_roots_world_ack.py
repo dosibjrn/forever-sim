@@ -6,7 +6,6 @@ control-event IDs to the same before/after world ACK as native damage.
 """
 from __future__ import annotations
 
-from math import isfinite
 from typing import Mapping
 
 from .go_native_world_damage_ack import (
@@ -76,6 +75,8 @@ class GsimNativeRootsWorldApplier:
                     or not isinstance(label, str) or not label
                     or not isinstance(action_id, str) or not action_id):
                 raise NativeDamageWorldApplicationError("WORLD_CONTROL_SOURCE_EVENT_INVALID")
+            if not target.alive and kind != "expire":
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_TARGET_ALREADY_DEAD")
             if kind == "attempt":
                 if type(landed) is not bool or expiry_ns is not None:
                     raise NativeDamageWorldApplicationError("WORLD_CONTROL_ATTEMPT_INVALID")
@@ -88,7 +89,8 @@ class GsimNativeRootsWorldApplier:
                     float(shadow_root_expiry or 0.0),
                 )
             else:
-                if landed is not None or expiry_ns is not None or shadow_root_expiry is None:
+                if (landed is not None or expiry_ns is not None
+                        or (shadow_root_expiry is None and target.alive)):
                     raise NativeDamageWorldApplicationError("WORLD_CONTROL_EXPIRE_WITHOUT_ACTIVE_ROOT")
                 shadow_root_expiry = None
             last_id = ordinal
