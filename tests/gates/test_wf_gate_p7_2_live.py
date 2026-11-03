@@ -160,7 +160,9 @@ def test_full_p72_explores_paid_balanced_elite_archive_then_freezes_best_screen(
     base["raid"]["parties"][0]["players"][0].update({
         "class": "ClassDruid", "distanceFromTarget": 15})
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    clock = iter([0.0] * 12 + [300.0, 300.0, 300.0])
+    # Start + six candidate loop conditions, then the 300s wall window.
+    # Removed per-step timestamps must not change the candidate sequence.
+    clock = iter([0.0] * 7 + [300.0, 300.0])
     monkeypatch.setattr(p72.time, "monotonic", lambda: next(clock))
     monkeypatch.setattr(
         p72, "_pinned_source_runtime",
