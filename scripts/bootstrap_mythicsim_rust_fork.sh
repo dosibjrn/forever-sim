@@ -101,8 +101,8 @@ if ! git diff --cached --quiet; then
 fi
 
 # Preserve the source-legal three-rank Improved Entangling Roots selection
-# in the real Rust preparer. Executable root/damage/break effects are a later
-# native Rust slice; rank intake alone never awards P1/P2 acceptance.
+# and periodic damage in the real Rust preparer. Rank intake and DoT damage
+# alone never award P1/P2 acceptance; control lifetime needs its own 2D proof.
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_improved_roots_rank.py" "$PWD"
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_entangling_roots_dot.py" "$PWD"
 # Stage every actual Rust source and regression file changed by these two ports.
@@ -205,6 +205,15 @@ python3 "$PROJECT/integrations/mythicsim-rust/port_native_gsim_moving.py" "$PWD"
 git add src/core/fight.rs src/core/fight/world_bridge.rs
 if ! git diff --cached --quiet; then
   git commit -m "feat(forever): apply real gsim movement to native cast legality"
+fi
+
+# Export the landed native Roots control and exact aura expiry to the same
+# selected-Rust/gsim world ACK. Damage-break semantics remain a separate slice.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_entangling_roots_control.py" "$PWD"
+git add src/classes/druid/spells.rs src/classes/druid/spells/entangling_roots.rs \
+  src/classes/druid/agent.rs src/core/fight/world_bridge.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): export native Roots control through gsim world ACK"
 fi
 
 # Existing native retarget regressions and new live terminal predicate must
