@@ -317,6 +317,11 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
     rng.shuffle(finalist_donors)
     rng.shuffle(balanced_donors)
     donors = finalist_donors + balanced_donors
+    # The former first-element choice always picked a finalist when one
+    # existed, making all independently paid balanced gear donors unreachable.
+    # Shuffle the combined PAID pool so either lineage can propose a block;
+    # selected MythicSim Rust remains the sole legality/scoring authority.
+    rng.shuffle(donors)
     other, different = donors[0]
     selected = rng.sample(different, min(len(different), rng.randint(2, 5)))
     for i in selected:
