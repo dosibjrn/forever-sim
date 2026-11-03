@@ -198,6 +198,15 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): report native mana regeneration across retained world kills"
 fi
 
+# Preserve measured mana regeneration from the genuine Rust 2-second tick
+# resources in each retained world-target receipt. This is in-combat source
+# evidence, not between-pull idle regeneration or paid recovery.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_mana_regen_receipts.py" "$PWD"
+git add src/core/fight.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): report native mana regeneration across retained world kills"
+fi
+
 # Publish gsim's actually observed world movement into the retained native
 # actor's existing Rust casting rules. Keep the world as movement authority;
 # do not duplicate spell legality in the Python 2D driver.
@@ -205,6 +214,16 @@ python3 "$PROJECT/integrations/mythicsim-rust/port_native_gsim_moving.py" "$PWD"
 git add src/core/fight.rs src/core/fight/world_bridge.rs
 if ! git diff --cached --quiet; then
   git commit -m "feat(forever): apply real gsim movement to native cast legality"
+fi
+
+# The canonical RNG contract is typed and required at the native boundary.
+# Never publish an environment-selected stochastic optimizer fallback.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_typed_rng.py" "$PWD"
+git add src/core/rng.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs \
+  src/lib.rs src/main.rs src/classes/*/agent.rs src/classes/*/prepared.rs
+git add tests/
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): require typed RNG mode throughout native combat"
 fi
 
 # Existing native retarget regressions and new live terminal predicate must
