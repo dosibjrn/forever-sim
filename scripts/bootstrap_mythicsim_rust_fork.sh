@@ -165,6 +165,15 @@ if ! git diff --cached --quiet; then
   git commit -m "fix(forever): end current world pull at confirmed native lethal ACK"
 fi
 
+# Publish the same real source-Rust two-distinct-world-target CLI exercised
+# by the retained gsim CombatRuntime integration regression. This is NOT a
+# paid 100-mob route or an acceptance gate.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_two_world_cli.py" "$PWD"
+git add src/core/fight.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): expose retained Rust actor to two real gsim world kills"
+fi
+
 # Existing native retarget regressions and new live terminal predicate must
 # pass before publishing this selected Rust integration.
 cargo test --locked --lib persistent_next_target
