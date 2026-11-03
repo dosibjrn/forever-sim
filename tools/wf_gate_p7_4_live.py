@@ -270,7 +270,26 @@ def _next_p74_confirmation(reranked, attempted, elapsed_s):
     ), None)
 
 
-def _freeze_paid_p74_winner(screen_best, reranked, confirmed=()):
+def _next_p74_deep_confirmation(reranked, confirmed, attempted, elapsed_s):
+    """Recheck the strongest 96-fight paid leaders before freezing a winner.
+
+    In real P7.4 #41563274960, a 727.55 DPS paid leader became 720.22
+    in the separate 1k stochastic holdout. Instead of confirming every
+    weaker finalist, spend at most two extra independent 24+24 batches
+    on already-paid top contenders, still within the 300-second budget.
+    """
+    if (not 260.0 <= elapsed_s < 295.0 or len(reranked) < 8
+            or len(confirmed) < 5 or len(attempted) >= 2):
+        return None
+    return next(((index, row)
+                 for index, row in sorted(
+                     enumerate(reranked),
+                     key=lambda item: item[1][0], reverse=True)
+                 if row[2] in confirmed and row[2] not in attempted), None)
+
+
+def _freeze_paid_p74_winner(screen_best, reranked, confirmed=(),
+                            deep_confirmed=()):
     """Freeze a paid independent finalist before the separate 1k holdout.
 
     Confirmed leaders have 4x24 genuinely paid non-holdout stochastic fights;
@@ -279,11 +298,14 @@ def _freeze_paid_p74_winner(screen_best, reranked, confirmed=()):
     If none completed, retain the best genuinely paid provisional finalist.
     """
     if reranked:
+        deep_rows = [row for row in reranked if row[2] in deep_confirmed]
         confirmed_rows = [row for row in reranked if row[2] in confirmed]
         score, live, sha, request, screen_score = max(
-            confirmed_rows or reranked, key=lambda row: row[0])
+            deep_rows or confirmed_rows or reranked, key=lambda row: row[0])
         return (score, live, sha, request, screen_score,
-                ("paid_4x24_stochastic_live_native_confirmed_finalist"
+                ("paid_6x24_stochastic_live_native_deep_confirmed_finalist"
+                 if deep_rows else
+                 "paid_4x24_stochastic_live_native_confirmed_finalist"
                  if confirmed_rows else
                  "paid_2x24_stochastic_live_native_finalist"))
     score, live, sha, request = screen_best
@@ -333,6 +355,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     stochastic_parent_proposals = 0
     confirmed = set()  # successful independent 24+24 confirmations
     confirmation_attempted = set()  # avoid retrying a failed paid candidate
+    deep_confirmation_attempted = set()
+    deep_confirmed = set()
     rerank_failures = []
     failures = []
     seen = set()
@@ -385,7 +409,10 @@ def run_live(root: Path, class_key: str, level: int, *,
             early_rerank = _p74_early_rerank_due(
                 rerank_elapsed, len(reranked)) if full_search else False
             if full_search and (rerank_elapsed >= 240.0 or early_rerank):
-                next_confirmation = (
+                next_deep = _next_p74_deep_confirmation(
+                    reranked, confirmed, deep_confirmation_attempted,
+                    rerank_elapsed) if full_search else None
+                next_confirmation = next_deep or (
                     _next_p74_confirmation(
                         reranked, confirmation_attempted,
                         time.monotonic() - search_start)
@@ -395,19 +422,32 @@ def run_live(root: Path, class_key: str, level: int, *,
                             search_start, max(worst_finalist_s,
                                               worst_confirmation_s)):
                         index, row = next_confirmation
-                        confirmation_attempted.add(row[2])
+                        is_deep = next_deep is not None
+                        if is_deep:
+                            deep_confirmation_attempted.add(row[2])
+                        else:
+                            confirmation_attempted.add(row[2])
                         paid_start = time.perf_counter()
                         try:
                             second_score, second_live = _paid_gear_stochastic_finalist(
                                 production, binary, row[3],
                                 player["distanceFromTarget"],
-                                seeds=("1947113", "1947139"))
+                                seeds=(("1947209", "1947227") if is_deep
+                                       else ("1947113", "1947139")))
                             # Each seed pair ran the same 24+24 independent
                             # native/world fights: equal-weight average of 96
                             # genuinely paid non-holdout stochastic fights.
-                            reranked[index] = ((row[0] + second_score) / 2,
-                                               second_live, *row[2:])
-                            confirmed.add(row[2])
+                            # Each non-holdout paid pair adds 48 stochastic
+                            # native/world fights. Existing confirmed 96-fight
+                            # means get 2x weight for a new 144-fight mean.
+                            score = ((2 * row[0] + second_score) / 3
+                                     if is_deep else
+                                     (row[0] + second_score) / 2)
+                            reranked[index] = (score, second_live, *row[2:])
+                            if is_deep:
+                                deep_confirmed.add(row[2])
+                            else:
+                                confirmed.add(row[2])
                         except (ValueError, RuntimeError, OSError, KeyError,
                                 TimeoutError, TypeError, AssertionError,
                                 subprocess.SubprocessError) as exc:
@@ -530,7 +570,7 @@ def run_live(root: Path, class_key: str, level: int, *,
 
     (score, live, candidate_sha, frozen_winner,
      winner_screen_dps, winner_selection) = _freeze_paid_p74_winner(
-         best, reranked, confirmed)
+         best, reranked, confirmed, deep_confirmed)
     complete_search = full_search and 300.0 <= search_wall_s <= 301.0
     final = {}
     if complete_search:
@@ -616,6 +656,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "winner_selection": winner_selection,
         "paid_stochastic_finalists": len(reranked),
         "paid_stochastic_confirmed_finalists": len(confirmed),
+        "paid_stochastic_deep_confirmed_finalists": len(deep_confirmed),
         "early_stochastic_finalists_paid": early_stochastic_finalists_paid,
         "stochastic_parent_proposals": stochastic_parent_proposals,
         "paid_stochastic_finalist_failures": rerank_failures[:4],
