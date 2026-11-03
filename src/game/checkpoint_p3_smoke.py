@@ -156,6 +156,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                   weight_evidence_kind: str, weapon_damage_dependent: bool,
                   equipped_weapon_dps_relevant: bool | None = None,
                   defensive_positive_required: bool = True,
+                  applicable_stat_axes: set[str] | None = None,
                   required_level_policy: str = 'catalogue') -> dict:
     """Measure the current source catalogue's fast P3 score coverage.
 
@@ -169,8 +170,10 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         raise ValueError('P3_DEFENSIVE_APPLICABILITY_NOT_BOOLEAN')
     # All ordinary weights are nonnegative. Outside Warrior/Bear, defensive
     # zeros are meaningful measurements rather than artificial P3 blockers.
-    strictly_positive_axes = (POSITIVE_WHEN_PRESENT if defensive_positive_required
-                              else POSITIVE_WHEN_PRESENT - DEFENSIVE_STAT_AXES)
+    applicable_axes = (set(POSITIVE_WHEN_PRESENT) if applicable_stat_axes is None
+                       else set(POSITIVE_WHEN_PRESENT) & set(applicable_stat_axes))
+    strictly_positive_axes = (applicable_axes if defensive_positive_required
+                              else applicable_axes - DEFENSIVE_STAT_AXES)
     rows = available_items(class_key, level, required_level_policy=required_level_policy)
     if not rows:
         raise ValueError('P3_NO_LEGAL_ITEMS_IN_CURRENT_DB')
@@ -235,8 +238,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
                     continue
                 parts[axis] = contribution
                 if required_axis and (weight > 0 or
-                        (weight == 0 and axis in DEFENSIVE_STAT_AXES
-                         and not defensive_positive_required)):
+                        (weight == 0 and axis not in strictly_positive_axes)):
                     item_valid_weight_checks += 1
             # Check the ACTUAL selector scorer; do not certify a parallel
             # dot-product that the optimizer itself never uses.
@@ -280,6 +282,7 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
             'legal_item_count': len(rows), 'tested_item_count': tested,
             'slot_count': len(slots), 'slots': slots,
             'catalogue_stat_axes': sorted(catalogue_stat_axes),
+            'applicable_stat_axes': sorted(applicable_axes),
             'tested_stat_assertions': tested_stat_assertions,
             'verified_stat_assertions': verified_stat_assertions,
             'weight_evidence_kind': weight_evidence_kind,
@@ -317,16 +320,31 @@ def _policy_uses_bear_form(ir, policy) -> bool:
 def fast_p3_smoke_for_policy(*, source_ir, policy, **kwargs) -> dict:
     """Bind P3's mean-hit condition to the *actual* source-IR policy actions."""
     if ('weapon_damage_dependent' in kwargs or 'equipped_weapon_dps_relevant' in kwargs
-            or 'defensive_positive_required' in kwargs):
+            or 'defensive_positive_required' in kwargs or 'applicable_stat_axes' in kwargs):
         raise ValueError('P3_MANUAL_POLICY_APPLICABILITY_OVERRIDE_FORBIDDEN')
     has_weapon_effect = policy_uses_weapon_damage(source_ir, policy)
     uses_equipped_weapon, uses_equipped_mean_hit = _policy_equipped_weapon_dependencies(source_ir, policy)
     defensive_positive_required = (str(kwargs.get('class_key', '')).lower() == 'warrior'
                                    or _policy_uses_bear_form(source_ir, policy))
+    from src.game.gear import executable_gear_stats
+    try:
+        applicable_stat_axes = set(executable_gear_stats(source_ir))
+    except (AttributeError, TypeError):
+        # Tiny policy-only unit fixtures without a complete actor retain the
+        # legacy validator contract; production GameIR always has an actor.
+        applicable_stat_axes = None
+    if applicable_stat_axes is not None:
+        weights = dict(kwargs.get('weights', {}))
+        # A catalogue field that this source build cannot execute still needs
+        # an explicit, auditable zero. Missing is never silently accepted.
+        for axis in POSITIVE_WHEN_PRESENT - applicable_stat_axes:
+            weights.setdefault(axis, 0.0)
+        kwargs['weights'] = weights
     report = fast_p3_smoke(
         weapon_damage_dependent=uses_equipped_mean_hit,
         equipped_weapon_dps_relevant=uses_equipped_weapon,
         defensive_positive_required=defensive_positive_required,
+        applicable_stat_axes=applicable_stat_axes,
         **kwargs,
     )
     report['source_policy'] = {
@@ -338,5 +356,6 @@ def fast_p3_smoke_for_policy(*, source_ir, policy, **kwargs) -> dict:
         'equipped_weapon_mean_hit_relevant': bool(uses_equipped_mean_hit),
         'equipped_weapon_damage_relevant': bool(uses_equipped_weapon),
         'defensive_positive_required': defensive_positive_required,
+        'applicable_stat_axes': sorted(applicable_stat_axes or ()),
     }
     return report
