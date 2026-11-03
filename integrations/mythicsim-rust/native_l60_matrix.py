@@ -293,7 +293,8 @@ def apply_current_client_talent_override(profile: str, request: dict):
 
 
 def create_inventory(registry_path, engine_src):
-    native_items = load_native_item_index(engine_src)
+    # Do not parse items.jsonl or preflight item identities here. Source
+    # equipment requests go to MythicSim; Rust owns identity and equip outcomes.
     if CURRENT_CLIENT_TALENT_OVERRIDES:
         try:
             engine_pin = subprocess.check_output(
@@ -345,15 +346,6 @@ def create_inventory(registry_path, engine_src):
             row["effective_source_request_fingerprint"] = fingerprint(request)
             pl = player(request)
             row["item_count"] = len(pl["equipment"]["items"])
-            row["native_item_inventory"], missing_ids = describe_native_gear(
-                pl["equipment"], native_items
-            )
-            row["native_db_missing_item_ids"] = missing_ids
-            if missing_ids:
-                row["status"] = "BLOCKED_NATIVE_ITEM_DB"
-                row["blocker"] = "Native items.jsonl missing source IDs: " + str(missing_ids)
-                rows.append((row, None))
-                continue
             row["native_oneofs"] = [k for k in pl if k.lower().endswith(("druid","warrior","mage","priest","shaman","hunter","rogue","warlock","paladin")) and k != "class"]
             row["status"] = "REFERENCE_READY" if kind == "gsim" else "SMOKE_FIXTURE_ONLY"
             row["blocker"] = None
