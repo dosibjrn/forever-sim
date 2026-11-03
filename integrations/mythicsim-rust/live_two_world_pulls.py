@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from math import hypot
 import os
 from pathlib import Path
 import subprocess
@@ -24,6 +25,35 @@ from src.game.runtime import ActorState, CombatRuntime, TargetState
 from src.shared.leveling.spaced_pulls import SpacedPullLayout
 
 
+def _queue_world_walk(world: CombatRuntime, target_id: str, *,
+                      speed_yards_s: float) -> dict:
+    """Use gsim's live 2D movement scheduler, never teleport a target/player.
+
+    A world walk is not native cast-while-moving legality, source-native
+    recovery, incoming damage, or a full paid 100-mob evaluator.
+    """
+    start = world.player_position_yards
+    target = world.enemy_positions_yards[target_id]
+    dx, dy = target[0] - start[0], target[1] - start[1]
+    distance = hypot(dx, dy)
+    # Stop outside melee, well inside the native Balance spell's range.
+    # This is a diagnostic approach position, not fabricated spell range.
+    approach_radius_yards = 12.0
+    if distance <= approach_radius_yards:
+        return {"target_id": target_id, "scheduled_yards": 0.0,
+                "start_s": world.actor.current_time_s,
+                "arrival_s": world.actor.current_time_s}
+    destination = (target[0] - approach_radius_yards * dx / distance,
+                   target[1] - approach_radius_yards * dy / distance)
+    start_s = float(world.actor.current_time_s)
+    arrival_s = world.begin_player_move(destination, speed_yards_s=speed_yards_s)
+    if arrival_s <= start_s or world.player_position_yards != start:
+        raise AssertionError("RUST_TWO_WORLD_ROUTE_TELEPORTED_OR_UNCHARGED")
+    return {"target_id": target_id,
+            "scheduled_yards": distance - approach_radius_yards,
+            "start_s": start_s, "arrival_s": arrival_s}
+
+
 def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
         target_count: int = 2, corrupt_ack: bool = False) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
@@ -37,16 +67,14 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
         raise ValueError("RUST_TWO_WORLD_PREPARED_SOURCE_INVALID")
     # One actual 2D world for the entire target sequence. This is the
     # existing native combat/world ACK diagnostic, not paid travel/recovery.
-    # Use the project's actual 20-yard spaced square grid. Center the
-    # diagnostic world around the player so early targets are reachable without
-    # pretending to have paid a between-pull route. Farther targets still
-    # require future real movement/retargeting; no 100-mob PASS is implied.
+    # Keep the real 20-yard grid. Start near the FIRST mob, not the
+    # centroid of a growing field (which falsely strands the first pull
+    # in a 100-target scenario). Subsequent range is earned by actual gsim
+    # player route events on the same world clock; no target teleport.
     targets = ("m1", "m0") + tuple(f"m{i}" for i in range(2, target_count))
     route = SpacedPullLayout(mob_count=target_count)
     points = route.positions_yards
-    center_x = sum(x for x, _ in points) / target_count + 0.123
-    center_y = sum(y for _, y in points) / target_count + 0.257
-    positions = {target_id: (x - center_x, y - center_y)
+    positions = {target_id: (x + 12.0 - points[0][0], y - points[0][1])
                  for target_id, (x, y) in zip(targets, points)}
     actor = ActorState.from_ir(
         ActorDefinition("hero", "player", base_stats={}),
@@ -69,6 +97,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
     previous_ack = ""
     last_clock_ns = -1
     kills = []
+    walks = []
     events = 0
     ticks = 0
     native_report = None
@@ -144,6 +173,14 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
                 kills.append({"target_id": targets[iteration],
                               "world_kill_clock_ns": clock_ns,
                               "ack_sha256": previous_ack})
+                if not corrupt_ack and iteration + 1 < target_count:
+                    # The lethal world ACK has already been transmitted.
+                    # Queue real gsim SpatialPlayerMoveStep events before the
+                    # next source-Rust boundary. Rust sees the ensuing range
+                    # and native actor timeline; no movement is free.
+                    walks.append(_queue_world_walk(
+                        world, targets[iteration + 1],
+                        speed_yards_s=route.movement_speed_yards_s))
             if corrupt_ack and events:
                 break
         proc.stdin.close()
@@ -176,6 +213,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
             "native_damage_events": events, "world_ticks": ticks,
             "continuous_native_actor": True, "actual_2d_ack": True,
             "world_targets_killed": target_count,
+            "gsim_world_walk_steps": sum(
+                event.kind == "SpatialPlayerMoveStep" for event in world.trace),
+            "gsim_route_legs": walks,
             "paid_recovery": False, "checkpoint_certified": False,
         }
     finally:
