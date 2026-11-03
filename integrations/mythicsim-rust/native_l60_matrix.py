@@ -51,8 +51,10 @@ SOURCES = {
     "rogue/assassination": ("engine", W+"assassination-rogue-2-targets.request.json"),
     "rogue/combat": ("engine", W+"combat-rogue-2-targets.request.json"),
     "rogue/subtlety": ("engine", W+"subtlety-rogue-2-targets.request.json"),
-    # Smite Priest may use Discipline points but is NOT a verified Disc profile.
-    "priest/discipline": ("engine", P+"production-smite-priest.request.json"),
+    # The upstream HealerPriest spec exposes separate Disc and Holy presets.
+    # Both rows use the pinned healer request/APL; Discipline replaces only its
+    # talentsString with the source Disc preset below, never the DPS/Smite request.
+    "priest/discipline": ("engine", "fixtures/healers/holy-priest.request.json"),
     "priest/holy": ("engine", "fixtures/healers/holy-priest.request.json"),
     "priest/shadow": ("engine", W+"shadow-priest-2-targets.request.json"),
     "warlock/affliction": ("engine", "validation/2026-10-06-mage-warlock-multi-target-references/affliction-warlock-2-targets.request.json"),
@@ -64,9 +66,9 @@ SOURCES = {
 }
 
 # The 2026-10-06 engine smoke fixtures predate the current 1.60.1.70707
-# talent-tree reshuffle. Keep their gear/encounter/APL, but replace only the
-# talent string with an exact current upstream preset. These remain composed
-# smoke fixtures, never saved ranking references.
+# talent-tree reshuffle. Keep their gear/encounter/APL, replacing only the
+# talent string with a pinned upstream UI preset or native test build. These
+# remain composed smoke fixtures, never saved ranking references.
 CURRENT_CLIENT_BUILD = "1.60.1.70707"
 CURRENT_ENGINE_PIN = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
 CURRENT_CLIENT_TALENT_OVERRIDES = {
@@ -106,6 +108,45 @@ CURRENT_CLIENT_TALENT_OVERRIDES = {
         "source_path": "ui/specs/mage/dps/presets.ts",
         "source_blob_sha": "ef20bfef2ab4dff32b6e387c946c016f5878f183",
     },
+    "druid/feral_bear": {
+        "class_name": "ClassDruid",
+        "talents_string": "050022-2322030212310212501-055",
+        "preset_name": "Bear",
+        "upstream_pr": 774,
+        "source_commit": "c96ec787be9529a934d19a1d9b8156524a176b5e",
+        "source_path": "ui/specs/druid/feralbear/presets.ts",
+        "source_blob_sha": "51e09cf57affbdced3a23cce0629ebaab836f8c6",
+    },
+    "paladin/holy": {
+        "class_name": "ClassPaladin",
+        "talents_string": "55320015022101251-503020005001",
+        "preset_name": "StandardTalents (sim test)",
+        "upstream_pr": 772,
+        "source_commit": "d608072a6db0197d58a073df7e3153c90f20f46c",
+        "source_path": "sim/paladin/holy/holy_test.go",
+        "source_blob_sha": "bff116c8fe0727c96b51d51c97d637c4f189ba5c",
+        "source_type": "PINNED_UPSTREAM_NATIVE_TEST_TALENT_FIXTURE",
+        "scope": "TALENT_STRING_ONLY; upstream simulator StandardTalents test build; original smoke-fixture gear, encounter and APL retained",
+    },
+    "paladin/protection": {
+        "class_name": "ClassPaladin",
+        "talents_string": "050050002-05302102213301531-502",
+        "preset_name": "Default",
+        "upstream_pr": 772,
+        "source_commit": "d608072a6db0197d58a073df7e3153c90f20f46c",
+        "source_path": "ui/specs/paladin/protection/presets.ts",
+        "source_blob_sha": "a59c83c7581d2aafb19f3265bfd10298722782bf",
+    },
+    "priest/discipline": {
+        "class_name": "ClassPriest",
+        "talents_string": "005025021330011531-335001030301",
+        "preset_name": "Disc",
+        "upstream_pr": None,
+        "source_commit": "a0ab835726319b558318cce186c88c4bd3a855dd",
+        "source_path": "ui/specs/priest/healer/presets.ts",
+        "source_blob_sha": "87fe551e2150ead167dbb5c2418f332bed02549c",
+        "scope": "TALENT_STRING_ONLY; upstream HealerPriest Disc preset applied to the pinned healer request; healerPriest oneof, gear, encounter and APL retained",
+    },
     "paladin/retribution": {
         "class_name": "ClassPaladin",
         "talents_string": "050250002-501-05233011201301351",
@@ -140,7 +181,7 @@ CURRENT_CLIENT_TALENT_DONOR_PRESETS = {
     "mage/frost": MAGE_ALTERNATE_CURRENT_CLIENT_TALENT_PRESETS,
 }
 
-HEAL = {"druid/restoration", "shaman/restoration", "priest/holy", "paladin/holy"}
+HEAL = {"druid/restoration", "shaman/restoration", "priest/discipline", "priest/holy", "paladin/holy"}
 TANK = {"druid/feral_bear", "warrior/protection", "paladin/protection"}
 
 
@@ -157,36 +198,17 @@ def player(request):
     return request["raid"]["parties"][0]["players"][0]
 
 
-def legal_apl_only_request(reference: dict, candidate: dict) -> bool:
-    """Freeze every non-APL native field and source-bound cast identities.
+def apl_only_candidate_scope(reference: dict, candidate: dict) -> bool:
+    """Limit this diagnostic to APL changes, not Warcraft action legality.
 
-    The APL grammar may reorder, insert source-backed casts and tune source
-    predicates. It may not introduce another spell/item/other oneof, change an
-    opaque native non-cast action, or silently mutate raid/encounter/talents/
-    gear/simOptions. This is a legality guard, not a JOINT search adapter.
+    Only the rotation priority list may change. Native MythicSim validates
+    spell IDs, cast actions and other game semantics on the submitted request.
     """
     try:
         original = player(reference)["rotation"]["priorityList"]
         actions = player(candidate)["rotation"]["priorityList"]
         if not isinstance(original, list) or not original or not isinstance(actions, list) or not actions:
             return False
-        def key(obj):
-            return json.dumps(obj, sort_keys=True, separators=(",", ":"))
-        casts = {
-            key(a["action"]["castSpell"]["spellId"])
-            for a in original if "castSpell" in a.get("action", {})
-        }
-        opaque = {
-            key(a["action"]) for a in original
-            if "castSpell" not in a.get("action", {})
-        }
-        for a in actions:
-            action = a["action"]
-            if "castSpell" in action:
-                if key(action["castSpell"]["spellId"]) not in casts:
-                    return False
-            elif key(action) not in opaque:
-                return False
         masked = copy.deepcopy(candidate)
         player(masked)["rotation"]["priorityList"] = copy.deepcopy(original)
         return masked == reference
@@ -298,12 +320,17 @@ def apply_current_client_talent_override(profile: str, request: dict):
     source_commit = override["source_commit"]
     metadata = {
         "status": "APPLIED",
-        "source_type": "PINNED_UPSTREAM_CURRENT_CLIENT_TALENT_PRESET",
-        "scope": "TALENT_PRESET_ONLY; original smoke-fixture gear, encounter and APL retained",
+        "source_type": override.get(
+            "source_type", "PINNED_UPSTREAM_CURRENT_CLIENT_TALENT_PRESET"
+        ),
+        "scope": override.get(
+            "scope",
+            "TALENT_PRESET_ONLY; original smoke-fixture gear, encounter and APL retained",
+        ),
         "client_build": CURRENT_CLIENT_BUILD,
         "engine_pin": CURRENT_ENGINE_PIN,
         "source_repo": "wowsims/forever",
-        "source_pull_request": override["upstream_pr"],
+        "source_pull_request": override.get("upstream_pr"),
         "source_commit": source_commit,
         "source_path": source_path,
         "source_blob_sha": override["source_blob_sha"],
@@ -446,10 +473,6 @@ def execute_row(row, reference, *, binary, budget, iterations, seed, outdir):
     profile = row["profile_id"]
     if reference is None:
         return row
-    if profile == "priest/discipline":
-        row["status"] = "BLOCKED_SPEC_IDENTITY"
-        row["blocker"] = "Only Smite Priest fixture; no verified Discipline profile identity"
-        return row
     if profile in HEAL or profile in TANK:
         row["status"] = "BLOCKED_OBJECTIVE"
         row["blocker"] = ("HPS" if profile in HEAL else "TPS")+" extractor/comparable native fixture not yet verified"
@@ -493,7 +516,7 @@ def execute_row(row, reference, *, binary, budget, iterations, seed, outdir):
         return out
 
     def legal(req):
-        return legal_apl_only_request(reference, req)
+        return apl_only_candidate_scope(reference, req)
 
     def evaluate(req, *, iterations, seed, rng_mode):
         try:
