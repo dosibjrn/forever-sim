@@ -1,0 +1,48 @@
+name: Work2 selected Rust two real gsim world targets (not M1)
+on:
+  pull_request:
+    paths:
+      - integrations/mythicsim-rust/port_native_two_world_cli.py
+      - integrations/mythicsim-rust/live_two_world_pulls.py
+      - integrations/mythicsim-rust/port_native_world_lethal_terminal.py
+      - .github/workflows/work2-native-two-world.yml
+
+permissions:
+  contents: read
+
+jobs:
+  two-world-kills:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Port the actual selected Rust engine, idempotently
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          echo "SELECTED_RUST_SHA=$(git -C "$engine" rev-parse HEAD)"
+          python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py "$engine"
+          python3 integrations/mythicsim-rust/port_native_two_world_cli.py "$engine"
+          git -C "$engine" diff --check
+          first="$(git -C "$engine" diff | sha256sum)"
+          python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py "$engine"
+          python3 integrations/mythicsim-rust/port_native_two_world_cli.py "$engine"
+          second="$(git -C "$engine" diff | sha256sum)"
+          test "$first" = "$second"
+          python3 -m py_compile integrations/mythicsim-rust/port_native_two_world_cli.py integrations/mythicsim-rust/live_two_world_pulls.py
+      - name: Build selected source and check native actor regressions
+        working-directory: integrations/mythicsim-rust/engine
+        run: |
+          cargo check --locked
+          cargo test --locked --lib persistent_next_target
+          cargo test --locked --lib world_lethal_terminal
+          cargo build --locked --bin forever-engine
+      - name: Two real distinct gsim 2D kills, retained Rust actor, forged ACK rejected
+        run: |
+          python3 integrations/mythicsim-rust/live_two_world_pulls.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
+            --mob-health 1200
