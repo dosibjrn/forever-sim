@@ -2,6 +2,8 @@
 
 # WoW Forever — simulator and optimizer
 
+**Engine ownership and migration:** The approved end state is **one game-rules authority: the exact-SHA-pinned [MythicSim Rust fork](https://github.com/dosibjrn/mythicsim-forever-engine)**. Rust owns Warcraft source facts, build legality, combat mechanics and game-world execution. Forever defines scenarios, proposes and searches candidates, scores native results and verifies the unchanged gate contracts. Python GameIR, source catalogues, Go/gsim bridges and Python world code in the **current** tree are transitional live dependencies, not additional permanent sources of game truth; migrate their real consumers and verify native replacement before deleting them. See [#357](https://github.com/dosibjrn/forever-sim/issues/357), [#359](https://github.com/dosibjrn/forever-sim/issues/359) and the [target architecture](docs/REPOSITORY_STRUCTURE.md).
+
 
 ## M1 — verified progress over time
 
@@ -31,7 +33,7 @@ This is an independent Forever simulation and optimization research project. The
 | 60 | 9 | 4 | 24 | 37 |
 | **Total** | **36** | **16** | **96** | **148** |
 
-**Combat executor policy:** MythicSim **Rust preferred, Go equally valid**, with one selected pinned engine per compatible gate chain and live gsim-2D integration whenever mandated by PROCESS. Build PASS is not gameplay PASS.
+**Current approved execution policy:** MythicSim **Rust preferred, Go equally valid** under PROCESS, with one selected pinned engine per compatible gate chain and live gsim-2D integration wherever required. The Rust-only target architecture does not silently remove an approved Go path or existing causal world requirement. Build PASS is not gameplay PASS.
 
 **Current critical path:** [live native→world event/HP/hash/ACK→next decision (public #7)](https://github.com/dosibjrn/forever-sim/issues/7) and [source-paid persistent 100-mob evaluation (public #19)](https://github.com/dosibjrn/forever-sim/issues/19), as ordered by [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md). Historical P7 diagnostics follow; they are not the current implementation queue. The owner has accepted **Balance P7.1 via exact Rust-input/Rust-engine replay**, and **Feral Cat P7** by explicit approval; see [recorded decision](docs/evidence/druid-p7/README.md) and [full Rust input/output](docs/evidence/druid-l60-balance/p7.1/README.md). These owner decisions are not evidence of Go-native or live 2D tests, and do not automatically increase certified-checkpoint counts.
 
@@ -57,12 +59,12 @@ The root `run.sh` and `run.ps1` remain unchanged stable entry points.
 
 ## Find your way around
 
-| Where | What belongs there |
+| Current path | Current purpose / migration status |
 | --- | --- |
-| [`src/`](src/) | Python GameIR, rulesets, 2D world, optimizers and local services |
+| [`src/`](src/) | Scenario/search/scoring/service code plus **transitional** Python GameIR, ruleset and world-runtime callers; no permanent second game-mechanics authority |
 | [`tests/`](tests/README.md) | Unit, regression, integration and acceptance tests (currently mostly flat) |
 | [`tools/`](tools/) | Python gate/capture/ingest/audit entry points |
-| [`data/`](data/) | Forever source snapshots, catalogues and staged databases |
+| [`data/`](data/) | Retained source snapshots, catalogues and staged databases needed by current callers/evidence during native migration |
 | [`docs/`](docs/INDEX.md) | Canonical documentation map, accepted reference evidence and source notes |
 | [`docs/evidence/`](docs/evidence/README.md) | Curated accepted gate decisions, reproducible requests/results and build proof |
 | [`evidence/`](evidence/README.md) | Historical WF experiments; **not** the current PASS scoreboard |
