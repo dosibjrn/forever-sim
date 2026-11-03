@@ -43,7 +43,8 @@ def _source_ranked_item_choice(items, rng: random.Random, *, ranked: bool):
 
 def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
                pool=None, enchant_pools=None, elite=None,
-               source_ranked=False, neighbor_mode="mixed"):
+               source_ranked=False, neighbor_mode="mixed",
+               native_authoritative=False):
     """Independent cold discovery or local edits of this run's paid winner.
 
     The saved loadout is never a search seed. An elite is only supplied after
@@ -141,13 +142,14 @@ def _cold_gear(base: dict, validator, gear_search, rng: random.Random, *,
         # This candidate was drawn independently from source-admitted pools.
         # Matching the saved reference by chance is legal discovery, never
         # evidence that the reference was used to seed the search.
-        try:
-            if enchant_pools is None:
-                validator.validate(ids)
-            else:
-                validator.validate(ids, enchants)
-        except gear_search.RejectedGear:
-            continue
+        if not native_authoritative:
+            try:
+                if enchant_pools is None:
+                    validator.validate(ids)
+                else:
+                    validator.validate(ids, enchants)
+            except gear_search.RejectedGear:
+                continue  # legacy callers retain their Python admission path
         candidate = gear_search._swap(base, ids)
         if enchant_pools is not None:
             actual_items = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
@@ -274,6 +276,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         # unrecorded item-effect semantics are not inferred.
         pool, _ = gear_search.candidate_pool(
             validator, limit=None if full_search else 15,
+            native_authoritative=True,
             **({"independent_enchants": True} if full_search else {}))
         enchant_pools = (gear_search.source_enchant_pools(validator, pool)
                          if full_search else None)
@@ -306,7 +309,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                         "enchant" if full_search and elite is not None
                         and proposals % 4 == 0 else
                         "single" if full_search and elite is not None
-                        and proposals % 4 in (1, 3) else "mixed"))
+                        and proposals % 4 in (1, 3) else "mixed"),
+                    native_authoritative=True)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
@@ -465,6 +469,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "source_legal_cold_candidates_paid": executed,
         "source_candidate_failures": failures[:4],
         "source_gear_and_native_item_legality_applied": True,
+        "item_candidate_admission": "source_catalogue_proposals_native_authoritative",
+        "python_item_candidate_pre_veto": False,
         "source_fixed_rotation_and_talents": True,
         "selected_validation": "3_native_world_fights_per_cold_gear_candidate",
         "search_rng_mode": "balanced",
