@@ -18,7 +18,9 @@ import time
 
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
                                     p7_required_dps)
+from tools.wf_gate_p7_5_prior import strongest_accepted_prior
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
+                                     _executed_p7_runtime_proof,
                                      _source_native_world_parity)
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
@@ -228,11 +230,22 @@ def run_live(root: Path, class_key: str, level: int, *,
             final = {"frozen_stochastic_failure":
                      type(exc).__name__ + ":" + str(exc)[:180]}
 
-    # No accepted-compatible P7.1–P7.4 stochastic prior is established.
-    # The external-only final is diagnostic and MUST NOT become a P7.5 PASS.
-    # A compatible accepted stochastic prior is required for P7.5, not an
-    # extra audit of an already pinned original report or exhaustive universe.
-    reasons = ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"]
+    # Compare the independent frozen P7.5 holdout against genuine compatible
+    # previously accepted results, never against search-screen estimates.
+    # Missing numeric receipts preserve the existing fail-closed BLOCKED state.
+    prior = (strongest_accepted_prior(
+        root, class_key, level, spec,
+        engine_revision=meta.get("selected_engine_revision", PINNED_RUST),
+        source_sha256=SAVED_BALANCE_RAW_SHA,
+        reference_dps=float(meta["reference_dps"]))
+        if complete_search else None)
+    prior_dps = prior["dps"] if prior is not None else None
+    required = (p7_required_dps(
+        "P7.5", float(meta["reference_dps"]),
+        strongest_accepted_compatible_prior=prior_dps)
+        if prior_dps is not None else None)
+    reasons = ([] if prior is not None else [
+        "P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"])
     if not full_search:
         reasons.append("P7_5_FULL_300S_COLD_SEARCH_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED")
     elif search_wall_s < 300.0:
@@ -243,6 +256,10 @@ def run_live(root: Path, class_key: str, level: int, *,
         reasons.append("P7_5_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED")
     elif not final["frozen_stochastic_external_only_floor_met"]:
         reasons.append("P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR")
+    elif required is not None and (
+            final["frozen_stochastic_native_dps"] < required
+            or final["frozen_stochastic_world_dps"] < required):
+        reasons.append("P7_5_FROZEN_STOCHASTIC_DPS_BELOW_ACCEPTED_PRIOR_FLOOR")
     # An unestablished accepted-compatible prior is a missing *comparison*,
     # not evidence that combat/search failed. Label a genuine full-run budget,
     # final-holdout or external-DPS failure as FAIL; otherwise remain BLOCKED.
@@ -252,9 +269,11 @@ def run_live(root: Path, class_key: str, level: int, *,
         "P7_5_SEARCH_BUDGET_OVERRUN",
         "P7_5_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED",
         "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR",
+        "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_ACCEPTED_PRIOR_FLOOR",
     } for reason in reasons)
     return {
-        "status": "FAIL" if failed_execution else "BLOCKED",
+        "status": ("FAIL" if failed_execution else
+                   "BLOCKED" if reasons else "PASS"),
         "reasons": reasons,
         "production_engine": "pinned_mythicsim_rust_gsim_2d",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py",
@@ -264,13 +283,22 @@ def run_live(root: Path, class_key: str, level: int, *,
         "joint_cold_world_dps": score,
         "external_reference_only_floor": p7_required_dps(
             "P7.4", float(meta["reference_dps"])),
-        "final_required_dps": None,
+        "final_required_dps": required,
+        "strongest_accepted_compatible_prior_dps": prior_dps,
+        "accepted_compatible_prior_gates": (
+            prior["compatible_gates"] if prior is not None else []),
+        "accepted_compatible_prior_run_urls": (
+            prior["run_urls"] if prior is not None else []),
         "cold_winner_request_sha256": candidate_sha,
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
         "independent_300s_search_completed": complete_search,
         "cold_unique_source_requests": len(seen),
         **final,
+        **(_executed_p7_runtime_proof(
+            "P7.5", final["frozen_request_raw_sha256"],
+            engine_revision=meta.get("selected_engine_revision", PINNED_RUST))
+           if complete_search and "frozen_request_raw_sha256" in final else {}),
         "world_damage_events": int(live["native_damage_events"]),
         "world_boundaries": int(live["native_world_ticks"]),
         "source_legal_joint_candidates_paid": executed,
