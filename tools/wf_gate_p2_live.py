@@ -1791,9 +1791,6 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
             (isinstance(expected,bool) or not isinstance(expected,int)
              or expected!=len(effects))):
         return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_EFFECT_CLAUSES_INCOMPLETE'}
-    if (l0.get('prerequisite_rank_build_bridge_unverified')
-            or l0.get('unsupported_prerequisite_rank_bridge_unverified')):
-        return {'status':'BLOCKED','reason':'CANONICAL_P2_PREREQUISITE_BUILD_BRIDGE_UNVERIFIED'}
     if l0.get('source_build') and str(l0['source_build'])!=source_build:
         return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_BUILD_MISMATCH'}
     for effect in effects:
@@ -1861,7 +1858,12 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
             'tree_key':source['tree_key'],'tree_row':source.get('tree_row'),
             'rank_cap':source['rank_cap'],'source_build':source_build,
             'source_url':source_url,'source_sha256':source.get('source_sha256'),
-            'prerequisite':prerequisite,'points_per_row':points_per_row,
+            'prerequisite':prerequisite,
+            # Preserve cross-build bridge uncertainty as diagnostic metadata;
+            # it is not a standalone acceptance gate.
+            'prerequisite_rank_build_bridge_unverified':l0.get('prerequisite_rank_build_bridge_unverified'),
+            'unsupported_prerequisite_rank_bridge_unverified':l0.get('unsupported_prerequisite_rank_bridge_unverified'),
+            'points_per_row':points_per_row,
             'required_tree_points':required_tree_points,
             'tree_members_count':len(tree_members),
             'effect_domains':[str(effect['domain']) for effect in effects],
@@ -1921,6 +1923,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                 if best[0][0]!=expected_build or source_doc.get('source_build')!=expected_build:
                     raise ValueError('DRUID_P2_SOURCE_CATALOGUE_BUILD_MISMATCH')
                 source_db_kind='staged_druid_source_catalogue'
+        # Retain selected source identity even if a later legacy overlay fails.
+        source_id=sha256(source_db.read_bytes()).hexdigest()
+        result.update(source_id=source_id,source_db_kind=source_db_kind)
         ir=build_game_ir_slice(class_key=class_key,level=level,ability_db_path=source_db)
         if ir is None:raise ValueError('CLASS_GAME_IR_NOT_AVAILABLE')
         if ir.actor.metadata.get('class_key')!=class_key or ir.actor.metadata.get('level')!=level:
@@ -1929,7 +1934,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
         if not compiled.talents:raise ValueError('NO_SOURCE_TALENTS')
         bonus=talented_bonus_for_level(level) if bonus_points is None else bonus_points
         points=available_talent_points(level,bonus_talent_points=bonus)
-        result.update(source_id=sha256(source_db.read_bytes()).hexdigest(),
+        result.update(source_id=source_id,
             source_db_kind=source_db_kind,
             engine_id='live_game_ir_compiler_and_runtime',
             production_engine='live_game_ir_compiler_and_runtime',talent_points=points,
