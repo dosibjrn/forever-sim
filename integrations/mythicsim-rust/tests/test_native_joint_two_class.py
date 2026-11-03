@@ -110,8 +110,10 @@ class NativeJointScoringContracts(unittest.TestCase):
         }, request())]
         with patch.object(joint, "native_score_request") as score_request:
             row = joint.execute(
-                "druid/restoration", inventory, Path("unused-engine"),
-                Path("unused-source"), 5.0, 40, 731, Path("unused-output"),
+                "druid/restoration", inventory,
+                binary=Path("unused-engine"), engine_src=Path("unused-source"),
+                seconds=5.0, iterations=40, seed=731,
+                outdir=Path("unused-output"),
             )
         self.assertEqual("HPS", row["objective"])
         self.assertEqual("BLOCKED_OBJECTIVE", row["status"])
