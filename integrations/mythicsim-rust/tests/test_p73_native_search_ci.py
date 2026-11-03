@@ -70,11 +70,13 @@ json.dump({'result':{'raidMetrics':{'dps':{'avg':725.0}}}},
             root=Path(tmp)
             binary=root/"fake_engine"
             binary.write_text("""#!/usr/bin/env python3
-import json,sys
+import json,sys,os
 argv=sys.argv
 req=json.load(open(argv[argv.index('--request')+1]))
 ranks=req['raid']['parties'][0]['players'][0]['talentsString']
 value=650+sum(int(v) for v in ranks if v.isdigit())+int(ranks[0])
+if os.environ.get('WOWSIM_RNG_MODE') != 'balanced':
+    value -= 2
 out={'result':{'raidMetrics':{'dps':{'avg':float(value)}}}}
 json.dump(out,open(argv[argv.index('--outfile')+1],'w'))
 """)
@@ -89,7 +91,7 @@ json.dump(out,open(argv[argv.index('--outfile')+1],'w'))
             output=root/'out'
             done=subprocess.run([sys.executable,str(ROOT/'p73_talent_search_v2.py'),
                 '--binary',str(binary),'--reference',str(inputfile),'--outdir',str(output),
-                '--seconds','6.0','--screen-iterations','2','--holdout-iterations','1000','--rng-mode','stochastic'],
+                '--seconds','6.0','--screen-iterations','2','--holdout-iterations','1000','--rng-mode','balanced'],
                 capture_output=True,text=True,timeout=12)
             self.assertEqual(done.returncode,0,done.stderr)
             report=json.loads((output/'report.json').read_text())
@@ -97,7 +99,7 @@ json.dump(out,open(argv[argv.index('--outfile')+1],'w'))
             self.assertLessEqual(report['elapsed_s'],6.0)
             self.assertGreater(report['paid_count'],0)
             self.assertGreater(report['rerank_finalists'],0)
-            self.assertEqual(report['best_reranked']['rerank_iterations'],10000)
+            self.assertEqual(report['best_reranked']['rerank_iterations'],24)
             self.assertTrue((output/'reranked_finalists.json').exists())
             self.assertFalse(report['live_2d_causal_trace_exists'])
             frozen=json.loads((output/'frozen_winner_request.json').read_text())
