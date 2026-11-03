@@ -1,14 +1,14 @@
 from tools.wf_gate_coverage import p7_search_deadline_completed
 
 
-def test_paid_step_must_finish_before_exact_300_second_deadline():
+def test_search_step_must_finish_before_exact_300_second_deadline():
     start = 1_000.0
     deadline = start + 300.0
     assert p7_search_deadline_completed(
         full_search=True,
         search_start=start,
         search_deadline=deadline,
-        last_paid_step_completed_at=deadline - 0.001,
+        last_search_step_completed_at=deadline - 0.001,
         observed_at=deadline + 0.000127,
     )
 
@@ -20,7 +20,7 @@ def test_candidate_that_finishes_82ms_after_deadline_is_rejected():
         full_search=True,
         search_start=start,
         search_deadline=deadline,
-        last_paid_step_completed_at=deadline + 0.082,
+        last_search_step_completed_at=deadline + 0.082,
         observed_at=deadline + 0.082,
     )
 
@@ -33,7 +33,7 @@ def test_post_deadline_observation_is_not_an_overrun_when_work_finished_on_time(
         full_search=True,
         search_start=start,
         search_deadline=deadline,
-        last_paid_step_completed_at=deadline - 0.5,
+        last_search_step_completed_at=deadline - 0.5,
         observed_at=deadline + 0.000127,
     )
 
@@ -44,7 +44,7 @@ def test_short_or_malformed_search_windows_never_complete():
     common = {
         "search_start": start,
         "search_deadline": deadline,
-        "last_paid_step_completed_at": deadline - 1.0,
+        "last_search_step_completed_at": deadline - 1.0,
         "observed_at": deadline + 0.001,
     }
     assert not p7_search_deadline_completed(full_search=False, **common)
@@ -54,7 +54,7 @@ def test_short_or_malformed_search_windows_never_complete():
     )
     assert not p7_search_deadline_completed(
         full_search=True,
-        **{**common, "last_paid_step_completed_at": start},
+        **{**common, "last_search_step_completed_at": start},
     )
     assert not p7_search_deadline_completed(
         full_search=True,
