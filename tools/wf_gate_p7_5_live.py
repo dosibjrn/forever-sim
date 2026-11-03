@@ -141,7 +141,9 @@ def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, r
 
     def distinct_paid_pairs(rows, candidate_index, limit):
         eligible = []
-        for row in sorted(rows, key=lambda row: row[0], reverse=True)[:limit]:
+        # Keep the best *eligible* paid donors, not the first N raw rows:
+        # identical-axis leaders must not hide a distinct paid contender.
+        for row in sorted(rows, key=lambda row: row[0], reverse=True):
             paid = row[candidate_index]
             if paid == parent:
                 continue
@@ -149,6 +151,8 @@ def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, r
             if (donor["talentsString"] != player["talentsString"]
                     or donor["rotation"] != player["rotation"]):
                 eligible.append(donor)
+                if len(eligible) >= limit:
+                    break
         return eligible
 
     # Every donor was actually paid by selected Rust + live 2D in this same
@@ -180,7 +184,9 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
 
     def distinct_paid_gear(rows, request_index, limit):
         eligible = []
-        for row in sorted(rows, key=lambda row: row[0], reverse=True)[:limit]:
+        # Cap genuine multi-slot donors after filtering. A top-ranked
+        # one-slot/identical-gear paid row must not exhaust this operator.
+        for row in sorted(rows, key=lambda row: row[0], reverse=True):
             paid = row[request_index]
             if paid == parent:
                 continue
@@ -193,6 +199,8 @@ def _paid_p75_gear_block_crossover(candidate, parent, finalists,
             # another single-slot edit or an identical-gear no-op.
             if len(different) >= 2:
                 eligible.append((other, different))
+                if len(eligible) >= limit:
+                    break
         return eligible
 
     # Every donor has been independently PAID in this cold search. The old
