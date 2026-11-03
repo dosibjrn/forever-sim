@@ -1,15 +1,16 @@
-"""Actual gsim target-state application of source-native Go spell damage.
+"""Apply source-native damage and landed control events to a real gsim target.
 
-A real native per-spell DealDamage event, not a cumulative DPS counter, is
-applied to an actual gsim CombatRuntime target. The returned ACK binds the
-native event IDs and the measured before/after world hashes to one tick.
-This is a narrow one-enemy source event seam, NOT a full P7 certificate.
+Damage and landed Roots control events are validated against one retained
+native process, monotonic clock, target identity and world hash. Control is
+applied through CombatRuntime's event queue so 2D movement and expiry remain
+owned by gsim. This is not a full P1/P7 certificate.
 """
 from __future__ import annotations
 
 from math import isfinite
 from typing import Mapping
 
+from .events import CombatEvent
 from .go_world_range_feed import GoWorldRangeError
 from .native_step_protocol import snapshot_gsim_world, state_hash
 
@@ -25,6 +26,7 @@ class GsimNativeDamageWorldApplier:
         self._runtime = runtime
         self._next_seq = 0
         self._previous_event_id = 0
+        self._previous_control_event_id = 0
         self._native_process_id = None
         self._last_native_time_ns = -1
         self._last_world_tick_ns = -1
@@ -95,8 +97,10 @@ class GsimNativeDamageWorldApplier:
         if not target.alive:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_ALREADY_DEAD")
         events = response.get("native_damage_events")
+        control_events = response.get("native_control_events", [])
         pid = response.get("native_process_id")
-        if not isinstance(events, list) or type(pid) is not int or pid <= 0:
+        if (not isinstance(events, list) or not isinstance(control_events, list)
+                or type(pid) is not int or pid <= 0):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_EVENTS_OR_PID_INVALID")
         # Event ordinals are only meaningful within one retained native process.
         # A restarted process cannot continue a paid world session by merely
@@ -104,12 +108,17 @@ class GsimNativeDamageWorldApplier:
         if self._native_process_id is not None and pid != self._native_process_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_PROCESS_RESTARTED")
         last_event_id = self._previous_event_id
+        last_control_event_id = self._previous_control_event_id
         # A genuine source pre-pull spell can deal damage before encounter t=0.
         # It is visible to gsim at the first world ACK, with its original
         # negative native timestamp retained (not fabricated as a t=0 hit).
         # Later ticks may never smuggle in pre-pull damage retroactively.
         first_precombat_boundary = seq == 0 and clock_ns == 0
-        last_native_time = -(1 << 63) if first_precombat_boundary else self._last_native_time_ns
+        previous_native_time = (
+            -(1 << 63) if first_precombat_boundary else self._last_native_time_ns
+        )
+        last_native_time = previous_native_time
+        control_last_native_time = previous_native_time
         # Validate all native effects before mutating the real gsim target.
         # An ACK batch cannot hide a second, later native hit after the first
         # already killed this same world mob. Equal-time effects are atomic.
@@ -188,6 +197,62 @@ class GsimNativeDamageWorldApplier:
             last_event_id = ordinal
             last_native_time = timestamp
             target_identity = current_native_target
+
+        # Control events have their own gapless ordinal stream, but share the
+        # retained process, native clock and single native target identity.
+        # Validate the entire batch before applying damage or control to gsim.
+        control_payloads = []
+        for event in control_events:
+            if not isinstance(event, Mapping):
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_MALFORMED")
+            event_id = event.get("event_id")
+            if not isinstance(event_id, str) or not event_id.startswith("native-control-"):
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_ID_MISSING")
+            try:
+                ordinal = int(event_id.removeprefix("native-control-"))
+            except ValueError as exc:
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_ID_INVALID") from exc
+            if ordinal != last_control_event_id + 1 or event_id != f"native-control-{ordinal}":
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_ID_GAP")
+            timestamp = event.get("native_time_ns")
+            duration_ns = event.get("duration_ns")
+            rank = event.get("rank")
+            target_index = event.get("native_target_index")
+            unit_index = event.get("native_target_unit_index")
+            target_label = event.get("native_target_label")
+            source_action_id = event.get("source_action_id")
+            if (type(timestamp) is not int or timestamp < 0 or timestamp > clock_ns
+                    or timestamp < self._last_world_tick_ns
+                    or timestamp < control_last_native_time):
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_TIME_INVALID")
+            if type(duration_ns) is not int or duration_ns <= 0:
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_DURATION_INVALID")
+            expiry_ns = timestamp + duration_ns
+            if expiry_ns > (1 << 63) - 1 or expiry_ns <= clock_ns:
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_EXPIRED_BEFORE_APPLY")
+            if event.get("control_id") != "root" or event.get("landed") is not True:
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_NOT_LANDED_ROOT")
+            if type(rank) is not int or rank < 0:
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_RANK_INVALID")
+            if (type(target_index) is not int or target_index != 0
+                    or type(unit_index) is not int or unit_index < 0
+                    or not isinstance(target_label, str) or not target_label):
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_TARGET_INVALID")
+            if not isinstance(source_action_id, str) or not source_action_id:
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_ACTION_INVALID")
+            current_native_target = (target_index, unit_index, target_label)
+            if target_identity is not None and current_native_target != target_identity:
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_TARGET_IDENTITY_CHANGED")
+            if self._target_handoff_ns is not None and timestamp < self._target_handoff_ns:
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_BEFORE_TARGET_HANDOFF")
+            if (lethal_native_time_ns is not None
+                    and timestamp > lethal_native_time_ns):
+                raise NativeDamageWorldApplicationError("WORLD_CONTROL_ACK_EVENT_AFTER_WORLD_DEATH")
+            target_identity = current_native_target
+            control_last_native_time = timestamp
+            last_control_event_id = ordinal
+            control_payloads.append((event, expiry_ns, expiry_ns - clock_ns))
+
         # Native spell damage can exceed remaining target HP on a lethal hit.
         # Preserve the full source-native event transcript while clamping only
         # the actual gsim world-health delta. Overkill must not block a kill.
@@ -198,8 +263,52 @@ class GsimNativeDamageWorldApplier:
         applied = old_health - float(target.health)
         if abs(applied - min(damage, old_health)) > 1e-6:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_HEALTH_DELTA_MISMATCH")
+
+        # Apply control through the same CombatRuntime queue used by native
+        # world mechanics. The remaining duration is measured from this ACK
+        # clock so the original native expiry timestamp is preserved.
+        control_runtime_events = []
+        for event, expiry_ns, remaining_ns in control_payloads:
+            runtime_event = CombatEvent(
+                time_s=clock_ns / 1_000_000_000.0,
+                kind="ControlApplied",
+                actor_id=self._runtime.actor.id,
+                target_id=target_id,
+                action_id=event["source_action_id"],
+                payload={
+                    "control_id": "root",
+                    "duration_s": remaining_ns / 1_000_000_000.0,
+                    "proc_chance": 1.0,
+                    "effect_index": 0,
+                    "prevents_enemy_actions": False,
+                    # Damage-break is explicitly outside this first slice.
+                    "breaks_on_damage": False,
+                    "native_event_id": event["event_id"],
+                    "native_time_ns": event["native_time_ns"],
+                    "native_duration_ns": event["duration_ns"],
+                    "native_source_rank": event["rank"],
+                    "native_damage_break_implemented": False,
+                },
+            )
+            self._runtime.queue.push(runtime_event)
+            control_runtime_events.append((event, runtime_event, expiry_ns))
+        if control_runtime_events:
+            self._runtime.advance_to(clock_ns / 1_000_000_000.0)
+
+        applied_control_event_ids = [event["event_id"] for event in control_events]
+        applied_control_events = [
+            {
+                **dict(event),
+                "applied": bool(runtime_event.payload.get("applied", False)),
+                "applied_at_ns": clock_ns,
+                "expires_at_ns": expiry_ns,
+            }
+            for event, runtime_event, expiry_ns in control_runtime_events
+        ]
+
         after_hash = state_hash(snapshot_gsim_world(self._runtime))
-        if (damage > 0 and after_hash == digest) or (damage == 0 and after_hash != digest):
+        if ((damage > 0 and after_hash == digest)
+                or (damage == 0 and not control_events and after_hash != digest)):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_WORLD_NOT_CHANGED_AS_EXPECTED")
         self._target_id = target_id
         # Only THIS native ACK's applied effects may authorize switching mobs.
@@ -210,8 +319,9 @@ class GsimNativeDamageWorldApplier:
         self._native_target_identity = target_identity
         self._next_seq += 1
         self._previous_event_id = last_event_id
+        self._previous_control_event_id = last_control_event_id
         self._native_process_id = pid
-        self._last_native_time_ns = last_native_time
+        self._last_native_time_ns = max(last_native_time, control_last_native_time)
         # Even an empty world ACK is a causal barrier: source effects reported
         # in a later tick may not be backdated before this acknowledged tick.
         self._last_world_tick_ns = clock_ns
@@ -222,6 +332,8 @@ class GsimNativeDamageWorldApplier:
             "world_after_sha256": after_hash,
             "applied_event_ids": ids,
             "applied_events": [dict(event) for event in events],
+            "applied_control_event_ids": applied_control_event_ids,
+            "applied_control_events": applied_control_events,
             "applied_native_damage": damage,
             "world_target_health_before": old_health,
             "world_target_health_after": float(target.health),
