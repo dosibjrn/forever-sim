@@ -405,8 +405,10 @@ def main(argv=None):
     if args.invalidate:
         rows = _rows(args.ledger)
         del_key = tuple(args.invalidate)
+        if del_key[-1] in RETIRED_GATES:
+            parser.error("Retired P1/P2 history is immutable")
         if del_key not in rows:
-            parser.error("No such PASS to invalidate")
+            parser.error("No such active PASS to invalidate")
         del rows[del_key]
         _write(rows, args.ledger)
     if args.plot_svg:
