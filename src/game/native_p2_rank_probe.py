@@ -11,8 +11,11 @@ import copy
 import hashlib
 import json
 import re
+import subprocess
 import sys
+import tempfile
 import time
+from enum import Enum
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -26,6 +29,10 @@ import p73_talent_search_v2 as _native_runner
 
 class NativeP2ProbeError(RuntimeError):
     """The selected engine layout or a source rank pair cannot be serialized."""
+
+
+class NativeRngMode(str, Enum):
+    BALANCED = "balanced"
 
 
 _TREE_ARRAYS = (
@@ -117,14 +124,9 @@ def encode_native_druid_talents(
             )
 
     for talent_id, raw_rank in selection.items():
-        if isinstance(raw_rank, bool):
+        if type(raw_rank) is not int:
             raise NativeP2ProbeError(f"SOURCE_TALENT_RANK_NOT_INTEGER:{talent_id}")
-        try:
-            rank = int(raw_rank)
-        except (TypeError, ValueError) as exc:
-            raise NativeP2ProbeError(
-                f"SOURCE_TALENT_RANK_NOT_INTEGER:{talent_id}"
-            ) from exc
+        rank = raw_rank
         if rank < 0:
             raise NativeP2ProbeError(f"SOURCE_TALENT_RANK_NEGATIVE:{talent_id}:{rank}")
         if rank == 0:
@@ -177,6 +179,52 @@ def _selection_delta(
         raise NativeP2ProbeError("NATIVE_P2_CANDIDATE_RANK_MISMATCH")
 
 
+def _prepare_request(binary_path: Path, request: dict) -> dict[str, object]:
+    """Run the selected Rust prepare command on the exact paired request."""
+    with tempfile.TemporaryDirectory(prefix="forever-p2-native-prepare-") as temp:
+        temp_root = Path(temp)
+        request_path = temp_root / "request.json"
+        prepared_path = temp_root / "prepared.json"
+        request_path.write_text(
+            json.dumps(request, sort_keys=True), encoding="utf-8"
+        )
+        started = time.monotonic()
+        completed = subprocess.run(
+            [
+                str(binary_path),
+                "prepare",
+                "--request",
+                str(request_path),
+                "--outfile",
+                str(prepared_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        elapsed = time.monotonic() - started
+        if completed.returncode != 0:
+            detail = (completed.stderr or completed.stdout or "").strip()[-1200:]
+            raise NativeP2ProbeError(
+                f"NATIVE_PREPARE_REFUSED:{completed.returncode}:{detail}"
+            )
+        if not prepared_path.is_file():
+            raise NativeP2ProbeError("NATIVE_PREPARE_OUTPUT_MISSING")
+        prepared_bytes = prepared_path.read_bytes()
+        try:
+            prepared = json.loads(prepared_bytes)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise NativeP2ProbeError("NATIVE_PREPARE_OUTPUT_INVALID_JSON") from exc
+        if not isinstance(prepared, dict):
+            raise NativeP2ProbeError("NATIVE_PREPARE_OUTPUT_NOT_OBJECT")
+        return {
+            "prepared_sha256": hashlib.sha256(prepared_bytes).hexdigest(),
+            "prepare_elapsed_seconds": float(elapsed),
+            "prepared_top_level_keys": sorted(prepared),
+        }
+
+
 def run_native_rank_pair(
     *,
     binary: str | Path,
@@ -186,9 +234,9 @@ def run_native_rank_pair(
     after_selection: Mapping[str, int],
     target_talent_id: str,
     target_rank: int,
+    rng_mode: NativeRngMode,
     iterations: int = 100,
     seed: int = 647003,
-    rng_mode: str = "balanced",
 ) -> dict[str, object]:
     """Run the same native Druid request with/without one source-legal rank.
 
@@ -196,7 +244,7 @@ def run_native_rank_pair(
     default. A PASS means the selected native simulator completed both gated
     requests and the rank increased the fixture's raid-DPS observable.
     """
-    if rng_mode != "balanced":
+    if rng_mode is not NativeRngMode.BALANCED:
         raise NativeP2ProbeError("NATIVE_P2_REQUIRES_EXPLICIT_BALANCED_RNG")
     if scenario not in {"balance", "cat"}:
         raise NativeP2ProbeError(f"NATIVE_P2_SCENARIO_UNSUPPORTED:{scenario}")
@@ -213,7 +261,7 @@ def run_native_rank_pair(
             "status": "BLOCKED",
             "reason": "SELECTED_RUST_BINARY_MISSING",
             "scenario": scenario,
-            "rng_mode": rng_mode,
+            "rng_mode": rng_mode.value,
         }
     request_path = (
         root / "tests" / "classes" / "druid" / "prepare" / f"{scenario}.request.json"
@@ -239,12 +287,13 @@ def run_native_rank_pair(
         request["simOptions"]["debugFirstIteration"] = False
         # The native runner writes iterations/seed and passes --rng-mode
         # explicitly to sim --request --gate.
+        prepared_receipt = _prepare_request(binary_path, request)
         score, report, elapsed, payload_sha = _native_runner.run(
             str(binary_path),
             request,
             int(iterations),
             int(seed),
-            rng_mode,
+            rng_mode.value,
             time.monotonic() + 120.0,
         )
         if not isinstance(score, (int, float)):
@@ -254,6 +303,7 @@ def run_native_rank_pair(
             "elapsed_seconds": float(elapsed),
             "request_sha256": str(payload_sha),
             "engine_identity": report.get("identity"),
+            **prepared_receipt,
         }
 
     try:
