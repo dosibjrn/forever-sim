@@ -163,6 +163,158 @@ COVERAGE_PATCHES = [
      '        "entangling_roots" if spell.dot.is_some() => Some("entangling_roots"),', "COVERAGE"),
 ]
 
+
+WORLD_BRIDGE_PATCHES = [
+    ("""struct DamageEvent {
+    event_id: String,
+    native_time_ns: i64,
+    damage: f64,
+    source_action_id: String,
+    rank: u32,
+    landed: bool,
+    crit: bool,
+    periodic: bool,
+    native_target_index: u32,
+    native_target_unit_index: u32,
+    native_target_label: String,
+    native_caster_type: String,
+    native_caster_unit_index: u32,
+    native_caster_label: String,
+}""",
+     """struct DamageEvent {
+    event_id: String,
+    kind: String,
+    control_id: Option<String>,
+    duration_ns: Option<i64>,
+    native_time_ns: i64,
+    damage: f64,
+    source_action_id: String,
+    rank: u32,
+    landed: bool,
+    crit: bool,
+    periodic: bool,
+    native_target_index: u32,
+    native_target_unit_index: u32,
+    native_target_label: String,
+    native_caster_type: String,
+    native_caster_unit_index: u32,
+    native_caster_label: String,
+}""", "EVENT_KIND"),
+    ("""        bridge.pending.push(DamageEvent {
+            event_id: format!("native-effect-{}", bridge.event_ordinal),
+            native_time_ns: time_ns, damage, source_action_id: action,
+            rank: 0, landed, crit, periodic,
+            native_target_index: 0, native_target_unit_index: 0,
+            native_target_label: target_label,
+            native_caster_type: caster_type.to_owned(), native_caster_unit_index: caster_index,
+            native_caster_label: caster_label,
+        });""",
+     """        bridge.pending.push(DamageEvent {
+            event_id: format!("native-effect-{}", bridge.event_ordinal),
+            kind: "damage".to_owned(), control_id: None, duration_ns: None,
+            native_time_ns: time_ns, damage, source_action_id: action,
+            rank: 0, landed, crit, periodic,
+            native_target_index: 0, native_target_unit_index: 0,
+            native_target_label: target_label,
+            native_caster_type: caster_type.to_owned(), native_caster_unit_index: caster_index,
+            native_caster_label: caster_label,
+        });""", "DAMAGE_KIND"),
+    ("fn send(value: &Value) {",
+     """fn queue_control_event(bridge: &mut Bridge, time_ns: i64, duration_ns: i64,
+    control_id: &str, action: String, target_label: String) {
+    assert!(control_id == "root", "RUST_WORLD_UNSUPPORTED_CONTROL");
+    assert!(duration_ns > 0, "RUST_WORLD_CONTROL_DURATION_INVALID");
+    assert!(!action.is_empty() && !target_label.is_empty(),
+        "RUST_WORLD_CONTROL_IDENTITY_INVALID");
+    assert!(time_ns >= bridge.last_tick_ns || bridge.last_tick_ns < 0,
+        "RUST_WORLD_CONTROL_EVENT_BEFORE_ACK");
+    let boundary = if time_ns < 0 { 0 }
+        else if time_ns > bridge.last_tick_ns && time_ns % 1_000_000 == 0 { time_ns }
+        else { (time_ns.div_euclid(1_000_000) + 1) * 1_000_000 };
+    assert!(boundary > bridge.last_tick_ns, "RUST_WORLD_CONTROL_BOUNDARY_NOT_FUTURE");
+    bridge.event_ordinal += 1;
+    bridge.pending.push(DamageEvent {
+        event_id: format!("native-effect-{}", bridge.event_ordinal),
+        kind: "control".to_owned(), control_id: Some(control_id.to_owned()),
+        duration_ns: Some(duration_ns), native_time_ns: time_ns, damage: 0.0,
+        source_action_id: action, rank: 0, landed: true, crit: false, periodic: false,
+        native_target_index: 0, native_target_unit_index: 0,
+        native_target_label: target_label, native_caster_type: String::new(),
+        native_caster_unit_index: 0, native_caster_label: String::new(),
+    });
+    // Flush at the landed cast timestamp (or the next representable ms), not the
+    // ordinary 100ms movement poll, so the rooted mob cannot keep approaching.
+    bridge.next_tick_ns = bridge.next_tick_ns.min(boundary);
+}
+
+pub(crate) fn record_control(time_ns: i64, duration_ns: i64, control_id: &str,
+    action: String, target_label: String) {
+    BRIDGE.with(|state| {
+        let mut state = state.borrow_mut();
+        if let Some(bridge) = state.as_mut() {
+            queue_control_event(bridge, time_ns, duration_ns, control_id, action, target_label);
+        }
+    });
+}
+
+#[cfg(test)]
+pub(crate) fn test_begin() {
+    BRIDGE.with(|state| *state.borrow_mut() = Some(Bridge {
+        iteration: 0, sequence: 0, next_tick_ns: 0, last_tick_ns: -1,
+        last_health: None, previous_ack_id: String::new(), source_hash: "a".repeat(64),
+        event_ordinal: 0, pending: Vec::new(),
+    }));
+}
+
+#[cfg(test)]
+pub(crate) fn test_root_control_events() -> Vec<(i64, i64)> {
+    BRIDGE.with(|state| {
+        state.borrow().as_ref().map(|bridge| bridge.pending.iter()
+            .filter(|event| event.kind == "control")
+            .map(|event| (event.native_time_ns, event.duration_ns.unwrap()))
+            .collect()).unwrap_or_default()
+    })
+}
+
+#[cfg(test)]
+pub(crate) fn test_reset() {
+    BRIDGE.with(|state| *state.borrow_mut() = None);
+}
+
+fn send(value: &Value) {""", "CONTROL_EVENT"),
+]
+
+ROOT_CONTROL_BRIDGE_TEST = """
+#[cfg(test)]
+mod native_roots_control_bridge_tests {
+    use super::*;
+
+    #[test]
+    fn landed_root_is_a_typed_native_event_and_forces_early_world_boundary() {
+        let mut bridge = Bridge {
+            iteration: 0, sequence: 4, next_tick_ns: 2_100_000_000,
+            last_tick_ns: 2_000_000_000, last_health: Some(100.0),
+            previous_ack_id: "a".repeat(64), source_hash: "b".repeat(64),
+            event_ordinal: 7, pending: Vec::new(),
+        };
+        queue_control_event(&mut bridge, 2_050_500_000, 27_000_000_000,
+            "root", "SpellID:9853".to_owned(), "Target".to_owned());
+        assert_eq!(bridge.next_tick_ns, 2_051_000_000);
+        assert_eq!(bridge.event_ordinal, 8);
+        assert_eq!(bridge.pending.len(), 1);
+        let event = &bridge.pending[0];
+        assert_eq!(event.event_id, "native-effect-8");
+        assert_eq!(event.kind, "control");
+        assert_eq!(event.control_id.as_deref(), Some("root"));
+        assert_eq!(event.duration_ns, Some(27_000_000_000));
+        assert_eq!(event.native_time_ns, 2_050_500_000);
+        assert_eq!(event.damage, 0.0);
+        assert!(event.landed);
+        assert!(!event.crit && !event.periodic);
+    }
+}
+"""
+
 RUST_TEST = """
 #[test]
 fn forever_roots_preparation_uses_native_spell_data_and_improved_rank() {
