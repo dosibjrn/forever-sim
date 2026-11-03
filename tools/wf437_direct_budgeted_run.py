@@ -64,7 +64,7 @@ role=('druid_feral' if (class_key,level,spec)==('druid',30,'unrestricted')
 bonus=talented_bonus_for_level(level)
 spec_params={}
 if spec!='unrestricted':
-    from tools.wf_gate_p2_live import _load_product_spec_profile
+    from tools.wf_source_profile import _load_product_spec_profile
     profile=_load_product_spec_profile(root,class_key,level,spec,
         source_sha256=sourcehash)
     if profile is None:
