@@ -84,6 +84,19 @@ def edit_neighbors(elite,rng):
 def dps(out):
     return float(out['result']['raidMetrics']['dps']['avg'])
 
+
+class NativeScoreExtractionError(RuntimeError):
+    """Native completed and wrote JSON, but it did not contain a usable DPS mean."""
+
+    def __init__(self, cause, *, raw_response, elapsed_s, request_sha256):
+        super().__init__(
+            "Native response has no usable result.raidMetrics.dps.avg: " + str(cause)
+        )
+        self.raw_response = raw_response
+        self.elapsed_s = elapsed_s
+        self.request_sha256 = request_sha256
+
+
 def run(binary,req,iterations,seed,rng_mode,deadline):
     remaining=deadline-time.monotonic()
     if remaining<=0.05:raise TimeoutError('No remaining time before native execution')
@@ -105,7 +118,22 @@ def run(binary,req,iterations,seed,rng_mode,deadline):
                 f"stderr={(res.stderr or '')[-700:]!r}"
             )
         output=json.loads(out.read_text())
-    return dps(output),output,round(time.monotonic()-st,6),sha(payload)
+    elapsed=round(time.monotonic()-st,6)
+    request_sha=sha(payload)
+    try:
+        score=dps(output)
+    except (KeyError, TypeError, ValueError, OverflowError) as exc:
+        raise NativeScoreExtractionError(
+            exc, raw_response=output, elapsed_s=elapsed,
+            request_sha256=request_sha,
+        ) from exc
+    if not math.isfinite(score):
+        raise NativeScoreExtractionError(
+            "result.raidMetrics.dps.avg is non-finite",
+            raw_response=output, elapsed_s=elapsed,
+            request_sha256=request_sha,
+        )
+    return score,output,elapsed,request_sha
 
 def main():
     pa=argparse.ArgumentParser()
