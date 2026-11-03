@@ -1716,7 +1716,7 @@ def _source_spec_rank_witness(population, talent_id, rank):
     return next((dict(a) for a in population if a.get(talent_id)==rank),None)
 
 
- _NATIVE_P2_RANK_SCENARIOS = {'moonkin_form': 'balance', 'predatory_strikes': 'cat'}
+_NATIVE_P2_RANK_SCENARIOS = {'moonkin_form': 'balance', 'predatory_strikes': 'cat'}
 
 
 def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
