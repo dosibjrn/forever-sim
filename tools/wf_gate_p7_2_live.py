@@ -40,11 +40,12 @@ def _blocked(reason: str):
 
 
 def _cold_apl(base: dict, rng: random.Random, mutation, *, elite=None):
-    """Cold grammar draw or local improvement of this search's paid best.
+    """Cold grammar draw or local improvement of this search's paid archive.
 
     The first candidate is sampled independently of the saved reference.
-    The optional elite is this search's already executed native/world winner;
-    only its rotation is mutable, while gear and talents remain pinned.
+    An optional elite must be a source-legal candidate already paid in this
+    search with deterministic Balanced native+2D scoring. Only its rotation
+    is mutable; gear and talents remain pinned.
     """
     result = copy.deepcopy(base)
     p = result["raid"]["parties"][0]["players"][0]
@@ -67,6 +68,18 @@ def _cold_apl(base: dict, rng: random.Random, mutation, *, elite=None):
             p.get("talentsString") != original.get("talentsString")):
         raise ValueError("ROTATION_ONLY_COLD_SEARCH_CHANGED_FIXED_DIMENSIONS")
     return result
+
+
+def _paid_elite_choice(elites, rng: random.Random, proposal_index: int):
+    """Choose a parent from this run's Balanced-scored paid APL archive.
+
+    Keep a top-22 archive for diversity, sample its top 18 for local proposals,
+    and force every fifth proposal to restart from the source grammar. No
+    stochastic score or other gate's winner can influence parent selection.
+    """
+    if proposal_index % 5 == 0 or not elites:
+        return None
+    return rng.choice(elites[:min(18, len(elites))])[1]
 
 
 def _pinned_source_runtime(root: Path, class_key: str, level: int,
@@ -124,6 +137,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     initial_hash = hashlib.sha256(json.dumps(
         player["rotation"]["priorityList"], sort_keys=True).encode()).hexdigest()
     best = None
+    elites = []  # top 22 source-legal APLs scored with deterministic Balanced RNG
     executed = 0
     failures = []
     paid_or_rejected = set()
@@ -137,12 +151,13 @@ def run_live(root: Path, class_key: str, level: int, *,
            if full_search else proposals < 4):
         proposals += 1
         try:
-            # After the first paid winner, 4/5 proposals improve that
-            # winner locally; every fifth is a fresh independent cold draw.
-            # A bounded short probe always stays cold. Candidate SHA
-            # deduplication and native/world paid scoring remain unchanged.
-            elite = (best[3] if full_search and best is not None
-                     and proposals % 5 != 0 else None)
+            # Four of five proposals explore one of this run's top paid
+            # legal APLs, not only the current global best. The archive is
+            # populated exclusively after 3-fight native+2D Balanced scoring.
+            # Every fifth proposal is an independent source-cold restart;
+            # bounded short probes remain entirely cold.
+            elite = (_paid_elite_choice(elites, rng, proposals)
+                     if full_search else None)
             candidate = _cold_apl(base, rng, mutation, elite=elite)
             candidate_sha = hashlib.sha256(
                 json.dumps(candidate, sort_keys=True).encode()).hexdigest()
@@ -168,6 +183,9 @@ def run_live(root: Path, class_key: str, level: int, *,
             score = float(result["world_mean_dps"])
             if score < 0 or not score < float("inf"):
                 raise ValueError("INVALID_COUPLED_WORLD_DPS")
+            elites.append((score, candidate))
+            elites.sort(key=lambda item: item[0], reverse=True)
+            del elites[22:]
             if best is None or score > best[0]:
                 best = (score, result, candidate_sha, candidate)
         except (ValueError, RuntimeError, OSError, subprocess.SubprocessError,
