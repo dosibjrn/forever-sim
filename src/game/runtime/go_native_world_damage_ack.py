@@ -8,6 +8,7 @@ or a full P7 certificate.
 from __future__ import annotations
 
 from math import isfinite
+import re
 from typing import Mapping
 
 from .events import CombatEvent
@@ -18,6 +19,19 @@ from .native_step_protocol import snapshot_gsim_world, state_hash
 
 class NativeDamageWorldApplicationError(GoWorldRangeError):
     pass
+
+
+# The six genuine Forever Entangling Roots ranks have distinct spell IDs.
+# Source-native controls carry both the spell ID and rank: reject mismatches
+# without incorrectly rejecting lower-level, source-legal Roots casts.
+_ROOTS_SPELL_IDS_BY_RANK = (0, 339, 1062, 5195, 5196, 9852, 9853)
+
+
+def _roots_action_matches_rank(action_id: str, rank: int) -> bool:
+    if type(rank) is not int or not 1 <= rank <= 6:
+        return False
+    spell_id = _ROOTS_SPELL_IDS_BY_RANK[rank]
+    return re.search(rf"(?<!\\w)SpellID:\\s*{spell_id}(?!\\d)", action_id) is not None
 
 
 class GsimNativeDamageWorldApplier:
@@ -208,7 +222,7 @@ class GsimNativeDamageWorldApplier:
                         or event.get("crit") is not False
                         or event.get("periodic") is not False
                         or caster_type != "" or caster_index != 0 or caster_label != ""
-                        or "9853" not in source_action_id):
+                        or not _roots_action_matches_rank(source_action_id, event["rank"])):
                     raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_CONTROL_EVENT_INVALID")
             ids.append(event_id)
             validated.append((kind, event))
