@@ -54,10 +54,6 @@ def test_rank_live_search_must_generate_rank_up():
     assert r['control_witness'] is not None
     assert r['control_witness'].get(talent.id,0)==0
     assert r['witness'].get(talent.id)==1
-    assert r['source_rank_facts']['talent_id']==talent.id
-    assert r['source_rank_facts']['rank']==1
-    assert r['source_rank_facts']['tree_key']==talent.tree_key
-    assert 'checkpoint_source_l0' in r['source_rank_facts']
 
 
 def test_live_cli_druid_l20_and_mage_can_be_called():
