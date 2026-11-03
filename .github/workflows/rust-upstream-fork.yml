@@ -28,6 +28,7 @@ on:
       - integrations/mythicsim-rust/test_port_native_entangling_roots_dot.py
       - integrations/mythicsim-rust/port_native_typed_rng.py
       - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
+      # Keep the fork compile gate wired to paid-recovery and explicit RNG contracts.
       - integrations/mythicsim-rust/port_native_paid_recovery.py
       - integrations/mythicsim-rust/test_port_native_paid_recovery.py
       - integrations/mythicsim-rust/live_two_world_pulls.py
