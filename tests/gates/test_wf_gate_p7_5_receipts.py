@@ -66,6 +66,50 @@ def _ledger(tmp_path):
             })
 
 
+def test_p75_uses_pre_run_snapshot_not_its_own_in_progress_batch(tmp_path):
+    """A P7.5 target cannot consume P7.1-P7.4 rows written earlier in its batch."""
+    _ledger(tmp_path)
+    live_ledger = tmp_path / "docs/planning/M1_PASSES.tsv"
+    snapshot = tmp_path / "m1-passes-pre-run.tsv"
+    snapshot.write_text(live_ledger.read_text())
+
+    # Model P7.1-P7.4 being accepted earlier in this same still-running M1
+    # batch: their ledger URLs now point at the current, not-yet-completed run.
+    with live_ledger.open(newline="") as file:
+        reader = csv.DictReader(file, delimiter="\t")
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+    for row in rows:
+        if row["gate"] in ("P7.1", "P7.2", "P7.3", "P7.4"):
+            row["status"] = "PASS"
+            row["passed_at_utc"] = "2026-11-04T00:16:00Z"
+            row["run_url"] = f"https://github.com/{REPO}/actions/runs/2000"
+    with live_ledger.open("w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames, delimiter="\t")
+        writer.writeheader()
+        writer.writerows(rows)
+
+    logs = {
+        1001: _log("P7.1", 729.7, "older-rust"),
+        1002: _log("P7.2", 722.4, "older-rust"),
+        1003: _log("P7.3", 749.54, ENGINE),
+    }
+    called = []
+
+    def reader(repo, run_id):
+        called.append(run_id)
+        return logs[run_id]
+
+    bundle = collect_accepted_receipts(
+        tmp_path, REPO, "druid", 60, "balance",
+        read_run=reader, ledger_path=snapshot,
+    )
+
+    assert called == [1001, 1002, 1003]
+    assert [row["gate"] for row in bundle["receipts"]] == ["P7.1", "P7.2", "P7.3"]
+    assert all(not row["run_url"].endswith("/2000") for row in bundle["receipts"])
+
+
 def test_collects_registered_m1_logs_and_existing_p75_validator(tmp_path, monkeypatch):
     _ledger(tmp_path)
     logs = {1001: _log("P7.1", 729.7, "older-rust"),
