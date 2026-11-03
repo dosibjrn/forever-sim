@@ -569,6 +569,7 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         ]
         spells, predicates_by_spell, _allowed, compatible, _auras = _corpus(source)
         self.assertIn(condition, compatible)
+        source_action_templates = _source_action_templates(source)
 
         class TargetRng:
             def choice(self, values):
