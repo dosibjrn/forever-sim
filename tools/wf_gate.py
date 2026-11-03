@@ -257,9 +257,10 @@ def _validate_p5(e: dict, previous: dict) -> list[str]:
         return errors
     a = e.get("unique_full_builds")
     b = p4["evidence"].get("unique_full_builds")
-    exhausted = e.get("full_legal_space_exhausted") is True
-    if not exhausted and (not _positive(a) or not _positive(b) or a < 10 * b):
-        errors.append(f"INSUFFICIENT_SEARCH_BREADTH:P5={a},P4={b},required>=10x")
+    # PROCESS v2.17 / docs/gates/P4-P6.md require actual doubled paid
+    # breadth. A caller-supplied finite-space flag is not an approved waiver.
+    if not _positive(a) or not _positive(b) or a < 2 * b:
+        errors.append(f"INSUFFICIENT_SEARCH_BREADTH:P5={a},P4={b},required>=2x")
     return errors
 
 
@@ -571,7 +572,7 @@ def main(argv=None) -> int:
                 "winning_gear_source_legality_verified",
                 "source_class_gear_membership_attested",
                 "independent_N30_unique_paid", "independent_N300_unique_paid",
-                "independent_p5_10x_breadth",
+                "independent_p5_2x_breadth",
                 "independent_same_source_candidate_space",
                 "independent_100mob_winner_replays_complete")
             boolean_fields = {
@@ -579,7 +580,7 @@ def main(argv=None) -> int:
                 "gear_source_snapshot_matches_current",
                 "winning_gear_source_legality_verified",
                 "source_class_gear_membership_attested",
-                "independent_p5_10x_breadth",
+                "independent_p5_2x_breadth",
                 "independent_same_source_candidate_space",
                 "independent_100mob_winner_replays_complete"}
             for key in paid_fields:
