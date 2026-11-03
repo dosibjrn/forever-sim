@@ -86,12 +86,12 @@ def test_unconfigured_spec_does_not_silently_select_source_tree(monkeypatch):
     from tools import wf_gate_p4_p5_partial as gate
     from src.game.data.forever import registry, gear
     from src.v2 import source_bounded_joint_frontier as frontier
-    from tools import wf_gate_p2_live as p2
+    from tools import wf_source_profile as profile
     monkeypatch.delenv("FOREVER_P4_P5_FULL_SOURCE", raising=False)
     monkeypatch.setattr(registry, "build_game_ir_slice",
                         lambda **kw: SimpleNamespace(actions=[]))
     monkeypatch.setattr(gear, "available_gear_roles", lambda cls: ["role"])
-    monkeypatch.setattr(p2, "_load_product_spec_profile", lambda *a, **kw: None)
+    monkeypatch.setattr(profile, "_load_product_spec_profile", lambda *a, **kw: None)
     monkeypatch.setattr(frontier, "search_bounded_joint_frontier",
                         lambda **kw: (_ for _ in ()).throw(AssertionError("must not search")))
     report = gate.run_paid_partial(ROOT, "druid", 60, spec="feral", gate="P4")

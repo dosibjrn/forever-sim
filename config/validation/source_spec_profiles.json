@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "authority": "PRODUCT_PROFILE_CONSTRAINT",
-  "description": "Product/optimizer selection policy, NOT a sourced WoW Forever game mechanic. Talent ranks, tier rules and prerequisites remain sourced and are validated by the canonical P2 executor.",
+  "description": "Product/optimizer selection policy, NOT a sourced WoW Forever game mechanic. Talent ranks, tier rules and prerequisites remain sourced and are validated by the canonical native talent validator.",
   "profiles": [
     {
       "class_key": "druid",
