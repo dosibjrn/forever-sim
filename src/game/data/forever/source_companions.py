@@ -7,7 +7,7 @@ explicit scenario assumption, not a proven free Call Pet or tame acquisition.
 from __future__ import annotations
 from dataclasses import replace
 import sqlite3
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 from src.game.model import (ActorDefinition,ActorLinkModifier,AutoAttackDefinition,
     AutoAttackDamageSource,ActionDefinition,DamageEffect,ResourceCost,
     ResourceDefinition,PolicyDefinition,PolicyRuleDefinition)
