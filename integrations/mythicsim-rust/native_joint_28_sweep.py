@@ -18,7 +18,7 @@ from pathlib import Path
 from native_joint_two_class import execute
 from native_source_donors import load_source_donor_fixtures
 from native_l60_matrix import (
-    HEAL, TANK, ROOT, create_inventory, load_native_item_index,
+    HEAL, TANK, ROOT, create_inventory,
 )
 
 STAGES = (5, 30, 300)
@@ -262,7 +262,6 @@ def main() -> None:
         ap.error("30/300s requires prior stage matrix.json")
     inventory = create_inventory(ROOT / "config/validation/checkpoint_148.json",
                                  args.engine_src)
-    native_items = load_native_item_index(args.engine_src)
     donor_inventory = load_source_donor_fixtures(args.engine_src)
     donor_fixtures = donor_inventory["fixtures"]
     previous = ({r["profile_id"]: r for r in json.loads(args.prior.read_text())}
@@ -270,7 +269,7 @@ def main() -> None:
 
     def pay_native(profile: str) -> dict:
         return execute(
-            profile, inventory, native_items,
+            profile, inventory,
             binary=args.binary, engine_src=args.engine_src,
             seconds=float(args.stage), iterations=args.iterations,
             seed=args.seed + next(i for i, (r, _) in enumerate(inventory)
