@@ -3,6 +3,7 @@ import unittest
 from port_native_early_retarget import (
     HELPER, METHOD_MARKER, NEW_GUARD, OLD_GUARD, TEST, port_source,
 )
+from port_native_persistent_target import FIGHT_TEST, replace_once
 
 SOURCE = (
     "impl<A> Fight<A> {\n" +
@@ -44,6 +45,23 @@ class EarlyRetargetPortTests(unittest.TestCase):
     def test_refuses_partial_successor(self):
         with self.assertRaisesRegex(ValueError, "partially applied"):
             port_source(port_source(SOURCE).replace(TEST, "", 1))
+
+
+    def test_base_persistent_port_recognizes_intact_early_clock_successor(self):
+        # The original port inserts a test with trailing newlines stripped.
+        # Early-clock inserts a second test between the module header and it.
+        original = ("mod tests {\n"
+                    "    use super::{Mp5Path, Side, DEFENDERS, MAX_TARGETS};\n\n"
+                    + FIGHT_TEST.rstrip("\n"))
+        marker = "    fn native_persistent_next_target_retains_actor_and_native_queue()"
+        early = original.replace("    #[test]\n" + marker,
+                                 TEST + "    #[test]\n" + marker)
+        self.assertNotIn(original, early)
+        self.assertEqual(replace_once(early, "", original, marker), early)
+        # Never interpret a modified base actor/resource test as idempotent.
+        broken = early.replace("let kept_mana =", "let fake_mana =", 1)
+        with self.assertRaisesRegex(ValueError, "partial or ambiguous"):
+            replace_once(broken, "", original, marker)
 
 
 if __name__ == "__main__":
