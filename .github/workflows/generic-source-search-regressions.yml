@@ -11,6 +11,7 @@ on:
       - 'tools/wf_gate_p7_2_live.py'
       - 'tests/gates/test_wf_gate_p7_3_live.py'
       - 'tests/gates/test_wf_gate_p7_4_live.py'
+      - 'tests/test_p7_search_deadline_contract.py'
       - 'tests/gates/test_wf_gate_class_cli.py'
       - 'integrations/mythicsim-rust/p73_talent_search_v2.py'
       - 'integrations/mythicsim-rust/p74_gear_search.py'
@@ -96,6 +97,9 @@ jobs:
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
           tests/gates/test_wf_gate_p7_5_live.py
           tests/gates/test_wf_gate_p7_2_live.py
+          tests/gates/test_wf_gate_p7_3_live.py
+          tests/gates/test_wf_gate_p7_4_live.py
+          tests/test_p7_search_deadline_contract.py
           integrations/mythicsim-rust/tests/test_p73_native_search_ci.py
           integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
           integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py
