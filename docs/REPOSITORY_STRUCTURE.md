@@ -1,97 +1,85 @@
 # Repository structure — maintained ideal architecture
 
-**Owner: Clean.** This is the **one canonical target-state architecture** for `dosibjrn/forever-sim`. It describes the structure we are converging to, not a claim that the current tree already matches it. Clean maintains this vision in `main`, delivers safe incremental cleanup PRs, and changes the vision only when an architectural decision genuinely changes. Current ownership/work priorities are in [AUTONOMOUS_AGENTS](planning/AUTONOMOUS_AGENTS.md) and [WORK_PRIORITY](planning/WORK_PRIORITY.md).
+**Owner: Clean.** This is the single maintained **target architecture**, not a description of code that has already migrated. The 2026-11-03 owner decisions [#357](https://github.com/dosibjrn/forever-sim/issues/357) and [#359](https://github.com/dosibjrn/forever-sim/issues/359) supersede the earlier long-term GameIR, Python source-legality and separate world-executor targets. [AUTONOMOUS_AGENTS](planning/AUTONOMOUS_AGENTS.md) defines roles; [WORK_PRIORITY](planning/WORK_PRIORITY.md) and owned issues carry execution priority.
 
-**Non-negotiables:** approved [OVERALL PLAN](../OVERALL_PLAN.md), [PROCESS](../PROCESS.md), and [gate contracts](gates/README.md) take precedence. The repo must support source-grounded 9-class × 4-level × profile checkpoints, genuine engine/world causality, paid 100-mob evaluation and separately required P7 MythicSim reference evidence. Repo neatness is not permission to delete a required test, source, formal gate proof, existing valid user decision, or stable entry point.
+**Authority and compatibility:** [OVERALL_PLAN](../OVERALL_PLAN.md), [PROCESS](../PROCESS.md) and the [gate contracts](gates/README.md) still govern scope and acceptance. A target-state design does not itself change an approved gate, disallow a currently approved pinned Go path, invalidate historical evidence or authorize an untested removal. Keep existing working production paths until their required behavior is proved through the native replacement.
 
 ## Ideal architecture (end state)
 
-One place for each responsibility. This is a **logical layout**: names marked “target” are migration destinations, not existing paths that can be imported today.
+The project is a **scenario and optimization client** of one source-of-truth game engine: the maintained, upstream-synchronized and **exact-SHA-pinned MythicSim Rust fork**. This logical map describes responsibility boundaries; named target folders need not exist yet.
 
 ```text
 /
-├── README.md                   # short product overview, first commands, links
-├── OVERALL_PLAN.md             # approved product scope; owner-controlled
-├── PROCESS.md                  # approved process; owner-controlled
-├── run.sh / run.ps1            # stable end-user launch interfaces
-├── .github/workflows/          # focused, bounded reproducible CI
+├── README.md                     # short overview, launchers and canonical links
+├── OVERALL_PLAN.md / PROCESS.md  # owner-controlled WHAT / HOW
+├── run.sh / run.ps1              # retained stable launch interfaces
+├── .github/workflows/            # bounded native/CI/on-demand gate jobs
 ├── config/
-│   ├── validation/             # static 148-checkpoint configuration
-│   └── gates/                  # static gate applicability/policies
-├── data/forever/               # pinned source observations and canonical catalogues
-├── src/
-│   ├── game/
-│   │   ├── data/              # source input/provenance + thin Rust contracts (legacy GameIR only for gsim)
-│   │   ├── model/             # legal game identities/models and state contracts
-│   │   ├── runtime/           # persistent world, actor, pull, travel, recovery
-│   │   └── search/            # unified gear × talents × policy search [target]
-│   ├── rulesets/              # explicit Classic/Forever ruleset adapters
-│   └── service/               # optional service/API/UI presentation
+│   ├── validation/               # checkpoint matrix and scenario settings
+│   └── gates/                    # gate policy, NOT Warcraft rules
 ├── integrations/
-│   ├── mythicsim-rust/        # pinned Rust combat integration and diagnostics
-│   └── mythicsim-go/          # pinned Go combat integration and diagnostics
-├── tools/                      # canonical Python public CLI: gate, ingest, audit
-├── scripts/
-│   ├── commands/             # shell/PowerShell operator wrappers
-│   └── diagnostics/          # narrowly scoped developer tooling
+│   └── mythicsim-rust/
+│       └── engine/               # tested immutable fork SHA (git submodule)
+├── src/
+│   ├── scenarios/                # our encounter/world/leveling scenario requests [target]
+│   ├── engine_client/            # thin typed native request/result/refusal transport [target]
+│   ├── optimization/             # generic candidate mutation, search, paid scoring [target]
+│   └── service/                  # optional user/API presentation
+├── tools/                         # stable gate/diagnostic CLIs, including wf_gate.py
+├── scripts/commands/             # shell/PowerShell operator wrappers
 ├── tests/
-│   ├── generic/              # cross-class search/runtime/publication contracts
-│   ├── mechanics/            # class-specific behavior contracts
-│   ├── integration/          # source→engine→world→recovery tests [target]
-│   ├── gates/                # live gate CLI and acceptance tests
-│   ├── fixtures/             # test-only immutable inputs
-│   ├── maintenance/          # layout, CI and hygiene safety checks
-│   └── release/              # explicitly invoked slow tests
+│   ├── generic/                  # search/scoring contracts
+│   ├── integration/              # native↔world↔optimizer behavior [target]
+│   ├── gates/                    # formal selected-production gate execution
+│   ├── fixtures/                 # immutable test-only scenarios
+│   ├── maintenance/              # layout, import and workflow integrity
+│   └── release/                  # explicitly requested slow tests
 └── docs/
-    ├── INDEX.md              # small navigation index
-    ├── REPOSITORY_STRUCTURE.md # this maintained vision, no separate design plan
-    ├── gates/                 # approved normative gate contracts
-    ├── evidence/              # optional run details; NOT required gate proof files
+    ├── INDEX.md
+    ├── REPOSITORY_STRUCTURE.md   # this maintained target
+    ├── gates/                    # approved acceptance predicates
+    ├── evidence/                 # retained reference/replay evidence
     ├── planning/
-    │   ├── WORK_PRIORITY.md  # one mutable work queue and agent ownership
-    │   └── AUTONOMOUS_AGENTS.md # one maintained agent role contract
-    └── reference/            # necessary retained external/source reference notes
+    │   ├── WORK_PRIORITY.md
+    │   ├── AUTONOMOUS_AGENTS.md
+    │   └── M1_PASSES.tsv         # Merge-only acceptance ledger
+    └── reference/                # historical cited sources when needed for evidence
 ```
 
-**Not intended as permanent top-level responsibility islands:** `gate_sources/`, `gate_evidence/`, `state/`, historical `evidence/`, root coverage JSON/TXT, migration one-offs. These currently exist. Their contents need classification and **proof of consumer migration before movement/removal**; the ideal map does not authorize blindly deleting or relocating them. `docs/archive/` is not a destination for new obsolete files. Git history retains deleted history.
+Game spell, rank, talent, gear, enchant, race/class/level/phase legality, acquisition, buffs, combat effects and **game-world execution** belong to the pinned MythicSim Rust fork, including interfaces required for movement, 2D feedback, chainpull and persistent 100-mob behavior. The client defines *which scenario to evaluate*, proposes candidate configurations, calls native validation/preparation/execution, and scores/optimizes actual native results. It may retain provenance and scenarios, not a second game-facts authority or a renamed GameIR. If native coverage is missing, extend and test the fork; do not infer source absence from an unsupported-native refusal.
 
-## Architecture and dependency rules
+Native game data and legality **do not** have a permanent `data/forever/`, `src/game/data/forever/`, `src/rulesets/` or Python GameIR home in this target. Existing folders remain **temporary live migration inputs**, with actual consumers and acceptance history protected until replaced. The `integrations/mythicsim-go/` reference and older gsim workflows likewise remain as long as approved PROCESS compatibility and active callers require them; this target is not authorization to break them.
 
-1. **Game facts flow in one direction:** pinned Forever source facts and Rust's native prepared/spell/talent definitions → thin legal-candidate/engine-input adapter → selected genuine Rust/Go combat runtime + our persistent 2D world and recovery → paid evaluation/scoring → **one generic** optimizer → formal gate/CLI. Rust already contains spell tables, talent layouts/rank limits, class preparation and rotation machinery. Reuse those as authoritative for the selected Rust path rather than compiling a duplicate combat GameIR or parallel talent-effect model. Independently sourced Forever acquisition/level/legality gaps remain explicit until native coverage is proved; an upstream `prepare` refusal is not an automatic absence of a legitimate source ability.
-2. **One authoritative mechanic and one real execution path per selected engine.** Rust is preferred and Go is valid when pinned, as governed by PROCESS. **On the Rust/hybrid-Rust path, Rust owns the actual ability/talent combat effects** (hit, damage, heal, procs, resources, cooldowns, auras and other native mechanics). The selected world owns geometry, movement, pulls, continuous recovery and world feedback; its bridge forwards native events, never independently calculates or applies the same effect twice. If a selected Rust ability/talent effect is missing, implement it in the public Rust fork and test its true native impact, not a Python clone. No fake effect ACK, surrogate DPS-as-leveling proxy, class-specific winner presets or hidden whitelists.
-3. **One implementation of shared abstractions.** Source legality/acquisition, candidate generation, search policy and 2D world/recovery need a generic interface, **not another copy of Rust's spell/talent/ability model**. Do not extend Python GameIR's combat effects merely to mirror upstream Rust. Keep existing gsim/GameIR production paths and their already-earned PASSes as long as they are actually used; migrate callers and run real production regressions before removing their code. Class/ruleset adapters provide source-backed differences and engine requests, not competing engines. Old `src/v2/`, `src/classic_mage_leveling_optimizer_v10.py` and legacy state must be assessed by **actual callers, benchmark/held-out challenger obligations and parity tests** before removal; never equate their age with safe obsolescence.
-4. **A predictable entry point.** Python public commands live under `tools/` (especially stable `python tools/wf_gate.py --class ... --level ... --gate ...`), shell/PS wrappers under `scripts/commands/`, root launchers remain stable. Keep long-lived code out of numbered one-off scripts; do not create a third CLI namespace.
-5. **Tests mirror boundaries** and invoke real source/runtime for the behavior under test. Fast tests by default; slow formal gate, 100-mob and holdout runs intentionally scoped. No disabling tests to make layout changes pass.
-6. **Separate data, test fixtures, operational state and proof.** `data/forever/` is source/canonical catalogue; `tests/fixtures/` is immutable test-only input; live-generated transient state should be reproducible and gitignored where safe; `docs/planning/M1_PASSES.tsv` is the one tiny timestamped on-demand PASS ledger; `docs/evidence/` is optional archival context, **not** a PROCESS requirement. Do not introduce 1,628 individual artifacts. Never merge diagnostic result into a PASS or delete an artifact without confirming no gate/replay depends on it.
-7. **Small stable root and short docs.** Root files are only stable entry points and project governance/config. README links to a small set of maintained canonical docs. Avoid per-folder readmes with duplicated process rules, one-time handoff reports, checklists that only repeat GitHub issues, and parallel “v2-final-new” authority files.
+## Dependency and ownership rules
 
-## Current deviations worth removing
+1. **One game truth:** upstream + Forever patch changes are integrated into the maintained Rust fork, tested there and promoted by reviewed exact submodule SHA. Only that fork defines Warcraft mechanics, source legality and legal build options. No independent source index, acquisition database, class/rank eligibility tables, game-rule validator or Python combat-engine fallback is a permanent client component.
+2. **One native request boundary:** scenario + proposed build/APL → native capability and legality validation (including structured invalid vs unsupported reasons) → genuine native execution and causal world events/ACK → paid results → generic optimizer. Preserve balanced RNG and independent stochastic final validation where PROCESS requires them. Neither fabricated event ACKs nor surrogate DPS-as-leveling satisfy the gates.
+3. **No separate world-gameplay truth:** spatial/world, chainpull, recovery and persistent combat semantics mandated by P1–P7.5 must survive inside or through the selected MythicSim interface. Current Python 2D and gsim components are transitional working paths; move consumers first, verify both positive and negative native cases, and only then remove duplicated execution.
+4. **Public CLI and process stability:** `python tools/wf_gate.py --class ... --level ... --gate ...`, `run.sh`, `run.ps1`, approved gates and the Merge-only `M1_PASSES.tsv` remain stable throughout migration. No extra source-authority CLI namespace, gate-only simulator, duplicated acceptance registry or unnecessary hourly heavy CI.
+5. **Tests and evidence reflect real boundaries:** run scoped unit/integration tests for a moved consumer, plus the required selected-production native/world gate path where behavior is affected. Existing accepted PASS receipts persist; no silent invalidation or invented new PASS from compilation/metadata. Keep only replay evidence still required by current acceptance or referenced decisions.
+6. **Small meaningful boundaries:** live code grouped by scenario, native client, generic optimizer and service, not numbered experiments. Move modules when their actual callers and tests can move together. Delete obsolete working-tree code once proven unused; Git history is the archive.
 
-These are **observed categories** from public main inspection, **not** a claim that their individual files are all obsolete.
+## Current main deviations and concrete migration checks
 
-| Present state | Desired improvement | Safety check before deleting/moving |
-| --- | --- | --- |
-| `src/` has many flat legacy modules; `src/v2/` is large | Group by concrete domain boundary; converge on one generic production path | Import graph, actual runtime callers, benchmarks and backward compatibility |
-| Very large `tests/` and `tools/` roots | Group tests by behavior and tools by stable responsibility; remove superseded one-off entry points | Pytest collection, invoked workflows, imports, CLI compatibility |
-| `gate_sources/`, `gate_evidence/` | Consolidate source inputs and formal proof into their intended homes | Search every path consumer and update CLI defaults/tests/evidence references together |
-| `evidence/` and `docs/evidence/` coexist | Retain only still-used reference/replay inputs; PASS timestamps live in one TSV | Actual data consumers and accepted historical decisions |
-| `state/`, coverage reports and migration scripts tracked | Keep only required reproducible fixtures/source; ignore generated noise; delete completed migration tooling | Verify no runtime startup, test or required replay depends on tracked artifacts |
-| `docs/archive/` and long historical narrative in guides | Git history is the archive; retain only currently useful explanations | Preserve current normative instructions and valid reference links |
-| Multiple wrappers/engines/optimizer layers | Clarify real ownership and remove redundant duplicate code paths | Source-native behavior, persistent world ACK, paid scoring and independent gate replays |
+These are **observed current paths**, not proof that any one of them is safe to delete:
+
+| Current state | Required migration before removal |
+| --- | --- |
+| `src/game/model/ir.py` defines GameIR; `src/game/data/forever/registry.py` and `source_ir_assembly.py` produce and enrich it | Trace every runtime, optimizer, gate, CLI and test caller; expose the actual missing Rust data/behavior and migrate callers to native requests before deleting schema, providers and overlays |
+| `tools/wf_gate_p1_live.py::_source_rows` reads the Forever SQLite `spell_index` directly and filters `level_hint` | Obtain sourced native ability availability and structured invalid/unsupported handling through the Rust API; retain the current code until real native P1 legal/illegal and effect tests replace it |
+| `src/game/runtime/`, `src/v2/`, `src/rulesets/` and flat legacy `src/` execute or reference earlier semantics | Trace active entry points, tests and held-out obligations; migrate one safe real consumer at a time, retaining 2D ACK, 100-mob continuity, source legality and stable CLI behavior |
+| `data/forever/`, `gate_sources/`, `gate_evidence/`, `state/`, `evidence/` hold overlapping source, working-state and proof material | Preserve any required historical gate reference/replay, then remove duplicated live game-data ownership only after native authority is proven; generated transient state can be ignored where safe |
+| Flat `tools/` and `tests/` contain long-lived and numbered one-off code | Group by real responsibility, update direct-entrypoint/CI/pytest references, and prove behavior before deleting or moving; file counts are not a goal |
+
+This table is a migration boundary map, **not a parallel backlog or an exhaustive caller inventory**. The live issue-level inventories and handoffs belong to [#357](https://github.com/dosibjrn/forever-sim/issues/357), [#359](https://github.com/dosibjrn/forever-sim/issues/359), and [WORK_PRIORITY](planning/WORK_PRIORITY.md).
 
 ## Convergence rules — Clean's repeated work loop
 
-1. **Compare `main` against this target**, then the current Clean-owned issue/PR. Pick **one bounded high-impact deviation**; continue the same unfinished cleanup until integrated rather than starting another survey.
-2. **Prove obsolete before delete:** check all references, active PRs, callers, source ownership, retention needs and accepted gate evidence. Obsolete items are deleted from the working tree, not shuffled into a new `legacy/` or `archive/` directory.
-3. **Migrate by responsibility, not aesthetics:** move a live file only when the new home has a clearer owner. Update imports, workflow paths, scripts, tests and docs in the same change. Preserve exported public CLIs or provide tested compatibility during migration.
-4. **Prove safe:** focused test collection and behavioral checks at the changed boundary; exercise a real production path when it could be affected. Never call a structure-only check a formal checkpoint pass.
-5. **Deliver a small PR** referencing the particular gap this closes, observed actual change and passing scoped checks. Merge agent integrates it. Repeat; update this target vision only for a substantive architecture decision.
-6. **Interrupt only for immediate cross-agent friction** (CI/runner failures, broken shared paths, duplicate critical implementation). Fix the root cause and return to the structural roadmap. Coordinate around Work1/Work2/Prio-owned branches; architecture cleanup must not stall the 0/148 → 1/148 critical path.
+1. Compare fresh `main`, current owned issue/PR and this target. Continue the existing unfinished cleanup, selecting one bounded actual dependency or code-removal delta. Do not create hypothetical blockers or a second inventory document.
+2. Prove callers and compatibility **before deleting or moving**: production imports, command/CI paths, live source/ruleset contracts, active agent branches, held-out/replay obligations and accepted evidence. Don't call a legacy name proof of dead code.
+3. Move one real consumer to a working native interface, then remove only the duplicated code made dead by that migration. Avoid expanding the old GameIR or replacing it with a renamed Python rules engine. Do not take Work1/Work2's active gameplay fixes.
+4. Verify the changed boundary with focused regressions and a real production path when needed. Docs-only target corrections need link/contract review, not invented gate PASSes.
+5. Deliver one small PR stating the observed deviation, exact paths migrated/deleted, validation and `M1 affected gates:` line. Merge integrates; only Merge records actual M1 gate progress. Preserve stable launchers and canonical docs; delete obsolete history instead of adding an archive tree.
+6. Interrupt for proven shared CI/runner/build breakage only; fix the real cause and resume the architecture migration. A useful existing bounded GitHub Action may run between cycles; avoid repeated heavy acceptance for unchanged behavior.
 
-**Definition of architectural progress:** fewer live competing abstractions and dead files, clearer responsibilities, fewer surprise paths and simpler real development flows, **without** reducing source fidelity, acceptance evidence or runtime coverage. File counts may help find waste but are not a target metric; avoid performative inventory and mandatory reports.
-
-## Grounded baseline and navigation
-
-On 2026-11-02 the checked `main` root includes `src/`, `tests/`, `tools/`, `scripts/`, `integrations/`, `data/`, `docs/`, `config/`, `state/`, `evidence/`, `gate_sources/`, `gate_evidence/` and root coverage artifacts. `src/game/` already has model/data/runtime partitions; `tests/generic/`, `tests/mechanics/`, `tests/maintenance/`, and `tests/release/` exist. These are starting points, not the goal's completion.
-
-See [README](../README.md) for entry points, [docs index](INDEX.md) for normative docs, [evidence index](evidence/README.md) for formal gate proof, and [work queue](planning/WORK_PRIORITY.md) for live ownership. Completed historical migration steps and obsolete directory manifests belong in Git history, not expanded here.
+**Progress means fewer live competing game-rule sources and verified native consumers, not more reports or fewer files for their own sake.** Git history retains completed migrations.
