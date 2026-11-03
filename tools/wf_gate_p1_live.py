@@ -414,7 +414,7 @@ def _load_p1_scenario_nonimpact(root: Path, class_key: str, level: int,
 def audit_inventory(source_rows, ir, *, parser, source_classifier, policy_builder,
                     scratch_builder, executor, max_errors=10000,
                     effect_checker=None, native_source_spell_ids=(), native_executor=None,
-                    scope_facts=None, context_exclusions=None, scenario_exclusions=None,
+                    scope_facts=None, context_exclusions=None, scenario_nonimpact=None,
                     scenario_id=P1_DEFAULT_SCENARIO):
     """PROCESS P1 live inventory with an incremental native-owned action path.
 
