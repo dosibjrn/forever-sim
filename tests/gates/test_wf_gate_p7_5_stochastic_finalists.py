@@ -128,6 +128,51 @@ def test_p75_gear_block_uses_paid_balanced_gear_when_finalist_gear_is_identical(
     assert validated == []
 
 
+
+def test_p75_gear_block_retries_a_different_paid_donor_after_illegal_mix():
+    """One rejected paid finalist must not suppress another legal paid build."""
+    parent, finalist, alternative, child = (
+        _candidate(name) for name in ("parent", "paid-finalist", "paid-balanced", "child"))
+    player = lambda q: q["raid"]["parties"][0]["players"][0]
+    player(finalist)["equipment"]["items"] = [
+        {"id": 91, "enchant": 901}, {"id": 92, "enchant": 902}]
+    player(alternative)["equipment"]["items"] = [
+        {"id": 71, "enchant": 801}, {"id": 72, "enchant": 802}]
+    source = SimpleNamespace(player=player, RejectedGear=ValueError)
+    original_finalist = copy.deepcopy(finalist)
+    original_alternative = copy.deepcopy(alternative)
+    attempted = []
+
+    def validate(ids, enchants):
+        attempted.append((ids, enchants))
+        if 91 in ids:
+            raise ValueError("incompatible source-legal gear mix")
+
+    class DeterministicRng:
+        # Try the highest-ranked stochastic finalist first; this first
+        # donor fails validation, while the already-paid balanced one passes.
+        def shuffle(self, sequence):
+            pass
+        def choice(self, sequence):
+            return sequence[0]
+        def randint(self, low, high):
+            return low
+        def sample(self, sequence, count):
+            return sequence[:count]
+
+    assert gate._paid_p75_gear_block_crossover(
+        child, parent,
+        [(900.0, {}, "paid-finalist-sha", finalist, 950.0)],
+        [(800.0, "paid-balanced-sha", alternative)],
+        source, SimpleNamespace(validate=validate), DeterministicRng())
+    assert attempted == [([91, 92], [901, 902]),
+                         ([71, 72], [801, 802])]
+    assert player(child)["equipment"] == player(alternative)["equipment"]
+    assert finalist == original_finalist
+    assert alternative == original_alternative
+
+
+
 def test_p75_paid_stochastic_parent_and_independent_cold_restarts():
     a, b = _candidate("balanced"), _candidate("stochastic")
     balanced = (900.0, {}, "sha-a", a)
