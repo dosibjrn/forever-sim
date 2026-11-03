@@ -104,6 +104,7 @@ fi
 # in the real Rust preparer. Executable root/damage/break effects are a later
 # native Rust slice; rank intake alone never awards P1/P2 acceptance.
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_improved_roots_rank.py" "$PWD"
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_entangling_roots_dot.py" "$PWD"
 git add src/classes/druid/prepare/talents.rs
 if ! git diff --cached --quiet; then
   git commit -m "feat(forever): preserve Improved Entangling Roots rank in native preparer"
