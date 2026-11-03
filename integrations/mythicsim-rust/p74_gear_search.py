@@ -27,8 +27,14 @@ class NativeFailure(RuntimeError):
 def _write(path, value):
     path.write_text(json.dumps(value, indent=2, allow_nan=False)+"\n")
 
-def candidate_pool(validator, limit):
-    """Only source/catalogue AND pinned Rust-compatible candidates can be screened."""
+def candidate_pool(validator, limit, *, independent_enchants=False):
+    """Enumerate source/Rust-legal gear for the actual enchant policy.
+
+    The historical native-only gear search preserves saved-reference enchants.
+    Full P7.4/P7.5 live cold searches independently select enchants: an item
+    legal with no enchant must not be excluded merely because it cannot use
+    the saved reference's enchant for that slot.
+    """
     con=validator.connection
     pool={}; exclusions=Counter()
     for i,slot in enumerate(SLOTS):
@@ -41,7 +47,10 @@ def candidate_pool(validator, limit):
         for row in rows:
             r=dict(row); iid=int(r["item_id"])
             try:
-                validator.item(i,iid)
+                if independent_enchants:
+                    validator.item(i, iid, 0)  # actual unenchanted cold candidate
+                else:
+                    validator.item(i, iid)  # native legacy keeps saved enchants
             except RejectedGear as exc:
                 exclusions[exc.category]+=1
                 continue
