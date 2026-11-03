@@ -78,7 +78,7 @@ def test_native_movement_projection_tracks_gsim_live_route_not_future_queue():
 def test_world_targets_use_existing_documented_classic_leveling_hp(level, expected_hp):
     health, metadata = _world_module()._target_health_profile(None, level)
     assert health == expected_hp
-    assert metadata["authority"] == "src.shared.leveling.objective.MOB_BASE_HP"
+    assert metadata["authority"] == "src.scenarios.leveling_targets.MOB_BASE_HP"
     assert "not_verified_forever" in metadata["source_status"]
     target = TargetState.with_health("source_target", health, **metadata)
     assert target.health == expected_hp

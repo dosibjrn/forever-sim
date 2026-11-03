@@ -39,6 +39,7 @@ def test_live_python_consumers_import_scenario_geometry():
         "src/v2/source_persistent_joint_finalists.py",
         "src/rulesets/forever/classes/druid/mechanics.py",
         "tools/wf365_spaced_pull_smoke.py",
+        "integrations/mythicsim-rust/live_two_world_pulls.py",
         "tools/wf373_druid_l30_primal_vs_swipe_100mob.py",
     )
     for relative in consumers:

@@ -34,6 +34,7 @@ def test_live_leveling_target_consumers_import_the_scenario_boundary():
         "src/rulesets/forever/classes/hunter/mechanics.py",
         "src/rulesets/forever/classes/paladin/mechanics.py",
         "src/rulesets/forever/classes/paladin/event_replay.py",
+        "integrations/mythicsim-rust/live_two_world_pulls.py",
         "tools/wf299_100_mob_continuity_probe.py",
     )
     for relative in consumers:
