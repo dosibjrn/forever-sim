@@ -106,10 +106,10 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
 
 
 
-def test_cold_and_elite_cast_conditions_remain_bound_to_source_spell_set():
-    # Same-spell predicates are preferred, but compatible source-cast
-    # predicates may cross between casts when every exact spell reference
-    # belongs to the source cast set. useItem/opaque predicates are excluded.
+def test_cold_and_elite_keep_exact_source_action_condition_pairings():
+    # Conditions are part of their source cast action, not a reusable pool.
+    # A generated 10463-style aura guard must never be detached, grafted,
+    # tuned or dropped while its cast remains in the candidate.
     source_actions = [
         {
             "action": {
@@ -148,60 +148,39 @@ def test_cold_and_elite_cast_conditions_remain_bound_to_source_spell_set():
         },
     ]
     source_snapshot = json.loads(json.dumps(source_actions))
-    spells, same_spell, _allowed_casts, compatible, source_aura_keys = _corpus(source_actions)
-    source_spell_keys = {
-        json.dumps(spell, sort_keys=True, separators=(",", ":"))
-        for spell in spells
-    }
-    compatible_shapes = {
-        json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
-        for predicate in compatible
-    }
-    item_shape = json.dumps(
-        _predicate_shape(source_actions[-2]["action"]["condition"]),
-        sort_keys=True, separators=(",", ":"),
-    )
-    opaque_shape = json.dumps(
-        _predicate_shape(source_actions[-1]["action"]["condition"]),
-        sort_keys=True, separators=(",", ":"),
-    )
-    assert item_shape not in compatible_shapes
-    assert opaque_shape not in compatible_shapes
-
-    same_shapes = {
-        key: {
-            json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
-            for predicate in predicates
-        }
-        for key, predicates in same_spell.items()
-    }
-    cross_spell_seen = False
-    for seed in range(128):
-        for cold in (True, False):
-            generated = mutate_apl(
-                None if cold else source_actions,
-                source_actions,
-                random.Random(seed),
-                cold=cold,
+    templates_by_spell = {}
+    source_noncast = set()
+    for entry in source_actions:
+        action = entry["action"]
+        cast = action.get("castSpell")
+        if isinstance(cast, dict):
+            key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
+            templates_by_spell.setdefault(key, set()).add(
+                json.dumps(action, sort_keys=True, separators=(",", ":"))
             )
-            for item in generated:
-                action = item.get("action", {})
+        else:
+            source_noncast.add(
+                json.dumps(action, sort_keys=True, separators=(",", ":"))
+            )
+
+    for seed in range(128):
+        cold = mutate_apl(None, source_actions, random.Random(seed), cold=True)
+        elite = mutate_apl(cold, source_actions, random.Random(seed + 1000))
+        for proposal in (cold, elite):
+            for entry in proposal:
+                action = entry["action"]
                 cast = action.get("castSpell")
-                condition = action.get("condition")
-                if not isinstance(cast, dict) or condition is None:
-                    continue
-                key = json.dumps(cast.get("spellId"), sort_keys=True, separators=(",", ":"))
-                spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
-                assert valid, (seed, cold, condition)
-                assert set(spell_refs) <= source_spell_keys, (seed, cold, key, spell_refs)
-                assert set(aura_refs) <= source_aura_keys, (seed, cold, key, aura_refs)
-                shape = json.dumps(
-                    _predicate_shape(condition), sort_keys=True, separators=(",", ":")
-                )
-                assert shape in compatible_shapes, (seed, cold, key, shape)
-                if shape not in same_shapes.get(key, set()):
-                    cross_spell_seen = True
-    assert cross_spell_seen, "Compatible cross-spell predicates must remain eligible"
+                if isinstance(cast, dict):
+                    key = json.dumps(
+                        cast.get("spellId"), sort_keys=True, separators=(",", ":")
+                    )
+                    assert json.dumps(
+                        action, sort_keys=True, separators=(",", ":")
+                    ) in templates_by_spell[key], (seed, proposal, action)
+                else:
+                    assert json.dumps(
+                        action, sort_keys=True, separators=(",", ":")
+                    ) in source_noncast
     assert source_actions == source_snapshot
 
 
@@ -280,18 +259,28 @@ def test_native_damage_witness_follows_conditional_opaque_prefix_for_cold_and_el
                 or "condition" in entry.get("action", {})
             ]
             anchored = _ensure_native_damage_action(
-                proposal, witnesses, random.Random(seed)
+                proposal, witnesses, random.Random(seed),
+                source_actions=source_actions,
             )
             assert anchored[:len(prefix)] == prefix
             assert len(anchored) <= 20
 
-            fallback = anchored[len(prefix)]["action"]
-            assert fallback["castSpell"]["spellId"] == {"spellId": 11713}
-            assert "condition" not in fallback
+            witness_actions = [
+                entry for entry in anchored
+                if entry.get("action", {}).get("castSpell", {}).get(
+                    "spellId", {}
+                ).get("spellId") == 11713
+            ]
+            assert witness_actions
             assert all(
-                isinstance(entry.get("action", {}).get("castSpell"), dict)
-                and "condition" not in entry.get("action", {})
-                for entry in anchored[len(prefix) + 1:]
+                entry["action"].get("condition")
+                == source_actions[1]["action"]["condition"]
+                for entry in witness_actions
+            )
+            assert all(
+                entry["action"].get("condition")
+                is not None
+                for entry in witness_actions
             )
 
             for entry in anchored:
