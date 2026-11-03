@@ -333,12 +333,6 @@ def mutate_apl(actions, source_actions, rng, *, cold=False,
         compatible_predicates = []
         source_aura_keys = set()
         cast_templates = {}
-        allowed = {
-            _spell_key(cast.get("spellId"))
-            for entry in source_actions
-            for cast in [entry.get("action", {}).get("castSpell")]
-            if isinstance(cast, dict) and isinstance(cast.get("spellId"), dict)
-        }
     else:
         spells, predicates_by_spell, allowed, compatible_predicates, source_aura_keys = _corpus(source_actions)
         cast_templates = _source_cast_templates(source_actions)
@@ -455,19 +449,20 @@ def mutate_apl(actions, source_actions, rng, *, cold=False,
             if casts:
                 _tune_literal(rng.choice(casts)["action"]["condition"], rng)
     _ensure_fallback(result, source_actions)
-    # Non-cast native actions (strictSequence, channelSpell, multidot, etc.)
-    # are opaque source-backed actions. They may be reordered, never invented
-    # or edited by this cast-oriented grammar.
-    source_noncast = {
-        _spell_key(entry.get("action", {}))
-        for entry in source_actions
-        if "castSpell" not in entry.get("action", {})
-    }
-    for entry in result:
-        action = entry.get("action", {})
-        if "castSpell" in action:
-            if _spell_key(action["castSpell"].get("spellId")) not in allowed:
-                raise ValueError("APL mutation created an unapproved cast identity")
-        elif _spell_key(action) not in source_noncast:
-            raise ValueError("APL mutation created an unsupported non-cast action")
+    if not preserve_source_conditions:
+        # Non-cast native actions (strictSequence, channelSpell, multidot, etc.)
+        # are opaque source-backed actions. They may be reordered, never invented
+        # or edited by this cast-oriented grammar.
+        source_noncast = {
+            _spell_key(entry.get("action", {}))
+            for entry in source_actions
+            if "castSpell" not in entry.get("action", {})
+        }
+        for entry in result:
+            action = entry.get("action", {})
+            if "castSpell" in action:
+                if _spell_key(action["castSpell"].get("spellId")) not in allowed:
+                    raise ValueError("APL mutation created an unapproved cast identity")
+            elif _spell_key(action) not in source_noncast:
+                raise ValueError("APL mutation created an unsupported non-cast action")
     return result
