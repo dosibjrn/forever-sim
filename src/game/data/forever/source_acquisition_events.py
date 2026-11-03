@@ -15,7 +15,7 @@ import sqlite3
 from typing import Iterable
 
 from src.game.data.forever.source_acquisition import read_acquisition_evidence
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 from src.v2.source_sqlite_detail_snapshots import read_verified_spell_detail_snapshot
 from .source_acquisition_entities import TYPES, _typed_listview
 
