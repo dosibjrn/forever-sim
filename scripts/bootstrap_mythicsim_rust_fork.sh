@@ -117,6 +117,14 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): continue native actor and world ACK across targets"
 fi
 
+# Expose the same selected Rust actor in an executable two-window diagnostic.
+# This is native-only: no two mob kills, live gsim ACK or paid recovery is claimed.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_two_pull_cli.py" "$PWD"
+git add src/core/fight.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): expose selected native same-actor two-window diagnostic"
+fi
+
 # The two-target native state and world ACK regressions must pass before
 # a new fork revision is published; compilation alone is insufficient.
 cargo test --locked --lib persistent_next_target
