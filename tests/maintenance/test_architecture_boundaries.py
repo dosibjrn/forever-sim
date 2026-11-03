@@ -340,3 +340,40 @@ else:
         f"runtime event import / compatibility exports failed: "
         f"{result.stdout}\\n{result.stderr}"
     )
+
+def test_source_target_profile_reads_do_not_import_transitional_game_ir():
+    """Profile consumers read sourced values without importing Python game mechanics.
+
+    Explicit legacy enrichment and the historical sqlite_talents.DEFAULT_DB
+    import remain compatible until those callers move to selected native Rust.
+    """
+    import subprocess
+    import sys
+
+    source = """
+import sys
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever.target_combat_source import (
+    DEFAULT_DB as PROFILE_DB, load_target_combat_profile,
+    physical_outgoing_expected_factors, source_enrich_target_combat,
+)
+assert PROFILE_DB is DEFAULT_DB
+assert 'src.game.model.ir' not in sys.modules
+profile = load_target_combat_profile(20)
+factors = physical_outgoing_expected_factors(20)
+assert profile['target_armor'] == factors['target_armor']
+assert factors['direct_multiplier'] > 0
+assert 'src.game.model.ir' not in sys.modules
+from src.game.data.forever.sqlite_talents import DEFAULT_DB as HISTORICAL_DB
+assert HISTORICAL_DB is DEFAULT_DB
+assert 'src.game.model.ir' in sys.modules
+assert callable(source_enrich_target_combat)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"source-profile/GameIR import boundary failed: "
+        f"{result.stdout}\\n{result.stderr}"
+    )
