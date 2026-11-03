@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: work1-p75-long-apl-contract-\${{ github.event.pull_request.head.sha }}
+  group: work1-p75-long-apl-contract-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - uses: actions/setup-python@v5
