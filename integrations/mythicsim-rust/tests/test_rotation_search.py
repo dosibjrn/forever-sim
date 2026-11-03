@@ -22,7 +22,7 @@ class RotationSearchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(TimeoutError):
                 module.simulate(pathlib.Path("/nonexistent"), {}, 1, tmp, "candidate_x",
-                                deadline=time.monotonic()-0.001)
+                                rng_mode="balanced", deadline=time.monotonic()-0.001)
 
     def test_timeout_clamped_to_remaining_budget(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -32,7 +32,8 @@ class RotationSearchTests(unittest.TestCase):
             deadline=time.monotonic()+0.2
             before=time.monotonic()
             with self.assertRaises(subprocess.TimeoutExpired):
-                module.simulate(fake, {}, 1, tmp, "candidate_x", deadline=deadline)
+                module.simulate(fake, {}, 1, tmp, "candidate_x",
+                                rng_mode="balanced", deadline=deadline)
             self.assertLess(time.monotonic()-before, 1.5)
 
     def test_search_is_diagnostic_and_writes_frozen_inputs(self):
@@ -42,6 +43,8 @@ class RotationSearchTests(unittest.TestCase):
             fake.write_text("""#!/usr/bin/env python3
 import json,sys
 args=sys.argv
+mode=args[args.index('--rng-mode')+1]
+assert mode in ('balanced','stochastic')
 req=json.load(open(args[args.index('--request')+1]))
 rot=req['raid']['parties'][0]['players'][0]['rotation']['priorityList']
 json.dump({'result':{'raidMetrics':{'dps':{'avg':float(rot[0]['id'])}}}},
@@ -57,6 +60,8 @@ json.dump({'result':{'raidMetrics':{'dps':{'avg':float(rot[0]['id'])}}}},
             self.assertEqual(p.returncode,0,p.stderr)
             report=json.loads((out/"search_report.json").read_text())
             self.assertEqual(report["status"],"DIAGNOSTIC_ONLY_P7_2_NOT_CERTIFIED")
+            self.assertEqual(report["winner_selection"],"best_balanced_screen")
+            self.assertEqual(report["search_rng_mode"],"balanced")
             self.assertLessEqual(report["elapsed_seconds"],3)
             frozen=json.loads((out/"frozen_stochastic_holdout.json").read_text())
             self.assertNotEqual(frozen["request"]["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"],

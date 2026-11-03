@@ -240,7 +240,8 @@ class NativeGearAdapterTests(unittest.TestCase):
                 stderr_path=path, runner=fake_runner)
             self.assertEqual(1, len(seen))
             command, kwargs, payload = seen[0]
-            self.assertEqual("balanced", kwargs["env"]["WOWSIM_RNG_MODE"])
+            self.assertEqual("balanced", command[command.index("--rng-mode") + 1])
+            self.assertNotIn("WOWSIM_RNG_MODE", kwargs.get("env", {}))
             self.assertEqual("1", kwargs["env"]["RUST_BACKTRACE"])
             self.assertIn("--gate", command)
             self.assertEqual(10, payload["simOptions"]["iterations"])

@@ -62,7 +62,8 @@ class RngDiagnosticContract(unittest.TestCase):
             def runner(command, **kwargs):
                 import subprocess
                 payload = json.loads(Path(command[command.index("--request") + 1]).read_text())
-                seen.append((payload, kwargs["env"]["WOWSIM_RNG_MODE"]))
+                seen.append((payload, command[command.index("--rng-mode") + 1],
+                             kwargs.get("env", {})))
                 return subprocess.CompletedProcess(command, 101, "", (
                     'RNG_PHYSICAL_CRIT_DIAGNOSTIC spell=12 chance=1.23\n'
                     'RNG_PROBABILITY_DIAGNOSTIC label="Physical Crit Roll" p=1.23\n'
@@ -77,7 +78,9 @@ class RngDiagnosticContract(unittest.TestCase):
             self.assertEqual(1.23, entry["invalid_probability"])
             self.assertEqual(12, entry["spell_id"])
             self.assertEqual("Physical Crit Roll", entry["label"])
-            self.assertEqual([(request, "balanced")], seen)
+            self.assertEqual((request, "balanced"), seen[0][:2])
+            self.assertNotIn("WOWSIM_RNG_MODE", seen[0][2])
+            self.assertEqual("0", seen[0][2]["RUST_BACKTRACE"])
             self.assertEqual(request, json.loads((request_dir / "gear_attempt_000.request.json").read_text()))
             self.assertNotIn("native_paid", entry)
 

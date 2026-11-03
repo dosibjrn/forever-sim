@@ -1,6 +1,6 @@
-"""P7 source-native and live 2D producers must use the same explicit RNG mode.
+"""P7 source-native and live 2D producers must pass the same required typed RNG mode.
 
-These are environment/dispatch tests, not real pinned Rust gate acceptance.
+These are CLI-contract tests, not real pinned Rust gate acceptance.
 """
 import importlib.util
 import json
@@ -30,7 +30,7 @@ def test_native_source_control_explicit_rng_mode(monkeypatch, tmp_path, mode):
     seen = []
 
     def fake_run(argv, **kwargs):
-        seen.append(kwargs["env"])
+        seen.append((argv, kwargs))
         source = json.loads(Path(argv[argv.index("--request") + 1]).read_text())
         assert source["simOptions"]["iterations"] == 3
         assert source["simOptions"]["randomSeed"] == "1179706472"
@@ -45,8 +45,10 @@ def test_native_source_control_explicit_rng_mode(monkeypatch, tmp_path, mode):
     result = producer.native_source_control(binary, request, 3, rng_mode=mode)
     assert result["native_dps"] == 730.0
     assert len(seen) == 1
-    assert seen[0]["WOWSIM_RNG_MODE"] == mode
-    assert "FOREVER_GSIM_WORLD_BRIDGE" not in seen[0]
+    command, kwargs = seen[0]
+    assert command[command.index("--rng-mode") + 1] == mode
+    assert "WOWSIM_RNG_MODE" not in kwargs.get("env", {})
+    assert "FOREVER_GSIM_WORLD_BRIDGE" not in kwargs["env"]
 
 
 @pytest.mark.parametrize("mode", ("balanced", "stochastic"))
@@ -68,7 +70,7 @@ def test_live_world_process_explicit_rng_mode(monkeypatch, tmp_path, mode):
         return SimpleNamespace(returncode=0)
 
     def fake_popen(argv, **kwargs):
-        seen.append(kwargs["env"])
+        seen.append((argv, kwargs))
         raise RuntimeError("EXPECTED_NATIVE_WORLD_ENV_CAPTURE")
 
     monkeypatch.setattr(producer.subprocess, "run", fake_prepare)
@@ -76,8 +78,17 @@ def test_live_world_process_explicit_rng_mode(monkeypatch, tmp_path, mode):
     with pytest.raises(RuntimeError, match="EXPECTED_NATIVE_WORLD_ENV_CAPTURE"):
         producer.run(binary, request, distance=15., iterations=3, rng_mode=mode)
     assert len(seen) == 1
-    assert seen[0]["WOWSIM_RNG_MODE"] == mode
-    assert seen[0]["FOREVER_GSIM_WORLD_BRIDGE"] == "1"
+    command, kwargs = seen[0]
+    assert command[command.index("--rng-mode") + 1] == mode
+    assert "WOWSIM_RNG_MODE" not in kwargs.get("env", {})
+    assert kwargs["env"]["FOREVER_GSIM_WORLD_BRIDGE"] == "1"
+
+
+def test_world_producer_requires_explicit_mode_without_default():
+    import inspect
+    producer = _producer()
+    assert inspect.signature(producer.run).parameters["rng_mode"].default is inspect.Parameter.empty
+    assert inspect.signature(producer.native_source_control).parameters["rng_mode"].default is inspect.Parameter.empty
 
 
 def test_invalid_rng_mode_fails_before_source_execution(tmp_path):

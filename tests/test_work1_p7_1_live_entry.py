@@ -247,6 +247,7 @@ def test_m1_action_prepares_exact_source_native_p7_without_heavy_opt_in():
     assert 'git ls-tree HEAD -- "$engine"' in workflow
     assert 'RUST_FORK_SUBMODULE_PIN_MISMATCH' in workflow
     assert "patch_world_ingress.py upstream" not in workflow
+    assert "python integrations/mythicsim-rust/port_typed_rng_mode.py upstream" in workflow
     assert "cargo build --release --locked" in workflow
     assert "FOREVER_MYTHICSIM_RUST_BIN:" in workflow
     assert "FOREVER_P7_LIVE_PROBE_ITERATIONS=3" in workflow
