@@ -539,6 +539,16 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 256:
                     record[key] = value
+        if gate == "P7.5":
+            # The live provider now returns the exact independently paid
+            # frozen winner. Preserve it in the CLI/M1 Actions receipt so a
+            # failed 300s search can be diagnosed without repeating the heavy
+            # run just to recover gear, talents and APL. Reporting only.
+            frozen_build = report.get("frozen_source_build")
+            if (isinstance(frozen_build, dict)
+                    and len(json.dumps(frozen_build, ensure_ascii=False).encode(
+                        "utf-8")) <= 16384):
+                record["frozen_source_build"] = frozen_build
         if gate == "P7.4":
             # Forward only bounded, source-executed winner identity. This is
             # diagnostic provenance, never an additional gate predicate.
