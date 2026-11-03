@@ -237,6 +237,46 @@ def test_p75_gear_block_submits_top_paid_donor_without_local_rules():
     assert alternative == original_alternative
 
 
+
+def test_p75_gear_block_can_select_paid_balanced_donor_with_finalist_present():
+    """A paid finalist must not starve independently paid balanced gear.
+
+    Both donor builds were already scored in this cold search. The old
+    operator shuffled each donor family separately but always picked the
+    first finalist, so balanced gear was unreachable whenever a finalist
+    had two different slots. This tests proposal reachability, not native
+    Warcraft legality or a P7.5 DPS PASS.
+    """
+    parent, finalist, balanced, child = (
+        _candidate(label) for label in
+        ("parent", "paid-finalist", "paid-balanced", "child"))
+    player = lambda req: req["raid"]["parties"][0]["players"][0]
+    player(finalist)["equipment"]["items"] = [
+        {"id": 91, "enchant": 901}, {"id": 92, "enchant": 902}]
+    player(balanced)["equipment"]["items"] = [
+        {"id": 71, "enchant": 801}, {"id": 72, "enchant": 802}]
+    original_finalist = copy.deepcopy(finalist)
+    original_balanced = copy.deepcopy(balanced)
+
+    class PreferLastPaidDonor:
+        def shuffle(self, rows):
+            if len(rows) > 1:
+                rows.reverse()
+        def randint(self, low, high):
+            return low
+        def sample(self, rows, count):
+            return rows[:count]
+
+    assert gate._paid_p75_gear_block_crossover(
+        child, parent,
+        [(900.0, {}, "paid-finalist", finalist, 950.0)],
+        [(800.0, "paid-balanced", balanced)],
+        SimpleNamespace(player=player), PreferLastPaidDonor())
+    assert player(child)["equipment"] == player(balanced)["equipment"]
+    assert finalist == original_finalist
+    assert balanced == original_balanced
+
+
 def test_p75_paid_stochastic_parent_and_independent_cold_restarts():
     a, b = _candidate("balanced"), _candidate("stochastic")
     balanced = (900.0, {}, "sha-a", a)
