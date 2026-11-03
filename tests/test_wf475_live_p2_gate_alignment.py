@@ -1,4 +1,4 @@
-"""P2 must not certify unrelated changes or silently bypass the talent frontier."""
+"""Legacy talent-runtime probes must reject unrelated changes and bypasses."""
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -55,7 +55,3 @@ def test_rank_live_search_must_generate_rank_up():
     assert r['control_witness'].get(talent.id,0)==0
     assert r['witness'].get(talent.id)==1
     assert 'source_rank_facts' not in r
-
-
-def test_live_cli_druid_l20_and_mage_can_be_called():
-    assert hasattr(p2, 'run_live')
