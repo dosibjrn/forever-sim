@@ -797,6 +797,66 @@ def test_p75_cli_exposes_balanced_paid_confirmation_receipt(monkeypatch, capsys)
     assert record["frozen_stochastic_world_dps"] == 698.8
 
 
+
+def test_p75_cli_exposes_bounded_wf613_operator_diagnostics(monkeypatch, capsys):
+    """WF613 telemetry must survive the CLI receipt without affecting verdict."""
+    from tools import wf_gate as cli
+
+    monkeypatch.setattr(cli, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR"],
+        "search_strategy": "wf613",
+        "operator_attempts": {
+            "fresh": 5, "gear_large": 2, "talent_rebuild": 1,
+            "structural_repair": 3,
+        },
+        "operator_best_improvements": {
+            "fresh": 1, "gear_large": 0, "talent_rebuild": 0,
+            "structural_repair": 1,
+        },
+        "paid_archive_size": 8,
+        "best_paid_balanced_world_dps": 733.25,
+    })
+    assert cli.main(["--class", "druid", "--level", "60",
+                     "--spec", "balance", "--gate", "P7.5"]) == 1
+    result = json.loads(capsys.readouterr().out)
+    record = result["results"][0]
+    assert result["status"] == "FAIL"
+    assert record["search_strategy"] == "wf613"
+    assert record["operator_attempts"] == {
+        "fresh": 5, "gear_large": 2, "talent_rebuild": 1,
+        "structural_repair": 3,
+    }
+    assert record["operator_best_improvements"] == {
+        "fresh": 1, "gear_large": 0, "talent_rebuild": 0,
+        "structural_repair": 1,
+    }
+    assert record["paid_archive_size"] == 8
+    assert record["best_paid_balanced_world_dps"] == 733.25
+
+
+def test_p75_cli_rejects_malformed_wf613_operator_diagnostics(monkeypatch, capsys):
+    """Malformed or unbounded optional telemetry is omitted, not trusted."""
+    from tools import wf_gate as cli
+
+    monkeypatch.setattr(cli, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR"],
+        "search_strategy": "wf613",
+        "operator_attempts": {"fresh": -1},
+        "operator_best_improvements": {"fresh": True},
+        "paid_archive_size": 49,
+        "best_paid_balanced_world_dps": float("inf"),
+    })
+    assert cli.main(["--class", "druid", "--level", "60",
+                     "--spec", "balance", "--gate", "P7.5"]) == 1
+    record = json.loads(capsys.readouterr().out)["results"][0]
+    assert "operator_attempts" not in record
+    assert "operator_best_improvements" not in record
+    assert "paid_archive_size" not in record
+    assert "best_paid_balanced_world_dps" not in record
+
+
 def _run_sibling_gate_policy_regression(filename, test_name, monkeypatch, tmp_path):
     """Run the P7.3/P7.4 optimizer-policy fixture in this existing CI suite."""
     from importlib.util import module_from_spec, spec_from_file_location
