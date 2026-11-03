@@ -6,21 +6,27 @@ No class, spell, talent or NPC facts are embedded in this search algorithm.
 """
 from __future__ import annotations
 
-from itertools import product
+from math import prod
 from time import perf_counter, process_time
 
 from src.game.checkpoint_pipeline import checkpoint_enemy, discover_source_damage_seeds
 from src.game.multi_pull import evaluate_repeated_pulls
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import apply_talent_selection, validate_talent_selection
+from src.optimization.talent_search import (
+    TalentAllocationOption,
+    enumerate_talent_allocations,
+)
 
 
 def enumerate_executable_allocations(compiled, *, level: int, bonus_talent_points: int = 0,
                                      max_enumerations: int = 100000):
-    """Enumerate all *supported* rank assignments if combinatorics permit.
+    """Adapt sourced executable ranks to the game-independent optimizer walk.
 
-    A candidate point total is level-9+bonus, per the canonical talent rule.
-    Abort/mark non-exhaustive when the finite enumeration budget is exceeded.
+    The optimizer owns bounded allocation traversal. This adapter owns the
+    current GameIR rank facts and final source-legality validation. The raw
+    Cartesian budget is checked before traversal, preserving the old
+    fail-closed exhaustive-subspace contract.
     """
     if not 1 <= max_enumerations <= 10000000:
         raise ValueError('INVALID_ALLOCATION_ENUMERATION_BUDGET')
@@ -30,34 +36,72 @@ def enumerate_executable_allocations(compiled, *, level: int, bonus_talent_point
     eligible = [t for t in compiled.talents if t.metadata.get('row') is not None
                 and int(t.metadata['row'])*per_row < budget
                 and any(r.modifiers for r in t.ranks)]
-    allowed = [(0, *[r.rank for r in t.ranks if r.modifiers]) for t in eligible]
-    combinations = 1
-    for choices in allowed:
-        combinations *= len(choices)
+    executable_ranks = [
+        tuple(int(rank.rank) for rank in talent.ranks if rank.modifiers)
+        for talent in eligible
+    ]
+    combinations = prod(len(ranks) + 1 for ranks in executable_ranks)
     if combinations > max_enumerations:
         return [], {'status': 'BLOCKED_EXACT_SUBSPACE_ENUMERATION_BUDGET',
                     'raw_combinations': combinations, 'max_enumerations': max_enumerations,
                     'complete_supported_subspace': False}
-    accepted=[]
-    for chosen in product(*allowed):
-        if sum(chosen) != budget:
-            continue
-        candidate = {t.id: int(value) for t, value in zip(eligible, chosen) if value}
-        try:
-            validate_talent_selection(compiled,candidate,level=level,
-                                      bonus_talent_points=bonus_talent_points)
-        except ValueError:
-            continue
-        accepted.append(candidate)
-    return accepted, {'status': ('COMPLETE_SUPPORTED_SUBSPACE_ENUMERATION' if accepted
-                                 else 'NO_EXECUTABLE_LEGAL_ALLOCATION'),
-                      'raw_combinations': combinations,
-                      'eligible_talent_ids': [t.id for t in eligible],
-                      'legal_allocations': len(accepted),
-                      'points': budget,
-                      'complete_supported_subspace': True,
-                      'all_source_talent_ranks_covered': False}
 
+    def validate(selection):
+        if sum(int(rank) for rank in selection.values()) != budget:
+            raise ValueError('TALENT_ALLOCATION_MUST_SPEND_EXACT_POINT_BUDGET')
+        validate_talent_selection(compiled, selection, level=level,
+                                  bonus_talent_points=bonus_talent_points)
+
+    if not eligible:
+        accepted = []
+        if budget == 0:
+            try:
+                validate({})
+            except ValueError:
+                pass
+            else:
+                accepted.append({})
+        return accepted, {
+            'status': ('COMPLETE_SUPPORTED_SUBSPACE_ENUMERATION' if accepted
+                       else 'NO_EXECUTABLE_LEGAL_ALLOCATION'),
+            'raw_combinations': combinations,
+            'eligible_talent_ids': [],
+            'legal_allocations': len(accepted),
+            'points': budget,
+            'complete_supported_subspace': True,
+            'all_source_talent_ranks_covered': False,
+        }
+
+    options = tuple(
+        TalentAllocationOption(
+            talent_id=talent.id,
+            max_rank=max(ranks),
+            executable_ranks=frozenset(ranks),
+        )
+        for talent, ranks in zip(eligible, executable_ranks)
+    )
+    allocations, truncated = enumerate_talent_allocations(
+        options,
+        max_points=budget,
+        rank_is_admissible=lambda *_: True,
+        validate_selection=validate,
+        max_candidates=max_enumerations,
+    )
+    if truncated:
+        return [], {'status': 'BLOCKED_EXACT_SUBSPACE_ENUMERATION_BUDGET',
+                    'raw_combinations': combinations, 'max_enumerations': max_enumerations,
+                    'complete_supported_subspace': False}
+    accepted = [dict(candidate) for candidate in allocations]
+    return accepted, {
+        'status': ('COMPLETE_SUPPORTED_SUBSPACE_ENUMERATION' if accepted
+                   else 'NO_EXECUTABLE_LEGAL_ALLOCATION'),
+        'raw_combinations': combinations,
+        'eligible_talent_ids': [t.id for t in eligible],
+        'legal_allocations': len(accepted),
+        'points': budget,
+        'complete_supported_subspace': True,
+        'all_source_talent_ranks_covered': False,
+    }
 
 def search_executable_talent_subspace(*, ir, level, bonus_talent_points=0,
                                       max_enumerations=100000,
