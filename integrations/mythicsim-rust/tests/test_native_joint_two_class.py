@@ -1266,7 +1266,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
             scope["source_apl_action_counts_by_talentsString"]["restoration-build-b"],
         )
 
-    def test_candidate_casts_and_damage_witness_are_bound_to_talent_string(self):
+    def test_native_decides_apl_spell_legality_and_damage_witness_stays_talent_bound(self):
         baseline = self.source_request(
             "baseline-build", [18932, 11713, 17923, 25309]
         )
@@ -1359,7 +1359,17 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         candidate_player["rotation"]["priorityList"] = [
             self.cast(18932), self.cast(11713)
         ]
-        self.assertFalse(adapter.legal(candidate), "18932 is not in this talent build's source APL")
+        self.assertTrue(
+            adapter.legal(candidate),
+            "MythicSim decides whether a baseline-only spell is valid for this build",
+        )
+        candidate_player["rotation"]["priorityList"] = [
+            self.cast(999999), self.cast(11713)
+        ]
+        self.assertTrue(
+            adapter.legal(candidate),
+            "an unseen spell identity must reach native rather than a Python whitelist",
+        )
 
         candidate_player["rotation"]["priorityList"] = [
             self.cast(11713), self.cast(17923)
@@ -1373,7 +1383,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         candidate_player["rotation"]["priorityList"] = [
             self.cast(11713), self.cast(25309)
         ]
-        self.assertTrue(adapter.legal(candidate), "per-talent source casts are checked, not globally guessed")
+        self.assertTrue(adapter.legal(candidate), "the objective witness remains bound to this talent build")
 
         candidate_player["talentsString"] = donor_c_talents
         candidate_player["rotation"]["priorityList"] = [
