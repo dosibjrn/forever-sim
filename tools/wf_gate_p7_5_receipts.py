@@ -190,8 +190,10 @@ def collect_accepted_receipts(root: Path, repository: str, class_key: str,
                     "m1_revalidated": True,
                     "report": report,
                 }
-                receipts[_PRIORS.index(gate) -
-                         sum(x not in rows for x in _PRIORS[:_PRIORS.index(gate)])] = next_receipt
+                receipts = [
+                    next_receipt if r["gate"] == gate else r
+                    for r in receipts
+                ]
                 del pending[gate]
     return {"receipts": receipts}
 
