@@ -122,8 +122,6 @@ def typed_ingest_stage(*,source_stage:Path,typed_stage:Path)->dict:
     canonical database is mutated. Existing ingestion modules own their data.
     """
     from tools.wf292_ingest_verified_detail_headers_sqlite import ingest as headers
-    from tools.ingest_source_acquisition_evidence_sqlite import ingest as acquisition
-    from tools.ingest_source_acquisition_entities_sqlite import ingest as entities
     from tools.ingest_source_index_effect_candidates_sqlite import ingest as effects
     from src.game.data.forever.source_effect_atoms import ingest as effect_atoms
     from src.game.data.forever.source_stat_aura_candidates import ingest as stat_auras
@@ -139,8 +137,6 @@ def typed_ingest_stage(*,source_stage:Path,typed_stage:Path)->dict:
     # A failure leaves an explicitly incomplete, never-promoted typed stage;
     # all individual ingesters are transactional. It can be deleted and rerun.
     results={'verified_headers':headers(typed_stage,quarantine_structural_errors=True),
-             'acquisition':acquisition(typed_stage),
-             'entities':entities(typed_stage),
              'effect_candidates':effects(typed_stage),
              'source_effect_atoms':effect_atoms(typed_stage),
              'source_stat_aura_candidates':stat_auras(typed_stage),

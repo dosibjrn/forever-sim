@@ -21,12 +21,12 @@ on:
       gate_seconds:
         description: "Per-gate timeout in seconds"
         required: true
-        default: "30"
+        default: "45"
         type: string
       total_seconds:
         description: "Total probe budget in seconds"
         required: true
-        default: "300"
+        default: "120"
         type: string
   pull_request:
     paths:
@@ -40,23 +40,23 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.ref == 'prio/first-contact-nine-gate-20261103')
+       github.event.pull_request.head.ref == 'prio/first-contact-gate-probe-20261103')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       PROBE_CLASS: ${{ inputs.class_key || 'druid' }}
       PROBE_LEVEL: ${{ inputs.level || '60' }}
       PROBE_SPEC: ${{ inputs.spec || 'balance' }}
-      PROBE_GATE_SECONDS: ${{ inputs.gate_seconds || '30' }}
-      PROBE_TOTAL_SECONDS: ${{ inputs.total_seconds || '300' }}
+      PROBE_GATE_SECONDS: ${{ inputs.gate_seconds || '45' }}
+      PROBE_TOTAL_SECONDS: ${{ inputs.total_seconds || '120' }}
       FOREVER_P7_LIVE_PROBE_ITERATIONS: "3"
       CARGO_PROFILE_RELEASE_LTO: "off"
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
     steps:
-      - name: Checkout exact current-main probe branch read-only
+      - name: Checkout current main read-only
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ github.event.pull_request.head.sha || 'main' }}
+          ref: main
           fetch-depth: 0
           lfs: true
           persist-credentials: false

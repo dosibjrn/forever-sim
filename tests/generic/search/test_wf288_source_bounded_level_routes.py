@@ -1,9 +1,18 @@
 """Native scored consecutive levels, never misrepresented as product-ready route."""
 from dataclasses import replace
+import inspect
 import pytest
 
 from src.game.level_legality import LevelState, validate_level_transition, validate_level_state
 from src.v2.source_budgeted_level_route import search_source_bounded_level_route
+
+
+def test_route_api_does_not_expose_spell_acquisition_proof_inputs():
+    forbidden = {
+        'initial_acquisition_state', 'acquisition_events_by_level',
+        'world_origin_id', 'world_events', 'world_db_path',
+    }
+    assert not forbidden.intersection(inspect.signature(search_source_bounded_level_route).parameters)
 
 
 def test_contiguous_real_druid_l2_and_legal_talent_transitions():
@@ -11,6 +20,19 @@ def test_contiguous_real_druid_l2_and_legal_talent_transitions():
         end_level=12, max_active_paths=1, max_children_per_path=2,
         max_l2_per_state=8, max_total_events=6000)
     assert result['status']=='EVALUATED_CONTIGUOUS_BOUNDED_SOURCE_SCENARIO'
+    assert not {
+        'source_player_action_filter_applied',
+        'source_consistent_local_acquisition_events',
+        'initial_learned_spells_are_assumed_not_verified',
+        'initial_acquisition_state_world_proven',
+        'ability_trainer_quest_rune_acquisition_verified',
+        'world_acquisition_verified',
+    }.intersection(result)
+    assert 'acquisition_event_attempts' not in result['compute']
+    assert all(not {
+        'source_consistent_acquisition', 'source_acquisition_events',
+        'world_acquisition_verified',
+    }.intersection(step) for step in result['selected_route'])
     assert [r['level'] for r in result['selected_route']]==[10,11,12]
     assert all(r['scratch_verification_complete'] and r['real_l2_attempts'] >= 3
                and r['full_cycle_s_per_mob'] > 0 for r in result['selected_route'])

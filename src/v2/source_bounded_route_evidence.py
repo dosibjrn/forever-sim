@@ -56,7 +56,6 @@ def checked_source_scenario_routes(root: Path, *, version: str, item_db_sha: str
                 raise ValueError('unproven_completion_or_checkpoint_claim')
             if any(record.get(flag) is not False for flag in (
                     'named_gear_acquisition_verified',
-                    'ability_trainer_quest_rune_acquisition_verified',
                     'travel_and_xp_timing_verified',
                     'cross_level_resource_carry_verified',
                     'indexed_effect_source_complete',
@@ -102,7 +101,6 @@ def checked_source_scenario_routes(root: Path, *, version: str, item_db_sha: str
                 raise ValueError('unproven_completion_or_checkpoint_claim')
             if any(record.get(flag) is not False for flag in (
                     'named_gear_acquisition_verified',
-                    'ability_trainer_quest_rune_acquisition_verified',
                     'travel_and_xp_timing_verified',
                     'cross_level_resource_carry_verified',
                     'indexed_effect_source_complete',

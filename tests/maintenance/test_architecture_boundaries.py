@@ -378,12 +378,8 @@ assert callable(source_enrich_target_combat)
         f"{result.stdout}\\n{result.stderr}"
     )
 
-def test_source_acquisition_metadata_imports_do_not_load_legacy_game_rules():
-    """Source-only acquisition readers may be imported without GameIR/talent compilation.
-
-    The historical source reader remains importable without restoring the
-    retired Python GameIR learned-action legality audit.
-    """
+def test_source_index_metadata_imports_do_not_load_legacy_game_rules():
+    """Source-index metadata can be imported without loading legacy game mechanics."""
     import subprocess
     import sys
 
@@ -394,10 +390,7 @@ from src.game.data.forever.source_db_scope import DEFAULT_DB
 from src.game.data.forever.source_indexed_action_coverage import (
     DEFAULT_DB as INDEX_DB, _source_spell_ids, indexed_ability_coverage,
 )
-from src.game.data.forever.source_acquisition import (
-    DEFAULT_DB as ACQUISITION_DB, read_acquisition_evidence,
-)
-assert INDEX_DB is DEFAULT_DB and ACQUISITION_DB is DEFAULT_DB
+assert INDEX_DB is DEFAULT_DB
 assert 'src.game.model.ir' not in sys.modules
 assert 'src.game.data.forever.sqlite_talents' not in sys.modules
 assert 'src.game.runtime.simulator' not in sys.modules
@@ -405,10 +398,7 @@ action = SimpleNamespace(
     provenance=({'source_spell_id': 123},), metadata={'spell_id': 456},
 )
 assert _source_spell_ids(action) == {123, 456}
-assert read_acquisition_evidence(class_key='druid', spell_ids=[]) == {}
 assert callable(indexed_ability_coverage)
-from src.game.data.forever import source_acquisition
-assert not hasattr(source_acquisition, 'audit_learned_action_legality')
 assert 'src.game.model.ir' not in sys.modules
 assert 'src.game.data.forever.sqlite_talents' not in sys.modules
 """
@@ -417,10 +407,9 @@ assert 'src.game.data.forever.sqlite_talents' not in sys.modules
         capture_output=True, text=True, timeout=30, check=False,
     )
     assert result.returncode == 0, (
-        f"source acquisition/GameIR import boundary failed: "
+        f"source-index/GameIR import boundary failed: "
         f"{result.stdout}\\n{result.stderr}"
     )
-
 
 def test_remaining_source_checkpoint_readers_defer_legacy_game_ir_compiler():
     """Independent source readers must not pull GameIR through DEFAULT_DB.

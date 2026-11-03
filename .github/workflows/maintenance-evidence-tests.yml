@@ -34,10 +34,13 @@ on:
       - 'tools/wf270_action_source_coverage.py'
       - 'tests/test_wf272_source_ranked_periodic_finisher.py'
       - 'src/v2/source_budgeted_level_route.py'
+      - 'src/v2/source_budgeted_gear.py'
+      - 'tools/wf_gate_p3_live.py'
+      - 'tests/test_prio_p3_source_policy_sp.py'
+      - 'src/v2/source_bounded_route_evidence.py'
+      - 'tests/test_wf288_bounded_route_evidence.py'
       - 'tests/test_level_legality_p00c.py'
-      - 'tests/test_wf290_source_acquisition_batch.py'
-      - 'tests/test_wf291_source_world_acquisition.py'
-      - 'tests/test_wf291_source_acquisition_route.py'
+      - 'tests/generic/search/test_wf288_source_bounded_level_routes.py'
       - 'src/v2/generic_frontier.py'
       - 'src/v2/generic_melee_routes.py'
       - 'src/v2/generic_backend.py'
@@ -84,10 +87,9 @@ jobs:
           python -m pytest -q
           tests/maintenance
           tests/test_level_legality_p00c.py
-          tests/test_wf290_source_acquisition_batch.py
           tests/test_wf272_source_ranked_periodic_finisher.py
-          tests/test_wf291_source_world_acquisition.py::test_real_spell_detail_and_npc_id_allow_synthetic_local_purchase
-          tests/test_wf291_source_acquisition_route.py::test_local_acquisition_proof_is_not_a_level_state_requirement
+          tests/generic/search/test_wf288_source_bounded_level_routes.py
+          tests/test_wf288_bounded_route_evidence.py
           tests/gates/test_wf327_checkpoint_action_l0.py
           tests/test_wf328_mode_joint_prefix_admission.py
           tests/gates/test_wf329_checkpoint_context_proxies.py
