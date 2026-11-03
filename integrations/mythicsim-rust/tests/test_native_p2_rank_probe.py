@@ -277,7 +277,13 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
                         iterations=1,
                     )
                 self.assertEqual(result["status"], status, result)
-                self.assertEqual(result["prepare_pair"]["status"], status)
+                # Prepare refusals are returned by spreading the native pair
+                # into the public result: both compact side receipts remain
+                # top-level (the nested prepare_pair field is only used after
+                # both prepares succeeded and a simulation fails).
+                self.assertEqual(result["before"]["status"], status)
+                self.assertEqual(result["after"]["status"], "PREPARED")
+                self.assertEqual(result["reason"], "NATIVE_P2_PREPARE_PAIR_NOT_READY")
                 self.assertFalse(result["accepted_for_p2"])
 
     def test_rank_pair_preserves_native_simulation_failure_classification(self):
