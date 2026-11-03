@@ -204,10 +204,9 @@ def run_native_p1_action(
         _player(expected_control)["rotation"]["priorityList"] = []
         if control != expected_control:
             raise NativeP2ProbeError("NATIVE_P1_CONTROL_CHANGED_MORE_THAN_APL")
-        # Do not synthesize a player level: the selected PreparedV2 contract
-        # does not carry one, and this adapter must not invent level legality.
-        if "level" in positive_player:
-            raise NativeP2ProbeError("NATIVE_P1_FIXTURE_UNEXPECTED_PLAYER_LEVEL_FIELD")
+        # Do not synthesize or validate player level. Record only whether
+        # this selected request contract happens to carry the field.
+        native_player_level_modeled = "level" in positive_player
     except (OSError, UnicodeDecodeError, ValueError, TypeError, KeyError, NativeP2ProbeError) as exc:
         return _failure(
             "ERROR", "request", f"NATIVE_P1_REQUEST_BUILD_FAILED:{type(exc).__name__}:{exc}",
@@ -363,9 +362,11 @@ def run_native_p1_action(
         "action_id": action_id,
         "source_spell_id": spell_id,
         "source_level_hint": source_level_hint,
-        "native_player_level_modeled": False,
+        "native_player_level_modeled": native_player_level_modeled,
         "native_player_level_note": (
-            "The selected PreparedV2 Player schema has no level field. "
+            "Native request carries player.level; MythicSim owns its interpretation."
+            if native_player_level_modeled else
+            "The selected PreparedV2 Player request carries no level field. "
             "This is a single-action effect observation, not a level-20 "
             "castability or acquisition verdict."
         ),
