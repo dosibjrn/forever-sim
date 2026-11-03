@@ -41,11 +41,15 @@ def test_live_leveling_target_consumers_import_the_scenario_boundary():
         assert "src.scenarios.leveling_targets" in source, relative
 
 def test_legacy_objective_contains_no_second_target_curve_copy():
+    from src.shared.leveling import objective as legacy
+
     source = (ROOT / "src/shared/leveling/objective.py").read_text(encoding="utf-8")
     assert "from src.scenarios.leveling_targets import MOB_BASE_HP, mob_hp, representative_hp" in source
     assert "MOB_BASE_HP =" not in source
     assert "def representative_hp(" not in source
     assert "def mob_hp(" not in source
+    assert "def combat_result(" not in source
+    assert not hasattr(legacy, "combat_result")
 
 def test_mage_engines_reuse_the_canonical_scenario_target_curve():
     from src.scenarios import leveling_targets
