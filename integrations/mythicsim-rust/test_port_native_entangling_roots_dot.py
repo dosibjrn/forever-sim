@@ -54,6 +54,8 @@ class NativeRootsDotPortTest(unittest.TestCase):
             agent = (root / "src/classes/druid/agent.rs").read_text()
             bridge = (root / "src/core/fight/world_bridge.rs").read_text()
             self.assertIn("world_bridge::record_control", agent)
+            self.assertIn("mod forever_roots_native_control_tests", agent)
+            self.assertIn("crate::RngMode::Balanced", agent)
             self.assertIn('control_id: Some("root".to_owned())', bridge)
             self.assertIn('"native_control_events": control_events', bridge)
             self.assertIn("RUST_WORLD_CONTROL_ACK_EVENTS_MISMATCH", bridge)
@@ -97,7 +99,7 @@ class NativeRootsDotPortTest(unittest.TestCase):
             "native_time_ns": 100_000_000,
             "damage": 0.0,
             "source_action_id": "SpellID: 9853",
-            "rank": 0,
+            "rank": 6,
             "landed": True,
             "crit": False,
             "periodic": False,
@@ -147,6 +149,34 @@ class NativeRootsDotPortTest(unittest.TestCase):
         after_expiry = world._enemy_position_at("m0")
         self.assertLess(after_expiry[0], while_rooted[0],
                         "enemy movement must resume when the native root duration expires")
+
+    def test_invalid_native_root_rank_is_rejected_before_world_mutation(self):
+        world = self._moving_world()
+        world.advance_to(0.1)
+        digest = state_hash(snapshot_gsim_world(world))
+        tick = {
+            "sequence": 0,
+            "native_clock_ns": 100_000_000,
+            "clock_ms": 100,
+            "world_sha256": digest,
+            "selected_target_id": "m0",
+        }
+        event = self._control_event()
+        event["rank"] = 0
+        response = {
+            "sequence": 0,
+            "native_process_id": 12345,
+            "observed_input_world_sha256": digest,
+            "native_damage_events": [],
+            "native_control_events": [event],
+        }
+        with self.assertRaisesRegex(
+                NativeDamageWorldApplicationError,
+                "WORLD_DAMAGE_ACK_CONTROL_EVENT_INVALID"):
+            GsimNativeDamageWorldApplier(world).apply(tick, response)
+        self.assertNotIn("root", world.targets["m0"].active_controls)
+        self.assertEqual(state_hash(snapshot_gsim_world(world)), digest)
+
 
     def test_invalid_native_root_control_is_rejected_before_world_mutation(self):
         world = self._moving_world()
