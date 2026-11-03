@@ -119,7 +119,7 @@ let second = forever_engine::simulate_prepared(
             (
                 "main-call.rs",
                 "let report = native_two_world_targets(&prepared, target_count)",
-                "let mode = RngMode::parse_cli(&args[6])?;\\n        let report = native_two_world_targets(&prepared, target_count, mode)",
+                "let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)",
                 CLI_TYPED_NEW,
             ),
         )
@@ -130,7 +130,7 @@ let second = forever_engine::simulate_prepared(
                 path.write_text(paid)
                 one_or_paid_recovery_descendant(root, name, old, new, paid)
                 self.assertEqual(path.read_text(), paid)
-                forged = paid.replace("recovery_ns: i64", "forged_ns: i64", 1)
+                forged = paid.replace("recovery_ns", "forged_recovery_ns", 1)
                 path.write_text(forged)
                 with self.assertRaises(RuntimeError):
                     one_or_paid_recovery_descendant(root, name, old, new, paid)
