@@ -677,12 +677,15 @@ def run_live(root: Path, class_key: str, level: int, *,
     # Compare the independent frozen P7.5 holdout against genuine compatible
     # previously accepted results, never against search-screen estimates.
     # Missing numeric receipts preserve the existing fail-closed BLOCKED state.
-    prior = (strongest_accepted_prior(
+    # Resolve the accepted comparator for both bounded light probes and
+    # full searches. A light probe needs the same numeric objective floor in
+    # its diagnostic receipt; the independent 300s search and 1,000-stochastic
+    # holdout requirements below still gate PASS.
+    prior = strongest_accepted_prior(
         root, class_key, level, spec,
         engine_revision=meta.get("selected_engine_revision", PINNED_RUST),
         source_sha256=SAVED_BALANCE_RAW_SHA,
         reference_dps=float(meta["reference_dps"]))
-        if complete_search else None)
     prior_dps = prior["dps"] if prior is not None else None
     required = (p7_required_dps(
         "P7.5", float(meta["reference_dps"]),
