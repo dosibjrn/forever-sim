@@ -192,18 +192,41 @@ def native_score_request(
 
 def source_bounded_adapter(
     class_key: str, reference: dict, same_class: list[dict],
-    items: dict[int, dict], *, donor_fixtures: list[dict] | None = None,
+    items: dict[int, dict], *, profile_id: str, same_profile: list[dict],
+    donor_fixtures: list[dict] | None = None,
     native_damage_witnesses: list[dict] | None = None,
 ) -> tuple[JointCandidateAdapter, dict]:
-    """Use exact pinned same-class source requests; the scheduler is unchanged."""
+    """Use class-wide gear donors but only explicit same-profile talent donors."""
     original = player(reference)
+    if not isinstance(profile_id, str) or profile_id.split("/", 1)[0] != class_key:
+        raise ValueError("BLOCKED_PROFILE_IDENTITY: profile id/class mismatch")
     extra_same_class = [
         fixture for fixture in (donor_fixtures or [])
         if fixture.get("class_name") == original.get("class")
         and isinstance(fixture.get("request"), dict)
     ]
+    extra_same_profile = [
+        fixture for fixture in extra_same_class
+        if fixture.get("profile_id_hint") == profile_id
+    ]
     donor_requests = [fixture["request"] for fixture in extra_same_class]
     source_requests = same_class + donor_requests
+    profile_requests = []
+    for request in same_profile:
+        try:
+            source_player = player(request)
+        except (KeyError, TypeError, ValueError, IndexError):
+            continue
+        if source_player.get("class") == original.get("class"):
+            profile_requests.append(request)
+    if not any(
+        player(request).get("talentsString") == original.get("talentsString")
+        for request in profile_requests
+    ):
+        profile_requests.append(reference)
+    talent_source_requests = profile_requests + [
+        fixture["request"] for fixture in extra_same_profile
+    ]
     gear = NativeGearAdapter(class_key, reference, source_requests, items)
     if not gear.mutable_indices:
         raise ValueError("BLOCKED_GEAR_POOL: no source-bounded legal alternate item")
@@ -212,7 +235,7 @@ def source_bounded_adapter(
     base_apl = copy.deepcopy(original["rotation"]["priorityList"])
     source_talents = set()
     talents = set()
-    for request in source_requests:
+    for request in talent_source_requests:
         try:
             source_player = player(request)
         except (KeyError, TypeError, ValueError, IndexError):
@@ -245,11 +268,12 @@ def source_bounded_adapter(
         {
             "source_path": fixture["source_path"],
             "source_sha256": fixture["source_sha256"],
+            "profile_id_hint": fixture["profile_id_hint"],
             "talents_sha256": fingerprint(
                 player(fixture["request"]).get("talentsString")
             ),
         }
-        for fixture in extra_same_class
+        for fixture in extra_same_profile
         if _is_full_51_source_build(
             player(fixture["request"]).get("talentsString")
         )
@@ -287,7 +311,7 @@ def source_bounded_adapter(
     def talent_legal(value):
         # The exact source reference is a legal starting anchor even when it
         # spends fewer than 51 points. Every mutated/cold talent candidate
-        # must still be one of the pinned full 51-point source builds.
+        # must still be one of the pinned full 51-point same-profile source builds.
         return (value == original["talentsString"]
                 or (value in talents and _is_full_51_source_build(value)))
 
@@ -329,9 +353,11 @@ def source_bounded_adapter(
         "gear_mutable_slots": list(gear.mutable_indices),
         "talent_builds": talents,
         "source_donor_fixture_count": len(extra_same_class),
+        "talent_profile_id": profile_id,
+        "talent_donor_fixture_count": len(extra_same_profile),
         "gear_donor_fixtures_scanned": gear_donor_fixtures_scanned,
         "talent_donor_fixtures": talent_donor_fixtures,
-        "talent_validation": "SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
+        "talent_validation": "SAME_PROFILE_SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
         "gear_validation": "PINNED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
         "apl_validation": "SOURCE_CAST_IDENTITIES_AND_OPAQUE_ACTION_CORPUS",
     }
@@ -382,10 +408,13 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     cls = profile_id.split("/", 1)[0]
     same_class = [req for entry, req in inventory if req is not None
                   and entry["profile_id"].split("/", 1)[0] == cls]
+    same_profile = [req for entry, req in inventory if req is not None
+                    and entry["profile_id"] == profile_id]
     native_damage_witnesses = []
     try:
         adapter, scope = source_bounded_adapter(
             cls, reference, same_class, native_items,
+            profile_id=profile_id, same_profile=same_profile,
             donor_fixtures=donor_fixtures,
             native_damage_witnesses=native_damage_witnesses,
         )
