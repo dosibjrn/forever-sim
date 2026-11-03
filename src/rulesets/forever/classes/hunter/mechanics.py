@@ -13,7 +13,7 @@ from functools import lru_cache
 from math import ceil
 
 from src.shared.leveling.objective import representative_hp, physical_hit_chance
-from src.shared.leveling.timing import between_pull_travel_s
+from src.scenarios.timing import between_pull_travel_s
 from src.v2.stat_weight_model import normalize_objective_gradient
 from src.rulesets.forever.shared.recovery import solve_recovery, RECOVERY_SOLVER_ID
 from src.rulesets.forever.items.runtime_selection import select_gear as catalogue_select_gear, item_payload as catalogue_item_payload, item_vector as catalogue_item_vector, effective_level as catalogue_effective_level
