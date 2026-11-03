@@ -48,6 +48,8 @@ RETIRED_TOOLS = (
     "integrations/mythicsim-rust/test_native_p2_rank_probe.py",
     "integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py",
     "tests/maintenance/test_native_p2_client_boundary.py",
+    "tests/test_wf_prio_p2_legal_pair.py",
+    "tests/test_wf_prio_native_p2_source_receipts.py",
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
@@ -110,8 +112,10 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
     assert (ROOT / "src/v2/source_budgeted_level_route.py").is_file()
-    # P2 source-profile proposal helpers remain used by the optimizer.
-    assert (ROOT / "tools/wf_gate_p2_live.py").is_file()
+    # P2 has no provider; the remaining module contains regression helpers only.
+    p2_helpers = ROOT / "tools/wf_gate_p2_live.py"
+    assert p2_helpers.is_file()
+    assert "def run_live(" not in p2_helpers.read_text(encoding="utf-8")
 
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
     for relative in RETIRED_TOOLS:
@@ -184,9 +188,10 @@ def test_historical_p1_gameir_admission_toolchain_is_retired():
     for relative in retired:
         assert not (ROOT / relative).exists(), relative
         assert relative not in workflow, f"retired path remains in maintenance workflow: {relative}"
-    # P1 has no separate live provider; the P2 helper remains an optimizer dependency.
+    # P1/P2 have no live gate provider; retained P2 helpers are regression-only.
     assert not (ROOT / "tools/wf_gate_p1_live.py").exists()
-    assert (ROOT / "src/game/data/forever/source_checkpoint_p2.py").is_file()
+    p2_helpers = (ROOT / "tools/wf_gate_p2_live.py").read_text(encoding="utf-8")
+    assert "def run_live(" not in p2_helpers
 
 
 def test_no_live_python_imports_retired_p1_gameir_admission_toolchain():
@@ -257,6 +262,10 @@ def test_retired_native_p2_rank_probe_diagnostic_has_no_code_or_actions():
     gate = (ROOT / "tools/wf_gate_p2_live.py").read_text(encoding="utf-8")
     assert "native_p2_rank_probe" not in gate
     assert "native_rank_probe" not in gate
+    assert "def run_live(" not in gate
+    assert "_default_p2_source_db" not in gate
+    assert "_p2_source_db_diagnostics" not in gate
+    assert "_sqlite_connection_path" not in gate
 
     gate_cli = (ROOT / "tools/wf_gate.py").read_text(encoding="utf-8")
     assert "native_rank_probe" not in gate_cli
