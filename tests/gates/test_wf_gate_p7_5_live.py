@@ -386,9 +386,9 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     catalogue.parent.mkdir(parents=True)
     catalogue.write_text("injected validator")
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # Start at 0; both paid proposals complete strictly after start,
-    # then the loop reaches the exact deadline and observes it. No grace.
-    clock = iter([0., 0., 0.1, 0.1, 0.2, 300., 300.])
+    # Two paid proposals, then the genuine 300s wall-window observation.
+    # The removed final-step timestamp is not an additional clock read.
+    clock = iter([0., 0., 0.1, 300., 300.])
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.))
     monkeypatch.setattr(
         gate, "_pinned_source_runtime",
