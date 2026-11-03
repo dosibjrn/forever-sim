@@ -1,0 +1,74 @@
+name: Work1 historical WF678 1000-Stochastic no-record diagnostic
+
+on:
+  pull_request:
+    types: [opened]
+    paths:
+      - 'tools/diagnostics/replay_historical_wf678_stochastic_1000.py'
+      - '.github/workflows/work1-p75-historical-1000-no-record.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work1-p75-historical-1000-\${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  historical-holdout:
+    if: github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_PROFILE_RELEASE_LTO: "off"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.event.pull_request.head.sha }}
+          submodules: true
+          lfs: true
+          persist-credentials: false
+
+      - name: Verify exact PR HEAD and selected Rust pin
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "\${{ github.event.pull_request.head.sha }}"
+          selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
+          actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
+          test "$selected" = "$actual"
+          test "$selected" = "deb366e986dbc156e2242ddac3ac8c4ac854c107"
+          echo "EXACT_PR_HEAD=$(git rev-parse HEAD)"
+          echo "SELECTED_RUST_PIN=$selected"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install existing source-validator dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+
+      - name: Apply explicit typed RNG port and build exact selected Rust pin
+        run: |
+          set -euo pipefail
+          python integrations/mythicsim-rust/port_native_typed_rng.py integrations/mythicsim-rust/engine
+          grep -Fq 'pub enum RngMode' integrations/mythicsim-rust/engine/src/core/rng.rs
+          ! grep -Fq 'WOWSIM_RNG_MODE' integrations/mythicsim-rust/engine/src/core/rng.rs
+          grep -Fq 'SimRng::new(rng_mode,' integrations/mythicsim-rust/engine/src/core/fight.rs
+          cargo build --locked --release --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+
+      - name: Replay historical WF678 axes for 1000 Stochastic native plus 2D fights
+        run: |
+          set -euo pipefail
+          python tools/diagnostics/replay_historical_wf678_stochastic_1000.py \
+            --binary integrations/mythicsim-rust/engine/target/release/forever-engine \
+            | tee "$RUNNER_TEMP/wf678-historical-1000.log"
+          grep -Fq 'HISTORICAL_WF678_1000_STOCHASTIC_NATIVE_2D_RESULT' "$RUNNER_TEMP/wf678-historical-1000.log"
+          cat "$RUNNER_TEMP/wf678-historical-1000.log" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: work1-p75-historical-1000-stochastic-\${{ github.event.pull_request.head.sha }}
+          path: \${{ runner.temp }}/wf678-historical-1000.log
+          if-no-files-found: warn
