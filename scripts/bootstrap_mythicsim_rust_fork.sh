@@ -189,6 +189,15 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): retain source-native damage receipts across 2D kills"
 fi
 
+# Preserve measured mana regeneration from the genuine Rust 2-second tick
+# resources in each retained world-target receipt. This is in-combat source
+# evidence, not between-pull idle regeneration or paid recovery.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_mana_regen_receipts.py" "$PWD"
+git add src/core/fight.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): report native mana regeneration across retained world kills"
+fi
+
 # Publish gsim's actually observed world movement into the retained native
 # actor's existing Rust casting rules. Keep the world as movement authority;
 # do not duplicate spell legality in the Python 2D driver.
@@ -198,10 +207,20 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): apply real gsim movement to native cast legality"
 fi
 
-# Existing native retarget regressions and new live terminal predicate must
-# pass before publishing this selected Rust integration.
+# Charge explicit elapsed time on the retained Rust actor and execute only
+# already-scheduled native resource/HoT ticks during each between-mob interval.
+# This does not add an active direct-heal policy or certify P4-P6.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_paid_recovery.py" "$PWD"
+git add src/core/queue.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs src/main.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): charge source-native recovery time between world kills"
+fi
+
+# Existing native retarget, world terminal and queue regressions must pass
+# before publishing this selected Rust integration.
 cargo test --locked --lib persistent_next_target
 cargo test --locked --lib world_lethal_terminal
+cargo test --locked --lib pop_first_matching_before
 
 # This is an engine packaging update, not a gate or native reference test.
 check_engine_source
