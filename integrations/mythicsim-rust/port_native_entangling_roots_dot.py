@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Port source-native Forever Entangling Roots periodic damage, not root/2D CC acceptance.
+"""Port source-native Forever Entangling Roots DoT and landed timed root control.
 
-This is source-patching infrastructure only: ALL Warcraft mechanics execute in the
-maintained MythicSim Rust fork. The true root / damage-break / world CC remains
-unimplemented and MUST NOT be marked P1/P2 PASS by this incremental change.
+MythicSim Rust owns the spell hit, rank and duration; the existing gsim world
+bridge applies the acknowledged root to real 2D target movement. Damage-break
+semantics remain unimplemented, so this incremental slice is not a P1/P2 PASS.
 """
 from __future__ import annotations
 
@@ -109,7 +109,8 @@ AGENT_PATCHES = [
      "            fight.dots[dot].tick_can_crit = row.periodic_can_crit();\n"
      "        }\n"
      "        for effect in &prepared.effects {\n            match effect {\n                Effect::Heals {", "TICK_BASE"),
-    ("            DruidSpell::InsectSwarm => insect_swarm::apply(fight, spell, target),",
+    ("            DruidSpell::InsectSwarm => insect_swarm::apply(fight, spell, target),\n"
+     "            DruidSpell::EntanglingRoots => insect_swarm::apply(fight, spell, target),",
      "            DruidSpell::InsectSwarm => insect_swarm::apply(fight, spell, target),\n"
      "            DruidSpell::EntanglingRoots => {\n"
      "                // Entangling Roots is binary: a miss applies neither its DoT nor\n"
@@ -237,7 +238,7 @@ mod forever_roots_native_control_tests {
                 &serde_json::to_vec(&request).unwrap(), "native-roots-periodic-control"
             ).expect("Forever source-native request prepares");
             prepared["player"]["stats"]["SpellHitPercent"] = serde_json::json!(0.0);
-            prepared["player"]["attackTable"]["base_spell_miss_chance"] =
+            prepared["player"]["attack_table"]["base_spell_miss_chance"] =
                 serde_json::json!(if force_miss { 1.0 } else { 0.0 });
             prepared["target"]["stats"]["NatureResistance"] = serde_json::json!(0.0);
             let prepared: crate::contracts::prepared_v2::PreparedV2 =
@@ -292,6 +293,8 @@ def port_text(path: str, contents: str) -> str:
         for old, new, label in patches[path]:
             contents = replace_once(contents, old, new, label)
         if path == "src/classes/druid/agent.rs":
+            if contents.count("            DruidSpell::EntanglingRoots =>") != 1:
+                raise ValueError("NATIVE_ROOTS_EXECUTOR_ARM_AMBIGUOUS")
             if RUST_RUNTIME_TEST not in contents:
                 if "mod forever_roots_native_control_tests" in contents:
                     if "a landed native Roots cast did not emit a world control event" not in contents:
