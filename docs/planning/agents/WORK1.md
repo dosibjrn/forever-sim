@@ -10,6 +10,8 @@ Work1 owns the highest-impact **real active-gate production repair** delegated b
 
 Owner priority is the first complete 9/9 checkpoint before discretionary GameIR/route cleanup. The latest production rechecks measured P7.4 **692.819689 < 720.9117** and P7.5 **616.177645 < 677.220060**; these are real FAILs despite older accepted receipts. Current Work1 lane: finish and hand off the existing Druid L60 Balance P7.5 production candidate-reachability repair (#718), then identify and fix the measured DPS shortfall on the actual P7.5 executor. Hold standalone no-gate route-candidate PRs #715/#716 unless an active P3–P7.5 gate or real optimizer caller demonstrably requires their code. If such a need is proven, reuse the smallest existing selected-MythicSim boundary and delete the displaced GameIR caller rather than adding wrappers, redundant checks or a new diagnostic suite.
 
+For P7.5, **candidate alternatives must come from pinned MythicSim Rust** (gear/enchants, talent allocations, APL action choices), not forever's SQLite source pool or Druid-specific Python legality tables. Keep the existing paid 300s search and stochastic holdout working while replacing only proven live dependencies; use a real Rust options API where needed, not a Python shadow catalogue. A Rust validation/refusal over an independently filtered Python inventory is only transitional. Do not turn this native-options migration into a new gate or preempt the measured P7.5 DPS fix.
+
 Do not edit Work2's active item/branch. Preserve existing accepted M1 evidence.
 
 ## Required cycle result
