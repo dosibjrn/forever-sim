@@ -136,6 +136,8 @@ jobs:
               db.execute("SELECT count(*) FROM checkpoint_talent_source_catalogue WHERE class_key='druid' AND min_level<=60").fetchone()
           print(f"STAGED_DRUID_SOURCE_SQLITE_HYDRATED:{len(raw)}")
           PY
+      - name: Install source HTML parser used by combat-fact verification
+        run: python3 -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
       - name: Apply port to selected production Rust source and compile
         run: |
           git clone --quiet --filter=blob:none https://github.com/dosibjrn/mythicsim-forever-engine.git /tmp/forever-selected-rust
