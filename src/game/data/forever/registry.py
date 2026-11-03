@@ -186,8 +186,8 @@ _GENERIC_DISPLAY = {
 def generic_class_metadata(*, selected_level: int | None = None) -> dict[str, dict]:
     """Source-provider capability and route planning, never inferred from legacy.
 
-    The IR may carry a *representative scenario race*. That does not establish
-    which races are playable or prove any other race has modeled starting stats.
+    Race availability remains unknown; a representative scenario setting does
+    not establish playable races or verified starting-stat coverage.
     """
     result = {}
     for key in registered_class_keys():
@@ -198,8 +198,8 @@ def generic_class_metadata(*, selected_level: int | None = None) -> dict[str, di
                                       and bounds[0] <= int(selected_level) <= bounds[1])
         default_levels = generic_default_ready_levels(key)
         product_caps = dict(_PROVIDER_SUPPORT.get(key, {}).get("product_capabilities") or {})
-        # Publication metadata must not compile a legacy GameIR merely to
-        # display an unverified scenario race. Keep race selection unknown.
+        # Race availability stays unknown. Do not compile GameIR to recover a
+        # scenario default that is not a verified playable-race list.
         result[key] = {
             "display_name": display, "tree_names": list(trees),
             "primary_profiles": ["all"], "accent": accent,
