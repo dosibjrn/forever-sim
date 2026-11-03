@@ -7,6 +7,8 @@ on:
       - 'integrations/mythicsim-rust/live_two_world_pulls.py'
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
       - 'integrations/mythicsim-rust/engine'
+      - 'docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json'
+      - 'tools/diagnostics/replay_historical_wf678_winner.py'
       - 'tests/test_work2_native_health_damage_controls.py'
       - 'tests/test_work2_native_world_elapsed.py'
       - 'tests/test_work2_gsim_world_walk.py'
@@ -39,6 +41,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          lfs: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -96,6 +99,11 @@ jobs:
               "BALANCED_TYPED_RNG_MODE_IGNORED_BY_SELECTED_RUST", outputs)
           print("REAL_SELECTED_RUST_BALANCED_STOCHASTIC_NATIVE_2D_SMOKE_GREEN_NOT_GATE", flush=True)
           PY
+      - name: Replay historical WF678 winner axes on current selected Rust + gsim 2D (diagnostic, not gate)
+        run: |
+          python tools/diagnostics/replay_historical_wf678_winner.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --iterations 5
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
