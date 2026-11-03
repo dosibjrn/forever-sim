@@ -96,6 +96,22 @@ def test_source_hash_is_required_not_invented():
                                       source_sha256="not-a-hash")
 
 
+
+def test_active_gate_consumers_are_decoupled_from_retired_p2_provider():
+    active_consumers = (
+        "tools/wf_gate_p3_live.py",
+        "tools/wf_gate_p4_p5_partial.py",
+        "tools/wf_gate_p6_live.py",
+        "tools/wf437_direct_budgeted_run.py",
+    )
+    for relative in active_consumers:
+        source = (ROOT / relative).read_text(encoding="utf-8")
+        assert "tools.wf_source_profile" in source, relative
+        assert "tools.wf_gate_p2_live" not in source, relative
+    assert (ROOT / "config/validation/source_spec_profiles.json").is_file()
+    assert not (ROOT / "config/validation/p2_spec_profiles.json").exists()
+
+
 def test_product_constraint_cannot_bypass_canonical_prerequisites(monkeypatch):
     monkeypatch.setattr(p2, "available_talent_points",
                         lambda level, bonus_talent_points: 51)
