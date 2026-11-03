@@ -1755,6 +1755,18 @@ _NATIVE_P2_TREE_SCENARIOS = {'balance': 'balance', 'feral': 'cat'}
 _NATIVE_P2_DIAGNOSTIC_RANKS = {('predatory_strikes', 1), ('predatory_strikes', 2), ('predatory_strikes', 3)}
 
 
+def _native_p2_candidate_pair(witness, talent_id, rank):
+    """Build a one-rank candidate pair; native prepare owns legality."""
+    after = dict(witness) if isinstance(witness, Mapping) else {}
+    after[talent_id] = int(rank)
+    before = dict(after)
+    if int(rank) == 1:
+        before.pop(talent_id, None)
+    else:
+        before[talent_id] = int(rank) - 1
+    return {'control_witness': before, 'witness': after}
+
+
 def _native_p2_rank_diagnostic(binary, talent_id, rank, tested, *,
                                checkpoint_class, checkpoint_level, tree_key):
     """Forward a checkpoint rank pair; source receipts are optional metadata."""
@@ -1934,13 +1946,40 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
             row=talent.metadata.get('row')
             for rank in talent.ranks:
                 key=f'{talent.id}:{rank.rank}'
+                native_target=(class_key=='druid' and level==60 and spec=='balance'
+                    and (talent.id,int(rank.rank)) in _NATIVE_P2_DIAGNOSTIC_RANKS)
+                witness=None
+                if row is not None and int(row)*step+int(rank.rank)<=points:
+                    witness=_witness(talent,rank.rank,compiled.talents,points,step)
+                profile_full=(_source_spec_rank_witness(
+                    population,talent.id,int(rank.rank))
+                    if population is not None and (native_target or witness is not None)
+                    else None)
+                if profile_full is not None:
+                    witness=profile_full
+                native_probe=None
+                if native_target:
+                    # Submit the candidate before any Forever-side reachability,
+                    # structural-allocation or GameIR behavior check can veto it.
+                    # If no local witness exists, submit the minimal rank pair;
+                    # native prepare decides whether that proposal is valid.
+                    candidate_pair=_native_p2_candidate_pair(
+                        witness,talent.id,int(rank.rank))
+                    native_probe=_native_p2_rank_diagnostic(
+                        os.environ.get('FOREVER_MYTHICSIM_RUST_BIN'),
+                        talent.id,int(rank.rank),candidate_pair,
+                        checkpoint_class=class_key,checkpoint_level=level,
+                        tree_key=talent.tree_key)
+                    native_probe['executor']='selected_mythicsim_rust'
+                    native_probe['accepted_for_p2']=False
+                    result['native_rank_probe_results'].append(
+                        {'rank_key':key,**native_probe})
                 if row is None:
                     result['unresolved'].append({'rank_key':key,'reason':'REACHABILITY_UNRESOLVED:MISSING_TREE_ROW'})
                     continue
                 if int(row)*step+int(rank.rank)>points:
                     result['unreachable'].append({'rank_key':key,'reason':'TIER_MINIMUM_EXCEEDS_BUDGET'})
                     continue
-                witness=_witness(talent,rank.rank,compiled.talents,points,step)
                 if witness is None:
                     result['unresolved'].append({'rank_key':key,'reason':'REACHABILITY_UNRESOLVED:NO_LEGAL_WITNESS'})
                     continue
@@ -1953,11 +1992,6 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                 # use the independently legal partial witness and the actual
                 # source-neighbor reachability check in _rank_probe. P4/P5
                 # continue to require full-point spec-legal candidates.
-                profile_full = (_source_spec_rank_witness(
-                    population,talent.id,int(rank.rank))
-                    if population is not None else None)
-                if profile_full is not None:
-                    witness=profile_full
                 try:
                     check_structural_allocation(compiled,witness,checkpoint,
                                                bonus_talent_points=bonus)
@@ -1969,18 +2003,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                                    profile_tree=(spec if profile_full is not None else None))
                 if population is not None:
                     tested['spec_full_point_exact_rank_witness']=profile_full is not None
-                if (class_key=='druid' and level==60 and spec=='balance'
-                        and (talent.id,int(rank.rank)) in _NATIVE_P2_DIAGNOSTIC_RANKS):
-                    native_probe=_native_p2_rank_diagnostic(
-                        os.environ.get('FOREVER_MYTHICSIM_RUST_BIN'),
-                        talent.id, int(rank.rank), tested,
-                        checkpoint_class=class_key, checkpoint_level=level,
-                        tree_key=talent.tree_key)
-                    native_probe['executor']='selected_mythicsim_rust'
-                    native_probe['accepted_for_p2']=False
+                if native_probe is not None:
                     tested['native_rank_probe']=native_probe
-                    result['native_rank_probe_results'].append(
-                        {'rank_key':key, **native_probe})
                 result['ranks'].append(tested)
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
         native_probes=result['native_rank_probe_results']
