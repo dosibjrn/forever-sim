@@ -303,6 +303,7 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
             self.assertIn("castSpell", action)
             self.assertIn(json.dumps(action["castSpell"]["spellId"], sort_keys=True),
                           allowed_spells)
+
     def test_gear_swaps_do_not_carry_old_item_enchants(self):
         # A legal new item may not accept the enchant from the old item.
         # Previously 50% gear mutations retained that enchant and were
