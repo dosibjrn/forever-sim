@@ -457,7 +457,8 @@ def apply_current_client_talent_donor_source_overrides(fixtures: list[dict]) -> 
 
         composed = copy.deepcopy(fixture)
         composed["request"] = effective
-        composed["source_type"] = "COMPOSED_SMOKE_FIXTURE_CURRENT_CLIENT_TALENT_PRESET"
+        composed["source_type"] = "COMPOSED_PINNED_SOURCE_FIXTURE_CURRENT_CLIENT_TALENT_PRESET_DONOR"
+        composed["talent_source_override_applied"] = True
         composed["talent_source_repository"] = metadata["source_repo"]
         composed["talent_source_pull_request"] = metadata["source_pull_request"]
         composed["talent_source_commit"] = metadata["source_commit"]
