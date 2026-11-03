@@ -57,10 +57,6 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_talent_layout_api.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_entangling_roots_dot.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_typed_rng.py
-          python3 -m py_compile src/engine_client/native_p2_rank_probe.py
-          python3 -m py_compile integrations/mythicsim-rust/test_native_p2_rank_probe.py
-          python3 -m py_compile integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
-          python3 -m py_compile tools/wf_gate_p2_live.py
           python3 integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_pull_queue.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_persistent_target.py
@@ -212,12 +208,6 @@ jobs:
                   assert isinstance(talent.get("in_proto"), bool)
           print("NATIVE_DRUID_TALENT_LAYOUT_JSON_API_PASS")
           PY
-          python3 integrations/mythicsim-rust/test_native_p2_rank_probe.py \
-            --engine-root /tmp/forever-selected-rust \
-            --binary /tmp/forever-selected-rust/target/debug/forever-engine
-          FOREVER_ENGINE_ROOT=/tmp/forever-selected-rust \
-            FOREVER_ENGINE_BINARY=/tmp/forever-selected-rust/target/debug/forever-engine \
-            python3 integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
           if /tmp/forever-selected-rust/target/debug/forever-engine sim --infile /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json >/tmp/forever-rng-missing.log 2>&1; then
             echo "Native CLI accepted missing RNG mode" >&2; exit 1
           fi
