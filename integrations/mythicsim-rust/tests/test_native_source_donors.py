@@ -207,7 +207,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
             ["888888-3"], scope["talent_builds_excluded_for_native_damage_witness"]
         )
         self.assertEqual(
-            "SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
+            "SOURCE_OBSERVED_OR_PINNED_NATIVE_VERIFIED_WHOLE_51_POINT_BUILDS_NOT_RANKWISE",
             scope["talent_validation"],
         )
         self.assertTrue(adapter.legal(copy.deepcopy(reference)))
