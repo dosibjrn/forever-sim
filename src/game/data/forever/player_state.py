@@ -7,9 +7,10 @@ contains reusable Actor/Resource semantics.  No combat scoring lives here.
 """
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
-from src.game.model.ir import ActorDefinition, ResourceDefinition
+if TYPE_CHECKING:
+    from src.game.model.ir import ActorDefinition, ResourceDefinition
 
 
 @dataclass(frozen=True)
@@ -43,6 +44,10 @@ def normalize_player_starting_state(
     actor_id: str = "player",
     resource_id: str = "mana",
 ) -> tuple[ActorDefinition, ...]:
+    # Only the legacy GameIR normalization needs Python game-model classes.
+    # Source fact reads and pure player-stat calculations must stay independent.
+    from src.game.model.ir import ActorDefinition, ResourceDefinition
+
     stats = {str(k): float(v) for k, v in dict(fact.base_stats).items()}
     intellect = float(stats.get("intellect", 0.0))
     intellect_mana = classic_mana_bonus_from_intellect(intellect)
