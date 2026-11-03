@@ -14,10 +14,10 @@ from .source_db_scope import DEFAULT_DB, active_ability_db
 from .source_indexed_action_coverage import _source_spell_ids
 
 
-def source_enrich_area_actions(ir):
+def source_enrich_area_actions(ir, *, db_path=None):
     if ir is None:
         return None
-    with sqlite3.connect(active_ability_db(DEFAULT_DB)) as db:
+    with sqlite3.connect(db_path if db_path is not None else active_ability_db(DEFAULT_DB)) as db:
         has_table = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' "
                                "AND name='verified_spell_area_facts'").fetchone()
         if not has_table:

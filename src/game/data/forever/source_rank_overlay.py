@@ -137,7 +137,7 @@ def _parse_rank(action, row):
                        'source_spell_power_coefficient_verified':source.get('spell_power_coefficient') is not None}), None
 
 
-def source_enrich_action_ranks(ir):
+def source_enrich_action_ranks(ir, *, db_path=None):
     """Source-driven cross-class rank promotion; no class/ability whitelists.
 
     An action with unsupported effect shapes is left intact, and its rank
@@ -150,7 +150,7 @@ def source_enrich_action_ranks(ir):
     from src.game.model.ir import ControlEffect, DamageEffect, PeriodicEffect
     class_key = str(ir.actor.metadata.get('class_key') or '').lower()
     level = int(ir.actor.metadata.get('level') or 0)
-    with sqlite3.connect(active_ability_db(DEFAULT_DB)) as conn:
+    with sqlite3.connect(db_path if db_path is not None else active_ability_db(DEFAULT_DB)) as conn:
         verified = {}
         if conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='verified_spell_rank_facts'").fetchone():
             verified = {int(r[0]): r for r in conn.execute("SELECT spell_id, cast_time_s, mana_cost, cooldown_s, tooltip_text, source_url, source_build, captured_at, spell_power_coefficient FROM verified_spell_rank_facts WHERE class_key=?", (class_key,))}

@@ -5,18 +5,20 @@ numbers are qualified Classic proxies, not discovered Forever NPC facts.
 """
 from __future__ import annotations
 from dataclasses import replace
+from pathlib import Path
 import sqlite3
 from .source_db_scope import DEFAULT_DB
 from src.game.model.ir import ArmorMitigationDefinition, IncomingAttackDefinition
 
 
-def source_enrich_incoming_world(ir):
+def source_enrich_incoming_world(ir, *, db_path: Path | None = None):
     if ir.incoming_attacks:
         return ir  # Preserve already sourced class-specific encounter scenario.
     if 'health' not in {r.id for r in ir.resources}:
         return ir
     level=int(ir.actor.metadata['level'])
-    with sqlite3.connect(f'file:{DEFAULT_DB}?mode=ro',uri=True) as c:
+    path=Path(db_path or DEFAULT_DB).resolve()
+    with sqlite3.connect(f'file:{path}?mode=ro',uri=True) as c:
         c.row_factory=sqlite3.Row
         row=c.execute('SELECT * FROM world_incoming_scenario_facts WHERE level=?',(level,)).fetchone()
     if row is None:
