@@ -85,12 +85,24 @@ class MaintenanceTestLayout(unittest.TestCase):
         self.assertIn("config/gates/p1_scenario_applicability_v1.json", workflow)
         self.assertNotIn("gate_config/", workflow)
         for consumer in (
-            ROOT / "tools" / "p1_native_source_inventory.py",
             ROOT / "tools" / "wf_gate_p1_live.py",
         ):
             content = consumer.read_text()
             self.assertIn("p1_scenario_applicability_v1.json", content)
             self.assertNotIn("gate_config", content)
+
+    def test_retired_p1_source_inventory_and_progress_sidecars_are_gone(self):
+        """The native P1 caller no longer depends on source-list/progress sidecars."""
+        for relative in (
+            "tools/p1_native_source_inventory.py",
+            "tools/p1_native_progress.py",
+            "tools/wf_p1_native_scope_matrix.py",
+            "tests/gates/test_p1_native_progress.py",
+        ):
+            self.assertFalse((ROOT / relative).exists(), f"retired P1 diagnostic remains: {relative}")
+        effects = (ROOT / "tools" / "wf_p1_native_effects.py").read_text(encoding="utf-8")
+        self.assertNotIn("p1_native_source_inventory", effects)
+        self.assertNotIn("p1_native_progress", effects)
 
     def test_current_ci_does_not_reference_old_test_locations(self):
         workflows = ROOT / ".github" / "workflows"
