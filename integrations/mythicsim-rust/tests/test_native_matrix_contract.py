@@ -330,6 +330,64 @@ class NativeGenericMatrixContract(unittest.TestCase):
             self.assertFalse(gear[2]["native_db_present"])
 
 
+    def test_create_inventory_does_not_preflight_item_identity_in_python(self):
+        from tempfile import TemporaryDirectory
+        from unittest.mock import patch
+        import native_l60_matrix as matrix
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            engine = root / "engine"
+            engine.mkdir()
+            registry = root / "registry.json"
+            registry.write_text("{}")
+            classes = (
+                "druid", "hunter", "mage", "paladin", "priest",
+                "rogue", "shaman", "warlock", "warrior",
+            )
+            profiles = [(classes[index % len(classes)], f"spec_{index}")
+                        for index in range(28)]
+            sources = {}
+            for index, (class_key, spec) in enumerate(profiles):
+                relative = f"requests/profile-{index}.json"
+                source_path = engine / relative
+                source_path.parent.mkdir(parents=True, exist_ok=True)
+                request = {
+                    "raid": {"parties": [{"players": [{
+                        "class": "Class" + class_key.capitalize(),
+                        "equipment": {"items": [{"id": 999999}]},
+                        "talentsString": "source-observed-build",
+                        "rotation": {"priorityList": []},
+                    }]}]},
+                    "simOptions": {"iterations": 3, "randomSeed": "47"},
+                }
+                source_path.write_text(json.dumps(request))
+                sources[f"{class_key}/{spec}"] = ("engine", relative)
+
+            with (
+                patch.object(matrix, "CURRENT_CLIENT_TALENT_OVERRIDES", {}),
+                patch.object(matrix, "enumerate_l60_profiles", return_value=profiles),
+                patch.object(matrix, "SOURCES", sources),
+                patch.object(matrix, "ROOT", root),
+                patch.object(
+                    matrix, "load_native_item_index",
+                    side_effect=AssertionError("Python item index must not preflight requests"),
+                ),
+            ):
+                rows = matrix.create_inventory(registry, engine)
+
+            self.assertEqual(28, len(rows))
+            for row, request in rows:
+                self.assertIsNotNone(request)
+                self.assertEqual("SMOKE_FIXTURE_ONLY", row["status"])
+                self.assertIsNone(row["blocker"])
+                self.assertEqual(
+                    999999,
+                    request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"],
+                )
+                self.assertNotIn("native_item_inventory", row)
+                self.assertNotIn("native_db_missing_item_ids", row)
+
     def test_subprocess_timeout_is_budget_expiry_not_engine_error(self):
         import subprocess
         attempts = []
@@ -411,6 +469,82 @@ class NativeGenericMatrixContract(unittest.TestCase):
         bad["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"][0]["action"]["castSpell"]["spellId"] = {"spellId": 999999}
         self.assertFalse(legal_apl_only_request(source, bad))
         self.assertFalse(legal_apl_only_request(source, {"raid": {}}))
+
+
+    def test_unscored_native_response_is_separate_and_does_not_block_paid_search(self):
+        from native_matrix import NativeUnscoredCandidate
+
+        calls = []
+
+        def evaluate(candidate, *, iterations, seed, rng_mode):
+            calls.append(candidate)
+            if len(calls) == 1:
+                raise NativeUnscoredCandidate(
+                    "No finite DPS mean in completed native response",
+                    raw_response={"result": {"raidMetrics": {"dps": {
+                        "aggregatorData": {"n": 40}, "hist": {"0": 40},
+                    }}}},
+                    request_sha256="native-request-sha",
+                    elapsed_s=0.04,
+                )
+            return 80.0
+
+        result = search_native(
+            profile_id="hunter/survival",
+            reference={"profile": "hunter/survival"},
+            propose=lambda rng: {"nonce": rng.randint(1, 1000000)},
+            mutate=lambda candidate, rng: {"nonce": rng.randint(1, 1000000)},
+            legal=lambda candidate: True,
+            evaluate=evaluate,
+            seconds=0.025,
+            iterations=40,
+            seed=11,
+            clock=FakeClock(),
+        )
+        self.assertEqual("RAN", result["status"])
+        self.assertEqual(0, result["engine_errors"])
+        self.assertEqual(1, result["unscored_candidates"])
+        self.assertGreater(result["paid_candidates"], 0)
+        self.assertEqual("UNSCORED", result["native_unscored_samples"][0]["status"])
+        self.assertEqual(30, next_budget(5, result))
+
+    def test_native_executor_only_marks_complete_missing_mean_as_unscored(self):
+        import subprocess
+        import time
+        from unittest.mock import patch
+        from native_executor import (
+            NativeExecutionError, NativeScoreExtractionError, run as native_run,
+        )
+
+        def fake_run(response):
+            def invoke(command, **_kwargs):
+                output = Path(command[command.index("--outfile") + 1])
+                output.write_text(json.dumps(response))
+                return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+            return invoke
+
+        complete = {"result": {"raidMetrics": {"dps": {
+            "aggregatorData": {"n": 40}, "hist": {"0": 40},
+        }}}}
+        with patch("native_executor.subprocess.run", side_effect=fake_run(complete)):
+            with self.assertRaises(NativeScoreExtractionError) as caught:
+                native_run(
+                    "unused-binary", {"simOptions": {}}, 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+        self.assertEqual("UNSCORED", caught.exception.status)
+        self.assertEqual(complete, caught.exception.raw_response)
+
+        incomplete = {"result": {"raidMetrics": {"dps": {
+            "aggregatorData": {"n": 40}, "hist": {"0": 39},
+        }}}}
+        with patch("native_executor.subprocess.run", side_effect=fake_run(incomplete)):
+            with self.assertRaises(NativeExecutionError) as caught:
+                native_run(
+                    "unused-binary", {"simOptions": {}}, 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+        self.assertEqual("ERROR", caught.exception.status)
 
 if __name__ == "__main__":
     unittest.main()

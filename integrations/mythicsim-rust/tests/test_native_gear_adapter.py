@@ -9,9 +9,13 @@ from native_gear_adapter import NativeGearAdapter, GearRejected
 
 
 def req(cls, ids):
-    return {"raid": {"parties": [{"players": [{"class": "Class" + cls,
-        "equipment": {"items": [{"id": x} for x in ids]},
-        "talentsString": "51", "rotation": {"priorityList": [{"action": {"wait": {}}}]}}]}]}}
+    return {
+        "raid": {"parties": [{"players": [{"class": "Class" + cls,
+            "equipment": {"items": [{"id": x} for x in ids]},
+            "talentsString": "51",
+            "rotation": {"priorityList": [{"action": {"wait": {}}}]}}]}]},
+        "simOptions": {"iterations": 3, "randomSeed": "47"},
+    }
 
 
 class NativeGearAdapterTests(unittest.TestCase):
@@ -32,27 +36,54 @@ class NativeGearAdapterTests(unittest.TestCase):
     def test_same_class_and_position_only(self):
         adapter = NativeGearAdapter("mage", self.fire,
             [self.fire, self.frost, self.warrior], self.items)
-        self.assertEqual((0, 1), adapter.mutable_indices)
+        self.assertEqual((0, 1, 2), adapter.mutable_indices)
         self.assertEqual({10, 11}, set(adapter.pools[0]))
         self.assertEqual({20, 21}, set(adapter.pools[1]))
-        self.assertNotIn(2, adapter.pools)  # baseline weapon is not an alternate; no other weapon ID is admitted
-        self.assertNotIn(2, adapter.mutable_indices)  # no same-ID variant in this fixture
+        self.assertEqual({30, 31}, set(adapter.pools[2]))  # native decides weapon/hand legality
 
     def test_native_mutation_preserves_reference_talents_apl_and_weapon(self):
         original = copy.deepcopy(self.fire)
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)
         candidate, audit = adapter.mutate_one(random.Random(10))
         self.assertEqual(original, self.fire)
-        self.assertEqual(original["raid"]["parties"][0]["players"][0]["equipment"]["items"][2],
-                         candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][2])
-        self.assertIn(audit["source_slot_index"], (0, 1))
+        original_player = original["raid"]["parties"][0]["players"][0]
+        candidate_player = candidate["raid"]["parties"][0]["players"][0]
+        self.assertEqual(original_player["talentsString"], candidate_player["talentsString"])
+        self.assertEqual(original_player["rotation"], candidate_player["rotation"])
+        self.assertEqual(1, sum(
+            a != b for a, b in zip(original_player["equipment"]["items"],
+                                   candidate_player["equipment"]["items"])))
+        self.assertIn(audit["source_slot_index"], (0, 1, 2))
         adapter.validate(candidate)
 
-    def test_class_allowlist_filters_cross_class_source(self):
+    def test_native_item_type_and_class_rules_do_not_prevent_source_proposal(self):
         items = copy.deepcopy(self.items)
         items[11]["class_allowlist"] = ["ClassWarrior"]
+        items[11]["type"] = "ItemTypeChest"  # wrong slot/type is still a native decision
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
-        self.assertNotIn(11, adapter.pools.get(0, {}))
+        self.assertIn(11, adapter.pools[0])
+        candidate = copy.deepcopy(self.fire)
+        candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
+        adapter.validate(candidate)  # proposal only; MythicSim owns the verdict
+
+        from native_joint_two_class import native_score_request, native_payload, fingerprint
+        from native_matrix import NativeCandidateRefusal
+        import time
+        seen = []
+        raw = {"status": "INVALID", "error": "native equipment refusal"}
+        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline):
+            seen.append(copy.deepcopy(request))
+            raise NativeCandidateRefusal(
+                "INVALID", raw_response=raw, reason=raw["error"],
+                request_sha256=fingerprint(native_payload(request, iterations, seed)),
+            )
+        with self.assertRaises(NativeCandidateRefusal) as caught:
+            native_score_request(Path("forever-engine"), candidate, 4, 731,
+                                 "balanced", time.monotonic() + 1.0,
+                                 runner=native_runner)
+        self.assertEqual([candidate], seen)
+        self.assertEqual("INVALID", caught.exception.status)
+        self.assertIs(raw, caught.exception.raw_response)
 
     def test_source_observed_same_id_enchant_variant_is_mutable(self):
         # RED before fix: ID-only pools reported no mutable gear even though
@@ -75,10 +106,46 @@ class NativeGearAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(GearRejected, "SOURCE_SLOT"):
             adapter.validate(unobserved)
 
-    def test_weapon_identity_stays_fixed_but_same_id_enchant_variant_is_mutable(self):
+    def test_native_refusal_excludes_exact_enchant_variant_not_every_same_id_variant(self):
+        # Two observed enchants share the item ID. Rejecting one native
+        # request must not silently discard the other source proposal.
+        source = req("Mage", [10])
+        donors = []
+        for effect_id in (123, 456):
+            donor = copy.deepcopy(source)
+            donor["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {
+                "id": 10, "enchant": {"effectId": effect_id}
+            }
+            donors.append(donor)
+        adapter = NativeGearAdapter("mage", source, [source, *donors])
+        first, audit = adapter.mutate_one(random.Random(7))
+        excluded = {(audit["source_slot_index"], audit["to_id"],
+                     audit["to_variant_sha256"])}
+        second, second_audit = adapter.mutate_one(
+            random.Random(7), excluded_swaps=excluded
+        )
+        self.assertEqual(10, audit["to_id"])
+        self.assertEqual(10, second_audit["to_id"])
+        self.assertNotEqual(
+            first["raid"]["parties"][0]["players"][0]["equipment"]["items"][0],
+            second["raid"]["parties"][0]["players"][0]["equipment"]["items"][0],
+        )
+        self.assertNotEqual(audit["to_variant_sha256"],
+                            second_audit["to_variant_sha256"])
+        adapter.validate(second)
+        # The same exact-variant exclusion applies when extending a candidate.
+        extended, extended_audit = adapter.mutate_from(
+            first, random.Random(7), excluded_swaps=excluded
+        )
+        self.assertEqual(second["raid"]["parties"][0]["players"][0]["equipment"]["items"],
+                         extended["raid"]["parties"][0]["players"][0]["equipment"]["items"])
+        self.assertEqual(second_audit["to_variant_sha256"],
+                         extended_audit["to_variant_sha256"])
+
+    def test_weapon_id_and_enchant_proposals_reach_native(self):
         source = req("Shaman", [30])
-        donor = copy.deepcopy(source)
-        donor["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {
+        enchant_donor = copy.deepcopy(source)
+        enchant_donor["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {
             "id": 30, "enchant": {"effectId": 123}
         }
         items = {
@@ -87,35 +154,91 @@ class NativeGearAdapterTests(unittest.TestCase):
             31: {"type": "ItemTypeWeapon", "hand_type": "HandTypeOneHand",
                  "class_allowlist": ["ClassShaman"]},
         }
-        adapter = NativeGearAdapter("shaman", source, [source, donor], items)
-        self.assertEqual((0,), adapter.mutable_indices)
-        candidate, audit = adapter.mutate_one(random.Random(2))
-        entry = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]
+        enchant_adapter = NativeGearAdapter("shaman", source, [source, enchant_donor], items)
+        self.assertEqual((0,), enchant_adapter.mutable_indices)
+        enchant_candidate, audit = enchant_adapter.mutate_one(random.Random(2))
+        entry = enchant_candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]
         self.assertEqual({"id": 30, "enchant": {"effectId": 123}}, entry)
         self.assertEqual(30, audit["from_id"])
         self.assertEqual(30, audit["to_id"])
-        adapter.validate(candidate)
+        enchant_adapter.validate(enchant_candidate)
 
-        # A different weapon ID still requires verified hand/equip rules.
+        # A different weapon/hand identity is a proposal too; Rust owns the refusal.
         changed_weapon = copy.deepcopy(source)
         changed_weapon["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 31}
-        locked = NativeGearAdapter("shaman", source, [source, changed_weapon], items)
-        self.assertEqual((), locked.mutable_indices)
+        adapter = NativeGearAdapter("shaman", source, [source, changed_weapon], items)
+        self.assertEqual((0,), adapter.mutable_indices)
+        candidate, audit = adapter.mutate_one(random.Random(2))
+        self.assertEqual({"id": 31}, candidate["raid"]["parties"][0]["players"][0]
+                         ["equipment"]["items"][0])
+        self.assertEqual(30, audit["from_id"])
+        self.assertEqual(31, audit["to_id"])
+        adapter.validate(candidate)
+
+        from native_joint_two_class import native_score_request, native_payload, fingerprint
+        from native_matrix import NativeCandidateRefusal
+        import time
+        seen = []
+        raw = {"status": "INVALID", "reason": "native hand/equipment refusal"}
+
+        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline):
+            seen.append(copy.deepcopy(request))
+            raise NativeCandidateRefusal(
+                "INVALID", raw_response=raw, reason=raw["reason"],
+                request_sha256=fingerprint(native_payload(request, iterations, seed)),
+            )
+
+        with self.assertRaises(NativeCandidateRefusal) as caught:
+            native_score_request(Path("forever-engine"), candidate, 4, 731,
+                                 "balanced", time.monotonic() + 1.0,
+                                 runner=native_runner)
+        self.assertEqual([candidate], seen)
+        self.assertEqual("INVALID", caught.exception.status)
+        self.assertIs(raw, caught.exception.raw_response)
+
+    def test_source_observed_unknown_item_identity_is_not_a_python_veto(self):
+        source = req("Mage", [10])
+        donor = req("Mage", [999999])
+        adapter = NativeGearAdapter("mage", source, [source, donor], self.items)
+        self.assertEqual((0,), adapter.mutable_indices)
+        candidate = copy.deepcopy(source)
+        candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 999999}
+        adapter.validate(candidate)  # unknown native identity is sent to Rust, not pre-rejected
+
+        from native_joint_two_class import native_score_request, native_payload, fingerprint
+        from native_matrix import NativeCandidateRefusal
+        import time
+        seen = []
+        raw = {"status": "INVALID", "reason": "native unknown-item refusal"}
+
+        def native_runner(_binary, request, iterations, seed, rng_mode, _deadline):
+            seen.append(copy.deepcopy(request))
+            raise NativeCandidateRefusal(
+                "INVALID", raw_response=raw, reason=raw["reason"],
+                request_sha256=fingerprint(native_payload(request, iterations, seed)),
+            )
+
+        with self.assertRaises(NativeCandidateRefusal) as caught:
+            native_score_request(Path("forever-engine"), candidate, 4, 731,
+                                 "balanced", time.monotonic() + 1.0,
+                                 runner=native_runner)
+        self.assertEqual([candidate], seen)
+        self.assertEqual("INVALID", caught.exception.status)
+        self.assertIs(raw, caught.exception.raw_response)
 
     def test_no_alternatives_blocks_explicitly(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire], self.items)
         with self.assertRaisesRegex(GearRejected, "NO_SOURCE_BOUNDED_ALTERNATIVE"):
             adapter.mutate_one(random.Random(1))
 
-    def test_unique_limit_category_rejected(self):
+    def test_native_unique_category_is_not_a_python_legality_veto(self):
         items = copy.deepcopy(self.items)
         items[11]["limit_category"] = 55
         items[20]["limit_category"] = 55
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
         candidate = copy.deepcopy(self.fire)
         candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
-        with self.assertRaisesRegex(GearRejected, "UNIQUE_CATEGORY"):
-            adapter.validate(candidate)
+        adapter.validate(candidate)
 
     def test_unverified_position_and_talent_change_rejected(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)
@@ -148,8 +271,7 @@ class NativeGearAdapterTests(unittest.TestCase):
         adapter.validate(copy.deepcopy(source))
         items[40]["unique"] = True
         unique_adapter = NativeGearAdapter("mage", source, [source], items)
-        with self.assertRaisesRegex(GearRejected, "UNIQUE_ITEM"):
-            unique_adapter.validate(copy.deepcopy(source))
+        unique_adapter.validate(copy.deepcopy(source))  # native decides uniqueness
 
     def test_candidate_cannot_mutate_encounter_or_buffs_during_gear_probe(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)
@@ -159,27 +281,31 @@ class NativeGearAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(GearRejected, "NON_GEAR_CHANGED"):
             adapter.validate(candidate)
 
-    def test_source_pool_never_crosses_unverified_armor_subtype(self):
+    def test_source_observed_armor_subtype_is_forwarded_to_native(self):
         items = copy.deepcopy(self.items)
         items[10]["armor_type"] = "ArmorTypeCloth"
         items[11]["armor_type"] = "ArmorTypePlate"
+        items[11]["required_level"] = 61
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
-        self.assertNotIn(11, adapter.pools.get(0, {}))
+        self.assertIn(11, adapter.pools[0])
+        candidate = copy.deepcopy(self.fire)
+        candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 11}
+        adapter.validate(candidate)  # no Python armor or level legality verdict
 
     def test_distinct_source_bounded_swaps_can_be_retried_after_native_failure(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], self.items)
-        first, first_audit = adapter.mutate_one(random.Random(11))
-        rejected = {(first_audit["source_slot_index"], first_audit["to_id"])}
-        second, second_audit = adapter.mutate_one(
-            random.Random(11), excluded_swaps=rejected)
-        self.assertNotEqual(
-            (first_audit["source_slot_index"], first_audit["to_id"]),
-            (second_audit["source_slot_index"], second_audit["to_id"]))
-        adapter.validate(first)
-        adapter.validate(second)
-        rejected.add((second_audit["source_slot_index"], second_audit["to_id"]))
-        with self.assertRaisesRegex(GearRejected, "NO_LEGAL_SOURCE_SWAP"):
-            adapter.mutate_one(random.Random(11), excluded_swaps=rejected)
+        seen = set()
+        candidates = []
+        for _ in range(3):
+            candidate, audit = adapter.mutate_one(random.Random(11), excluded_swaps=seen)
+            swap = (audit["source_slot_index"], audit["to_id"])
+            self.assertNotIn(swap, seen)
+            seen.add(swap)
+            candidates.append(candidate)
+            adapter.validate(candidate)
+        self.assertEqual(3, len(seen))  # head, chest and weapon proposals all remain searchable
+        with self.assertRaisesRegex(GearRejected, "NO_SOURCE_OBSERVED_SWAP"):
+            adapter.mutate_one(random.Random(11), excluded_swaps=seen)
 
     def test_native_rng_panic_is_classified_not_paid(self):
         from native_gear_probe import classify_native_failure

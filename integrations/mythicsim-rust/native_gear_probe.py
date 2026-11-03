@@ -205,7 +205,7 @@ def probe_all(*, engine_src: Path, binary: Path, outdir: Path, seed: int, iterat
             try:
                 adapter = NativeGearAdapter(cls, reference, same_class, index)
                 row["source_bounded_mutable_positions"] = list(adapter.mutable_indices)
-                attempted_swaps: set[tuple[int, int]] = set()
+                attempted_swaps: set[tuple[int, int, str]] = set()
                 rowdir = outdir / "profiles" / profile.replace("/", "__")
                 rowdir.mkdir(parents=True, exist_ok=True)
                 for attempt in range(max_attempts):
@@ -219,7 +219,8 @@ def probe_all(*, engine_src: Path, binary: Path, outdir: Path, seed: int, iterat
                             row.update(status="BLOCKED_GEAR_POOL", blocker=str(exc),
                                        blocker_category="SOURCE_BOUNDED_GEAR_POOL_EXHAUSTED")
                         break
-                    attempted_swaps.add((swap["source_slot_index"], swap["to_id"]))
+                    attempted_swaps.add((swap["source_slot_index"], swap["to_id"],
+                                         swap["to_variant_sha256"]))
                     assert player(candidate)["class"] == player(reference)["class"]
                     assert player(candidate)["talentsString"] == player(reference)["talentsString"]
                     assert player(candidate)["rotation"] == player(reference)["rotation"]

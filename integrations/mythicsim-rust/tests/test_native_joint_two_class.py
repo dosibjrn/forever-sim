@@ -14,12 +14,15 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import p73_talent_search_v2 as p73
+import native_executor as native_exec
+import native_l60_matrix as l60_matrix
 import native_joint_two_class as joint
 from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast, mutate_apl
 from native_joint_two_class import (
     _ensure_native_damage_action, _native_positive_source_casts,
     _write_native_failure, fingerprint, native_payload, native_score_request,
 )
+from native_matrix import NativeCandidateRefusal, next_budget, search_native
 
 
 def request():
@@ -39,10 +42,17 @@ class NativeJointScoringContracts(unittest.TestCase):
     def test_native_request_records_explicit_balanced_mode_and_raw_receipt(self):
         calls = []
         source = request()
-        raw = {"result": {"raidMetrics": {"dps": {"avg": 123.5}}}}
+        source["raid"]["parties"][0]["players"][0]["talentsString"] = (
+            "native-proposal-without-a-python-point-budget"
+        )
+        seen_talent_payloads = []
+        raw = {"status": "VALID", "result": {"raidMetrics": {"dps": {"avg": 123.5}}}}
 
         def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
             calls.append((binary, iterations, seed, rng_mode, deadline))
+            seen_talent_payloads.append(
+                candidate["raid"]["parties"][0]["players"][0]["talentsString"]
+            )
             return (123.5, raw, 0.0123,
                     fingerprint(native_payload(candidate, iterations, seed)))
 
@@ -51,15 +61,91 @@ class NativeJointScoringContracts(unittest.TestCase):
             time.monotonic() + 5.0, runner=fake_run,
         )
         self.assertEqual(1, len(calls))
+        self.assertEqual(
+            ["native-proposal-without-a-python-point-budget"],
+            seen_talent_payloads,
+        )
         self.assertEqual("balanced", calls[0][3])
         self.assertEqual(40, calls[0][1])
         self.assertEqual(731, calls[0][2])
         self.assertEqual(123.5, record["score"])
+        self.assertEqual("VALID", record["native_status"])
         self.assertEqual("balanced", record["rng_mode"])
         self.assertEqual(fingerprint(native_payload(source, 40, 731)),
                          record["effective_request_sha256"])
         self.assertEqual(fingerprint(raw), record["raw_response_sha256"])
         self.assertIs(raw, actual_raw)
+
+
+    def test_native_refusal_is_propagated_for_the_exact_talent_candidate(self):
+        source = request()
+        source["raid"]["parties"][0]["players"][0]["talentsString"] = (
+            "native-refusal-proposal"
+        )
+        effective = native_payload(source, 40, 731)
+        raw = {
+            "status": "INVALID",
+            "error": "MythicSim rejected this talent proposal",
+        }
+        refusal = NativeCandidateRefusal(
+            "INVALID", raw_response=raw,
+            reason=raw["error"], returncode=5,
+            request_sha256=fingerprint(effective), elapsed_s=0.012,
+        )
+        seen_talent_payloads = []
+
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
+            seen_talent_payloads.append(
+                candidate["raid"]["parties"][0]["players"][0]["talentsString"]
+            )
+            raise refusal
+
+        with self.assertRaises(NativeCandidateRefusal) as raised:
+            native_score_request(
+                Path("forever-engine"), source, 40, 731, "balanced",
+                time.monotonic() + 5.0, runner=fake_run,
+            )
+
+        self.assertEqual(["native-refusal-proposal"], seen_talent_payloads)
+        self.assertIs(refusal, raised.exception)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertEqual(fingerprint(effective), raised.exception.request_sha256)
+
+
+    def test_missing_talent_string_candidate_reaches_native_and_refusal_is_preserved(self):
+        source = request()
+        source_player = source["raid"]["parties"][0]["players"][0]
+        source_player.pop("talentsString")
+        effective = native_payload(source, 40, 731)
+        raw = {
+            "status": "INVALID",
+            "error": "MythicSim rejected the request without talentsString",
+        }
+        refusal = NativeCandidateRefusal(
+            "INVALID",
+            raw_response=raw,
+            reason=raw["error"],
+            returncode=5,
+            elapsed_s=0.012,
+            request_sha256=fingerprint(effective),
+        )
+        seen_presence = []
+
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
+            candidate_player = candidate["raid"]["parties"][0]["players"][0]
+            seen_presence.append("talentsString" in candidate_player)
+            raise refusal
+
+        with self.assertRaises(NativeCandidateRefusal) as raised:
+            native_score_request(
+                Path("forever-engine"), source, 40, 731, "balanced",
+                time.monotonic() + 5.0, runner=fake_run,
+            )
+
+        self.assertEqual([False], seen_presence)
+        self.assertIs(refusal, raised.exception)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertEqual(fingerprint(effective), raised.exception.request_sha256)
 
     def test_stochastic_mode_is_rejected_before_the_native_runner(self):
         calls = []
@@ -432,9 +518,9 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         baseline = self.source_request(
             "baseline-build", [18932, 11713, 17923, 25309]
         )
-        donor_a_talents = "333333-333333-333330"
-        donor_b_talents = "333333-333330-333333"
-        donor_c_talents = "333330-333333-333333"
+        donor_a_talents = "source-candidate-a"
+        donor_b_talents = "source-candidate-b"
+        donor_c_talents = "source-candidate-c"
         donor_a = self.source_request(donor_a_talents, [11713, 17923])
         donor_b = self.source_request(donor_b_talents, [11713, 17923, 25309])
         donor_c = self.source_request(donor_c_talents, [18932, 25309])
@@ -449,7 +535,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
             }
 
         class FakeGear:
-            def __init__(self, class_key, reference, source_requests, items):
+            def __init__(self, class_key, reference, source_requests):
                 self.reference = reference
                 self.mutable_indices = [0]
 
@@ -469,7 +555,6 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
                 "warlock",
                 baseline,
                 [baseline],
-                {},
                 donor_fixtures=[
                     fixture("donor-a", donor_a, "a"),
                     fixture("donor-b", donor_b, "b"),
@@ -486,7 +571,6 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
                     "warlock",
                     baseline,
                     [baseline],
-                    {},
                     donor_fixtures=[
                         fixture("donor-a", donor_a, "a"),
                         fixture("donor-b", donor_b, "b"),
@@ -495,7 +579,10 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
                     native_damage_witnesses=[],
                 )
 
-        self.assertEqual(sorted([donor_a_talents, donor_b_talents]), scope["talent_builds"])
+        self.assertEqual(
+            sorted(["baseline-build", donor_a_talents, donor_b_talents]),
+            scope["talent_builds"],
+        )
         self.assertEqual(
             [donor_c_talents],
             scope["talent_builds_excluded_for_native_damage_witness"],
@@ -570,112 +657,15 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
 
 
 
-class NativeGeneratedDruidTalentDonorContracts(unittest.TestCase):
-    def test_two_native_verified_full_builds_unlock_shared_baseline_damage_witness(self):
-        baseline = request()
-        source_player = baseline["raid"]["parties"][0]["players"][0]
-        source_player["talentsString"] = "5532220115501351--505"
-        source_player["rotation"]["priorityList"] = [
-            {"action": {"castSpell": {"spellId": {"rank": 5, "spellId": 24977}}}},
-            {"action": {"castSpell": {"spellId": {"rank": 10, "spellId": 9835}}}},
-            {"action": {"castSpell": {"spellId": {"rank": 8, "spellId": 9912}}}},
-        ]
-        raw = {"result": {"raidMetrics": {
-            "dps": {"avg": 200.0},
-            "parties": [{"players": [{"actions": [
-                {"id": {"spellId": 24977}, "targets": [{"casts": 40, "damage": 800.0}]},
-                {"id": {"spellId": 9835}, "targets": [{"casts": 20, "damage": 300.0}]},
-                {"id": {"spellId": 9912}, "targets": [{"casts": 30, "damage": 500.0}]},
-            ]}]}],
-        }}}
-        calls = []
-
-        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
-            calls.append((candidate["raid"]["parties"][0]["players"][0]["talentsString"],
-                          iterations, seed, rng_mode))
-            return (200.0, raw, 0.01,
-                    fingerprint(native_payload(candidate, iterations, seed)))
-
-        with tempfile.TemporaryDirectory() as directory:
-            donors, witnesses, summary = joint._generate_native_druid_talent_donors(
-                Path("native"), baseline,
-                [{"rank": 5, "spellId": 24977},
-                 {"rank": 10, "spellId": 9835},
-                 {"rank": 8, "spellId": 9912}],
-                Path(directory), iterations=40, seed=731,
-                existing_talents={source_player["talentsString"]},
-                runner=fake_run, max_attempts=8,
-            )
-
-            self.assertEqual("PASS", summary["status"])
-            self.assertEqual(2, len(donors))
-            self.assertEqual(2, len({
-                joint.player(fixture["request"])["talentsString"]
-                for fixture in donors
-            }))
-            self.assertTrue(all(
-                joint._is_full_51_source_build(
-                    joint.player(fixture["request"])["talentsString"]
-                )
-                for fixture in donors
-            ))
-            self.assertEqual(2, summary["native_evaluations"])
-            self.assertEqual("balanced", donors[0]["native_rng_mode"])
-            self.assertEqual(
-                [{"rank": 5, "spellId": 24977},
-                 {"rank": 10, "spellId": 9835},
-                 {"rank": 8, "spellId": 9912}],
-                witnesses,
-            )
-            self.assertTrue(all(
-                (Path(directory) / fixture["source_path"]).is_file()
-                for fixture in donors
-            ))
-            self.assertTrue(all(
-                (Path(directory) / fixture["source_path"].replace(
-                    ".request.json", ".response.json"
-                )).is_file()
-                for fixture in donors
-            ))
-
-            class FakeGear:
-                def __init__(self, class_key, reference, source_requests, items):
-                    self.reference = reference
-                    self.mutable_indices = [0]
-
-                def validate(self, request_value):
-                    return None
-
-                def mutate_one(self, rng):
-                    return copy.deepcopy(self.reference), {}
-
-                def mutate_from(self, request_value, rng):
-                    return copy.deepcopy(request_value), {}
-
-            verified = {
-                source_player["talentsString"],
-                *[joint.player(fixture["request"])["talentsString"]
-                  for fixture in donors],
-            }
-            with patch.object(joint, "NativeGearAdapter", FakeGear), patch.object(
-                joint, "legal_apl_only_request", return_value=True
-            ):
-                _adapter, scope = joint.source_bounded_adapter(
-                    "druid", baseline, [baseline], {},
-                    donor_fixtures=donors,
-                    native_damage_witnesses=witnesses,
-                    native_verified_talent_builds=verified,
-                )
-            self.assertEqual(sorted(verified), scope["talent_builds"])
-            self.assertEqual(sorted(verified), scope["native_verified_talent_builds"])
-            self.assertEqual(
-                witnesses,
-                scope["native_positive_damage_witnesses_common_to_selected_talent_builds"],
-            )
-
-
 class NativeExecutionErrorReporting(unittest.TestCase):
-    def test_missing_dps_average_preserves_raw_native_response(self):
+    def test_joint_and_legacy_p73_paths_share_one_executor(self):
+        self.assertIs(joint.run, native_exec.run)
+        self.assertIs(l60_matrix.run, native_exec.run)
+        self.assertIs(p73.run, native_exec.run)
+        self.assertIs(p73.NativeExecutionError, native_exec.NativeExecutionError)
+        self.assertIs(p73.NativeScoreExtractionError, native_exec.NativeScoreExtractionError)
+
+    def test_incomplete_dps_distribution_is_execution_error_and_preserves_raw_response(self):
         source = request()
         raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
 
@@ -685,22 +675,25 @@ class NativeExecutionErrorReporting(unittest.TestCase):
             return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
 
         with patch.object(p73.subprocess, "run", side_effect=write_output):
-            with self.assertRaises(p73.NativeScoreExtractionError) as raised:
-                p73.run(
+            with self.assertRaises(native_exec.NativeExecutionError) as raised:
+                native_exec.run(
                     Path("native"), source, 40, 731, "balanced",
                     time.monotonic() + 5.0,
                 )
 
         self.assertEqual(raw, raised.exception.raw_response)
-        self.assertIn("result.raidMetrics.dps.avg", str(raised.exception))
+        self.assertEqual("ERROR", raised.exception.status)
+        self.assertEqual(0, raised.exception.returncode)
         self.assertGreaterEqual(raised.exception.elapsed_s, 0.0)
         self.assertTrue(raised.exception.request_sha256)
 
     def test_failed_score_extraction_writes_request_and_raw_response_receipts(self):
         effective = native_payload(request(), 40, 731)
         key = fingerprint(effective)
-        raw = {"result": {"raidMetrics": {"dps": {"aggregatorData": {"n": 0}}}}}
-        exc = p73.NativeScoreExtractionError(
+        raw = {"result": {"raidMetrics": {"dps": {
+            "aggregatorData": {"n": 40}, "hist": {"0": 40},
+        }}}}
+        exc = native_exec.NativeScoreExtractionError(
             "missing avg", raw_response=raw, elapsed_s=0.012,
             request_sha256=key,
         )
@@ -715,6 +708,7 @@ class NativeExecutionErrorReporting(unittest.TestCase):
             self.assertEqual(raw, json.loads(response_path.read_text()))
             self.assertEqual(fingerprint(raw), receipt["raw_response_sha256"])
             self.assertEqual(response_path.name, receipt["response_file"])
+            self.assertEqual("UNSCORED", receipt["native_status"])
             self.assertNotIn("score", receipt)
 
     def test_failed_native_execution_preserves_returncode_stdout_and_stderr(self):
@@ -725,7 +719,7 @@ class NativeExecutionErrorReporting(unittest.TestCase):
         )
         with patch.object(p73.subprocess, "run", return_value=completed) as run:
             with self.assertRaises(RuntimeError) as raised:
-                p73.run(
+                native_exec.run(
                     Path("native"), {"simOptions": {}}, 40, 731, "balanced",
                     time.monotonic() + 5.0,
                 )
@@ -736,6 +730,201 @@ class NativeExecutionErrorReporting(unittest.TestCase):
         self.assertIn("native stderr detail", message)
         self.assertIs(run.call_args.kwargs["stdout"], subprocess.PIPE)
         self.assertIs(run.call_args.kwargs["stderr"], subprocess.PIPE)
+
+
+
+class NativeCliOutcomeClassificationContracts(unittest.TestCase):
+    def test_successful_native_report_is_valid(self):
+        source = request()
+        raw = {"status": "VALID", "result": {"raidMetrics": {"dps": {"avg": 123.0}}}}
+
+        def write_output(args, **kwargs):
+            Path(args[args.index("--outfile") + 1]).write_text(json.dumps(raw))
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        with patch.object(p73.subprocess, "run", side_effect=write_output):
+            score, response, _elapsed, request_sha = native_exec.run(
+                Path("native"), source, 40, 731, "balanced",
+                time.monotonic() + 5.0,
+            )
+        self.assertEqual(123.0, score)
+        self.assertEqual(raw, response)
+        self.assertTrue(request_sha)
+
+    def test_unknown_explicit_native_status_fails_closed(self):
+        source = request()
+        raw = {
+            "status": "MAYBE_VALID",
+            "result": {"raidMetrics": {"dps": {"avg": 999.0}}},
+        }
+
+        def write_output(args, **kwargs):
+            Path(args[args.index("--outfile") + 1]).write_text(json.dumps(raw))
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+        with patch.object(p73.subprocess, "run", side_effect=write_output):
+            with self.assertRaises(native_exec.NativeExecutionError) as raised:
+                native_exec.run(
+                    Path("native"), source, 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+
+        self.assertEqual("ERROR", raised.exception.status)
+        self.assertEqual(0, raised.exception.returncode)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertIn("Unknown native status", str(raised.exception))
+        self.assertTrue(raised.exception.request_sha256)
+
+    def test_gate_exit_three_is_native_unsupported(self):
+        raw = {
+            "supported": False,
+            "refusals": [{"code": "rotation_unsupported", "reason": "unsupported action"}],
+        }
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=3, stdout=json.dumps(raw), stderr="",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(NativeCandidateRefusal) as raised:
+                native_exec.run(Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0)
+        self.assertEqual("UNSUPPORTED", raised.exception.status)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertEqual(3, raised.exception.returncode)
+
+    def test_gate_exit_four_is_native_invalid(self):
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=4, stdout="",
+            stderr="invalid prepared request: malformed talent payload",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(NativeCandidateRefusal) as raised:
+                native_exec.run(Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0)
+        self.assertEqual("INVALID", raised.exception.status)
+        self.assertEqual(4, raised.exception.returncode)
+        self.assertIn("malformed talent payload", raised.exception.reason)
+        self.assertEqual(completed.stderr,
+                         raised.exception.raw_response["stderr"])
+
+    def test_prepare_exit_five_maps_native_refusal_codes(self):
+        cases = (
+            ("request", "INVALID"),
+            ("talents", "INVALID"),
+            ("rotation_unsupported", "UNSUPPORTED"),
+        )
+        for code, expected in cases:
+            with self.subTest(code=code):
+                raw = {"prepared": False, "refusal": {
+                    "code": code, "reason": "native refusal reason",
+                }}
+                completed = subprocess.CompletedProcess(
+                    args=["native"], returncode=5,
+                    stdout=json.dumps(raw), stderr="",
+                )
+                with patch.object(p73.subprocess, "run", return_value=completed):
+                    with self.assertRaises(NativeCandidateRefusal) as raised:
+                        native_exec.run(Path("native"), request(), 40, 731, "balanced",
+                                time.monotonic() + 5.0)
+                self.assertEqual(expected, raised.exception.status)
+                self.assertEqual(raw, raised.exception.raw_response)
+                self.assertEqual(5, raised.exception.returncode)
+
+    def test_prepare_fault_is_execution_error_not_candidate_refusal(self):
+        raw = {"prepared": False, "refusal": {
+            "code": "prepare_fault", "reason": "native prepare fault",
+        }}
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=5, stdout=json.dumps(raw), stderr="",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(native_exec.NativeExecutionError) as raised:
+                native_exec.run(Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0)
+        self.assertEqual("ERROR", raised.exception.status)
+        self.assertEqual(raw, raised.exception.raw_response)
+
+    def test_exit_seven_remains_execution_error(self):
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=7,
+            stdout="native stdout detail", stderr="native stderr detail",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed):
+            with self.assertRaises(native_exec.NativeExecutionError) as raised:
+                native_exec.run(Path("native"), request(), 40, 731, "balanced",
+                        time.monotonic() + 5.0)
+        self.assertEqual("ERROR", raised.exception.status)
+        self.assertEqual(7, raised.exception.returncode)
+        self.assertIn("native stderr detail", str(raised.exception))
+
+    def test_native_matrix_counts_refusals_separately_from_execution_errors(self):
+        class Clock:
+            def __init__(self, step):
+                self.value = 0.0
+                self.step = step
+            def __call__(self):
+                value = self.value
+                self.value += self.step
+                return value
+
+        counter = [0]
+        def propose(_rng):
+            counter[0] += 1
+            return {"candidate": counter[0]}
+        def mutate(_elite, _rng):
+            counter[0] += 1
+            return {"candidate": counter[0]}
+        def refuse(_candidate, **_kwargs):
+            raise NativeCandidateRefusal(
+                "UNSUPPORTED", raw_response={"supported": False},
+                reason="native coverage refusal", returncode=3,
+            )
+
+        result = search_native(
+            profile_id="mage/fire", reference=request(), propose=propose,
+            mutate=mutate, legal=lambda _candidate: True, evaluate=refuse,
+            seconds=1.0, iterations=1, seed=1, clock=Clock(0.1),
+        )
+        self.assertEqual("BLOCKED_NATIVE_REFUSALS", result["status"])
+        self.assertGreater(result["native_refusals"], 0)
+        self.assertEqual(result["native_refusals"], result["native_unsupported"])
+        self.assertEqual(0, result["engine_errors"])
+        self.assertIsNone(next_budget(5, result))
+
+    def test_native_refusal_does_not_block_promotion_after_paid_native_score(self):
+        class Clock:
+            def __init__(self, step):
+                self.value = 0.0
+                self.step = step
+            def __call__(self):
+                value = self.value
+                self.value += self.step
+                return value
+
+        counter = [0]
+        def propose(_rng):
+            counter[0] += 1
+            return {"candidate": counter[0]}
+        def mutate(_elite, _rng):
+            counter[0] += 1
+            return {"candidate": counter[0]}
+        def evaluate(candidate, **_kwargs):
+            if candidate["candidate"] == 1:
+                raise NativeCandidateRefusal(
+                    "INVALID", raw_response={"status": "INVALID"},
+                    reason="native talent refusal", returncode=5,
+                )
+            return float(candidate["candidate"])
+
+        result = search_native(
+            profile_id="mage/fire", reference=request(), propose=propose,
+            mutate=mutate, legal=lambda _candidate: True, evaluate=evaluate,
+            seconds=0.35, iterations=1, seed=1, clock=Clock(0.05),
+        )
+        self.assertEqual("RAN", result["status"])
+        self.assertEqual(1, result["native_invalid"])
+        self.assertGreater(result["paid_candidates"], 0)
+        self.assertEqual(0, result["engine_errors"])
+        self.assertEqual(30, next_budget(5, result))
 
 
 class APLPredicateCompatibilityContracts(unittest.TestCase):

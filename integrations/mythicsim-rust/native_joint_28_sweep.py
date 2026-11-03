@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""28-row native Rust JOINT breadth using the ONE existing search_native kernel.
+"""28-row native Rust JOINT diagnostic using the ONE existing search_native kernel.
 
 This runner reuses native_joint_two_class.execute; it does not introduce a new
-optimizer or scorer. A whole-build donor talent and a source-bounded gear swap
-are *partial* legality, not rank-wise 51-point or full equip certification.
-Thus measured 5s rows cannot yet be promoted to 30s/300s or PROCESS P7 PASS.
+optimizer or scorer. Python bounds proposals to the declared candidate domain;
+MythicSim Rust alone decides whether a submitted request is valid or supported.
+The 5s matrix is a diagnostic, not a stochastic holdout or PROCESS P7 result.
 """
 from __future__ import annotations
 
@@ -18,12 +18,11 @@ from pathlib import Path
 from native_joint_two_class import execute
 from native_source_donors import load_source_donor_fixtures
 from native_l60_matrix import (
-    HEAL, TANK, ROOT, create_inventory, load_native_item_index,
+    HEAL, TANK, ROOT, create_inventory,
+    current_client_talent_donor_fixtures,
 )
 
 STAGES = (5, 30, 300)
-SOURCE_GAP = "VERIFY_PER_RANK_TALENTS_AND_FULL_EQUIP_RULES"
-
 
 def preflight(profile: str, source: dict, request: dict | None, stage: int,
               previous: dict | None = None) -> tuple[str, str] | None:
@@ -39,16 +38,11 @@ def preflight(profile: str, source: dict, request: dict | None, stage: int,
     if stage != 5:
         if previous is None:
             return ("BLOCKED_PRIOR_STAGE", "Missing completed prior-stage exact profile row")
-        if not previous.get("full_source_legality_certified", False) or (
-            previous.get("status") != "FULL_SOURCE_NATIVE_JOINT"
-        ):
-            return ("BLOCKED_FULL_SOURCE_LEGALITY",
-                    "Previous stage is source-bounded, not rank-wise 51-point and full equip legal")
-        if (previous.get("native_paid", 0) < 1
+        if (previous.get("three_axis_paid", 0) < 1
                 or not previous.get("replay_matches")
                 or previous.get("native_errors", 0) != 0):
             return ("BLOCKED_PRIOR_STAGE",
-                    "Prior stage lacks paid, independently replayed error-free native evidence")
+                    "Prior stage lacks a three-axis native-paid candidate with exact replay and zero execution errors")
     return None
 
 
@@ -80,57 +74,65 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             "native_paid_total": 0,
             "baseline_balanced_score": None,
             "three_axis_paid": 0,
-            "full_source_legality_certified": False,
-            "process_gate_pass": False,
-            "promotable": False,
+            "native_errors": 0,
+            "native_unscored": 0,
+            "native_refusals": 0,
+            "native_invalid": 0,
+            "native_unsupported": 0,
         }
         if block:
             base["status"], base["blocker"] = block
-            base["promotion_blocker"] = block[0]
             rows.append(base)
             continue
         measured = run(profile)
-        if measured.get("process_gate_pass") or measured.get("full_source_legality_certified"):
-            # This source-bounded adapter cannot certify full legal gear/talents.
-            raise ValueError("Unverified full-source legality or P7 certification")
         base.update(measured)
         base.setdefault("baseline_paid", 0)
         base.setdefault("native_paid_total",
                         base.get("native_paid", 0) + base.get("baseline_paid", 0))
-        base["full_source_legality_certified"] = False
-        base["process_gate_pass"] = False
-        base["promotable"] = False
-        base["promotion_blocker"] = "BLOCKED_FULL_SOURCE_LEGALITY"
+        # Strip obsolete proof/gate fields from older measured rows as well.
+        for obsolete in (
+            "full_source_legality_certified", "process_gate_pass",
+            "promotable", "promotion_blocker", "live_gsim_2d_rust_causality",
+        ):
+            base.pop(obsolete, None)
         base["score_scope"] = "BALANCED_NATIVE_SCREEN_ONLY_NOT_HOLDOUT"
         rows.append(base)
     return rows
 
 
-def _cause(row: dict) -> str:
+def _cause(row: dict) -> str | None:
     status = row["status"]
-    if status == "SOURCE_BOUNDED_NATIVE_JOINT_PARTIAL_LEGALITY":
-        return SOURCE_GAP
-    if status == "BLOCKED_FULL_SOURCE_LEGALITY":
-        return SOURCE_GAP
+    if status == "NATIVE_JOINT_PAID" and row.get("replay_matches"):
+        return None
     if status.startswith("BLOCKED_OBJECTIVE"):
         return "VERIFY_NATIVE_HPS_TPS_OBJECTIVE"
     if status == "BLOCKED_SPEC_IDENTITY":
         return "VERIFY_DISCIPLINE_FIXTURE_IDENTITY"
-    if status == "BLOCKED_SOURCE_LEGALITY":
+    if status == "BLOCKED_CANDIDATE_DOMAIN":
         detail = str(row.get("blocker") or "")
         if detail.startswith("BLOCKED_GEAR_POOL:"):
             return "SOURCE_GEAR_POOL_MISSING"
         if detail.startswith("BLOCKED_TALENTS:"):
             return "SOURCE_TALENT_DONORS_MISSING"
-        if "talent allocation" in detail or "talent encoding" in detail:
-            return "SOURCE_TALENT_ENCODING_INVALID"
-        return "INVESTIGATE_SOURCE_LEGALITY"
-    if status == "BLOCKED_NO_PAID_THREE_AXIS_JOINT":
-        return "VERIFY_SOURCE_GEAR_TALENTS_APL"
+        return "INVESTIGATE_CANDIDATE_DOMAIN"
+    if status == "BLOCKED_NATIVE_REFUSALS":
+        return "NATIVE_CANDIDATE_REFUSALS"
+    if status == "BLOCKED_NATIVE_UNSCORED":
+        return "NATIVE_SCORE_UNAVAILABLE"
+    if status in {"BLOCKED_NATIVE_EXECUTION_ERROR", "NATIVE_JOINT_PAID_WITH_EXECUTION_ERRORS"}:
+        return "NATIVE_EXECUTION_ERRORS"
+    if status == "BLOCKED_NO_NATIVE_ACCEPTED_THREE_AXIS_CANDIDATE":
+        if row.get("native_refusals", 0):
+            return "NATIVE_CANDIDATE_REFUSALS"
+        if row.get("native_errors", 0):
+            return "NATIVE_EXECUTION_ERRORS"
+        if row.get("native_unscored", 0):
+            return "NATIVE_SCORE_UNAVAILABLE"
+        return "NO_NATIVE_ACCEPTED_THREE_AXIS_CANDIDATE"
     if status == "BLOCKED_SOURCE":
         return "PROVIDE_EXACT_NATIVE_REQUEST"
     if status == "BLOCKED_PRIOR_STAGE":
-        return "PROVIDE_PRIOR_STAGE_PAID_REPLAY"
+        return "PROVIDE_PRIOR_STAGE_NATIVE_PAID_REPLAY"
     if status == "BLOCKED_NATIVE_REPLAY_MISMATCH":
         return "REPRODUCE_EXACT_NATIVE_WINNER"
     return "INVESTIGATE_" + status
@@ -140,10 +142,12 @@ def gap_summary(rows: list[dict]) -> list[dict]:
     groups: dict[str, list[dict]] = {}
     for row in rows:
         cause = _cause(row)
+        if cause is None:
+            continue
         groups.setdefault(cause, []).append({
             "profile_id": row["profile_id"],
             "status": row["status"],
-            "blocker": row.get("blocker") or row.get("promotion_blocker"),
+            "blocker": row.get("blocker") or row.get("search_status") or row["status"],
         })
     return [{"cause": cause, "count": len(entries), "rows": entries}
             for cause, entries in sorted(groups.items(), key=lambda kv: -len(kv[1]))]
@@ -194,12 +198,11 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
         "candidate_rng_mode": "balanced",
         "holdout_rng_mode": "stochastic",
         "holdout_status": "NOT_RUN_STAGE_5",
-        "source_scope": "PINNED_NATIVE_SOURCE_BOUNDED_PARTIAL_LEGALITY",
+        "source_scope": "PINNED_NATIVE_CANDIDATE_DOMAIN",
         "source_talent_overrides": [
             {"profile_id": row["profile_id"], **row["talent_override"]}
             for row in rows if row.get("talent_override")
         ],
-        "process_p7_pass": False,
     }
     if donor_inventory is not None:
         donor_manifest = [
@@ -208,6 +211,14 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
                 "source_sha256": item["source_sha256"],
                 "class_name": item["class_name"],
                 "item_count": item["item_count"],
+                "source_type": item.get("source_type", "PINNED_SOURCE_FIXTURE"),
+                "talent_source_repository": item.get("talent_source_repository"),
+                "talent_source_pull_request": item.get("talent_source_pull_request"),
+                "talent_source_commit": item.get("talent_source_commit"),
+                "talent_source_path": item.get("talent_source_path"),
+                "talent_source_blob_sha": item.get("talent_source_blob_sha"),
+                "talent_preset_name": item.get("talent_preset_name"),
+                "composed_over_profile": item.get("composed_over_profile"),
             }
             for item in donor_inventory.get("fixtures", [])
         ]
@@ -217,12 +228,16 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
         provenance["source_donor_corpus"] = {
             "directories": donor_inventory.get("directories", []),
             "loaded_count": len(donor_manifest),
+            "pinned_engine_fixture_count": donor_inventory.get("pinned_engine_fixture_count", len(donor_manifest)),
+            "current_client_preset_donor_count": len(donor_inventory.get("current_client_preset_donors", [])),
+            "current_client_preset_donors": donor_inventory.get("current_client_preset_donors", []),
             "skipped_count": len(donor_inventory.get("skipped", [])),
             "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
             "skipped_sources": donor_inventory.get("skipped", []),
         }
     for row in rows:
         row.setdefault("baseline_paid", 0)
+        row.setdefault("native_unscored", 0)
         row.setdefault("native_paid_total",
                        row.get("native_paid", 0) + row.get("baseline_paid", 0))
         row["repo_git_sha"] = repo_sha
@@ -232,17 +247,18 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
     (out / "matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
     (out / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
     (out / "gaps.json").write_text(json.dumps(gap_summary(rows), indent=2) + "\n")
-    lines = ["# Native Rust L60 source-bounded JOINT " + str(stage) + "s",
-             "", "Not full legal JOINT, not stochastic holdout, not PROCESS P7.",
-             "", "| Profile | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Gap |",
-             "|---|---|---:|---:|---:|---:|---:|---|"]
+    lines = ["# Native Rust L60 JOINT " + str(stage) + "s diagnostic",
+             "", "Balanced native screen only; no stochastic holdout or PROCESS P7 claim.",
+             "", "| Profile | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Unscored | Outcome / blocker |",
+             "|---|---|---:|---:|---:|---:|---:|---:|---|"]
     for r in rows:
         def esc(value):
             return str(value if value is not None else "—").replace("|", "\\|").replace("\n", " ")
         lines.append("| " + " | ".join(map(esc, (
             r["profile_id"], r["status"], r.get("baseline_balanced_score"),
             r.get("best_balanced_screen"), r["native_paid"], r.get("baseline_paid", 0),
-            r["three_axis_paid"], r.get("blocker") or r.get("promotion_blocker"),
+            r["three_axis_paid"], r.get("native_unscored", 0),
+            r.get("blocker") or r.get("search_status") or r["status"],
         ))) + " |")
     (out / "matrix.md").write_text("\n".join(lines) + "\n")
 
@@ -265,15 +281,29 @@ def main() -> None:
         ap.error("30/300s requires prior stage matrix.json")
     inventory = create_inventory(ROOT / "config/validation/checkpoint_148.json",
                                  args.engine_src)
-    native_items = load_native_item_index(args.engine_src)
     donor_inventory = load_source_donor_fixtures(args.engine_src)
+    donor_inventory["pinned_engine_fixture_count"] = len(donor_inventory["fixtures"])
+    preset_donors = current_client_talent_donor_fixtures(inventory)
+    donor_inventory["current_client_preset_donors"] = [
+        {
+            key: donor[key]
+            for key in (
+                "source_path", "source_sha256", "talent_preset_name",
+                "talent_string", "composed_over_profile",
+                "talent_source_commit", "talent_source_blob_sha",
+                "talent_source_url",
+            )
+        }
+        for donor in preset_donors
+    ]
+    donor_inventory["fixtures"] = donor_inventory["fixtures"] + preset_donors
     donor_fixtures = donor_inventory["fixtures"]
     previous = ({r["profile_id"]: r for r in json.loads(args.prior.read_text())}
                 if args.prior else None)
 
     def pay_native(profile: str) -> dict:
         return execute(
-            profile, inventory, native_items,
+            profile, inventory,
             binary=args.binary, engine_src=args.engine_src,
             seconds=float(args.stage), iterations=args.iterations,
             seed=args.seed + next(i for i, (r, _) in enumerate(inventory)
@@ -292,8 +322,13 @@ def main() -> None:
                       "search_native_paid": sum(r["native_paid"] for r in rows),
                       "native_paid_total": sum(r.get("native_paid_total", r["native_paid"]) for r in rows),
                       "three_axis_paid": sum(r["three_axis_paid"] for r in rows),
+                      "native_refusals": sum(r.get("native_refusals", 0) for r in rows),
+                      "native_invalid": sum(r.get("native_invalid", 0) for r in rows),
+                      "native_unsupported": sum(r.get("native_unsupported", 0) for r in rows),
+                      "native_errors": sum(r.get("native_errors", 0) for r in rows),
+                      "native_unscored": sum(r.get("native_unscored", 0) for r in rows),
                       "source_donor_fixtures": len(donor_fixtures),
-                      "promotable": sum(bool(r["promotable"]) for r in rows)},
+                      "current_client_preset_donors": len(preset_donors)},
                      sort_keys=True), flush=True)
 
 

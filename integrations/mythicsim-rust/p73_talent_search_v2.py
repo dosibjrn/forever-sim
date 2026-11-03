@@ -5,9 +5,11 @@ This is a native-Rust talent discovery diagnostic. It does not itself establish
 live gsim 2D ↔ Rust causality or certify a PROCESS P7.3 gate.
 """
 from __future__ import annotations
-import argparse, copy, hashlib, json, math, random, subprocess, sys, tempfile, time
+import argparse, copy, hashlib, json, math, random, subprocess, sys, time
 from pathlib import Path
 from talent_schema_druid import TREES,LOOKUP,parse,encode,points,legal_add,validate
+from native_matrix import NativeCandidateRefusal
+from native_executor import NativeExecutionError, NativeScoreExtractionError, dps, run
 
 REFERENCE_DPS=728.1936126415858
 
@@ -81,59 +83,6 @@ def edit_neighbors(elite,rng):
         if validate(out) and out!=elite:return out
     return random_build(rng,elite)
 
-def dps(out):
-    return float(out['result']['raidMetrics']['dps']['avg'])
-
-
-class NativeScoreExtractionError(RuntimeError):
-    """Native completed and wrote JSON, but it did not contain a usable DPS mean."""
-
-    def __init__(self, cause, *, raw_response, elapsed_s, request_sha256):
-        super().__init__(
-            "Native response has no usable result.raidMetrics.dps.avg: " + str(cause)
-        )
-        self.raw_response = raw_response
-        self.elapsed_s = elapsed_s
-        self.request_sha256 = request_sha256
-
-
-def run(binary,req,iterations,seed,rng_mode,deadline):
-    remaining=deadline-time.monotonic()
-    if remaining<=0.05:raise TimeoutError('No remaining time before native execution')
-    payload=copy.deepcopy(req)
-    payload['simOptions']['iterations']=iterations
-    payload['simOptions']['randomSeed']=str(seed)
-    with tempfile.TemporaryDirectory() as d:
-        inp=Path(d)/'req.json'; out=Path(d)/'out.json'
-        inp.write_text(json.dumps(payload,separators=(',',':')))
-        st=time.monotonic()
-        res=subprocess.run([str(binary),'sim','--request',str(inp),'--outfile',str(out),'--gate','--rng-mode',rng_mode],
-                           stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
-                           timeout=max(0.001,deadline-time.monotonic()))
-        if res.returncode!=0 or not out.exists():
-            raise RuntimeError(
-                "native Rust failed "
-                f"(returncode={res.returncode}, output_exists={out.exists()}): "
-                f"stdout={(res.stdout or '')[-700:]!r}; "
-                f"stderr={(res.stderr or '')[-700:]!r}"
-            )
-        output=json.loads(out.read_text())
-    elapsed=round(time.monotonic()-st,6)
-    request_sha=sha(payload)
-    try:
-        score=dps(output)
-    except (KeyError, TypeError, ValueError, OverflowError) as exc:
-        raise NativeScoreExtractionError(
-            exc, raw_response=output, elapsed_s=elapsed,
-            request_sha256=request_sha,
-        ) from exc
-    if not math.isfinite(score):
-        raise NativeScoreExtractionError(
-            "result.raidMetrics.dps.avg is non-finite",
-            raw_response=output, elapsed_s=elapsed,
-            request_sha256=request_sha,
-        )
-    return score,output,elapsed,request_sha
 
 def main():
     pa=argparse.ArgumentParser()

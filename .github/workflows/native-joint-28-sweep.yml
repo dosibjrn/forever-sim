@@ -14,6 +14,7 @@ on:
       - integrations/mythicsim-rust/native_joint_composition.py
       - integrations/mythicsim-rust/native_gear_adapter.py
       - integrations/mythicsim-rust/native_l60_matrix.py
+      - integrations/mythicsim-rust/native_executor.py
       - integrations/mythicsim-rust/p73_talent_search_v2.py
       - integrations/mythicsim-rust/apl_mutation.py
       - integrations/mythicsim-rust/port_native_typed_rng.py
