@@ -64,8 +64,10 @@ def test_historical_p1_gameir_admission_toolchain_is_retired():
         "tests/test_wf377_mage_spellbook_reconciliation.py",
         "tests/gates/test_wf333_checkpoint_p1_contract.py",
     )
+    workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(encoding="utf-8")
     for relative in retired:
         assert not (ROOT / relative).exists(), relative
+        assert relative not in workflow, f"retired path remains in maintenance workflow: {relative}"
     # Keep the actual production P1 entrypoint and the still-live P2 caller.
     assert (ROOT / "tools/wf_gate_p1_live.py").is_file()
     assert (ROOT / "src/game/data/forever/source_checkpoint_p2.py").is_file()
