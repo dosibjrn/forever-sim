@@ -1,6 +1,8 @@
 """Fail-closed and idempotency tests for the selected-Rust paid-recovery port."""
 import importlib.util
 from pathlib import Path
+import port_native_early_retarget as early_retarget
+import port_native_persistent_target as persistent_target
 
 spec = importlib.util.spec_from_file_location(
     "native_paid_recovery_port",
@@ -95,3 +97,45 @@ for broken in (FIGHT.replace("let mut windows = Vec::with_capacity(target_count)
         raise AssertionError("RUST_NATIVE_PAID_RECOVERY_FIGHT_MUST_FAIL_CLOSED")
 
 print("RUST_NATIVE_PAID_RECOVERY_PORT_IDEMPOTENT_AND_FAIL_CLOSED")
+
+# The paid-recovery port changes the early-retarget clock test. The earlier
+# persistent-target port must still accept this exact composed descendant on
+# the second source-port pass, while rejecting any partial/drifted extension.
+source = FIGHT.replace(
+    early_retarget.TEST_MARKER, "fn fixture_clock_boundary()"
+).replace(
+    port.FIGHT_CLOCK_TEST_OLD,
+    "        assert!(!fight.accepts_next_target_clock(cap + 2, cap + 2_000_000, true));",
+)
+method_anchor = "    /// Go " + chr(96) + "Simulation.reset" + chr(96) + " and " + chr(96) + "Environment.reset" + chr(96) + ".\n"
+source += (
+    "\n" + persistent_target.FIGHT_METHOD
+    + method_anchor
+    + persistent_target.FIGHT_TEST.rstrip("\n") + "\n"
+)
+source = early_retarget.port_source(source)
+source = port.port_fight(source)
+method_marker = "    pub(crate) fn begin_next_target(&mut self"
+method_new = persistent_target.FIGHT_METHOD + method_anchor
+assert persistent_target.replace_once(
+    source, method_anchor, method_new, method_marker
+) == source
+
+test_anchor = "mod tests {\n    use super::{Mp5Path, Side, DEFENDERS, MAX_TARGETS};"
+test_new = test_anchor + "\n\n" + persistent_target.FIGHT_TEST.rstrip("\n")
+test_marker = "    fn native_persistent_next_target_retains_actor_and_native_queue()"
+assert persistent_target.replace_once(
+    source, test_anchor, test_new, test_marker
+) == source
+
+broken = source.replace(port.FIGHT_CLOCK_TEST_NEW, "        assert!(true);", 1)
+try:
+    persistent_target.replace_once(
+        broken, method_anchor, method_new, method_marker
+    )
+except ValueError:
+    pass
+else:
+    raise AssertionError("PERSISTENT_TARGET_PORT_MUST_REJECT_PAID_RECOVERY_DRIFT")
+
+print("RUST_PERSISTENT_TARGET_PORT_ACCEPTS_EXACT_PAID_RECOVERY_DESCENDANT")
