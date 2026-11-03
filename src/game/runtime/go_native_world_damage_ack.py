@@ -137,6 +137,8 @@ class GsimNativeDamageWorldApplier:
         damage = 0.0
         validated = []
         for ordinal, kind, event in ordered:
+            if ordinal != last_event_id + 1:
+                raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_EVENT_ID_GAP")
             event_id = event["event_id"]
             timestamp = event.get("native_time_ns")
             current_native_target = (
@@ -150,8 +152,7 @@ class GsimNativeDamageWorldApplier:
             source_action_id = event.get("source_action_id")
             value = event.get("damage", 0.0)
             effect_kind = event.get("effect_kind", kind)
-            if (ordinal != last_event_id + 1
-                    or type(timestamp) is not int
+            if (type(timestamp) is not int
                     or (timestamp < 0 and (not first_precombat_boundary or kind != "damage"))
                     or timestamp < last_native_time
                     or (timestamp < self._last_world_tick_ns and not first_precombat_boundary)
