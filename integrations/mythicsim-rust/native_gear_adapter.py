@@ -34,7 +34,10 @@ class NativeGearAdapter:
     is valid, invalid, or unsupported.
     """
 
-    def __init__(self, class_key: str, reference: dict, fixtures: list[dict], items: dict[int, dict]):
+    def __init__(
+        self, class_key: str, reference: dict, fixtures: list[dict],
+        items: dict[int, dict] | None = None,
+    ):
         self.class_key = class_key
         self.reference = copy.deepcopy(reference)
         # Retained as a compatibility argument for existing callers only.
