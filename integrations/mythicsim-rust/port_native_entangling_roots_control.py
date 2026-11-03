@@ -50,6 +50,14 @@ AGENT_PATCHES = [
         "APPLY",
     ),
     (
+        "        // Native-only Forever spell: source data owns base tick numbers, not a\\n"
+        "        // Python or Go copy. Root/break and real 2D CC remain unimplemented.\\n",
+        "        // Native-only Forever spell: source data owns base tick numbers, not a\\n"
+        "        // Python or Go copy. Root lifetime is source-native and ACKed by gsim;\\n"
+        "        // damage-break probability remains a separate native slice.\\n",
+        "ROOT_COMMENT",
+    ),
+    (
         "        if behavior == DruidSpell::InsectSwarm {\n"
         "            let side = fight.dots[dot].side;\n"
         "            insect_swarm::on_dot_gain(fight, fight.agent.insect_swarm_debuff, side);\n"
