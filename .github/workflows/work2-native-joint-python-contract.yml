@@ -7,6 +7,8 @@ on:
     paths:
       - .github/workflows/work2-native-joint-python-contract.yml
       - integrations/mythicsim-rust/native_joint_two_class.py
+      - integrations/mythicsim-rust/native_executor.py
+      - integrations/mythicsim-rust/p73_talent_search_v2.py
       - integrations/mythicsim-rust/native_joint_composition.py
       - integrations/mythicsim-rust/native_source_donors.py
       - integrations/mythicsim-rust/tests/test_native_joint_two_class.py
