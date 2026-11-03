@@ -1549,6 +1549,92 @@ class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
             self.assertEqual([source_entry], preserved)
             self.assertEqual(condition, preserved[0]["action"]["condition"])
 
+    def test_hps_autocast_other_cooldowns_directive_survives_cold_and_drop(self):
+        condition = {
+            "not": {
+                "val": {
+                    "auraIsActive": {
+                        "auraId": {"spellId": 10463},
+                    }
+                }
+            }
+        }
+        cooldown_directive = {"action": {"autocastOtherCooldowns": {}}}
+        guarded_heal = {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": 10463},
+                    "target": {"type": "Self"},
+                },
+                "condition": copy.deepcopy(condition),
+            }
+        }
+        utility_cast = {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": 10623},
+                    "target": {"type": "Self"},
+                }
+            }
+        }
+        fallback = {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": 5185},
+                    "target": {"type": "Self"},
+                }
+            }
+        }
+        source_actions = [
+            cooldown_directive, guarded_heal, utility_cast, fallback,
+        ]
+
+        class OmitDirectiveColdRng:
+            def randint(self, low, high):
+                return 2
+
+            def sample(self, population, count):
+                if len(population) != 4 or count != 2:
+                    raise AssertionError("expected a two-entry sample from four source actions")
+                return [copy.deepcopy(guarded_heal), copy.deepcopy(fallback)]
+
+            def shuffle(self, values):
+                pass
+
+        cold = mutate_apl(
+            None, source_actions, OmitDirectiveColdRng(),
+            cold=True, preserve_source_conditions=True,
+        )
+
+        class DropFirstActionRng:
+            def choices(self, modes, weights=None):
+                return ["drop_action"]
+
+            def randrange(self, stop):
+                return 0  # deterministically drop the source directive
+
+        mutated = mutate_apl(
+            source_actions, source_actions, DropFirstActionRng(),
+            preserve_source_conditions=True,
+        )
+
+        for candidate in (cold, mutated):
+            self.assertEqual(
+                [cooldown_directive],
+                [
+                    entry for entry in candidate
+                    if "autocastOtherCooldowns" in entry.get("action", {})
+                ],
+            )
+            self.assertIn(guarded_heal, candidate)
+            preserved = next(
+                entry for entry in candidate
+                if entry.get("action", {}).get("castSpell", {})
+                .get("spellId", {}).get("spellId") == 10463
+            )
+            self.assertEqual(condition, preserved["action"]["condition"])
+
+
     def test_profile_role_selects_the_matching_native_objective(self):
         self.assertEqual("HPS", joint.objective_for_profile("druid/restoration"))
         self.assertEqual("HPS", joint.objective_for_profile("priest/holy"))
