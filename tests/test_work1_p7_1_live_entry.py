@@ -403,12 +403,23 @@ def run(binary, request, *, distance, iterations, rng_mode):
             "per_iteration": [{"iteration_index": i, "duration_s": 120.0,
                                "world_dps": 730.0, "world_applied_damage": 87600.0}
                               for i in range(iterations)]}
+def run_range_perturbation_pair(binary, request):
+    return {
+        "native_ack_chain_verified": True,
+        "source_request_raw_sha256": hashlib.sha256(request.read_bytes()).hexdigest(),
+        "control_post_switch_direct_action_events": 47,
+        "perturbed_post_switch_direct_action_events": 1,
+    }
 """)
     from tools.wf_gate import _run_live_gate
     result = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.1", "")
     assert result["status"] == "PASS"
     assert result["reasons"] == []
     assert result["p7_1_1_reference_pinned"] is True
+    assert result["p7_1_world_range_causality_verified"] is True
+    assert result["world_range_perturbation"]["native_ack_chain_verified"] is True
+    assert result["world_range_perturbation"]["source_request_raw_sha256"] == (
+        hashlib.sha256(request.read_bytes()).hexdigest())
     assert result["iterations"] == 1000
     assert result["saved_source_iterations"] == 7
     assert result["runtime_proof"]["executed"] is True
