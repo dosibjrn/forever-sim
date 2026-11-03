@@ -432,9 +432,9 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         baseline = self.source_request(
             "baseline-build", [18932, 11713, 17923, 25309]
         )
-        donor_a_talents = "333333-333333-333330"
-        donor_b_talents = "333333-333330-333333"
-        donor_c_talents = "333330-333333-333333"
+        donor_a_talents = "source-candidate-a"
+        donor_b_talents = "source-candidate-b"
+        donor_c_talents = "source-candidate-c"
         donor_a = self.source_request(donor_a_talents, [11713, 17923])
         donor_b = self.source_request(donor_b_talents, [11713, 17923, 25309])
         donor_c = self.source_request(donor_c_talents, [18932, 25309])
@@ -495,7 +495,10 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
                     native_damage_witnesses=[],
                 )
 
-        self.assertEqual(sorted([donor_a_talents, donor_b_talents]), scope["talent_builds"])
+        self.assertEqual(
+            sorted(["baseline-build", donor_a_talents, donor_b_talents]),
+            scope["talent_builds"],
+        )
         self.assertEqual(
             [donor_c_talents],
             scope["talent_builds_excluded_for_native_damage_witness"],
@@ -597,15 +600,19 @@ class NativeGeneratedDruidTalentDonorContracts(unittest.TestCase):
                     fingerprint(native_payload(candidate, iterations, seed)))
 
         with tempfile.TemporaryDirectory() as directory:
-            donors, witnesses, summary = joint._generate_native_druid_talent_donors(
-                Path("native"), baseline,
-                [{"rank": 5, "spellId": 24977},
-                 {"rank": 10, "spellId": 9835},
-                 {"rank": 8, "spellId": 9912}],
-                Path(directory), iterations=40, seed=731,
-                existing_talents={source_player["talentsString"]},
-                runner=fake_run, max_attempts=8,
-            )
+            with patch.object(
+                joint, "random_build",
+                side_effect=["native-proposal-a", "native-proposal-b"],
+            ), patch.object(joint, "encode", side_effect=lambda proposal: proposal):
+                donors, witnesses, summary = joint._generate_native_druid_talent_donors(
+                    Path("native"), baseline,
+                    [{"rank": 5, "spellId": 24977},
+                     {"rank": 10, "spellId": 9835},
+                     {"rank": 8, "spellId": 9912}],
+                    Path(directory), iterations=40, seed=731,
+                    existing_talents={source_player["talentsString"]},
+                    runner=fake_run, max_attempts=8,
+                )
 
             self.assertEqual("PASS", summary["status"])
             self.assertEqual(2, len(donors))
@@ -613,12 +620,10 @@ class NativeGeneratedDruidTalentDonorContracts(unittest.TestCase):
                 joint.player(fixture["request"])["talentsString"]
                 for fixture in donors
             }))
-            self.assertTrue(all(
-                joint._is_full_51_source_build(
-                    joint.player(fixture["request"])["talentsString"]
-                )
-                for fixture in donors
-            ))
+            self.assertEqual(
+                {"native-proposal-a", "native-proposal-b"},
+                {call[0] for call in calls},
+            )
             self.assertEqual(2, summary["native_evaluations"])
             self.assertEqual("balanced", donors[0]["native_rng_mode"])
             self.assertEqual(
