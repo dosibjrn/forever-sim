@@ -74,7 +74,7 @@ def port(source: str) -> str:
     # Insert AFTER the already published persistent-next-target regression.
     # Its source port checks that its entire original test block stays intact
     # on the second idempotent application.
-    anchor = "    /// Go adds a bonus to the raw stats and takes it away again: 77 plus Mana Tide Totem's\\n"
+    anchor = "    /// Go adds a bonus to the raw stats and takes it away again: 77 plus Mana Tide Totem's\n"
     if source.count(anchor) != 1:
         raise ValueError("native Rust post-persistence test anchor missing")
     return source.replace(anchor, TEST + anchor, 1)
