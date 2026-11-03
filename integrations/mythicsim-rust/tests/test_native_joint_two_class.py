@@ -1007,6 +1007,42 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
         candidate_player["rotation"]["priorityList"] = generated
         self.assertTrue(adapter.legal(candidate))
 
+        # A candidate can be reduced to one retained source action before an
+        # APL mutation. That cold fallback must use the same condition-preserving
+        # source-entry mode as the ordinary HPS/TPS cold path.
+        candidate_player["rotation"]["priorityList"] = [copy.deepcopy(source_entry)]
+        self.assertTrue(adapter.legal(candidate))
+
+        class AplOnlyRng:
+            def random(self):
+                return 0.0
+
+            def sample(self, population, k):
+                self.assertEqual(("gear", "talents", "apl"), tuple(population))
+                self.assertEqual(1, k)
+                return ["apl"]
+
+        def preserve_cold(_current, source_actions, _rng, cold=False,
+                          preserve_source_conditions=False):
+            self.assertEqual([source_entry, utility_entry], source_actions)
+            self.assertTrue(cold)
+            self.assertTrue(preserve_source_conditions)
+            return [copy.deepcopy(utility_entry)]
+
+        with patch.object(joint, "mutate_apl", side_effect=preserve_cold):
+            mutated = adapter.mutate(candidate, AplOnlyRng())
+        self.assertIn(source_entry, mutated)
+        self.assertEqual(
+            condition,
+            next(
+                entry["action"]["condition"]
+                for entry in mutated
+                if entry.get("action", {}).get("castSpell", {}).get("spellId", {}).get("spellId") == 10463
+            ),
+        )
+        candidate_player["rotation"]["priorityList"] = mutated
+        self.assertTrue(adapter.legal(candidate))
+
     def test_native_verified_cross_build_apl_enters_selected_talent_domain(self):
         baseline = request()
         baseline_player = baseline["raid"]["parties"][0]["players"][0]
