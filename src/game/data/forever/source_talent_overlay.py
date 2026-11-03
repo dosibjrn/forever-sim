@@ -9,14 +9,17 @@ from dataclasses import replace
 import json
 import sqlite3
 
-from src.game.model.ir import TalentDefinition, TalentModifier, TalentRankDefinition
-from .sqlite_talents import DEFAULT_DB, _slug, load_sqlite_talents
-from .source_db_scope import active_ability_db
+from src.shared.identifiers import source_slug as _slug
+from .source_db_scope import DEFAULT_DB, active_ability_db
 
 
 def source_enrich_indexed_talents(ir):
     if ir is None:
         return None
+    # Only the real legacy IR enrichment path requires these temporary types.
+    # Source-only imports must not initialize a second game-model compiler.
+    from src.game.model.ir import TalentDefinition, TalentModifier, TalentRankDefinition
+    from .sqlite_talents import load_sqlite_talents
     class_key = str(ir.actor.metadata.get('class_key') or '').lower()
     with sqlite3.connect(active_ability_db(DEFAULT_DB)) as conn:
         indexed = conn.execute('''SELECT spell_id,name,source_url
