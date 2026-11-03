@@ -205,7 +205,7 @@ def _p74_early_rerank_due(elapsed_s, reranked_count):
 
 def _paid_gear_stochastic_finalist(production, binary, request: dict, distance: float, *,
                                     seeds=("1947004", "1947047")):
-    """Paid independent stochastic seed pairs reduce 24-fight winner's curse.
+    """Paid 24-fight balanced native+2D finalist comparisons.
 
     The old single 24-fight seed selected a 671.34 DPS frozen winner in the
     completed 2026-11-02 P7.4 run (versus the prior 706.29 DPS screen policy).
@@ -654,7 +654,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "winner_live_dps": score,
         "winner_screen_dps": winner_screen_dps,
         "winner_selection": winner_selection,
-        "paid_stochastic_finalists": len(reranked),
+        "paid_stochastic_finalists": len(reranked),  # legacy schema alias
+        "paid_balanced_finalists": len(reranked),
         "paid_stochastic_confirmed_finalists": len(confirmed),
         "paid_stochastic_deep_confirmed_finalists": len(deep_confirmed),
         "early_stochastic_finalists_paid": early_stochastic_finalists_paid,
