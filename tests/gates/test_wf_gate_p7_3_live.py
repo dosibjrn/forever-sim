@@ -87,6 +87,9 @@ def test_full_p73_freezes_a_unique_talent_winner_before_stochastic_holdout(
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
     assert json.loads(calls[0][3]) == json.loads(calls[3][3])
     assert report["cold_unique_source_requests"] == 1
+    assert report["winner_selection"] == "best_balanced_live_screen"
+    assert report["paid_stochastic_finalists"] == 0
+    assert report["stochastic_parent_proposals"] == 0
     # Real gate receipt exposes which talent build was frozen; a request
     # hash alone cannot distinguish unchanged-effective-rank hypotheses.
     assert report["source_original_talents"] == "old"
@@ -230,7 +233,7 @@ def test_p73_paid_elite_archive_caps_source_pool_to_top_18():
     assert _paid_elite_choice(elites, PickLast(), 1)["rank"] == 17
 
 
-def test_p73_paid_stochastic_finalist_uses_real_paired_score_and_separate_seed(
+
         monkeypatch, tmp_path):
     """The independent paid re-rank must use native+2D, not screen-only DPS."""
     source = _reference()
