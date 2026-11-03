@@ -355,6 +355,15 @@ def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
     candidate_player["rotation"] = copy.deepcopy(rotation)
     return True
 
+def _p75_crossover_rng(proposal_index: int) -> random.Random:
+    """Stable per-proposal randomness isolated from the candidate search RNG.
+
+    Donor-pool size and crossover shuffle/sample calls must not advance the
+    primary RNG used by later candidate generation.
+    """
+    return random.Random(1_000_000 + proposal_index)
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.5")
@@ -509,22 +518,23 @@ def run_live(root: Path, class_key: str, level: int, *,
                         base, source, validator, pools, rng,
                         elite=elite, enchant_pools=enchant_pools,
                         repair_axes=repair_axes)
+                    crossover_rng = _p75_crossover_rng(proposals)
                     if crossover:
                         _paid_p75_crossover(
                             candidate, elite, balanced_finalists,
-                            balanced_elites, source, rng)
+                            balanced_elites, source, crossover_rng)
                     elif apl_crossover:
                         _paid_p75_apl_crossover(
                             candidate, elite, balanced_finalists,
-                            balanced_elites, source, rng)
+                            balanced_elites, source, crossover_rng)
                     elif gear_crossover:
                         _paid_p75_gear_block_crossover(
                             candidate, elite, balanced_finalists,
-                            balanced_elites, source, rng)
+                            balanced_elites, source, crossover_rng)
                     elif gear_apl_crossover:
                         _paid_p75_gear_apl_crossover(
                             candidate, elite, balanced_finalists,
-                            balanced_elites, source, rng)
+                            balanced_elites, source, crossover_rng)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
