@@ -1,4 +1,4 @@
-"""The generic priority-policy optimizer must remain game-model independent."""
+"""The generic optimizer components must remain game-model independent."""
 
 import subprocess
 import sys
@@ -82,9 +82,53 @@ from src.game.policy_search import (
     PolicySearchResult as LegacyPolicySearchResult,
     search_priority_policy as legacy_search_priority_policy,
 )
-assert legacy_search_priority_policy is search_priority_policy
+assert legacy_search_priority_search is search_priority_search
 assert LegacyPolicySearchResult is PolicySearchResult
 assert PolicyLike is not None and PolicyRuleLike is not None
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", source],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_optimizer_evaluation_cache_is_game_independent_and_caches_negative_results():
+    source = r"""
+import sys
+from src.optimization.evaluation_cache import EvaluationCache
+
+assert not any(name == "src.game" or name.startswith("src.game.") for name in sys.modules)
+
+calls = []
+cache = EvaluationCache()
+
+def expensive_evaluate(candidate):
+    calls.append(candidate)
+    return None, {"reason": "unsupported"}
+
+score1, detail1, hit1 = cache.evaluate(
+    "semantic-key", "candidate-a", expensive_evaluate=expensive_evaluate,
+)
+detail1["reason"] = "mutated"
+score2, detail2, hit2 = cache.evaluate(
+    "semantic-key", "candidate-b", expensive_evaluate=expensive_evaluate,
+)
+assert score1 is None and score2 is None
+assert hit1 is False and hit2 is True
+assert calls == ["candidate-a"]
+assert detail2 == {"reason": "unsupported"}
+assert cache.as_dict() == {
+    "requests": 2,
+    "expensive_evaluations": 1,
+    "cache_hits": 1,
+    "cache_entries": 1,
+    "expensive_evaluations_avoided": 1,
+}
 """
     completed = subprocess.run(
         [sys.executable, "-c", source],
