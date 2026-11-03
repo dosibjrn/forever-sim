@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import sqlite3
 
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 
 
 def repair_queue(*, class_key: str, level: int, db_path: Path | None = None) -> dict:

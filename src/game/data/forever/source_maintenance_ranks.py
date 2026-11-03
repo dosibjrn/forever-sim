@@ -6,8 +6,7 @@ ability values; no inference of trainer acquisition or other spell effects.
 from __future__ import annotations
 import json,re,sqlite3
 from pathlib import Path
-from .sqlite_talents import DEFAULT_DB
-from .source_db_scope import active_ability_db
+from .source_db_scope import DEFAULT_DB, active_ability_db
 
 _THORNS_SHAPE=re.compile(r'^Thorns sprout from the friendly target causing (?P<damage>\d+) (?P<school>[A-Za-z]+) damage to attackers when hit\. Lasts (?P<mins>\d+) min\.$')
 _COST=re.compile(r'^(?P<amount>\d+) (?P<resource>Mana|Rage|Energy)$')
