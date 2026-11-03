@@ -177,8 +177,8 @@ def prepare_native_request(
     """Call the selected engine's explicit prepare --request CLI.
 
     The result preserves the native PreparedV2 object or its structured
-    refusal. Preparation is not a source-legality proof: the caller must supply
-    a pair already validated against the canonical source facts.
+    refusal. MythicSim alone determines game legality; this client only
+    serializes requests and classifies the selected engine's response.
     """
     binary_path = Path(binary)
     if not binary_path.is_file():
@@ -317,8 +317,8 @@ def run_native_prepare_pair(
     """Return structured selected-Rust PreparedV2 receipts for a rank pair.
 
     This is an execution adapter, not a legality validator or a P2 PASS.
-    Source acquisition, rank legality, point budgets and prerequisites must be
-    proven by the canonical source authority before the pair reaches this API.
+    MythicSim Rust alone determines rank legality, point budgets and
+    prerequisites. This adapter checks only the rank-pair request shape.
     """
     if scenario not in {"balance", "cat"}:
         raise NativeP2ProbeError(f"NATIVE_P2_SCENARIO_UNSUPPORTED:{scenario}")
@@ -379,8 +379,20 @@ def run_native_prepare_pair(
         deadline=deadline,
     )
     if before.get("status") != "PREPARED" or after.get("status") != "PREPARED":
+        # Native refusals are authoritative: never turn an INVALID talent
+        # request or UNSUPPORTED mechanic into a generic missing-evidence
+        # BLOCKED result. Preserve both individual native receipts below.
+        statuses = {before.get("status"), after.get("status")}
+        if not statuses <= {"PREPARED", "BLOCKED", "INVALID", "UNSUPPORTED", "ERROR"}:
+            pair_status = "ERROR"
+        else:
+            pair_status = next(
+                (status for status in ("ERROR", "INVALID", "UNSUPPORTED")
+                 if status in statuses),
+                "BLOCKED",
+            )
         return {
-            "status": "BLOCKED",
+            "status": pair_status,
             "reason": "NATIVE_P2_PREPARE_PAIR_NOT_READY",
             "target_talent_id": target_talent_id,
             "target_rank": int(target_rank),
