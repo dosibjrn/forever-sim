@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 from src.game.model import ActorDefinition, ResourceDefinition, IncomingAttackDefinition, ActionDefinition, DamageEffect
 from src.game.runtime import ActorState, CombatRuntime, TargetState
-from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.scenarios.spaced_pulls import SpacedPullLayout
 
 
 def pack(*, count=2, health=200, monster_health=100, damage=10, enemy_speed=5):
