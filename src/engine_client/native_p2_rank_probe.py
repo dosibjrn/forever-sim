@@ -24,11 +24,9 @@ from .native_candidate_client import (
     prepare_native_request,
 )
 
-# Compatibility name for the retired P2 diagnostic wrapper; active callers
+# Compatibility name for the legacy P2 diagnostic wrapper; active callers
 # import the neutral client directly.
 NativeP2ProbeError = NativeCandidateClientError
-
-
 
 _TREE_ARRAYS = (
     ("balance", "FOREVER_BALANCE"),
