@@ -507,7 +507,9 @@ def main(argv=None) -> int:
                     "source_replay_Tfirst_Tsecond", "source_replay_numeric_saturation",
                     "joint_cold_world_dps", "external_reference_only_floor",
                     "final_required_dps", "source_legal_joint_candidates_paid",
-                    "cold_winner_request_sha256", "cold_candidate_failures"):
+                    "cold_winner_request_sha256",
+                    "selected_balanced_request_sha256",
+                    "cold_candidate_failures"):
             if key in report:
                 record[key] = report[key]
         if gate.startswith("P7."):

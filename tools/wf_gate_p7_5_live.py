@@ -675,7 +675,12 @@ def run_live(root: Path, class_key: str, level: int, *,
             prior["compatible_gates"] if prior is not None else []),
         "accepted_compatible_prior_run_urls": (
             prior["run_urls"] if prior is not None else []),
-        "cold_winner_request_sha256": candidate_sha,
+        # The best cold three-fight screen and the selected paid balanced
+        # finalist can be different builds. Both fingerprints use canonical
+        # JSON; frozen_request_raw_sha256 separately hashes the exact 1,000-
+        # fight request bytes for native↔world provenance.
+        "cold_winner_request_sha256": best[2],
+        "selected_balanced_request_sha256": candidate_sha,
         "frozen_source_build": frozen_source_build,
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
