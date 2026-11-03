@@ -382,7 +382,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    probe_deltas: tuple[float, ...] = (5., 20.),
                                    max_evaluations: int = 4,
                                    schedule_incoming_attacks: bool = True,
-                                   baseline_cache: dict | None = None) -> dict:
+                                   baseline_cache: dict | None = None,
+                                   candidate_records: tuple[dict, ...] = ()) -> dict:
     """Find a *measured* beneficial stat delta on an existing legal policy.
 
     A bounded cold gear search may select a policy that does not use a stat at
@@ -395,7 +396,9 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     policy evaluation is independent of which stat is changed. This is not an
     optimality claim, epsilon, class exception or synthetic simulator. A
     negative first-policy weight remains negative; callers must not use this
-    function to hide it.
+    function to hide it. Search-produced runner-up records are also valid
+    source-derived candidates: replay their exact ordered opening, not only
+    their fallback continuation.
     """
     from src.game.gear import apply_stat_delta
 
@@ -407,10 +410,21 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     attempted_policies = []
     baseline_reused_any = False
     cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
-    for policy in ir.policies:
-        if not policy.provenance:
+    candidates = []
+    for record in candidate_records:
+        if not isinstance(record, dict) or not record.get('fallback'):
             continue
-        cache_key = (*cache_prefix, str(policy.id))
+        policy = _make_policy(
+            ir, record['fallback'],
+            guarded_action=record.get('guarded_action'),
+            guarded_conditions=tuple(PolicyCondition(**c)
+                                     for c in record.get('guarded_conditions', ())))
+        opening_action_ids = tuple(record.get('prefix') or ())
+        candidates.append((policy, opening_action_ids, 'search_candidate'))
+    candidates.extend((policy, (), 'source_ir_policy')
+                      for policy in ir.policies if policy.provenance)
+    for policy, opening_action_ids, candidate_source in candidates:
+        cache_key = (*cache_prefix, str(policy.id), opening_action_ids)
         cached_baseline = (baseline_cache.get(cache_key)
                            if baseline_cache is not None else None)
         policy_baseline_reused = cached_baseline is not None
@@ -424,6 +438,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             try:
                 before, execution, details = _policy_combat_evaluation(
                     ir, level=level, policy_override=policy,
+                    opening_action_ids=opening_action_ids,
                     schedule_incoming_attacks=schedule_incoming_attacks)
             except (ValueError, RuntimeError, EventTransitionBudgetExceeded,
                     ComputeDeadlineExceeded):
@@ -445,6 +460,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 changed = apply_stat_delta(ir, stat, float(delta))
                 after, execution, details = _policy_combat_evaluation(
                     changed, level=level, policy_override=policy,
+                    opening_action_ids=opening_action_ids,
                     schedule_incoming_attacks=schedule_incoming_attacks)
             except (ValueError, RuntimeError, EventTransitionBudgetExceeded,
                     ComputeDeadlineExceeded):
@@ -465,6 +481,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'delta': float(delta), 'paid_evaluations': used,
                     'baseline_reused': policy_baseline_reused,
                     'attempted_policies': attempted_policies,
+                    'candidate_source': candidate_source,
+                    'opening_action_ids': list(opening_action_ids),
                     'source_ir_id': str(ir.id),
                     'engine': 'gsim_CombatRuntime',
                     'method': 'same_source_policy_real_combat_and_recovery_before_after',
