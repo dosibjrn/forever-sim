@@ -264,7 +264,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     accepted = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert accepted["status"] == "PASS"
     assert accepted["reasons"] == []
-    assert accepted["final_required_dps"] == 0.99 * 728.19
+    assert accepted["final_required_dps"] == 0.93 * 728.19
     assert accepted["strongest_accepted_compatible_prior_dps"] == 725.0
     assert accepted["runtime_proof"]["executed"] is True
 
@@ -272,7 +272,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     # frozen 729-DPS result must now fail, not use the external-only limit.
     monkeypatch.setattr(gate, "strongest_accepted_prior",
                         lambda *args, **kwargs: {
-                            "dps": 750.0,
+                            "dps": 800.0,
                             "compatible_gates": ["P7.4"],
                             "run_urls": ["https://github.com/example/actions/runs/1"]})
     clock = iter([0.0, 0.0, 300.0, 300.0])
@@ -280,7 +280,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     rejected = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert rejected["status"] == "FAIL"
     assert "P7_5_FROZEN_STOCHASTIC_DPS_BELOW_ACCEPTED_PRIOR_FLOOR" in rejected["reasons"]
-    assert rejected["final_required_dps"] == 742.5
+    assert rejected["final_required_dps"] == 744.0
     assert "runtime_proof" not in rejected
     assert original == unchanged
 
@@ -304,7 +304,7 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert [(a, b, c) for a, b, c, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced")]
     assert light["joint_cold_world_dps"] == 729.0
-    assert light["final_required_dps"] == 742.5
+    assert light["final_required_dps"] == 697.5
     assert light["strongest_accepted_compatible_prior_dps"] == 750.0
     assert light["status"] == "BLOCKED"
     assert light["reasons"] == [

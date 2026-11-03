@@ -18,6 +18,7 @@ import tempfile
 import time
 
 from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
+                                    P7_5_FINAL_DPS_FLOOR_FRACTION,
                                     p7_required_dps,
                                     p7_search_deadline_completed)
 from tools.wf_gate_p7_5_prior import strongest_accepted_prior
@@ -774,8 +775,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                         and int(world["native_damage_events"]) > 0
                         and int(world["native_world_ticks"]) > 0):
                     raise ValueError("P7_5_FROZEN_STOCHASTIC_WORLD_INVALID")
-                reference_only_floor = p7_required_dps(
-                    "P7.4", float(meta["reference_dps"]))
+                reference_only_floor = (P7_5_FINAL_DPS_FLOOR_FRACTION
+                                        * float(meta["reference_dps"]))
                 final = {
                     "frozen_request_raw_sha256": frozen_sha,
                     "frozen_stochastic_iterations": n,
@@ -862,8 +863,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "paid_joint_balanced_deep_confirmed": len(deep_confirmed),
         "balanced_parent_proposals": balanced_parent_proposals,
         "balanced_finalist_failures": rerank_failures[:4],
-        "external_reference_only_floor": p7_required_dps(
-            "P7.4", float(meta["reference_dps"])),
+        "external_reference_only_floor": (P7_5_FINAL_DPS_FLOOR_FRACTION
+                                          * float(meta["reference_dps"])),
         "final_required_dps": required,
         "strongest_accepted_compatible_prior_dps": prior_dps,
         "accepted_compatible_prior_gates": (

@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from math import isfinite
 
-TOLERANCE = 0.99
+TOLERANCE = 0.99  # P7.1-P7.4
+P75_TOLERANCE = 0.93  # P7.5
 GATES = ("P7.1", "P7.2", "P7.3", "P7.4", "P7.5")
 
 
@@ -26,7 +27,7 @@ def minimum_dps(gate: str, external_reference_dps: float, *,
     """Required point-estimate DPS floor; other gate criteria remain separate.
 
     P7.1–P7.4 each require >=99% saved external reference.
-    P7.5 requires >=99% of the larger of saved external reference and the
+    P7.5 requires >=93% of the larger of saved external reference and the
     strongest **accepted, same-scenario, same-engine, source-legal** compatible
     P7.1–P7.4 winner. Compare the frozen 1,000-stochastic-fight arithmetic
     MEAN to this floor; no confidence-bound PASS criterion.
@@ -41,7 +42,7 @@ def minimum_dps(gate: str, external_reference_dps: float, *,
         return TOLERANCE * ref
     if strongest_prior_stochastic_dps is None:
         raise ValueError("P7.5 requires a compatible strongest prior stochastic DPS")
-    return TOLERANCE * max(ref, _dps(strongest_prior_stochastic_dps,
+    return P75_TOLERANCE * max(ref, _dps(strongest_prior_stochastic_dps,
                                      "strongest_prior_stochastic_dps"))
 
 

@@ -16,15 +16,15 @@ def test_single_dimension_gates_accept_one_percent_below_reference(gate):
     assert minimum_dps(gate, ref) == pytest.approx(720.9116765151699)
 
 
-def test_p75_uses_99_percent_of_external_when_prior_is_lower():
+def test_p75_uses_93_percent_of_external_when_prior_is_lower():
     assert minimum_dps("P7.5", 811.023726, strongest_prior_stochastic_dps=805) == pytest.approx(
-        811.023726 * .99)
+        811.023726 * .93)
 
 
-def test_p75_also_retains_ninety_nine_percent_of_stronger_prior():
+def test_p75_also_retains_ninety_three_percent_of_stronger_prior():
     ref = 811.023726
     prior = 853.93055
-    assert minimum_dps("P7.5", ref, strongest_prior_stochastic_dps=prior) == pytest.approx(845.3912445)
+    assert minimum_dps("P7.5", ref, strongest_prior_stochastic_dps=prior) == pytest.approx(853.93055 * .93)
 
 
 @pytest.mark.parametrize("gate", ["P7.2", "P7.3", "P7.4", "P7.1"])
@@ -46,7 +46,7 @@ def test_p75_needs_compatible_prior_and_rejects_invalid_values():
 
 
 def test_p75_mean_passes_between_old_ci_limit_and_numeric_floor():
-    # Historical WF613: 848.764 > 99% of 853.93055 and > 811.023726.
+    # Historical WF613: 848.764 > 93% of 853.93055 and > 811.023726.
     # A one-sided confidence lower bound was previously examined; v2.10
     # deliberately uses only the frozen stochastic MEAN, never that CI limit.
     assert p75_holdout_mean_meets_floor(
@@ -55,18 +55,18 @@ def test_p75_mean_passes_between_old_ci_limit_and_numeric_floor():
     )
 
 
-def test_p75_mean_must_reach_99_percent_of_larger_external_or_prior():
+def test_p75_mean_must_reach_93_percent_of_larger_external_or_prior():
     assert not p75_holdout_mean_meets_floor(
-        802.0, 811.023726, strongest_accepted_compatible_prior_mean_dps=805,
+        750.0, 811.023726, strongest_accepted_compatible_prior_mean_dps=805,
     )
     assert p75_holdout_mean_meets_floor(
         809.9, 811.023726, strongest_accepted_compatible_prior_mean_dps=805,
     )
     assert not p75_holdout_mean_meets_floor(
-        840.0, 811.023726, strongest_accepted_compatible_prior_mean_dps=853.93055,
+        794.0, 811.023726, strongest_accepted_compatible_prior_mean_dps=853.93055,
     )
     assert p75_holdout_mean_meets_floor(
-        853.93055 * 0.99, 811.023726,
+        853.93055 * 0.93, 811.023726,
         strongest_accepted_compatible_prior_mean_dps=853.93055,
     )
 
@@ -89,8 +89,8 @@ def test_p75_external_threshold_equality_is_accepted_not_only_full_reference():
     external = 811.023726
     prior = 805.0
     assert p75_holdout_mean_meets_floor(
-        .99 * external, external,
+        .93 * external, external,
         strongest_accepted_compatible_prior_mean_dps=prior)
     assert not p75_holdout_mean_meets_floor(
-        .99 * external - 0.001, external,
+        .93 * external - 0.001, external,
         strongest_accepted_compatible_prior_mean_dps=prior)

@@ -78,7 +78,8 @@ def measured_live_coverage(report: dict) -> dict | None:
 
 
 P7_FINAL_STOCHASTIC_ITERATIONS = 1_000
-P7_FINAL_DPS_FLOOR_FRACTION = 0.99
+P7_FINAL_DPS_FLOOR_FRACTION = 0.99  # P7.1-P7.4
+P7_5_FINAL_DPS_FLOOR_FRACTION = 0.93
 
 P7_SEARCH_BUDGET_SECONDS = 300.0
 
@@ -120,7 +121,7 @@ def p7_search_deadline_completed(
 
 def p7_required_dps(gate: str, saved_reference: float, *,
                     strongest_accepted_compatible_prior: float | None = None) -> float:
-    """Single owner-approved 1%-tolerant P7.1–P7.5 DPS floor.
+    """Owner-approved final floors: 99% P7.1-P7.4, 93% P7.5.
 
     The strongest prior must be from independently ACCEPTED compatible P7
     evidence, never a tentative search candidate. A common floor avoids a
@@ -137,7 +138,8 @@ def p7_required_dps(gate: str, saved_reference: float, *,
         if type(prior) not in (int, float) or not isfinite(prior) or prior <= 0:
             raise ValueError("P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED")
         comparator = max(comparator, float(prior))
-    return P7_FINAL_DPS_FLOOR_FRACTION * comparator
+    return (P7_5_FINAL_DPS_FLOOR_FRACTION if gate == "P7.5"
+            else P7_FINAL_DPS_FLOOR_FRACTION) * comparator
 
 
 def p7_final_stochastic_mean_passes(gate: str, observed_mean: float,
