@@ -5,7 +5,7 @@ No runtime module imports this capture: the compiler reads SQLite only.
 from __future__ import annotations
 import json,sqlite3
 from pathlib import Path
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 ROOT=Path(__file__).resolve().parents[1]
 CAPTURE=ROOT/'data/forever/source_captures/wf252_hunter_pet_l10_20_20261011.json'
 
