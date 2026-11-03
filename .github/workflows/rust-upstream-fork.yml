@@ -92,7 +92,7 @@ jobs:
               "FOREVER_RUST_FORK_TOKEN", "who", "actual_parent",
               "git push fork refs/remotes/origin/main:refs/heads/main",
               "check_engine_source", "cargo check --locked",
-              "port_upstream_paladin_typed_rng.py", "git merge --no-ff",
+              "port_upstream_paladin_typed_rng.py", "port_native_talent_layout_api.py", "git merge --no-ff",
               "FORK_ENGINE_SHA",
           ):
               assert required in s, required
@@ -181,7 +181,7 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_improved_roots_rank.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_entangling_roots_dot.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_talent_layout_api.py /tmp/forever-selected-rust
-          second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
+          second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
           test "$first_hash" = "$second_hash"
           python3 integrations/mythicsim-rust/port_native_typed_rng.py /tmp/forever-selected-rust
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
