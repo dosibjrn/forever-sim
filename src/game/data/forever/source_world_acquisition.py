@@ -14,7 +14,7 @@ from pathlib import Path
 import sqlite3
 from typing import Iterable, Mapping
 
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 from .source_acquisition import read_acquisition_evidence
 from .source_acquisition_entities import _typed_listview
 from src.v2.source_sqlite_detail_snapshots import read_verified_spell_detail_snapshot
