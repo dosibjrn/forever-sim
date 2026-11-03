@@ -121,9 +121,9 @@ def test_p7_5_uses_higher_accepted_compatible_holdout_floor():
     r = _real_coupled_p7_dps_report(
         gate="P7.5", score=900., reference=800., prior=1000.)
     m = measured_p7_dps_proximity("P7.5", r)
-    assert m["dps_objective_required"] == 990.
-    assert m["dps_objective_proximity_percent"] == 90.91
-    assert m["dps_objective_pareto_effort_estimate_percent"] == 63.64
+    assert m["dps_objective_required"] == 930.
+    assert m["dps_objective_proximity_percent"] == 96.77
+    assert m["dps_objective_pareto_effort_estimate_percent"] == 87.1
     del r["strongest_accepted_compatible_prior_dps"]
     assert measured_p7_dps_proximity("P7.5", r) is None
 
@@ -137,7 +137,7 @@ def test_unverified_native_only_or_incomplete_p7_cannot_show_score():
     assert measured_p7_dps_proximity("P7.1", r) is None
 
 
-def test_owner_approved_all_five_p7_gates_use_same_one_percent_floor():
+def test_owner_approved_p7_1_to_p7_4_keep_one_percent_floor():
     for gate in ("P7.1", "P7.2", "P7.3", "P7.4"):
         assert p7_required_dps(gate, 1000.) == pytest.approx(990.)
         assert p7_final_stochastic_mean_passes(
@@ -156,17 +156,17 @@ def test_final_requires_1000_original_stochastic_iterations_not_balanced_search(
         "P7.1", 990., 1000., iterations=1000, stochastic=True)
 
 
-def test_p7_5_one_percent_applies_to_both_external_and_best_accepted_prior():
+def test_p7_5_seven_percent_applies_to_both_external_and_best_accepted_prior():
     assert p7_required_dps("P7.5", 1000.,
-        strongest_accepted_compatible_prior=850.) == pytest.approx(990.)
+        strongest_accepted_compatible_prior=850.) == pytest.approx(930.)
     assert p7_required_dps("P7.5", 800.,
-        strongest_accepted_compatible_prior=1000.) == pytest.approx(990.)
+        strongest_accepted_compatible_prior=1000.) == pytest.approx(930.)
     for external, prior in ((1000., 850.), (800., 1000.)):
         assert p7_final_stochastic_mean_passes(
-            "P7.5", 990., external, iterations=1000,
+            "P7.5", 930., external, iterations=1000,
             stochastic=True, strongest_accepted_compatible_prior=prior)
         assert not p7_final_stochastic_mean_passes(
-            "P7.5", 989., external, iterations=1000,
+            "P7.5", 929., external, iterations=1000,
             stochastic=True, strongest_accepted_compatible_prior=prior)
     with pytest.raises(ValueError, match="PRIOR_REQUIRED"):
         p7_required_dps("P7.5", 800.)
@@ -180,7 +180,7 @@ def test_p7_5_actual_joint_dps_visible_without_forged_prior_fraction(monkeypatch
         "reasons": ["P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"],
         "production_engine": "pinned_mythicsim_rust_gsim_2d",
         "joint_cold_world_dps": 512.5,
-        "external_reference_only_floor": 720.9117,
+        "external_reference_only_floor": 677.2201,
         "final_required_dps": None,
         "source_legal_joint_candidates_paid": 2,
     })
@@ -210,7 +210,7 @@ def test_p7_5_cli_receipt_exposes_real_stochastic_final_without_prior_pass(monke
         "source_request_raw_sha256": "pinned-report",
         "native_source_revision": "pinned-rust",
         "joint_cold_world_dps": 607.9683,
-        "external_reference_only_floor": 720.9117,
+        "external_reference_only_floor": 677.2201,
         "source_legal_joint_candidates_paid": 1584,
         "search_wall_s": 300.12,
         "independent_300s_search_completed": True,
