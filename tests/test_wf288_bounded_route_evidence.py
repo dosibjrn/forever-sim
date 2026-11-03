@@ -123,6 +123,26 @@ def test_current_source_fixture_replays_and_ignores_legacy_spell_metadata(tmp_pa
     assert all('route_complete' not in row for row in rows.values())
 
 
+def test_reader_does_not_repeat_source_state_check_after_transition(monkeypatch, tmp_path):
+    from src.v2 import source_bounded_route_evidence as reader
+
+    fixture = current_fixture()
+    checked_levels = []
+    original = reader.validate_level_state
+
+    def count_initial_state_checks(state):
+        checked_levels.append(state.level)
+        return original(state)
+
+    monkeypatch.setattr(reader, 'validate_level_state', count_initial_state_checks)
+    info, rows = staged(tmp_path, fixture)
+    assert info['valid'], info['failures']
+    assert len(rows) == 2
+    # Continuations already validate parent+child through the transition
+    # check; the standalone state check is only needed for the root.
+    assert checked_levels == [10]
+
+
 def test_historical_snapshot_is_rejected_when_talent_database_changes():
     info,rows=checked()
     assert not info['valid'], info['failures']
