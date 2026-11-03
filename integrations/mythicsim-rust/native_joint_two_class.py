@@ -906,7 +906,7 @@ def source_bounded_adapter(
         current_apl = player(candidate_context)["rotation"]["priorityList"]
         for _ in range(8):
             actions = _ensure_native_objective_action(
-                mutate_apl(None, source_actions, rng, cold=True),
+                mutate_apl(None, source_actions, rng, cold=True, preserve_source_conditions=objective != "DPS"),
                 objective_witness_entries_by_talent.get(talent_string, []),
                 rng,
                 objective=objective,
@@ -924,7 +924,7 @@ def source_bounded_adapter(
         if len(current) < 2:
             updated = mutate_apl(None, source_actions, rng, cold=True)
         else:
-            updated = mutate_apl(current, source_actions, rng)
+            updated = mutate_apl(current, source_actions, rng, preserve_source_conditions=objective != "DPS")
         return _ensure_native_objective_action(
             updated,
             objective_witness_entries_by_talent.get(talent_string, []),

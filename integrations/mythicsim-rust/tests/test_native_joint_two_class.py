@@ -931,7 +931,10 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
                 "condition": copy.deepcopy(condition),
             }
         }
-        baseline_player["rotation"]["priorityList"] = [copy.deepcopy(source_entry)]
+        utility_entry = {"action": {"autocastOtherCooldowns": {}}}
+        baseline_player["rotation"]["priorityList"] = [
+            copy.deepcopy(source_entry), copy.deepcopy(utility_entry)
+        ]
         donor = copy.deepcopy(baseline)
         donor_player = donor["raid"]["parties"][0]["players"][0]
         donor_player["talentsString"] = "restoration-build-b"
@@ -962,7 +965,9 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
                 native_objective_witnesses=[heal_cast],
                 native_objective_witnesses_by_talentsString=witness_map,
                 native_objective_source_apls_by_talentsString={
-                    "restoration-build-b": [[copy.deepcopy(source_entry)]],
+                    "restoration-build-b": [[
+                        copy.deepcopy(source_entry), copy.deepcopy(utility_entry)
+                    ]],
                 },
                 objective="HPS",
             )
@@ -985,11 +990,20 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
         ]
         self.assertFalse(adapter.legal(candidate))
 
-        # A cold/mutated candidate that lost the source guard is repaired from
-        # the exact source APL entry, never from an unconditional spell clone.
-        with patch.object(joint, "mutate_apl", return_value=[]):
-            generated = adapter.adapters["apl"].cold(random.Random(23), candidate)
-        self.assertEqual([source_entry], generated)
+        # The mutation layer may propose a stripped clone; the source-bounded
+        # adapter must replace it with the exact source entry and retain the guard.
+        generated = adapter.adapters["apl"].cold(random.Random(23), candidate)
+        self.assertIn(source_entry, generated)
+        self.assertIn(utility_entry, generated)
+        self.assertNotIn(unconditional_clone, generated)
+        self.assertEqual(
+            condition,
+            next(
+                entry["action"]["condition"]
+                for entry in generated
+                if entry.get("action", {}).get("castSpell", {}).get("spellId", {}).get("spellId") == 10463
+            ),
+        )
         candidate_player["rotation"]["priorityList"] = generated
         self.assertTrue(adapter.legal(candidate))
 
@@ -1410,6 +1424,51 @@ class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
             [], [source_entry], random.Random(2), objective="TPS"
         )
         self.assertEqual(source_entry, repaired[0])
+
+    def test_hps_source_condition_tree_survives_cold_and_later_mutation(self):
+        condition = {
+            "not": {
+                "val": {
+                    "auraIsActive": {
+                        "auraId": {"spellId": 10463},
+                    }
+                }
+            }
+        }
+        source_entry = {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": 10463},
+                    "target": {"type": "Self"},
+                },
+                "condition": copy.deepcopy(condition),
+            }
+        }
+        source_fallback = {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": 5185},
+                    "target": {"type": "Self"},
+                }
+            }
+        }
+        source_actions = [source_entry, source_fallback]
+
+        cold = joint.mutate_apl(
+            None, source_actions, random.Random(31),
+            cold=True, preserve_source_conditions=True,
+        )
+        mutated = joint.mutate_apl(
+            source_actions, source_actions, random.Random(32),
+            preserve_source_conditions=True,
+        )
+        for candidate in (cold, mutated):
+            preserved = [
+                entry for entry in candidate
+                if entry.get("action", {}).get("castSpell", {}).get("spellId", {}).get("spellId") == 10463
+            ]
+            self.assertEqual([source_entry], preserved)
+            self.assertEqual(condition, preserved[0]["action"]["condition"])
 
     def test_profile_role_selects_the_matching_native_objective(self):
         self.assertEqual("HPS", joint.objective_for_profile("druid/restoration"))
