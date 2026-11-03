@@ -69,8 +69,11 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             "profile_id": profile,
             "stage_seconds": stage,
             "source_sha256": inv.get("source_sha256"),
+            "source_fixture_sha256": inv.get("source_fixture_sha256", inv.get("source_sha256")),
+            "effective_source_request_fingerprint": inv.get("effective_source_request_fingerprint"),
             "source_path": inv.get("source_path"),
             "source_type": inv.get("source_type"),
+            "talent_override": inv.get("talent_override"),
             "objective": "HPS" if profile in HEAL else ("TPS" if profile in TANK else "DPS"),
             "native_paid": 0,
             "baseline_paid": 0,
@@ -192,6 +195,10 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
         "holdout_rng_mode": "stochastic",
         "holdout_status": "NOT_RUN_STAGE_5",
         "source_scope": "PINNED_NATIVE_SOURCE_BOUNDED_PARTIAL_LEGALITY",
+        "source_talent_overrides": [
+            {"profile_id": row["profile_id"], **row["talent_override"]}
+            for row in rows if row.get("talent_override")
+        ],
         "process_p7_pass": False,
     }
     if donor_inventory is not None:
