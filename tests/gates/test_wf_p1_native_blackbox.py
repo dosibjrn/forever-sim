@@ -823,3 +823,38 @@ def test_native_action_inventory_parity_fails_closed_on_mismatch():
     assert result["status"] == "MISMATCH"
     assert result["positive_spell_records_equal"] is False
     assert result["positive_major_cooldowns_equal"] is True
+
+
+def test_native_candidate_attempted_count_excludes_deadline_skipped_actions(monkeypatch):
+    """Candidate inventory is not proof that every action reached native prepare."""
+    from src.engine_client import native_p1_effect_probe as probe
+
+    monkeypatch.setattr(
+        probe,
+        "prepare_native_request",
+        lambda **kwargs: pytest.fail("expired candidate must not invoke native"),
+    )
+    inventory = {
+        "status": "AVAILABLE",
+        "spells": [
+            {"action_id": {"spell_id": 14282}, "flags": ["SpellFlagAPL"]},
+            {"action_id": {"spell_id": 13550}, "flags": ["SpellFlagAPL"]},
+        ],
+        "major_cooldowns": [],
+    }
+    result = probe._probe_native_prepared_action_candidates(
+        binary=Path("/selected/forever-engine"),
+        request=_sample_request(),
+        inventory=inventory,
+        selected_spell_id=14282,
+        selected_prepare={"status": "PREPARED", "engine_identity": "selected-pin"},
+        deadline=-1.0,
+    )
+    assert result["status"] == "PARTIAL"
+    assert result["candidate_count"] == 2
+    assert result["attempted_count"] == 1
+    assert result["prepared_count"] == 1
+    assert result["blocked_count"] == 1
+    assert result["candidate_results"][0]["reused_selected_prepare"] is True
+    assert result["candidate_results"][1]["native_status"] == "BLOCKED"
+    assert result["p1_certified"] is False
