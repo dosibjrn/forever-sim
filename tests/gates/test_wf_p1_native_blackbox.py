@@ -780,6 +780,7 @@ def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypat
     assert candidate_probe["status"] == "AVAILABLE"
     assert candidate_probe["candidate_scope"] == "NATIVE_PREPARED_APL_SPELLS_ONLY"
     assert candidate_probe["candidate_count"] == 2
+    assert candidate_probe["selected_spell_present"] is True
     assert candidate_probe["prepared_count"] == 1
     assert candidate_probe["unsupported_count"] == 1
     assert candidate_probe["non_apl_spell_record_count"] == 1
