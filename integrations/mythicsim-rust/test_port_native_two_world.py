@@ -27,7 +27,7 @@ class TwoWorldPortTests(unittest.TestCase):
             port.port_fight("fn irrelevant() {}")
         with self.assertRaisesRegex(ValueError, "ANCHOR_DRIFT"):
             port.port_fight(port.OLD_GUARD * 2 + port.FIGHT_MARKER)
-        with self.assertRaisesRegex(ValueError, "PARTIAL"):
+        with self.assertRaisesRegex(ValueError, "ANCHOR_DRIFT"):
             port.port_fight(port.NEW_GUARD + port.FIGHT_MARKER)
 
     def test_prepared_entry_initializes_one_real_bridge(self):
