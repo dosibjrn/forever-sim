@@ -20,14 +20,51 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApplier
 from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
+from src.game.runtime.native_step_protocol import snapshot_gsim_world, state_hash
 from tools.wf_gsim_go_live_range_probe import (
     diagnostic_gsim_world, source_target_health_from_request,
 )
 from tools.wf_gate_coverage import P7_FINAL_STOCHASTIC_ITERATIONS, p7_required_dps
 
+
+def _move_selected_target_to_distance(world, distance_after_yards: float) -> dict:
+    """Perturb the actual gsim target position before the next Rust boundary."""
+    if not math.isfinite(distance_after_yards) or distance_after_yards <= 60.0:
+        raise ValueError("RUST_WORLD_DISTANCE_SWITCH_INVALID")
+    before = snapshot_gsim_world(world)
+    target_id = before["selected_target_id"]
+    if target_id in world._enemy_motion:
+        raise ValueError("RUST_WORLD_DISTANCE_SWITCH_TARGET_MOVING")
+    player_xy = tuple(map(float, before["player_xy_yards"]))
+    target_xy = tuple(map(float, before["enemies"][target_id]["xy_yards"]))
+    before_distance = math.hypot(target_xy[0] - player_xy[0], target_xy[1] - player_xy[1])
+    before_sha = state_hash(before)
+    destination = (player_xy[0] + float(distance_after_yards), player_xy[1])
+    world.enemy_positions_yards[target_id] = destination
+    if isinstance(getattr(world, "_pack_positions", None), dict):
+        world._pack_positions[target_id] = destination
+    after = snapshot_gsim_world(world)
+    after_xy = tuple(map(float, after["enemies"][target_id]["xy_yards"]))
+    after_distance = math.hypot(after_xy[0] - player_xy[0], after_xy[1] - player_xy[1])
+    after_sha = state_hash(after)
+    if not math.isclose(after_distance, distance_after_yards, rel_tol=0.0, abs_tol=1e-6):
+        raise AssertionError("RUST_WORLD_DISTANCE_SWITCH_NOT_APPLIED")
+    if before_sha == after_sha:
+        raise AssertionError("RUST_WORLD_DISTANCE_SWITCH_HASH_UNCHANGED")
+    return {
+        "target_id": target_id,
+        "before_distance_yards": before_distance,
+        "after_distance_yards": after_distance,
+        "world_sha256_before": before_sha,
+        "world_sha256_after": after_sha,
+    }
+
+
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
+        distance_switch_at_s: float | None = None,
+        distance_after_yards: float | None = None,
         rng_mode: str) -> dict:
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_WORLD_RNG_MODE_INVALID")
@@ -41,6 +78,15 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     if facing_switch_at_s is not None and (
             not math.isfinite(facing_switch_at_s) or facing_switch_at_s <= 0 or iterations != 1):
         raise ValueError("RUST_WORLD_FACING_SWITCH_INVALID")
+    if (distance_switch_at_s is None) != (distance_after_yards is None):
+        raise ValueError("RUST_WORLD_DISTANCE_SWITCH_INVALID")
+    if distance_switch_at_s is not None and (
+            not math.isfinite(distance_switch_at_s) or distance_switch_at_s <= 0
+            or distance_after_yards is None or not math.isfinite(distance_after_yards)
+            or not math.isfinite(distance) or distance <= 0 or distance >= 40.0
+            or distance_after_yards <= 60.0 or iterations != 1
+            or facing_switch_at_s is not None):
+        raise ValueError("RUST_WORLD_DISTANCE_SWITCH_INVALID")
     def new_world():
         world = diagnostic_gsim_world(
             target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
@@ -71,7 +117,13 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     iteration_precombat_damage = 0.
     total_ticks = 0
     facing_switch_clock_ns = None
+    distance_switch_clock_ns = None
+    distance_switch_tick_sequence = None
+    distance_switch_native_range_receipt = None
+    distance_perturbation = None
+    distance_switch_grace_ns = 4_000_000_000
     source_action_events_before = {}
+    source_action_events_during_distance_switch_grace = {}
     source_action_events_after = {}
     with tempfile.TemporaryDirectory() as folder:
         output = Path(folder) / "result.json"
@@ -132,7 +184,21 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     # puts the hero in front, whereas +X means behind.
                     world.targets["m1"].metadata["facing_xy_yards"] = (-1., 0.)
                     facing_switch_clock_ns = clock_ns
+                if (distance_switch_at_s is not None and distance_switch_clock_ns is None
+                        and clock_ns >= round(distance_switch_at_s * 1e9)):
+                    # Move the actual selected Balance target out of native
+                    # spell range before the next Rust decision. The world
+                    # hash is captured at the same clock on both sides.
+                    distance_perturbation = _move_selected_target_to_distance(world, distance_after_yards)
+                    distance_switch_clock_ns = clock_ns
                 tick = feed.next_tick()
+                if distance_switch_clock_ns == clock_ns:
+                    if not math.isclose(float(tick["distance_yards"]), distance_after_yards,
+                                        rel_tol=0.0, abs_tol=1e-6):
+                        raise AssertionError("RUST_WORLD_DISTANCE_SWITCH_NOT_IN_NEXT_TICK")
+                    if tick["world_sha256"] != distance_perturbation["world_sha256_after"]:
+                        raise AssertionError("RUST_WORLD_DISTANCE_SWITCH_TICK_HASH_MISMATCH")
+                    distance_switch_tick_sequence = tick["sequence"]
                 assert tick["sequence"] == native["sequence"]
                 assert tick["native_clock_ns"] == clock_ns
                 tick["previous_world_ack_id"] = previous_ack_id
@@ -153,11 +219,13 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 assert receipt["iteration_index"] == iteration
                 assert receipt["native_request_sha256"] == request_sha
                 assert receipt["native_process_id"] == proc.pid
+                if distance_switch_clock_ns == clock_ns:
+                    distance_switch_native_range_receipt = receipt["native_range_receipt"]
+                    if not math.isclose(float(distance_switch_native_range_receipt["applied_yards"]),
+                                        distance_after_yards, rel_tol=0.0, abs_tol=1e-6):
+                        raise AssertionError("RUST_WORLD_DISTANCE_SWITCH_NOT_IN_NATIVE_RECEIPT")
                 feed.accept_range_receipt(receipt["native_range_receipt"])
                 ack = applier.apply(tick, receipt)
-                action_counter = (source_action_events_after
-                    if facing_switch_clock_ns is not None
-                    else source_action_events_before)
                 for event in receipt["native_damage_events"]:
                     if event["native_caster_type"] == "pet":
                         pet_damage_events += 1
@@ -165,6 +233,20 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                         precombat_damage_events += 1
                         iteration_precombat_damage += event["damage"]
                     action = event["source_action_id"]
+                    event_time_ns = int(event["native_time_ns"])
+                    if distance_switch_clock_ns is not None:
+                        if event_time_ns < distance_switch_clock_ns:
+                            action_counter = source_action_events_before
+                        elif event_time_ns < distance_switch_clock_ns + distance_switch_grace_ns:
+                            action_counter = source_action_events_during_distance_switch_grace
+                        else:
+                            action_counter = source_action_events_after
+                    elif facing_switch_clock_ns is not None:
+                        action_counter = (source_action_events_before
+                                          if event_time_ns < facing_switch_clock_ns
+                                          else source_action_events_after)
+                    else:
+                        action_counter = source_action_events_before
                     action_counter[action] = action_counter.get(action, 0) + 1
                 ack["iteration_index"] = iteration
                 event_count += len(ack["applied_event_ids"])
@@ -194,6 +276,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 return {"forged_ack_rejected": True, "native_damage_events": event_count}
             assert status == 0, f"RUST_NATIVE_WORLD_EXIT_{status}: {stderr[-4000:]}"
             result = json.loads(output.read_text())
+            if distance_switch_at_s is not None and distance_switch_clock_ns is None:
+                raise AssertionError("RUST_WORLD_DISTANCE_SWITCH_NOT_REACHED")
             # The genuine Rust protobuf-JSON report omits avg entirely for a
             # zero-damage fight (80yd out of range); that is 0 DPS, not an error.
             native_dps = result["result"]["raidMetrics"]["dps"].get("avg", 0.0)
@@ -221,6 +305,24 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "source_request_proto_sha256": request_sha,
                     "source_request_raw_sha256": raw_sha,
                     "facing_switch_clock_ns": facing_switch_clock_ns,
+                     "distance_switch_clock_ns": distance_switch_clock_ns,
+                     "world_distance_perturbation": (
+                         None if distance_perturbation is None else {
+                             **distance_perturbation,
+                             "native_clock_ns": distance_switch_clock_ns,
+                             "native_range_tick_sequence": distance_switch_tick_sequence,
+                             "native_range_receipt_applied_yards": float(
+                                 distance_switch_native_range_receipt["applied_yards"]
+                             ),
+                             "post_switch_grace_ns": distance_switch_grace_ns,
+                         }
+                     ),
+                     "source_action_events_during_distance_switch_grace":
+                         source_action_events_during_distance_switch_grace,
+                     "native_damage_events_after_perturbation_grace": (
+                         sum(source_action_events_after.values())
+                         if distance_switch_clock_ns is not None else None
+                     ),
                     "source_action_events_before": source_action_events_before,
                     "source_action_events_after": source_action_events_after,
                     "checkpoint_certified": False}
