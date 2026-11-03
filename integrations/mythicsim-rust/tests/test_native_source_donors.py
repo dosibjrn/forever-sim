@@ -151,7 +151,7 @@ class SourceDonorAdapterTests(unittest.TestCase):
                 "fixtures/forever-gaps/druid-gear-and-talent.request.json",
                 "fixtures/mage/prepared-v2/druid-gear-only.request.json",
             ],
-            [item["source_path"] for item in scope["gear_donor_fixtures"]],
+            [item["source_path"] for item in scope["gear_donor_fixtures_scanned"]],
         )
         self.assertEqual(
             ["fixtures/forever-gaps/druid-gear-and-talent.request.json"],
