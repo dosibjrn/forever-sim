@@ -907,6 +907,106 @@ class NativeJointPerBuildObjectiveWitnessContracts(unittest.TestCase):
         self.assertFalse(adapter.legal(candidate))
 
 
+    def test_hps_conditioned_witness_keeps_source_guard_and_rejects_unconditional_clone(self):
+        baseline = request()
+        baseline_player = baseline["raid"]["parties"][0]["players"][0]
+        baseline_player["class"] = "ClassShaman"
+        baseline_player["talentsString"] = "restoration-build-a"
+        heal_cast = {
+            "spellId": {"spellId": 10463},
+            "target": {"type": "Self"},
+        }
+        condition = {
+            "not": {
+                "val": {
+                    "auraIsActive": {
+                        "auraId": {"spellId": 10463},
+                    }
+                }
+            }
+        }
+        source_entry = {
+            "action": {
+                "castSpell": copy.deepcopy(heal_cast),
+                "condition": copy.deepcopy(condition),
+            }
+        }
+        utility_entry = {"action": {"autocastOtherCooldowns": {}}}
+        baseline_player["rotation"]["priorityList"] = [
+            copy.deepcopy(source_entry), copy.deepcopy(utility_entry)
+        ]
+        donor = copy.deepcopy(baseline)
+        donor_player = donor["raid"]["parties"][0]["players"][0]
+        donor_player["talentsString"] = "restoration-build-b"
+
+        class FakeGear:
+            def __init__(self, class_key, reference, source_requests):
+                self.reference = reference
+                self.mutable_indices = [0]
+
+            def validate(self, request_value):
+                return None
+
+            def mutate_one(self, rng):
+                return copy.deepcopy(self.reference), {}
+
+            def mutate_from(self, request_value, rng):
+                return copy.deepcopy(request_value), {}
+
+        witness_map = {
+            "restoration-build-a": [heal_cast],
+            "restoration-build-b": [heal_cast],
+        }
+        with patch.object(joint, "NativeGearAdapter", FakeGear):
+            adapter, scope = joint.source_bounded_adapter(
+                "shaman",
+                baseline,
+                [baseline, donor],
+                native_objective_witnesses=[heal_cast],
+                native_objective_witnesses_by_talentsString=witness_map,
+                native_objective_source_apls_by_talentsString={
+                    "restoration-build-b": [[
+                        copy.deepcopy(source_entry), copy.deepcopy(utility_entry)
+                    ]],
+                },
+                objective="HPS",
+            )
+
+        candidate = copy.deepcopy(donor)
+        candidate_player = candidate["raid"]["parties"][0]["players"][0]
+        self.assertTrue(adapter.legal(candidate))
+        self.assertEqual(
+            [source_entry],
+            scope["native_positive_objective_witness_entries_by_talentsString"][
+                "restoration-build-b"
+            ],
+        )
+
+        unconditional_clone = {"action": {"castSpell": copy.deepcopy(heal_cast)}}
+        candidate_player["rotation"]["priorityList"] = [copy.deepcopy(unconditional_clone)]
+        self.assertFalse(adapter.legal(candidate))
+        candidate_player["rotation"]["priorityList"] = [
+            copy.deepcopy(source_entry), copy.deepcopy(unconditional_clone)
+        ]
+        self.assertFalse(adapter.legal(candidate))
+
+        # The mutation layer may propose a stripped clone; the source-bounded
+        # adapter must replace it with the exact source entry and retain the guard.
+        generated = adapter.adapters["apl"].cold(random.Random(23), candidate)
+        self.assertIn(source_entry, generated)
+        self.assertIn(utility_entry, generated)
+        self.assertNotIn(unconditional_clone, generated)
+        self.assertEqual(
+            condition,
+            next(
+                entry["action"]["condition"]
+                for entry in generated
+                if entry.get("action", {}).get("castSpell", {}).get("spellId", {}).get("spellId") == 10463
+            ),
+        )
+        candidate_player["rotation"]["priorityList"] = generated
+        self.assertTrue(adapter.legal(candidate))
+
     def test_native_verified_cross_build_apl_enters_selected_talent_domain(self):
         baseline = request()
         baseline_player = baseline["raid"]["parties"][0]["players"][0]
@@ -1046,9 +1146,12 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
 
         captured = {}
 
-        def fake_mutate(_current, source_actions, _rng, cold=False):
+        def fake_mutate(_current, source_actions, _rng, cold=False,
+                        preserve_source_conditions=False):
             captured["source_actions"] = copy.deepcopy(source_actions)
+            captured["preserve_source_conditions"] = preserve_source_conditions
             self.assertTrue(cold)
+            self.assertTrue(preserve_source_conditions)
             return [
                 {"action": {"castSpell": copy.deepcopy(donor_only_heal)}},
                 {"action": {"castSpell": copy.deepcopy(heal_cast)}},
@@ -1274,7 +1377,22 @@ class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
             "spellId": {"spellId": 5185},
             "target": {"type": "Self"},
         }
-        source = [{"action": {"castSpell": copy.deepcopy(heal_cast)}}]
+        condition = {
+            "not": {
+                "val": {
+                    "auraIsActive": {
+                        "auraId": {"spellId": 5185},
+                    }
+                }
+            }
+        }
+        source_entry = {
+            "action": {
+                "castSpell": copy.deepcopy(heal_cast),
+                "condition": copy.deepcopy(condition),
+            }
+        }
+        source = [copy.deepcopy(source_entry)]
         response = {"result": {"raidMetrics": {"parties": [{"players": [{
             "actions": [{
                 "id": {"spellId": 5185},
@@ -1286,14 +1404,16 @@ class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
         self.assertEqual([heal_cast], witnesses)
         candidate = [{"action": {"autocastOtherCooldowns": {}}}]
         repaired = _ensure_native_damage_action(
-            candidate, witnesses, random.Random(1), objective="HPS"
+            candidate, [source_entry], random.Random(1), objective="HPS"
         )
-        self.assertEqual(heal_cast, repaired[1]["action"]["castSpell"])
-        self.assertEqual({"type": "Self"}, repaired[1]["action"]["castSpell"]["target"])
+        self.assertEqual(source_entry, repaired[1])
+        self.assertEqual(condition, repaired[1]["action"]["condition"])
+        self.assertEqual(2, len(repaired))
 
     def test_tps_witness_uses_native_threat_and_preserves_source_cast(self):
         threat_cast = {"spellId": {"spellId": 23922}}
-        source = [{"action": {"castSpell": copy.deepcopy(threat_cast)}}]
+        source_entry = {"action": {"castSpell": copy.deepcopy(threat_cast)}}
+        source = [copy.deepcopy(source_entry)]
         response = {"result": {"raidMetrics": {"parties": [{"players": [{
             "actions": [{
                 "id": {"spellId": 23922},
@@ -1304,9 +1424,54 @@ class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
         witnesses = _native_positive_source_casts(source, response, objective="TPS")
         self.assertEqual([threat_cast], witnesses)
         repaired = _ensure_native_damage_action(
-            [], witnesses, random.Random(2), objective="TPS"
+            [], [source_entry], random.Random(2), objective="TPS"
         )
-        self.assertEqual(threat_cast, repaired[0]["action"]["castSpell"])
+        self.assertEqual(source_entry, repaired[0])
+
+    def test_hps_source_condition_tree_survives_cold_and_later_mutation(self):
+        condition = {
+            "not": {
+                "val": {
+                    "auraIsActive": {
+                        "auraId": {"spellId": 10463},
+                    }
+                }
+            }
+        }
+        source_entry = {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": 10463},
+                    "target": {"type": "Self"},
+                },
+                "condition": copy.deepcopy(condition),
+            }
+        }
+        source_fallback = {
+            "action": {
+                "castSpell": {
+                    "spellId": {"spellId": 5185},
+                    "target": {"type": "Self"},
+                }
+            }
+        }
+        source_actions = [source_entry, source_fallback]
+
+        cold = joint.mutate_apl(
+            None, source_actions, random.Random(31),
+            cold=True, preserve_source_conditions=True,
+        )
+        mutated = joint.mutate_apl(
+            source_actions, source_actions, random.Random(32),
+            preserve_source_conditions=True,
+        )
+        for candidate in (cold, mutated):
+            preserved = [
+                entry for entry in candidate
+                if entry.get("action", {}).get("castSpell", {}).get("spellId", {}).get("spellId") == 10463
+            ]
+            self.assertEqual([source_entry], preserved)
+            self.assertEqual(condition, preserved[0]["action"]["condition"])
 
     def test_profile_role_selects_the_matching_native_objective(self):
         self.assertEqual("HPS", joint.objective_for_profile("druid/restoration"))
