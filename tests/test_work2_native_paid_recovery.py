@@ -128,11 +128,11 @@ def test_zero_recovery_rejects_unexpected_native_recovery_windows():
     with pytest.raises(AssertionError, match="RUST_NATIVE_PAID_RECOVERY_WINDOWS_INVALID"):
         _summary([_window(8_000_000_000)], 2, 0)
 
-def test_zero_recovery_preserves_legacy_native_cli_contract():
+def test_zero_recovery_omits_recovery_flag_but_passes_required_typed_rng_mode():
     command = _command(Path("/tmp/forever-engine"), Path("/tmp/prepared.json"), 2, 0)
     assert command == [
         "/tmp/forever-engine", "native-world-pulls", "--infile",
-        "/tmp/prepared.json", "--targets", "2",
+        "/tmp/prepared.json", "--targets", "2", "--rng-mode", "stochastic",
     ]
 
 
