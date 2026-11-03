@@ -14,6 +14,9 @@ on:
       - integrations/mythicsim-rust/port_native_world_lethal_ack.py
       - integrations/mythicsim-rust/port_native_early_retarget.py
       - integrations/mythicsim-rust/port_native_world_lethal_terminal.py
+      - integrations/mythicsim-rust/port_native_two_world.py
+      - integrations/mythicsim-rust/test_port_native_two_world.py
+      - integrations/mythicsim-rust/live_two_world_probe.py
       - integrations/mythicsim-rust/test_port_native_world_lethal_terminal.py
       - integrations/mythicsim-rust/port_native_improved_roots_rank.py
       - integrations/mythicsim-rust/test_port_native_improved_roots_rank.py
@@ -49,6 +52,9 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_world_lethal_ack.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_early_retarget.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_world_lethal_terminal.py
+          python3 -m py_compile integrations/mythicsim-rust/port_native_two_world.py
+          python3 -m py_compile integrations/mythicsim-rust/live_two_world_probe.py
+          python3 integrations/mythicsim-rust/test_port_native_two_world.py
           python3 integrations/mythicsim-rust/test_port_native_improved_roots_rank.py
           python3 integrations/mythicsim-rust/test_port_native_pull_queue.py
           python3 integrations/mythicsim-rust/test_port_native_world_lethal_ack.py
@@ -95,6 +101,7 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_world_lethal_ack.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_early_retarget.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_two_world.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
           first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs | sha256sum)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
@@ -104,10 +111,19 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_world_lethal_ack.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_early_retarget.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_two_world.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_improved_roots_rank.py /tmp/forever-selected-rust
           second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs | sha256sum)"
           test "$first_hash" = "$second_hash"
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
+          # Exact selected-Rust two-target causal smoke, with deliberately
+          # synthetic HP (never a sourced P4/P5/P6 acceptance result).
+          python3 -m pip install --disable-pip-version-check beautifulsoup4==4.13.4
+          cargo build --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
+          python3 integrations/mythicsim-rust/live_two_world_probe.py \
+            --binary /tmp/forever-selected-rust/target/debug/forever-engine \
+            --prepared /tmp/forever-selected-rust/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
+            --diagnostic-world-health 5000
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib native_improved_roots_rank_intake
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib persistent_next_target
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib world_lethal_terminal
