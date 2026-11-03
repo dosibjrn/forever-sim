@@ -57,7 +57,7 @@ jobs:
           python -m pytest -q
           tests/maintenance
           tests/test_p7_search_deadline_contract.py
-          tests/test_p7_5_light_prior_floor.py
+          tests/gates/test_wf_gate_p7_5_prior.py
           tests/test_wf246_primary_stat_combat.py
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
