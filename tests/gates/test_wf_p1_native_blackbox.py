@@ -87,15 +87,32 @@ def test_native_single_action_pair_keeps_every_non_action_field_identical():
     assert positive_normalized == control_normalized
 
 
-def test_native_single_action_pair_rejects_missing_or_ambiguous_action():
-    with pytest.raises(ValueError, match="NOT_UNIQUE_IN_APL"):
-        native_single_action_pair(_sample_request(), 1130)
+def test_native_single_action_pair_forwards_absent_candidate_as_native_wire_request():
+    request = _sample_request()
+    reference = deepcopy(request)
+    positive, no_action = native_single_action_pair(request, 1130)
 
+    positive_player = positive["raid"]["parties"][0]["players"][0]
+    control_player = no_action["raid"]["parties"][0]["players"][0]
+    assert positive_player["rotation"]["priorityList"] == [
+        {"action": {"castSpell": {"spellId": {"spellId": 1130}}}}
+    ]
+    assert control_player["rotation"]["priorityList"] == []
+    assert request == reference
+
+    positive_normalized = deepcopy(positive)
+    control_normalized = deepcopy(no_action)
+    positive_normalized["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] = ["ACTION"]
+    control_normalized["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] = ["ACTION"]
+    assert positive_normalized == control_normalized
+
+
+def test_native_single_action_pair_rejects_ambiguous_duplicate_action():
     duplicate = _sample_request()
     duplicate["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"].append(
         deepcopy(duplicate["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"][0])
     )
-    with pytest.raises(ValueError, match="NOT_UNIQUE_IN_APL"):
+    with pytest.raises(ValueError, match="AMBIGUOUS_IN_APL"):
         native_single_action_pair(duplicate, 14282)
 
 
@@ -162,6 +179,10 @@ def test_native_prepare_refusal_is_preserved_without_fallback(monkeypatch, tmp_p
     def prepare(**kwargs):
         calls.append(kwargs["scenario"])
         if kwargs["scenario"].endswith("with-action"):
+            player = kwargs["request"]["raid"]["parties"][0]["players"][0]
+            assert player["rotation"]["priorityList"] == [
+                {"action": {"castSpell": {"spellId": {"spellId": 1130}}}}
+            ]
             return {"status": "UNSUPPORTED", "stage": "prepare",
                     "reason": "native_action_not_supported"}
         return {
@@ -182,13 +203,13 @@ def test_native_prepare_refusal_is_preserved_without_fallback(monkeypatch, tmp_p
     )
     result = probe.run_native_p1_direct_effect_probe(
         binary=binary, engine_root=engine_root, request=_druid_request(),
-        spell_id=14282, timeout_seconds=5,
+        spell_id=1130, timeout_seconds=5,
     )
     assert result["status"] == "UNSUPPORTED"
     assert result["reason"] == "native_action_not_supported"
     # Native refusal of the selected action is final: do not prepare a
     # redundant no-action control or execute either side.
-    assert calls == ["p1-druid-l60-single-action-14282-with-action"]
+    assert calls == ["p1-druid-l60-single-action-1130-with-action"]
     assert result["p1_certified"] is False
 
 
