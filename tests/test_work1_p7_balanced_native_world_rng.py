@@ -123,3 +123,61 @@ def test_selected_rust_build_reuses_historical_full_rng_patch_chain():
     assert typed_mode in publisher
     assert typed_mode in selected
     assert publisher.index(typed_mode) < publisher.index("cargo test --locked --lib persistent_next_target")
+
+def test_reference_cli_uses_explicit_stochastic_mode(monkeypatch, tmp_path, capsys):
+    """The standalone reference diagnostic must preserve its former stochastic default."""
+    import sys
+
+    producer = _producer()
+    request = tmp_path / "saved-request.json"
+    request.write_text(json.dumps({
+        "raid": {"parties": [{"players": [{
+            "class": "ClassDruid", "balanceDruid": {},
+            "distanceFromTarget": 15.0,
+        }]}]},
+        "encounter": {"targets": [{"level": 63}]},
+    }))
+    binary = tmp_path / "forever-engine"
+    calls = []
+
+    def native(binary, request, iterations, *, rng_mode):
+        calls.append(("native", rng_mode, iterations))
+        return {"iterations": iterations, "native_dps": 730.0,
+                "first_duration_s": 120.0}
+
+    def live(binary, request, *, distance, iterations, rng_mode):
+        calls.append(("world", rng_mode, iterations))
+        return {"iterations_done": iterations, "native_dps": 730.0,
+                "world_mean_dps": 730.0, "sampled_duration_s": 120.0,
+                "source_request_raw_sha256": "test-request",
+                "native_damage_events": iterations,
+                "native_world_ticks": iterations}
+
+    monkeypatch.setattr(producer, "native_source_control", native)
+    monkeypatch.setattr(producer, "run", live)
+    monkeypatch.setattr(sys, "argv", [
+        "live_world_probe.py", "--binary", str(binary),
+        "--request", str(request), "--reference-iterations", "2",
+    ])
+    producer.main()
+    assert calls == [("native", "stochastic", 2), ("world", "stochastic", 2)]
+    assert "checkpoint_certified" in capsys.readouterr().out
+
+def test_upstream_candidate_verification_passes_explicit_rng_mode():
+    """No source-verification helper may rely on the removed implicit mode default."""
+    import ast
+
+    path = (Path(__file__).resolve().parents[1] /
+            "integrations/mythicsim-rust/verify_upstream_candidate.py")
+    tree = ast.parse(path.read_text())
+    calls = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "run"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "probe"
+    ]
+    assert calls
+    assert all(any(keyword.arg == "rng_mode" for keyword in node.keywords)
+               for node in calls)

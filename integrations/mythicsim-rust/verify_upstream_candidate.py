@@ -70,7 +70,7 @@ def run(binary: Path) -> dict:
         source = binary.parents[2] / request
         assert source.is_file(), ("UPDATED_RUST_SOURCE_FIXTURE_MISSING", str(source))
         try:
-            world = probe.run(binary, source, distance=distance)
+            world = probe.run(binary, source, distance=distance, rng_mode="stochastic")
         except subprocess.CalledProcessError as exc:
             raise RuntimeError(
                 f"UPSTREAM_NATIVE_PREPARE_REFUSED_OR_BROKEN {spec_name} "
