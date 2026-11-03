@@ -132,8 +132,8 @@ pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_
 
 
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
-    if source.count(anchor) != 1:
-        raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
+    # Exact already-applied descendants must be recognized before the anchor:
+    # successful insertions consume that anchor rather than retaining it.
     if source.count(replacement) == 1:
         return source
     # The maintained two-world method may already have separately
@@ -156,13 +156,11 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if typed is not None:
         beginning, expected = typed
         if beginning in source:
-            if source.count(beginning) != 1:
-                raise ValueError(f"RUST_WORLD_MULTI_TARGET_TYPED_RNG_AMBIGUOUS_{marker}")
-            start = source.index(beginning)
-            end = source.index(anchor)
-            if start >= end or source[start:end] != expected:
+            if source.count(beginning) != 1 or source.count(expected) != 1:
                 raise ValueError(f"RUST_WORLD_MULTI_TARGET_TYPED_RNG_DRIFT_{marker}")
             return source
+    if source.count(anchor) != 1:
+        raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
     # The previously validated two-target CLI and methods already exist in the
     # maintained public Rust fork on some source lineages. Replace only their
     # exact identified bounded block, never another function or game mechanic.
