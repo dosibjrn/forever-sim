@@ -184,6 +184,7 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         for slot, item in enumerate(frozen_items)]
     assert report["source_legal_cold_candidates_paid"] == 2
     assert report["winner_selection"] == "best_balanced_live_screen"
+    assert report["search_rng_mode"] == "balanced"
     assert report["paid_stochastic_finalists"] == 0
     assert report["stochastic_parent_proposals"] == 0
     # The real chosen winner is NOT the last attempted candidate.
