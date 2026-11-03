@@ -3017,7 +3017,7 @@ class CombatRuntime:
                     # timed buff, irrespective of spell, class or equipment.
                     # Compute against the ACTUAL geared/talented ActorState at
                     # cast time, not naked provider stats at IR-build time.
-                    from src.game.stat_math import converted_stat_amount
+                    from src.shared.stat_math import converted_stat_amount
                     for fact in self.actor.metadata.get('canonical_primary_stat_conversions', ()):
                         source_stat=str(fact['source_stat'])
                         if source_stat not in effect.actor_stat_deltas:
