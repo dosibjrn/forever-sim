@@ -21,7 +21,7 @@ from pathlib import Path
 
 from apl_mutation import mutate_apl
 from native_matrix import enumerate_l60_profiles, search_native, next_budget
-from p73_talent_search_v2 import run
+from native_executor import run
 
 ROOT = Path(__file__).resolve().parents[2]
 P = "fixtures/mage/prepared-v2/"
@@ -115,6 +115,29 @@ CURRENT_CLIENT_TALENT_OVERRIDES = {
         "source_path": "ui/specs/paladin/retribution/presets.ts",
         "source_blob_sha": "5b592addceab39c25d8a8d1af89b22c8df88b032",
     },
+}
+
+
+MAGE_ALTERNATE_CURRENT_CLIENT_TALENT_PRESETS = (
+    {
+        "preset_name": "Arcane Fire",
+        "talents_string": "050205203100311531-525000012001-003",
+    },
+    {
+        "preset_name": "FFB",
+        "talents_string": "-5550000123011303-203501031",
+    },
+)
+CURRENT_CLIENT_TALENT_DONOR_PRESETS = {
+    "druid/feral_cat": (
+        {
+            "preset_name": "Hybrid",
+            "talents_string": "050022-50220332123112125011-05",
+        },
+    ),
+    "mage/arcane": MAGE_ALTERNATE_CURRENT_CLIENT_TALENT_PRESETS,
+    "mage/fire": MAGE_ALTERNATE_CURRENT_CLIENT_TALENT_PRESETS,
+    "mage/frost": MAGE_ALTERNATE_CURRENT_CLIENT_TALENT_PRESETS,
 }
 
 HEAL = {"druid/restoration", "shaman/restoration", "priest/holy", "paladin/holy"}
@@ -290,6 +313,68 @@ def apply_current_client_talent_override(profile: str, request: dict):
         "replacement_talents_string": replacement,
     }
     return effective, metadata
+
+
+
+def current_client_talent_donor_fixtures(inventory):
+    """Compose alternate pinned upstream talent presets as native-only proposals.
+
+    The original profile request supplies gear, encounter and APL. Only the
+    talent string changes. This records source provenance; it does not assert
+    that MythicSim accepts any proposed talent build.
+    """
+    requests = {
+        row["profile_id"]: request
+        for row, request in inventory
+        if request is not None
+    }
+    donors = []
+    for profile, presets in CURRENT_CLIENT_TALENT_DONOR_PRESETS.items():
+        reference = requests.get(profile)
+        if reference is None:
+            continue
+        source = CURRENT_CLIENT_TALENT_OVERRIDES[profile]
+        base_player = player(reference)
+        if base_player.get("class") != source["class_name"]:
+            raise ValueError(f"{profile}: current-client donor class mismatch")
+        if base_player.get("talentsString") != source["talents_string"]:
+            raise ValueError(f"{profile}: current-client donor baseline preset mismatch")
+        for preset in presets:
+            replacement = preset["talents_string"]
+            if not isinstance(replacement, str) or not replacement:
+                raise ValueError(f"{profile}: missing pinned alternate talent preset")
+            if replacement == base_player.get("talentsString"):
+                continue
+            composed = copy.deepcopy(reference)
+            player(composed)["talentsString"] = replacement
+            source_path = (
+                f"upstream/wowsims/forever@{source['source_commit']}/"
+                f"{source['source_path']}#{preset['preset_name']};"
+                f"composed-over={profile}"
+            )
+            donors.append({
+                "source_path": source_path,
+                "source_sha256": fingerprint(composed),
+                "class_name": source["class_name"],
+                "item_count": len(player(composed)["equipment"]["items"]),
+                "request": composed,
+                "source_type": "PINNED_UPSTREAM_CURRENT_CLIENT_TALENT_PRESET_DONOR",
+                "talent_source_repository": "wowsims/forever",
+                "talent_source_pull_request": source["upstream_pr"],
+                "talent_source_commit": source["source_commit"],
+                "talent_source_path": source["source_path"],
+                "talent_source_blob_sha": source["source_blob_sha"],
+                "talent_source_url": (
+                    f"https://github.com/wowsims/forever/blob/"
+                    f"{source['source_commit']}/{source['source_path']}"
+                ),
+                "talent_preset_name": preset["preset_name"],
+                "talent_string": replacement,
+                "composed_over_profile": profile,
+                "client_build": CURRENT_CLIENT_BUILD,
+                "engine_pin": CURRENT_ENGINE_PIN,
+            })
+    return donors
 
 
 def create_inventory(registry_path, engine_src):
