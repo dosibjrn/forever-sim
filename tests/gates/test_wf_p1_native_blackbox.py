@@ -1,161 +1,137 @@
-"""P1 source inventory/black-box native harness contracts.
+"""Boundary tests for the native P1 PreparedV2 caller.
 
-Only schema tests may use miniature request objects. A passing test here
-NEVER asserts native combat success without executing MythicSim Rust.
+These tests cover request shaping and fail-closed response propagation only.
+They do not mock a native combat PASS; the positive effect path is exercised
+against the pinned Rust binary by integrations/mythicsim-rust/tests/.
 """
-from copy import deepcopy
+from __future__ import annotations
+
+import json
 from pathlib import Path
 
-import pytest
+from src.engine_client import native_p1_effect_probe as probe
+from tools.wf_p1_native_effects import (
+    DRUID_CLAW_RANK1,
+    build_druid_cat_action_request,
+    native_single_action_pair,
+    run_native,
+)
 
-from tools.p1_native_source_inventory import inventory
-from tools.wf_p1_native_effects import native_apl_pair, run_native
 
-ROOT = Path(__file__).resolve().parents[2]
-
-
-def _sample_request():
+def _request(spell_id=DRUID_CLAW_RANK1):
     return {
-        "raid": {"parties": [{"players": [{
-            "class": "Hunter", "talentsString": "123",
-            "equipment": {"items": [{"id": 42}]},
-            "rotation": {"priorityList": [
-                {"action": {"castSpell": {"spellId": {"spellId": 14282}}}},
-                {"action": {"castSpell": {"spellId": {"spellId": 13550}}}},
-            ]},
-        }]}]},
-        "simOptions": {"iterations": 1, "randomSeed": "43123"},
-        "encounter": {"duration": 12},
+        "raid": {
+            "parties": [{
+                "players": [{
+                    "class": "ClassDruid",
+                    "rotation": {
+                        "priorityList": [{
+                            "action": {
+                                "castSpell": {
+                                    "spellId": {"spellId": spell_id}
+                                }
+                            }
+                        }]
+                    },
+                }]
+            }]
+        },
+        "simOptions": {"iterations": 10, "randomSeed": "647003"},
     }
 
 
-def test_hunter_l20_source_inventory_no_gameir_and_no_false_pass():
-    result = inventory("hunter", 20)
-    assert result["source_only"] is True
-    assert result["game_ir_required"] is False
-    assert result["effects_tested"] == 0
-    assert result["p1_certified"] is False
-    assert result["candidate_count"] > 0
-    # Auto Shot is already a native autoattack source, not a missing
-    # player ActionDefinition.
-    special = {x["spell_id"]: x["status"] for x in result["separate"]}
-    assert special[75] == "NATIVE_AUTO_ATTACK"
-    assert {14282, 13550} <= {x["spell_id"] for x in result["candidates"]}
+def test_single_action_pair_removes_only_the_selected_priority_row():
+    request = _request()
+    positive, control = native_single_action_pair(request, DRUID_CLAW_RANK1)
+    assert positive == request
+    assert control["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"] == []
+    assert control["simOptions"] == request["simOptions"]
+    assert request["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
 
 
-@pytest.mark.parametrize("cls", ("druid", "hunter", "mage", "paladin", "priest",
-                                   "rogue", "shaman", "warlock", "warrior"))
-@pytest.mark.parametrize("level", (20, 60))
-def test_class_level_p1_source_inventory_does_not_require_old_python_adapters(cls, level):
-    result = inventory(cls, level)
-    assert result["class"] == cls
-    assert result["level"] == level
-    assert result["candidate_count"] + result["separate_count"] > 0
-    assert result["p1_certified"] is False
+def test_single_action_pair_rejects_duplicate_selected_actions():
+    request = _request()
+    player = request["raid"]["parties"][0]["players"][0]
+    player["rotation"]["priorityList"].append(
+        player["rotation"]["priorityList"][0]
+    )
+    try:
+        native_single_action_pair(request, DRUID_CLAW_RANK1)
+    except ValueError as exc:
+        assert "AMBIGUOUS" in str(exc) or "DUPLICATE" in str(exc)
+    else:
+        raise AssertionError("duplicate native action was accepted")
 
 
-def test_native_apl_control_preserves_all_non_apl_request_content():
-    req = _sample_request()
-    reference = deepcopy(req)
-    baseline, no_spell = native_apl_pair(req, 14282)
-    assert req == reference and baseline == reference
-    player = no_spell["raid"]["parties"][0]["players"][0]
-    assert player["rotation"]["priorityList"] == [
-        {"action": {"castSpell": {"spellId": {"spellId": 13550}}}}
-    ]
-    player["rotation"]["priorityList"] = deepcopy(
-        req["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"])
-    assert no_spell == req
+def test_druid_cat_request_builder_uses_only_fixture_and_selected_action(tmp_path):
+    fixture = tmp_path / "tests" / "classes" / "druid" / "prepare" / "cat.request.json"
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text(json.dumps(_request(9830)), encoding="utf-8")
+    request = build_druid_cat_action_request(tmp_path, DRUID_CLAW_RANK1)
+    player = request["raid"]["parties"][0]["players"][0]
+    assert player["class"] == "ClassDruid"
+    assert player["rotation"]["priorityList"] == [{
+        "action": {"castSpell": {"spellId": {"spellId": DRUID_CLAW_RANK1}}}
+    }]
 
 
-def test_native_missing_apl_spell_is_not_labeled_missing_engine_implementation():
-    with pytest.raises(ValueError, match="SPELL_NOT_IN_SOURCE_NATIVE_APL"):
-        native_apl_pair(_sample_request(), 1130)
-
-
-def test_native_runner_rejects_missing_binary_without_fabricating_native_output():
-    with pytest.raises(FileNotFoundError, match="PINNED_RUST_ENGINE_BINARY_MISSING"):
-        run_native(ROOT/"nonexistent-forever-engine", _sample_request(),
-                   class_key="hunter", level=20, spell_id=14282)
-
-
-def test_source_only_nonimpact_never_becomes_an_effect_pass():
-    result = inventory("druid", 20)
-    rows = {x["name"]: x["status"] for x in result["separate"]}
-    for name in ("Aquatic Form", "Growl", "Cure Poison", "Rebirth", "Revive"):
-        assert rows[name] == "NOT_RELEVANT_TO_SIMULATION"
-    assert result["p1_certified"] is False
-
-
-
-
-def test_unproven_python_source_role_does_not_block_a_native_apl_probe(monkeypatch, tmp_path):
-    """Test Forever admission plumbing, not the correctness of Rust game rules.
-
-    The legacy source role is uncertain, but the caller has an explicit native
-    castSpell request. Only MythicSim may decide whether it is supported.
-    This is a mocked adapter test and never earns P1 effect coverage.
-    """
-    from tools import wf_p1_native_effects as native
-
-    source = {
-        "class": "hunter", "level": 20,
-        "scenario": "current_solo_leveling_100mob_v1",
-        "source_only": True, "game_ir_required": False,
-        "candidates": [{"spell_id": 13550}],
-        "separate": [{"spell_id": 14282, "status": "NOT_A_PROVEN_CASTABLE_ACTION"}],
-    }
-    monkeypatch.setattr(native, "inventory", lambda *args, **kwargs: source)
-    calls = []
-
-    def fake_native(binary, request, *, timeout_s):
-        actions = request["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
-        calls.append([row["action"]["castSpell"]["spellId"]["spellId"] for row in actions])
-        return {"result": {"raidMetrics": {"dps": {"avg": float(len(actions))}}}}
-
-    monkeypatch.setattr(native, "_run", fake_native)
-    binary = tmp_path / "forever-engine"
-    binary.write_bytes(b"unit-test-placeholder-not-an-engine")
-    result = native.run_native(binary, _sample_request(),
-                               class_key="hunter", level=20, spell_id=14282)
-    assert calls == [[14282, 13550], [13550]]
-    assert result["status"] == "NATIVE_APL_ABLATION_DIFFERENCE"
+def test_missing_selected_rust_binary_is_blocked_without_fallback(tmp_path):
+    engine_root = tmp_path / "integrations" / "mythicsim-rust" / "engine"
+    request = _request()
+    result = run_native(
+        engine_root / "target" / "debug" / "forever-engine",
+        request,
+        class_key="druid",
+        level=20,
+        spell_id=DRUID_CLAW_RANK1,
+        root=tmp_path,
+        world_required=False,
+    )
+    assert result["status"] == "BLOCKED"
+    assert result["reason"] == "SELECTED_RUST_BINARY_MISSING"
+    assert result["native_executed"] is False
     assert result["effect_observed"] is False
     assert result["p1_certified"] is False
-    assert result["p1_native_progress"]["verified"] == 0
-    assert result["p1_native_progress"]["diagnostic_only_spell_ids"] == [14282]
 
 
+def test_native_prepare_refusal_is_preserved_and_never_simulated(tmp_path, monkeypatch):
+    engine_root = tmp_path / "integrations" / "mythicsim-rust" / "engine"
+    binary = engine_root / "target" / "debug" / "forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"test-only executable placeholder")
+    calls = []
 
-def test_native_preparation_refusal_preserves_rust_reason(monkeypatch, tmp_path):
-    """The pinned Rust CLI emits a JSON refusal on stdout with exit code 5."""
-    from subprocess import CompletedProcess
-    from tools.wf_p1_native_effects import _run
+    def prepare_native_request(*, binary, request, scenario, deadline):
+        calls.append(scenario)
+        if scenario.endswith("with-action"):
+            return {
+                "status": "UNSUPPORTED",
+                "reason": "selected native engine does not support this request",
+                "engine_identity": "test-native-identity",
+            }
+        return {
+            "status": "PREPARED",
+            "prepared": {"scenario": scenario},
+            "engine_identity": "test-native-identity",
+        }
 
-    def refused(argv, **kwargs):
-        return CompletedProcess(
-            argv, 5,
-            stdout='{"prepared":false,"refusal":{"code":"talents","reason":"illegal rank"}}',
-            stderr="",
-        )
+    def forbidden_simulation(*_args, **_kwargs):
+        raise AssertionError("native prepare refusal must stop before simulation")
 
-    monkeypatch.setattr("tools.wf_p1_native_effects.subprocess.run", refused)
-    with pytest.raises(ValueError, match="NATIVE_PREPARE_REFUSED:talents:illegal rank"):
-        _run(tmp_path / "forever-engine", _sample_request(), timeout_s=1.0)
-
-
-def test_native_coverage_refusal_preserves_rust_reason(monkeypatch, tmp_path):
-    """Valid unsupported inputs report exit 3, not a synthetic P1 success."""
-    from subprocess import CompletedProcess
-    from tools.wf_p1_native_effects import _run
-
-    def refused(argv, **kwargs):
-        return CompletedProcess(
-            argv, 3,
-            stdout='{"supported":false,"refusals":[{"code":"native_gap","reason":"unsupported spell"}]}',
-            stderr="",
-        )
-
-    monkeypatch.setattr("tools.wf_p1_native_effects.subprocess.run", refused)
-    with pytest.raises(ValueError, match="NATIVE_COVERAGE_REFUSED:"):
-        _run(tmp_path / "forever-engine", _sample_request(), timeout_s=1.0)
+    monkeypatch.setattr(probe, "prepare_native_request", prepare_native_request)
+    monkeypatch.setattr(probe, "_simulate_prepared", forbidden_simulation)
+    result = run_native(
+        binary,
+        _request(),
+        class_key="druid",
+        level=20,
+        spell_id=DRUID_CLAW_RANK1,
+        root=tmp_path,
+        world_required=False,
+    )
+    assert result["status"] == "UNSUPPORTED"
+    assert result["reason"] == "selected native engine does not support this request"
+    assert result["native_executed"] is False
+    assert result["effect_observed"] is False
+    assert result["p1_certified"] is False
+    assert len(calls) == 2
