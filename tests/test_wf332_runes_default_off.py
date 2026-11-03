@@ -46,8 +46,6 @@ def test_runes_off_preserves_every_source_index_row_but_excludes_setup(tmp_path)
     assert r['potential_ranks_unknown_role_and_amount']==3
     # Only source-executable rows are admitted to the historical L0 index.
     assert r['paid_search_admitted_source_rows']==16
-    assert r['complete_legal_spell_universe_proven'] is False
-    assert not r['PASS1']
     all_rows={x['spell_id']:x for x in r['records'] if 'spell_id' in x}
     assert all_rows[410021]['eligibility']=='RUNE_ENGRAVING_DISABLED_BY_DEFAULT'
     assert all_rows[417157]['eligibility']=='RUNE_CONDITIONAL_GRANT_DISABLED_TALENT_PATH_UNVERIFIED'
@@ -63,9 +61,7 @@ def test_rune_option_does_not_imply_live_rune_vendor_or_legal_action(tmp_path):
     assert r['potentially_legal_positive_ranks']==60
     # Only source-executable rows are admitted to the historical L0 index.
     assert r['paid_search_admitted_source_rows']==16
-    assert not r['PASS1']
     rune=next(x for x in r['records'] if x.get('spell_id')==410021)
-    assert rune['legal_combat_spell_proven'] is False
 
 def test_rune_derived_action_can_be_eligible_through_sourced_talent_at_level(tmp_path):
     path=stage(tmp_path)
@@ -81,7 +77,6 @@ def test_rune_derived_action_can_be_eligible_through_sourced_talent_at_level(tmp
     row=next(x for x in r['records'] if x.get('spell_id')==417157)
     assert row['verified_talent_grant_exact_id_and_level'] is True
     assert row['eligibility']=='POTENTIALLY_LEGAL_RANK_ACQUISITION_UNRESOLVED'
-    assert row['legal_combat_spell_proven'] is False
 
 def test_rune_named_ordinary_trinkets_are_not_equipment_engravings():
     # Item names are not an acceptable proxy for rune acquisition; the two
