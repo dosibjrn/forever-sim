@@ -21,3 +21,13 @@ def test_native_p2_client_is_single_owner_and_gate_uses_it():
                    for name in imports)
     # Moving the adapter must not change how it locates the selected pinned fork.
     assert "_REPO_ROOT = Path(__file__).resolve().parents[2]" in canonical.read_text(encoding="utf-8")
+
+
+def test_python_gameir_only_p2_report_cli_is_retired():
+    """P2 acceptance belongs to the selected production engine, not a GameIR report CLI."""
+    legacy_report = ROOT / "tools/wf430_p2_gate_report.py"
+    assert not legacy_report.exists()
+
+    p2_contract = (ROOT / "docs/gates/P1-P2.md").read_text(encoding="utf-8")
+    assert "A Python GameIR-only run is diagnostic" in p2_contract
+    assert (ROOT / "tools/wf_gate_p2_live.py").is_file()
