@@ -10,6 +10,12 @@ on:
       - 'src/scenarios/leveling_targets.py'
       - 'tools/audit_feral_p7_holdout.py'
       - 'tools/import_feral_p7_archives.py'
+      - 'tools/wf_gate_coverage.py'
+      - 'tools/wf_gate_p7_2_live.py'
+      - 'tools/wf_gate_p7_3_live.py'
+      - 'tools/wf_gate_p7_4_live.py'
+      - 'tools/wf_gate_p7_5_live.py'
+      - 'tests/test_p7_search_deadline_contract.py'
       - 'docs/evidence/druid-p7/recovered/raw/**'
       - 'src/game/evaluation.py'
       - 'src/optimization/evaluation.py'
@@ -37,10 +43,21 @@ jobs:
           python-version: '3.11'
       - name: Install focused test runner
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Compile live P7 gate providers
+        run: >-
+          python -m py_compile
+          tools/wf_gate_coverage.py
+          tools/wf_gate_p7_2_live.py
+          tools/wf_gate_p7_3_live.py
+          tools/wf_gate_p7_4_live.py
+          tools/wf_gate_p7_5_live.py
+          tests/test_p7_search_deadline_contract.py
       - name: Verify grouped mechanics layout and preserved evidence assertions
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/test_p7_search_deadline_contract.py
+          tests/gates/test_wf_gate_p7_5_prior.py
           tests/test_wf246_primary_stat_combat.py
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py

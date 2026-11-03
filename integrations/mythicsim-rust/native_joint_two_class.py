@@ -117,7 +117,7 @@ def _ensure_native_damage_action(actions: list[dict],
         is_cast = isinstance(cast, dict)
         identity = cast.get("spellId") if is_cast else None
         identity_key = json.dumps(identity, sort_keys=True, separators=(",", ":"))
-        is_witness = (is_cast and not action.get("condition")
+        is_witness = (is_cast and "condition" not in action
                       and identity_key in allowed)
         if is_witness:
             if identity_key not in seen_witnesses:
@@ -138,29 +138,18 @@ def _ensure_native_damage_action(actions: list[dict],
             "spellId": copy.deepcopy(witness)}}})
         seen_witnesses.add(identity_key)
 
-    # Preserve the source-priority prefix and all available positive witnesses;
-    # discard lower-priority utility casts first to respect the native cap.
-    while (len(conditional_or_opaque) + len(existing_witnesses)
-           + len(unconditional) > 20 and unconditional):
-        unconditional.pop()
+    # Reserve the native 20-action budget for observed damage witnesses before
+    # retaining the highest-priority conditional prefix. A full conditional
+    # APL must not evict every fallback (or produce >20 actions). Trim only
+    # lower-priority tail actions; source APL objects are never modified.
+    existing_witnesses = existing_witnesses[:20]
+    prefix_room = 20 - len(existing_witnesses)
+    conditional_or_opaque = conditional_or_opaque[:prefix_room]
+    utility_room = 20 - len(conditional_or_opaque) - len(existing_witnesses)
+    unconditional = unconditional[:utility_room]
 
-    if len(conditional_or_opaque) + len(existing_witnesses) > 20:
-        room = max(0, 20 - len(conditional_or_opaque))
-        if room == 0 and conditional_or_opaque:
-            removable = next(
-                (i for i in range(len(conditional_or_opaque) - 1, -1, -1)
-                 if json.dumps(
-                     conditional_or_opaque[i].get("action", {}).get(
-                         "castSpell", {}).get("spellId"),
-                     sort_keys=True, separators=(",", ":")) not in allowed),
-                len(conditional_or_opaque) - 1,
-            )
-            conditional_or_opaque.pop(removable)
-            room = 1
-        existing_witnesses = existing_witnesses[:room]
-
-    # Conditional/opaque actions retain their order, followed by the complete
-    # available positive-witness block and then remaining unconditional casts.
+    # Conditional/opaque actions retain their relative order, followed by
+    # native-positive fallback casts and any remaining utility actions.
     return conditional_or_opaque + existing_witnesses + unconditional
 
 def talent_points(talents: str) -> int:
