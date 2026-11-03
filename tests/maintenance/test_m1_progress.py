@@ -154,6 +154,18 @@ def test_old_pass_only_ledger_is_backwards_compatible(tmp_path):
     assert m1.scoreboard(path)["passed_gates"] == 0
 
 
+
+def test_retired_history_cannot_be_invalidated(tmp_path):
+    path = tmp_path / "old.tsv"
+    path.write_text("\\t".join(m1.PASS_FIELDS) + "\\n" +
+                    "\\t".join(("druid", "60", "balance", "P2",
+                               "2026-11-02T00:00:00+00:00", SHA, "", "")) + "\\n")
+    with pytest.raises(SystemExit):
+        m1.main(["--ledger", str(path), "--invalidate",
+                 "druid", "60", "balance", "P2"])
+    assert ("druid", "60", "balance", "P2") in m1._rows(path)
+
+
 def test_partial_watermark_is_monotonic_but_logs_lower_current_measurement(
         monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
