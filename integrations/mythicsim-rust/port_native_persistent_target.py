@@ -13,13 +13,25 @@ from pathlib import Path
 def _paid_recovery_descendant(source: str) -> bool:
     """Recognize only the exact persistent-target + early-retarget + paid-recovery composition."""
     try:
-        from port_native_early_retarget import HELPER, NEW_GUARD, TEST_MARKER
-        from port_native_paid_recovery import port_fight as port_paid_recovery
+        from port_native_early_retarget import HELPER, NEW_GUARD, TEST
+        from port_native_paid_recovery import (
+            FIGHT_CLOCK_OLD, FIGHT_CLOCK_NEW,
+            FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW,
+            port_fight as port_paid_recovery,
+        )
+        # Paid recovery deliberately tightens the early-retarget helper and
+        # its boundary test. Compare against those exact transformed forms,
+        # not the pre-recovery strings.
+        if (HELPER.count(FIGHT_CLOCK_OLD) != 1
+                or TEST.count(FIGHT_CLOCK_TEST_OLD) != 1):
+            return False
+        paid_helper = HELPER.replace(FIGHT_CLOCK_OLD, FIGHT_CLOCK_NEW, 1)
+        paid_test = TEST.replace(FIGHT_CLOCK_TEST_OLD, FIGHT_CLOCK_TEST_NEW, 1)
         return (
-            source.count(HELPER) == 1
+            source.count(paid_helper) == 1
             and source.count(NEW_GUARD) == 1
-            and source.count(TEST_MARKER) == 1
-            and source.count(FIGHT_TEST.rstrip("\n")) == 1
+            and source.count(paid_test) == 1
+            and source.count(FIGHT_TEST.rstrip("\\n")) == 1
             and port_paid_recovery(source) == source
         )
     except (ImportError, ValueError):
