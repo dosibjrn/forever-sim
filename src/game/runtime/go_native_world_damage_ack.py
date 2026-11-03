@@ -65,8 +65,13 @@ class GsimNativeDamageWorldApplier:
         if type(seq) is not int or seq != self._next_seq or response.get("sequence") != seq:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_SEQUENCE_REPLAY")
         clock_ns = tick.get("native_clock_ns")
+        same_clock_control_boundary = (
+            type(clock_ns) is int and clock_ns == self._last_world_tick_ns
+            and isinstance(response.get("native_control_events", []), list)
+            and bool(response.get("native_control_events", []))
+        )
         if (type(clock_ns) is not int or clock_ns < 0
-                or clock_ns <= self._last_world_tick_ns):
+                or (clock_ns <= self._last_world_tick_ns and not same_clock_control_boundary)):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_CLOCK_INVALID")
         before = snapshot_gsim_world(self._runtime)
         # Native time is not authority for gsim time. Reject a fabricated
