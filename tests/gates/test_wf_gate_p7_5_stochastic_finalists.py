@@ -347,6 +347,20 @@ def test_p75_freezes_best_paid_screen_without_repeating_seed_independent_balance
                 "native_damage_events": 10, "native_world_ticks": 20}
 
     production = SimpleNamespace(native_source_control=native, run=world)
+    original_crossover = gate._paid_p75_crossover
+
+    def observe_crossover(candidate, parent, finalists, balanced_elites,
+                          source, rng):
+        operator_rngs.append(rng)
+        assert rng is not candidate_rngs[-1]
+        search_state = candidate_rngs[-1].getstate()
+        for _ in range(20):
+            rng.random()
+        assert candidate_rngs[-1].getstate() == search_state
+        return original_crossover(
+            candidate, parent, finalists, balanced_elites, source, rng)
+
+    monkeypatch.setattr(gate, "_paid_p75_crossover", observe_crossover)
     monkeypatch.setattr(gate, "_source_module",
                         lambda path, name: source if "joint_search" in str(path)
                         else production)
@@ -465,9 +479,12 @@ def test_p75_full_budget_spends_on_unique_paid_candidates_without_reranks(
     requests = [0]
     joint_calls = []
     screen_calls = []
+    candidate_rngs = []
+    operator_rngs = []
 
     def make_candidate(base, pools, rng, **kwargs):
         requests[0] += 1
+        candidate_rngs.append(rng)
         joint_calls.append((requests[0], kwargs.get("elite"),
                             kwargs.get("repair_axes")))
         return _candidate(str(requests[0]))
@@ -530,6 +547,9 @@ def test_p75_full_budget_spends_on_unique_paid_candidates_without_reranks(
     assert result["status"] == "PASS", result
     assert result["search_wall_s"] == 300.0
     assert result["source_legal_joint_candidates_paid"] == 30
+    assert candidate_rngs[0] is candidate_rngs[-1]
+    assert len(operator_rngs) == 2  # proposals 13 and 26
+    assert len({id(rng) for rng in operator_rngs}) == 2
     assert len(screen_calls) == 60
     world_screens = [label for kind, n, mode, label in screen_calls
                      if kind == "world"]
