@@ -9,9 +9,16 @@ optimizer dimensions supplied by callbacks and records exact state identity.
 from dataclasses import dataclass
 import hashlib
 import json
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Protocol
 
-from src.game.model.ir import GameIRSlice
+
+class SerializableOptimizerState(Protocol):
+    """Typed backend-neutral scorer state; no Python game-model dependency."""
+
+    def as_dict(self) -> Mapping[str, Any]:
+        """Stable scorer/scenario identity used by the existing hash contract."""
+        ...
+
 
 
 @dataclass(frozen=True)
@@ -66,13 +73,13 @@ class FixedPointResult:
         }
 
 
-EvaluateState = Callable[[GameIRSlice], Mapping[str, Any]]
-MeasureWeights = Callable[[GameIRSlice], Mapping[str, float]]
+EvaluateState = Callable[[SerializableOptimizerState], Mapping[str, Any]]
+MeasureWeights = Callable[[SerializableOptimizerState], Mapping[str, float]]
 SelectGear = Callable[[Mapping[str, float]], Mapping[str, Any]]
-ApplyGear = Callable[[GameIRSlice, Mapping[str, Any]], GameIRSlice]
+ApplyGear = Callable[[SerializableOptimizerState, Mapping[str, Any]], SerializableOptimizerState]
 
 
-def _ir_hash(ir_slice: GameIRSlice) -> str:
+def _ir_hash(ir_slice: SerializableOptimizerState) -> str:
     raw = json.dumps(ir_slice.as_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
@@ -91,7 +98,7 @@ def _state_identity(*, source_ir_hash: str, gear_candidate_id: str, stat_weights
 
 
 def run_optimizer_fixed_point(
-    source_ir_slice: GameIRSlice,
+    source_ir_slice: SerializableOptimizerState,
     *,
     evaluate_state: EvaluateState,
     measure_weights: MeasureWeights,
@@ -111,7 +118,7 @@ def run_optimizer_fixed_point(
     source_hash = _ir_hash(source_ir_slice)
     rows: list[FixedPointIteration] = []
 
-    def record(index: int, ir_slice: GameIRSlice, gear_id: str, gear_detail: Mapping[str, Any]) -> FixedPointIteration:
+    def record(index: int, ir_slice: SerializableOptimizerState, gear_id: str, gear_detail: Mapping[str, Any]) -> FixedPointIteration:
         state = dict(evaluate_state(ir_slice))
         score = state.get("seconds_per_mob")
         if score is None:
