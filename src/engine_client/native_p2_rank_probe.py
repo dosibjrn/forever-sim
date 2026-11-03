@@ -1,9 +1,8 @@
-"""Selected-Rust Druid talent rank-pair client for the P2 gate.
+"""Selected-Rust Druid talent rank-pair client for P2 diagnostics.
 
-This module deliberately does not implement talent legality or effect semantics.
-It serializes an already source-validated rank pair against the exact selected
-Rust engine layout, then asks that engine to execute both requests with an
-explicit deterministic balanced RNG mode.
+This module does not implement talent legality or effect semantics. It encodes
+proposed candidate pairs against the selected Rust layout and delegates
+legality, preparation and execution to that engine with explicit balanced RNG.
 """
 from __future__ import annotations
 

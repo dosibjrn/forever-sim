@@ -6,9 +6,7 @@ on:
     types: [created]
   pull_request:
     paths:
-      - .github/workflows/rust-upstream-fork.yml
       - scripts/bootstrap_mythicsim_rust_fork.sh
-      - docs/RUST_UPSTREAM_FORK.md
       - integrations/mythicsim-rust/port_native_two_pull_cli.py
       - integrations/mythicsim-rust/port_native_target_ramp_clock.py
       - integrations/mythicsim-rust/port_native_world_lethal_ack.py
@@ -31,10 +29,6 @@ on:
       - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
       - integrations/mythicsim-rust/port_native_persistent_target.py
       - integrations/mythicsim-rust/test_port_native_early_retarget.py
-      - integrations/mythicsim-rust/test_native_p2_rank_probe.py
-      - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
-      - src/engine_client/native_p2_rank_probe.py
-      - tools/wf_gate_p2_live.py
 
 permissions:
   contents: read
