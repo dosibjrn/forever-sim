@@ -22,7 +22,8 @@ from src.game.data.forever.source_checkpoint_p2 import P2Checkpoint, _witness, c
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.data.forever.checkpoint_p2_execution_gate import _executable_filler_witness
 from src.game.talents import apply_talent_selection, talented_bonus_for_level, available_talent_points, validate_talent_selection
-from src.game.talent_frontier import source_legal_talent_neighbors, allocation_key
+from src.game.talent_frontier import source_legal_talent_neighbors
+from src.optimization.talent_frontier import allocation_key
 from src.game.source_objective_relevance import solo_threat_exclusion
 
 

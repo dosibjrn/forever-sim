@@ -697,3 +697,21 @@ assert 'src.game.model.ir' in sys.modules
         text=True, capture_output=True, timeout=30, check=False,
     )
     assert result.returncode == 0, result.stdout + "\\n" + result.stderr
+
+def test_optimizer_package_has_no_gameplay_or_ruleset_dependencies():
+    """The new optimizer boundary must stay independent of game truth."""
+    forbidden = (
+        "src.game",
+        "src.rulesets",
+        "src.engines",
+        "src.classic_mage_leveling_optimizer_v10",
+    )
+    offenders = {}
+    for path in _python_files("src/optimization"):
+        bad = [
+            name for name in _imports(path)
+            if any(name == prefix or name.startswith(prefix + ".") for prefix in forbidden)
+        ]
+        if bad:
+            offenders[str(path)] = bad
+    assert offenders == {}

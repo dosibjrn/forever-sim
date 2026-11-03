@@ -189,6 +189,15 @@ if ! git diff --cached --quiet; then
   git commit -m "feat(forever): retain source-native damage receipts across 2D kills"
 fi
 
+# Preserve measured mana regeneration from the genuine Rust 2-second tick
+# resources in each retained world-target receipt. This is in-combat source
+# evidence, not between-pull idle regeneration or paid recovery.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_mana_regen_receipts.py" "$PWD"
+git add src/core/fight.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): report native mana regeneration across retained world kills"
+fi
+
 # Publish gsim's actually observed world movement into the retained native
 # actor's existing Rust casting rules. Keep the world as movement authority;
 # do not duplicate spell legality in the Python 2D driver.

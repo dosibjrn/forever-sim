@@ -23,7 +23,8 @@ from src.shared.leveling.objective import representative_hp
 from src.v2.source_stateful_budgeted import _make_policy, _condition_from_record
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_budgeted_joint_talents import run_source_budgeted_joint_talents
-from src.game.talent_frontier import allocation_key, source_legal_talent_neighbors
+from src.optimization.talent_frontier import allocation_key
+from src.game.talent_frontier import source_legal_talent_neighbors
 from src.game.runtime.source_maintenance import _execute_source_maintenance_upkeep
 from src.game.runtime.simulator import EventTransitionBudgetExceeded, ComputeDeadlineExceeded
 from src.shared.leveling.spaced_pulls import SpacedPullLayout
