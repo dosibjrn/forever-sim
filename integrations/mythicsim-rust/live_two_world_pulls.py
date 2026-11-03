@@ -123,7 +123,8 @@ def _native_survival_min_health(windows: list[dict], target_count: int) -> float
 
 
 def _native_health_damage_summary(windows: list[dict], *,
-                                  require_positive: bool) -> dict:
+                                  require_positive: bool,
+                                  require_zero: bool = False) -> dict:
     """Carry actual per-target Rust damage-taken resource receipts into 2D results.
 
     The source Rust engine owns incoming attacks and health changes. Missing
@@ -138,7 +139,7 @@ def _native_health_damage_summary(windows: list[dict], *,
         for w in windows
     ]
     if all(not amount and not events for amount, events in presence):
-        if require_positive:
+        if require_positive or require_zero:
             raise AssertionError("RUST_WORLD_NATIVE_HEALTH_DAMAGE_PORT_NOT_SELECTED")
         return {"observed": False, "damage_taken": None, "damage_events": None}
     if not all(amount and events for amount, events in presence):
@@ -156,6 +157,8 @@ def _native_health_damage_summary(windows: list[dict], *,
         event_total += events
     if require_positive and damage_total <= 0:
         raise AssertionError("RUST_WORLD_NATIVE_ATTACK_NOT_OBSERVED")
+    if require_zero and (damage_total != 0 or event_total != 0):
+        raise AssertionError("RUST_WORLD_UNEXPECTED_NATIVE_HEALTH_DAMAGE")
     return {"observed": True, "damage_taken": damage_total,
             "damage_events": event_total}
 
@@ -164,8 +167,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         target_count: int = 2, corrupt_ack: bool = False,
         require_native_moving: bool = False,
         classic_mob_level: int | None = None,
-        require_native_health_damage: bool = False) -> dict:
+        require_native_health_damage: bool = False,
+        require_native_zero_health_damage: bool = False) -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
+    if require_native_health_damage and require_native_zero_health_damage:
+        raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
     if type(target_count) is not int or not 2 <= target_count <= 100:
         raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
@@ -344,7 +350,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         min_native_health = _native_survival_min_health(
             result["windows"], target_count)
         native_health_damage = _native_health_damage_summary(
-            result["windows"], require_positive=require_native_health_damage)
+            result["windows"], require_positive=require_native_health_damage,
+            require_zero=require_native_zero_health_damage)
         if require_native_moving and walks and native_moving_ticks == 0:
             raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
         return {
@@ -381,13 +388,17 @@ def main() -> None:
                         help="CMaNGOS ordinary-mob reference HP (Classic proxy, not Forever-verified)")
     parser.add_argument("--targets", type=int, default=2)
     parser.add_argument("--require-native-moving", action="store_true")
-    parser.add_argument("--require-native-health-damage", action="store_true",
-                        help="require source enemy swings and positive Rust player damage")
+    health_controls = parser.add_mutually_exclusive_group()
+    health_controls.add_argument("--require-native-health-damage", action="store_true",
+                                 help="require source enemy swings and positive Rust player damage")
+    health_controls.add_argument("--require-native-zero-health-damage", action="store_true",
+                                 help="require selected Rust receipts with zero incoming damage")
     args = parser.parse_args()
     valid = run(args.binary, args.prepared, mob_health=args.mob_health,
                 target_count=args.targets, require_native_moving=args.require_native_moving,
                 classic_mob_level=args.classic_mob_level,
-                require_native_health_damage=args.require_native_health_damage)
+                require_native_health_damage=args.require_native_health_damage,
+                require_native_zero_health_damage=args.require_native_zero_health_damage)
     print("RUST_TWO_REAL_GSIM_WORLD_KILLS", json.dumps(valid, sort_keys=True), flush=True)
     forged = run(args.binary, args.prepared, mob_health=args.mob_health,
                  target_count=args.targets, corrupt_ack=True,
