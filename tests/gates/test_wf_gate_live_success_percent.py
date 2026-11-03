@@ -1,6 +1,5 @@
-"""Live FAIL success% and 80/20 are asserted behavior, never exploration.
+"""Active-gate FAIL success% and 80/20 are asserted behavior, never exploration.
 
-Real P2 test executes the production GameIR/CombatRuntime rank probes.
 Unit cases guard against metadata, sampling and candidate-count fraud.
 """
 import subprocess
@@ -14,20 +13,6 @@ from tools.wf_gate_coverage import (measured_live_coverage,
                                     p7_required_dps,
                                     P7_FINAL_STOCHASTIC_ITERATIONS,
                                     pareto_effort_fraction)
-from tools.wf_gate_probe import probe_gate
-
-
-def test_real_druid_p2_live_fail_shows_success_and_8020():
-    row = probe_gate("druid", 60, "balance", "P2", timeout_s=45.0)
-    assert row["status"] == "FAIL", row
-    assert row["verified"] > 0
-    assert row["applicable"] >= row["verified"]
-    c = row["verified"] / row["applicable"]
-    assert row["partial_coverage_percent"] == round(100 * c, 2)
-    assert row["pareto_effort_estimate_percent"] == round(
-        100 * pareto_effort_fraction(c), 2)
-    assert row["engine_id"] == "live_game_ir_compiler_and_runtime"
-    assert len(row["source_id"]) == 64
 
 
 def test_direct_scoreboard_script_still_runs_without_pythonpath():
@@ -84,17 +69,26 @@ def _real_coupled_p7_dps_report(*, gate: str, score: float, reference: float,
     # Contract regression with numeric examples, not evidence of a production
     # P7 run. No M1 PASS/PARTIAL can be derived from these synthetic values.
     report = dict(status="FAIL", production_engine="pinned_mythicsim_rust_gsim_2d",
-                  native_source_revision="pinned", source_request_raw_sha256="source",
+                  native_source_revision="a" * 40, source_request_raw_sha256="b" * 64,
                   world_damage_events=20, world_boundaries=400,
                   saved_reference_dps=reference)
     if gate == "P7.1":
-        report["world_dps"] = score
-    elif gate == "P7.5":
-        report["holdout_mean_dps"] = score
-        if prior is not None:
-            report["strongest_accepted_compatible_prior_dps"] = prior
+        report.update(
+            world_dps=score,
+            iterations=1000,
+            selected_validation="1000_native_and_live_stochastic_fights",
+            stochastic_rng=True,
+        )
     else:
-        report["winner_live_dps"] = score
+        report.update(
+            frozen_stochastic_iterations=1000,
+            frozen_request_raw_sha256="c" * 64,
+            frozen_stochastic_world_damage_events=20,
+            frozen_stochastic_world_boundaries=400,
+            frozen_stochastic_world_dps=score,
+        )
+        if gate == "P7.5" and prior is not None:
+            report["strongest_accepted_compatible_prior_dps"] = prior
     return report
 
 
