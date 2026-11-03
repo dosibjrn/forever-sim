@@ -315,76 +315,117 @@ def _ensure_fallback(actions, source_actions):
     fallbacks = [entry for entry in actions if _is_unconditional_cast(entry)]
     actions[:] = [entry for entry in actions if not _is_unconditional_cast(entry)] + fallbacks
 
-def mutate_apl(actions, source_actions, rng, *, cold=False):
-    """Return a new legal-grammar priority list, class/gate independent.
+def mutate_apl(actions, source_actions, rng, *, cold=False,
+               preserve_source_conditions=False):
+    """Return a new source-bounded priority list.
 
-    Cold generation samples a randomized action list, *not* a paid reference
-    candidate; later elite mutations use the same operators. The grammar is
-    deliberately restricted to expression trees and spell IDs present in the
-    supplied frozen input. This is not full spellbook-level completeness.
+    HPS/TPS callers preserve the exact source action -> condition AST. In that
+    mode cold generation samples complete source entries, later mutations may
+    reorder/insert/drop complete source entries, and no condition is sanitized,
+    replaced, tuned or synthesized. MythicSim remains the legality authority.
+    DPS keeps the broader predicate/cast mutation grammar.
     """
-    spells, predicates_by_spell, allowed, compatible_predicates, source_aura_keys = _corpus(source_actions)
-    cast_templates = _source_cast_templates(source_actions)
+    if preserve_source_conditions:
+        # Do not run the Python predicate grammar or legality filters in this
+        # mode. The complete source entry is the unit of mutation.
+        spells = []
+        predicates_by_spell = {}
+        compatible_predicates = []
+        source_aura_keys = set()
+        cast_templates = {}
+        allowed = {
+            _spell_key(cast.get("spellId"))
+            for entry in source_actions
+            for cast in [entry.get("action", {}).get("castSpell")]
+            if isinstance(cast, dict) and isinstance(cast.get("spellId"), dict)
+        }
+    else:
+        spells, predicates_by_spell, allowed, compatible_predicates, source_aura_keys = _corpus(source_actions)
+        cast_templates = _source_cast_templates(source_actions)
+
     if cold:
-        # A cold search may READ the saved request as a source-backed grammar,
-        # but must not initialize its policy from the saved priority list.
-        # Independently sample new casts/predicates and optional opaque native
-        # actions; an identical policy can still arise by chance and is legal.
-        opaque = [entry for entry in source_actions
-                  if "castSpell" not in entry.get("action", {})]
-        # The saved request is a source vocabulary, not an APL length prior.
-        # Keep the full native action-list budget available to cold search:
-        # a 10-action source grammar must still admit 19-action legal policies.
-        length = rng.randint(2, 20)
-        result = []
-        for _ in range(length):
-            if opaque and rng.random() < 0.15:
-                result.append(copy.deepcopy(rng.choice(opaque)))
-            else:
-                result.append(_new_cast(spells, predicates_by_spell, compatible_predicates, rng,
-                                        cast_templates=cast_templates))
-        # A fallback is a freshly sampled source spell, never a copied saved
-        # reference priority entry. Keep the real native action legality check.
-        if not _has_fallback(result):
-            if len(result) >= 20:
-                result.pop()
-            result.append({"action": {"castSpell": _cast_from_source(
-                rng.choice(spells), cast_templates, rng)}})
+        if preserve_source_conditions:
+            if len(source_actions) < 2:
+                raise ValueError(
+                    "Condition-preserving cold APL requires at least two source actions"
+                )
+            length = rng.randint(2, min(20, len(source_actions)))
+            result = [copy.deepcopy(entry) for entry in rng.sample(source_actions, length)]
+        else:
+            # A cold search may READ the saved request as a source-backed grammar,
+            # but must not initialize its policy from the saved priority list.
+            # Independently sample new casts/predicates and optional opaque native
+            # actions; an identical policy can still arise by chance and is legal.
+            opaque = [entry for entry in source_actions
+                      if "castSpell" not in entry.get("action", {})]
+            # The saved request is a source vocabulary, not an APL length prior.
+            # Keep the full native action-list budget available to cold search:
+            # a 10-action source grammar must still admit 19-action legal policies.
+            length = rng.randint(2, 20)
+            result = []
+            for _ in range(length):
+                if opaque and rng.random() < 0.15:
+                    result.append(copy.deepcopy(rng.choice(opaque)))
+                else:
+                    result.append(_new_cast(spells, predicates_by_spell, compatible_predicates, rng,
+                                            cast_templates=cast_templates))
+            # A fallback is a freshly sampled source spell, never a copied saved
+            # reference priority entry. Keep the real native action legality check.
+            if not _has_fallback(result):
+                if len(result) >= 20:
+                    result.pop()
+                result.append({"action": {"castSpell": _cast_from_source(
+                    rng.choice(spells), cast_templates, rng)}})
         rng.shuffle(result)
     else:
         result = copy.deepcopy(actions)
-        source_spell_keys = frozenset(_spell_key(spell) for spell in spells)
-        # Do not let an inherited, source-unknown aura/spell reference survive
-        # merely because the elite mutation happened not to replace it. This
-        # sanitizes only spell-cast predicates; opaque/item actions stay frozen.
-        for entry in result:
-            action = entry.get("action", {})
-            cast = action.get("castSpell")
-            spell = cast.get("spellId") if isinstance(cast, dict) else None
-            if not isinstance(spell, dict) or not (
-                isinstance(spell.get("spellId"), int)
-                and not isinstance(spell.get("spellId"), bool)
-                and spell["spellId"] > 0
-            ):
-                continue
-            condition = action.get("condition")
-            if not isinstance(condition, dict) or not condition:
-                continue
-            spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
-            if (not valid
-                    or not set(spell_refs).issubset(source_spell_keys)
-                    or not set(aura_refs).issubset(source_aura_keys)
-                    or not _condition_is_safe_for_cast(condition, spell)):
-                action.pop("condition", None)
+        if not preserve_source_conditions:
+            source_spell_keys = frozenset(_spell_key(spell) for spell in spells)
+            # Do not let an inherited, source-unknown aura/spell reference survive
+            # merely because the elite mutation happened not to replace it. This
+            # sanitizes only spell-cast predicates; opaque/item actions stay frozen.
+            for entry in result:
+                action = entry.get("action", {})
+                cast = action.get("castSpell")
+                spell = cast.get("spellId") if isinstance(cast, dict) else None
+                if not isinstance(spell, dict) or not (
+                    isinstance(spell.get("spellId"), int)
+                    and not isinstance(spell.get("spellId"), bool)
+                    and spell["spellId"] > 0
+                ):
+                    continue
+                condition = action.get("condition")
+                if not isinstance(condition, dict) or not condition:
+                    continue
+                spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
+                if (not valid
+                        or not set(spell_refs).issubset(source_spell_keys)
+                        or not set(aura_refs).issubset(source_aura_keys)
+                        or not _condition_is_safe_for_cast(condition, spell)):
+                    action.pop("condition", None)
+
     if len(result) < 2:
         raise ValueError("APL requires at least two priority actions")
     operations = 0 if cold else 1
     for _ in range(operations):
-        modes = ["swap", "replace_condition", "tune_condition", "insert_cast", "drop_action"]
-        mode = rng.choices(modes, weights=(27, 25, 20, 20, 8))[0]
+        if preserve_source_conditions:
+            modes = ["swap", "insert_source_action", "drop_action"]
+            mode = rng.choices(modes, weights=(55, 30, 15))[0]
+        else:
+            modes = ["swap", "replace_condition", "tune_condition", "insert_cast", "drop_action"]
+            mode = rng.choices(modes, weights=(27, 25, 20, 20, 8))[0]
         if mode == "swap":
             i, j = rng.sample(range(len(result)), 2)
             result[i], result[j] = result[j], result[i]
+        elif mode == "insert_source_action" and len(result) < 20:
+            present = {_spell_key(entry) for entry in result}
+            candidates = [
+                entry for entry in source_actions
+                if _spell_key(entry) not in present
+            ]
+            if candidates:
+                result.insert(rng.randrange(len(result) + 1),
+                              copy.deepcopy(rng.choice(candidates)))
         elif mode == "insert_cast" and len(result) < 20:
             result.insert(rng.randrange(len(result) + 1), _new_cast(
                 spells, predicates_by_spell, compatible_predicates, rng,
