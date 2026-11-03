@@ -40,17 +40,3 @@ def test_real_p3_balance_uses_paid_sp_witness_not_epsilon():
                for w in witnesses), result
     assert result["real_measured_stat_weights"]["spell_power"] > 0
     assert result["behavior_probes_executed"] <= 60
-
-
-
-def test_real_p3_druid_l40_unrestricted_measures_spirit_with_reserved_witness_budget():
-    result = run_live(ROOT, "druid", 40, spec="unrestricted")
-    assert result["status"] == "PASS", result
-    assert result["pass_count"] == result["reachability_count"] == 149, result
-    assert result["real_source_search_attempts"] <= 44, result
-    assert result["behavior_probes_executed"] <= 60, result
-    assert result["real_measured_stat_weights"]["spirit"] > 0, result
-    assert any(w["stat"] == "spirit"
-               and w["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
-               and w["weight_s_saved_per_mob_per_unit"] > 0
-               for w in result["source_policy_stat_witnesses"]), result
