@@ -243,7 +243,7 @@ def _probe_native_objective_donor_witnesses(
     objective: str,
     baseline_apl_source_path: str | None = None,
     outdir: Path | None = None,
-    max_probes: int = 12,
+    max_probes: int = 24,
     max_variants_per_talent: int = 2,
     score_request=native_score_request,
 ) -> tuple[dict, list[dict], dict]:
@@ -314,6 +314,9 @@ def _probe_native_objective_donor_witnesses(
                 "probe_kind": "REFERENCE_APL_CROSS_BUILD",
             })
 
+    # Up to 12 distinct source builds may each need both variants: the
+    # reference APL cross-build first, then that build's donor-APL fallback.
+    # A 12-probe total cap starves every fallback after 12 cross-build misses.
     ordered_source_records = cross_build_records + source_request_records
     for source_record in ordered_source_records:
         if isinstance(source_record, dict) and isinstance(source_record.get("request"), dict):
