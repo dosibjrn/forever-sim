@@ -315,13 +315,51 @@ def _ensure_fallback(actions, source_actions):
     fallbacks = [entry for entry in actions if _is_unconditional_cast(entry)]
     actions[:] = [entry for entry in actions if not _is_unconditional_cast(entry)] + fallbacks
 
+def _is_autocast_other_cooldowns(entry):
+    action = entry.get("action", {}) if isinstance(entry, dict) else {}
+    return isinstance(action, dict) and "autocastOtherCooldowns" in action
+
+
+def _ensure_source_cooldown_directives(actions, source_actions):
+    """Keep source autocooldown policy directives in condition-preserving search.
+
+    autocastOtherCooldowns is a request-level policy switch, not an optional
+    cast proposal. Dropping it silently changes the cooldown policy for every
+    remaining action, so HPS/TPS source-preserving search retains the exact
+    source entry through cold generation and later mutation.
+    """
+    required = [
+        copy.deepcopy(entry)
+        for entry in source_actions
+        if _is_autocast_other_cooldowns(entry)
+    ]
+    for entry in required:
+        if entry in actions:
+            continue
+        if len(actions) >= 20:
+            removable = next(
+                (
+                    index for index in range(len(actions) - 1, -1, -1)
+                    if not _is_autocast_other_cooldowns(actions[index])
+                ),
+                None,
+            )
+            if removable is None:
+                raise ValueError(
+                    "APL cannot retain source cooldown directives within the 20-action limit"
+                )
+            actions.pop(removable)
+        actions.append(entry)
+
+
 def mutate_apl(actions, source_actions, rng, *, cold=False,
                preserve_source_conditions=False):
     """Return a new source-bounded priority list.
 
-    HPS/TPS callers preserve the exact source action -> condition AST. In that
-    mode cold generation samples complete source entries, later mutations may
-    reorder/insert/drop complete source entries, and no condition is sanitized,
+    HPS/TPS callers preserve the exact source action -> condition AST and the
+    source autocooldown policy directive. Cold generation and later mutations
+    operate on complete source entries; the policy directive is retained even
+    when other entries are sampled or dropped. No condition is sanitized,
     replaced, tuned or synthesized. MythicSim remains the legality authority.
     DPS keeps the broader predicate/cast mutation grammar.
     """
@@ -455,6 +493,8 @@ def mutate_apl(actions, source_actions, rng, *, cold=False,
             if casts:
                 _tune_literal(rng.choice(casts)["action"]["condition"], rng)
     _ensure_fallback(result, source_actions)
+    if preserve_source_conditions:
+        _ensure_source_cooldown_directives(result, source_actions)
     # Non-cast native actions (strictSequence, channelSpell, multidot, etc.)
     # are opaque source-backed actions. They may be reordered, never invented
     # or edited by this cast-oriented grammar.
