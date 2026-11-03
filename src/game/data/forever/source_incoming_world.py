@@ -6,7 +6,7 @@ numbers are qualified Classic proxies, not discovered Forever NPC facts.
 from __future__ import annotations
 from dataclasses import replace
 import sqlite3
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 from src.game.model.ir import ArmorMitigationDefinition, IncomingAttackDefinition
 
 
