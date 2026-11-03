@@ -48,7 +48,7 @@ class NativeRootsDotPortTest(unittest.TestCase):
             first = {p: (root / p).read_bytes() for p in port.PATHS}
             self.assertEqual(port.main(["port", tmp]), 0)
             self.assertEqual(first, {p: (root / p).read_bytes() for p in port.PATHS})
-            self.assertIn("0.25 * f64::from", (root / list(patches)[0]).read_text())
+            self.assertIn("0.25 * f64::from", (root / "src/classes/druid/prepare/balance.rs").read_text())
             self.assertIn("EntanglingRoots {}", (root / "src/contracts/prepared_v2.rs").read_text())
             self.assertIn('"kind": "entangling_roots"', (root / "src/classes/druid/prepare/export.rs").read_text())
             self.assertIn('"entangling_roots",', (root / "src/classes/druid/prepared/coverage.rs").read_text())
