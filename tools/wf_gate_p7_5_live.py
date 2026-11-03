@@ -85,7 +85,7 @@ def _paid_p75_parent(best, finalists, proposal_index, rng, *,
         return rng.choice(sorted(
             balanced_elites, key=lambda row: row[0], reverse=True
         )[:6])[2]
-    if finalists:
+    if finalists and proposal_index % 3 != 0:
         return rng.choice(sorted(
             finalists, key=lambda row: row[0], reverse=True
         )[:3])[3]
