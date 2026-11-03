@@ -627,6 +627,28 @@ def main(argv=None) -> int:
                     "cold_candidate_failures"):
             if key in report:
                 record[key] = report[key]
+        if gate == "P3":
+            # Preserve the measured source-policy witness and weight vector so
+            # a first-contact P3 failure can be repaired from its actual cause.
+            # These are bounded diagnostics only; they never alter PASS/M1.
+            witnesses = report.get("source_policy_stat_witnesses")
+            if isinstance(witnesses, list):
+                record["source_policy_stat_witnesses"] = witnesses[:8]
+            weights = report.get("real_measured_stat_weights")
+            if isinstance(weights, dict):
+                record["real_measured_stat_weights"] = {
+                    str(axis): float(value)
+                    for axis, value in list(weights.items())[:32]
+                    if type(value) in (int, float) and math.isfinite(value)
+                }
+            for key in ("real_catalogue_legal_items", "real_catalogue_slots_scored",
+                        "actual_search_result_status"):
+                value = report.get(key)
+                if type(value) is int or isinstance(value, str):
+                    record[key] = value
+            profile = report.get("source_profile_production_build")
+            if isinstance(profile, dict):
+                record["source_profile_production_build"] = profile
         if gate.startswith("P7."):
             # Real P7 providers report the frozen 1,000-stochastic outcome,
             # but the public CLI previously dropped it. Keep this bounded
