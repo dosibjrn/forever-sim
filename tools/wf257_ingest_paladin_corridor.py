@@ -6,7 +6,7 @@ identities are checked against canonical Wowhead spell_index before promotion.
 from __future__ import annotations
 import json, re, sqlite3
 from pathlib import Path
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 CAPTURE=Path(__file__).resolve().parents[1]/'data/forever/source_captures/wf257_paladin_l21_30_20261011.json'
 

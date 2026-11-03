@@ -11,7 +11,7 @@ import json
 import shutil
 import sqlite3
 
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'evidence/wf381/mage_talent_positions_70374.json'

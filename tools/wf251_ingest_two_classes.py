@@ -6,7 +6,7 @@ must corroborate every captured class/spell/level before it can execute.
 from __future__ import annotations
 import json, sqlite3
 from pathlib import Path
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 CAPTURE = Path(__file__).resolve().parents[1] / 'data/forever/source_captures/wf251_two_classes_2026-10-11.json'
 
