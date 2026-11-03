@@ -260,6 +260,10 @@ def test_retired_native_p2_rank_probe_diagnostic_has_no_code_or_actions():
     assert "native_p2_rank_probe" not in gate
     assert "native_rank_probe" not in gate
 
+    gate_cli = (ROOT / "tools/wf_gate.py").read_text(encoding="utf-8")
+    assert "native_rank_probe" not in gate_cli
+    assert 'VALIDATORS = {"P1": _validate_p1, "P3": _validate_p3,' in gate_cli
+
     rust_workflow = (ROOT / ".github/workflows/rust-upstream-fork.yml").read_text(encoding="utf-8")
     assert "native_p2_rank_probe" not in rust_workflow
     assert "test_native_p2_rank_probe" not in rust_workflow
