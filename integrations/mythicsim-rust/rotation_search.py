@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Cold, time-bounded Rust APL discovery. Not a P7.2 gate by itself."""
-import argparse, copy, hashlib, json, os, random, subprocess, tempfile, time
+import argparse, copy, hashlib, json, random, subprocess, tempfile, time
 from pathlib import Path
 
 REFERENCE_DPS = 728.1936126415858
@@ -17,7 +17,9 @@ def average_dps(report):
             return float(value)
     raise ValueError("native Rust output contains no average DPS")
 
-def simulate(binary, request, iterations, output_dir, label, rng_mode="stochastic", deadline=None):
+def simulate(binary, request, iterations, output_dir, label, rng_mode, deadline=None):
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_NATIVE_RNG_MODE_INVALID")
     if deadline is not None and time.monotonic() >= deadline:
         raise TimeoutError("End-to-end search deadline exhausted before native execution")
     req = copy.deepcopy(request)
@@ -25,11 +27,10 @@ def simulate(binary, request, iterations, output_dir, label, rng_mode="stochasti
     with tempfile.TemporaryDirectory() as tmp:
         input_path, output_path = Path(tmp)/"in.json", Path(tmp)/"out.json"
         input_path.write_text(json.dumps(req, separators=(",", ":")))
-        env = dict(os.environ, WOWSIM_RNG_MODE=rng_mode)
         started = time.monotonic()
         run = subprocess.run([str(binary), "sim", "--request", str(input_path), "--outfile",
-                              str(output_path), "--gate"], capture_output=True, text=True,
-                             env=env, timeout=max(0.001, min(90.0, deadline - time.monotonic())) if deadline is not None else 90.0)
+                              str(output_path), "--gate", "--rng-mode", rng_mode], capture_output=True, text=True,
+                             timeout=max(0.001, min(90.0, deadline - time.monotonic())) if deadline is not None else 90.0)
         log = {"label":label, "iterations":iterations, "rng_mode":rng_mode,
                "request_sha256":digest(req), "exit_code":run.returncode,
                "elapsed_seconds":round(time.monotonic()-started, 6),
@@ -91,7 +92,7 @@ def main():
         req["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]=candidate
         try:
             log=simulate(args.binary,req,args.screen_iterations,args.output,
-                         "candidate_%05d"%index, deadline=screening_deadline)
+                         "candidate_%05d"%index, rng_mode="balanced", deadline=screening_deadline)
             log["apl_hash"]=key
             trials.append(log)
             elites.append((log["dps"],candidate))
