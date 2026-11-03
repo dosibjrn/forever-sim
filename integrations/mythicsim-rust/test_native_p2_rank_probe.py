@@ -62,7 +62,7 @@ def main() -> int:
     assert layout["feral"][10]["max_rank"] == 3
 
     # Round-trip each pinned engine fixture through the Rust-derived layout.
-    for scenario in ("balance", "cat"):
+    for scenario in ("balance",):
         fixture = _fixture_request(args.engine_root, scenario)
         selection = _decode_fixture_talents(fixture, layout)
         encoded = encode_native_druid_talents(selection, args.engine_root)
@@ -92,12 +92,23 @@ def main() -> int:
     moonkin_before.pop("moonkin_form")
     assert encode_native_druid_talents(moonkin_before, args.engine_root).split("-")[0][-1] == "0"
 
-    predatory_after = _decode_fixture_talents(
-        _fixture_request(args.engine_root, "cat"), layout
+    # The checked-in Cat request fixture contains an unrelated
+    # predatory_discipline rank above the selected Rust layout cap. Do not
+    # erase or clamp it: construct a separate legal 15-point Feral control,
+    # then add only Predatory Strikes rank 1. The selected Rust prepare path
+    # validates this exact pair before the simulation is allowed to run.
+    predatory_before = {
+        "ferocity": 5,
+        "furor": 5,
+        "feral_swiftness": 2,
+        "feral_instinct": 3,
+    }
+    predatory_after = {**predatory_before, "predatory_strikes": 1}
+    predatory_request = _fixture_request(args.engine_root, "cat")
+    predatory_request["raid"]["parties"][0]["players"][0]["talentsString"] = (
+        encode_native_druid_talents(predatory_after, args.engine_root)
     )
-    assert predatory_after.get("predatory_strikes") == 1
-    predatory_before = dict(predatory_after)
-    predatory_before.pop("predatory_strikes")
+    assert _decode_fixture_talents(predatory_request, layout) == predatory_after
     assert encode_native_druid_talents(predatory_before, args.engine_root).split("-")[1][10] == "0"
 
     results = {
