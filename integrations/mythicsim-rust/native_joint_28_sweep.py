@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 from collections import Counter
 from pathlib import Path
 
@@ -71,6 +72,9 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             "source_type": inv.get("source_type"),
             "objective": "HPS" if profile in HEAL else ("TPS" if profile in TANK else "DPS"),
             "native_paid": 0,
+            "baseline_paid": 0,
+            "native_paid_total": 0,
+            "baseline_balanced_score": None,
             "three_axis_paid": 0,
             "full_source_legality_certified": False,
             "process_gate_pass": False,
@@ -86,6 +90,9 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             # This source-bounded adapter cannot certify full legal gear/talents.
             raise ValueError("Unverified full-source legality or P7 certification")
         base.update(measured)
+        base.setdefault("baseline_paid", 0)
+        base.setdefault("native_paid_total",
+                        base.get("native_paid", 0) + base.get("baseline_paid", 0))
         base["full_source_legality_certified"] = False
         base["process_gate_pass"] = False
         base["promotable"] = False
@@ -142,16 +149,55 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _git_sha(path: Path) -> str | None:
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def _git_diff_sha(path: Path) -> str | None:
+    try:
+        diff = subprocess.check_output(
+            ["git", "-C", str(path), "diff", "--binary"],
+            stderr=subprocess.DEVNULL,
+        )
+        return hashlib.sha256(diff).hexdigest()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
                 engine_src: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     db = {name: _sha(engine_src / "data" / (name + ".jsonl"))
           for name in ("items", "enchants", "spells")}
-    provenance = {"stage_seconds": stage, "binary_sha256": _sha(binary),
-                  "native_db_sha256": db,
-                  "source_scope": "PINNED_NATIVE_SOURCE_BOUNDED_PARTIAL_LEGALITY",
-                  "process_p7_pass": False}
+    repo_sha = _git_sha(ROOT)
+    engine_sha = _git_sha(engine_src)
+    port_path = ROOT / "integrations/mythicsim-rust/port_native_typed_rng.py"
+    provenance = {
+        "stage_seconds": stage,
+        "repo_git_sha": repo_sha,
+        "engine_git_sha": engine_sha,
+        "engine_worktree_diff_sha256": _git_diff_sha(engine_src),
+        "typed_rng_port_sha256": _sha(port_path) if port_path.is_file() else None,
+        "binary_sha256": _sha(binary),
+        "native_db_sha256": db,
+        "candidate_rng_mode": "balanced",
+        "holdout_rng_mode": "stochastic",
+        "holdout_status": "NOT_RUN_STAGE_5",
+        "source_scope": "PINNED_NATIVE_SOURCE_BOUNDED_PARTIAL_LEGALITY",
+        "process_p7_pass": False,
+    }
     for row in rows:
+        row.setdefault("baseline_paid", 0)
+        row.setdefault("native_paid_total",
+                       row.get("native_paid", 0) + row.get("baseline_paid", 0))
+        row["repo_git_sha"] = repo_sha
+        row["engine_git_sha"] = engine_sha
         row["native_binary_sha256"] = provenance["binary_sha256"]
         row["native_db_sha256"] = db
     (out / "matrix.json").write_text(json.dumps(rows, indent=2) + "\n")
@@ -159,14 +205,15 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
     (out / "gaps.json").write_text(json.dumps(gap_summary(rows), indent=2) + "\n")
     lines = ["# Native Rust L60 source-bounded JOINT " + str(stage) + "s",
              "", "Not full legal JOINT, not stochastic holdout, not PROCESS P7.",
-             "", "| Profile | Status | Paid | 3-axis paid | Balanced screen | Gap |",
-             "|---|---|---:|---:|---:|---|"]
+             "", "| Profile | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Gap |",
+             "|---|---|---:|---:|---:|---:|---:|---|"]
     for r in rows:
         def esc(value):
             return str(value if value is not None else "—").replace("|", "\\|").replace("\n", " ")
         lines.append("| " + " | ".join(map(esc, (
-            r["profile_id"], r["status"], r["native_paid"], r["three_axis_paid"],
-            r.get("best_balanced_screen"), r.get("blocker") or r.get("promotion_blocker"),
+            r["profile_id"], r["status"], r.get("baseline_balanced_score"),
+            r.get("best_balanced_screen"), r["native_paid"], r.get("baseline_paid", 0),
+            r["three_axis_paid"], r.get("blocker") or r.get("promotion_blocker"),
         ))) + " |")
     (out / "matrix.md").write_text("\n".join(lines) + "\n")
 
@@ -209,7 +256,9 @@ def main() -> None:
                 engine_src=args.engine_src)
     print(json.dumps({"stage_seconds": args.stage, "profiles": len(rows),
                       "statuses": dict(Counter(r["status"] for r in rows)),
-                      "native_paid": sum(r["native_paid"] for r in rows),
+                      "baseline_paid": sum(r.get("baseline_paid", 0) for r in rows),
+                      "search_native_paid": sum(r["native_paid"] for r in rows),
+                      "native_paid_total": sum(r.get("native_paid_total", r["native_paid"]) for r in rows),
                       "three_axis_paid": sum(r["three_axis_paid"] for r in rows),
                       "promotable": sum(bool(r["promotable"]) for r in rows)},
                      sort_keys=True), flush=True)
