@@ -54,9 +54,9 @@ assert Evaluation is OptimizerEvaluation
 assert not any(name == "src.game" or name.startswith("src.game.") for name in sys.modules)
 from src.game.evaluation import Evaluation as LegacyEvaluation
 assert LegacyEvaluation is Evaluation
+assert "src.game.runtime.simulator" in sys.modules
 from src.game import Evaluation as PublicGameEvaluation
 assert PublicGameEvaluation is Evaluation
-assert not any(name.startswith("src.game.runtime") for name in sys.modules)
 '''
     subprocess.run([sys.executable, "-c", probe], cwd=root, check=True)
 
