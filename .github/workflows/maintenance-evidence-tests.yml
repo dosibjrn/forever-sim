@@ -12,7 +12,9 @@ on:
       - 'tools/wf_gate_p7_3_live.py'
       - 'tools/wf_gate_p7_4_live.py'
       - 'tools/wf_gate_p7_5_live.py'
+      - 'tools/wf_gate_p7_5_prior.py'
       - 'tests/test_p7_search_deadline_contract.py'
+      - 'tests/test_p7_5_light_prior_floor.py'
       - 'docs/evidence/druid-p7/recovered/raw/**'
       - 'src/game/evaluation.py'
       - 'src/optimization/evaluation.py'
@@ -48,12 +50,15 @@ jobs:
           tools/wf_gate_p7_3_live.py
           tools/wf_gate_p7_4_live.py
           tools/wf_gate_p7_5_live.py
+          tools/wf_gate_p7_5_prior.py
           tests/test_p7_search_deadline_contract.py
+          tests/test_p7_5_light_prior_floor.py
       - name: Verify grouped mechanics layout and preserved evidence assertions
         run: >-
           python -m pytest -q
           tests/maintenance
           tests/test_p7_search_deadline_contract.py
+          tests/test_p7_5_light_prior_floor.py
           tests/test_wf246_primary_stat_combat.py
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
