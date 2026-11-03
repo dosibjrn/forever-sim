@@ -1,0 +1,40 @@
+name: Work2 bounded real gsim 2D 100-target first-failure diagnostic
+on:
+  push:
+    branches:
+      - work/work2-paid-100-diagnostic-20261103-0555
+
+permissions:
+  contents: read
+
+jobs:
+  native-multiple-world-targets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Prepare exactly selected source Rust (idempotent)
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          echo "selected engine=$(git -C "$engine" rev-parse HEAD)"
+          python3 integrations/mythicsim-rust/port_native_world_lethal_terminal.py "$engine"
+          python3 integrations/mythicsim-rust/port_native_two_world_cli.py "$engine"
+          git -C "$engine" diff --check
+          cargo check --locked --manifest-path "$engine/Cargo.toml"
+          cargo build --locked --manifest-path "$engine/Cargo.toml" --bin forever-engine
+      - name: Reproduce first real world-range or native-resource failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          for targets in 2 3 4 8 16 32 100; do
+            echo "::group::Actual source-Rust + gsim 2D session with $targets distinct world targets"
+            python3 integrations/mythicsim-rust/live_two_world_pulls.py \
+              --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+              --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/balance-druid-revelation.prepared.json \
+              --mob-health 1200 --targets "$targets"
+            echo "::endgroup::"
+          done
