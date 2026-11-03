@@ -1,6 +1,9 @@
 name: Work1 Stage-5 Druid Balance native-2D candidate replay
 
 on:
+  push:
+    branches:
+      - "work/work1-stage5-candidate-2d-replay-20261103"
   pull_request:
     paths:
       - ".github/workflows/work1-stage5-candidate-2d-replay.yml"
