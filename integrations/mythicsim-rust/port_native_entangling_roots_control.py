@@ -75,11 +75,13 @@ AGENT_PATCHES = [
         "            };\n"
         "            let target_index = side.target_position()\n"
         "                .expect(\"Entangling Roots DoT must target an enemy\") as u32;\n"
+        "            let rank_spell_id = fight.spells[spell].id.spell_id;\n"
+        "            let action = format!(\"spell:{}\", rank_spell_id);\n"
         "            let expires_at_ns = fight.now.checked_add(duration_ns)\n"
         "                .expect(\"Entangling Roots expiry overflow\");\n"
         "            crate::core::fight::world_bridge::record_control_state(\n"
         "                fight.now, true, Some(expires_at_ns),\n"
-        "                format!(\"{:?}\", fight.spells[spell].id), target_index, format!(\"{:?}\", side),\n"
+        "                action, rank_spell_id, target_index, format!(\"{:?}\", side),\n"
         "            );\n"
         "        }",
         "GAIN",
@@ -100,9 +102,11 @@ AGENT_PATCHES = [
         "            };\n"
         "            let target_index = side.target_position()\n"
         "                .expect(\"Entangling Roots DoT must target an enemy\") as u32;\n"
+        "            let rank_spell_id = fight.spells[spell].id.spell_id;\n"
+        "            let action = format!(\"spell:{}\", rank_spell_id);\n"
         "            crate::core::fight::world_bridge::record_control_state(\n"
         "                fight.now, false, None,\n"
-        "                format!(\"{:?}\", fight.spells[spell].id), target_index, format!(\"{:?}\", side),\n"
+        "                action, rank_spell_id, target_index, format!(\"{:?}\", side),\n"
         "            );\n"
         "        }",
         "EXPIRE",
