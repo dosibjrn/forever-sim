@@ -73,6 +73,38 @@ impl RngMode {
     one(root, "src/core/fight.rs",
         "rng: SimRng::new(prepared.sim.labeled_rng, prepared.sim.seed as u64),",
         "rng: SimRng::new(rng_mode, prepared.sim.labeled_rng, prepared.sim.seed as u64),")
+    # Real selected-Rust RNG tests: both enum variants and CLI parser.
+    rng_path = root / "src/core/rng.rs"
+    tests = """
+#[cfg(test)]
+mod typed_rng_api_tests {
+    use super::*;
+    #[test]
+    fn required_mode_parses_without_environment_fallback() {
+        assert_eq!(RngMode::parse_cli("balanced"), Ok(RngMode::Balanced));
+        assert_eq!(RngMode::parse_cli("stochastic"), Ok(RngMode::Stochastic));
+        assert!(RngMode::parse_cli("").is_err());
+        assert!(RngMode::parse_cli("unknown").is_err());
+    }
+    #[test]
+    fn balanced_constructor_is_seed_independent_and_stochastic_is_not() {
+        let mut balanced_a = SimRng::new(RngMode::Balanced, false, 101);
+        let mut balanced_b = SimRng::new(RngMode::Balanced, false, 100001);
+        for _ in 0..100 {
+            assert_eq!(balanced_a.proc(0.17, "crit"), balanced_b.proc(0.17, "crit"));
+            assert_eq!(balanced_a.next_f64("damage"), balanced_b.next_f64("damage"));
+        }
+        let mut stochastic_a = SimRng::new(RngMode::Stochastic, false, 101);
+        let mut stochastic_b = SimRng::new(RngMode::Stochastic, false, 100001);
+        assert_ne!(stochastic_a.next_f64("damage"), stochastic_b.next_f64("damage"));
+    }
+}
+"""
+    current = rng_path.read_text()
+    if tests not in current:
+        if "mod typed_rng_api_tests" in current:
+            raise RuntimeError("RNG_TYPED_TEST_SOURCE_DRIFT")
+        rng_path.write_text(current + tests)
     # Existing source-native Druid tests intentionally exercise stochastic mode.
     edit(root, "src/core/fight.rs", [
         ("DruidAgent::fight(&prepared)", "DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)", 3),
