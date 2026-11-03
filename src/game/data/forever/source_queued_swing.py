@@ -15,7 +15,6 @@ import re
 import sqlite3
 
 from src.forever_build import current as current_build
-from src.game.model.ir import ActionDefinition, QueuedSwingEffect, ResourceCost
 from .source_db_scope import DEFAULT_DB, active_ability_db
 from src.shared.identifiers import source_slug as _slug
 from .source_indexed_action_coverage import _source_spell_ids
@@ -85,6 +84,9 @@ def source_queued_swing_actions(ir,*,class_key:str,level:int,db_path=None):
                          ON i.class_key=o.class_key AND i.spell_id=o.spell_id AND i.kind='abilities'
                          WHERE o.class_key=? AND i.level_hint<=? ORDER BY i.level_hint,o.spell_id''',
                          (class_key,int(level))).fetchall()
+    # The source-observation parser and ingestion path do not need legacy
+    # GameIR classes; only construction of an executable IR action does.
+    from src.game.model.ir import ActionDefinition, QueuedSwingEffect, ResourceCost
     modes={m.id for m in ir.modes};resources={r.id for r in ir.resources}
     known={sid for action in ir.actions for sid in _source_spell_ids(action)}
     actions=[];permissions={};facts=[]
