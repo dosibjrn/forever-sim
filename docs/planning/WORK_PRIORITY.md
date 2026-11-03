@@ -16,6 +16,8 @@ This is a current execution queue, not a changelog or second gate/evidence syste
 
 **Prio (#1 unblock owner):** identify the **first missing MythicSim native API or genuine behavior** preventing a high-impact caller migration, confirm it against the selected fork SHA, and implement/assign a tested Rust-fork PR (not a Forever Python workaround). Native validation already present must be reused; do not confuse a correctly rejected invalid candidate with a broken validator. The migration is complete only when no duplicated live GameIR or source-legality execution remains.
 
+**Every Work1/Work2/Clean cycle must land a real pushed implementation increment** (commit/PR with focused validation); CI-only, status-only or PR-comment-only reports do not satisfy the cycle. If one migration is blocked, switch to a different executable independent slice; never fabricate a meaningless diff. See the agent delivery contract.
+
 **Fork-to-production path:** normal branch → source/test PR → merge in [owned MythicSim fork](https://github.com/dosibjrn/mythicsim-forever-engine) → tested exact-SHA gitlink PR in Forever → native caller migration/deletion PR. No floating engine refs and no changes to historical PASS ledger. The privileged [rust-upstream-fork.yml](../../.github/workflows/rust-upstream-fork.yml) bootstrap is a separate, owner-guarded operation; it is **not required** for normal fork PR creation or merge. See [RUST_UPSTREAM_FORK](../RUST_UPSTREAM_FORK.md).
 
 ### #2 P0 — Work2 #15: joint optimizer, using MythicSim-owned legality
