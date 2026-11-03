@@ -8,6 +8,8 @@ on:
       - .github/workflows/wf-gsim-rust-native-world.yml
       - integrations/mythicsim-rust/port_native_typed_rng.py
       - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
+      - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
+      - src/game/native_p2_rank_probe.py
       - .github/workflows/m1-on-demand-record.yml
 
 permissions:
@@ -61,5 +63,11 @@ jobs:
         working-directory: integrations/mythicsim-rust/engine
         run: |
           cargo test --locked --lib typed_rng_api_tests
+          cargo test --locked --lib native_improved_roots_rank
           cargo check --locked
           cargo test --locked --no-run
+          cargo build --locked --bin forever-engine
+      - name: Exercise selected-Rust P2 prepare adapter
+        env:
+          FOREVER_ENGINE_BINARY: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        run: python3 integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
