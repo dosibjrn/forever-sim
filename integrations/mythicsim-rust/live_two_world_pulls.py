@@ -26,8 +26,25 @@ from src.shared.leveling.spaced_pulls import SpacedPullLayout
 from src.shared.leveling.objective import MOB_BASE_HP, representative_hp
 
 
+def _source_approach_radius(request: dict) -> float:
+    """Use the selected source-prepared melee reach for diagnostic 2D placement.
+
+    The gsim world controller does not define Warcraft attack range. A melee
+    source build cannot start at the ranged diagnostic's 12-yard separation.
+    The 90% fraction stays strictly within the sourced max range.
+    """
+    melee = request.get("melee", {})
+    if melee.get("auto_swing_melee") is not True:
+        return 12.0
+    reach = melee.get("main_hand", {}).get("max_range")
+    if type(reach) not in (int, float) or not isfinite(reach) or reach <= 0:
+        raise ValueError("RUST_WORLD_SOURCE_MELEE_RANGE_INVALID")
+    return min(12.0, 0.9 * float(reach))
+
+
 def _queue_world_walk(world: CombatRuntime, target_id: str, *,
-                      speed_yards_s: float) -> dict:
+                      speed_yards_s: float,
+                      approach_radius_yards: float = 12.0) -> dict:
     """Use gsim's live 2D movement scheduler, never teleport a target/player.
 
     A world walk is not native cast-while-moving legality, source-native
@@ -39,7 +56,6 @@ def _queue_world_walk(world: CombatRuntime, target_id: str, *,
     distance = hypot(dx, dy)
     # Stop outside melee, well inside the native Balance spell's range.
     # This is a diagnostic approach position, not fabricated spell range.
-    approach_radius_yards = 12.0
     if distance <= approach_radius_yards:
         return {"target_id": target_id, "scheduled_yards": 0.0,
                 "start_s": world.actor.current_time_s,
@@ -160,6 +176,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     source_hash = request["request_sha256"]
     if not isinstance(source_hash, str) or len(source_hash) != 64:
         raise ValueError("RUST_TWO_WORLD_PREPARED_SOURCE_INVALID")
+    approach_radius_yards = _source_approach_radius(request)
     # One actual 2D world for the entire target sequence. This is the
     # existing native combat/world ACK diagnostic, not paid travel/recovery.
     # Keep the real 20-yard grid. Start near the FIRST mob, not the
@@ -169,7 +186,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     targets = ("m1", "m0") + tuple(f"m{i}" for i in range(2, target_count))
     route = SpacedPullLayout(mob_count=target_count)
     points = route.positions_yards
-    positions = {target_id: (x + 12.0 - points[0][0], y - points[0][1])
+    positions = {target_id: (x + approach_radius_yards - points[0][0], y - points[0][1])
                  for target_id, (x, y) in zip(targets, points)}
     actor = ActorState.from_ir(
         ActorDefinition("hero", "player", base_stats={}),
@@ -294,7 +311,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                     # and native actor timeline; no movement is free.
                     walks.append(_queue_world_walk(
                         world, targets[iteration + 1],
-                        speed_yards_s=route.movement_speed_yards_s))
+                        speed_yards_s=route.movement_speed_yards_s,
+                        approach_radius_yards=approach_radius_yards))
             if corrupt_ack and events:
                 break
         proc.stdin.close()
