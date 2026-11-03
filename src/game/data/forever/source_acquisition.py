@@ -13,7 +13,6 @@ from pathlib import Path
 import sqlite3
 from typing import Iterable
 
-from .source_indexed_action_coverage import _source_spell_ids
 from .source_db_scope import DEFAULT_DB
 
 
@@ -76,6 +75,9 @@ def audit_learned_action_legality(ir, *, level: int, action_ids: Iterable[str],
     hint or a Taught-by page. Even a proven trainer method requires a separate
     validated route event; no such event verifier is implemented yet.
     """
+    # Legacy GameIR rank trace is only needed by this legacy audit path.
+    # Source-only evidence readers must not eagerly load the IR coverage layer.
+    from .source_indexed_action_coverage import _source_spell_ids
     actions = {a.id: a for a in ir.actions}
     acquired = set(int(x) for x in acquired_spell_ids)
     verified_trace = None

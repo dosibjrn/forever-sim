@@ -21,6 +21,7 @@ from src.game.data.forever.source_acquisition_entities import TYPES, _typed_list
 assert events.DEFAULT_DB is DEFAULT_DB
 for module in (
     'src.game.data.forever.sqlite_talents',
+    'src.game.data.forever.source_indexed_action_coverage',
     'src.game.model.ir',
     'src.game.runtime.simulator',
 ):
@@ -55,6 +56,7 @@ else:
 
 for module in (
     'src.game.data.forever.sqlite_talents',
+    'src.game.data.forever.source_indexed_action_coverage',
     'src.game.model.ir',
     'src.game.runtime.simulator',
 ):
