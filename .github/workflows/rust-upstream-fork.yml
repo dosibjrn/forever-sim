@@ -59,12 +59,19 @@ jobs:
       - name: Apply port to selected production Rust source and compile
         run: |
           git clone --quiet --filter=blob:none https://github.com/dosibjrn/mythicsim-forever-engine.git /tmp/forever-selected-rust
-          git -C /tmp/forever-selected-rust checkout --quiet 1f170913f0af47f0de455c2b91581d777e713d3a
+          # Check the actual gitlink selected by this PR, not a stale hardcoded SHA.
+          selected_sha="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
+          test -n "$selected_sha"
+          git -C /tmp/forever-selected-rust checkout --quiet "$selected_sha"
+          test "$(git -C /tmp/forever-selected-rust rev-parse HEAD)" = "$selected_sha"
+
+          # The source port must work both before and after the fork is pinned.
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
-          test "$(git -C /tmp/forever-selected-rust diff --name-only)" = "src/core/fight.rs"
+          first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
-          test "$(git -C /tmp/forever-selected-rust diff --name-only)" = "src/core/fight.rs"
+          second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs)"
+          test "$first_hash" = "$second_hash"
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
 
   sync-fork:
