@@ -5,6 +5,9 @@ on:
       - 'tests/maintenance/**'
       - 'tests/integration/source/**'
       - 'tests/mechanics/**'
+      - 'src/rulesets/forever/classes/druid/mechanics.py'
+      - 'src/optimization/leveling_score.py'
+      - 'src/scenarios/leveling_targets.py'
       - 'tools/audit_feral_p7_holdout.py'
       - 'tools/import_feral_p7_archives.py'
       - 'docs/evidence/druid-p7/recovered/raw/**'
@@ -43,6 +46,9 @@ jobs:
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/mechanics/druid/test_druid_mechanics_layout.py
+          tests/mechanics/druid/test_druid_cat_closure_v0114896.py
+          tests/mechanics/druid/test_druid_balance_mana_weights_v0114854.py
+          tests/mechanics/druid/test_druid_shared_form_recovery_cycle_v0114898.py
           tests/mechanics/hunter/test_hunter_mechanics_layout.py
           tests/mechanics/mage/test_mage_extended_layout.py
           tests/mechanics/paladin/test_paladin_mechanics_layout.py
