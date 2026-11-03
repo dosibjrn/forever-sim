@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from apl_mutation import _corpus, mutate_apl
+from native_joint_two_class import _ensure_native_damage_action, _native_positive_source_casts
 
 
 def _predicate_shape(value):
@@ -129,3 +130,85 @@ def test_cold_and_elite_cast_conditions_remain_bound_to_their_source_spell():
                 assert observed in source_conditions.get(key, set()), (
                     f"seed={seed}, cold={cold}, spell={key}, condition={observed}"
                 )
+
+
+
+def test_native_damage_anchor_and_spell_bound_predicates_compose_on_cold_and_elite_apls():
+    # A source-paid baseline proves 11713 damages; 11689 is a non-damaging
+    # Life Tap cast. The item predicate must never enter either cast's pool.
+    source_actions = [
+        {
+            "action": {
+                "castSpell": {"spellId": {"spellId": 11689}},
+                "condition": {"auraIsActive": {"auraId": {"spellId": 11689}}},
+            }
+        },
+        {
+            "action": {
+                "castSpell": {"spellId": {"spellId": 11713}},
+                "condition": {"auraIsActive": {"auraId": {"spellId": 11713}}},
+            }
+        },
+        {
+            "action": {
+                "useItem": {"itemId": 12662},
+                "condition": {"auraIsActive": {"auraId": {"spellId": 12662}}},
+            }
+        },
+    ]
+    source_snapshot = json.loads(json.dumps(source_actions))
+    baseline = {
+        "result": {
+            "raidMetrics": {
+                "parties": [{
+                    "players": [{
+                        "actions": [
+                            {"id": {"spellId": 11689}, "targets": [{"casts": 80}]},
+                            {"id": {"spellId": 11713},
+                             "targets": [{"casts": 10, "damage": 800.0}]},
+                        ]
+                    }]
+                }]
+            }
+        }
+    }
+
+    witnesses = _native_positive_source_casts(source_actions, baseline)
+    assert witnesses == [{"spellId": 11713}]
+    _, predicates_by_spell, _ = _corpus(source_actions)
+    assert set(predicates_by_spell) == {
+        json.dumps({"spellId": 11689}, sort_keys=True, separators=(",", ":")),
+        json.dumps({"spellId": 11713}, sort_keys=True, separators=(",", ":")),
+    }
+
+    for seed in range(128):
+        cold = mutate_apl(None, source_actions, random.Random(seed), cold=True)
+        elite = mutate_apl(cold, source_actions, random.Random(seed + 1000))
+        for proposal in (cold, elite):
+            anchored = _ensure_native_damage_action(
+                proposal, witnesses, random.Random(seed)
+            )
+            first = anchored[0]["action"]
+            assert first["castSpell"]["spellId"] == {"spellId": 11713}
+            assert "condition" not in first
+
+            # Every generated cast predicate remains attached to the exact
+            # source spell identity; the non-cast item condition is excluded.
+            for entry in anchored:
+                action = entry.get("action", {})
+                cast = action.get("castSpell")
+                condition = action.get("condition")
+                if not isinstance(cast, dict) or condition is None:
+                    continue
+                key = json.dumps(
+                    cast.get("spellId"), sort_keys=True, separators=(",", ":")
+                )
+                observed = json.dumps(
+                    condition, sort_keys=True, separators=(",", ":")
+                )
+                allowed = {
+                    json.dumps(item, sort_keys=True, separators=(",", ":"))
+                    for item in predicates_by_spell.get(key, ())
+                }
+                assert observed in allowed, (seed, key, observed)
+        assert source_actions == source_snapshot
