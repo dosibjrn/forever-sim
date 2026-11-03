@@ -427,7 +427,7 @@ def main(argv=None):
               f"({100 * p['coverage']:.1f}% {unit}, "
               f"{100 * p['pareto_effort']:.1f}% Pareto-modeled work){tentative}")
     print(f"Whole checkpoints: {result['certified_checkpoints']}/148; "
-          f"11/11 gate candidates: {result['complete_candidates']}")
+          f"9/9 gate candidates: {result['complete_candidates']}")
     print("Unlinked/mismatched compatibility IDs never certify a whole checkpoint.")
     return 0
 
