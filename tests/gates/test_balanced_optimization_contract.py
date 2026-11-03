@@ -14,7 +14,9 @@ def _source(path: str) -> str:
 def test_live_p7_candidate_and_finalist_scoring_never_uses_stochastic_rng():
     for gate in ("p7_2", "p7_3", "p7_4", "p7_5"):
         source = _source(f"tools/wf_gate_{gate}_live.py")
-        search, separator, frozen = source.partition("    complete_search =")
+        marker = ("    if full_search and search_wall_s >= 300.0:"
+                  if gate == "p7_2" else "    complete_search =")
+        search, separator, frozen = source.partition(marker)
         assert separator, gate
         assert 'rng_mode="stochastic"' not in search, gate
         assert '"search_rng_mode": "balanced"' in frozen, gate
