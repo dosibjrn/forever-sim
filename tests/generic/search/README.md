@@ -30,3 +30,7 @@ their own files.
 The directory is included in normal `pytest` collection
 (`pytest.ini` sets `testpaths = tests`). Formal gate acceptance and M1 progress
 remain owned by their production gate runners and Merge.
+
+The retained V2 analytic scorer and analytic-frontier regressions are collected
+here rather than in the flat `tests/` root; their test bodies are unchanged.
+The focused PR job exercises these modules and the relocation layout check.
