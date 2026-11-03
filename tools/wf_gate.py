@@ -572,6 +572,25 @@ def main(argv=None) -> int:
             if isinstance(failures, list):
                 record["balanced_finalist_failures"] = [
                     str(error)[:180] for error in failures[:4]]
+            # WF613 has its own adaptive paid-parent controller. Its operator
+            # diagnostics must survive this CLI projection; the default-only
+            # balanced_parent_proposals counter is not meaningful for WF613.
+            if report.get("search_strategy") == "wf613":
+                for key in ("operator_attempts", "operator_best_improvements"):
+                    value = report.get(key)
+                    if (isinstance(value, dict) and len(value) <= 9
+                            and all(isinstance(name, str) and len(name) <= 64
+                                    and type(count) is int and 0 <= count <= 100000
+                                    for name, count in value.items())):
+                        record["wf613_" + key] = value
+                for key in ("parent_proposals", "fresh_proposals",
+                            "paid_archive_size"):
+                    value = report.get(key)
+                    if type(value) is int and 0 <= value <= 100000:
+                        record["wf613_" + key] = value
+                value = report.get("best_paid_balanced_world_dps")
+                if type(value) in (int, float) and math.isfinite(value):
+                    record["wf613_best_paid_balanced_world_dps"] = value
         if gate == "P7.4":
             # Forward only bounded, source-executed winner identity. This is
             # diagnostic provenance, never an additional gate predicate.
