@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from tools import m1_progress as m1
+from tools import wf_gate
 
 
 SHA = "a" * 40
@@ -153,6 +154,15 @@ def test_old_pass_only_ledger_is_backwards_compatible(tmp_path):
                                "2026-11-02T00:00:00+00:00", SHA, "", "")) + "\n")
     assert m1.scoreboard(path)["passed_gates"] == 0
 
+
+
+
+def test_public_gate_cli_rejects_retired_p1_p2():
+    assert wf_gate.GATES == tuple(f"P{i}" for i in range(3, 7)) + tuple(
+        f"P7.{i}" for i in range(1, 6))
+    for gate in ("P1", "P2"):
+        with pytest.raises(SystemExit):
+            wf_gate.main(["--class", "druid", "--level", "60", "--gate", gate])
 
 
 def test_retired_history_cannot_be_invalidated(tmp_path):
