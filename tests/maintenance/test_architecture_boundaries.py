@@ -193,3 +193,36 @@ def test_registry_metadata_selection_defers_legacy_class_builder_imports(monkeyp
         (".druid", "src.game.data.forever"),
         (".druid", "src.game.data.forever"),
     ]
+
+
+def test_registry_lightweight_import_does_not_load_legacy_combat_engine():
+    """A fresh source-metadata read must not eagerly import GameIR or its runtime.
+
+    The legacy src.game Evaluation exports remain available when explicitly
+    requested, so existing consumers can migrate independently.
+    """
+    import subprocess
+    import sys
+
+    source = """
+import sys
+from src.game.data.forever.registry import registered_class_keys, generic_default_ready_levels
+assert len(registered_class_keys()) == 9
+assert generic_default_ready_levels('druid') == ()
+assert 'src.game.model.ir' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+
+from src.game import Evaluation, evaluation_from_combat_timeline
+assert Evaluation.__name__ == 'Evaluation'
+assert callable(evaluation_from_combat_timeline)
+assert 'src.game.model.ir' in sys.modules
+assert 'src.game.runtime.simulator' in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"registry import / explicit runtime compatibility failed: "
+        f"{result.stdout}\n{result.stderr}"
+    )
