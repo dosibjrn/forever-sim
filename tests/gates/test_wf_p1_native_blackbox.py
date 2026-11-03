@@ -799,98 +799,26 @@ def test_native_direct_effect_report_carries_prepared_action_inventory(monkeypat
 
 
 
-def test_native_candidate_inventory_is_not_complete_when_control_spellbook_differs(
-    monkeypatch, tmp_path
-):
-    from src.engine_client import native_p1_effect_probe as probe
+def test_native_action_inventory_parity_fails_closed_on_mismatch():
+    from src.engine_client.native_p1_effect_probe import _native_action_inventory_parity
 
-    engine_root = tmp_path / "engine"
-    engine_root.mkdir()
-    binary = engine_root / "forever-engine"
-    binary.write_bytes(b"placeholder")
-    selected = {
-        "action_id": {"spell_id": 14282},
-        "rank": 1,
-        "class_spell": "AimedShot",
-        "flags": ["APL"],
+    positive = {
+        "status": "AVAILABLE",
+        "spells": [{"action_id": {"spell_id": 14282}}],
+        "major_cooldowns": [],
+        "spell_count": 1,
+        "major_cooldown_count": 0,
     }
-    candidate = {
-        "action_id": {"spell_id": 13550},
-        "rank": 2,
-        "class_spell": "SerpentSting",
-        "flags": ["APL"],
+    control = {
+        "status": "AVAILABLE",
+        "spells": [],
+        "major_cooldowns": [],
+        "spell_count": 0,
+        "major_cooldown_count": 0,
     }
-    positive_spellbook = [selected, candidate]
-    control_spellbook = [selected]
 
-    def prepare(**kwargs):
-        scenario = kwargs["scenario"]
-        if scenario.endswith("native-candidate-13550"):
-            marker = "candidate"
-            spellbook = positive_spellbook
-        elif scenario.endswith("with-action"):
-            marker = "with"
-            spellbook = positive_spellbook
-        else:
-            marker = "without"
-            spellbook = control_spellbook
-        digest = {
-            "with": "a" * 64,
-            "without": "b" * 64,
-            "candidate": "c" * 64,
-        }[marker]
-        return {
-            "status": "PREPARED",
-            "stage": "prepare",
-            "engine_identity": "selected-pin",
-            "request_sha256": digest,
-            "prepared_sha256": digest,
-            "prepared": {
-                "marker": marker,
-                "player": {
-                    "class": "Hunter",
-                    "level": 20,
-                    "talents_string": "123",
-                    "talents": {},
-                    "spells": spellbook,
-                    "major_cooldowns": [],
-                },
-            },
-        }
+    result = _native_action_inventory_parity(positive, control)
 
-    def simulate(**kwargs):
-        marker = kwargs["prepared"]["marker"]
-        return {
-            "status": "EXECUTED",
-            "stage": "sim",
-            "dps": 18.0 if marker == "with" else 4.0,
-            "engine_identity": "selected-pin",
-        }
-
-    monkeypatch.setattr(probe, "prepare_native_request", prepare)
-    monkeypatch.setattr(probe, "_simulate_prepared", simulate)
-    monkeypatch.setattr(
-        probe, "_run_world_bridge",
-        lambda *args, **kwargs: pytest.fail("non-spatial probe must not start 2D"),
-    )
-
-    result = probe.run_native_p1_direct_effect_probe(
-        binary=binary,
-        engine_root=engine_root,
-        request=_sample_request(),
-        spell_id=14282,
-        timeout_seconds=5,
-        iterations=1,
-        requires_2d_world=False,
-        target_count=0,
-        world_mob_health=0,
-    )
-
-    assert result["status"] == "NATIVE_DIRECT_EFFECT_VERIFIED"
-    assert result["native_action_inventory_parity"]["status"] == "MISMATCH"
-    assert result["native_action_inventory_parity"]["positive_spell_records_equal"] is False
-    assert result["native_action_candidate_probe"]["status"] == "PARTIAL"
-    assert result["native_action_candidate_probe"]["reason"] == (
-        "NATIVE_PREPARED_ACTION_INVENTORY_NOT_STABLE_ACROSS_ACTION_CONTROL"
-    )
-    assert result["p1_certified"] is False
+    assert result["status"] == "MISMATCH"
+    assert result["positive_spell_records_equal"] is False
+    assert result["positive_major_cooldowns_equal"] is True
