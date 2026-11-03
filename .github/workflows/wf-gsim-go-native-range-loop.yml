@@ -23,6 +23,7 @@ on:
       - src/game/runtime/simulator.py
       - tests/integration/backend/test_wf_gsim_go_world_range_feed.py
       - tests/integration/backend/test_wf_druid_l60_native_step_protocol.py
+      # Ingress ACK schema and core boundary tests are one protocol surface.
       - integrations/mythicsim-go/world_boundary/**
 
 permissions:
