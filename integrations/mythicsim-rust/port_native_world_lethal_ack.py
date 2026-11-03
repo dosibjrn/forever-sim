@@ -87,35 +87,10 @@ mod persistent_next_target_world_lethal_ack_tests {
 }
 
 """
-# The pre-guard regression was written for an ACKed *living* target. Once
-# retarget requires a real kill, its valid positive control must carry the
-# same lethal HP and SHA-256 ACK ancestry as the production bridge.
-LEGACY_TEST_STATE = '''last_tick_ns: 120_000_000, last_health: Some(40.0),
-            previous_ack_id: "ack-from-first-target".into(),'''
-LETHAL_TEST_STATE = '''last_tick_ns: 120_000_000, last_health: Some(0.0),
-            previous_ack_id: "a".repeat(64),'''
-LEGACY_TEST_ASSERT = 'assert_eq!(bridge.previous_ack_id, "ack-from-first-target");'
-LETHAL_TEST_ASSERT = 'assert_eq!(bridge.previous_ack_id, "a".repeat(64));'
-
-
-def repair_persistent_bridge_test(source: str) -> str:
-    if LEGACY_TEST_STATE in source:
-        if source.count(LEGACY_TEST_STATE) != 1 or source.count(LEGACY_TEST_ASSERT) != 1:
-            raise ValueError("ambiguous legacy bridge regression")
-        source = source.replace(LEGACY_TEST_STATE, LETHAL_TEST_STATE, 1)
-        source = source.replace(LEGACY_TEST_ASSERT, LETHAL_TEST_ASSERT, 1)
-    elif (source.count(LETHAL_TEST_STATE) != 1
-          or source.count(LETHAL_TEST_ASSERT) != 1
-          or LEGACY_TEST_ASSERT in source):
-        raise ValueError("unknown persistent bridge test ancestry")
-    return source
-
-
 BEFORE_TEST = "pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64> {"
 
 
 def port_source(source: str) -> str:
-    source = repair_persistent_bridge_test(source)
     if NEW in source:
         if (source.count(NEW) != 1 or source.count(TEST_MARKER) != 1
                 or source.count(TESTS) != 1
