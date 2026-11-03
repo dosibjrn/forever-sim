@@ -274,6 +274,9 @@ def _probe_native_prepared_action_candidates(
             and isinstance(selected_prepare, dict)
             and selected_prepare.get("status") == "PREPARED"
         )
+        # An inventory candidate is not necessarily an attempted native
+        # prepare: the deadline may expire before the request is sent.
+        native_prepare_attempted = reused
         if reused:
             receipt = selected_prepare
         elif time.monotonic() >= deadline:
@@ -288,6 +291,7 @@ def _probe_native_prepared_action_candidates(
                 positive_request, _ = native_single_action_pair(
                     request, spell_id, action_row=_minimal_cast_spell_row(spell_id)
                 )
+                native_prepare_attempted = True
                 receipt = prepare_native_request(
                     binary=binary,
                     request=positive_request,
@@ -312,6 +316,7 @@ def _probe_native_prepared_action_candidates(
                 "reason": "NATIVE_P1_CANDIDATE_RECEIPT_INVALID",
             },
             "reused_selected_prepare": reused,
+            "native_prepare_attempted": native_prepare_attempted,
         })
 
     counts = {
@@ -334,7 +339,9 @@ def _probe_native_prepared_action_candidates(
         "candidate_scope": "NATIVE_PREPARED_APL_SPELLS_ONLY",
         "candidate_count": len(seen),
         "selected_spell_present": selected_spell_present,
-        "attempted_count": len(seen),
+        "attempted_count": sum(
+            row.get("native_prepare_attempted") is True for row in results
+        ),
         "prepared_count": counts["PREPARED"],
         "invalid_count": counts["INVALID"],
         "unsupported_count": counts["UNSUPPORTED"],
