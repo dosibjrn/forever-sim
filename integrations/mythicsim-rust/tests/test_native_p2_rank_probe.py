@@ -54,8 +54,15 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
         self.assertEqual(result["status"], "PREPARED", result)
         self.assertFalse(result["accepted_for_p2"])
         self.assertTrue(result["engine_identity"])
-        before_prepared = result["before"]["prepared"]
-        after_prepared = result["after"]["prepared"]
+        # The public pair result intentionally keeps compact receipts under
+        # before/after and exposes full prepared states under these private
+        # diagnostic keys. Do not assume the compact receipt nests PreparedV2.
+        self.assertEqual(result["before"]["status"], "PREPARED")
+        self.assertEqual(result["after"]["status"], "PREPARED")
+        self.assertTrue(result["before"]["prepared_sha256"])
+        self.assertTrue(result["after"]["prepared_sha256"])
+        before_prepared = result["_before_prepared"]
+        after_prepared = result["_after_prepared"]
         self.assertEqual(
             before_prepared["player"]["talents"].get("predatory_strikes", 0), 0
         )
