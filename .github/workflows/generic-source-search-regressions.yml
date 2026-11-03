@@ -12,6 +12,7 @@ on:
       - 'tests/gates/test_wf_gate_p7_3_live.py'
       - 'tests/gates/test_wf_gate_p7_4_live.py'
       - 'tests/test_work1_p7_native_item_authority.py'
+      - 'tests/test_work1_p7_full_gear_pool.py'
       - 'tests/test_p7_search_deadline_contract.py'
       - 'tests/gates/test_wf_gate_class_cli.py'
       - 'integrations/mythicsim-rust/p73_talent_search_v2.py'
@@ -105,6 +106,7 @@ jobs:
           tests/gates/test_p7_independent_cold_rediscovery.py
           tests/gates/test_wf_gate_p7_4_live.py
           tests/test_work1_p7_native_item_authority.py
+          tests/test_work1_p7_full_gear_pool.py
           tests/test_p7_search_deadline_contract.py
           integrations/mythicsim-rust/tests/test_p73_native_search_ci.py
           integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
