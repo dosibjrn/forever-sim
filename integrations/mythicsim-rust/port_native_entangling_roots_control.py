@@ -166,9 +166,14 @@ WORLD_BRIDGE_PATCHES = [
         "        }\n"
         "        if !bridge.pending_controls.is_empty() {\n"
         "            return Err(\"RUST_WORLD_UNACKNOWLEDGED_CONTROLS\");\n"
-        "        }\n"
-        "        bridge.root_expires_at_ns = None;",
+        "        }",
         "NEXT_TARGET_PENDING",
+    ),
+    (
+        "        bridge.last_health = None; // new world target, not a healed old one",
+        "        bridge.last_health = None; // new world target, not a healed old one\n"
+        "        bridge.root_expires_at_ns = None;",
+        "NEXT_TARGET_ROOT_RESET",
     ),
     (
         "        bridge.sequence > 0 && bridge.last_health == Some(0.0)\n"
