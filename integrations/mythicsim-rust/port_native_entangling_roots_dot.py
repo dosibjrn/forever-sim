@@ -88,6 +88,17 @@ PREP_PATCHES = [
      + ": every rank is registered.", "METHOD"),
 ]
 
+LANDING_GUARD_PATH = "src/classes/druid/spells/insect_swarm.rs"
+# Entangling Roots deliberately reuses the native binary-hit dot executor.
+# A miss must never call apply_dot, so the native OnGain control callback cannot run.
+LANDING_GUARD = """    let result = fight.calc_outcome(spell, target, Outcome::MagicHit);
+    if result.landed() {
+        let dot = fight.spells[spell].dot.expect("Insect Swarm has a dot");
+        fight.apply_dot(fight.dot_on(dot, target));
+    }
+    fight.deal_damage(spell, result, false);"""
+
+
 AGENT_PATCHES = [
     ("    InsectSwarm,\n    Innervate,",
      "    InsectSwarm,\n    EntanglingRoots,\n    Innervate,", "ENUM"),
@@ -459,6 +470,10 @@ fn forever_roots_native_periodic_ticks_change_with_rank() {
 
 
 def port_text(path: str, contents: str) -> str:
+    if path == LANDING_GUARD_PATH:
+        if contents.count(LANDING_GUARD) != 1:
+            raise ValueError("NATIVE_ROOTS_LANDING_GUARD_MISSING")
+        return contents
     patches = {
         "src/classes/druid/prepare/balance.rs": PREP_PATCHES,
         "src/classes/druid/agent.rs": AGENT_PATCHES,
@@ -507,6 +522,7 @@ PATHS = [
     "src/classes/druid/prepare/export.rs",
     "tests/classes/druid/prepare.rs",
     "src/core/fight/world_bridge.rs",
+    LANDING_GUARD_PATH,
 ]
 
 
