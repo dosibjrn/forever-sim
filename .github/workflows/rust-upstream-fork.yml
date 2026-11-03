@@ -165,6 +165,8 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_gsim_moving.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_health_damage_receipts.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_mana_regen_receipts.py /tmp/forever-selected-rust
+          # Re-run the idempotent layout port after every other src/lib.rs edit.
+          python3 integrations/mythicsim-rust/port_native_talent_layout_api.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
           first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
