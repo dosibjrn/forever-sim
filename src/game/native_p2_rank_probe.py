@@ -157,6 +157,249 @@ def _druid_player(request: dict) -> dict:
     return player
 
 
+def _json_object(raw: str) -> dict | None:
+    try:
+        value = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def prepare_native_request(
+    *,
+    binary: str | Path,
+    request: dict,
+    scenario: str,
+    deadline: float,
+) -> dict[str, object]:
+    """Call the selected engine's explicit prepare --request CLI.
+
+    The result preserves the native PreparedV2 object or its structured
+    refusal. Preparation is not a source-legality proof: the caller must supply
+    a pair already validated against the canonical source facts.
+    """
+    binary_path = Path(binary)
+    if not binary_path.is_file():
+        return {"status": "BLOCKED", "stage": "prepare",
+                "reason": "SELECTED_RUST_BINARY_MISSING"}
+    if not isinstance(scenario, str) or not scenario.strip() or len(scenario) > 200:
+        raise NativeP2ProbeError("NATIVE_P2_SCENARIO_ID_INVALID")
+
+    payload = copy.deepcopy(request)
+    player = _druid_player(payload)
+    options = payload["simOptions"]
+    options["iterations"] = 1
+    options["debugFirstIteration"] = False
+
+    with tempfile.TemporaryDirectory(prefix="forever-native-p2-") as directory:
+        request_path = Path(directory) / "request.json"
+        prepared_path = Path(directory) / "prepared.json"
+        request_path.write_text(
+            json.dumps(payload, separators=(",", ":"), ensure_ascii=False),
+            encoding="utf-8",
+        )
+        remaining = deadline - time.monotonic()
+        if remaining <= 0.05:
+            return {"status": "ERROR", "stage": "prepare",
+                    "reason": "NATIVE_P2_PREPARE_DEADLINE_EXPIRED"}
+        started = time.monotonic()
+        try:
+            completed = subprocess.run(
+                [
+                    str(binary_path), "prepare", "--request", str(request_path),
+                    "--scenario", scenario, "--outfile", str(prepared_path),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=max(0.001, deadline - time.monotonic()),
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return {"status": "ERROR", "stage": "prepare",
+                    "reason": f"NATIVE_PREPARE_CLI_FAILED:{type(exc).__name__}:{exc}"}
+
+        elapsed = round(time.monotonic() - started, 6)
+        if completed.returncode != 0:
+            refusal = _json_object(completed.stdout or "")
+            if refusal is not None and refusal.get("prepared") is False:
+                details = refusal.get("refusal")
+                details = details if isinstance(details, dict) else {}
+                code = details.get("code")
+                status = (
+                    "INVALID" if code == "request"
+                    else "ERROR" if code == "prepare_fault"
+                    else "UNSUPPORTED"
+                )
+                return {
+                    "status": status,
+                    "stage": "prepare",
+                    "reason": str(details.get("reason") or code or "NATIVE_PREPARE_REFUSED"),
+                    "refusal": details,
+                    "elapsed_seconds": elapsed,
+                }
+            return {
+                "status": "ERROR",
+                "stage": "prepare",
+                "reason": "NATIVE_PREPARE_FAILED_WITHOUT_STRUCTURED_REFUSAL",
+                "returncode": completed.returncode,
+                "stdout_tail": (completed.stdout or "")[-700:],
+                "stderr_tail": (completed.stderr or "")[-700:],
+                "elapsed_seconds": elapsed,
+            }
+        if not prepared_path.is_file():
+            return {"status": "ERROR", "stage": "prepare",
+                    "reason": "NATIVE_PREPARE_OUTPUT_MISSING",
+                    "stdout_tail": (completed.stdout or "")[-700:],
+                    "stderr_tail": (completed.stderr or "")[-700:],
+                    "elapsed_seconds": elapsed}
+        raw = prepared_path.read_bytes()
+        try:
+            prepared = json.loads(raw)
+        except (UnicodeDecodeError, ValueError) as exc:
+            return {"status": "ERROR", "stage": "prepare",
+                    "reason": f"NATIVE_PREPARE_OUTPUT_INVALID_JSON:{exc}",
+                    "elapsed_seconds": elapsed}
+        if (not isinstance(prepared, dict)
+                or prepared.get("schema_version") != 2
+                or prepared.get("contract") != "forever-prepared"):
+            return {"status": "ERROR", "stage": "prepare",
+                    "reason": "NATIVE_PREPARE_OUTPUT_CONTRACT_MISMATCH",
+                    "elapsed_seconds": elapsed}
+        reference = prepared.get("reference")
+        prepared_player = prepared.get("player")
+        if (not isinstance(reference, dict)
+                or not isinstance(reference.get("engine_revision"), str)
+                or not reference["engine_revision"].strip()
+                or not isinstance(prepared_player, dict)
+                or prepared_player.get("talents_string") != player.get("talentsString")
+                or not isinstance(prepared_player.get("talents"), dict)):
+            return {"status": "ERROR", "stage": "prepare",
+                    "reason": "NATIVE_PREPARE_OUTPUT_IDENTITY_MISMATCH",
+                    "elapsed_seconds": elapsed}
+        return {
+            "status": "PREPARED",
+            "stage": "prepare",
+            "engine_identity": reference["engine_revision"],
+            "request_sha256": prepared.get("request_sha256"),
+            "prepared_sha256": hashlib.sha256(raw).hexdigest(),
+            "elapsed_seconds": elapsed,
+            "prepared": prepared,
+        }
+
+
+def run_native_prepare_pair(
+    *,
+    binary: str | Path,
+    engine_root: str | Path,
+    scenario: str,
+    before_selection: Mapping[str, int],
+    after_selection: Mapping[str, int],
+    target_talent_id: str,
+    target_rank: int,
+    timeout_seconds: float = 120.0,
+) -> dict[str, object]:
+    """Return structured selected-Rust PreparedV2 receipts for a rank pair.
+
+    This is an execution adapter, not a legality validator or a P2 PASS.
+    Source acquisition, rank legality, point budgets and prerequisites must be
+    proven by the canonical source authority before the pair reaches this API.
+    """
+    if scenario not in {"balance", "cat"}:
+        raise NativeP2ProbeError(f"NATIVE_P2_SCENARIO_UNSUPPORTED:{scenario}")
+    _selection_delta(before_selection, after_selection, target_talent_id, int(target_rank))
+
+    root = Path(engine_root)
+    binary_path = Path(binary)
+    if not binary_path.is_file():
+        return {"status": "BLOCKED", "reason": "SELECTED_RUST_BINARY_MISSING",
+                "accepted_for_p2": False}
+    try:
+        binary_path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return {"status": "BLOCKED", "reason": "BINARY_NOT_FROM_SELECTED_ENGINE_ROOT",
+                "accepted_for_p2": False}
+
+    request_path = (
+        root / "tests" / "classes" / "druid" / "prepare" / f"{scenario}.request.json"
+    )
+    if not request_path.is_file():
+        return {"status": "BLOCKED",
+                "reason": f"NATIVE_DRUID_REQUEST_FIXTURE_MISSING:{scenario}",
+                "accepted_for_p2": False}
+    base_request = json.loads(request_path.read_text(encoding="utf-8"))
+    _druid_player(base_request)
+    before_string = encode_native_druid_talents(before_selection, root)
+    after_string = encode_native_druid_talents(after_selection, root)
+    if before_string == after_string:
+        raise NativeP2ProbeError("NATIVE_P2_TALENT_STRINGS_IDENTICAL")
+
+    before_request = copy.deepcopy(base_request)
+    after_request = copy.deepcopy(base_request)
+    _druid_player(before_request)["talentsString"] = before_string
+    _druid_player(after_request)["talentsString"] = after_string
+    deadline = time.monotonic() + timeout_seconds
+    before = prepare_native_request(
+        binary=binary_path,
+        request=before_request,
+        scenario=f"native-p2-{scenario}-{target_talent_id}-{target_rank}-control",
+        deadline=deadline,
+    )
+    after = prepare_native_request(
+        binary=binary_path,
+        request=after_request,
+        scenario=f"native-p2-{scenario}-{target_talent_id}-{target_rank}-candidate",
+        deadline=deadline,
+    )
+    if before.get("status") != "PREPARED" or after.get("status") != "PREPARED":
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_P2_PREPARE_PAIR_NOT_READY",
+            "target_talent_id": target_talent_id,
+            "target_rank": int(target_rank),
+            "before": before,
+            "after": after,
+            "accepted_for_p2": False,
+        }
+    if before.get("engine_identity") != after.get("engine_identity"):
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_ENGINE_IDENTITY_CHANGED_BETWEEN_PREPARE_PAIRS",
+            "before": before,
+            "after": after,
+            "accepted_for_p2": False,
+        }
+
+    before_player = before["prepared"]["player"]
+    after_player = after["prepared"]["player"]
+    before_rank = int(before_player["talents"].get(target_talent_id, 0))
+    after_rank = int(after_player["talents"].get(target_talent_id, 0))
+    if before_rank != int(target_rank) - 1 or after_rank != int(target_rank):
+        return {
+            "status": "BLOCKED",
+            "reason": "NATIVE_P2_PREPARED_TALENT_RANK_MISMATCH",
+            "before_rank": before_rank,
+            "after_rank": after_rank,
+            "before": before,
+            "after": after,
+            "accepted_for_p2": False,
+        }
+    return {
+        "status": "PREPARED",
+        "reason": "SELECTED_RUST_PREPARE_PAIR_EXECUTED",
+        "target_talent_id": target_talent_id,
+        "target_rank": int(target_rank),
+        "talents_string_before": before_string,
+        "talents_string_after": after_string,
+        "before": before,
+        "after": after,
+        "engine_identity": before["engine_identity"],
+        "source_layout_sha256": hashlib.sha256(
+            (root / "src" / "classes" / "druid" / "prepare.rs").read_bytes()
+        ).hexdigest(),
+        "accepted_for_p2": False,
+    }
+
+
 def _selection_delta(
     before: Mapping[str, int],
     after: Mapping[str, int],
@@ -238,11 +481,11 @@ def run_native_rank_pair(
     iterations: int = 100,
     seed: int = 647003,
 ) -> dict[str, object]:
-    """Run the same native Druid request with/without one source-legal rank.
+    """Run a DPS-only diagnostic for a source-validated native Druid rank pair.
 
-    The balanced RNG mode is an explicit call argument, never an environment
-    default. A PASS means the selected native simulator completed both gated
-    requests and the rank increased the fixture's raid-DPS observable.
+    The balanced RNG mode is a required call argument, never an environment
+    default. A positive DPS delta is diagnostic only; it is not a P2 PASS.
+    Use run_native_prepare_pair for structured PreparedV2 receipts.
     """
     if rng_mode is not NativeRngMode.BALANCED:
         raise NativeP2ProbeError("NATIVE_P2_REQUIRES_EXPLICIT_BALANCED_RNG")
@@ -367,7 +610,7 @@ def run_native_rank_pair(
 
     delta = float(after["dps"]) - float(before["dps"])
     return {
-        "status": "PASS" if delta > 1e-9 else "FAIL",
+        "status": "PROBE_PASS" if delta > 1e-9 else "PROBE_FAIL",
         "reason": "NATIVE_DPS_INCREASE_OBSERVED"
         if delta > 1e-9
         else "NATIVE_DPS_DID_NOT_INCREASE",
