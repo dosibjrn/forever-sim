@@ -235,7 +235,7 @@ jobs:
               accepted_receipts="$(mktemp)"
               if python tools/wf_gate_p7_5_receipts.py \
                 --repository "$GITHUB_REPOSITORY" --class "$class" \
-                --level "$level" --spec "$spec" --out "$accepted_receipts" \\
+                --level "$level" --spec "$spec" --out "$accepted_receipts" \
                 --ledger "$accepted_prior_ledger"; then
                 export FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS="$accepted_receipts"
               else
