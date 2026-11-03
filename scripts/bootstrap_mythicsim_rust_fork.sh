@@ -102,7 +102,7 @@ fi
 
 # Preserve the source-legal three-rank Improved Entangling Roots selection
 # in the real Rust preparer. Executable root/damage/break effects are a later
-# native Rust slice; rank intake is not a separate active acceptance gate.
+# native Rust slice; rank intake alone never awards P1/P2 acceptance.
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_improved_roots_rank.py" "$PWD"
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_entangling_roots_dot.py" "$PWD"
 # Stage every actual Rust source and regression file changed by these two ports.
