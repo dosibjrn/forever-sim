@@ -76,6 +76,7 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
+    from src.game.gear import executable_gear_stats
     from src.v2.source_budgeted_gear import (run_source_budgeted_gear,
         paid_source_policy_stat_witness)
     from src.v2.source_stateful_budgeted import _make_policy
@@ -203,6 +204,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_source_search_attempts": result.get("attempted", 0),
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
+        "source_policy_applicability": dict(item_check.get("source_policy") or {}),
+        "source_executable_stat_axes": sorted(executable_gear_stats(ir)),
+        "catalogue_stat_axes": item_check["catalogue_stat_axes"],
         "real_measured_stat_weights": dict(sorted(weights.items())),
         "real_catalogue_legal_items": item_check["legal_item_count"],
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
