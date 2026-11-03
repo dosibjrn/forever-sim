@@ -276,9 +276,12 @@ def test_late_paid_p74_gear_candidate_gets_stochastic_finalist_comparison(
         # Three balanced fights mis-rank the actual 24-fight finalist:
         # candidate 11 looks best on screen but loses to candidate 12
         # in the paid stochastic comparison and frozen 1,000 holdout.
-        return ({11: 900.0, 12: 800.0, 13: 100.0}
-                if mode == "balanced" else
-                {11: 600.0, 12: 730.0, 13: 500.0})[item_id]
+        # Small balanced screens and larger balanced finalist comparisons
+        # may rank differently; only the separate frozen holdout is stochastic.
+        if mode == "balanced":
+            return ({11: 900.0, 12: 800.0, 13: 100.0} if n == 3
+                    else {11: 600.0, 12: 730.0, 13: 500.0})[item_id]
+        return {11: 600.0, 12: 730.0, 13: 500.0}[item_id]
 
     def native(binary, path, n, *, rng_mode):
         return {"native_dps": score(path, n, rng_mode)}
@@ -300,7 +303,7 @@ def test_late_paid_p74_gear_candidate_gets_stochastic_finalist_comparison(
     assert report["cold_winner_gear"][0]["item_id"] == 12
     assert report["winner_selection"] == "paid_2x24_stochastic_live_native_finalist"
     assert report["frozen_stochastic_world_dps"] == 730.0
-    assert (12, 24, "stochastic") in calls
+    assert (12, 24, "balanced") in calls
     assert (12, 1000, "stochastic") in calls
 
 
@@ -639,8 +642,8 @@ def test_p74_stochastic_paid_finalist_uses_two_independent_seed_pairs(monkeypatc
     assert dps == 720.0  # mean of both independent, paid 24-fight seeds
     assert live["iterations_done"] == 24
     assert [r[:3] for r in calls] == [
-        ("native", 24, "stochastic"), ("world", 24, "stochastic"),
-        ("native", 24, "stochastic"), ("world", 24, "stochastic")]
+        ("native", 24, "balanced"), ("world", 24, "balanced"),
+        ("native", 24, "balanced"), ("world", 24, "balanced")]
     assert [r[3]["simOptions"]["randomSeed"] for r in calls] == [
         "1947004", "1947004", "1947047", "1947047"]
     assert base == untouched
