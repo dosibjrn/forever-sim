@@ -23,7 +23,7 @@ import math
 from typing import Dict, Iterable, Mapping, Sequence
 
 from src.engine_registry import eng
-from src.shared.leveling.timing import between_pull_travel_s
+from src.scenarios.timing import between_pull_travel_s
 from .expected_engine import CooldownState, ExpectedState, expected_direct_components, simulate_fight_expected, score_policy as score_policy_expected
 
 EPS=1e-12

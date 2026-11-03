@@ -8,7 +8,7 @@ import os
 
 from src.class_registry import class_names, get_definition
 from src.game.data.forever.registry import registered_class_keys, generic_class_metadata
-from src.shared.leveling.timing import TIMING_CONTRACT_VERSION
+from src.scenarios.timing import TIMING_CONTRACT_VERSION
 
 from .decision_artifacts import DECISION_ROOT, ROOT, read_json
 from src.service.publication import resolve_published_path, read_published_class_artifact
