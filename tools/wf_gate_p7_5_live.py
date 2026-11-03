@@ -393,7 +393,6 @@ def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
 
     apl_donors = []
     seen_apl_sha = set()
-    seen_rotations = set()
 
     def collect_apl(rows, candidate_index, sha_index, limit):
         added = 0
@@ -405,12 +404,8 @@ def _paid_p75_gear_apl_crossover(candidate, parent, finalists,
             rotation = source.player(paid)["rotation"]
             if rotation == current_rotation:
                 continue
-            rotation_key = json.dumps(rotation, sort_keys=True)
-            if rotation_key in seen_rotations:
-                continue
             apl_donors.append((paid_sha, rotation))
             seen_apl_sha.add(paid_sha)
-            seen_rotations.add(rotation_key)
             added += 1
             if added >= limit:
                 break
