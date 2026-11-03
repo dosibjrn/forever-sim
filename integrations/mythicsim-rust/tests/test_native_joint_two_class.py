@@ -409,9 +409,9 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
 
         self.assertEqual(snapshot, actions)
         self.assertEqual(4, len(repaired))
-        self.assertEqual(11713, repaired[0]["action"]["castSpell"]["spellId"]["spellId"])
-        self.assertIn("condition", repaired[0]["action"])
-        self.assertIn("useItem", repaired[1]["action"])
+        self.assertIn("useItem", repaired[0]["action"])
+        self.assertEqual(11713, repaired[1]["action"]["castSpell"]["spellId"]["spellId"])
+        self.assertIn("condition", repaired[1]["action"])
         self.assertEqual(11713, repaired[2]["action"]["castSpell"]["spellId"]["spellId"])
         self.assertNotIn("condition", repaired[2]["action"])
         self.assertEqual(11689, repaired[3]["action"]["castSpell"]["spellId"]["spellId"])
