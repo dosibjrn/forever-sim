@@ -135,6 +135,65 @@ def _validate_world_receipt(world: dict[str, Any], target_count: int) -> dict[st
     ):
         raise ValueError("NATIVE_ROUTE_WORLD_PAID_MOVEMENT_TIME_MISSING")
 
+    elapsed_s = world.get("world_elapsed_seconds")
+    per_target_s = world.get("world_seconds_per_target_without_paid_recovery")
+    per_target_rows = world.get("world_per_target_elapsed_seconds_without_paid_recovery")
+    if (
+        isinstance(elapsed_s, bool)
+        or not isinstance(elapsed_s, (int, float))
+        or not math.isfinite(float(elapsed_s))
+        or elapsed_s <= 0
+        or isinstance(per_target_s, bool)
+        or not isinstance(per_target_s, (int, float))
+        or not math.isfinite(float(per_target_s))
+        or per_target_s <= 0
+        or not isinstance(per_target_rows, list)
+        or len(per_target_rows) != target_count
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or value <= 0
+            for value in per_target_rows
+        )
+        or not math.isclose(float(per_target_s), float(elapsed_s) / target_count, rel_tol=1e-9)
+        or not math.isclose(sum(float(value) for value in per_target_rows), float(elapsed_s), rel_tol=1e-9)
+    ):
+        raise ValueError("NATIVE_ROUTE_WORLD_ELAPSED_RECEIPT_INVALID")
+
+    mana_after = world.get("native_actor_mana_after_world_kills")
+    mana_deltas = world.get("native_actor_mana_delta_between_world_kills")
+    min_mana = world.get("minimum_native_actor_mana")
+    min_health = world.get("minimum_native_actor_health")
+    if (
+        not isinstance(mana_after, list)
+        or len(mana_after) != target_count
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or value < 0
+            for value in mana_after
+        )
+        or not isinstance(mana_deltas, list)
+        or len(mana_deltas) != target_count - 1
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            for value in mana_deltas
+        )
+        or isinstance(min_mana, bool)
+        or not isinstance(min_mana, (int, float))
+        or not math.isfinite(float(min_mana))
+        or min_mana < 0
+        or isinstance(min_health, bool)
+        or not isinstance(min_health, (int, float))
+        or not math.isfinite(float(min_health))
+        or min_health <= 0
+    ):
+        raise ValueError("NATIVE_ROUTE_WORLD_RESOURCE_CONTINUITY_INVALID")
+
     return {
         "world_targets_killed": target_count,
         "continuous_native_actor": True,
@@ -149,7 +208,15 @@ def _validate_world_receipt(world: dict[str, Any], target_count: int) -> dict[st
         "gsim_route_paid_receipts": len(route_receipts),
         "gsim_route_paid_movement_s": float(paid_movement_s),
         "world_target_hp": world.get("world_target_hp"),
-        "world_elapsed_seconds": world.get("world_elapsed_seconds"),
+        "world_elapsed_seconds": float(elapsed_s),
+        "world_seconds_per_target_without_paid_recovery": float(per_target_s),
+        "world_per_target_elapsed_seconds_without_paid_recovery": [
+            float(value) for value in per_target_rows
+        ],
+        "native_actor_mana_after_world_kills": [float(value) for value in mana_after],
+        "native_actor_mana_delta_between_world_kills": [float(value) for value in mana_deltas],
+        "minimum_native_actor_mana": float(min_mana),
+        "minimum_native_actor_health": float(min_health),
         "paid_recovery": world.get("paid_recovery"),
         "target_provenance": world.get("world_target_provenance"),
     }
