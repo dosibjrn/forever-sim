@@ -43,6 +43,7 @@ class NativeTalentLayoutApiPortTest(unittest.TestCase):
             self.assertIn('"in_proto": talent.in_proto', prepare)
             self.assertIn("pub fn forever_druid_talent_layout()", library)
             self.assertIn("druid_talent_layout_api_tests", library)
+            self.assertFalse(library.endswith("\n\n"))
             self.assertIn('args == ["talent-layout", "--class", "druid"]', main)
             self.assertIn("forever-engine talent-layout --class druid", main)
 
