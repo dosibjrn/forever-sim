@@ -21,7 +21,9 @@ from pathlib import Path
 
 from apl_mutation import mutate_apl
 from native_gear_adapter import GearRejected, NativeGearAdapter
-from native_joint_composition import CandidateAxis, JointCandidateAdapter, search_joint
+from native_joint_composition import (
+    MISSING_TALENT_STRING, CandidateAxis, JointCandidateAdapter, search_joint,
+)
 from native_l60_matrix import (
     ROOT, create_inventory, digest, fingerprint, legal_apl_only_request,
     load_native_item_index, player,
@@ -404,7 +406,22 @@ def source_bounded_adapter(
     base_apl = copy.deepcopy(original["rotation"]["priorityList"])
     source_talents = set()
     talents = set()
-    source_casts_by_talentsString: dict[str, set[str]] = {}
+    source_casts_by_talentsString: dict[object, set[str]] = {}
+
+    def talent_sort_key(value):
+        if value == MISSING_TALENT_STRING:
+            return (0, "")
+        if value is None:
+            return (1, "")
+        return (2, str(value))
+
+    def talent_label(value):
+        if value == MISSING_TALENT_STRING:
+            return "<MISSING_TALENT_STRING>"
+        if value is None:
+            return "<NULL_TALENT_STRING>"
+        return value
+
     for request in source_requests:
         try:
             source_player = player(request)
@@ -412,26 +429,27 @@ def source_bounded_adapter(
             continue
         if source_player.get("class") != original["class"]:
             continue
-        source_talent = source_player.get("talentsString")
-        if isinstance(source_talent, str):
-            source_talents.add(source_talent)
-            source_casts = source_casts_by_talentsString.setdefault(source_talent, set())
-            rotation = source_player.get("rotation")
-            priority_list = rotation.get("priorityList", []) if isinstance(rotation, dict) else []
-            if isinstance(priority_list, list):
-                for entry in priority_list:
-                    action = entry.get("action", {}) if isinstance(entry, dict) else {}
-                    cast = action.get("castSpell") if isinstance(action, dict) else None
-                    if isinstance(cast, dict) and cast:
-                        source_casts.add(json.dumps(
-                            cast, sort_keys=True, separators=(",", ":")
-                        ))
-        if isinstance(source_talent, str):
-            # The source corpus proposes candidates; a prior native receipt is
-            # provenance, not an admission rule. The exact candidate reaches
-            # the selected Rust evaluator, which can accept or refuse it.
-            talents.add(source_talent)
-    talents = sorted(talents)
+        source_talent = source_player.get("talentsString", MISSING_TALENT_STRING)
+        if not (isinstance(source_talent, str)
+                or source_talent is None
+                or source_talent == MISSING_TALENT_STRING):
+            continue
+        source_talents.add(source_talent)
+        source_casts = source_casts_by_talentsString.setdefault(source_talent, set())
+        rotation = source_player.get("rotation")
+        priority_list = rotation.get("priorityList", []) if isinstance(rotation, dict) else []
+        if isinstance(priority_list, list):
+            for entry in priority_list:
+                action = entry.get("action", {}) if isinstance(entry, dict) else {}
+                cast = action.get("castSpell") if isinstance(action, dict) else None
+                if isinstance(cast, dict) and cast:
+                    source_casts.add(json.dumps(
+                        cast, sort_keys=True, separators=(",", ":")
+                    ))
+        # Missing talentString is a source-observed candidate too. Preserve
+        # its absence in the request; only MythicSim can accept or refuse it.
+        talents.add(source_talent)
+    talents = sorted(talents, key=talent_sort_key)
     original_talents = original["talentsString"]
     if original_talents not in source_talents or len(talents) < 2:
         raise ValueError(
@@ -470,8 +488,10 @@ def source_bounded_adapter(
     _support_count, selected_witness_key, selected_builds = max(
         supported_build_sets, key=lambda row: row[0]
     )
-    talents = sorted(selected_builds)
-    excluded_talents = sorted(candidate_talents - set(talents))
+    talents = sorted(selected_builds, key=talent_sort_key)
+    excluded_talents = sorted(
+        candidate_talents - set(talents), key=talent_sort_key
+    )
     selected_talent_strings = list(dict.fromkeys(
         [original_talents] + [talent for talent in talents if talent != original_talents]
     ))
@@ -510,20 +530,23 @@ def source_bounded_adapter(
         if fixture.get("item_count") == len(base_gear)
         and fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
     ]
-    talent_donor_fixtures = [
-        {
+    talent_donor_fixtures = []
+    for fixture in extra_same_class:
+        donor_player = player(fixture["request"])
+        has_talent_string = "talentsString" in donor_player
+        talent_donor_fixtures.append({
             "source_path": fixture["source_path"],
             "source_sha256": fixture["source_sha256"],
-            "talents_sha256": fingerprint(
-                player(fixture["request"]).get("talentsString")
+            "talent_string_present": has_talent_string,
+            "talentsString": donor_player.get("talentsString"),
+            "talents_sha256": (
+                fingerprint(donor_player.get("talentsString"))
+                if has_talent_string else None
             ),
             "source_type": fixture.get("source_type", "PINNED_SOURCE_FIXTURE"),
             "native_response_sha256": fixture.get("native_response_sha256"),
             "native_positive_damage_witnesses": fixture.get("native_positive_damage_witnesses", []),
-        }
-        for fixture in extra_same_class
-        if isinstance(player(fixture["request"]).get("talentsString"), str)
-    ]
+        })
 
     def make_gear(rng):
         request, _audit = gear.mutate_one(rng)
@@ -619,7 +642,7 @@ def source_bounded_adapter(
 
     def joint_legal(candidate):
         candidate_player = player(candidate)
-        talent_string = candidate_player.get("talentsString")
+        talent_string = candidate_player.get("talentsString", MISSING_TALENT_STRING)
         source_casts = source_casts_by_talentsString.get(talent_string)
         if source_casts is None:
             return False
@@ -656,8 +679,10 @@ def source_bounded_adapter(
     )
     return result, {
         "gear_mutable_slots": list(gear.mutable_indices),
-        "talent_builds": talents,
-        "talent_builds_excluded_for_native_damage_witness": excluded_talents,
+        "talent_builds": [talent_label(value) for value in talents],
+        "talent_builds_excluded_for_native_damage_witness": [
+            talent_label(value) for value in excluded_talents
+        ],
         "source_donor_fixture_count": sum(
             fixture.get("source_type") != "NATIVE_VERIFIED_GENERATED_TALENT_CANDIDATE"
             for fixture in extra_same_class
@@ -670,10 +695,11 @@ def source_bounded_adapter(
         "gear_donor_fixtures_scanned": gear_donor_fixtures_scanned,
         "talent_donor_fixtures": talent_donor_fixtures,
         "source_casts_by_talentsString": {
-            talent: [
-                json.loads(key) for key in sorted(source_casts_by_talentsString[talent])
+            talent_label(talent): [
+                json.loads(key)
+                for key in sorted(source_casts_by_talentsString[talent])
             ]
-            for talent in sorted(source_casts_by_talentsString)
+            for talent in sorted(source_casts_by_talentsString, key=talent_sort_key)
         },
         "common_source_casts": [
             json.loads(key) for key in sorted(common_cast_keys)
@@ -689,7 +715,10 @@ def axis_delta(reference: dict, candidate: dict) -> dict[str, bool]:
     r, p = player(reference), player(candidate)
     return {
         "gear": p["equipment"]["items"] != r["equipment"]["items"],
-        "talents": p["talentsString"] != r["talentsString"],
+        "talents": (
+            p.get("talentsString", MISSING_TALENT_STRING)
+            != r.get("talentsString", MISSING_TALENT_STRING)
+        ),
         "apl": p["rotation"]["priorityList"] != r["rotation"]["priorityList"],
     }
 
