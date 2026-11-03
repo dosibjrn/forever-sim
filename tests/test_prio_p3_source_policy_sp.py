@@ -57,8 +57,25 @@ def test_real_unrestricted_l40_p3_reuses_baseline_to_measure_spirit():
 def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
     """Exercise the active P3 production path on a different class and level."""
     result = run_live(ROOT, "mage", 20, spec="unrestricted")
-    assert result["status"] == "PASS", result
-    assert result["pass_count"] == result["reachability_count"], result
-    assert result["behavior_probes_executed"] > 0, result
-    assert result["production_engine"] == "gsim_CombatRuntime", result
-    assert result["real_catalogue_slots_scored"] > 0, result
+    witness_summary = [
+        {key: witness.get(key) for key in (
+            "stat", "status", "policy_id", "paid_evaluations",
+            "baseline_reused", "weight_s_saved_per_mob_per_unit")}
+        for witness in result.get("source_policy_stat_witnesses", ())
+    ]
+    diagnostic = {
+        "status": result.get("status"),
+        "reasons": result.get("reasons"),
+        "pass_count": result.get("pass_count"),
+        "reachability_count": result.get("reachability_count"),
+        "weights": result.get("real_measured_stat_weights"),
+        "witnesses": witness_summary,
+        "behavior_probes_executed": result.get("behavior_probes_executed"),
+        "real_catalogue_slots_scored": result.get("real_catalogue_slots_scored"),
+        "actual_search_result_status": result.get("actual_search_result_status"),
+    }
+    assert result["status"] == "PASS", diagnostic
+    assert result["pass_count"] == result["reachability_count"], diagnostic
+    assert result["behavior_probes_executed"] > 0, diagnostic
+    assert result["production_engine"] == "gsim_CombatRuntime", diagnostic
+    assert result["real_catalogue_slots_scored"] > 0, diagnostic
