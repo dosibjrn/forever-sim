@@ -1,9 +1,7 @@
 """G47b: source/route/race capabilities have one registry authority."""
-from pathlib import Path
 import subprocess
 import sys
-
-ROOT = Path(__file__).resolve().parents[3]
+from pathlib import Path
 
 from src.game.data.forever import registry
 from src.v2.decision_dashboard import _generic_ui_metadata
@@ -11,6 +9,9 @@ from src.v2.generic_backend import build_partial_generic_records
 from src.v2.generic_frontier import GENERIC_DRUID_ROUTE_LEVELS
 from src.v2.generic_melee_routes import MELEE_CORRIDORS
 from src.version import SOFTWARE_VERSION
+
+
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_g47b_route_corridors_have_registry_authority():
@@ -56,7 +57,7 @@ for module in (
         cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
     )
     assert result.returncode == 0, (
-        f"generic metadata loaded legacy GameIR: {result.stdout}\\n{result.stderr}"
+        f"generic metadata loaded legacy GameIR: {result.stdout}\n{result.stderr}"
     )
 
 
