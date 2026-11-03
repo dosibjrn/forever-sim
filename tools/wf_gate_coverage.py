@@ -36,6 +36,13 @@ def measured_live_coverage(report: dict) -> dict | None:
     # selected production P2 executor proves these ranks legal/reachable and
     # verifies that their threat-only effect has no possible alternate target.
     # They are NOT reported as executed effects or a whole P2 gate PASS.
+    # P2 partial coverage is meaningful only when it was measured on one of
+    # the approved production backends. GameIR-only runtime probes are
+    # diagnostics, not P2 acceptance or M1 progress.
+    if (report.get("gate") == "P2"
+            and report.get("production_engine") not in {
+                "gsim", "msim", "msim+gsim-world"}):
+        return None
     basis = report.get("coverage_basis")
     if basis == "executed_behavior_or_checked_solo_exclusion":
         if report.get("gate") != "P2":
