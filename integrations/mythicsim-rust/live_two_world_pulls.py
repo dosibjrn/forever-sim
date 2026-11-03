@@ -100,6 +100,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
     walks = []
     events = 0
     ticks = 0
+    native_moving_ticks = 0
     native_report = None
     env = dict(os.environ, FOREVER_GSIM_WORLD_BRIDGE="1", WOWSIM_RNG_MODE="stochastic")
     proc = subprocess.Popen(
@@ -159,6 +160,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
                 raise AssertionError("RUST_TWO_WORLD_RECEIPT_INVALID")
             if receipt["native_range_receipt"].get("gsim_player_moving") is not tick["gsim_player_moving"]:
                 raise AssertionError("RUST_TWO_WORLD_MOVING_RECEIPT_MISMATCH")
+            if tick["gsim_player_moving"]:
+                native_moving_ticks += 1
             feed.accept_range_receipt(receipt["native_range_receipt"])
             ack = applier.apply(tick, receipt)
             ack["iteration_index"] = iteration
@@ -212,10 +215,13 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
             raise AssertionError("RUST_TWO_WORLD_NATIVE_RESULT_INVALID")
         if [k["target_id"] for k in kills] != list(targets):
             raise AssertionError("RUST_TWO_WORLD_DISTINCT_TARGET_IDS_INVALID")
+        if walks and native_moving_ticks == 0:
+            raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
         return {
             "source_sha256": source_hash, "native_pid": proc.pid,
             "native_windows": result["windows"], "world_kills": kills,
             "native_damage_events": events, "world_ticks": ticks,
+            "native_gsim_moving_ticks": native_moving_ticks,
             "continuous_native_actor": True, "actual_2d_ack": True,
             "world_targets_killed": target_count,
             "gsim_world_walk_steps": sum(
