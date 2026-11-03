@@ -28,7 +28,8 @@ def test_cold_joint_changes_all_three_dimensions_and_does_not_seed_winner():
         p["rotation"]["priorityList"] = [3, 2, 1]
         return q
     v = SimpleNamespace(engine={11: {"name": "One"}, 21: {"name": "Two"}},
-                        validate=lambda ids, enchants: True)
+                        validate=lambda *args: (_ for _ in ()).throw(
+                            AssertionError("duplicate Python gear veto executed")))
     source = SimpleNamespace(make_candidate=create, player=player,
                              RejectedGear=ValueError)
     candidate = gate._cold_joint(original, source, v, {}, random.Random(1))
@@ -58,7 +59,8 @@ def test_source_joint_keeps_same_name_distinct_ids_for_real_legality_check(
     names = {100 + i: f"distinct-{i}" for i in range(16)}
     names[110] = names[111] = "same-display-name-not-same-id"
     monkeypatch.setattr(source, "random_build", lambda rng: "legal-ranks")
-    monkeypatch.setattr(source, "validate", lambda ranks: True)
+    monkeypatch.setattr(source, "validate", lambda ranks: (_ for _ in ()).throw(
+        AssertionError("duplicate Python talent veto executed")))
     monkeypatch.setattr(source, "encode", lambda ranks: "legal")
     monkeypatch.setattr(source, "mutate_apl", lambda *args, **kwargs: [1, 2, 3])
 
