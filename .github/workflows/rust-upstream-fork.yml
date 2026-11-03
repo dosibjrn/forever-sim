@@ -23,6 +23,8 @@ on:
       - tests/test_work2_rust_gsim_moving_port.py
       - integrations/mythicsim-rust/port_native_improved_roots_rank.py
       - integrations/mythicsim-rust/test_port_native_improved_roots_rank.py
+      - integrations/mythicsim-rust/port_native_talent_layout_api.py
+      - integrations/mythicsim-rust/test_port_native_talent_layout_api.py
       - integrations/mythicsim-rust/port_native_entangling_roots_dot.py
       - integrations/mythicsim-rust/test_port_native_entangling_roots_dot.py
       - integrations/mythicsim-rust/port_native_typed_rng.py
@@ -52,6 +54,7 @@ jobs:
           bash -n scripts/bootstrap_mythicsim_rust_fork.sh
           python3 -m py_compile integrations/mythicsim-rust/port_upstream_paladin_typed_rng.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_improved_roots_rank.py
+          python3 -m py_compile integrations/mythicsim-rust/port_native_talent_layout_api.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_entangling_roots_dot.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_typed_rng.py
           python3 -m py_compile src/engine_client/native_p2_rank_probe.py
@@ -73,6 +76,7 @@ jobs:
           python3 integrations/mythicsim-rust/test_port_native_health_damage_receipts.py
           python3 integrations/mythicsim-rust/test_port_native_mana_regen_receipts.py
           python3 integrations/mythicsim-rust/test_port_native_improved_roots_rank.py
+          python3 integrations/mythicsim-rust/test_port_native_talent_layout_api.py
           python3 integrations/mythicsim-rust/test_port_native_entangling_roots_dot.py
           python3 integrations/mythicsim-rust/test_port_native_pull_queue.py
           python3 integrations/mythicsim-rust/test_port_native_world_lethal_ack.py
@@ -149,6 +153,7 @@ jobs:
           # The source port must work both before and after the fork is pinned.
           python3 integrations/mythicsim-rust/port_native_improved_roots_rank.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_entangling_roots_dot.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_talent_layout_api.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_persistent_target.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_two_pull_cli.py /tmp/forever-selected-rust
@@ -161,7 +166,7 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_health_damage_receipts.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_mana_regen_receipts.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
-          first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
+          first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_persistent_target.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_two_pull_cli.py /tmp/forever-selected-rust
@@ -175,12 +180,36 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_mana_regen_receipts.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_improved_roots_rank.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_entangling_roots_dot.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_talent_layout_api.py /tmp/forever-selected-rust
           second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
           test "$first_hash" = "$second_hash"
           python3 integrations/mythicsim-rust/port_native_typed_rng.py /tmp/forever-selected-rust
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib typed_rng_api_tests
           cargo build --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --bin forever-engine
+          cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib druid_talent_layout_api_tests
+          /tmp/forever-selected-rust/target/debug/forever-engine talent-layout --class druid > /tmp/forever-druid-talent-layout.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          value = json.loads(Path("/tmp/forever-druid-talent-layout.json").read_text())
+          assert value.get("schema_version") == 1
+          assert value.get("class") == "druid"
+          assert value.get("ruleset") == "forever"
+          trees = value.get("trees")
+          assert isinstance(trees, list)
+          assert [tree.get("key") for tree in trees] == ["balance", "feral", "restoration"]
+          for tree in trees:
+              talents = tree.get("talents")
+              assert isinstance(talents, list) and talents
+              for talent in talents:
+                  assert isinstance(talent.get("field"), str) and talent["field"]
+                  assert isinstance(talent.get("name"), str) and talent["name"]
+                  assert isinstance(talent.get("max_ranks"), int)
+                  assert isinstance(talent.get("in_proto"), bool)
+          print("NATIVE_DRUID_TALENT_LAYOUT_JSON_API_PASS")
+          PY
           python3 integrations/mythicsim-rust/test_native_p2_rank_probe.py \
             --engine-root /tmp/forever-selected-rust \
             --binary /tmp/forever-selected-rust/target/debug/forever-engine
