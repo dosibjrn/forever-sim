@@ -628,6 +628,36 @@ def test_p74_freezes_paid_stochastic_winner_not_noisy_balanced_screen():
     assert gate._freeze_paid_p74_winner(high_screen, [])[2] == "a"
 
 
+
+def test_p74_frozen_winner_prefers_independently_confirmed_paid_finalist():
+    """A noisy late 48-fight outlier must not displace a paid 96-fight winner.
+
+    The 1,000-fight holdout is intentionally unavailable to this decision.
+    All candidates were independently cold-discovered and genuinely paid.
+    """
+    screen_best = (810., {"world_mean_dps": 810.}, "late",
+                   {"gear": "late"})
+    reranked = [
+        (725., {"world_mean_dps": 725.}, "confirmed-a",
+         {"gear": "a"}, 770.),
+        (720., {"world_mean_dps": 720.}, "confirmed-b",
+         {"gear": "b"}, 760.),
+        (735., {"world_mean_dps": 735.}, "late",
+         {"gear": "late"}, 810.),
+    ]
+    selected = gate._freeze_paid_p74_winner(
+        screen_best, reranked, {"confirmed-a", "confirmed-b"})
+    assert selected[2] == "confirmed-a"
+    assert selected[0] == 725.
+    assert selected[5] == (
+        "paid_4x24_stochastic_live_native_confirmed_finalist")
+    assert selected[3] == {"gear": "a"}
+    # Without completed confirmations, later paid finalists remain eligible.
+    provisional = gate._freeze_paid_p74_winner(screen_best, reranked)
+    assert provisional[2] == "late"
+    assert provisional[5] == "paid_2x24_stochastic_live_native_finalist"
+
+
 def test_paid_p74_enchant_only_skips_immutable_slots_even_with_adversarial_rng():
     """Old code retried the first immutable slot 60 times and raised, despite
     a legal alternative in another paid slot. No simulated DPS is asserted."""
