@@ -91,6 +91,9 @@ def _validate_p1(e: dict, _: dict) -> list[str]:
 
 def _validate_p2(e: dict, _: dict) -> list[str]:
     errors: list[str] = []
+    production_engine = e.get("production_engine")
+    if production_engine not in {"gsim", "msim", "msim+gsim-world"}:
+        errors.append("UNAPPROVED_P2_PRODUCTION_ENGINE:" + str(production_engine or "missing"))
     _count_at_least(e, errors, "ranks_with_executed_behavior_tests", "structurally_reachable_ranks")
     _count_at_least(e, errors, "ranks_with_executor_paths", "structurally_reachable_ranks")
     _require_zero(e, errors, "missing_executor_ranks")

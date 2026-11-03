@@ -1735,7 +1735,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
         bonus=talented_bonus_for_level(level) if bonus_points is None else bonus_points
         points=available_talent_points(level,bonus_talent_points=bonus)
         result.update(source_id=sha256(source_db.read_bytes()).hexdigest(),
-            engine_id='live_game_ir_compiler_and_runtime',talent_points=points,
+            engine_id='live_game_ir_compiler_and_runtime',
+            production_engine='live_game_ir_compiler_and_runtime',talent_points=points,
             source_talent_count=len(compiled.talents),
             source_rank_total=sum(len(t.ranks) for t in compiled.talents))
         step=int((compiled.provenance.get('talent_tree_rules') or {}).get('points_per_row') or 0)
