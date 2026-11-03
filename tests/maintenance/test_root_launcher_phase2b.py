@@ -20,6 +20,13 @@ class AlternateRunnerRelocation(unittest.TestCase):
                     self.assertTrue((COMMANDS / name).is_file(), name)
         for name in ("run.sh", "run.ps1"):
             self.assertTrue((ROOT / name).is_file(), name)
+        # The public checkout must permit the README-documented ./run.sh entry point.
+        if (ROOT / ".git").exists():
+            index = subprocess.run(
+                ["git", "ls-files", "--stage", "--", "run.sh"],
+                cwd=ROOT, check=True, text=True, capture_output=True,
+            ).stdout
+            self.assertTrue(index.startswith("100755 "), index)
 
     def test_shell_syntax_and_repo_root_resolution(self):
         for stem in NAMES:
