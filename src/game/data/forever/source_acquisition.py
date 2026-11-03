@@ -14,7 +14,7 @@ import sqlite3
 from typing import Iterable
 
 from .source_indexed_action_coverage import _source_spell_ids
-from .sqlite_talents import DEFAULT_DB
+from .source_db_scope import DEFAULT_DB
 
 
 def read_acquisition_evidence(*, class_key: str, spell_ids: Iterable[int],
