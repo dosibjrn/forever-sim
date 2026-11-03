@@ -14,6 +14,11 @@ import random
 import re
 
 
+# Existing production mutation operators already cap insertion at 20 actions.
+# Keep cold discovery on that same bound; do not tie reachability to reference length.
+MAX_APL_ACTIONS = 20
+
+
 def _spell_key(spell):
     return json.dumps(spell, sort_keys=True, separators=(",", ":"))
 
@@ -109,7 +114,7 @@ def _ensure_fallback(actions, source_actions):
                         if "castSpell" in x.get("action", {})
                         and "condition" not in x["action"])
         # A missing unconditional cast is a termination hazard: repair it.
-        if len(actions) >= 20:
+        if len(actions) >= MAX_APL_ACTIONS:
             actions.pop()
         actions.append(fallback)
 
@@ -117,8 +122,8 @@ def _ensure_fallback(actions, source_actions):
 def mutate_apl(actions, source_actions, rng, *, cold=False):
     """Return a new legal-grammar priority list, class/gate independent.
 
-    Cold generation samples a randomized action list, *not* a paid reference
-    candidate; later elite mutations use the same operators. The grammar is
+    Cold generation samples a randomized action list up to MAX_APL_ACTIONS,
+    *not* a paid reference candidate; later elite mutations use the same operators. The grammar is
     deliberately restricted to expression trees and spell IDs present in the
     supplied frozen input. This is not full spellbook-level completeness.
     """
@@ -130,7 +135,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
         # actions; an identical policy can still arise by chance and is legal.
         opaque = [entry for entry in source_actions
                   if "castSpell" not in entry.get("action", {})]
-        length = rng.randint(2, min(20, max(2, len(source_actions) + 3)))
+        length = rng.randint(2, MAX_APL_ACTIONS)
         result = []
         for _ in range(length):
             if opaque and rng.random() < 0.15:
@@ -140,7 +145,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
         # A fallback is a freshly sampled source spell, never a copied saved
         # reference priority entry. Keep the real native action legality check.
         if not _has_fallback(result):
-            if len(result) >= 20:
+            if len(result) >= MAX_APL_ACTIONS:
                 result.pop()
             result.append({"action": {"castSpell": {
                 "spellId": copy.deepcopy(rng.choice(spells))}}})
@@ -156,7 +161,7 @@ def mutate_apl(actions, source_actions, rng, *, cold=False):
         if mode == "swap":
             i, j = rng.sample(range(len(result)), 2)
             result[i], result[j] = result[j], result[i]
-        elif mode == "insert_cast" and len(result) < 20:
+        elif mode == "insert_cast" and len(result) < MAX_APL_ACTIONS:
             result.insert(rng.randrange(len(result) + 1), _new_cast(spells, predicates, rng))
         elif mode == "drop_action" and len(result) > 3:
             result.pop(rng.randrange(len(result)))
