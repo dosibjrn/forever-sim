@@ -549,3 +549,58 @@ def test_p1_real_production_heal_requires_restored_health_not_overheal():
     assert wounded.payload['restored'] > 0
     assert _p1_effect_observed(wounded)
     assert _runtime_exercise(ir, action, 20)['status'] == 'executed'
+
+
+
+def test_native_p1_executor_replaces_gameir_effect_validation_and_runtime():
+    selected = action(9912, effects=(), req=('legacy-only-requirement',), trace=False)
+    calls = []
+    def native(row_value, action_value):
+        calls.append((row_value['spell_id'], action_value.id))
+        return {
+            'outcome': {'status':'executed','effect_observed':True,
+                        'native_status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED'},
+            'report': {'spell_id':9912,'status':'NATIVE_DIRECT_BEHAVIOR_VERIFIED',
+                       'native_executed':True,'effect_observed':True,
+                       'p1_certified':False},
+        }
+    result = audit_inventory(
+        [row(9912)], ir_with(selected), parser=lambda a:set(),
+        source_classifier=lambda r,raw:{'role':'ABILITY'},
+        policy_builder=lambda ir,rules:policy(rules[0][0]),
+        scratch_builder=lambda ir,max_candidates:[policy(a.id) for a in ir.actions],
+        executor=lambda ir,a:(_ for _ in ()).throw(
+            AssertionError('native-selected action fell back to GameIR runtime')),
+        native_executor=native,
+        effect_checker=lambda e:(_ for _ in ()).throw(
+            AssertionError('native-selected action consulted GameIR effect dispatch')),
+    )
+    assert calls == [(9912, 'source_spell:9912')]
+    assert result['status'] == 'PASS'
+    assert result['pass_count'] == 1
+    assert result['production_runtime_exercises'] == 1
+    assert result['native_effect_probe_count'] == 1
+    assert result['native_effect_probes'][0]['p1_certified'] is False
+
+
+def test_native_p1_refusal_is_preserved_without_gameir_fallback():
+    selected = action(9912, effects=(), trace=False)
+    result = audit_inventory(
+        [row(9912)], ir_with(selected), parser=lambda a:set(),
+        source_classifier=lambda r,raw:{'role':'ABILITY'},
+        policy_builder=lambda ir,rules:policy(rules[0][0]),
+        scratch_builder=lambda ir,max_candidates:[policy(a.id) for a in ir.actions],
+        executor=lambda ir,a:(_ for _ in ()).throw(
+            AssertionError('native refusal must never fall back to GameIR')),
+        native_executor=lambda row_value,action_value:{
+            'outcome': {'status':'native_refused','native_status':'UNSUPPORTED',
+                        'reason':'native_action_not_supported'},
+            'report': {'spell_id':9912,'status':'UNSUPPORTED',
+                       'reason':'native_action_not_supported','p1_certified':False},
+        },
+        effect_checker=lambda e:'direct_damage',
+    )
+    assert result['status'] == 'FAIL'
+    assert 'NATIVE_ACTION_REFUSED' in codes(result)
+    assert result['native_effect_probes'][0]['status'] == 'UNSUPPORTED'
+    assert result['pass_count'] == 0
