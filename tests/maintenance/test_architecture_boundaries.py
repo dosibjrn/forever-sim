@@ -226,3 +226,35 @@ assert 'src.game.runtime.simulator' in sys.modules
         f"registry import / explicit runtime compatibility failed: "
         f"{result.stdout}\n{result.stderr}"
     )
+
+
+
+def test_forever_package_import_keeps_source_registry_deferred():
+    """Source-only imports avoid legacy GameIR registry; builder API still works."""
+    import subprocess
+    import sys
+
+    source = """
+import sys
+import src.game.data.forever as forever
+from src.game.data.forever import source_db_scope
+
+assert forever.__all__ == ['build_game_ir_slice']
+assert 'src.game.data.forever.registry' not in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+assert callable(source_db_scope.ability_source_scope)
+
+from src.game.data.forever import build_game_ir_slice
+from src.game.data.forever.registry import build_game_ir_slice as direct
+assert build_game_ir_slice is direct
+assert 'src.game.data.forever.registry' in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"Forever source-only import / public builder compatibility failed: "
+        f"{result.stdout}\n{result.stderr}"
+    )
