@@ -3,6 +3,7 @@
 MythicSim owns spell/rank acquisition legality and game-source facts.
 The real route and stable production gate entrypoints remain separate live code.
 """
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -98,12 +99,27 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
 
 
 def test_no_live_python_imports_retired_source_proof_and_audit_clis():
+    # Match actual imports, not incidental metadata keys or historical strings.
+    # An import may name the module directly or import its leaf from a package.
+    retired_modules = {
+        Path(relative).stem
+        for relative in (*RETIRED_TOOLS, *RETIRED_SOURCE_PROOF_MODULES)
+    }
+    retired_modules.update(name for name in RETIRED_IMPORT_NAMES if name.isidentifier())
     for root in (ROOT / "src", ROOT / "tools", ROOT / "tests"):
         for path in root.rglob("*.py"):
             if path == Path(__file__):
                 continue
-            source = path.read_text(encoding="utf-8")
-            assert not any(name in source for name in RETIRED_IMPORT_NAMES), path
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    imported = {part for alias in node.names for part in alias.name.split(".")}
+                elif isinstance(node, ast.ImportFrom):
+                    imported = set((node.module or "").split("."))
+                    imported.update(alias.name for alias in node.names)
+                else:
+                    continue
+                assert not (imported & retired_modules), (path, node.lineno, imported & retired_modules)
 
 
 def test_retired_checkpoint_acquisition_proof_and_l0_verdict_are_gone():
