@@ -1,9 +1,8 @@
-"""Scope historical P1-P6 acceptance separately from full P1-P7.5 certification.
+"""Report current M1 checkpoint status alongside separate historical P1–P6 facts.
 
-WF360/WF365/WF367 contain historical six-gate verdicts; they cannot certify
-any current full checkpoint under PROCESS v2.10. This compatibility reader
-never upgrades those records into a P1-P7.5 pass. The actual full-gate verifier
-must be implemented separately before this helper may report any full PASS.
+WF360/WF365/WF367 are legacy six-gate evidence, not current certification.
+Only the canonical Merge-owned M1 register can supply full checkpoint counts.
+This reader never awards a gate PASS or changes the register.
 """
 from __future__ import annotations
 import json
@@ -56,20 +55,22 @@ def _legacy_six_gate_status(root: Path) -> dict:
 
 
 def accepted_checkpoint_status(root: Path) -> dict:
-    """Fail-closed current count plus separately named historic six-gate facts.
+    """Read the canonical live M1 count, retaining separately labeled legacy facts.
 
-    This historical helper has no live P7.1-P7.5 executor/evidence authority.
-    It cannot certify even one full checkpoint; callers must not display a
-    WF367 2/148 value as the current P1-P7.5 overall-plan progress.
-
-    A future real full-gate acceptance reader must replace this conservative
-    zero; adding new P7 certificates to this historical helper is NOT enough.
+    An empty or absent ledger means zero certified checkpoints. Even 11 PASS
+    rows do not certify a checkpoint unless their compatibility IDs agree;
+    tools.m1_progress.scoreboard owns that predicate. No gate is run here.
     """
+    from tools.m1_progress import scoreboard
+
+    root = Path(root)
     legacy = _legacy_six_gate_status(root)
+    current = scoreboard(root / "docs/planning/M1_PASSES.tsv")
+    certified = current["certified_checkpoints"]
     return {
-        "accepted_checkpoints": "0/148",
-        "full_checkpoint_certified": False,
-        "full_checkpoint_authority": "NOT_VERIFIED_BY_LEGACY_P1_P6_EVIDENCE",
+        "accepted_checkpoints": f"{certified}/{current['total_checkpoints']}",
+        "full_checkpoint_certified": certified > 0,
+        "full_checkpoint_authority": "CANONICAL_M1_LEDGER_COMPATIBLE_P1_P7_5",
         "legacy_six_gate_accepted_checkpoints": legacy["accepted_checkpoints"],
         "legacy_six_gate_druid_l30": legacy["druid_l30"],
         "legacy_six_gate_authority": legacy["authority"],
