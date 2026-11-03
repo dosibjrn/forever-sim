@@ -257,7 +257,7 @@ def source_bounded_adapter(
         "talent_donor_fixtures": talent_donor_fixtures,
         "talent_validation": "SOURCE_OBSERVED_BASELINE_PLUS_51_POINT_WHOLE_BUILDS_NOT_RANKWISE",
         "gear_validation": "PINNED_SAME_CLASS_SLOT_NATIVE_DB_PARTIAL_EQUIP_RULES",
-        "apl_validation": "SOURCE_CAST_IDENTITIES_AND_OPAQUE_ACTION_CORPUS",
+        "apl_validation": "SOURCE_CAST_CONDITION_PAIRS_AND_OPAQUE_ACTION_CORPUS",
     }
 
 
