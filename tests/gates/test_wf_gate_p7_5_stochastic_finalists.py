@@ -140,7 +140,7 @@ def test_p75_archive_parent_escapes_single_balanced_leader():
 
     class PickSecond:
         def choice(self, rows):
-            return rows[1]
+            return rows[1] if len(rows) > 1 else rows[0]
 
     pick = PickSecond()
     assert gate._paid_p75_parent(
