@@ -756,7 +756,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
         self.assertFalse(adapter.legal(candidate), "a build without a common native witness is excluded")
 
         cold_context = copy.deepcopy(baseline)
-        player(cold_context)["talentsString"] = donor_a_talents
+        cold_context["raid"]["parties"][0]["players"][0]["talentsString"] = donor_a_talents
         generated = adapter.adapters["apl"].cold(random.Random(23), cold_context)
         donor_a_casts = {
             json.dumps(value, sort_keys=True, separators=(",", ":"))
