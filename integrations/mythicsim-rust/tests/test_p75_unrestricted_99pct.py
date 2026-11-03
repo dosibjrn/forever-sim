@@ -259,7 +259,7 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         src=inspect.getsource(main)
         self.assertIn("rerank_record=paid_rerank_record(",src)
         self.assertIn("rerank_paid.append(rerank_record)",src)
-        self.assertIn('("rerank.json",rerank_paid)',src)
+        self.assertIn("persist_paid_search_evidence(a.outdir,paid,rerank_paid",src)
         self.assertIn('"rerank_paid_records":len(rerank_paid)',src)
 
     def test_gear_swaps_do_not_carry_old_item_enchants(self):
