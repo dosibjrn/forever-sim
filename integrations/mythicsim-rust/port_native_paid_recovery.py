@@ -284,6 +284,59 @@ CLI_NEW = """    if args[0] == "native-world-pulls" {
         return Ok(());
     }
 """
+# Typed-RNG descendants are the selected production source shape. Paid recovery
+# must extend these signatures without dropping the explicit mode argument.
+CLASSES_SIGNATURE_TYPED_OLD = CLASSES_SIGNATURE_OLD.replace(
+    "    target_count: usize,\\n",
+    "    target_count: usize,\\n    rng_mode: crate::core::rng::RngMode,\\n",
+)
+CLASSES_SIGNATURE_TYPED_NEW = CLASSES_SIGNATURE_TYPED_OLD.replace(
+    "    rng_mode: crate::core::rng::RngMode,\\n",
+    "    rng_mode: crate::core::rng::RngMode,\\n    recovery_ns: i64,\\n",
+)
+
+PREPARED_SIGNATURE_TYPED_OLD = PREPARED_SIGNATURE_OLD.replace(
+    "target_count: usize)",
+    "target_count: usize, rng_mode: crate::core::rng::RngMode)",
+)
+PREPARED_SIGNATURE_TYPED_NEW = PREPARED_SIGNATURE_TYPED_OLD.replace(
+    "rng_mode: crate::core::rng::RngMode)",
+    "rng_mode: crate::core::rng::RngMode, recovery_ns: i64)",
+)
+PREPARED_CALL_TYPED_OLD = PREPARED_CALL_OLD + ", rng_mode"
+PREPARED_CALL_TYPED_NEW = PREPARED_CALL_TYPED_OLD + ", recovery_ns"
+
+CLI_TYPED_OLD = CLI_OLD.replace(
+    'args.len() != 5 || args[1] != "--infile" || args[3] != "--targets"',
+    'args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode"',
+    1,
+).replace(
+    "let report = native_two_world_targets(&prepared, target_count)",
+    "let mode = RngMode::parse_cli(&args[6])?;\\n        let report = native_two_world_targets(&prepared, target_count, mode)",
+    1,
+)
+CLI_TYPED_NEW = CLI_NEW.replace(
+    'if !matches!(args.len(), 5 | 7)\\n            || args[1] != "--infile" || args[3] != "--targets"\\n            || (args.len() == 7 && args[5] != "--recovery-ns")',
+    'if !matches!(args.len(), 7 | 9)\\n            || args[1] != "--infile" || args[3] != "--targets"\\n            || args[5] != "--rng-mode"\\n            || (args.len() == 9 && args[7] != "--recovery-ns")',
+    1,
+).replace(
+    "--targets 2..100 [--recovery-ns 0..300000000000]",
+    "--targets 2..100 --rng-mode balanced|stochastic [--recovery-ns 0..300000000000]",
+    1,
+).replace(
+    "let recovery_ns = if args.len() == 7 {",
+    "let mode = RngMode::parse_cli(&args[6])?;\\n        let recovery_ns = if args.len() == 9 {",
+    1,
+).replace(
+    "args[6].parse::<i64>()",
+    "args[8].parse::<i64>()",
+    1,
+).replace(
+    "native_two_world_targets(&prepared, target_count, recovery_ns)",
+    "native_two_world_targets(&prepared, target_count, mode, recovery_ns)",
+    1,
+)
+
 
 
 def _replace_once(source: str, old: str, new: str, label: str) -> str:
@@ -366,6 +419,27 @@ def is_composed_paid_recovery_source(source: str) -> bool:
 
 
 def port_classes(source: str) -> str:
+    if CLASSES_SIGNATURE_TYPED_NEW in source:
+        if (source.count(CLASSES_SIGNATURE_TYPED_NEW) != 1
+                or source.count(CLASSES_CALL_NEW) != 9
+                or CLASSES_SIGNATURE_TYPED_OLD in source
+                or CLASSES_SIGNATURE_NEW in source
+                or CLASSES_SIGNATURE_OLD in source
+                or CLASSES_CALL_OLD in source):
+            raise ValueError("RUST_NATIVE_PAID_RECOVERY_CLASSES_PARTIAL")
+        return source
+    if CLASSES_SIGNATURE_TYPED_OLD in source:
+        if (source.count(CLASSES_SIGNATURE_TYPED_OLD) != 1
+                or source.count(CLASSES_CALL_OLD) != 9
+                or CLASSES_SIGNATURE_TYPED_NEW in source
+                or CLASSES_SIGNATURE_NEW in source
+                or CLASSES_SIGNATURE_OLD in source
+                or CLASSES_CALL_NEW in source):
+            raise ValueError("RUST_NATIVE_PAID_RECOVERY_CLASSES_PARTIAL")
+        source = source.replace(
+            CLASSES_SIGNATURE_TYPED_OLD, CLASSES_SIGNATURE_TYPED_NEW, 1
+        )
+        return source.replace(CLASSES_CALL_OLD, CLASSES_CALL_NEW)
     if CLASSES_SIGNATURE_NEW in source:
         if (source.count(CLASSES_SIGNATURE_NEW) != 1
                 or source.count(CLASSES_CALL_NEW) != 9
@@ -380,6 +454,36 @@ def port_classes(source: str) -> str:
 
 
 def port_prepared(source: str) -> str:
+    if PREPARED_SIGNATURE_TYPED_NEW in source:
+        if (source.count(PREPARED_SIGNATURE_TYPED_NEW) != 1
+                or source.count(PREPARED_COUNT_NEW) != 1
+                or source.count(PREPARED_CALL_TYPED_NEW) != 1
+                or PREPARED_SIGNATURE_TYPED_OLD in source
+                or PREPARED_CALL_TYPED_OLD in source
+                or PREPARED_SIGNATURE_NEW in source
+                or PREPARED_SIGNATURE_OLD in source
+                or PREPARED_CALL_NEW in source
+                or PREPARED_CALL_OLD in source):
+            raise ValueError("RUST_NATIVE_PAID_RECOVERY_PREPARED_PARTIAL")
+        return source
+    if PREPARED_SIGNATURE_TYPED_OLD in source:
+        if (source.count(PREPARED_SIGNATURE_TYPED_OLD) != 1
+                or source.count(PREPARED_COUNT_OLD) != 1
+                or source.count(PREPARED_CALL_TYPED_OLD) != 1
+                or PREPARED_SIGNATURE_TYPED_NEW in source
+                or PREPARED_CALL_TYPED_NEW in source
+                or PREPARED_SIGNATURE_NEW in source
+                or PREPARED_SIGNATURE_OLD in source
+                or PREPARED_CALL_NEW in source
+                or PREPARED_CALL_OLD in source):
+            raise ValueError("RUST_NATIVE_PAID_RECOVERY_PREPARED_PARTIAL")
+        source = source.replace(
+            PREPARED_SIGNATURE_TYPED_OLD, PREPARED_SIGNATURE_TYPED_NEW, 1
+        )
+        source = source.replace(PREPARED_COUNT_OLD, PREPARED_COUNT_NEW, 1)
+        return source.replace(
+            PREPARED_CALL_TYPED_OLD, PREPARED_CALL_TYPED_NEW, 1
+        )
     if PREPARED_SIGNATURE_NEW in source:
         if (source.count(PREPARED_SIGNATURE_NEW) != 1
                 or source.count(PREPARED_COUNT_NEW) != 1
@@ -399,6 +503,20 @@ def port_prepared(source: str) -> str:
 
 
 def port_main(source: str) -> str:
+    if CLI_TYPED_NEW in source:
+        if (source.count(CLI_TYPED_NEW) != 1
+                or CLI_TYPED_OLD in source
+                or CLI_NEW in source
+                or CLI_OLD in source):
+            raise ValueError("RUST_NATIVE_PAID_RECOVERY_CLI_PARTIAL")
+        return source
+    if CLI_TYPED_OLD in source:
+        if (source.count(CLI_TYPED_OLD) != 1
+                or CLI_TYPED_NEW in source
+                or CLI_NEW in source
+                or CLI_OLD in source):
+            raise ValueError("RUST_NATIVE_PAID_RECOVERY_CLI_PARTIAL")
+        return source.replace(CLI_TYPED_OLD, CLI_TYPED_NEW, 1)
     if CLI_NEW in source:
         if source.count(CLI_NEW) != 1 or CLI_OLD in source:
             raise ValueError("RUST_NATIVE_PAID_RECOVERY_CLI_PARTIAL")
