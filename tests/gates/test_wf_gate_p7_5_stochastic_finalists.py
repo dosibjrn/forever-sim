@@ -309,7 +309,7 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
     }
     assert result["joint_cold_world_dps"] == 770.0
     assert result["selected_validation"] == (
-        "paid_2x24_stochastic_live_native_finalist")
+        "paid_2x24_balanced_live_native_finalist")
     assert ("native", 1000, "stochastic", "B") in calls
     assert ("world", 1000, "stochastic", "A") not in calls
     assert result["source_legal_joint_candidates_paid"] == 2
@@ -478,7 +478,7 @@ def test_p75_deep_confirms_two_real_paid_leaders_before_freeze(
                if index % 5 == 0 or elite is None)
     assert paid_seeds.count(deep_seeds) == 2
     assert result["selected_validation"] == (
-        "paid_6x24_stochastic_live_native_deep_confirmed_finalist")
+        "paid_6x24_balanced_live_native_deep_confirmed_finalist")
     assert result["frozen_stochastic_iterations"] == 1000
     assert result["frozen_stochastic_world_dps"] == 760.0
 
