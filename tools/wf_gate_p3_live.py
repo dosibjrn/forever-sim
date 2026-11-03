@@ -169,7 +169,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             ir, stat=axis, level=level, probe_deltas=(5., 20.),
             max_evaluations=remaining,
             schedule_incoming_attacks=schedule_incoming_attacks,
-            baseline_cache=source_policy_baseline_cache)
+            baseline_cache=source_policy_baseline_cache,
+            candidate_records=((runner_up_record,) if runner_up_record else ()))
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
         if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
