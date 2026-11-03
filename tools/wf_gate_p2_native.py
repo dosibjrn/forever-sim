@@ -227,12 +227,13 @@ def parse_druid_rust_layout(engine_root: Path | str) -> dict[str, list[dict[str,
 def validate_source_layout(
     source_data: dict[str, Any],
     layout: dict[str, list[dict[str, Any]]],
-) -> None:
-    """Require every source talent to map exactly by field and rank cap."""
+) -> dict[str, dict[str, list[str]]]:
+    """Require source tree/row order to agree with the selected Rust layout."""
     by_field = {
         tree: {entry["field"]: entry for entry in entries}
         for tree, entries in layout.items()
     }
+    source_by_id = {entry["talent_id"]: entry for entry in source_data["talents"]}
     for source in source_data["talents"]:
         tree = _tree_key(source["tree_key"])
         tid = source["talent_id"]
@@ -244,6 +245,26 @@ def validate_source_layout(
                 f"P2_NATIVE_RANK_CAP_MISMATCH:{tid}:"
                 f"source={source['max_rank']}:rust={native['max_rank']}"
             )
+    order_receipts: dict[str, dict[str, list[str]]] = {}
+    for tree in TREE_ORDER:
+        source_order = [
+            entry["talent_id"] for entry in sorted(
+                (entry for entry in source_data["talents"]
+                 if _tree_key(entry["tree_key"]) == tree),
+                key=lambda item: (int(item["row"]), int(item["column"]), item["talent_id"]),
+            )
+        ]
+        rust_order = [
+            entry["field"] for entry in layout[tree]
+            if entry["field"] in source_by_id
+        ]
+        if source_order != rust_order:
+            raise NativeP2Error(
+                f"P2_NATIVE_SOURCE_RUST_TREE_ORDER_MISMATCH:{tree}:"
+                f"source={source_order}:rust={rust_order}"
+            )
+        order_receipts[tree] = {"source_order": source_order, "rust_order": rust_order}
+    return order_receipts
 
 
 def build_source_legal_witness(
@@ -486,9 +507,9 @@ def _source_observation(source_data: dict[str, Any], talent_id: str, rank: int) 
     observation = source_data.get("rank_l0", {}).get(talent_id)
     if not observation:
         raise NativeP2Error(f"P2_NATIVE_CHECKPOINT_SOURCE_L0_MISSING:{talent_id}")
-    for feature in observation["features"]:
-        if len(feature.get("rank_values", [])) < rank:
-            raise NativeP2Error(f"P2_NATIVE_CHECKPOINT_SOURCE_L0_RANK_MISSING:{talent_id}:{rank}")
+    if not any(len(feature.get("rank_values", [])) >= rank
+               for feature in observation["features"]):
+        raise NativeP2Error(f"P2_NATIVE_CHECKPOINT_SOURCE_L0_RANK_MISSING:{talent_id}:{rank}")
     return observation
 
 
@@ -512,8 +533,9 @@ def _probe_predatory_strikes(
 
     matching = [
         feature for feature in observation["features"]
-        if "attack_power" in str(feature["domain"]).lower()
-        or "attack_power" in str(feature["target"]).lower()
+        if ("attack_power" in str(feature["domain"]).lower()
+            or "attack_power" in str(feature["target"]).lower())
+        and len(feature.get("rank_values", [])) >= rank
     ]
     if not matching:
         raise NativeP2Error("P2_NATIVE_PREDATORY_ATTACK_POWER_SOURCE_EFFECT_MISSING")
@@ -610,7 +632,7 @@ def run_smoke(
     engine_sha = verify_selected_engine_pin(engine_root)
     source_data, source_sha = load_source_positions(source_db, level)
     layout = parse_druid_rust_layout(engine_root)
-    validate_source_layout(source_data, layout)
+    source_rust_tree_order = validate_source_layout(source_data, layout)
 
     rank_results = [
         _probe_predatory_strikes(source_data, layout, engine_root, binary, engine_sha, rank, level)
@@ -628,6 +650,7 @@ def run_smoke(
         "source_sha256": source_sha,
         "selected_engine_sha": engine_sha,
         "production_engine": "msim",
+        "source_rust_tree_order": source_rust_tree_order,
         "rank_results": rank_results,
         "pass_count": pass_count,
         "applicable_probe_count": len(rank_results),
