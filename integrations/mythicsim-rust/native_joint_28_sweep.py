@@ -223,6 +223,7 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
                 "composed_over_profile": item.get("composed_over_profile"),
                 "original_talents_string": item.get("original_talents_string"),
                 "replacement_talents_string": item.get("replacement_talents_string"),
+                "talent_source_override_applied": item.get("talent_source_override_applied", False),
             }
             for item in donor_inventory.get("fixtures", [])
         ]
@@ -237,7 +238,7 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
             "current_client_preset_donors": donor_inventory.get("current_client_preset_donors", []),
             "current_client_talent_source_override_count": sum(
                 1 for item in donor_inventory.get("fixtures", [])
-                if item.get("composed_over_profile")
+                if item.get("talent_source_override_applied")
             ),
             "current_client_talent_source_overrides": [
                 {
@@ -249,7 +250,7 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
                     )
                 }
                 for item in donor_inventory.get("fixtures", [])
-                if item.get("composed_over_profile")
+                if item.get("talent_source_override_applied")
             ],
             "skipped_count": len(donor_inventory.get("skipped", [])),
             "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
