@@ -51,6 +51,7 @@ def _run_world_bridge(
         prepared_path,
         mob_health=mob_health,
         target_count=target_count,
+        require_native_moving=True,
     )
 
 
@@ -110,12 +111,44 @@ def _validate_world_receipt(world: dict[str, Any], target_count: int) -> dict[st
     if type(world_ticks) is not int or world_ticks < target_count:
         raise ValueError("NATIVE_ROUTE_WORLD_TICKS_INCOMPLETE")
 
+    native_moving_ticks = world.get("native_gsim_moving_ticks")
+    native_moving_receipts = world.get("native_moving_receipts")
+    if type(native_moving_ticks) is not int or native_moving_ticks <= 0:
+        raise ValueError("NATIVE_ROUTE_WORLD_NATIVE_MOVEMENT_NOT_OBSERVED")
+    if native_moving_receipts != world_ticks or world.get("native_movement_cast_legal") is not True:
+        raise ValueError("NATIVE_ROUTE_WORLD_NATIVE_MOVEMENT_RECEIPT_INCOMPLETE")
+    walk_steps = world.get("gsim_world_walk_steps")
+    route_legs = world.get("gsim_route_legs")
+    route_receipts = world.get("gsim_route_paid_receipts")
+    paid_movement_s = world.get("gsim_route_paid_movement_s")
+    if type(walk_steps) is not int or walk_steps <= 0:
+        raise ValueError("NATIVE_ROUTE_WORLD_GSIM_MOVEMENT_MISSING")
+    if not isinstance(route_legs, list) or len(route_legs) != target_count - 1:
+        raise ValueError("NATIVE_ROUTE_WORLD_ROUTE_LEG_COUNT_MISMATCH")
+    if not isinstance(route_receipts, list) or len(route_receipts) != target_count - 1:
+        raise ValueError("NATIVE_ROUTE_WORLD_PAID_MOVEMENT_RECEIPTS_INCOMPLETE")
+    if (
+        isinstance(paid_movement_s, bool)
+        or not isinstance(paid_movement_s, (int, float))
+        or not math.isfinite(float(paid_movement_s))
+        or paid_movement_s <= 0
+    ):
+        raise ValueError("NATIVE_ROUTE_WORLD_PAID_MOVEMENT_TIME_MISSING")
+
     return {
         "world_targets_killed": target_count,
         "continuous_native_actor": True,
         "actual_2d_ack": True,
         "native_damage_events": native_damage_events,
         "world_ticks": world_ticks,
+        "native_gsim_moving_ticks": native_moving_ticks,
+        "native_moving_receipts": native_moving_receipts,
+        "native_movement_cast_legal": True,
+        "gsim_world_walk_steps": walk_steps,
+        "gsim_route_legs": len(route_legs),
+        "gsim_route_paid_receipts": len(route_receipts),
+        "gsim_route_paid_movement_s": float(paid_movement_s),
+        "world_target_hp": world.get("world_target_hp"),
         "world_elapsed_seconds": world.get("world_elapsed_seconds"),
         "paid_recovery": world.get("paid_recovery"),
         "target_provenance": world.get("world_target_provenance"),
