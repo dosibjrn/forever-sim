@@ -655,7 +655,7 @@ def test_paid_p75_talent_crossover_uses_fourth_genuine_paid_donor():
 
 
 def test_paid_p75_gear_crossover_uses_fourth_multi_slot_paid_donor():
-    """Three paid one-slot edits cannot hide a legal fourth two-slot donor."""
+    """Three one-slot edits cannot hide a fourth genuinely paid two-slot donor."""
     player = lambda q: q["raid"]["parties"][0]["players"][0]
     parent = _candidate("parent")
     child = copy.deepcopy(parent)
@@ -669,16 +669,12 @@ def test_paid_p75_gear_crossover_uses_fourth_multi_slot_paid_donor():
         {"id": 71, "enchant": 801}, {"id": 72, "enchant": 802}]
     leaders.append((800.0, {}, "paid-multi-slot", meaningful))
     source = SimpleNamespace(player=player, RejectedGear=ValueError)
-    validated = []
-    validator = SimpleNamespace(
-        validate=lambda ids, enchants: validated.append((ids, enchants)))
     before_parent = copy.deepcopy(parent)
     before_donor = copy.deepcopy(meaningful)
 
     assert gate._paid_p75_gear_block_crossover(
-        child, parent, leaders, [], source, validator, random.Random(17))
+        child, parent, leaders, [], source, random.Random(17))
     assert player(child)["equipment"] == player(meaningful)["equipment"]
-    assert validated == [([71, 72], [801, 802])]
     assert parent == before_parent
     assert meaningful == before_donor
 
