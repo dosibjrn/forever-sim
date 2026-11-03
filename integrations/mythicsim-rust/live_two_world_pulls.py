@@ -90,16 +90,28 @@ def _queue_world_walk(world: CombatRuntime, target_id: str, *,
     if distance <= approach_radius_yards:
         return {"target_id": target_id, "scheduled_yards": 0.0,
                 "start_s": world.actor.current_time_s,
-                "arrival_s": world.actor.current_time_s}
+                "arrival_s": world.actor.current_time_s,
+                "movement_generation": None, "scheduled_movement_steps": 0}
     destination = (target[0] - approach_radius_yards * dx / distance,
                    target[1] - approach_radius_yards * dy / distance)
     start_s = float(world.actor.current_time_s)
     arrival_s = world.begin_player_move(destination, speed_yards_s=speed_yards_s)
     if arrival_s <= start_s or world.player_position_yards != start:
         raise AssertionError("RUST_TWO_WORLD_ROUTE_TELEPORTED_OR_UNCHARGED")
+    # Bind the receipt to the *real* queued gsim movement generation. A single
+    # unrelated/stale step must never certify a completed route as paid.
+    generation = world._player_move_generation
+    queued_steps = sum(
+        event.kind == "SpatialPlayerMoveStep"
+        and event.payload.get("move_generation") == generation
+        for _, _, event in world.queue._heap)
+    if queued_steps <= 0:
+        raise AssertionError("RUST_WORLD_ROUTE_NO_QUEUED_GSIM_STEPS")
     return {"target_id": target_id,
             "scheduled_yards": distance - approach_radius_yards,
-            "start_s": start_s, "arrival_s": arrival_s}
+            "start_s": start_s, "arrival_s": arrival_s,
+            "movement_generation": generation,
+            "scheduled_movement_steps": queued_steps}
 
 
 def _target_health_profile(mob_health: float | None, classic_mob_level: int | None) -> tuple[float, dict]:
@@ -224,15 +236,29 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
         # cast on the move). Do not credit the as-yet-unexecuted route tail.
         through_s = min(next_s, float(arrival_s))
         paid_s = max(0.0, through_s - start_s) if yards > 0 else 0.0
+        generation = leg.get("movement_generation")
+        scheduled_steps = leg.get("scheduled_movement_steps")
+        if (type(scheduled_steps) is not int
+                or (yards > 0 and (type(generation) is not int
+                                    or scheduled_steps <= 0))
+                or (yards == 0 and (generation is not None
+                                    or scheduled_steps != 0))):
+            raise AssertionError("RUST_WORLD_ROUTE_STEP_SCHEDULE_INVALID")
         steps = sum(event.kind == "SpatialPlayerMoveStep"
-                    and start_s < event.time_s <= through_s + 1e-9
-                    for event in trace)
+                    and event.payload.get("move_generation") == generation
+                    and start_s < event.time_s <= next_s + 1e-9
+                    for event in trace) if yards > 0 else 0
         if yards == 0 and arrival_s != start_s:
             raise AssertionError("RUST_WORLD_ROUTE_ZERO_DISTANCE_CLOCK_INVALID")
-        if yards > 0 and next_s >= arrival_s and steps == 0:
-            # A fully elapsed walk must have executed real 2D movement
-            # steps. A schedule plus a late lethal clock is not proof.
-            raise AssertionError("RUST_WORLD_ROUTE_COMPLETE_WITHOUT_GSIM_STEPS")
+        if steps > scheduled_steps:
+            raise AssertionError("RUST_WORLD_ROUTE_DUPLICATE_GSIM_STEPS")
+        if yards > 0 and next_s >= arrival_s:
+            # The real lethal ACK clock alone does not prove arrival. Every
+            # scheduled 2D movement step of this leg must have actually run.
+            if steps == 0:
+                raise AssertionError("RUST_WORLD_ROUTE_COMPLETE_WITHOUT_GSIM_STEPS")
+            if steps != scheduled_steps:
+                raise AssertionError("RUST_WORLD_ROUTE_INCOMPLETE_GSIM_STEPS")
         receipts.append({
             "target_id": leg["target_id"],
             "prior_kill_clock_ns": prior_ns,
