@@ -1,10 +1,9 @@
-"""Generic, typed APL mutation from a source-backed executable action corpus.
+"""Generic APL mutation over exact source-backed action templates.
 
-Never invent spell IDs or expression opcodes: the frozen profile's castSpell
-identities and predicate ASTs are the grammar's admissible terminals. This
-admits new actions, predicate rewrites, and threshold changes beyond shuffling.
-It does NOT certify that a new spell/predicate combination is optimal, or that
-any particular talent/spec configuration can cast it: paid native runs decide.
+Spell identities, native cast payloads and each source action's condition tree
+stay paired. Cold and elite search may add, remove and reorder source actions,
+but never graft, tune or drop a source guard. MythicSim decides the submitted
+action's legality and effect.
 """
 from __future__ import annotations
 
@@ -240,8 +239,8 @@ def _tune_literal(condition, rng):
     return entry["val"] != old
 
 
-def _source_cast_templates(source_actions):
-    """Preserve exact source cast payloads (including healing targets) for proposals."""
+def _source_action_templates(source_actions):
+    """Return exact cast action payloads keyed by their source spell identity."""
     templates = {}
     for entry in source_actions:
         action = entry.get("action", {}) if isinstance(entry, dict) else {}
@@ -252,36 +251,18 @@ def _source_cast_templates(source_actions):
                 or spell_id <= 0):
             continue
         variants = templates.setdefault(_spell_key(spell), {})
-        variants.setdefault(_spell_key(cast), copy.deepcopy(cast))
+        variants.setdefault(_spell_key(action), copy.deepcopy(action))
     return {key: tuple(variants.values()) for key, variants in templates.items()}
 
 
-def _cast_from_source(spell, cast_templates, rng):
-    variants = cast_templates.get(_spell_key(spell), ())
-    if not variants:
-        return {"spellId": copy.deepcopy(spell)}
-    return copy.deepcopy(variants[0] if len(variants) == 1 else rng.choice(variants))
-
-
 def _new_cast(spells, predicates_by_spell, compatible_predicates, rng,
-              cast_templates=None):
+              source_action_templates=None):
+    """Sample a source action intact; its condition never leaves its cast."""
     spell = copy.deepcopy(rng.choice(spells))
-    action = {"castSpell": _cast_from_source(spell, cast_templates or {}, rng)}
-    preferred = _predicates_for_spell(
-        predicates_by_spell.get(_spell_key(spell), ()), spell
-    )
-    cross_spell = _predicates_for_spell(compatible_predicates, spell)
-    predicates = preferred
-    # Same-spell remains a preference; compatible cross-spell predicates
-    # remain eligible unless their self-refresh test is unsafe for this cast.
-    if not preferred or rng.random() >= 0.8:
-        predicates = cross_spell
-    if predicates and rng.random() < 0.8:
-        condition = copy.deepcopy(rng.choice(predicates))
-        if rng.random() < 0.7:
-            _tune_literal(condition, rng)
-        action["condition"] = condition
-    return {"action": action}
+    variants = (source_action_templates or {}).get(_spell_key(spell), ())
+    if not variants:
+        raise ValueError("APL source spell has no exact source action template")
+    return {"action": copy.deepcopy(rng.choice(variants))}
 
 
 def _is_unconditional_cast(entry):
@@ -316,117 +297,125 @@ def _ensure_fallback(actions, source_actions):
     actions[:] = [entry for entry in actions if not _is_unconditional_cast(entry)] + fallbacks
 
 def mutate_apl(actions, source_actions, rng, *, cold=False):
-    """Return a new legal-grammar priority list, class/gate independent.
+    """Add, remove and reorder exact source actions without rewriting guards.
 
-    Cold generation samples a randomized action list, *not* a paid reference
-    candidate; later elite mutations use the same operators. The grammar is
-    deliberately restricted to expression trees and spell IDs present in the
-    supplied frozen input. This is not full spellbook-level completeness.
+    Cold generation samples a randomized action list from the selected source
+    action corpus. Elite mutations first restore any changed cast payload or
+    condition to an exact source action, then perform one structural mutation.
+    Native MythicSim remains responsible for game-semantic legality.
     """
-    spells, predicates_by_spell, allowed, compatible_predicates, source_aura_keys = _corpus(source_actions)
-    cast_templates = _source_cast_templates(source_actions)
+    spells, predicates_by_spell, _allowed_casts, compatible_predicates, _source_aura_keys = (
+        _corpus(source_actions)
+    )
+    source_action_templates = _source_action_templates(source_actions)
+    if not source_action_templates:
+        raise ValueError("APL source action corpus contains no exact spell templates")
+
+    source_cast_action_keys = {
+        _spell_key(entry["action"])
+        for entry in source_actions
+        if isinstance(entry, dict)
+        and isinstance(entry.get("action"), dict)
+        and isinstance(entry["action"].get("castSpell"), dict)
+    }
+    source_noncast = {
+        _spell_key(entry.get("action", {}))
+        for entry in source_actions
+        if isinstance(entry, dict)
+        and isinstance(entry.get("action"), dict)
+        and "castSpell" not in entry["action"]
+    }
+    source_action_keys_by_spell = {
+        key: {_spell_key(action) for action in variants}
+        for key, variants in source_action_templates.items()
+    }
+
     if cold:
-        # A cold search may READ the saved request as a source-backed grammar,
-        # but must not initialize its policy from the saved priority list.
-        # Independently sample new casts/predicates and optional opaque native
-        # actions; an identical policy can still arise by chance and is legal.
-        opaque = [entry for entry in source_actions
-                  if "castSpell" not in entry.get("action", {})]
-        # The saved request is a source vocabulary, not an APL length prior.
-        # Keep the full native action-list budget available to cold search:
-        # a 10-action source grammar must still admit 19-action legal policies.
+        # The saved request supplies only an action grammar. It does not seed
+        # the saved priority list or authorize synthetic unconditional casts.
+        opaque = [
+            entry for entry in source_actions
+            if isinstance(entry, dict)
+            and isinstance(entry.get("action"), dict)
+            and "castSpell" not in entry["action"]
+        ]
         length = rng.randint(2, 20)
         result = []
         for _ in range(length):
             if opaque and rng.random() < 0.15:
                 result.append(copy.deepcopy(rng.choice(opaque)))
             else:
-                result.append(_new_cast(spells, predicates_by_spell, compatible_predicates, rng,
-                                        cast_templates=cast_templates))
-        # A fallback is a freshly sampled source spell, never a copied saved
-        # reference priority entry. Keep the real native action legality check.
-        if not _has_fallback(result):
-            if len(result) >= 20:
-                result.pop()
-            result.append({"action": {"castSpell": _cast_from_source(
-                rng.choice(spells), cast_templates, rng)}})
+                result.append(_new_cast(
+                    spells, predicates_by_spell, compatible_predicates, rng,
+                    source_action_templates=source_action_templates,
+                ))
         rng.shuffle(result)
     else:
         result = copy.deepcopy(actions)
-        source_spell_keys = frozenset(_spell_key(spell) for spell in spells)
-        # Do not let an inherited, source-unknown aura/spell reference survive
-        # merely because the elite mutation happened not to replace it. This
-        # sanitizes only spell-cast predicates; opaque/item actions stay frozen.
-        for entry in result:
-            action = entry.get("action", {})
+        # A candidate may only carry an exact source action/condition pair.
+        # If an inherited candidate has a rewritten or missing guard, restore
+        # one exact source variant for that same spell before mutating it.
+        for index, entry in enumerate(result):
+            action = entry.get("action", {}) if isinstance(entry, dict) else None
+            if not isinstance(action, dict):
+                raise ValueError("APL mutation contains a malformed action")
             cast = action.get("castSpell")
-            spell = cast.get("spellId") if isinstance(cast, dict) else None
-            if not isinstance(spell, dict) or not (
-                isinstance(spell.get("spellId"), int)
-                and not isinstance(spell.get("spellId"), bool)
-                and spell["spellId"] > 0
-            ):
-                continue
-            condition = action.get("condition")
-            if not isinstance(condition, dict) or not condition:
-                continue
-            spell_refs, aura_refs, valid = _condition_spell_identity_keys(condition)
-            if (not valid
-                    or not set(spell_refs).issubset(source_spell_keys)
-                    or not set(aura_refs).issubset(source_aura_keys)
-                    or not _condition_is_safe_for_cast(condition, spell)):
-                action.pop("condition", None)
-    if len(result) < 2:
-        raise ValueError("APL requires at least two priority actions")
+            if isinstance(cast, dict):
+                spell = cast.get("spellId")
+                spell_id = spell.get("spellId") if isinstance(spell, dict) else None
+                if (isinstance(spell_id, int) and not isinstance(spell_id, bool)
+                        and spell_id > 0):
+                    key = _spell_key(spell)
+                    variants = source_action_templates.get(key, ())
+                    if not variants:
+                        raise ValueError("APL mutation created an unapproved cast identity")
+                    if _spell_key(action) not in source_action_keys_by_spell[key]:
+                        result[index] = {"action": copy.deepcopy(rng.choice(variants))}
+                elif _spell_key(action) not in source_cast_action_keys:
+                    raise ValueError("APL mutation created an unsupported native cast action")
+            elif _spell_key(action) not in source_noncast:
+                raise ValueError("APL mutation created an unsupported non-cast action")
+
+    # Source conditions are immutable grammar terminals. Only structural
+    # operators remain: priority swap, exact source-action insertion and drop.
     operations = 0 if cold else 1
     for _ in range(operations):
-        modes = ["swap", "replace_condition", "tune_condition", "insert_cast", "drop_action"]
-        mode = rng.choices(modes, weights=(27, 25, 20, 20, 8))[0]
+        mode = rng.choices(
+            ["swap", "insert_cast", "drop_action"],
+            weights=(45, 40, 15),
+        )[0]
         if mode == "swap":
             i, j = rng.sample(range(len(result)), 2)
             result[i], result[j] = result[j], result[i]
         elif mode == "insert_cast" and len(result) < 20:
             result.insert(rng.randrange(len(result) + 1), _new_cast(
                 spells, predicates_by_spell, compatible_predicates, rng,
-                cast_templates=cast_templates))
+                source_action_templates=source_action_templates,
+            ))
         elif mode == "drop_action" and len(result) > 3:
             result.pop(rng.randrange(len(result)))
-        elif mode == "replace_condition":
-            casts = [a for a in result if "castSpell" in a.get("action", {})]
-            if casts:
-                entry = rng.choice(casts)["action"]
-                cast = entry.get("castSpell", {})
-                spell = cast.get("spellId") if isinstance(cast, dict) else None
-                preferred = _predicates_for_spell(
-                    predicates_by_spell.get(_spell_key(spell), ()), spell
-                )
-                cross_spell = _predicates_for_spell(compatible_predicates, spell)
-                predicates = preferred
-                if not preferred or rng.random() >= 0.8:
-                    predicates = cross_spell
-                if predicates and rng.random() < 0.80:
-                    entry["condition"] = copy.deepcopy(rng.choice(predicates))
-                    _tune_literal(entry["condition"], rng)
-                else:
-                    entry.pop("condition", None)
-        elif mode == "tune_condition":
-            casts = [a for a in result if isinstance(a.get("action", {}).get("condition"), dict)]
-            if casts:
-                _tune_literal(rng.choice(casts)["action"]["condition"], rng)
+
+    # Keep a source-backed unconditional fallback only when the source APL
+    # actually contains one. Never manufacture an unguarded copy of a guarded
+    # healing/damage action merely to satisfy a generic fallback convention.
     _ensure_fallback(result, source_actions)
-    # Non-cast native actions (strictSequence, channelSpell, multidot, etc.)
-    # are opaque source-backed actions. They may be reordered, never invented
-    # or edited by this cast-oriented grammar.
-    source_noncast = {
-        _spell_key(entry.get("action", {}))
-        for entry in source_actions
-        if "castSpell" not in entry.get("action", {})
-    }
+
     for entry in result:
-        action = entry.get("action", {})
-        if "castSpell" in action:
-            if _spell_key(action["castSpell"].get("spellId")) not in allowed:
-                raise ValueError("APL mutation created an unapproved cast identity")
+        action = entry.get("action", {}) if isinstance(entry, dict) else None
+        if not isinstance(action, dict):
+            raise ValueError("APL mutation contains a malformed action")
+        cast = action.get("castSpell")
+        if isinstance(cast, dict):
+            spell = cast.get("spellId")
+            spell_id = spell.get("spellId") if isinstance(spell, dict) else None
+            if (isinstance(spell_id, int) and not isinstance(spell_id, bool)
+                    and spell_id > 0):
+                key = _spell_key(spell)
+                if _spell_key(action) not in source_action_keys_by_spell.get(key, set()):
+                    raise ValueError("APL mutation changed a source cast payload or condition")
+            elif _spell_key(action) not in source_cast_action_keys:
+                raise ValueError("APL mutation created an unsupported native cast action")
         elif _spell_key(action) not in source_noncast:
             raise ValueError("APL mutation created an unsupported non-cast action")
     return result
+
