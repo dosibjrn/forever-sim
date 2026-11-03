@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import isfinite
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping, TypeVar
 
-from src.game.gear import apply_stat_delta
-from src.game.model.ir import GameIRSlice
+StateT = TypeVar("StateT")
 
 
 DEFAULT_PROBE_DELTAS = (1.0, 2.0, 5.0, 10.0, 20.0)
@@ -52,15 +51,17 @@ class StatSensitivityResult:
         }
 
 
-Scorer = Callable[[GameIRSlice], float | None]
+Scorer = Callable[[StateT], float | None]
+StatPerturbation = Callable[[StateT, str, float], StateT]
 
 
 def measure_stat_sensitivities(
-    ir_slice: GameIRSlice,
+    ir_slice: StateT,
     *,
     stats: Iterable[str],
-    score: Scorer,
+    score: Scorer[StateT],
     probe_deltas: Iterable[float] = DEFAULT_PROBE_DELTAS,
+    apply_delta: StatPerturbation[StateT] | None = None,
 ) -> StatSensitivityResult:
     deltas = tuple(float(x) for x in probe_deltas if float(x) > 0.0)
     if not deltas:
@@ -71,6 +72,12 @@ def measure_stat_sensitivities(
     baseline = float(baseline)
     if not isfinite(baseline) or baseline <= 0.0:
         raise ValueError('baseline generic scorer returned nonpositive or nonfinite seconds per mob')
+    # Legacy IR gear semantics remain the default until callers migrate.
+    # Native clients can supply a typed request mutation without importing
+    # the retiring Python GameIR/gear implementation.
+    if apply_delta is None:
+        from src.game.gear import apply_stat_delta
+        apply_delta = apply_stat_delta
     rows = []
     for stat in tuple(str(x) for x in stats):
         probes = []
@@ -79,7 +86,7 @@ def measure_stat_sensitivities(
         chosen_value = 0.0
         first_regression = None
         for delta in deltas:
-            candidate = apply_stat_delta(ir_slice, stat, delta)
+            candidate = apply_delta(ir_slice, stat, delta)
             candidate_score = score(candidate)
             if candidate_score is not None:
                 candidate_score = float(candidate_score)
