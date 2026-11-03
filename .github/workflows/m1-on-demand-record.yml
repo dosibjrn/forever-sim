@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  actions: read # P7.5 reads historical registered accepted-run logs only
   issues: read
   pull-requests: read
 
@@ -144,6 +145,7 @@ jobs:
       - name: Run real production gates and update one TSV
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           TARGETS: ${{ steps.targets.outputs.targets }}
           ALLOW_HEAVY: ${{ steps.targets.outputs.heavy }}
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
@@ -208,6 +210,24 @@ jobs:
             else
               unset FOREVER_P7_LIVE_PROBE_ITERATIONS || true
             fi
+            # P7.5 needs numeric genuine accepted prior finals. The TSV
+            # intentionally stores only timestamp/run URL, so recover each
+            # accepted report from its *registered* trusted M1 Actions log.
+            # Never use a guessed prior or re-run an unchanged heavy gate.
+            if [[ "$gate" == P7.5 && "$ALLOW_HEAVY" == true ]]; then
+              accepted_receipts="$(mktemp)"
+              if python tools/wf_gate_p7_5_receipts.py \
+                --repository "$GITHUB_REPOSITORY" --class "$class" \
+                --level "$level" --spec "$spec" --out "$accepted_receipts"; then
+                export FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS="$accepted_receipts"
+              else
+                rm -f "$accepted_receipts"
+                unset FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS || true
+                echo "P7.5 accepted prior receipts unavailable; gate remains fail-closed."
+              fi
+            else
+              unset FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS || true
+            fi
             timeout "${timeout_s}s" python tools/wf_gate.py --class "$class" --level "$level" \
               --spec "$spec" --gate "$gate" --record-progress --out "$report" || rc=$?
             python -c 'import json,sys; from pathlib import Path; d=json.loads(Path(sys.argv[1]).read_text()); rc=int(sys.argv[2]); assert d["status"] in ("PASS","FAIL","BLOCKED") and rc in (0,1) and ((rc==0)==(d["status"]=="PASS")), "Incomplete or inconsistent live gate"; print(json.dumps(d, ensure_ascii=False))' "$report" "$rc"
@@ -230,7 +250,8 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
               f.write(f'| `{sys.argv[2]}` | {d["status"]} | {measure} |\n')
           PY
-            rm -f "$report"
+            rm -f "$report" "${accepted_receipts:-}"
+            unset accepted_receipts || true
             echo "::endgroup::"
           done
           python tools/m1_progress.py | tee "$RUNNER_TEMP/m1-scoreboard.txt"
