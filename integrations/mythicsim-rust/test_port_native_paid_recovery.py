@@ -109,7 +109,9 @@ source = FIGHT.replace(
 )
 method_anchor = "    /// Go " + chr(96) + "Simulation.reset" + chr(96) + " and " + chr(96) + "Environment.reset" + chr(96) + ".\n"
 source += (
-    "\n" + persistent_target.FIGHT_METHOD
+    "\\n" + persistent_target.FIGHT_METHOD.replace(
+        port.FIGHT_CLOCK_COMMENT_OLD, ""
+    )
     + method_anchor
     + persistent_target.FIGHT_TEST.rstrip("\n") + "\n"
 )
