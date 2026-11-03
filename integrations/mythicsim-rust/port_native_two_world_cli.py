@@ -51,9 +51,49 @@ LEGACY_PORTS = {
 }
 
 
+def typed_rng_variant(marker: str, replacement: str) -> str:
+    """Exact published typed-RNG descendant of the original multi-world port."""
+    rng = "crate::core::rng::RngMode"
+    if marker == CLASS_MARKER:
+        return (replacement.replace(
+            "    target_count: usize,\n", "    target_count: usize,\n    rng_mode: " + rng + ",\n", 1)
+            .replace("::fight(prepared)?", "::fight(prepared, rng_mode)?"))
+    if marker == PREPARED_MARKER:
+        return (replacement.replace(
+            "target_count: usize)", "target_count: usize, rng_mode: " + rng + ")", 1)
+            .replace("native_two_world_targets(prepared, target_count)",
+                     "native_two_world_targets(prepared, target_count, rng_mode)", 1))
+    if marker == CLI_MARKER:
+        return (replacement.replace(
+            'args.len() != 5 || args[1] != "--infile" || args[3] != "--targets"',
+            'args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode"', 1)
+            .replace("let report = native_two_world_targets(&prepared, target_count)",
+                     "let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)", 1))
+    raise ValueError("RUST_WORLD_TYPED_RNG_VARIANT_UNSUPPORTED")
+
+
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if source.count(anchor) != 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
+    # The published selected Rust fork already has typed RNG. Its complete
+    # source method and the subsequent paid-recovery descendant are valid
+    # idempotent outcomes; a partial signature/call-site change is not.
+    if marker in (CLASS_MARKER, PREPARED_MARKER, CLI_MARKER):
+        typed = typed_rng_variant(marker, replacement)
+        if source.count(typed) == 1:
+            return source
+        from port_native_paid_recovery import port_classes, port_prepared, port_main
+        transform = {
+            CLASS_MARKER: port_classes,
+            PREPARED_MARKER: port_prepared,
+            CLI_MARKER: port_main,
+        }[marker]
+        try:
+            paid_typed = transform(typed)
+            if source.count(paid_typed) == 1 and transform(source) == source:
+                return source
+        except ValueError:
+            pass
     # Paid recovery extends every layer of the two-world API. Recognize each
     # exact downstream signature before the base CLI port checks its old
     # replacement, otherwise the second source-port pass mistakes the valid
