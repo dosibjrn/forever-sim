@@ -40,6 +40,48 @@ on:
       - 'src/optimization/**'
       - '.github/workflows/generic-source-search-regressions.yml'
 
+  push:
+    branches:
+      - work/work1-528-typed-rust-rng-20261103
+    paths:
+      - 'tests/generic/search/**'
+      - 'tests/generic/publication/**'
+      - 'tests/gates/test_wf_gate_p7_5_stochastic_finalists.py'
+      - 'tools/wf_gate_p7_5_live.py'
+      - 'tests/gates/test_wf_gate_p7_3_live.py'
+      - 'tests/gates/test_wf_gate_p7_4_live.py'
+      - 'tests/gates/test_wf_gate_class_cli.py'
+      - 'integrations/mythicsim-rust/p73_talent_search_v2.py'
+      - 'integrations/mythicsim-rust/p74_gear_search.py'
+      - 'integrations/mythicsim-rust/p74_gear_validation.py'
+      - 'integrations/mythicsim-rust/tests/test_p74_gear_search_ci.py'
+      - 'docs/evidence/druid-l60-balance/p7.3/saved_728_request.json'
+      - 'data/forever/catalogue/items_2026-09-29.sqlite'
+      - 'integrations/mythicsim-rust/p75_joint_search.py'
+      - 'integrations/mythicsim-rust/p75_unrestricted_search.py'
+      - 'integrations/mythicsim-rust/rotation_search.py'
+      - 'integrations/mythicsim-rust/tests/test_p73_native_search_ci.py'
+      - 'integrations/mythicsim-rust/tests/test_p75_joint_contract.py'
+      - 'integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py'
+      - 'integrations/mythicsim-rust/tests/test_native_gear_adapter.py'
+      - 'integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py'
+      - 'tests/test_work1_p7_balanced_native_world_rng.py'
+      - 'tools/wf_gate_p7_3_live.py'
+      - 'tools/wf_gate_p7_4_live.py'
+      - 'tests/generic/runtime/test_source_maintenance_rank_reader.py'
+      - 'tests/generic/runtime/test_source_stage_isolation.py'
+      - 'tests/generic/runtime/test_source_ir_assembly_order.py'
+      - 'tests/test_wf332_runes_default_off.py'
+      - 'src/v2/source_bounded_joint_frontier.py'
+      - 'src/v2/source_persistent_slot_search.py'
+      - 'src/v2/source_persistent_joint_finalists.py'
+      - 'src/game/data/forever/**'
+      - 'src/game/talent_execution_coverage.py'
+      - 'src/game/talents.py'
+      - 'src/game/talent_search.py'
+      - 'src/optimization/**'
+      - '.github/workflows/generic-source-search-regressions.yml'
+
 permissions:
   contents: read
 
