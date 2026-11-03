@@ -110,6 +110,17 @@ class GsimNativeDamageWorldApplier:
         # Later ticks may never smuggle in pre-pull damage retroactively.
         first_precombat_boundary = seq == 0 and clock_ns == 0
         last_native_time = -(1 << 63) if first_precombat_boundary else self._last_native_time_ns
+        # Validate all native effects before mutating the real gsim target.
+        # An ACK batch cannot hide a second, later native hit after the first
+        # already killed this same world mob. Equal-time effects are atomic.
+        max_health = float(target.max_health)
+        old_health = float(target.health)
+        if (not isfinite(max_health) or max_health <= 0
+                or not isfinite(old_health) or old_health <= 0
+                or old_health > max_health):
+            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_MAX_HEALTH_INVALID")
+        health_at_event = old_health
+        lethal_native_time_ns = None
         target_identity = self._native_target_identity
         ids = []
         damage = 0.0
@@ -166,6 +177,12 @@ class GsimNativeDamageWorldApplier:
                     and timestamp < self._target_handoff_ns):
                 raise NativeDamageWorldApplicationError(
                     "WORLD_DAMAGE_ACK_EVENT_BEFORE_TARGET_HANDOFF")
+            if lethal_native_time_ns is not None and timestamp > lethal_native_time_ns:
+                raise NativeDamageWorldApplicationError(
+                    "WORLD_DAMAGE_ACK_NATIVE_EVENT_AFTER_WORLD_DEATH")
+            health_at_event = max(0.0, health_at_event - float(value))
+            if health_at_event == 0.0 and lethal_native_time_ns is None:
+                lethal_native_time_ns = timestamp
             ids.append(event_id)
             damage += float(value)
             last_event_id = ordinal
@@ -176,10 +193,6 @@ class GsimNativeDamageWorldApplier:
         # the actual gsim world-health delta. Overkill must not block a kill.
         if not isfinite(damage):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_DAMAGE_INVALID")
-        max_health = float(target.max_health)
-        if not isfinite(max_health) or max_health <= 0 or target.health > max_health:
-            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_MAX_HEALTH_INVALID")
-        old_health = float(target.health)
         for event in events:
             target.apply_damage(float(event["damage"]))
         applied = old_health - float(target.health)

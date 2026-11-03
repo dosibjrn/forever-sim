@@ -54,6 +54,49 @@ def test_real_native_lethal_overkill_kills_gsim_target_without_losing_source_dam
     assert ack["world_after_sha256"] == state_hash(snapshot_gsim_world(rt))
 
 
+def test_buffered_native_hit_after_world_lethal_time_fails_before_hp_mutation():
+    # The first genuinely native hit kills the real world mob at time 0.
+    # A second, later native effect in the same buffered ACK is causally
+    # impossible: the Rust actor must stop and retarget after the lethal ACK.
+    rt, tick, reply = fixture()
+    target = rt.targets["m1"]
+    target.health = target.max_health = 10.0
+    rt.advance_to(0.1)
+    tick.update(clock_ms=100, native_clock_ns=100_000_000,
+                world_sha256=state_hash(snapshot_gsim_world(rt)))
+    reply["observed_input_world_sha256"] = tick["world_sha256"]
+    first = reply["native_damage_events"][0]
+    reply["native_damage_events"] = [
+        {**first, "native_time_ns": 0},
+        {**first, "event_id": "native-effect-2",
+         "native_time_ns": 100_000_000},
+    ]
+    before = target.health
+    with pytest.raises(NativeDamageWorldApplicationError,
+                       match="WORLD_DAMAGE_ACK_NATIVE_EVENT_AFTER_WORLD_DEATH"):
+        GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert target.health == before and target.alive
+
+
+def test_simultaneous_lethal_native_hits_remain_atomic_on_gsim_target():
+    # Same-timestamp native effects have no observed causal order; they may
+    # legitimately overkill in one ACK without post-mortem time travel.
+    rt, tick, reply = fixture()
+    target = rt.targets["m1"]
+    target.health = target.max_health = 10.0
+    tick["world_sha256"] = state_hash(snapshot_gsim_world(rt))
+    reply["observed_input_world_sha256"] = tick["world_sha256"]
+    first = reply["native_damage_events"][0]
+    reply["native_damage_events"] = [
+        first, {**first, "event_id": "native-effect-2"},
+    ]
+    ack = GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert target.health == 0.0 and not target.alive
+    assert ack["applied_event_ids"] == ["native-effect-1", "native-effect-2"]
+    assert ack["applied_native_damage"] == 150.0
+    assert ack["world_after_sha256"] == state_hash(snapshot_gsim_world(rt))
+
+
 def test_replayed_effect_does_not_double_apply_world_damage():
     rt, tick, reply = fixture()
     applier = GsimNativeDamageWorldApplier(rt)
