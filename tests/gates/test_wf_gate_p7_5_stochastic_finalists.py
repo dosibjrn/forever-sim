@@ -278,7 +278,7 @@ def test_p75_gear_block_retries_a_different_paid_donor_after_illegal_mix():
 
 
 
-def test_p75_paid_stochastic_parent_and_independent_cold_restarts():
+def test_p75_paid_balanced_parent_and_independent_cold_restarts():
     a, b = _candidate("balanced"), _candidate("stochastic")
     balanced = (900.0, {}, "sha-a", a)
     paid = [(770.0, {}, "sha-b", b, 800.0)]

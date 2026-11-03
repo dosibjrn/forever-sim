@@ -176,9 +176,9 @@ def _paid_step_has_budget(
 def _paid_step_has_budget(search_start: float, observed_max_s: float) -> bool:
     """Do not launch an indivisible native+2D paid call too near 300s.
 
-    A full candidate/rerank includes multiple subprocess calls. The old loop
-    only checked time at its head, so a 24-fight finalist started at 299s
-    could finish at 302s and prevent the independent 1,000-fight holdout.
+    A paid native+2D step can include multiple subprocess calls. The old loop
+    only checked time at its head, so a paid screen started at 299s could
+    finish after 300s and prevent the independent 1,000-fight holdout.
     Reserve 1.5x the slowest observed same-kind step plus 250ms, while
     leaving the final 300s deadline and all source-paid results unchanged.
     """
