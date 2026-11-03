@@ -34,6 +34,10 @@ def port_bridge(source: str) -> str:
     let moving = tick["gsim_player_moving"].as_bool()
         .expect("RUST_WORLD_PLAYER_MOVEMENT_NOT_PROVIDED");
 ''', "INGRESS")
+    source = _replace(source,
+        '"facing_applied": true, "in_front_of_target": front',
+        '"facing_applied": true, "in_front_of_target": front,\n            "gsim_player_moving": moving',
+        "MOVING_RECEIPT")
     return _replace(source,
         "    (distance, front)\n}\n",
         "    (distance, front, moving)\n}\n",
