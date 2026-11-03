@@ -60,7 +60,9 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
         for predicate in source_predicates
     }
     historical_compatible_shapes = set()
-    historical_cross_spell_shapes = set()
+    historical_compatible_count = 0
+    historical_cross_cast_shapes = set()
+    historical_cross_cast_count = 0
     for action in historical_actions:
         action_body = action.get("action", {})
         condition = action_body.get("condition")
@@ -74,19 +76,24 @@ def test_cold_search_can_reach_legal_19_action_policy_length_without_seeding_it(
         shape = json.dumps(
             _predicate_shape(condition), sort_keys=True, separators=(",", ":")
         )
+        historical_compatible_count += 1
         historical_compatible_shapes.add(shape)
-        target_spell_id = identity.get("spellId")
-        ref_spell_ids = {
-            json.loads(ref).get("spellId") for ref in refs
+        target_key = json.dumps(identity, sort_keys=True, separators=(",", ":"))
+        same_spell_shapes = {
+            json.dumps(_predicate_shape(predicate), sort_keys=True, separators=(",", ":"))
+            for predicate in _same_spell_predicates.get(target_key, ())
         }
-        if any(spell_id != target_spell_id for spell_id in ref_spell_ids):
-            historical_cross_spell_shapes.add(shape)
+        if shape not in same_spell_shapes:
+            historical_cross_cast_count += 1
+            historical_cross_cast_shapes.add(shape)
 
-    # Historical conditions that reference an aura outside the saved source
-    # cast set (for example 408255) are deliberately not reusable.
+    # 11/16 historical conditions are source-compatible; 6 are cross-cast,
+    # including spell-agnostic predicates. The five conditions referencing
+    # aura 408255 are excluded because it is not in the saved source cast set.
+    assert historical_compatible_count == 11
+    assert historical_cross_cast_count == 6
     assert historical_compatible_shapes <= source_shapes
-    assert historical_cross_spell_shapes
-    assert historical_cross_spell_shapes <= source_shapes
+    assert historical_cross_cast_shapes <= source_shapes
 
     saved_snapshot = json.loads(json.dumps(source_actions))
     generated = mutate_apl(None, source_actions, random.Random(29), cold=True)
