@@ -11,6 +11,7 @@ import hashlib
 import json
 import math
 import re
+import subprocess  # shared module object keeps legacy P2 test patch points compatible
 import time
 from collections.abc import Mapping
 from pathlib import Path
