@@ -28,7 +28,7 @@ class ImprovedRootsRankSourcePortTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "SOURCE_DRIFT"):
             port.port_text(initial.replace(port.READ_OLD, "unexpected reader"))
         with self.assertRaisesRegex(ValueError, "SOURCE_DRIFT"):
-            port.port_text(initial.replace(port.FIELD_OLD, port.FIELD_NEW))
+            port.port_text(initial.replace(port.FIELD_OLD, "unexpected field schema"))
 
     def test_real_filesystem_target_and_second_application(self):
         with tempfile.TemporaryDirectory() as directory:
