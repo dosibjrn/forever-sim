@@ -2,6 +2,7 @@ name: Generic source-paid search regressions
 on:
   pull_request:
     paths:
+      - 'tests/generic/search/test_generic_talent_policy_search_g19.py'
       - 'tests/generic/search/**'
       - 'tests/generic/publication/**'
       - 'tests/gates/test_wf_gate_p7_5_stochastic_finalists.py'
@@ -62,6 +63,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/generic/publication/test_generic_registry_g47b.py
+          tests/generic/search/test_generic_talent_policy_search_g19.py
           tests/generic/search/test_wf_p2_cross_tree_source_witness.py
           tests/generic/search/test_work2_refinement_mode_slot.py
           tests/generic/search/test_wf_p2_source_witness_priority.py
