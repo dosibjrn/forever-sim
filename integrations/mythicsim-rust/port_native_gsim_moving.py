@@ -12,7 +12,9 @@ from pathlib import Path
 
 
 def _replace(source: str, old: str, new: str, label: str) -> str:
-    if source.count(new) == 1 and source.count(old) == 0:
+    # Some replacements intentionally retain the old prefix before extending
+    # it; an already-ported source therefore still contains the old substring.
+    if source.count(new) == 1 and source.count(old) <= 1:
         return source
     if source.count(old) != 1 or new in source:
         raise ValueError(f"RUST_WORLD_MOVING_{label}_ANCHOR_DRIFT")
