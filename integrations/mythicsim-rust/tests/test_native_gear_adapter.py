@@ -35,7 +35,8 @@ class NativeGearAdapterTests(unittest.TestCase):
         self.assertEqual((0, 1), adapter.mutable_indices)
         self.assertEqual({10, 11}, set(adapter.pools[0]))
         self.assertEqual({20, 21}, set(adapter.pools[1]))
-        self.assertNotIn(2, adapter.pools)  # no weapon/offhand guesswork
+        self.assertNotIn(2, adapter.pools)  # baseline weapon is not an alternate; no other weapon ID is admitted
+        self.assertNotIn(2, adapter.mutable_indices)  # no same-ID variant in this fixture
 
     def test_native_mutation_preserves_reference_talents_apl_and_weapon(self):
         original = copy.deepcopy(self.fire)
@@ -52,6 +53,54 @@ class NativeGearAdapterTests(unittest.TestCase):
         items[11]["class_allowlist"] = ["ClassWarrior"]
         adapter = NativeGearAdapter("mage", self.fire, [self.fire, self.frost], items)
         self.assertNotIn(11, adapter.pools.get(0, {}))
+
+    def test_source_observed_same_id_enchant_variant_is_mutable(self):
+        # RED before fix: ID-only pools reported no mutable gear even though
+        # the pinned same-class request had a different exact item entry.
+        source = copy.deepcopy(self.fire)
+        donor = copy.deepcopy(self.fire)
+        donor["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {
+            "id": 10, "enchant": {"effectId": 123}
+        }
+        adapter = NativeGearAdapter("mage", source, [source, donor], self.items)
+        self.assertEqual((0,), adapter.mutable_indices)
+        candidate, audit = adapter.mutate_one(random.Random(2))
+        entry = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]
+        self.assertEqual({"id": 10, "enchant": {"effectId": 123}}, entry)
+        self.assertEqual(10, audit["from_id"])
+        self.assertEqual(10, audit["to_id"])
+        adapter.validate(candidate)
+        unobserved = copy.deepcopy(candidate)
+        unobserved["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["enchant"]["effectId"] = 124
+        with self.assertRaisesRegex(GearRejected, "SOURCE_SLOT"):
+            adapter.validate(unobserved)
+
+    def test_weapon_identity_stays_fixed_but_same_id_enchant_variant_is_mutable(self):
+        source = req("Shaman", [30])
+        donor = copy.deepcopy(source)
+        donor["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {
+            "id": 30, "enchant": {"effectId": 123}
+        }
+        items = {
+            30: {"type": "ItemTypeWeapon", "hand_type": "HandTypeTwoHand",
+                 "class_allowlist": ["ClassShaman"]},
+            31: {"type": "ItemTypeWeapon", "hand_type": "HandTypeOneHand",
+                 "class_allowlist": ["ClassShaman"]},
+        }
+        adapter = NativeGearAdapter("shaman", source, [source, donor], items)
+        self.assertEqual((0,), adapter.mutable_indices)
+        candidate, audit = adapter.mutate_one(random.Random(2))
+        entry = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]
+        self.assertEqual({"id": 30, "enchant": {"effectId": 123}}, entry)
+        self.assertEqual(30, audit["from_id"])
+        self.assertEqual(30, audit["to_id"])
+        adapter.validate(candidate)
+
+        # A different weapon ID still requires verified hand/equip rules.
+        changed_weapon = copy.deepcopy(source)
+        changed_weapon["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {"id": 31}
+        locked = NativeGearAdapter("shaman", source, [source, changed_weapon], items)
+        self.assertEqual((), locked.mutable_indices)
 
     def test_no_alternatives_blocks_explicitly(self):
         adapter = NativeGearAdapter("mage", self.fire, [self.fire], self.items)
