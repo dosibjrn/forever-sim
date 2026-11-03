@@ -134,6 +134,7 @@ class NativeRootsDotPortTest(unittest.TestCase):
         applier = GsimNativeDamageWorldApplier(world)
         ack = applier.apply(tick, response)
         self.assertEqual(ack["applied_event_ids"], ["native-effect-1"])
+        self.assertEqual(ack["acknowledged_control_event_ids"], ["native-effect-1"])
         self.assertEqual(ack["applied_control_event_ids"], ["native-effect-1"])
         self.assertNotEqual(ack["world_before_sha256"], ack["world_after_sha256"])
         self.assertEqual(ack["root_break_semantics"], "unimplemented")
@@ -202,6 +203,36 @@ class NativeRootsDotPortTest(unittest.TestCase):
             GsimNativeDamageWorldApplier(world).apply(tick, response)
         self.assertNotIn("root", world.targets["m0"].active_controls)
         self.assertEqual(state_hash(snapshot_gsim_world(world)), digest)
+
+
+    def test_pre_pull_root_expired_before_first_world_ack_is_consumed_not_extended(self):
+        world = self._moving_world()
+        digest = state_hash(snapshot_gsim_world(world))
+        tick = {
+            "sequence": 0,
+            "native_clock_ns": 0,
+            "clock_ms": 0,
+            "world_sha256": digest,
+            "selected_target_id": "m0",
+        }
+        event = self._control_event(duration_ns=27_000_000_000)
+        event["native_time_ns"] = -30_000_000_000
+        response = {
+            "sequence": 0,
+            "native_process_id": 12345,
+            "observed_input_world_sha256": digest,
+            "native_damage_events": [],
+            "native_control_events": [event],
+        }
+        ack = GsimNativeDamageWorldApplier(world).apply(tick, response)
+        self.assertEqual(ack["acknowledged_control_event_ids"], ["native-effect-1"])
+        self.assertEqual(ack["applied_control_event_ids"], [])
+        self.assertEqual(
+            ack["acknowledged_control_events"][0]["world_application_status"],
+            "expired_before_world_ack",
+        )
+        self.assertNotIn("root", world.targets["m0"].active_controls)
+        self.assertEqual(ack["world_before_sha256"], ack["world_after_sha256"])
 
 
 if __name__ == "__main__":
