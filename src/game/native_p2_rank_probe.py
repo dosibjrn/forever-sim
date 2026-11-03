@@ -630,7 +630,7 @@ def run_native_rank_pair(
 
     delta = float(after["dps"]) - float(before["dps"])
     return {
-        "status": "PASS" if delta > 1e-9 else "FAIL",
+        "status": "PROBE_PASS" if delta > 1e-9 else "PROBE_FAIL",
         "reason": "NATIVE_DPS_INCREASE_OBSERVED"
         if delta > 1e-9
         else "NATIVE_DPS_DID_NOT_INCREASE",
@@ -640,11 +640,11 @@ def run_native_rank_pair(
         "talents_string_before": pair["talents_string_before"],
         "talents_string_after": pair["talents_string_after"],
         "before": {
-            "prepare_receipt": pair["before"],
+            "prepared": pair["before"],
             "simulation": before,
         },
         "after": {
-            "prepare_receipt": pair["after"],
+            "prepared": pair["after"],
             "simulation": after,
         },
         "delta_dps": delta,
