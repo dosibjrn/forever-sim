@@ -556,7 +556,7 @@ def execute(profile_id: str, inventory: list, *,
         "baseline_seed": None,
         "baseline_response_sha256": None,
         "three_axis_paid": 0,
-        "native_errors": 0, "native_refusals": 0,
+        "native_errors": 0, "native_unscored": 0, "native_refusals": 0,
         "native_invalid": 0, "native_unsupported": 0,
         "source_scope": "SMOKE_FIXTURE_OR_PINNED_REFERENCE",
     }
@@ -690,6 +690,8 @@ def execute(profile_id: str, inventory: list, *,
     )
     row["paid_unique"] = result["paid_candidates"]
     row["native_errors"] = result["engine_errors"]
+    row["native_unscored"] = result["unscored_candidates"]
+    row["native_unscored_samples"] = result["native_unscored_samples"]
     row["native_refusals"] = result["native_refusals"]
     row["native_invalid"] = result["native_invalid"]
     row["native_unsupported"] = result["native_unsupported"]
@@ -708,12 +710,16 @@ def execute(profile_id: str, inventory: list, *,
         row["status"] = "BLOCKED_NATIVE_EXECUTION_ERROR"
     elif row["native_refusals"]:
         row["status"] = "BLOCKED_NATIVE_REFUSALS"
+    elif row["native_unscored"]:
+        row["status"] = "BLOCKED_NATIVE_UNSCORED"
     else:
         row["status"] = "BLOCKED_NO_NATIVE_ACCEPTED_THREE_AXIS_CANDIDATE"
     if row["status"] == "NATIVE_JOINT_PAID":
         row["blocker"] = None
     elif row["status"] == "BLOCKED_NATIVE_REFUSALS":
         row["blocker"] = "MythicSim refused every scored three-axis proposal in this screen"
+    elif row["status"] == "BLOCKED_NATIVE_UNSCORED":
+        row["blocker"] = "Native completed the requested distribution but returned no usable DPS mean"
     elif row["status"] == "BLOCKED_NATIVE_EXECUTION_ERROR":
         row["blocker"] = "Native execution/response errors prevented a usable three-axis score"
     elif row["status"] == "NATIVE_JOINT_PAID_WITH_EXECUTION_ERRORS":

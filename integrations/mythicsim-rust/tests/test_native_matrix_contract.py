@@ -470,5 +470,81 @@ class NativeGenericMatrixContract(unittest.TestCase):
         self.assertFalse(legal_apl_only_request(source, bad))
         self.assertFalse(legal_apl_only_request(source, {"raid": {}}))
 
+
+    def test_unscored_native_response_is_separate_and_does_not_block_paid_search(self):
+        from native_matrix import NativeUnscoredCandidate
+
+        calls = []
+
+        def evaluate(candidate, *, iterations, seed, rng_mode):
+            calls.append(candidate)
+            if len(calls) == 1:
+                raise NativeUnscoredCandidate(
+                    "No finite DPS mean in completed native response",
+                    raw_response={"result": {"raidMetrics": {"dps": {
+                        "aggregatorData": {"n": 40}, "hist": {"0": 40},
+                    }}}},
+                    request_sha256="native-request-sha",
+                    elapsed_s=0.04,
+                )
+            return 80.0
+
+        result = search_native(
+            profile_id="hunter/survival",
+            reference={"profile": "hunter/survival"},
+            propose=lambda rng: {"nonce": rng.randint(1, 1000000)},
+            mutate=lambda candidate, rng: {"nonce": rng.randint(1, 1000000)},
+            legal=lambda candidate: True,
+            evaluate=evaluate,
+            seconds=0.025,
+            iterations=40,
+            seed=11,
+            clock=FakeClock(),
+        )
+        self.assertEqual("RAN", result["status"])
+        self.assertEqual(0, result["engine_errors"])
+        self.assertEqual(1, result["unscored_candidates"])
+        self.assertGreater(result["paid_candidates"], 0)
+        self.assertEqual("UNSCORED", result["native_unscored_samples"][0]["status"])
+        self.assertEqual(30, next_budget(5, result))
+
+    def test_native_executor_only_marks_complete_missing_mean_as_unscored(self):
+        import subprocess
+        import time
+        from unittest.mock import patch
+        from native_executor import (
+            NativeExecutionError, NativeScoreExtractionError, run as native_run,
+        )
+
+        def fake_run(response):
+            def invoke(command, **_kwargs):
+                output = Path(command[command.index("--outfile") + 1])
+                output.write_text(json.dumps(response))
+                return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+            return invoke
+
+        complete = {"result": {"raidMetrics": {"dps": {
+            "aggregatorData": {"n": 40}, "hist": {"0": 40},
+        }}}}
+        with patch("native_executor.subprocess.run", side_effect=fake_run(complete)):
+            with self.assertRaises(NativeScoreExtractionError) as caught:
+                native_run(
+                    "unused-binary", {"simOptions": {}}, 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+        self.assertEqual("UNSCORED", caught.exception.status)
+        self.assertEqual(complete, caught.exception.raw_response)
+
+        incomplete = {"result": {"raidMetrics": {"dps": {
+            "aggregatorData": {"n": 40}, "hist": {"0": 39},
+        }}}}
+        with patch("native_executor.subprocess.run", side_effect=fake_run(incomplete)):
+            with self.assertRaises(NativeExecutionError) as caught:
+                native_run(
+                    "unused-binary", {"simOptions": {}}, 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+        self.assertEqual("ERROR", caught.exception.status)
+
 if __name__ == "__main__":
     unittest.main()

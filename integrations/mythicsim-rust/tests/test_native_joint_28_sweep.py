@@ -59,7 +59,7 @@ class SweepContracts(unittest.TestCase):
     def test_native_paid_replay_is_sufficient_for_30_second_stage(self):
         prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 100,
                  "three_axis_paid": 10, "replay_matches": True, "native_errors": 0,
-                 "native_refusals": 50}
+                 "native_unscored": 3, "native_refusals": 50}
         self.assertIsNone(preflight("druid/feral_cat", {}, {}, 30, prior))
 
     def test_30_second_stage_rejects_prior_without_native_paid_replay(self):
@@ -84,12 +84,14 @@ class SweepContracts(unittest.TestCase):
         rows = build_matrix(inventory(), stage=5,
                             run=lambda _: {"status": "NATIVE_JOINT_PAID",
                                            "native_paid": 1, "three_axis_paid": 1,
-                                           "native_errors": 0, "replay_matches": True})
+                                           "native_errors": 0, "native_unscored": 2,
+                                           "replay_matches": True})
         gaps = gap_summary(rows)
         self.assertEqual(3, sum(g["count"] for g in gaps))
         causes = {g["cause"] for g in gaps}
         self.assertEqual({"VERIFY_NATIVE_HPS_TPS_OBJECTIVE",
                           "VERIFY_DISCIPLINE_FIXTURE_IDENTITY"}, causes)
+        self.assertNotIn("NATIVE_SCORE_UNAVAILABLE", causes)
         self.assertTrue(all("score" not in row for row in rows))
 
     def test_report_contains_balanced_baseline_best_and_exact_provenance(self):
@@ -113,6 +115,7 @@ class SweepContracts(unittest.TestCase):
                 "best_balanced_screen": 111.5,
                 "three_axis_paid": 1,
                 "native_errors": 0,
+                "native_unscored": 2,
                 "replay_matches": True,
                 "blocker": None,
             }]
@@ -127,6 +130,8 @@ class SweepContracts(unittest.TestCase):
             self.assertNotIn("process_p7_pass", provenance)
             matrix = (out / "matrix.md").read_text()
             self.assertIn("Baseline balanced", matrix)
+            self.assertIn("Unscored", matrix)
+            self.assertIn("| druid/feral_cat | NATIVE_JOINT_PAID | 101.25 | 111.5 | 2 | 1 | 1 | 2 |", matrix)
             self.assertIn("101.25", matrix)
             self.assertIn("111.5", matrix)
             self.assertIn("diagnostic", matrix.lower())

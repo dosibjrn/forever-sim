@@ -75,6 +75,7 @@ def build_matrix(inventory: list[tuple[dict, dict | None]], *, stage: int, run,
             "baseline_balanced_score": None,
             "three_axis_paid": 0,
             "native_errors": 0,
+            "native_unscored": 0,
             "native_refusals": 0,
             "native_invalid": 0,
             "native_unsupported": 0,
@@ -116,6 +117,8 @@ def _cause(row: dict) -> str | None:
         return "INVESTIGATE_CANDIDATE_DOMAIN"
     if status == "BLOCKED_NATIVE_REFUSALS":
         return "NATIVE_CANDIDATE_REFUSALS"
+    if status == "BLOCKED_NATIVE_UNSCORED":
+        return "NATIVE_SCORE_UNAVAILABLE"
     if status in {"BLOCKED_NATIVE_EXECUTION_ERROR", "NATIVE_JOINT_PAID_WITH_EXECUTION_ERRORS"}:
         return "NATIVE_EXECUTION_ERRORS"
     if status == "BLOCKED_NO_NATIVE_ACCEPTED_THREE_AXIS_CANDIDATE":
@@ -123,6 +126,8 @@ def _cause(row: dict) -> str | None:
             return "NATIVE_CANDIDATE_REFUSALS"
         if row.get("native_errors", 0):
             return "NATIVE_EXECUTION_ERRORS"
+        if row.get("native_unscored", 0):
+            return "NATIVE_SCORE_UNAVAILABLE"
         return "NO_NATIVE_ACCEPTED_THREE_AXIS_CANDIDATE"
     if status == "BLOCKED_SOURCE":
         return "PROVIDE_EXACT_NATIVE_REQUEST"
@@ -232,6 +237,7 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
         }
     for row in rows:
         row.setdefault("baseline_paid", 0)
+        row.setdefault("native_unscored", 0)
         row.setdefault("native_paid_total",
                        row.get("native_paid", 0) + row.get("baseline_paid", 0))
         row["repo_git_sha"] = repo_sha
@@ -243,15 +249,16 @@ def save_report(out: Path, rows: list[dict], *, stage: int, binary: Path,
     (out / "gaps.json").write_text(json.dumps(gap_summary(rows), indent=2) + "\n")
     lines = ["# Native Rust L60 JOINT " + str(stage) + "s diagnostic",
              "", "Balanced native screen only; no stochastic holdout or PROCESS P7 claim.",
-             "", "| Profile | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Outcome / blocker |",
-             "|---|---|---:|---:|---:|---:|---:|---|"]
+             "", "| Profile | Status | Baseline balanced | Best balanced | Search paid | Baseline paid | 3-axis paid | Unscored | Outcome / blocker |",
+             "|---|---|---:|---:|---:|---:|---:|---:|---|"]
     for r in rows:
         def esc(value):
             return str(value if value is not None else "—").replace("|", "\\|").replace("\n", " ")
         lines.append("| " + " | ".join(map(esc, (
             r["profile_id"], r["status"], r.get("baseline_balanced_score"),
             r.get("best_balanced_screen"), r["native_paid"], r.get("baseline_paid", 0),
-            r["three_axis_paid"], r.get("blocker") or r.get("search_status") or r["status"],
+            r["three_axis_paid"], r.get("native_unscored", 0),
+            r.get("blocker") or r.get("search_status") or r["status"],
         ))) + " |")
     (out / "matrix.md").write_text("\n".join(lines) + "\n")
 
@@ -319,6 +326,7 @@ def main() -> None:
                       "native_invalid": sum(r.get("native_invalid", 0) for r in rows),
                       "native_unsupported": sum(r.get("native_unsupported", 0) for r in rows),
                       "native_errors": sum(r.get("native_errors", 0) for r in rows),
+                      "native_unscored": sum(r.get("native_unscored", 0) for r in rows),
                       "source_donor_fixtures": len(donor_fixtures),
                       "current_client_preset_donors": len(preset_donors)},
                      sort_keys=True), flush=True)

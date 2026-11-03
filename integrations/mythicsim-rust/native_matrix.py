@@ -39,6 +39,20 @@ class NativeCandidateRefusal(RuntimeError):
         super().__init__(f"MythicSim {normalized}: {self.reason}")
 
 
+class NativeUnscoredCandidate(RuntimeError):
+    """Native evaluation completed, but no finite scalar score was available."""
+
+    status = "UNSCORED"
+
+    def __init__(self, reason, *, raw_response=None, request_sha256=None,
+                 elapsed_s=None):
+        self.reason = str(reason or "Native response has no usable score")
+        self.raw_response = raw_response
+        self.request_sha256 = request_sha256
+        self.elapsed_s = elapsed_s
+        super().__init__(self.reason)
+
+
 def enumerate_l60_profiles(registry: dict, *, include_unrestricted: bool = False) -> list[tuple[str, str]]:
     """Follow the canonical checkpoint registry order; no hardcoded class list."""
     rows = [
@@ -103,6 +117,8 @@ def search_native(
         "best_score": None,
         "elapsed_s": 0.0,
         "engine_errors": 0,
+        "unscored_candidates": 0,
+        "native_unscored_samples": [],
         "native_refusals": 0,
         "native_invalid": 0,
         "native_unsupported": 0,
@@ -170,6 +186,16 @@ def search_native(
                     sample["request_sha256"] = exc.request_sha256
                 result["native_refusal_samples"].append(sample)
             continue
+        except NativeUnscoredCandidate as exc:
+            # Native completed, but no finite scalar score was available.
+            # Preserve this separately from both native refusals and execution errors.
+            result["unscored_candidates"] += 1
+            if len(result["native_unscored_samples"]) < 8:
+                sample = {"status": exc.status, "reason": exc.reason}
+                if exc.request_sha256:
+                    sample["request_sha256"] = exc.request_sha256
+                result["native_unscored_samples"].append(sample)
+            continue
         except Exception:
             result["engine_errors"] += 1
             continue
@@ -186,6 +212,8 @@ def search_native(
         result["status"] = "BLOCKED_ENGINE_ERROR"
     elif result["native_refusals"]:
         result["status"] = "BLOCKED_NATIVE_REFUSALS"
+    elif result["unscored_candidates"]:
+        result["status"] = "BLOCKED_NO_USABLE_NATIVE_SCORE"
     elif result["legal_rejections"]:
         result["status"] = "BLOCKED_NO_LEGAL_CANDIDATE"
     return result
