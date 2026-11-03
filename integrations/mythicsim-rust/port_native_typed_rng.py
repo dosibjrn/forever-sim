@@ -198,6 +198,17 @@ mod typed_rng_api_tests {
         ("forever_engine::simulate_prepared(&prepared)",
          "forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)", 3),
     ])
+    # Integration-test callers must also select a mode explicitly. Preserve
+    # their pre-port stochastic semantics; no library default is retained.
+    edit(root, "tests/healers.rs", [
+        ("simulate_prepared(&prepared)", "simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)", 7),
+    ])
+    one(root, "tests/release.rs",
+        "simulate_prepared(&serde_json::from_value(value).unwrap())",
+        "simulate_prepared(&serde_json::from_value(value).unwrap(), forever_engine::RngMode::Stochastic)")
+    one(root, "tests/autocast.rs",
+        "forever_engine::simulate_prepared(&prepared)",
+        "forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic)")
     # The old v1 frostbolt prototype does not use SimRng; its explicit mode
     # is nevertheless mandatory at the CLI. No false claim of balanced v1.
     print("RUST_TYPED_RNG_PORT_APPLIED")
