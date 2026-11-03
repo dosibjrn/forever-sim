@@ -523,3 +523,51 @@ assert HISTORICAL_DB is DEFAULT_DB
         f"Source-only import and legacy compatibility failed: "
         f"{result.stdout}\n{result.stderr}"
     )
+
+
+def test_index_rank_source_reader_remains_lightweight_without_game_ir():
+    """Typed index-only reads do not initialize the transitional talent compiler."""
+    import subprocess
+    import sys
+
+    source = """
+import sys
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+from src.game.data.forever.source_index_rank_parity import (
+    DEFAULT_DB as INDEX_DB, IndexedRankParityError,
+    indexed_rank_fact, indexed_rank_identity, parse_index_after,
+)
+assert INDEX_DB is DEFAULT_DB
+assert callable(indexed_rank_fact) and callable(indexed_rank_identity)
+parsed = parse_index_after({
+    'cost': '30 Mana', 'cast': 'Instant',
+    'text': 'Causes 12 to 24 Fire damage to the target.',
+}, 'direct_damage')
+assert parsed == {
+    'kind': 'direct_damage', 'mana': 30.0, 'cast_s': 0.0,
+    'low': 12.0, 'high': 24.0, 'school': 'fire',
+}
+try:
+    parse_index_after({
+        'cost': 'unverified', 'cast': 'Instant',
+        'text': 'Causes 12 to 24 Fire damage to the target.',
+    }, 'direct_damage')
+except IndexedRankParityError as exc:
+    assert str(exc) == 'INDEX_COST_OR_CAST_UNVERIFIED'
+else:
+    raise AssertionError('malformed source cost must still fail closed')
+
+assert 'src.game.data.forever.sqlite_talents' not in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+from src.game.data.forever.sqlite_talents import DEFAULT_DB as HISTORICAL_DB
+assert HISTORICAL_DB is DEFAULT_DB
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"indexed rank source/GameIR boundary failed: "
+        f"{result.stdout}\n{result.stderr}"
+    )
