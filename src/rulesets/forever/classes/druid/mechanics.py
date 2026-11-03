@@ -11,6 +11,7 @@ Energy/Combo Points, DoT maintenance, Eclipse alternation and Nature's Grace.
 from contextvars import ContextVar
 
 from src.shared.leveling import objective as leveling
+from src.optimization.leveling_score import score_combat_cycle
 from src.scenarios.leveling_targets import representative_hp
 from src.scenarios.timing import between_pull_travel_s
 from src.scenarios.spaced_pulls import SpacedPullLayout
@@ -741,8 +742,9 @@ def _cat_single(level: int, t: Talents) -> dict:
     ]
     if not recovery['feasible']:
         flags.append('survival infeasible under shared HP bookkeeping')
-    return leveling.combat_result(
-        level=level, dps=dps, mana_spent=0.0, mana_pool=base_mana,
+    return score_combat_cycle(
+        target_hp=representative_hp(level),
+        dps=dps, mana_spent=0.0, mana_pool=base_mana,
         regen_per_s=mana_regen_per_s, travel_s=travel, rotation=rotation,
         profile='cat', flags=flags, recovery_s_override=recovery['recovery_s'],
         details={
@@ -1352,8 +1354,9 @@ def _balance(level: int, t: Talents) -> dict:
     ]
 
     recovery=_caster_recovery(level,gear,total_cast_time,mana_spent,mana_pool)
-    return leveling.combat_result(
-        level=level, dps=effective_dps, mana_spent=mana_spent,
+    return score_combat_cycle(
+        target_hp=representative_hp(level),
+        dps=effective_dps, mana_spent=mana_spent,
         mana_pool=mana_pool, regen_per_s=regen, travel_s=between_pull_travel_s(),
         rotation="; ".join(rotation_parts), profile="balance", flags=flags,
         recovery_s_override=recovery["recovery_s"],
