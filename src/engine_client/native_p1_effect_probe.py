@@ -1,0 +1,431 @@
+"""Direct P1 single-action probe through the selected Rust PreparedV2 executor.
+
+The positive and control requests differ only in the APL priorityList:
+one selected castSpell versus no castSpell. MythicSim owns spell/rank
+availability and all combat mechanics; this client does not consult a
+Python spellbook, trainer ledger, source legality table, or GameIR action
+implementation before sending the request.
+
+A direct native effect is measured with a same-request no-action control.
+The optional live gsim 2D bridge is used only for world-owned effects. This
+is diagnostic evidence only, never a formal P1 PASS.
+"""
+from __future__ import annotations
+
+import copy
+import hashlib
+import json
+import math
+from pathlib import Path
+import sys
+import tempfile
+import time
+
+from src.engine_client.native_p2_rank_probe import (
+    NativeP2ProbeError,
+    NativeRngMode,
+    _simulate_prepared,
+    prepare_native_request,
+)
+
+ROOT = Path(__file__).resolve().parents[2]
+ENGINE_ROOT = ROOT / "integrations" / "mythicsim-rust" / "engine"
+INTEGRATION_ROOT = ROOT / "integrations" / "mythicsim-rust"
+
+
+def _player(request: dict) -> dict:
+    try:
+        return request["raid"]["parties"][0]["players"][0]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("NATIVE_P1_REQUEST_PLAYER_PATH_MISSING") from exc
+
+
+def _cast_spell_id(row: dict) -> int | None:
+    if not isinstance(row, dict):
+        return None
+    action = row.get("action")
+    cast = action.get("castSpell") if isinstance(action, dict) else None
+    spell = cast.get("spellId") if isinstance(cast, dict) else None
+    if isinstance(spell, dict):
+        spell = spell.get("spellId")
+    return spell if type(spell) is int and spell > 0 else None
+
+
+def native_single_action_pair(request: dict, spell_id: int) -> tuple[dict, dict]:
+    """Build one-action and no-action requests without changing scenario data.
+
+    The positive request contains exactly one selected castSpell APL row.
+    The control has an empty priorityList. All non-priorityList input fields
+    are byte-for-byte-equivalent JSON values in the two request objects.
+    """
+    if type(spell_id) is not int or spell_id <= 0:
+        raise ValueError("NATIVE_P1_SELECTED_SPELL_ID_INVALID")
+    original = copy.deepcopy(request)
+    player = _player(original)
+    rotation = player.get("rotation")
+    if not isinstance(rotation, dict) or not isinstance(rotation.get("priorityList"), list):
+        raise ValueError("NATIVE_P1_APL_PRIORITY_LIST_MISSING")
+
+    # Do not silently leave a second action channel active in the control.
+    for key, value in rotation.items():
+        if key != "priorityList" and isinstance(value, list) and value:
+            raise ValueError("NATIVE_P1_UNCONTROLLED_ROTATION_CHANNEL:" + key)
+    for key in ("majorCooldowns", "cooldowns", "itemSwap"):
+        if player.get(key):
+            raise ValueError("NATIVE_P1_UNCONTROLLED_PLAYER_ACTION_CHANNEL:" + key)
+
+    matches = [
+        row for row in rotation["priorityList"]
+        if _cast_spell_id(row) == spell_id
+    ]
+    if len(matches) != 1:
+        raise ValueError("NATIVE_P1_SELECTED_SPELL_NOT_UNIQUE_IN_APL:" + str(spell_id))
+
+    positive = copy.deepcopy(original)
+    control = copy.deepcopy(original)
+    _player(positive)["rotation"]["priorityList"] = [copy.deepcopy(matches[0])]
+    _player(control)["rotation"]["priorityList"] = []
+
+    positive_normalized = copy.deepcopy(positive)
+    control_normalized = copy.deepcopy(control)
+    _player(positive_normalized)["rotation"]["priorityList"] = ["SELECTED_ACTION"]
+    _player(control_normalized)["rotation"]["priorityList"] = ["SELECTED_ACTION"]
+    if positive_normalized != control_normalized:
+        raise ValueError("NATIVE_P1_PAIR_CHANGED_NON_ACTION_REQUEST_FIELDS")
+    if len(_player(positive)["rotation"]["priorityList"]) != 1:
+        raise ValueError("NATIVE_P1_POSITIVE_ACTION_COUNT_INVALID")
+    if _player(control)["rotation"]["priorityList"]:
+        raise ValueError("NATIVE_P1_CONTROL_IS_NOT_NO_ACTION")
+    return positive, control
+
+
+def _sha256_json(value: dict) -> str:
+    payload = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _compact(receipt: dict) -> dict:
+    keys = (
+        "status", "stage", "reason", "engine_identity", "request_sha256",
+        "prepared_sha256", "elapsed_seconds", "refusal", "returncode",
+        "stdout_tail", "stderr_tail",
+    )
+    return {key: receipt[key] for key in keys if key in receipt}
+
+
+def _run_world_bridge(
+    binary_path: Path,
+    prepared: dict,
+    *,
+    target_count: int,
+    mob_health: float | None,
+) -> dict:
+    if str(INTEGRATION_ROOT) not in sys.path:
+        sys.path.insert(0, str(INTEGRATION_ROOT))
+    import live_two_world_pulls
+
+    with tempfile.TemporaryDirectory(prefix="forever-p1-native-world-") as directory:
+        prepared_path = Path(directory) / "prepared.json"
+        prepared_path.write_text(
+            json.dumps(prepared, sort_keys=True, separators=(",", ":"), allow_nan=False),
+            encoding="utf-8",
+        )
+        return live_two_world_pulls.run(
+            binary_path,
+            prepared_path,
+            mob_health=mob_health,
+            target_count=target_count,
+        )
+
+
+def run_native_p1_direct_effect_probe(
+    *,
+    binary: str | Path,
+    request: dict,
+    spell_id: int,
+    engine_root: str | Path = ENGINE_ROOT,
+    timeout_seconds: float = 120.0,
+    iterations: int = 10,
+    seed: int = 647003,
+    target_count: int = 2,
+    world_mob_health: float | None = 1200.0,
+    world_required: bool = False,
+    scenario_label: str | None = None,
+) -> dict[str, object]:
+    """Prepare/simulate a single native action and a same-request no-action control."""
+    if isinstance(iterations, bool) or type(iterations) is not int or iterations < 1:
+        raise ValueError("NATIVE_P1_ITERATIONS_INVALID")
+    if isinstance(seed, bool) or type(seed) is not int:
+        raise ValueError("NATIVE_P1_SEED_INVALID")
+    if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)) \
+            or not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+        raise ValueError("NATIVE_P1_TIMEOUT_INVALID")
+    if type(world_required) is not bool:
+        raise ValueError("NATIVE_P1_WORLD_REQUIREMENT_INVALID")
+    if world_required and (type(target_count) is not int or not 2 <= target_count <= 100):
+        raise ValueError("NATIVE_P1_WORLD_TARGET_COUNT_INVALID")
+    if world_required and world_mob_health is not None and (
+        isinstance(world_mob_health, bool)
+        or not isinstance(world_mob_health, (int, float))
+        or not math.isfinite(world_mob_health)
+        or world_mob_health <= 0
+    ):
+        raise ValueError("NATIVE_P1_WORLD_MOB_HEALTH_INVALID")
+    if scenario_label is not None and (
+        not isinstance(scenario_label, str) or not scenario_label.strip()
+    ):
+        raise ValueError("NATIVE_P1_SCENARIO_LABEL_INVALID")
+
+    binary_path = Path(binary)
+    root = Path(engine_root)
+    if not binary_path.is_file():
+        return {
+            "status": "BLOCKED", "stage": "prepare",
+            "reason": "SELECTED_RUST_BINARY_MISSING",
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+    try:
+        binary_path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return {
+            "status": "BLOCKED", "stage": "prepare",
+            "reason": "BINARY_NOT_FROM_SELECTED_ENGINE_ROOT",
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+
+    try:
+        positive_request, control_request = native_single_action_pair(request, spell_id)
+        for payload in (positive_request, control_request):
+            options = payload.get("simOptions")
+            if not isinstance(options, dict):
+                raise ValueError("NATIVE_P1_SIM_OPTIONS_MISSING")
+            options["iterations"] = iterations
+            options["randomSeed"] = str(seed)
+            options["debugFirstIteration"] = False
+    except (KeyError, TypeError, ValueError) as exc:
+        return {
+            "status": "INVALID", "stage": "request",
+            "reason": str(exc), "native_executed": False,
+            "effect_observed": False, "p1_certified": False,
+        }
+
+    deadline = time.monotonic() + float(timeout_seconds)
+    scenario = scenario_label or f"p1-druid-single-action-{spell_id}"
+    try:
+        positive_prepare = prepare_native_request(
+            binary=binary_path,
+            request=positive_request,
+            scenario=scenario + "-with-action",
+            deadline=deadline,
+        )
+        control_prepare = prepare_native_request(
+            binary=binary_path,
+            request=control_request,
+            scenario=scenario + "-no-action",
+            deadline=deadline,
+        )
+    except (NativeP2ProbeError, OSError, ValueError, TypeError) as exc:
+        return {
+            "status": "ERROR", "stage": "prepare",
+            "reason": f"NATIVE_P1_PREPARE_ADAPTER_FAILED:{type(exc).__name__}:{exc}",
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+
+    if positive_prepare.get("status") != "PREPARED" or control_prepare.get("status") != "PREPARED":
+        failed = (
+            positive_prepare if positive_prepare.get("status") != "PREPARED"
+            else control_prepare
+        )
+        return {
+            "status": failed.get("status", "ERROR"),
+            "stage": failed.get("stage", "prepare"),
+            "reason": failed.get("reason", "NATIVE_P1_PREPARE_PAIR_NOT_READY"),
+            "positive_prepare": _compact(positive_prepare),
+            "control_prepare": _compact(control_prepare),
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+
+    if (
+        positive_prepare.get("engine_identity") != control_prepare.get("engine_identity")
+        or not positive_prepare.get("request_sha256")
+        or not control_prepare.get("request_sha256")
+        or positive_prepare.get("request_sha256") == control_prepare.get("request_sha256")
+    ):
+        return {
+            "status": "ERROR", "stage": "prepare",
+            "reason": "NATIVE_P1_PREPARED_PAIR_IDENTITY_OR_HASH_INVALID",
+            "positive_prepare": _compact(positive_prepare),
+            "control_prepare": _compact(control_prepare),
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+
+    try:
+        positive_sim = _simulate_prepared(
+            binary_path=binary_path,
+            prepared=positive_prepare["prepared"],
+            rng_mode=NativeRngMode.BALANCED,
+            iterations=iterations,
+            seed=seed,
+            deadline=deadline,
+        )
+        control_sim = _simulate_prepared(
+            binary_path=binary_path,
+            prepared=control_prepare["prepared"],
+            rng_mode=NativeRngMode.BALANCED,
+            iterations=iterations,
+            seed=seed,
+            deadline=deadline,
+        )
+    except Exception as exc:
+        return {
+            "status": "ERROR", "stage": "sim",
+            "reason": f"NATIVE_P1_SIM_ADAPTER_FAILED:{type(exc).__name__}:{exc}",
+            "positive_prepare": _compact(positive_prepare),
+            "control_prepare": _compact(control_prepare),
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+    if positive_sim.get("status") != "EXECUTED" or control_sim.get("status") != "EXECUTED":
+        failed = positive_sim if positive_sim.get("status") != "EXECUTED" else control_sim
+        return {
+            "status": failed.get("status", "ERROR"),
+            "stage": failed.get("stage", "sim"),
+            "reason": failed.get("reason", "NATIVE_P1_SIM_PAIR_NOT_EXECUTED"),
+            "positive_prepare": _compact(positive_prepare),
+            "control_prepare": _compact(control_prepare),
+            "positive_sim": _compact(positive_sim),
+            "control_sim": _compact(control_sim),
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+
+    try:
+        positive_dps = float(positive_sim["dps"])
+        control_dps = float(control_sim["dps"])
+    except (KeyError, TypeError, ValueError) as exc:
+        return {
+            "status": "ERROR", "stage": "sim",
+            "reason": f"NATIVE_P1_DPS_MISSING_OR_INVALID:{type(exc).__name__}:{exc}",
+            "positive_sim": _compact(positive_sim),
+            "control_sim": _compact(control_sim),
+            "native_executed": True, "effect_observed": False,
+            "p1_certified": False,
+        }
+    if not math.isfinite(positive_dps) or not math.isfinite(control_dps):
+        return {
+            "status": "ERROR", "stage": "sim",
+            "reason": "NATIVE_P1_DPS_NONFINITE",
+            "positive_sim": _compact(positive_sim),
+            "control_sim": _compact(control_sim),
+            "native_executed": True, "effect_observed": False,
+            "p1_certified": False,
+        }
+    dps_delta = positive_dps - control_dps
+    common = {
+        "spell_id": spell_id,
+        "positive_action_count": 1,
+        "control_action_count": 0,
+        "positive_request_sha256": _sha256_json(positive_request),
+        "control_request_sha256": _sha256_json(control_request),
+        "positive_prepare": _compact(positive_prepare),
+        "control_prepare": _compact(control_prepare),
+        "positive_sim": _compact(positive_sim),
+        "control_sim": _compact(control_sim),
+        "dps_with_action": positive_dps,
+        "dps_without_action": control_dps,
+        "dps_delta": dps_delta,
+        "engine_identity": positive_prepare["engine_identity"],
+        "scenario": scenario,
+        "world_required": world_required,
+        "native_executed": True,
+        "p1_certified": False,
+    }
+    if dps_delta <= 0:
+        return {
+            **common,
+            "status": "NO_DIRECT_EFFECT_OBSERVED",
+            "effect_observed": False,
+            "proof_kind": "NATIVE_DIRECT_EFFECT",
+            "executor": "msim-rust",
+            "controlled_behavior_assertion_passed": False,
+        }
+
+    if not world_required:
+        return {
+            **common,
+            "status": "NATIVE_DIRECT_BEHAVIOR_VERIFIED",
+            "effect_observed": True,
+            "proof_kind": "NATIVE_DIRECT_EFFECT",
+            "executor": "msim-rust",
+            "controlled_behavior_assertion_passed": True,
+            "observable_effects": {
+                "dps_with_action": positive_dps,
+                "dps_without_action": control_dps,
+                "dps_delta": dps_delta,
+            },
+        }
+
+    try:
+        world = _run_world_bridge(
+            binary_path,
+            positive_prepare["prepared"],
+            target_count=target_count,
+            mob_health=world_mob_health,
+        )
+    except Exception as exc:
+        return {
+            **common,
+            "status": "ERROR", "stage": "world",
+            "reason": f"NATIVE_P1_WORLD_BRIDGE_FAILED:{type(exc).__name__}:{exc}",
+            "effect_observed": False,
+            "proof_kind": "NATIVE_DIRECT_EFFECT",
+            "executor": "msim-rust",
+            "controlled_behavior_assertion_passed": False,
+        }
+
+    world_ok = (
+        isinstance(world, dict)
+        and world.get("actual_2d_ack") is True
+        and world.get("continuous_native_actor") is True
+        and type(world.get("native_damage_events")) is int
+        and world["native_damage_events"] > 0
+        and world.get("checkpoint_certified") is False
+    )
+    if not world_ok:
+        return {
+            **common,
+            "status": "ERROR", "stage": "world",
+            "reason": "NATIVE_P1_WORLD_BRIDGE_CAUSALITY_NOT_CONFIRMED",
+            "world_bridge": world,
+            "effect_observed": False,
+            "proof_kind": "NATIVE_DIRECT_EFFECT",
+            "executor": "msim-rust",
+            "controlled_behavior_assertion_passed": False,
+        }
+
+    observable = {
+        "dps_with_action": positive_dps,
+        "dps_without_action": control_dps,
+        "dps_delta": dps_delta,
+        "world_targets_killed": world["world_targets_killed"],
+        "native_damage_events": world["native_damage_events"],
+        "actual_2d_ack": world["actual_2d_ack"],
+        "world_elapsed_seconds": world.get("world_elapsed_seconds"),
+    }
+    return {
+        **common,
+        "status": "NATIVE_DIRECT_BEHAVIOR_VERIFIED",
+        "effect_observed": True,
+        "proof_kind": "NATIVE_DIRECT_EFFECT",
+        "executor": "msim-rust",
+        "controlled_behavior_assertion_passed": True,
+        "observable_effects": observable,
+        "world_bridge": world,
+    }
