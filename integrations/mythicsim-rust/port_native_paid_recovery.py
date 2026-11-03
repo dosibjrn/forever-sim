@@ -287,12 +287,12 @@ CLI_NEW = """    if args[0] == "native-world-pulls" {
 # Typed-RNG descendants are the selected production source shape. Paid recovery
 # must extend these signatures without dropping the explicit mode argument.
 CLASSES_SIGNATURE_TYPED_OLD = CLASSES_SIGNATURE_OLD.replace(
-    "    target_count: usize,\\n",
-    "    target_count: usize,\\n    rng_mode: crate::core::rng::RngMode,\\n",
+    "    target_count: usize,\n",
+    "    target_count: usize,\n    rng_mode: crate::core::rng::RngMode,\n",
 )
 CLASSES_SIGNATURE_TYPED_NEW = CLASSES_SIGNATURE_TYPED_OLD.replace(
-    "    rng_mode: crate::core::rng::RngMode,\\n",
-    "    rng_mode: crate::core::rng::RngMode,\\n    recovery_ns: i64,\\n",
+    "    rng_mode: crate::core::rng::RngMode,\n",
+    "    rng_mode: crate::core::rng::RngMode,\n    recovery_ns: i64,\n",
 )
 
 PREPARED_SIGNATURE_TYPED_OLD = PREPARED_SIGNATURE_OLD.replace(
@@ -312,12 +312,12 @@ CLI_TYPED_OLD = CLI_OLD.replace(
     1,
 ).replace(
     "let report = native_two_world_targets(&prepared, target_count)",
-    "let mode = RngMode::parse_cli(&args[6])?;\\n        let report = native_two_world_targets(&prepared, target_count, mode)",
+    "let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)",
     1,
 )
 CLI_TYPED_NEW = CLI_NEW.replace(
-    'if !matches!(args.len(), 5 | 7)\\n            || args[1] != "--infile" || args[3] != "--targets"\\n            || (args.len() == 7 && args[5] != "--recovery-ns")',
-    'if !matches!(args.len(), 7 | 9)\\n            || args[1] != "--infile" || args[3] != "--targets"\\n            || args[5] != "--rng-mode"\\n            || (args.len() == 9 && args[7] != "--recovery-ns")',
+    'if !matches!(args.len(), 5 | 7)\n            || args[1] != "--infile" || args[3] != "--targets"\n            || (args.len() == 7 && args[5] != "--recovery-ns")',
+    'if !matches!(args.len(), 7 | 9)\n            || args[1] != "--infile" || args[3] != "--targets"\n            || args[5] != "--rng-mode"\n            || (args.len() == 9 && args[7] != "--recovery-ns")',
     1,
 ).replace(
     "--targets 2..100 [--recovery-ns 0..300000000000]",
@@ -325,7 +325,7 @@ CLI_TYPED_NEW = CLI_NEW.replace(
     1,
 ).replace(
     "let recovery_ns = if args.len() == 7 {",
-    "let mode = RngMode::parse_cli(&args[6])?;\\n        let recovery_ns = if args.len() == 9 {",
+    "let mode = RngMode::parse_cli(&args[6])?;\n        let recovery_ns = if args.len() == 9 {",
     1,
 ).replace(
     "args[6].parse::<i64>()",
