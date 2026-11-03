@@ -27,7 +27,6 @@ spec.loader.exec_module(port)
 class NativeRootsDotPortTest(unittest.TestCase):
     def test_all_source_anchors_apply_once_and_are_idempotent(self):
         patches = {
-            "src/core/fight.rs": port.FIGHT_PATCHES,
             "src/classes/druid/prepare/balance.rs": port.PREP_PATCHES,
             "src/classes/druid/agent.rs": port.AGENT_PATCHES,
             "src/classes/druid/prepared/coverage.rs": port.COVERAGE_PATCHES,
@@ -54,9 +53,9 @@ class NativeRootsDotPortTest(unittest.TestCase):
             self.assertIn('"entangling_roots",', (root / "src/classes/druid/prepared/coverage.rs").read_text())
             agent = (root / "src/classes/druid/agent.rs").read_text()
             bridge = (root / "src/core/fight/world_bridge.rs").read_text()
-            fight = (root / "src/core/fight.rs").read_text()
-            self.assertIn("pub(crate) rank: i32", fight)
-            self.assertIn("rank: exported.rank", fight)
+            self.assertIn("crate::core::fight::Outcome::MagicHit", agent)
+            self.assertIn("match fight.spells[spell].id.spell_id", agent)
+            self.assertIn("9853 => 6", agent)
             self.assertIn("world_bridge::record_control", agent)
             self.assertIn("mod forever_roots_native_control_tests", agent)
             self.assertIn("crate::RngMode::Balanced", agent)
