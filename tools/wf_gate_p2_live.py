@@ -1816,6 +1816,18 @@ def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
     after=tested.get('witness')
     if not isinstance(before,dict) or not isinstance(after,dict):
         return {'status':'BLOCKED','reason':'SOURCE_LEGAL_RANK_PAIR_UNAVAILABLE'}
+    for selection in (before,after):
+        if any(not isinstance(key,str) or not key or isinstance(value,bool)
+               or not isinstance(value,int) or value<0
+               for key,value in selection.items()):
+            return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_ALLOCATION_INVALID'}
+    if (before.get(talent_id,0)!=int(rank)-1
+            or after.get(talent_id,0)!=int(rank)):
+        return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_TARGET_RANK_MISMATCH'}
+    changed={key for key in set(before)|set(after)
+             if before.get(key,0)!=after.get(key,0)}
+    if changed!={talent_id}:
+        return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_NOT_SINGLE_TALENT_CHANGE'}
     prerequisite=source.get('prerequisite')
     if prerequisite is not None:
         if (not isinstance(prerequisite,dict) or not prerequisite.get('talent_id')
