@@ -14,6 +14,7 @@ on:
       - 'integrations/mythicsim-rust/p75_joint_search.py'
       - 'integrations/mythicsim-rust/p75_unrestricted_search.py'
       - 'integrations/mythicsim-rust/apl_mutation.py'
+      - 'integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py'
       - 'integrations/mythicsim-rust/rotation_search.py'
       - 'integrations/mythicsim-rust/tests/test_p73_native_search_ci.py'
       - 'integrations/mythicsim-rust/tests/test_p75_joint_contract.py'
@@ -87,6 +88,7 @@ jobs:
           tests/test_wf_feral01_sqlite_talent_execution.py::test_unknown_talent_effect_is_not_a_zero_cost_noop
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
           integrations/mythicsim-rust/tests/test_p73_native_search_ci.py
+          integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
           tests/test_work1_p7_balanced_native_world_rng.py
