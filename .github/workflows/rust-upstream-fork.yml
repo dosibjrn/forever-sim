@@ -47,6 +47,7 @@ jobs:
       - name: Syntax check and verify fail-closed bootstrap guards
         run: |
           bash -n scripts/bootstrap_mythicsim_rust_fork.sh
+          python3 -m py_compile integrations/mythicsim-rust/port_typed_rng_mode.py
           python3 -m py_compile integrations/mythicsim-rust/port_upstream_paladin_typed_rng.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_improved_roots_rank.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_entangling_roots_dot.py
@@ -114,6 +115,7 @@ jobs:
           python3 integrations/mythicsim-rust/port_native_two_world_cli.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_gsim_moving.py /tmp/forever-selected-rust
           python3 integrations/mythicsim-rust/port_native_health_damage_receipts.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_typed_rng_mode.py /tmp/forever-selected-rust
           git -C /tmp/forever-selected-rust diff --check
           first_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
           python3 integrations/mythicsim-rust/port_native_pull_queue.py /tmp/forever-selected-rust
