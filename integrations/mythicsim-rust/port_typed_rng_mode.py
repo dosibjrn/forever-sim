@@ -60,6 +60,15 @@ pub(crate) enum SimRng {"""),
         ("rng: SimRng::new(prepared.sim.labeled_rng, prepared.sim.seed as u64)",
          "rng: SimRng::new(prepared.sim.labeled_rng, prepared.sim.seed as u64, rng_mode)"),
     ])
+    # Existing native test fixtures explicitly select stochastic behavior.
+    # The typed fight constructor no longer offers implicit RNG selection.
+    path = root / "src/core/fight.rs"
+    tests = path.read_text()
+    old_test_call = "DruidAgent::fight(&prepared)"
+    assert tests.count(old_test_call) == 3, "Rust fixture callsites drifted"
+    tests = tests.replace(old_test_call,
+                          "DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)")
+    path.write_text(tests)
     for cl in CLASSES:
         agent = root / f"src/classes/{cl}/agent.rs"
         source = agent.read_text()
