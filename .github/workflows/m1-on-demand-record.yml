@@ -163,6 +163,11 @@ jobs:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine
         run: |
           set -euo pipefail
+          # Freeze already-completed accepted priors before this batch records
+          # any of its own targets. P7.5 must never read its current in-progress
+          # M1 run as a prior merely because P7.1-P7.4 appeared earlier in TARGETS.
+          accepted_prior_ledger="$RUNNER_TEMP/m1-passes-pre-run.tsv"
+          cp docs/planning/M1_PASSES.tsv "$accepted_prior_ledger"
           python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
           echo "Measured production HEAD: $(git rev-parse HEAD)"
           read -r -a entries <<< "$TARGETS"
@@ -230,7 +235,8 @@ jobs:
               accepted_receipts="$(mktemp)"
               if python tools/wf_gate_p7_5_receipts.py \
                 --repository "$GITHUB_REPOSITORY" --class "$class" \
-                --level "$level" --spec "$spec" --out "$accepted_receipts"; then
+                --level "$level" --spec "$spec" --out "$accepted_receipts" \
+                --ledger "$accepted_prior_ledger"; then
                 export FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS="$accepted_receipts"
               else
                 rm -f "$accepted_receipts"
@@ -266,6 +272,7 @@ jobs:
             unset accepted_receipts || true
             echo "::endgroup::"
           done
+          rm -f "$accepted_prior_ledger"
           python tools/m1_progress.py | tee "$RUNNER_TEMP/m1-scoreboard.txt"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '### M1 scoreboard (best measured)' >> "$GITHUB_STEP_SUMMARY"

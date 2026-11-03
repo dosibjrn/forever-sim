@@ -19,6 +19,8 @@ on:
       - 'tools/wf_gate.py'
       - 'tools/wf_gate_p7_4_live.py'
       - 'tools/wf_gate_p7_5_live.py'
+      - 'tests/gates/test_wf_gate_p7_5_receipts.py'
+      - 'tools/wf_gate_p7_5_receipts.py'
       - 'tests/test_p7_search_deadline_contract.py'
       - 'docs/evidence/druid-p7/recovered/raw/**'
       - 'src/game/evaluation.py'
@@ -75,6 +77,7 @@ jobs:
           tools/wf_gate.py
           tools/wf_gate_p7_4_live.py
           tools/wf_gate_p7_5_live.py
+          tools/wf_gate_p7_5_receipts.py
           src/v2/source_budgeted_gear.py
           tools/wf_gate_p3_live.py
           tests/test_p7_search_deadline_contract.py
@@ -98,6 +101,7 @@ jobs:
           tests/test_wf322_druid_l20_web_observed_build_parity.py::test_newer_web_text_stage_changes_actual_core_runtime_but_not_canonical
           tests/test_p7_search_deadline_contract.py
           tests/gates/test_wf_gate_p7_5_prior.py
+          tests/gates/test_wf_gate_p7_5_receipts.py
           tests/test_wf246_primary_stat_combat.py
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
