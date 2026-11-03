@@ -1,5 +1,6 @@
 """P7.2 cold APL mutation contract; no fake gate acceptance or saved-run PASS."""
 import copy
+import json
 import random
 from types import SimpleNamespace
 
@@ -45,6 +46,81 @@ def test_independently_rediscovered_reference_apl_remains_eligible():
     assert candidate is not base
 
 
+def test_p72_paid_parent_uses_balanced_archive_and_keeps_cold_restarts():
+    best_request = _request()
+    elite_request = copy.deepcopy(best_request)
+    finalist_request = copy.deepcopy(best_request)
+    elite_request["raid"]["parties"][0]["players"][0]["talentsString"] = "paid-elite"
+    finalist_request["raid"]["parties"][0]["players"][0]["talentsString"] = "paid-finalist"
+    best = (900.0, {}, "screen-best", best_request)
+    elites = [(890.0, "elite-a", best_request),
+              (880.0, "elite-b", elite_request)]
+    finalists = [(910.0, {}, "finalist-a", finalist_request, 900.0)]
+
+    class PickLast:
+        @staticmethod
+        def choice(rows):
+            return rows[-1]
+
+    assert gate._paid_p72_parent(
+        best, finalists, 5, PickLast(), balanced_elites=elites) is None
+    assert gate._paid_p72_parent(
+        best, [], 3, PickLast(), balanced_elites=elites) is elite_request
+    assert gate._paid_p72_parent(
+        best, finalists, 4, PickLast(), balanced_elites=[]) is finalist_request
+
+
+def test_p72_paid_finalist_only_calls_balanced_native_and_world(monkeypatch, tmp_path):
+    request = _request()
+    observed = []
+
+    def native(binary, path, n, *, rng_mode):
+        saved = json.loads(path.read_text())
+        observed.append(("native", n, rng_mode, saved["simOptions"]["randomSeed"]))
+        return {"native_dps": 750.0}
+
+    def world(binary, path, distance, iterations, *, rng_mode):
+        saved = json.loads(path.read_text())
+        observed.append(("world", iterations, rng_mode,
+                         saved["simOptions"]["randomSeed"]))
+        return {"world_mean_dps": 750.0, "iterations_done": iterations,
+                "native_damage_events": 9, "native_world_ticks": 15}
+
+    monkeypatch.setattr(gate, "_source_native_world_parity",
+                        lambda *args, **kwargs: None)
+    production = SimpleNamespace(native_source_control=native, run=world)
+    score, live = gate._paid_p72_balanced_finalist(
+        production, tmp_path / "selected-engine", request, 15,
+        seeds=("101", "202"), stage="finalist")
+    assert score == 750.0
+    assert live["iterations_done"] == 3
+    assert observed == [
+        ("native", 3, "balanced", "101"),
+        ("world", 3, "balanced", "101"),
+        ("native", 3, "balanced", "202"),
+        ("world", 3, "balanced", "202"),
+    ]
+
+
+def test_p72_freeze_prefers_deepest_paid_balanced_finalist():
+    screen = _request()
+    a, b = copy.deepcopy(screen), copy.deepcopy(screen)
+    a["raid"]["parties"][0]["players"][0]["talentsString"] = "A"
+    b["raid"]["parties"][0]["players"][0]["talentsString"] = "B"
+    screen_best = (999.0, {"screen": True}, "screen", screen)
+    finalists = [
+        (730.0, {"live": "A"}, "a", a, 990.0),
+        (720.0, {"live": "B"}, "b", b, 980.0),
+    ]
+    frozen = gate._freeze_paid_p72_balanced_winner(
+        screen_best, finalists, confirmed={"b"}, deep_confirmed={"a"})
+    assert frozen[0] == 730.0
+    assert frozen[2] == "a"
+    assert frozen[3]["raid"]["parties"][0]["players"][0]["talentsString"] == "A"
+    assert frozen[4] == 990.0
+    assert frozen[5] == "paid_6x3_balanced_live_native_deep_confirmed_finalist"
+
+
 def test_wrong_checkpoint_refuses_before_any_native_run(tmp_path):
     report = gate.run_live(tmp_path, "priest", 60, spec="holy")
     assert report["status"] == "BLOCKED"
@@ -85,49 +161,120 @@ def test_p72_rejects_equal_native_world_dps_if_fight_duration_differs(monkeypatc
                for error in report["cold_candidate_failures"])
     assert "winner_live_dps" not in report
 
-def test_full_p72_holds_frozen_candidate_out_of_balanced_search(monkeypatch, tmp_path):
-    """--heavy runs real producer twice in separate RNG modes; no fake PASS."""
-    import os
+def test_full_p72_confirms_paid_balanced_finalists_before_stochastic_holdout(
+        monkeypatch, tmp_path):
+    """The screen leader cannot bypass paid Balanced confirmation; holdout is last."""
     from tools import wf_gate_p7_2_live as p72
+
     base = _request()
     base["raid"]["parties"][0]["players"][0].update({
         "class": "ClassDruid", "distanceFromTarget": 15})
     calls = []
+    clock = [0.0]
+    perf = [0.0]
+    screen_world = [0]
+    finalist_world = [0]
+    confirmation_world = [0]
+
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # A controlled 300-second clock tests the routing only; real elapsed time,
-    # source legality and source Rust/world execution are NOT proved by this unit.
-    clock = iter([0.0, 0.0, 300.0, 300.0])
-    monkeypatch.setattr(p72.time, "monotonic", lambda: next(clock))
-    monkeypatch.setattr(p72, "_pinned_source_runtime",
-                        lambda *args: (base, {"reference_dps": 728.19}, tmp_path / "binary"))
+    monkeypatch.setattr(p72.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(p72.time, "perf_counter", lambda: perf[0])
+    monkeypatch.setattr(p72.time, "sleep",
+                        lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+    monkeypatch.setattr(
+        p72, "_pinned_source_runtime",
+        lambda *args: (base, {"reference_dps": 728.19,
+                              "selected_engine_revision": "test-pin"},
+                       tmp_path / "binary"))
     monkeypatch.setattr(p72, "_source_native_world_parity",
-                        lambda native, live, n, **kw: None)
-    source = SimpleNamespace(
-        mutate_apl=lambda a, s, rng, cold: list(reversed(s)))
+                        lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        p72, "_executed_p7_runtime_proof",
+        lambda gate_name, sha, **kwargs: {
+            "runtime_proof": {"executed": True, "source_revision": sha}})
+
+    generated = [0]
+    def mutate(actions, source_actions, rng, cold):
+        offset = generated[0] % 3
+        generated[0] += 1
+        return source_actions[offset:] + source_actions[:offset]
+
+    source = SimpleNamespace(mutate_apl=mutate)
+
+    def spell_id(request):
+        return request["raid"]["parties"][0]["players"][0]["rotation"][
+            "priorityList"][0]["action"]["castSpell"]["spellId"]["spellId"]
+
+    def score(request, path, rng_mode):
+        if rng_mode == "stochastic":
+            return 725.0
+        identity = spell_id(request)
+        if path.name == "source-cold-candidate.json":
+            return {1: 721.0, 2: 720.0, 3: 719.0}[identity]
+        if path.name == "paid-balanced-finalist.json":
+            return {1: 690.0, 2: 731.0, 3: 710.0}[identity]
+        if path.name == "paid-balanced-confirmation.json":
+            return {1: 695.0, 2: 735.0, 3: 712.0}[identity]
+        raise AssertionError(f"unexpected paid P7.2 request: {path.name}")
+
     def native(binary, path, n, *, rng_mode):
-        calls.append(("native", n, rng_mode))
-        return {"native_dps": 730.0 if rng_mode == "balanced" else 729.0}
+        request = json.loads(path.read_text())
+        calls.append(("native", n, rng_mode, path.name, spell_id(request)))
+        return {"native_dps": score(request, path, rng_mode)}
+
     def world(binary, path, distance, iterations, *, rng_mode):
-        calls.append(("world", iterations, rng_mode))
-        return {"world_mean_dps": 730.0 if rng_mode == "balanced" else 729.0,
-                "native_damage_events": 9, "native_world_ticks": 15,
-                "iterations_done": iterations}
-    producer = SimpleNamespace(native_source_control=native, run=world)
-    monkeypatch.setattr(p72, "_source_module",
-                        lambda path, name: source if "apl_mutation" in str(path)
-                        else producer)
-    from tools.wf_gate import _run_live_gate
-    report = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.2", "")
-    assert calls == [
-        ("native", 3, "balanced"), ("world", 3, "balanced"),
-        ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
+        request = json.loads(path.read_text())
+        calls.append(("world", iterations, rng_mode, path.name, spell_id(request)))
+        if rng_mode == "balanced":
+            perf[0] += 0.01
+            if path.name == "source-cold-candidate.json":
+                screen_world[0] += 1
+                if screen_world[0] == 3:
+                    clock[0] = 120.0
+            elif path.name == "paid-balanced-finalist.json":
+                finalist_world[0] += 1
+                if finalist_world[0] in (2, 4):
+                    clock[0] = 120.0 + 10.0 * finalist_world[0]
+                elif finalist_world[0] == 6:
+                    clock[0] = 260.0
+            elif path.name == "paid-balanced-confirmation.json":
+                confirmation_world[0] += 1
+                if confirmation_world[0] in (2, 4):
+                    clock[0] = 260.0 + 5.0 * confirmation_world[0]
+                elif confirmation_world[0] == 6:
+                    clock[0] = 300.0
+        return {"world_mean_dps": score(request, path, rng_mode),
+                "iterations_done": iterations,
+                "native_damage_events": 9, "native_world_ticks": 15}
+
+    production = SimpleNamespace(native_source_control=native, run=world)
+    monkeypatch.setattr(
+        p72, "_source_module",
+        lambda path, name: source if "apl_mutation" in str(path) else production)
+
+    report = p72.run_live(tmp_path, "druid", 60, spec="balance")
+
+    assert report["status"] == "PASS"  # mocked routing, not production acceptance
+    assert report["cold_balanced_screen_best_dps"] == 721.0
+    assert report["winner_screen_dps"] == 720.0
+    assert report["winner_live_dps"] == 733.0
+    assert report["paid_balanced_finalists"] == 3
+    assert report["paid_balanced_confirmed_finalists"] == 3
+    assert report["paid_balanced_deep_confirmed_finalists"] == 0
+    assert report["balanced_parent_proposals"] == 2
+    assert report["selected_validation"] == (
+        "paid_4x3_balanced_live_native_confirmed_finalist")
+    assert report["cold_winner_apl"][0]["action"]["castSpell"]["spellId"]["spellId"] == 2
     assert report["frozen_stochastic_iterations"] == 1000
-    assert report["frozen_stochastic_world_dps"] == 729.0
-    assert report["status"] == "PASS"  # mocked call routing, not a production gate run
+    assert report["frozen_stochastic_world_dps"] == 725.0
     assert report["runtime_proof"]["executed"] is True
     assert report["runtime_proof"]["source_revision"] == report["frozen_request_raw_sha256"]
     assert report["reasons"] == []
     assert report["independent_300s_search_completed"] is True
+    assert all(row[2] == "balanced" for row in calls[:-2])
+    assert [(row[0], row[1], row[2]) for row in calls[-2:]] == [
+        ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
+    assert [row[4] for row in calls[-2:]] == [2, 2]
 
 
 def test_invalid_full_p72_mode_is_blocked(monkeypatch, tmp_path):
