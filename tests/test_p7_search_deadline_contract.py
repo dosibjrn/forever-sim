@@ -1,4 +1,8 @@
+from pathlib import Path
+
 from tools.wf_gate_coverage import p7_search_deadline_completed
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_search_step_must_finish_before_exact_300_second_deadline():
@@ -60,3 +64,14 @@ def test_short_or_malformed_search_windows_never_complete():
         full_search=True,
         **{**common, "observed_at": deadline - 0.001},
     )
+
+
+
+def test_all_live_search_gates_use_shared_strict_deadline_predicate():
+    for gate in ("p7_2", "p7_3", "p7_4", "p7_5"):
+        source = (REPO_ROOT / "tools" / f"wf_gate_{gate}_live.py").read_text()
+        assert "p7_search_deadline_completed" in source
+        assert "search_deadline_met" in source
+        assert "300.0 <= search_wall_s <= 301.0" not in source
+        assert "search_wall_s > 301.0" not in source
+        assert "last_search_step_completed_at = time.monotonic()" in source
