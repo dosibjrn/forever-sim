@@ -97,12 +97,19 @@ class GsimNativeDamageWorldApplier:
         if self._target_id is not None and target_id != self._target_id:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_GSIM_TARGET_SWITCH")
         target = self._runtime.targets[target_id]
-        if not target.alive:
-            raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_ALREADY_DEAD")
         events = response.get("native_damage_events")
+        control_events = response.get("native_control_events", [])
         pid = response.get("native_process_id")
         if not isinstance(events, list) or type(pid) is not int or pid <= 0:
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_NATIVE_EVENTS_OR_PID_INVALID")
+        if not target.alive:
+            expiry_only = (
+                not events and isinstance(control_events, list) and bool(control_events)
+                and all(isinstance(event, Mapping) and event.get("event_kind") == "expire"
+                        for event in control_events)
+            )
+            if not expiry_only:
+                raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_ALREADY_DEAD")
         # Event ordinals are only meaningful within one retained native process.
         # A restarted process cannot continue a paid world session by merely
         # supplying plausible new event IDs and a valid gsim snapshot.
@@ -121,8 +128,8 @@ class GsimNativeDamageWorldApplier:
         max_health = float(target.max_health)
         old_health = float(target.health)
         if (not isfinite(max_health) or max_health <= 0
-                or not isfinite(old_health) or old_health <= 0
-                or old_health > max_health):
+                or not isfinite(old_health) or old_health < 0
+                or (old_health <= 0 and events) or old_health > max_health):
             raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_TARGET_MAX_HEALTH_INVALID")
         health_at_event = old_health
         lethal_native_time_ns = None
