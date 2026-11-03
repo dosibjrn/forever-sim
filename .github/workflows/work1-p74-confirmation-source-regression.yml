@@ -1,0 +1,28 @@
+name: Work1 P7.4 confirmation source regression (one-shot)
+on:
+  push:
+    branches:
+      - work/work1-p74-paid-finalist-confirmation-20261103
+    paths:
+      - '.github/workflows/work1-p74-confirmation-source-regression.yml'
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact branch producer
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install bounded regression dependencies
+        run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
+      - name: Compile and run paid P7.4 regression suite
+        run: |
+          python -m compileall -q tools/wf_gate.py tools/wf_gate_p7_4_live.py
+          python -m pytest -q tests/gates/test_wf_gate_p7_4_live.py tests/test_work1_p7_full_gear_pool.py
