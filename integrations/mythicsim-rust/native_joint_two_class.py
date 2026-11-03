@@ -103,6 +103,7 @@ def _ensure_native_damage_action(actions: list[dict],
     """
     if not witnesses:
         return actions
+    actions = copy.deepcopy(actions)
     allowed = {json.dumps(x, sort_keys=True, separators=(",", ":"))
                for x in witnesses}
     for index, entry in enumerate(actions):
