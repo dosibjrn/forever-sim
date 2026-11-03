@@ -16,7 +16,7 @@ from src.v2.source_joint_discovery import _gear_envelope
 from src.v2.generic_backend import _policy_combat_evaluation
 from tools.wf243_joint_multi_pull_replay import frozen_policy
 from src.game.recovery import recover_actor_to_full
-from src.shared.leveling.objective import representative_hp
+from src.scenarios.leveling_targets import representative_hp
 from src.game.data.forever.target_combat_source import target_combat_metadata
 from src.v2.source_stateful_budgeted import _make_policy, _condition_from_record
 
@@ -70,7 +70,7 @@ def run(evidence_path:Path, *, mobs:int=100, historical:bool=False,
         at_start=float(actor.current_time_s)
         target=TargetState.with_health('canonical_leveling_target_L%d'%level, float(representative_hp(level)),
            **metadata,source_status='source_backed_canonical_leveling_reference',
-           authority='src.shared.leveling.objective.MOB_BASE_HP',
+           authority='src.scenarios.leveling_targets.MOB_BASE_HP',
            source_basis='CMaNGOS warrior-class BaseHealthExp0 ordinary melee target curve',level=level)
         runtime=CombatRuntime(actor=actor,target=target,
             spell_power=float(actor.stats.get('spell_power',0.)),auto_attacks=ir.auto_attacks,

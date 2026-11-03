@@ -67,7 +67,7 @@ def test_cross_class_real_l2_and_hard_global_event_cap():
 
 
 def test_canonical_classic_hp_l1_10_no_longer_clamped_to_l11():
-    from src.shared.leveling.objective import representative_hp
+    from src.scenarios.leveling_targets import representative_hp
     # CMaNGOS unit class=1 BaseHealthExp0, explicit Classic proxy source.
     assert [representative_hp(l) for l in range(1,12)] == [
         42.,55.,71.,86.,102.,120.,137.,156.,176.,198.,222.]
@@ -89,7 +89,7 @@ def test_druid_l1_12_full_cycle_join_and_source_scenario_invalidation(monkeypatc
     assert joined['fully_validated_class_level_checkpoints']==0
     ir=build_game_ir_slice(class_key='druid',level=1)
     before=source_execution_context(ir)
-    import src.shared.leveling.objective as objective
+    import src.scenarios.leveling_targets as objective
     monkeypatch.setitem(objective.MOB_BASE_HP,1,43)
     assert source_execution_context(ir)!=before
     with pytest.raises(ValueError,match='source/engine/scenario mismatch'):

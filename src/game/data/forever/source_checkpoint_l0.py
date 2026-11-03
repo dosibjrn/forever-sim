@@ -24,7 +24,7 @@ from .source_checkpoint_detail_observations import load_detail_observations
 from .source_checkpoint_acquisition import acquisition_frontier
 from .source_indexed_action_coverage import _source_spell_ids
 from .source_db_scope import DEFAULT_DB
-from src.shared.leveling.objective import representative_hp
+from src.scenarios.leveling_targets import representative_hp
 
 
 def _features_from_atoms(atoms: list[dict]) -> dict:

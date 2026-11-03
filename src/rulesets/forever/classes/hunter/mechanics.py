@@ -12,7 +12,8 @@ from contextvars import ContextVar
 from functools import lru_cache
 from math import ceil
 
-from src.shared.leveling.objective import representative_hp, physical_hit_chance
+from src.scenarios.leveling_targets import representative_hp
+from src.shared.leveling.objective import physical_hit_chance
 from src.scenarios.timing import between_pull_travel_s
 from src.v2.stat_weight_model import normalize_objective_gradient
 from src.rulesets.forever.shared.recovery import solve_recovery, RECOVERY_SOLVER_ID

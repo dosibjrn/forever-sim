@@ -11,6 +11,7 @@ Energy/Combo Points, DoT maintenance, Eclipse alternation and Nature's Grace.
 from contextvars import ContextVar
 
 from src.shared.leveling import objective as leveling
+from src.scenarios.leveling_targets import representative_hp
 from src.scenarios.timing import between_pull_travel_s
 from src.scenarios.spaced_pulls import SpacedPullLayout
 from src.rulesets.forever.data.rules import default_rules
@@ -643,7 +644,7 @@ def _simulate_cat_chain(*, pulls:int, travel_s:float, sim_kwargs:dict) -> dict:
 
 
 def _cat_single(level: int, t: Talents) -> dict:
-    hp = leveling.representative_hp(level)
+    hp = representative_hp(level)
     _strength, ap, crit, gear = _feral_attack_power(level, t)
     nat = 1 + .01 * t.naturalist
 
@@ -852,7 +853,7 @@ def _bear_pack(level: int, t: Talents, pull_size: int, *,
                mob_spacing_yards: float = 20.0,
                movement_speed_yards_s: float = 7.0) -> dict:
     requested_n=max(1,min(wh.SWIPE_MAX_TARGETS,int(pull_size)))
-    hp=leveling.representative_hp(level)
+    hp=representative_hp(level)
     _strength, ap, crit, gear = _feral_attack_power(level, t, bear=True)
     nat=1 + .01 * t.naturalist
 
@@ -1198,7 +1199,7 @@ def _spell_damage(avg_base: float, coeff: float, sp: float, crit: float, crit_bo
 
 
 def _balance(level: int, t: Talents) -> dict:
-    hp = leveling.representative_hp(level)
+    hp = representative_hp(level)
     wrath = _latest(wh.WRATH_RANKS, level)
     starfire = _latest(wh.STARFIRE_RANKS, level)
     moonfire = _latest(wh.MOONFIRE_RANKS, level)

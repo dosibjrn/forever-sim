@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from math import isfinite
 from time import perf_counter, process_time
 
-from src.shared.leveling.objective import representative_hp
+from src.scenarios.leveling_targets import representative_hp
 from src.game.data.forever import build_game_ir_slice
 from src.game.data.forever.source_checkpoint_p3 import checkpoint_item_l0
 from src.game.data.forever.target_combat_source import load_target_combat_profile

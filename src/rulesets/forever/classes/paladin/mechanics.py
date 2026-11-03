@@ -4,6 +4,7 @@ from functools import lru_cache
 import math
 
 from src.shared.leveling import objective as leveling
+from src.scenarios.leveling_targets import representative_hp
 from src.scenarios.timing import between_pull_travel_s
 from src.rulesets.forever.data.rules import default_rules
 from src.rulesets.forever.data.catalogue import default_catalogue
@@ -504,7 +505,7 @@ def _pack_damage_geometry(level:int,pull_size:int,focus_dps:float,aura_dps:float
     be used for proof-safe branch-and-bound pruning.
     """
     n=max(1,int(pull_size))
-    hp_per_mob=leveling.representative_hp(level)
+    hp_per_mob=representative_hp(level)
     c_factor=float(con_factor)
     exposure=estimate_pack_exposure(
         n, float(focus_dps), float(aura_dps)+float(con_dps)*c_factor
@@ -541,7 +542,7 @@ def _score_one_mana_plan(level:int,t:Talents,profile:str,gear:GearSetup,pull_siz
         player_hp=player_base_hp(level,gear.stamina_bonus)*(1+.02*t.sacred_duty)
         mana_pool=(180.0+18.0*level+15.0*gear.intellect_bonus)*(1+.02*t.divine_intellect)
         static={
-            "hp_per_mob":leveling.representative_hp(level),
+            "hp_per_mob":representative_hp(level),
             "player_hp":player_hp,
             "mana_pool":mana_pool,
             "heal":_heal_model(level,t,gear,incoming["landed_swings_per_mob"]*n),
@@ -772,7 +773,7 @@ def smooth_pack_score(level:int,t:Talents,profile:str,gear:GearSetup,pull_size:i
     mana_pool=(180.0+18.0*level+15.0*gear.intellect_bonus)*(1+.02*t.divine_intellect)
     start_hp=player_hp
     static={
-        "hp_per_mob":leveling.representative_hp(level),
+        "hp_per_mob":representative_hp(level),
         "player_hp":player_hp,
         "mana_pool":mana_pool,
         "heal":_heal_model(level,t,gear,incoming["landed_swings_per_mob"]*n),
@@ -805,7 +806,7 @@ def smooth_pack_score(level:int,t:Talents,profile:str,gear:GearSetup,pull_size:i
             "seal_duration_s":float(focus.get("seal_duration_s",30.0)),
             "gcd_s":1.5,
             "pull_size":n,
-            "hp_per_mob":float(leveling.representative_hp(level)),
+            "hp_per_mob":float(representative_hp(level)),
             "aura_first":float(incoming["mob_fixture"]["weighted_family_swing_s"]),
             "aura_period":float(incoming["mob_fixture"]["weighted_family_swing_s"]),
             "aura_damage":float(aura_dps)*float(incoming["mob_fixture"]["weighted_family_swing_s"]),
@@ -1272,7 +1273,7 @@ def analytic_stat_gradient(level:int,t:Talents,*,baseline:dict,policy=None,cfg=N
     exposure=estimate_pack_exposure(n,float(plan_row["focus_dps"]),float(aura_dps)+float(con_dps)*c_factor)
     avg_alive=float(exposure.avg_alive)
     pack_dps=max(.1,float(plan_row["focus_dps"])+(float(aura_dps)+float(con_dps)*c_factor)*avg_alive)
-    smooth_pack_kill=float(leveling.representative_hp(level))*n/pack_dps
+    smooth_pack_kill=float(representative_hp(level))*n/pack_dps
     per100=100.0/n
 
     # Canonical mana-plan cadence scales the corresponding derivative pieces.
