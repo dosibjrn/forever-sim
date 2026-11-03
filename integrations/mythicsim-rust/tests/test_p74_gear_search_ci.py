@@ -12,6 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from p74_preflight import preflight,player
 from p74_gear_validation import GearValidator, RejectedGear, RUST_TYPES, SLOTS
+import p74_gear_search as gear_search
 from p74_gear_search import candidate_pool, simulate, NativeFailure
 
 REFERENCE=ROOT.parent.parent/"docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
@@ -118,6 +119,28 @@ class P74GearSearchContracts(unittest.TestCase):
         self.assertEqual(16,len(preflight(self.ref,req)["candidate_ids"]))
         player(req)["talentsString"]="0--0"
         with self.assertRaises(ValueError):preflight(self.ref,req)
+    def test_simulate_passes_required_typed_mode_to_cli_without_environment(self):
+        import subprocess
+        seen = []
+
+        def fake_run(command, **kwargs):
+            seen.append((command, kwargs))
+            Path(command[command.index("--outfile") + 1]).write_text(json.dumps({
+                "result": {"raidMetrics": {"dps": {"avg": 731.0}}}}))
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        original = gear_search.subprocess.run
+        gear_search.subprocess.run = fake_run
+        try:
+            score = simulate(Path(self.tmp.name) / "engine", self.ref,
+                             "balanced", 3, 42, time.monotonic() + 5.0)
+        finally:
+            gear_search.subprocess.run = original
+        self.assertEqual(731.0, score)
+        command, kwargs = seen[0]
+        self.assertEqual("balanced", command[command.index("--rng-mode") + 1])
+        self.assertNotIn("WOWSIM_RNG_MODE", kwargs.get("env", {}))
+
     def test_native_errors_include_stdout_when_stderr_empty(self):
         tmp=Path(self.tmp.name)
         fake=tmp/"engine"
