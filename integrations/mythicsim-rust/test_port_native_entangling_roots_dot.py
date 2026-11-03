@@ -49,6 +49,37 @@ class NativeRootsDotPortTest(unittest.TestCase):
         self.assertNotIn(port.RUST_RUNTIME_TEST, first)
         self.assertEqual(first, port.port_text("tests/classes/druid/prepare.rs", first))
 
+    def test_existing_typed_rank_runtime_test_is_recognized(self):
+        existing = """fn forever_roots_native_periodic_ticks_change_with_rank() {
+    let report = forever_engine::simulate_prepared(&prepared, forever_engine::RngMode::Stochastic);
+    let (base, base_log) = run(0);
+    let (improved, improved_log) = run(3);
+    assert!(base_log.contains("Casting {SpellID: 9853}"));
+    assert!(improved_log.contains("Casting {SpellID: 9853}"));
+    assert!(improved > base);
+}
+"""
+        result = port.port_text("tests/classes/druid/prepare.rs", existing)
+        self.assertEqual(
+            result.count("fn forever_roots_native_periodic_ticks_change_with_rank()"),
+            1,
+        )
+        self.assertIn(port.RUST_TEST, result)
+        self.assertEqual(
+            result,
+            port.port_text("tests/classes/druid/prepare.rs", result),
+        )
+
+    def test_conflicting_same_name_runtime_test_still_fails_closed(self):
+        existing = (
+            "fn forever_roots_native_periodic_ticks_change_with_rank() { "
+            "assert!(true); }"
+        )
+        with self.assertRaisesRegex(
+            ValueError, "NATIVE_ROOTS_TEST_SOURCE_DRIFT"
+        ):
+            port.port_text("tests/classes/druid/prepare.rs", existing)
+
     def test_missing_native_anchor_is_not_silently_accepted(self):
         path = "src/classes/druid/agent.rs"
         initial = "\n".join(old for old, _, _ in port.AGENT_PATCHES)
