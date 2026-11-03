@@ -241,6 +241,50 @@ def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, r
     return True
 
 
+def _paid_p75_apl_crossover(candidate, parent, finalists, balanced_elites, source, rng):
+    """Transfer only the APL from a distinct genuinely paid cold-search donor.
+
+    The exact selected-pin P7.5 axis ablation #41633601436 measured a large
+    APL-only improvement, whereas a talent-only replacement was worse. The
+    existing paid crossover always coupled talents and APL, preventing an
+    independently strong policy from moving onto a different paid talent/gear
+    background. No saved reference or historical winning build is a donor.
+    """
+    player = source.player(candidate)
+
+    def distinct_paid_apls(rows, request_index):
+        eligible = []
+        seen = set()
+        for row in sorted(rows, key=lambda row: row[0], reverse=True):
+            paid = row[request_index]
+            if paid == parent:
+                continue
+            rotation = source.player(paid)["rotation"]
+            if rotation == player["rotation"]:
+                continue
+            key = json.dumps(rotation, sort_keys=True)
+            if key in seen:
+                continue
+            seen.add(key)
+            eligible.append(rotation)
+            if len(eligible) >= 3:
+                break
+        return eligible
+
+    donors = []
+    seen = set()
+    for rotation in (distinct_paid_apls(finalists, 3) +
+                     distinct_paid_apls(balanced_elites, 2)):
+        key = json.dumps(rotation, sort_keys=True)
+        if key not in seen:
+            donors.append(rotation)
+            seen.add(key)
+    if not donors:
+        return False
+    player["rotation"] = copy.deepcopy(rng.choice(donors))
+    return True
+
+
 def _paid_p75_gear_block_crossover(candidate, parent, finalists,
                                     balanced_elites, source, validator, rng):
     """Combine a small block of independently paid gear/enchant pairs.
@@ -502,7 +546,17 @@ def run_live(root: Path, class_key: str, level: int, *,
                                       and proposals % 7 != 0
                                       and proposals % 11 != 0
                                       and not crossover)
-                    repair_axes = (("gear",) if crossover or gear_crossover
+                    # Ablation showed that a strong paid APL must be able to
+                    # move independently of a weaker donor talent allocation.
+                    # Keep the existing paired/rebuild/gear operators and cold
+                    # restarts; never use historical or saved winners as donors.
+                    apl_crossover = (elite is not None and full_search
+                                     and proposals % 19 == 0
+                                     and proposals % 7 != 0
+                                     and proposals % 11 != 0
+                                     and not crossover and not gear_crossover)
+                    repair_axes = (("rotation",) if apl_crossover
+                                   else ("gear",) if crossover or gear_crossover
                                    else _p75_paid_joint_axes(proposals)
                                    if elite is not None and full_search else None)
                     if (repair_axes is None and elite is not None
@@ -514,6 +568,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                         repair_axes=repair_axes)
                     if crossover:
                         _paid_p75_crossover(
+                            candidate, elite, balanced_finalists,
+                            balanced_elites, source, rng)
+                    elif apl_crossover:
+                        _paid_p75_apl_crossover(
                             candidate, elite, balanced_finalists,
                             balanced_elites, source, rng)
                     elif gear_crossover:
