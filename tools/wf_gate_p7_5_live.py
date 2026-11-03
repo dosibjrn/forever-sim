@@ -93,6 +93,23 @@ def _paid_p75_parent(best, finalists, proposal_index, rng, *,
     return best[3]
 
 
+def _p75_paid_joint_axes(proposal_index: int):
+    """Occasionally repair interacting axes from THIS search's paid parent.
+
+    The previous P7.5 local operator mutated only one of gear, talents, APL
+    or enchants per proposal. The genuine full paid run #41577577552 fell
+    16.90 DPS below its accepted-compatible prior; retain the independent
+    1/5 cold restarts and existing one-axis exploitation, but let every
+    seventh paid-parent proposal explore a two-axis neighborhood. Never use
+    the saved reference or earlier gates' winning builds as parents.
+    """
+    if proposal_index % 7:
+        return None
+    pairs = (("gear", "talents"), ("gear", "rotation"),
+             ("talents", "rotation"))
+    return pairs[(proposal_index // 7 - 1) % len(pairs)]
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.5")
@@ -270,9 +287,15 @@ def run_live(root: Path, class_key: str, level: int, *,
                         if full_search else None)
                     if elite is not None and stochastic_finalists and proposals % 3 != 0:
                         stochastic_parent_proposals += 1
+                    # A real paid elite may need coordinated gear/talent/APL
+                    # edits to escape a single-axis local basin. Do not pass
+                    # repair axes to independent cold restarts.
+                    joint_axes = (_p75_paid_joint_axes(proposals)
+                                  if elite is not None and full_search else None)
                     candidate = _cold_joint(
                         base, source, validator, pools, rng,
-                        elite=elite, enchant_pools=enchant_pools)
+                        elite=elite, enchant_pools=enchant_pools,
+                        repair_axes=joint_axes)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
