@@ -386,9 +386,10 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
     catalogue.parent.mkdir(parents=True)
     catalogue.write_text("injected validator")
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # Start, two paid proposals, expired boundary, elapsed search time.
-    clock = iter([0., 0., 0., 300., 300.])
-    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock))
+    # Start, two paid proposals, one completion timestamp per step,
+    # then the exact deadline and final observation. No fake overrun grace.
+    clock = iter([0., 0., 0., 0., 0., 300., 300.])
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.))
     monkeypatch.setattr(
         gate, "_pinned_source_runtime",
         lambda *a: (base, {"reference_dps": 728.19}, binary))
