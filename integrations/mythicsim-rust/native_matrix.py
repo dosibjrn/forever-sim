@@ -16,6 +16,25 @@ import time
 from typing import Any, Callable
 
 
+class NativeCandidateRejected(RuntimeError):
+    """MythicSim returned a structured INVALID or UNSUPPORTED candidate outcome."""
+
+    def __init__(self, *, status: str, code: str, reason: str,
+                 raw_response: dict, elapsed_s: float,
+                 request_sha256: str, returncode: int,
+                 stdout: str = "", stderr: str = ""):
+        self.status = status.upper()
+        self.code = code
+        self.reason = reason
+        self.raw_response = raw_response
+        self.elapsed_s = elapsed_s
+        self.request_sha256 = request_sha256
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+        super().__init__(f"MythicSim {self.status} candidate refusal ({code}): {reason}")
+
+
 def enumerate_l60_profiles(registry: dict, *, include_unrestricted: bool = False) -> list[tuple[str, str]]:
     """Follow the canonical checkpoint registry order; no hardcoded class list."""
     rows = [
@@ -80,6 +99,9 @@ def search_native(
         "best_score": None,
         "elapsed_s": 0.0,
         "engine_errors": 0,
+        "native_invalid": 0,
+        "native_unsupported": 0,
+        "native_rejections": 0,
         "legal_rejections": 0,
         "duplicate_proposals": 0,
     }
@@ -125,6 +147,13 @@ def search_native(
             value = float(value)
             if not math.isfinite(value):
                 raise ValueError("Non-finite native score")
+        except NativeCandidateRejected as exc:
+            result["native_rejections"] += 1
+            if exc.status == "UNSUPPORTED":
+                result["native_unsupported"] += 1
+            else:
+                result["native_invalid"] += 1
+            continue
         except (TimeoutError, subprocess.TimeoutExpired):
             # Reaching a strict native deadline is normal budget exhaustion,
             # not a source/engine error and not a failed paid evaluation.
@@ -143,6 +172,10 @@ def search_native(
         result["status"] = "RAN" if not result["engine_errors"] else "RAN_WITH_ENGINE_ERRORS"
     elif result["engine_errors"]:
         result["status"] = "BLOCKED_ENGINE_ERROR"
+    elif result["native_unsupported"] and not result["native_invalid"]:
+        result["status"] = "BLOCKED_NATIVE_UNSUPPORTED"
+    elif result["native_rejections"]:
+        result["status"] = "BLOCKED_NO_NATIVE_ACCEPTED_CANDIDATE"
     elif result["legal_rejections"]:
         result["status"] = "BLOCKED_NO_LEGAL_CANDIDATE"
     return result
