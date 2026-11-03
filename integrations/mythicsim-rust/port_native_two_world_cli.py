@@ -54,6 +54,14 @@ LEGACY_PORTS = {
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if source.count(anchor) != 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
+    if marker == METHOD_MARKER:
+        from port_native_paid_recovery import (
+            FIGHT_SIGNATURE_NEW, is_composed_paid_recovery_source,
+        )
+        if FIGHT_SIGNATURE_NEW in source:
+            if is_composed_paid_recovery_source(source):
+                return source
+            raise ValueError("RUST_WORLD_MULTI_TARGET_PAID_RECOVERY_DESCENDANT_DRIFT")
     if source.count(replacement) == 1:
         return source
     # The maintained two-world method may already have separately
