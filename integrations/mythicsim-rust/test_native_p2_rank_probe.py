@@ -138,14 +138,16 @@ def main() -> int:
         ),
     }
     for name, result in results.items():
-        before = result.get("before", {})
-        after = result.get("after", {})
+        before = result.get("before", {}).get("prepared", {})
+        after = result.get("after", {}).get("prepared", {})
         if not before.get("prepared_sha256") or not after.get("prepared_sha256"):
             raise SystemExit(f"NATIVE_P2_PREPARE_RECEIPT_MISSING:{name}")
         if before["prepared_sha256"] == after["prepared_sha256"]:
             raise SystemExit(f"NATIVE_P2_PREPARED_STATE_UNCHANGED:{name}")
+        if result.get("accepted_for_p2") is not False:
+            raise SystemExit(f"NATIVE_P2_DIAGNOSTIC_MUST_NOT_ACCEPT:{name}")
     print(json.dumps(results, sort_keys=True, indent=2))
-    failed = [name for name, result in results.items() if result.get("status") != "PASS"]
+    failed = [name for name, result in results.items() if result.get("status") != "PROBE_PASS"]
     if failed:
         raise SystemExit("NATIVE_P2_RANK_PAIR_DIAGNOSTIC_FAILED:" + ",".join(failed))
     print("SELECTED_RUST_NATIVE_P2_RANK_PAIR_DIAGNOSTICS_PASS_NOT_ACCEPTANCE")
