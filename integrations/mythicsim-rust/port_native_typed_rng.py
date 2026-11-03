@@ -8,6 +8,13 @@ Fail closed on upstream drift; the fork-sync workflow publishes only reviewed co
 from pathlib import Path
 import sys
 
+from port_native_paid_recovery import (
+    CLASSES_SIGNATURE_TYPED_NEW,
+    PREPARED_SIGNATURE_TYPED_NEW,
+    PREPARED_CALL_TYPED_NEW,
+    CLI_TYPED_NEW,
+)
+
 def edit(root, name, transformations):
     path = root / name
     src = path.read_text()
@@ -30,6 +37,16 @@ def edit(root, name, transformations):
 
 def one(root, name, old, new):
     edit(root, name, [(old, new, 1)])
+
+
+def one_or_paid_recovery_descendant(root, name, old, new, paid_descendant):
+    """Accept only the exact typed+paid descendant of a typed-RNG callsite."""
+    source = (root / name).read_text()
+    if (source.count(paid_descendant) == 1
+            and source.count(old) == 0
+            and source.count(new) == 0):
+        return
+    one(root, name, old, new)
 
 def add_explicit_mode_to_test_calls(source):
     """Add a typed stochastic mode to every legacy one-argument test call.
@@ -247,9 +264,12 @@ mod typed_rng_api_tests {
         ("::prepared::run_prepared(prepared)", "::prepared::run_prepared(prepared, rng_mode)", 9),
         ("::fight(prepared)?", "::fight(prepared, rng_mode)?", 18),
     ])
-    one(root, clsfile,
+    one_or_paid_recovery_descendant(
+        root, clsfile,
         "    target_count: usize,\n) -> Result<serde_json::Value, String> {",
-        "    target_count: usize,\n    rng_mode: crate::core::rng::RngMode,\n) -> Result<serde_json::Value, String> {")
+        "    target_count: usize,\n    rng_mode: crate::core::rng::RngMode,\n) -> Result<serde_json::Value, String> {",
+        CLASSES_SIGNATURE_TYPED_NEW,
+    )
     one(root, clsfile,
         "pub(crate) fn native_two_pull_windows(\n    prepared: &crate::contracts::prepared_v2::PreparedV2,\n)",
         "pub(crate) fn native_two_pull_windows(\n    prepared: &crate::contracts::prepared_v2::PreparedV2,\n    rng_mode: crate::core::rng::RngMode,\n)")
@@ -258,11 +278,18 @@ mod typed_rng_api_tests {
         "pub fn simulate(prepared: &PreparedV2) -> Result<PreparedReport, PreparedError> {",
         "pub fn simulate(prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode) -> Result<PreparedReport, PreparedError> {")
     one(root, eng, "    run(prepared)\n}", "    run(prepared, rng_mode)\n}")
-    one(root, eng,
+    one_or_paid_recovery_descendant(
+        root, eng,
         "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize)",
-        "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode: crate::core::rng::RngMode)")
-    one(root, eng, "crate::classes::native_two_world_targets(prepared, target_count)",
-        "crate::classes::native_two_world_targets(prepared, target_count, rng_mode)")
+        "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode: crate::core::rng::RngMode)",
+        PREPARED_SIGNATURE_TYPED_NEW,
+    )
+    one_or_paid_recovery_descendant(
+        root, eng,
+        "crate::classes::native_two_world_targets(prepared, target_count)",
+        "crate::classes::native_two_world_targets(prepared, target_count, rng_mode)",
+        PREPARED_CALL_TYPED_NEW,
+    )
     one(root, eng,
         "pub fn native_two_pull_windows(prepared: &PreparedV2)",
         "pub fn native_two_pull_windows(prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode)")
@@ -300,12 +327,18 @@ mod typed_rng_api_tests {
         ("simulate_prepared(black_box(&prepared))", "simulate_prepared(black_box(&prepared), rng_mode)", 2),
     ])
     # Native world commands must also choose explicitly; no hidden default.
-    one(root, main,
+    one_or_paid_recovery_descendant(
+        root, main,
         'if args.len() != 5 || args[1] != "--infile" || args[3] != "--targets" {',
-        'if args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode" {')
-    one(root, main,
+        'if args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode" {',
+        CLI_TYPED_NEW,
+    )
+    one_or_paid_recovery_descendant(
+        root, main,
         'let report = native_two_world_targets(&prepared, target_count)',
-        'let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)')
+        'let mode = RngMode::parse_cli(&args[6])?;\n        let report = native_two_world_targets(&prepared, target_count, mode)',
+        CLI_TYPED_NEW,
+    )
     one(root, main,
         'if args.len() != 5 || args[1] != "--infile"\n            || args[3] != "--targets" || args[4] != "2" {',
         'if args.len() != 7 || args[1] != "--infile"\n            || args[3] != "--targets" || args[4] != "2" || args[5] != "--rng-mode" {')
