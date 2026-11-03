@@ -1888,6 +1888,31 @@ def _default_p2_source_db(root, class_key, level, source_db=None):
     return Path(DEFAULT_DB)
 
 
+def _p2_source_db_diagnostics(root, source_db):
+    path = Path(source_db).resolve()
+    raw = path.read_bytes()
+    with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as db:
+        integrity = db.execute('PRAGMA integrity_check').fetchone()
+    return {
+        'cwd': str(Path.cwd()),
+        'root': str(Path(root).resolve()),
+        'source_db_path': str(path),
+        'source_db_size_bytes': path.stat().st_size,
+        'source_db_first_32_bytes_hex': raw[:32].hex(),
+        'source_db_sha256': sha256(raw).hexdigest(),
+        'source_db_integrity_check': integrity[0] if integrity else None,
+    }
+
+
+def _sqlite_connection_path(database):
+    value = str(database)
+    if value == ':memory:' or value.startswith('file::memory:'):
+        return None
+    if value.startswith('file:'):
+        value = value[5:].split('?', 1)[0]
+    return str(Path(value).resolve())
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
              source_db: Path | None=None, bonus_points: int | None=None):
     """One P2 gate execution; fast, class-neutral and fail-closed."""
@@ -1896,10 +1921,22 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
             'unresolved':[], 'behavior_probes_executed':0,
             'native_rank_probe_results':[],
             'native_rank_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE'}
+    source_db = None
+    sqlite_connection_paths = []
     try:
         source_db=_default_p2_source_db(root,class_key,level,source_db)
         if not source_db.is_file():raise ValueError('CANONICAL_SOURCE_DB_MISSING')
         source_db_kind='default_canonical'
+        source_db_diagnostics=_p2_source_db_diagnostics(root,source_db)
+        result['source_db_diagnostics']=source_db_diagnostics
+        expected_path=os.environ.get('FOREVER_P2_HYDRATED_SOURCE_DB_PATH')
+        expected_sha=os.environ.get('FOREVER_P2_HYDRATED_SOURCE_DB_SHA256')
+        if expected_path and Path(expected_path).resolve()!=source_db.resolve():
+            raise ValueError('P2_HYDRATED_SOURCE_DB_PATH_MISMATCH')
+        if expected_sha and expected_sha!=source_db_diagnostics['source_db_sha256']:
+            raise ValueError('P2_HYDRATED_SOURCE_DB_SHA256_MISMATCH')
+        if source_db_diagnostics['source_db_integrity_check']!='ok':
+            raise ValueError('P2_SOURCE_DB_INTEGRITY_CHECK_FAILED')
         # Druid L30+ uses the version-pinned staged catalogue that owns its
         # checkpoint_source_l0 rank curves; DEFAULT_DB intentionally lacks it.
         with sqlite3.connect(f'file:{source_db.resolve()}?mode=ro',uri=True) as db:
@@ -1923,10 +1960,22 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                 if best[0][0]!=expected_build or source_doc.get('source_build')!=expected_build:
                     raise ValueError('DRUID_P2_SOURCE_CATALOGUE_BUILD_MISMATCH')
                 source_db_kind='staged_druid_source_catalogue'
-        # Retain selected source identity even if a later legacy overlay fails.
-        source_id=sha256(source_db.read_bytes()).hexdigest()
+        source_id=source_db_diagnostics['source_db_sha256']
         result.update(source_id=source_id,source_db_kind=source_db_kind)
-        ir=build_game_ir_slice(class_key=class_key,level=level,ability_db_path=source_db)
+        original_connect=sqlite3.connect
+        def traced_connect(database,*args,**kwargs):
+            sqlite_connection_paths.append(str(database))
+            return original_connect(database,*args,**kwargs)
+        sqlite3.connect=traced_connect
+        try:
+            ir=build_game_ir_slice(class_key=class_key,level=level,ability_db_path=source_db)
+        finally:
+            sqlite3.connect=original_connect
+            result['sqlite_connection_paths']=list(sqlite_connection_paths)
+            normalized_paths={_sqlite_connection_path(path) for path in sqlite_connection_paths}
+            result['non_selected_sqlite_paths']=sorted(
+                path for path in normalized_paths
+                if path is not None and path!=str(source_db.resolve()))
         if ir is None:raise ValueError('CLASS_GAME_IR_NOT_AVAILABLE')
         if ir.actor.metadata.get('class_key')!=class_key or ir.actor.metadata.get('level')!=level:
             raise ValueError('GAME_IR_CHECKPOINT_IDENTITY_MISMATCH')
@@ -2033,5 +2082,17 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
         result['reasons'] += [f"{r['rank_key']}:{r['reason']}" for r in result['unresolved']]
         result['status']='PASS' if not result['reasons'] else 'FAIL'
     except (ImportError,ValueError,KeyError,TypeError,AttributeError,sqlite3.Error,OSError) as exc:
+        if source_db is not None:
+            try:
+                result['source_db_failure_diagnostics']=_p2_source_db_diagnostics(root,source_db)
+            except Exception as diagnostic_exc:
+                result['source_db_failure_diagnostics_error']=(
+                    type(diagnostic_exc).__name__+':'+str(diagnostic_exc))
+        result['sqlite_connection_paths']=list(sqlite_connection_paths)
+        if source_db is not None:
+            normalized_paths={_sqlite_connection_path(path) for path in sqlite_connection_paths}
+            result['non_selected_sqlite_paths']=sorted(
+                path for path in normalized_paths
+                if path is not None and path!=str(source_db.resolve()))
         result['reasons'].append('P2_RUNTIME_SETUP_FAILED:'+type(exc).__name__+':'+str(exc))
     return result

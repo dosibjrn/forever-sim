@@ -330,3 +330,27 @@ def test_selected_rust_source_workflow_installs_html_parser_dependency():
     )[0]
     assert "'beautifulsoup4==4.13.4'" in selected_job
     assert "Install selected-source HTML parser dependency" in selected_job
+
+
+def test_p2_source_db_diagnostics_report_same_process_file_identity(tmp_path):
+    import sqlite3
+    from hashlib import sha256
+    from pathlib import Path
+
+    from tools.wf_gate_p2_live import _p2_source_db_diagnostics, _sqlite_connection_path
+
+    source_db = tmp_path / "selected.sqlite"
+    with sqlite3.connect(source_db) as db:
+        db.execute("CREATE TABLE source_fixture (id INTEGER PRIMARY KEY)")
+    raw = source_db.read_bytes()
+    diagnostics = _p2_source_db_diagnostics(tmp_path, source_db)
+
+    assert diagnostics["cwd"] == str(Path.cwd())
+    assert diagnostics["root"] == str(tmp_path.resolve())
+    assert diagnostics["source_db_path"] == str(source_db.resolve())
+    assert diagnostics["source_db_size_bytes"] == len(raw)
+    assert diagnostics["source_db_first_32_bytes_hex"] == raw[:32].hex()
+    assert diagnostics["source_db_sha256"] == sha256(raw).hexdigest()
+    assert diagnostics["source_db_integrity_check"] == "ok"
+    assert _sqlite_connection_path(f"file:{source_db.resolve()}?mode=ro") == str(source_db.resolve())
+    assert _sqlite_connection_path(":memory:") is None

@@ -136,6 +136,11 @@ jobs:
               db.execute("SELECT count(*) FROM checkpoint_talent_source_catalogue WHERE class_key='druid' AND min_level<=60").fetchone()
           print(f"STAGED_DRUID_SOURCE_SQLITE_HYDRATED:{len(raw)}")
           PY
+          source_db_sha256="$(sha256sum "$source_db" | awk '{print $1}')"
+          {
+            printf 'FOREVER_P2_HYDRATED_SOURCE_DB_PATH=%s/%s\n' "$PWD" "$source_db"
+            printf 'FOREVER_P2_HYDRATED_SOURCE_DB_SHA256=%s\n' "$source_db_sha256"
+          } >> "$GITHUB_ENV"
       - name: Install source HTML parser used by combat-fact verification
         run: python3 -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
       - name: Apply port to selected production Rust source and compile
