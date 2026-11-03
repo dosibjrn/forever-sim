@@ -6,6 +6,10 @@ on:
       - 'tests/generic/publication/**'
       - 'tests/gates/test_wf_gate_p7_5_stochastic_finalists.py'
       - 'tools/wf_gate_p7_5_live.py'
+      - 'tests/gates/test_wf_gate_p7_3_live.py'
+      - 'tools/wf_gate_p7_3_live.py'
+      - 'tests/gates/test_wf_gate_p7_4_live.py'
+      - 'tools/wf_gate_p7_4_live.py'
       - 'tests/generic/runtime/test_source_maintenance_rank_reader.py'
       - 'tests/generic/runtime/test_source_stage_isolation.py'
       - 'tests/generic/runtime/test_source_ir_assembly_order.py'
@@ -59,4 +63,6 @@ jobs:
           tests/generic/runtime/test_source_stage_isolation.py
           tests/generic/runtime/test_source_ir_assembly_order.py
           tests/test_wf332_runes_default_off.py
+          tests/gates/test_wf_gate_p7_3_live.py
+          tests/gates/test_wf_gate_p7_4_live.py
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
