@@ -76,10 +76,11 @@ def port_source(source: str) -> str:
     if source.count("world_bridge::begin_next_target(at_ns)?;") != 1:
         raise ValueError("Rust early-world-target source anchors missing or ambiguous")
     if NEW_GUARD in source:
-        if (source.count(NEW_GUARD) != 1 or source.count(HELPER) != 1
-                or OLD_GUARD in source):
+        if source.count(NEW_GUARD) != 1 or OLD_GUARD in source:
             raise ValueError("Rust early-target port partially applied")
-        if source.count(TEST) == 1:
+        # Paid recovery deliberately transforms both HELPER and TEST. Check
+        # the exact composed descendant before requiring the unmodified forms.
+        if source.count(HELPER) == 1 and source.count(TEST) == 1:
             return source
         if _paid_recovery_descendant(source):
             return source
