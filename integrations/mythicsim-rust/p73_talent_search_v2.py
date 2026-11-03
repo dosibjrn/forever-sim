@@ -113,7 +113,7 @@ def main():
     pa.add_argument('--holdout-iterations',type=int,default=4000)
     pa.add_argument('--seed',type=int,default=647003)
     pa.add_argument('--rng-mode',choices=('balanced',),default='balanced',
-                    help='Balanced search (default) requires verified patched Rust; stochastic is an explicit fallback')
+                    help='Balanced search (default) requires verified patched Rust; stochastic is prohibited for optimization')
     a=pa.parse_args()
     if a.seconds<=0 or a.screen_iterations<=0 or a.holdout_iterations<1000:pa.error('Invalid budgets')
     a.outdir.mkdir(parents=True,exist_ok=True)
@@ -196,11 +196,11 @@ def main():
         requested=copy.deepcopy(reference)
         player(requested)['talentsString']=candidate['talents']
         try:
-            score,_,duration,request_hash=run(a.binary,requested,10000,rerank_seed,'stochastic',rerank_end)
+            score,_,duration,request_hash=run(a.binary,requested,24,rerank_seed,'balanced',rerank_end)
         except (TimeoutError,subprocess.TimeoutExpired):break
         reranked.append({'talents':candidate['talents'],'screen_dps':candidate['dps'],
                          'rerank_dps':score,'rerank_seed':rerank_seed,
-                         'rerank_iterations':10000,'request_sha256':request_hash,'elapsed_s':duration})
+                         'rerank_iterations':24,'request_sha256':request_hash,'elapsed_s':duration})
     if not reranked:raise RuntimeError('No independently re-evaluated finalists')
     final_best=max(reranked,key=lambda r:r['rerank_dps'])
     (a.outdir/'reranked_finalists.json').write_text(json.dumps(reranked,indent=2))
