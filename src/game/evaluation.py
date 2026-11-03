@@ -2,12 +2,11 @@ from __future__ import annotations
 
 """Game-runtime adapters that produce the shared Evaluation contract."""
 
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import Any, Mapping
 
 from src.shared.evaluation import Evaluation
 
-if TYPE_CHECKING:
-    from src.game.runtime.simulator import CombatTimelineResult
+from src.game.runtime.simulator import CombatTimelineResult
 
 
 def evaluation_from_combat_timeline(
