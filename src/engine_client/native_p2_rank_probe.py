@@ -508,7 +508,18 @@ def _simulate_prepared(
         elapsed = round(time.monotonic() - started, 6)
         if completed.returncode != 0:
             refusal = _json_object(completed.stdout or "")
-            if refusal is not None and "supported" in refusal:
+            # The selected Rust CLI reserves exit 3 for an explicit gate refusal.
+            # A JSON object that merely contains "supported" is not enough:
+            # malformed output, validation errors and faults must remain ERROR.
+            if (
+                completed.returncode == 3
+                and refusal is not None
+                and refusal.get("supported") is False
+                and isinstance(refusal.get("reasons"), list)
+                and bool(refusal["reasons"])
+                and isinstance(refusal.get("refusals"), list)
+                and bool(refusal["refusals"])
+            ):
                 return {
                     "status": "UNSUPPORTED",
                     "stage": "sim",
