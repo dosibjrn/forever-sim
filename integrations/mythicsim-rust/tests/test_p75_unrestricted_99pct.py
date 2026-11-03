@@ -464,7 +464,10 @@ class UnrestrictedNinetyNinePercentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             tmp=Path(d)
             self.assertEqual(execute(tmp).returncode,0,"Matching native reports should compare successfully")
-            free["paid_per_spec"]["resto"]=0\n            self.assertNotEqual(execute(tmp).returncode,0,"Must reject advertised but unscored Resto")\n            free["paid_per_spec"]["resto"]=1\n            p=winners["unrestricted"]["raid"]["parties"][0]["players"][0]
+            free["paid_per_spec"]["resto"]=0
+            self.assertNotEqual(execute(tmp).returncode,0,"Must reject advertised but unscored Resto")
+            free["paid_per_spec"]["resto"]=1
+            p=winners["unrestricted"]["raid"]["parties"][0]["players"][0]
             p["buffs"]["mark"]=False
             self.assertNotEqual(execute(tmp).returncode,0,"Must reject changed player buffs")
             p["buffs"]["mark"]=True
