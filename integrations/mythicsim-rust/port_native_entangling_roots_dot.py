@@ -395,7 +395,91 @@ fn forever_roots_native_periodic_ticks_change_with_rank() {
 """
 
 
+
+ROOT_CONTROL_FIGHT_TEST = """
+#[cfg(test)]
+mod native_roots_control_tests {
+    use super::*;
+    use crate::classes::druid::agent::DruidAgent;
+    use crate::contracts::prepared_v2::{ActionId, PreparedV2};
+    use crate::core::fight::world_bridge;
+
+    fn run_with_hit_bonus(hit_bonus: f64) -> (Vec<(i64, i64)>, u64) {
+        let mut request: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/classes/druid/prepare/balance-every-talent-at-max.request.json"
+        ))).unwrap();
+        let player = &mut request["raid"]["parties"][0]["players"][0];
+        player["talentsString"] = serde_json::Value::String("0000000".to_owned());
+        player["rotation"]["priorityList"] = serde_json::json!([
+            {"action": {
+                "castSpell": {"spellId": {"spellId": 9853}},
+                "condition": {"not": {"val": {
+                    "dotIsActive": {"spellId": {"spellId": 9853}}
+                }}}
+            }},
+            {"action": {"castSpell": {"spellId": {"spellId": 9912}}}}
+        ]);
+        request["simOptions"]["iterations"] = serde_json::json!(1);
+        request["encounter"]["duration"] = serde_json::json!(60.0);
+        request["encounter"]["durationVariation"] = serde_json::json!(0.0);
+        let prepared_json = crate::prepare_json(
+            &serde_json::to_vec(&request).unwrap(), "roots-control-land-miss",
+        ).unwrap();
+        let prepared: PreparedV2 = serde_json::from_value(prepared_json).unwrap();
+        let mut fight = DruidAgent::fight(&prepared).unwrap();
+        if !fight.extra_targets_built {
+            fight.build_extra_targets();
+            fight.build_exclusive_tracking();
+            fight.apply_enemy_slow_priorities();
+        }
+        fight.reset();
+        let root_spell = fight.spells.iter().position(|spell|
+            spell.id == ActionId::spell(9853)).expect("native Roots spell registered");
+        fight.spells[root_spell].bonus_hit_percent = hit_bonus;
+        world_bridge::test_begin();
+        fight.schedule(0, PRIORITY_PREPULL + 1, Action::EncounterStart);
+        let mut steps = 0;
+        while fight.step() {
+            steps += 1;
+            assert!(steps < 100_000, "native Roots control fight did not terminate");
+        }
+        let misses = fight.spells[root_spell].metrics[0].misses as u64;
+        let events = world_bridge::test_root_control_events();
+        world_bridge::test_reset();
+        (events, misses)
+    }
+
+    #[test]
+    fn native_root_control_is_emitted_on_land_and_absent_on_miss() {
+        let (landed, landed_misses) = run_with_hit_bonus(100.0);
+        assert!(!landed.is_empty(), "a landed native Roots DoT must emit root control");
+        assert!(landed.iter().all(|(_, duration)| *duration == 27_000_000_000),
+            "control duration must equal native remaining DoT lifetime: {landed:?}");
+        assert_eq!(landed_misses, 0, "forced-hit Roots should not miss");
+
+        let (missed, miss_count) = run_with_hit_bonus(-100.0);
+        assert!(miss_count > 0, "forced-miss Roots cast must be observed");
+        assert!(missed.is_empty(), "a native Roots miss must not immobilize the world target");
+    }
+}
+"""
+
 def port_text(path: str, contents: str) -> str:
+    if path == "src/core/fight/world_bridge.rs":
+        for old, new, label in WORLD_BRIDGE_PATCHES:
+            contents = replace_once(contents, old, new, label)
+        if ROOT_CONTROL_BRIDGE_TEST not in contents:
+            if "fn landed_root_is_a_typed_native_event_and_forces_early_world_boundary()" in contents:
+                raise ValueError("NATIVE_ROOTS_BRIDGE_TEST_SOURCE_DRIFT")
+            contents = contents.rstrip() + "\n" + ROOT_CONTROL_BRIDGE_TEST
+        return contents
+    if path == "src/core/fight.rs":
+        if ROOT_CONTROL_FIGHT_TEST not in contents:
+            if "fn native_root_control_is_emitted_on_land_and_absent_on_miss()" in contents:
+                raise ValueError("NATIVE_ROOTS_FIGHT_TEST_SOURCE_DRIFT")
+            contents = contents.rstrip() + "\n" + ROOT_CONTROL_FIGHT_TEST
+        return contents
     patches = {
         "src/classes/druid/prepare/balance.rs": PREP_PATCHES,
         "src/classes/druid/agent.rs": AGENT_PATCHES,
@@ -427,6 +511,8 @@ PATHS = [
     "src/classes/druid/prepared/coverage.rs",
     "src/contracts/prepared_v2.rs",
     "src/classes/druid/prepare/export.rs",
+    "src/core/fight/world_bridge.rs",
+    "src/core/fight.rs",
     "tests/classes/druid/prepare.rs",
 ]
 
