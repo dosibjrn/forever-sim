@@ -2,7 +2,7 @@ name: Work1 historical WF678 1000-Stochastic no-record diagnostic
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
     paths:
       - 'tools/diagnostics/replay_historical_wf678_stochastic_1000.py'
       - '.github/workflows/work1-p75-historical-1000-no-record.yml'
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: work1-p75-historical-1000-\${{ github.event.pull_request.head.sha }}
+  group: work1-p75-historical-1000-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           submodules: true
           lfs: true
           persist-credentials: false
@@ -33,7 +33,7 @@ jobs:
       - name: Verify exact PR HEAD and selected Rust pin
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "\${{ github.event.pull_request.head.sha }}"
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
           actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
           test "$selected" = "$actual"
@@ -69,6 +69,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: work1-p75-historical-1000-stochastic-\${{ github.event.pull_request.head.sha }}
-          path: \${{ runner.temp }}/wf678-historical-1000.log
+          name: work1-p75-historical-1000-stochastic-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/wf678-historical-1000.log
           if-no-files-found: warn
