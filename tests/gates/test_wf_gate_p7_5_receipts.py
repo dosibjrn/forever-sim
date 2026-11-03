@@ -148,6 +148,9 @@ def test_trusted_new_engine_m1_pass_supersedes_old_pin_only_for_p75_comparison(
         engine_revision=ENGINE, source_sha256=SOURCE, reference_dps=REFERENCE)
     assert accepted["dps"] == 761.3895
     assert accepted["compatible_gates"] == ["P7.1"]
+    # The comparable DPS came from the NEW trusted same-pin run, not the
+    # historical accepted ledger row on the old native engine.
+    assert accepted["run_urls"] == [f"https://github.com/{REPO}/actions/runs/2001"]
     # Revalidation is only a verified compatible comparator, not an M1 writer.
     assert "2001" not in (tmp_path / "docs/planning/M1_PASSES.tsv").read_text()
 
