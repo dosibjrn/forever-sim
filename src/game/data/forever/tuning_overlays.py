@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from src.game.model.overlay import FieldOverlay
+from src.shared.field_overlays import FieldOverlay
 from src.rulesets.forever.shared.tuning import active_spell_tuning
 
 

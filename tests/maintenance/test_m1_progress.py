@@ -68,7 +68,8 @@ def test_compatible_eleven_and_invalidation(monkeypatch, tmp_path):
 def _p2_partial(verified=83, total=103):
     return {"status": "FAIL", "pass_count": verified,
             "reachability_count": total, "behavior_probes_executed": 110,
-            "unresolved_count": 2, "coverage_basis": "executed_behavior_assertions"}
+            "unresolved_count": 2, "coverage_basis": "executed_behavior_assertions",
+            "production_engine": "gsim"}
 
 
 def test_partial_p2_is_visible_but_not_certified(monkeypatch, tmp_path, capsys):

@@ -12,7 +12,7 @@ from itertools import product
 from typing import Any, Callable, Mapping
 
 from src.game.model import ActionDefinition, PeriodicEffect, PolicyCondition, PolicyDefinition, PolicyRuleDefinition
-from src.game.policy_search import PolicyEvaluator, PolicySearchResult
+from src.optimization.policy_search import PolicyEvaluator, PolicySearchResult
 
 
 @dataclass(frozen=True)

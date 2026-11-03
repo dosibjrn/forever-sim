@@ -55,7 +55,7 @@ concurrency:
 jobs:
   source-search:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checkout pinned source data
         uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Verify source-backed talent and paid equipment search
         run: >-
-          python -m pytest -q
+          python -m pytest -vv
           tests/generic/publication/test_generic_registry_g47b.py
           tests/generic/search/test_wf_p2_cross_tree_source_witness.py
           tests/generic/search/test_work2_refinement_mode_slot.py
@@ -83,6 +83,8 @@ jobs:
           tests/generic/search/test_v2_analytic_frontier_extra.py
           tests/generic/search/test_generic_search_layout.py
           tests/generic/search/test_wf390_generic_talent_subset_search.py
+          tests/generic/search/test_bounded_policy_search_g16.py
+          tests/generic/search/test_policy_search_efficiency_g18.py::test_g18_cache_normalizes_action_cost_and_numeric_equivalent_policy
           tests/generic/runtime/test_source_maintenance_rank_reader.py
           tests/generic/runtime/test_source_stage_isolation.py
           tests/generic/runtime/test_source_ir_assembly_order.py

@@ -94,33 +94,60 @@ def _native_positive_source_casts(source_actions: list[dict],
 
 def _ensure_native_damage_action(actions: list[dict],
                                  witnesses: list[dict], rng) -> list[dict]:
-    """Keep a source-observed native-damaging unconditional first action.
+    """Keep a source-observed damaging cast as the first unconditional fallback.
 
-    An arbitrary unconditional cast is not a damage fallback: the seven real
-    zero-DPS receipts showed Rogue Vanish/Stealth and Warlock Life Tap loops.
-    This only changes *proposals*; native evaluation still decides damage,
-    legality and score, and no failed request is credited as paid success.
+    Conditional and opaque source actions retain priority. The witness then
+    precedes non-damaging unconditional casts, so it cannot be starved by
+    Life Tap or a utility loop and does not shadow source conditions.
     """
     if not witnesses:
         return actions
     actions = copy.deepcopy(actions)
     allowed = {json.dumps(x, sort_keys=True, separators=(",", ":"))
                for x in witnesses}
-    for index, entry in enumerate(actions):
+
+    conditional_or_opaque = []
+    unconditional = []
+    fallback = None
+    for entry in actions:
         action = entry.get("action", {})
         cast = action.get("castSpell")
-        if (isinstance(cast, dict) and "condition" not in action
-                and json.dumps(cast.get("spellId"), sort_keys=True,
-                               separators=(",", ":")) in allowed):
-            if index:
-                actions.insert(0, actions.pop(index))
-            return actions
-    if len(actions) >= 20:
-        actions.pop()
-    actions.insert(0, {"action": {"castSpell": {
-        "spellId": copy.deepcopy(rng.choice(witnesses))}}})
-    return actions
+        is_cast = isinstance(cast, dict)
+        identity = cast.get("spellId") if is_cast else None
+        is_witness = (not action.get("condition")
+                      and json.dumps(identity, sort_keys=True,
+                                     separators=(",", ":")) in allowed)
+        if is_witness and fallback is None:
+            fallback = entry
+        elif not is_cast or "condition" in action:
+            conditional_or_opaque.append(entry)
+        else:
+            unconditional.append(entry)
 
+    if fallback is None:
+        # A conditional source-positive cast stays in its original prefix;
+        # the added unconditional copy is only the final source-backed escape.
+        if len(actions) >= 20:
+            if unconditional:
+                unconditional.pop()
+            else:
+                # Preserve a conditional native-positive action when possible.
+                removable = next(
+                    (i for i in range(len(conditional_or_opaque) - 1, -1, -1)
+                     if json.dumps(
+                         conditional_or_opaque[i].get("action", {}).get(
+                             "castSpell", {}).get("spellId"),
+                         sort_keys=True, separators=(",", ":")) not in allowed),
+                    len(conditional_or_opaque) - 1,
+                )
+                if removable >= 0:
+                    conditional_or_opaque.pop(removable)
+        fallback = {"action": {"castSpell": {
+            "spellId": copy.deepcopy(rng.choice(witnesses))}}}
+
+    # Keep every conditional/opaque action in its original relative order,
+    # then the native-positive fallback, then other unconditional casts.
+    return conditional_or_opaque + [fallback] + unconditional
 
 def talent_points(talents: str) -> int:
     """Count points in source-native two- or three-tree encodings.

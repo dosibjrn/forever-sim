@@ -271,9 +271,12 @@ def test_model_overlay_import_does_not_load_legacy_game_ir():
 
     source = """
 import sys
+from src.shared.field_overlays import FieldOverlay as SharedFieldOverlay
+assert not any(name == 'src.game' or name.startswith('src.game.') for name in sys.modules)
 import src.game.model as model
 assert 'src.game.model.ir' not in sys.modules
 from src.game.model.overlay import FieldOverlay
+assert FieldOverlay is SharedFieldOverlay
 assert FieldOverlay.__name__ == 'FieldOverlay'
 assert 'src.game.model.ir' not in sys.modules
 from src.game.model import GameIRSlice, ActionDefinition
