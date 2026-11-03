@@ -12,8 +12,10 @@ from time import monotonic
 from typing import Mapping
 
 from src.game.data.forever.registry import build_game_ir_slice
-from src.game.talent_search import executable_talent_definitions, talent_candidate_id
+from src.game.talent_search import executable_talent_definitions
 from src.game.talents import validate_talent_selection, available_talent_points
+from src.optimization.point_frontier import generate_point_frontier
+from src.optimization.talent_search import TalentAllocationOption, talent_candidate_id
 from src.shared.leveling.objective import representative_hp
 from src.v2.source_joint_discovery import _gear_envelope
 from src.v2.source_staged_joint_search import _diverse_gear_indices
@@ -21,50 +23,38 @@ from src.v2.source_staged_joint_search import _diverse_gear_indices
 
 def legal_point_frontier(source, allocation: Mapping[str, int], *, level: int,
                          allow_transfers: bool = True, bonus_talent_points: int = 0):
-    """Legal +1-point moves, plus -1/+1 transfers at the point cap.
+    """Adapt source-executable ranks and canonical legality to generic traversal.
 
-    No class, talent, spell or fixture IDs appear in the generator.  A rank is
-    selectable only if its own source-normalized modifier row exists. Invalid
-    tier, prerequisite, rank and point-budget transitions fail closed.
+    Preserve existing source-backed rank filtering, validation, transfer order
+    and public API while the selected Rust source-legality interface is migrated.
     """
-    validate_talent_selection(source, allocation, level=level, bonus_talent_points=bonus_talent_points)
     definitions = executable_talent_definitions(source)
-    point_cap = available_talent_points(level, bonus_talent_points=bonus_talent_points)
-    spent = sum(int(v) for v in allocation.values())
-    seen = set()
-    out = []
-    bases = [dict(allocation)]
-    if allow_transfers and spent >= point_cap:
-        for old in definitions:
-            rank = int(allocation.get(old.id, 0))
-            if rank:
-                base = dict(allocation)
-                if rank == 1:
-                    del base[old.id]
-                else:
-                    base[old.id] = rank - 1
-                bases.append(base)
-    for base in bases:
-        if sum(base.values()) >= point_cap:
-            continue
-        for talent in definitions:
-            next_rank = int(base.get(talent.id, 0)) + 1
-            if next_rank > int(talent.max_rank):
-                continue
-            if not any(r.rank == next_rank and r.modifiers for r in talent.ranks):
-                continue
-            candidate = dict(base)
-            candidate[talent.id] = next_rank
-            cid = talent_candidate_id(candidate)
-            if cid == talent_candidate_id(allocation) or cid in seen:
-                continue
-            try:
-                validate_talent_selection(source, candidate, level=level, bonus_talent_points=bonus_talent_points)
-            except ValueError:
-                continue
-            seen.add(cid)
-            out.append(candidate)
-    return out
+    options = tuple(
+        TalentAllocationOption(
+            talent_id=talent.id,
+            max_rank=int(talent.max_rank),
+            executable_ranks=frozenset(
+                int(rank.rank) for rank in talent.ranks if rank.modifiers
+            ),
+        )
+        for talent in definitions
+    )
+
+    def validate(selection: Mapping[str, int]) -> None:
+        validate_talent_selection(
+            source, selection, level=level,
+            bonus_talent_points=bonus_talent_points,
+        )
+
+    return generate_point_frontier(
+        options,
+        allocation,
+        max_points=available_talent_points(
+            level, bonus_talent_points=bonus_talent_points
+        ),
+        validate_selection=validate,
+        allow_transfers=allow_transfers,
+    )
 
 
 def _interleave_tree_candidates(candidates, tree_of):
