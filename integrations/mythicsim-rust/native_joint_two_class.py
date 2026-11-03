@@ -30,6 +30,27 @@ from p73_talent_search_v2 import run
 from native_source_donors import load_source_donor_fixtures
 
 
+def _write_native_failure(outdir: Path, request_sha256: str,
+                          effective_request: dict, exc: Exception) -> dict:
+    """Persist failed request plus any native response without inventing a score."""
+    request_path = outdir / ("failed_" + request_sha256 + ".json")
+    request_path.write_text(json.dumps(effective_request, indent=2) + "\n")
+    record = {
+        "effective_request_sha256": request_sha256,
+        "error": str(exc)[-1200:],
+    }
+    raw = getattr(exc, "raw_response", None)
+    if isinstance(raw, dict):
+        response_path = outdir / ("failed_" + request_sha256 + ".response.json")
+        response_path.write_text(json.dumps(raw, indent=2) + "\n")
+        record["raw_response_sha256"] = fingerprint(raw)
+        record["response_file"] = response_path.name
+        elapsed = getattr(exc, "elapsed_s", None)
+        if isinstance(elapsed, (int, float)) and math.isfinite(float(elapsed)):
+            record["native_duration_s"] = float(elapsed)
+    return record
+
+
 def talent_points(talents: str) -> int:
     """Count points in source-native two- or three-tree encodings.
 
@@ -311,7 +332,10 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
     except Exception as exc:
         row["status"] = "BLOCKED_NATIVE_BASELINE"
         row["blocker"] = "Balanced native reference baseline failed: " + str(exc)[-700:]
-        row["native_failures"] = [{"stage": "baseline", "error": str(exc)[-1200:]}]
+        failure = _write_native_failure(
+            outdir, fingerprint(baseline_effective), baseline_effective, exc
+        )
+        row["native_failures"] = [{"stage": "baseline", **failure}]
         return row
     row["baseline_paid"] = 1
     row["baseline_balanced_score"] = baseline_record["score"]
@@ -345,10 +369,10 @@ def execute(profile_id: str, inventory: list, native_items: dict, *,
             raise
         except Exception as exc:
             if len(native_failures) < 12:
-                (outdir / ("failed_" + key + ".json")).write_text(
-                    json.dumps(effective, indent=2) + "\n")
-                native_failures.append({"effective_request_sha256": key,
-                                        "error": str(exc)[-1200:]})
+                native_failures.append({
+                    "stage": "candidate",
+                    **_write_native_failure(outdir, key, effective, exc),
+                })
             raise
         if key != scored_sha or not math.isfinite(score):
             raise RuntimeError("Native payload/score provenance mismatch")
