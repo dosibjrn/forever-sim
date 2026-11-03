@@ -4,12 +4,16 @@ from __future__ import annotations
 import sys
 import time
 import unittest
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_joint_two_class import (
     fingerprint, native_payload, native_score_request, select_balanced_winner,
 )
+from p73_talent_search_v2 import run as native_run
 
 
 def request():
@@ -50,6 +54,24 @@ class NativeJointScoringContracts(unittest.TestCase):
                          record["effective_request_sha256"])
         self.assertEqual(fingerprint(raw), record["raw_response_sha256"])
         self.assertIs(raw, actual_raw)
+
+    def test_native_runner_surfaces_stdout_and_stderr_on_failure(self):
+        completed = SimpleNamespace(
+            returncode=2,
+            stdout="RUST_NATIVE_BASELINE_REJECTED",
+            stderr="native stderr detail",
+        )
+        with patch("p73_talent_search_v2.subprocess.run", return_value=completed) as mocked:
+            with self.assertRaisesRegex(RuntimeError, "RUST_NATIVE_BASELINE_REJECTED") as caught:
+                native_run(
+                    Path("forever-engine"), request(), 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+        self.assertIn("native stderr detail", str(caught.exception))
+        args, kwargs = mocked.call_args
+        self.assertEqual(subprocess.PIPE, kwargs["stdout"])
+        self.assertIn("--rng-mode", args[0])
+        self.assertEqual("balanced", args[0][-1])
 
     def test_stochastic_mode_is_rejected_before_the_native_runner(self):
         calls = []
