@@ -185,6 +185,40 @@ def _paid_step_has_budget(search_start: float, observed_max_s: float) -> bool:
     return time.monotonic() + reserve_s < search_start + 300.0
 
 
+def _p74_early_rerank_due(elapsed_s, reranked_count):
+    """Schedule bounded balanced finalist screens; shared with P7.5.
+
+    One opportunity per 20 seconds from 120s through 220s. These scores
+    are deterministic balanced-RNG search evidence, never stochastic holdout.
+    """
+    return (120.0 <= elapsed_s < 240.0 and reranked_count < 6
+            and elapsed_s >= 120.0 + 20.0 * reranked_count)
+
+
+def _next_p74_confirmation(reranked, attempted, elapsed_s):
+    """Choose the best unconfirmed paid balanced finalist in the bounded window."""
+    if len(reranked) < 3 or not 260.0 <= elapsed_s < 295.0:
+        return None
+    return next((
+        (index, row)
+        for index, row in sorted(enumerate(reranked),
+                                 key=lambda item: item[1][0], reverse=True)
+        if row[2] not in attempted
+    ), None)
+
+
+def _next_p74_deep_confirmation(reranked, confirmed, attempted, elapsed_s):
+    """Recheck strongest balanced paid leaders before the frozen holdout."""
+    if (not 260.0 <= elapsed_s < 295.0 or len(reranked) < 8
+            or len(confirmed) < 5 or len(attempted) >= 2):
+        return None
+    return next(((index, row)
+                 for index, row in sorted(
+                     enumerate(reranked),
+                     key=lambda item: item[1][0], reverse=True)
+                 if row[2] in confirmed and row[2] not in attempted), None)
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.4")
