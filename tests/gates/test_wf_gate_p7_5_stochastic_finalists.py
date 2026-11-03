@@ -142,6 +142,14 @@ def test_p75_independent_stochastic_finalist_beats_balanced_spike(
     assert result["cold_balanced_screen_best_dps"] == 900.0
     assert result["paid_joint_stochastic_finalists"] == 2
     assert result["frozen_stochastic_world_dps"] == 770.0
+    # Capture the actual source-paid frozen winner, not the balanced spike A.
+    # The production gate can now compare real gear/talent/APL on a FAIL
+    # without a duplicate 300s/1000-fight acceptance run.
+    assert result["frozen_source_build"] == {
+        "equipment": {"items": [{"id": 11}, {"id": 21}]},
+        "talentsString": "B",
+        "rotation": {"priorityList": [3, 2, 1]},
+    }
     assert result["joint_cold_world_dps"] == 770.0
     assert result["selected_validation"] == (
         "paid_2x24_stochastic_live_native_finalist")
