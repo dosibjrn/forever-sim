@@ -453,7 +453,7 @@ def _run_prepare(
         request_path.write_text(json.dumps(request, separators=(",", ":")), encoding="utf-8")
         command = [
             str(binary), "prepare", "--request", str(request_path),
-            "--scenario", scenario, "--outfile", str(output_path),
+            "--outfile", str(output_path),
         ]
         proc = subprocess.run(command, text=True, capture_output=True, check=False, timeout=60)
         if proc.returncode != 0:
