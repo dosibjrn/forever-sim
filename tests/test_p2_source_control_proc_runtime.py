@@ -8,7 +8,7 @@ from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import (
     apply_talent_selection, available_talent_points, talented_bonus_for_level,
 )
-from tools.wf_gate_p2_live import _behavior_fixtures
+from tools.wf_talent_runtime import _behavior_fixtures
 
 
 def test_source_control_proc_rank_executes_and_wrong_chance_fails_closed():
