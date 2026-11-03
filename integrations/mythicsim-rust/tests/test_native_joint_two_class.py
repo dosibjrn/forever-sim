@@ -59,7 +59,7 @@ class NativeJointScoringContracts(unittest.TestCase):
         )
         self.assertEqual(1, len(calls))
         self.assertEqual(
-            ["native-proposal-without-a-python-point_budget"],
+            ["native-proposal-without-a-python-point-budget"],
             seen_talent_payloads,
         )
         self.assertEqual("balanced", calls[0][3])
