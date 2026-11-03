@@ -10,7 +10,7 @@ import unittest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
-from src.game.native_p2_rank_probe import (  # noqa: E402
+from src.engine_client.native_p2_rank_probe import (  # noqa: E402
     NativeP2ProbeError,
     parse_native_druid_layout,
     run_native_prepare_pair,

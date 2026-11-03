@@ -1,4 +1,4 @@
-"""Selected-Rust Druid talent rank-pair diagnostic for the P2 gate.
+"""Selected-Rust Druid talent rank-pair client for the P2 gate.
 
 This module deliberately does not implement talent legality or effect semantics.
 It serializes an already source-validated rank pair against the exact selected

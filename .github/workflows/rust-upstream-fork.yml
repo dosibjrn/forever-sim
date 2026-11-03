@@ -33,7 +33,7 @@ on:
       - integrations/mythicsim-rust/test_port_native_early_retarget.py
       - integrations/mythicsim-rust/test_native_p2_rank_probe.py
       - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
-      - src/game/native_p2_rank_probe.py
+      - src/engine_client/native_p2_rank_probe.py
       - tools/wf_gate_p2_live.py
 
 permissions:
@@ -60,7 +60,7 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_improved_roots_rank.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_entangling_roots_dot.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_typed_rng.py
-          python3 -m py_compile src/game/native_p2_rank_probe.py
+          python3 -m py_compile src/engine_client/native_p2_rank_probe.py
           python3 -m py_compile integrations/mythicsim-rust/test_native_p2_rank_probe.py
           python3 -m py_compile integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
           python3 -m py_compile tools/wf_gate_p2_live.py

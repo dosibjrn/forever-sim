@@ -9,7 +9,7 @@ on:
       - integrations/mythicsim-rust/port_native_typed_rng.py
       - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
       - integrations/mythicsim-rust/tests/test_native_p2_rank_probe.py
-      - src/game/native_p2_rank_probe.py
+      - src/engine_client/native_p2_rank_probe.py
       - .github/workflows/m1-on-demand-record.yml
 
 permissions:
