@@ -45,6 +45,12 @@ jobs:
           echo "SELECTED_RUST_SHA=$actual"
           python integrations/mythicsim-rust/port_native_typed_rng.py integrations/mythicsim-rust/engine
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+      - name: Prove a mid-fight gsim range change reaches the next native decision
+        run: |
+          python integrations/mythicsim-rust/live_world_probe.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
+            --request integrations/mythicsim-rust/engine/tests/classes/druid/prepare/balance.request.json \
+            --range-perturbation-only
       - name: Download the exact Stage-5 artifact
         env:
           GH_TOKEN: ${{ github.token }}
