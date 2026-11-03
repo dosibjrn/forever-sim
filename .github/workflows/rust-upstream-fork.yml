@@ -110,6 +110,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Install selected-source HTML parser dependency
+        run: python3 -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
       - name: Hydrate canonical staged Druid source catalogue
         shell: bash
         run: |

@@ -319,3 +319,14 @@ def test_druid_talent_overlay_uses_the_selected_source_database(monkeypatch, tmp
         "source_ability_actions": selected_db,
         "load_sqlite_talents": selected_db,
     }
+
+
+def test_selected_rust_source_workflow_installs_html_parser_dependency():
+    from pathlib import Path
+
+    workflow = Path(".github/workflows/rust-upstream-fork.yml").read_text()
+    selected_job = workflow.split("  check-selected-rust-source:", 1)[1].split(
+        "  sync-fork:", 1
+    )[0]
+    assert "'beautifulsoup4==4.13.4'" in selected_job
+    assert "Install selected-source HTML parser dependency" in selected_job
