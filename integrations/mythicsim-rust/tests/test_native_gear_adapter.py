@@ -106,6 +106,42 @@ class NativeGearAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(GearRejected, "SOURCE_SLOT"):
             adapter.validate(unobserved)
 
+    def test_native_refusal_excludes_exact_enchant_variant_not_every_same_id_variant(self):
+        # Two observed enchants share the item ID. Rejecting one native
+        # request must not silently discard the other source proposal.
+        source = req("Mage", [10])
+        donors = []
+        for effect_id in (123, 456):
+            donor = copy.deepcopy(source)
+            donor["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] = {
+                "id": 10, "enchant": {"effectId": effect_id}
+            }
+            donors.append(donor)
+        adapter = NativeGearAdapter("mage", source, [source, *donors])
+        first, audit = adapter.mutate_one(random.Random(7))
+        excluded = {(audit["source_slot_index"], audit["to_id"],
+                     audit["to_variant_sha256"])}
+        second, second_audit = adapter.mutate_one(
+            random.Random(7), excluded_swaps=excluded
+        )
+        self.assertEqual(10, audit["to_id"])
+        self.assertEqual(10, second_audit["to_id"])
+        self.assertNotEqual(
+            first["raid"]["parties"][0]["players"][0]["equipment"]["items"][0],
+            second["raid"]["parties"][0]["players"][0]["equipment"]["items"][0],
+        )
+        self.assertNotEqual(audit["to_variant_sha256"],
+                            second_audit["to_variant_sha256"])
+        adapter.validate(second)
+        # The same exact-variant exclusion applies when extending a candidate.
+        extended, extended_audit = adapter.mutate_from(
+            first, random.Random(7), excluded_swaps=excluded
+        )
+        self.assertEqual(second["raid"]["parties"][0]["players"][0]["equipment"]["items"],
+                         extended["raid"]["parties"][0]["players"][0]["equipment"]["items"])
+        self.assertEqual(second_audit["to_variant_sha256"],
+                         extended_audit["to_variant_sha256"])
+
     def test_weapon_id_and_enchant_proposals_reach_native(self):
         source = req("Shaman", [30])
         enchant_donor = copy.deepcopy(source)
