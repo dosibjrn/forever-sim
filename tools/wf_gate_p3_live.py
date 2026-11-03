@@ -28,7 +28,7 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
     from src.game.talents import (
         apply_talent_selection, available_talent_points,
         talented_bonus_for_level, validate_talent_selection)
-    from tools.wf_gate_p2_live import (
+    from tools.wf_talent_runtime import (
         _load_product_spec_profile, _source_spec_profile)
 
     db = Path(DEFAULT_DB)
