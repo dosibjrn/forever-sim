@@ -263,3 +263,32 @@ def test_paid_world_route_rejects_inconsistent_real_kill_clock(
     with pytest.raises(AssertionError, match=expected):
         module._paid_world_route_receipts(
             kills, [{**leg, **leg_override}], world.trace)
+
+
+def test_world_elapsed_reports_each_real_native_acked_target_delta():
+    verify = _world_module()._verified_world_elapsed
+    measured = verify(
+        [{"index": 0, "native_kill_ns": 1_000_000_000},
+         {"index": 1, "native_kill_ns": 3_500_000_000},
+         {"index": 2, "native_kill_ns": 4_000_000_000}],
+        [{"world_kill_clock_ns": 1_000_000_000},
+         {"world_kill_clock_ns": 3_500_000_000},
+         {"world_kill_clock_ns": 4_000_000_000}])
+    assert measured["world_elapsed_seconds"] == pytest.approx(4.)
+    assert measured["world_seconds_per_target_without_paid_recovery"] == pytest.approx(4./3.)
+    assert measured["world_per_target_elapsed_seconds_without_paid_recovery"] == pytest.approx(
+        [1., 2.5, 0.5])
+
+
+def test_completed_world_route_cannot_claim_paid_2d_walk_without_steps():
+    module = _world_module()
+    world = _world()
+    leg = module._queue_world_walk(world, "m1", speed_yards_s=7.)
+    # A scheduled route and subsequent native lethal timestamp are not
+    # sufficient; this negative control has not advanced the gsim 2D world.
+    assert leg["scheduled_yards"] > 0.
+    with pytest.raises(AssertionError, match="RUST_WORLD_ROUTE_COMPLETE_WITHOUT_GSIM_STEPS"):
+        module._paid_world_route_receipts(
+            [{"world_kill_clock_ns": 0},
+             {"world_kill_clock_ns": round((leg["arrival_s"] + 1.) * 1e9)}],
+            [leg], world.trace)
