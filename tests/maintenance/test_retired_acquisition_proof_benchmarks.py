@@ -82,6 +82,8 @@ RETIRED_TOOLS = (
     "tests/test_wf387_atomic_rank_promotion.py",
     "tests/test_wf382_mage_l30_build_delta_p1_tdd.py",
     "tests/test_talent_tree_row_ingestion.py",
+    "tests/test_wf_feral01c_source_tree_gates.py",
+    "data/forever/source_captures/wowhead_druid_tree_rows_2026-10-10.json",
     "tests/generic/search/test_wf_p2_cross_tree_source_witness.py",
     "tests/generic/search/test_wf_p2_source_witness_priority.py",
     "evidence/wf336/druid_l20_talent_rank_observations_70338.json",
