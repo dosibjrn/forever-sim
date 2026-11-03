@@ -98,20 +98,36 @@ def _new_cast(spells, predicates, rng):
     return {"action": action}
 
 
+def _is_unconditional_cast(entry):
+    action = entry.get("action", {})
+    return (isinstance(action, dict)
+            and isinstance(action.get("castSpell"), dict)
+            and not action.get("condition"))
+
+
 def _has_fallback(actions):
-    return any("castSpell" in x.get("action", {})
-               and "condition" not in x.get("action", {}) for x in actions)
+    return any(_is_unconditional_cast(entry) for entry in actions)
 
 
 def _ensure_fallback(actions, source_actions):
     if _has_fallback(source_actions) and not _has_fallback(actions):
         fallback = next(copy.deepcopy(x) for x in source_actions
-                        if "castSpell" in x.get("action", {})
-                        and "condition" not in x["action"])
+                        if _is_unconditional_cast(x))
         # A missing unconditional cast is a termination hazard: repair it.
         if len(actions) >= 20:
             actions.pop()
         actions.append(fallback)
+
+    # Priority lists are first-match: an unconditional castSpell before a
+    # conditional cast shadows every lower-priority action while it is
+    # castable. Keep all unconditional casts as a stable fallback suffix.
+    # Opaque non-cast actions (for example autocastOtherCooldowns) retain
+    # their position and are not mistaken for cast fallbacks.
+    fallbacks = [entry for entry in actions if _is_unconditional_cast(entry)]
+    if fallbacks:
+        actions[:] = [
+            entry for entry in actions if not _is_unconditional_cast(entry)
+        ] + fallbacks
 
 
 def mutate_apl(actions, source_actions, rng, *, cold=False):
