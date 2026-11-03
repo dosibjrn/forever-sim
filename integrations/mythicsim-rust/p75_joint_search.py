@@ -27,8 +27,8 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
 
     A gear slot's captured reference enchant is a *per-slot option*, not a
     saved loadout seed. The additional 'none' option keeps enchant free.
-    In selected full live search, enchant_pools comes from the pinned Rust
-    source validator rather than the reference's enchant subset.
+    In selected full live search, enchant_pools are native-data proposals rather
+    than a Python-filtered subset of the reference's enchant choices.
     """
     q=copy.deepcopy(reference)
     template=player(reference)["equipment"]["items"]
@@ -61,14 +61,14 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
                     j=rng.randrange(16)
                     ids[j]=pick_gear(pools[j],rng)
             elif axis=="talents":
-                ranks=edit_neighbors(ranks,rng)
+                ranks=edit_neighbors(ranks,rng,native_authoritative=True)
             elif axis=="rotation":
                 actions=mutate_apl(actions,player(reference)["rotation"]["priorityList"],rng)
             elif axis=="gear_rebuild":
                 ids=[pick_gear(pools[j],rng) for j in range(16)]
                 enchants=[rng.choice(enchant_choices[i]) for i in range(16)]
             elif axis=="talents_rebuild":
-                ranks=random_build(rng)
+                ranks=random_build(rng,native_authoritative=True)
             elif axis=="rotation_rebuild":
                 actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
             else:
@@ -83,19 +83,10 @@ def make_candidate(reference,pools,rng,elite=None,item_names=None,enchant_pools=
         enchants=([rng.choice(enchant_choices[i]) for i in range(16)]
                   if enchant_pools is not None else
                   [e if rng.random()<0.86 else None for e in allowed_enchants])
-        ranks=random_build(rng)
+        ranks=random_build(rng,native_authoritative=True)
         actions=mutate_apl(None,player(reference)["rotation"]["priorityList"],rng,cold=True)
-    # Avoid an identical item ID in the paired ring/trinket slots only as a
-    # proposal-quality heuristic. The active P7.5 executor sends the complete
-    # candidate to selected native prepare/sim for all equipment legality,
-    # including duplicate IDs and unique-equipped categories. Never infer a
-    # unique-equipped rule from equal catalogue display names.
-    for first,second in ((10,11),(12,13)):
-        if ids[first]==ids[second]:
-            alternatives=[x for x in pools[second] if x!=ids[first]]
-            if not alternatives:
-                raise ValueError("No distinct ring/trinket item ID remains in source pool")
-            ids[second]=pick_gear(alternatives,rng)
+    # Preserve the proposed equipment vector unchanged. MythicSim decides duplicate
+    # item IDs and unique-equipped categories; Forever does not rewrite the build.
     p=player(q)
     for i,item in enumerate(p["equipment"]["items"]):
         item.clear()
