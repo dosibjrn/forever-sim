@@ -69,17 +69,26 @@ def _real_coupled_p7_dps_report(*, gate: str, score: float, reference: float,
     # Contract regression with numeric examples, not evidence of a production
     # P7 run. No M1 PASS/PARTIAL can be derived from these synthetic values.
     report = dict(status="FAIL", production_engine="pinned_mythicsim_rust_gsim_2d",
-                  native_source_revision="pinned", source_request_raw_sha256="source",
+                  native_source_revision="a" * 40, source_request_raw_sha256="b" * 64,
                   world_damage_events=20, world_boundaries=400,
                   saved_reference_dps=reference)
     if gate == "P7.1":
-        report["world_dps"] = score
-    elif gate == "P7.5":
-        report["holdout_mean_dps"] = score
-        if prior is not None:
-            report["strongest_accepted_compatible_prior_dps"] = prior
+        report.update(
+            world_dps=score,
+            iterations=1000,
+            selected_validation="1000_native_and_live_stochastic_fights",
+            stochastic_rng=True,
+        )
     else:
-        report["winner_live_dps"] = score
+        report.update(
+            frozen_stochastic_iterations=1000,
+            frozen_request_raw_sha256="c" * 64,
+            frozen_stochastic_world_damage_events=20,
+            frozen_stochastic_world_boundaries=400,
+            frozen_stochastic_world_dps=score,
+        )
+        if gate == "P7.5" and prior is not None:
+            report["strongest_accepted_compatible_prior_dps"] = prior
     return report
 
 
