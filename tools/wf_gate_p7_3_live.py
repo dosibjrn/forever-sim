@@ -72,7 +72,7 @@ def _paid_elite_choice(elites, rng, proposal_index):
 
 
 def _p73_paid_parent_pool(balanced_elites, stochastic_finalists, proposal_index):
-    """Use paid native+2D stochastic feedback for most local talent proposals.
+    """Use paid native+2D balanced feedback for local talent proposals.
 
     Three balanced fights can misrank a talent allocation against stochastic
     DPS. Only this run's independently executed source-legal contenders enter
@@ -87,7 +87,7 @@ def _p73_paid_parent_pool(balanced_elites, stochastic_finalists, proposal_index)
 
 
 def _p73_early_rerank_due(elapsed_s, attempted_count):
-    """Pay for at most six early native+2D stochastic finalists, 120–240 s.
+    """Pay for at most six early native+2D balanced finalists, 120–240 s.
 
     Reranks are charged to the existing 300-second search, not the separate
     frozen 1,000-fight stochastic holdout. Failed attempts consume a slot.
@@ -97,7 +97,7 @@ def _p73_early_rerank_due(elapsed_s, attempted_count):
 
 
 def _paid_stochastic_finalist(production, binary, request: dict, distance: float):
-    """Re-rank a paid live elite on separate stochastic seeds, not acceptance.
+    """Re-rank a paid live elite with balanced RNG, never on acceptance RNG.
 
     The 3-balanced-fight screen is only an exploration heuristic. This uses
     the same genuine Rust/native and 2D pair as the final holdout; a different
@@ -340,7 +340,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "winner_live_dps": score,
         "winner_screen_dps": screen_score,
         "winner_selection": winner_selection,
-        "paid_stochastic_finalists": len(reranked),
+        "paid_stochastic_finalists": len(reranked),  # legacy schema alias
+        "paid_balanced_finalists": len(reranked),
         "early_stochastic_finalists_paid": early_stochastic_finalists_paid,
         "stochastic_parent_proposals": stochastic_parent_proposals,
         "paid_stochastic_finalist_failures": rerank_failures[:4],
