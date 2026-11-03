@@ -60,7 +60,8 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
     witness_summary = [
         {key: witness.get(key) for key in (
             "stat", "status", "policy_id", "paid_evaluations",
-            "baseline_reused", "weight_s_saved_per_mob_per_unit")}
+            "baseline_reused", "weight_s_saved_per_mob_per_unit",
+            "candidate_source", "opening_action_ids", "attempted_policies")}
         for witness in result.get("source_policy_stat_witnesses", ())
     ]
     diagnostic = {
