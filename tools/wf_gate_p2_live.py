@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from math import isclose, isfinite
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 from dataclasses import replace
 import sqlite3
@@ -25,6 +26,7 @@ from src.game.talents import apply_talent_selection, talented_bonus_for_level, a
 from src.game.talent_frontier import source_legal_talent_neighbors
 from src.optimization.talent_frontier import allocation_key
 from src.game.source_objective_relevance import solo_threat_exclusion
+from src.game.native_p2_rank_probe import NativeRngMode, run_native_rank_pair
 
 
 def _runtime_actor_state_delta(before, after):
@@ -1394,12 +1396,39 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
     """Legal rank + actual applied runtime behavior, with honest unsupported cases."""
     key=f'{talent.id}:{rank}'
     result={'rank_key':key,'talent_id':talent.id,'rank':rank,
-            'witness':dict(witness),'status':'FAIL','reasons':[],
+            'witness':dict(witness),'control_witness':None,
+            'source_rank_facts':None,'status':'FAIL','reasons':[],
             'behavior_tests':[], 'search_reachable':False}
     r=next((x for x in talent.ranks if x.rank==rank),None)
     if r is None:
         result['reasons'].append('IMPLEMENTATION_MISSING')
         return result
+    # Carry canonical source facts alongside the legal N-1/N witness. The
+    # native adapter must not infer source identity, effects or prerequisites
+    # from a Rust field name.
+    source_l0=r.provenance.get('checkpoint_source_l0')
+    metadata=talent.metadata if isinstance(talent.metadata,Mapping) else {}
+    prerequisite=talent.prerequisite if isinstance(talent.prerequisite,Mapping) else None
+    source_url=(source_l0.get('source_url') if isinstance(source_l0,Mapping) else None)
+    source_url=(source_url or metadata.get('checkpoint_source_url')
+                or r.provenance.get('source_url'))
+    source_build=(metadata.get('checkpoint_source_build')
+                  or r.provenance.get('source_build'))
+    source_row=metadata.get('row')
+    result['source_rank_facts']={
+        'class_key':str(compiled.actor.metadata.get('class_key') or ''),
+        'level':int(compiled.actor.metadata.get('level') or 0),
+        'talent_id':str(talent.id),'rank':int(rank),
+        'tree_key':str(talent.tree_key),
+        'tree_row':int(source_row) if source_row is not None else None,
+        'rank_cap':int(talent.max_rank),
+        'source_build':str(source_build or ''),
+        'source_url':str(source_url or ''),
+        'source_sha256':str(metadata.get('checkpoint_source_stage_sha256')
+                             or metadata.get('checkpoint_source_sha256') or ''),
+        'prerequisite':dict(prerequisite) if prerequisite is not None else None,
+        'checkpoint_source_l0':dict(source_l0) if isinstance(source_l0,Mapping) else None,
+    }
     exclusion = solo_threat_exclusion(compiled, r) if not r.modifiers else None
     if not r.modifiers and exclusion is None:
         result['reasons'].append('IMPLEMENTATION_MISSING')
@@ -1464,6 +1493,7 @@ def _rank_probe(compiled, talent, rank, witness, *, level, bonus,
                                             bonus_talent_points=bonus)
             witness=trial
             result['witness']=dict(witness)
+            result['control_witness']=dict(prior)
             break
         except (ValueError,TypeError) as exc:
             last_error=str(exc)
@@ -1713,12 +1743,110 @@ def _source_spec_rank_witness(population, talent_id, rank):
     return next((dict(a) for a in population if a.get(talent_id)==rank),None)
 
 
+_NATIVE_P2_TREE_SCENARIOS = {'balance': 'balance', 'feral': 'cat'}
+_NATIVE_P2_DIAGNOSTIC_RANKS = {('moonkin_form', 1), ('predatory_strikes', 1)}
+
+
+def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
+    source=tested.get('source_rank_facts')
+    if not isinstance(source,dict):
+        return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_RANK_FACTS_MISSING'}
+    l0=source.get('checkpoint_source_l0')
+    if not isinstance(l0,dict):
+        return {'status':'BLOCKED','reason':'CANONICAL_CHECKPOINT_SOURCE_L0_MISSING'}
+    source_url=str(source.get('source_url') or l0.get('source_url') or '')
+    source_build=str(source.get('source_build') or '')
+    if not source_url.startswith('https://') or not source_build:
+        return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_IDENTITY_INCOMPLETE'}
+    if (source.get('talent_id')!=talent_id or source.get('rank')!=int(rank)
+            or isinstance(source.get('rank_cap'),bool)
+            or not isinstance(source.get('rank_cap'),int)
+            or source['rank_cap']<int(rank)
+            or source.get('class_key')!='druid' or int(source.get('level') or 0)!=60):
+        return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_RANK_IDENTITY_MISMATCH'}
+    effects=l0.get('effects')
+    if not isinstance(effects,list):
+        effects=[]
+        if l0.get('effect_domain') and l0.get('target') and l0.get('value') is not None:
+            effects.append({'domain':l0['effect_domain'],'target':l0['target'],
+                            'sourced_value':l0['value'],'condition':l0.get('condition'),
+                            'source':source_url})
+            if l0.get('additional_effect_domain'):
+                if l0.get('additional_target') is None or l0.get('additional_value') is None:
+                    return {'status':'BLOCKED','reason':'CANONICAL_P2_ADDITIONAL_SOURCE_EFFECT_INCOMPLETE'}
+                effects.append({'domain':l0['additional_effect_domain'],
+                                'target':l0['additional_target'],
+                                'sourced_value':l0['additional_value'],
+                                'condition':l0.get('condition'),'source':source_url})
+    expected=l0.get('expected_clause_count')
+    if not effects or (expected is not None and
+            (isinstance(expected,bool) or int(expected)!=len(effects))):
+        return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_EFFECT_CLAUSES_INCOMPLETE'}
+    for effect in effects:
+        value=effect.get('sourced_value',effect.get('value'))
+        effect_source=str(effect.get('source') or source_url)
+        if (not effect.get('domain') or not effect.get('target')
+                or isinstance(value,bool) or not isinstance(value,(int,float))
+                or not isfinite(float(value)) or not effect_source.startswith('https://')):
+            return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_EFFECT_CLAUSE_INVALID'}
+    before=tested.get('control_witness')
+    after=tested.get('witness')
+    if not isinstance(before,dict) or not isinstance(after,dict):
+        return {'status':'BLOCKED','reason':'SOURCE_LEGAL_RANK_PAIR_UNAVAILABLE'}
+    prerequisite=source.get('prerequisite')
+    if prerequisite is not None:
+        if (not isinstance(prerequisite,dict) or not prerequisite.get('talent_id')
+                or isinstance(prerequisite.get('required_rank'),bool)
+                or not isinstance(prerequisite.get('required_rank'),int)
+                or prerequisite['required_rank']<1):
+            return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_PREREQUISITE_INVALID'}
+        required_id=str(prerequisite['talent_id'])
+        required_rank=int(prerequisite['required_rank'])
+        if any(int(selection.get(required_id,0))<required_rank
+               for selection in (before,after)):
+            return {'status':'BLOCKED','reason':'SOURCE_RANK_PAIR_PREREQUISITE_NOT_SATISFIED'}
+    scenario=_NATIVE_P2_TREE_SCENARIOS.get(str(source.get('tree_key') or ''))
+    if scenario is None:
+        return {'status':'BLOCKED','reason':'NATIVE_P2_TREE_SCENARIO_UNAVAILABLE',
+                'tree_key':source.get('tree_key')}
+    if not binary:
+        return {'status': 'BLOCKED', 'reason': 'FOREVER_MYTHICSIM_RUST_BIN_NOT_SET'}
+    binary_path=Path(binary)
+    if not binary_path.is_file():
+        return {'status': 'BLOCKED', 'reason': 'SELECTED_RUST_BINARY_MISSING'}
+    try:
+        engine_root=binary_path.resolve().parents[2]
+        result=run_native_rank_pair(
+            binary=binary_path, engine_root=engine_root,
+            scenario=scenario,
+            before_selection=before, after_selection=after,
+            target_talent_id=talent_id, target_rank=int(rank),
+            iterations=100, seed=647003, rng_mode=NativeRngMode.BALANCED)
+        result['source_rank_facts']={
+            'talent_id':talent_id,'rank':int(rank),
+            'tree_key':source['tree_key'],'tree_row':source.get('tree_row'),
+            'rank_cap':source['rank_cap'],'source_build':source_build,
+            'source_url':source_url,'source_sha256':source.get('source_sha256'),
+            'prerequisite':prerequisite,
+            'effect_domains':[str(effect['domain']) for effect in effects],
+            'checkpoint_source_l0_sha256':sha256(
+                json.dumps(l0,sort_keys=True,separators=(',',':')).encode()).hexdigest(),
+            'source_pair_validated_by':'canonical_p2_rank_probe',
+        }
+        return result
+    except Exception as exc:
+        return {'status': 'BLOCKED',
+                'reason': f'NATIVE_P2_DIAGNOSTIC_FAILED:{type(exc).__name__}:{exc}'}
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
              source_db: Path | None=None, bonus_points: int | None=None):
     """One P2 gate execution; fast, class-neutral and fail-closed."""
     result={'class':class_key,'level':level,'spec':spec,'gate':'P2',
             'status':'FAIL','reasons':[],'ranks':[], 'unreachable':[],
-            'unresolved':[], 'behavior_probes_executed':0}
+            'unresolved':[], 'behavior_probes_executed':0,
+            'native_rank_probe_results':[],
+            'native_rank_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE'}
     try:
         source_db=Path(source_db or DEFAULT_DB)
         if not source_db.is_file():raise ValueError('CANONICAL_SOURCE_DB_MISSING')
@@ -1793,8 +1921,28 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                                    profile_tree=(spec if profile_full is not None else None))
                 if population is not None:
                     tested['spec_full_point_exact_rank_witness']=profile_full is not None
+                if (class_key=='druid' and level==60 and spec=='balance'
+                        and (talent.id,int(rank.rank)) in _NATIVE_P2_DIAGNOSTIC_RANKS):
+                    native_probe=_native_p2_rank_diagnostic(
+                        os.environ.get('FOREVER_MYTHICSIM_RUST_BIN'),
+                        talent.id, int(rank.rank), tested)
+                    native_probe['executor']='selected_mythicsim_rust'
+                    native_probe['accepted_for_p2']=False
+                    tested['native_rank_probe']=native_probe
+                    result['native_rank_probe_results'].append(
+                        {'rank_key':key, **native_probe})
                 result['ranks'].append(tested)
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
+        native_probes=result['native_rank_probe_results']
+        result['native_rank_probe_summary']={
+            'scope':'druid:60:balance; moonkin_form:1 and predatory_strikes:1',
+            'attempted':len(native_probes),
+            'pass_count':sum(p.get('status')=='PROBE_PASS' for p in native_probes),
+            'fail_count':sum(p.get('status')=='PROBE_FAIL' for p in native_probes),
+            'blocked_count':sum(p.get('status')=='BLOCKED' for p in native_probes),
+            'rng_mode':'balanced',
+            'counted_in_p2_acceptance':False,
+        }
         fail=[r for r in result['ranks'] if r['status']!='PASS']
         result['reachability_count']=len(result['ranks'])
         result['pass_count']=len(result['ranks'])-len(fail)
