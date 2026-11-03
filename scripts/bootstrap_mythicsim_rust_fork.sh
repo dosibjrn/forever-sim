@@ -132,6 +132,14 @@ if ! git diff --cached --quiet; then
   git commit -m "fix(forever): schedule second-target armor effects at global native time"
 fi
 
+# Require the ACTUAL gsim-native lethal HP/death/hash acknowledgement before
+# the same Rust actor may switch to its next distinct world target.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_world_lethal_ack.py" "$PWD"
+git add src/core/fight/world_bridge.rs
+if ! git diff --cached --quiet; then
+  git commit -m "fix(forever): require native lethal world ACK before Rust retarget"
+fi
+
 # The two-target native state and world ACK regressions must pass before
 # a new fork revision is published; compilation alone is insufficient.
 cargo test --locked --lib persistent_next_target

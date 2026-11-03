@@ -201,12 +201,23 @@ def port_fight(source: str) -> str:
 
 
 def port_bridge(source: str) -> str:
-    source = replace_once(
-        source,
-        "pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64> {",
-        BRIDGE_METHOD + "pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64> {",
-        "pub(crate) fn begin_next_target(at_ns: i64)",
-    )
+    # A later source patch deliberately tightens the already-installed Rust
+    # method. Reapplying the base port must recognize ONLY that exact hardened
+    # descendant, not treat any method with the same name as idempotent.
+    if "RUST_WORLD_NEXT_TARGET_NOT_NATIVE_LETHAL" in source:
+        from port_native_world_lethal_ack import OLD, NEW
+        if BRIDGE_METHOD.count(OLD) != 1:
+            raise ValueError("base Rust world-retarget anchor drifted")
+        hardened = BRIDGE_METHOD.replace(OLD, NEW, 1)
+        if source.count(hardened) != 1:
+            raise ValueError("hardened Rust world-retarget method is ambiguous")
+    else:
+        source = replace_once(
+            source,
+            "pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64> {",
+            BRIDGE_METHOD + "pub(crate) fn due(next_native_ns: i64, end_ns: i64) -> Option<i64> {",
+            "pub(crate) fn begin_next_target(at_ns: i64)",
+        )
     if "fn world_persistent_next_target_preserves_ack_and_monotonic_clock()" not in source:
         source += "\n" + BRIDGE_TEST
     elif source.count("fn world_persistent_next_target_preserves_ack_and_monotonic_clock()") != 1:
