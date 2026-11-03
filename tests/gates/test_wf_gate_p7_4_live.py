@@ -100,7 +100,7 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     # These routing fixtures advance a synthetic clock by entire stages.
     # Deadline guards are tested separately with measured paid-step latency.
     monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *a: True)
-    clock = iter([0.0, 0.0, 0.0, 0.0, 0.0, 300.0, 300.0])
+    clock = iter([0.0, 0.0, 0.0, 300.0, 300.0])
     monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 300.0))
     monkeypatch.setattr(gate, "_pinned_source_runtime",
                         lambda *a: (base, {"reference_dps": 728.19}, binary))
@@ -183,6 +183,10 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         {"slot": slot, "item_id": item["id"], "enchant_id": item.get("enchant")}
         for slot, item in enumerate(frozen_items)]
     assert report["source_legal_cold_candidates_paid"] == 2
+    assert report["winner_selection"] == "best_balanced_live_screen"
+    assert report["search_rng_mode"] == "balanced"
+    assert report["paid_stochastic_finalists"] == 0
+    assert report["stochastic_parent_proposals"] == 0
     # The real chosen winner is NOT the last attempted candidate.
     assert report["cold_winner_request_sha256"] != hashlib.sha256(
         json.dumps(json.loads(calls[2][3]), sort_keys=True).encode()).hexdigest()
@@ -195,113 +199,6 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     assert report["reasons"] == []
     assert base == original
 
-
-
-def test_late_paid_p74_gear_candidate_gets_stochastic_finalist_comparison(
-        monkeypatch, tmp_path):
-    """A newly paid 297-300s candidate must not be excluded from freeze.
-
-    Fake runtime probes exercise the actual 300s search/selection routing;
-    this is not native-world P7.4 acceptance evidence.
-    """
-    import hashlib
-    import json
-
-    base = {"simOptions": {"randomSeed": "667"}, "raid": {"parties": [
-        {"players": [{
-            "class": "ClassDruid",
-            "distanceFromTarget": 15,
-            "talentsString": "fixed",
-            "rotation": {"priorityList": []},
-            "equipment": {"items": [{"id": 10}, {"id": 20}]},
-        }]}]}}
-    binary = tmp_path / "upstream/target/release/forever-engine"
-    binary.parent.mkdir(parents=True)
-    binary.write_text("fake; never executed")
-    (binary.parents[2] / "data").mkdir()
-    (binary.parents[2] / "data/items.jsonl").write_text("")
-    (binary.parents[2] / "data/enchants.jsonl").write_text("")
-    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
-    catalogue.parent.mkdir(parents=True)
-    catalogue.write_text("fake source database")
-    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    # These routing fixtures advance a synthetic clock by entire stages.
-    # Deadline guards are tested separately with measured paid-step latency.
-    monkeypatch.setattr(gate, "_paid_step_has_budget", lambda *a: True)
-    # First real paid candidate at 0s. At 297s rerank it. At 298s
-    # another genuine source candidate is paid; at 299s rerank that one.
-    # The formerly hard-coded <295s cutoff skipped BOTH rerankings.
-    times = iter([0.0, 0.0, 0.0, 297.0, 297.0, 298.0, 298.0,
-                  299.0, 299.0, 300.0, 300.0])
-    monkeypatch.setattr(gate.time, "monotonic",
-                        lambda: next(times, 300.0))
-    monkeypatch.setattr(gate, "_pinned_source_runtime",
-                        lambda *args: (base, {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *args, **kwargs: None)
-
-    def swap(request, ids):
-        candidate = copy.deepcopy(request)
-        items = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
-        for item, item_id in zip(items, ids):
-            item["id"] = item_id
-        return candidate
-
-    class Validator:
-        @staticmethod
-        def require_sqlite_catalogue(path):
-            assert path == catalogue
-
-        def __init__(self, *args):
-            pass
-
-        def close(self):
-            pass
-
-    gear = SimpleNamespace(
-        GearValidator=Validator,
-        candidate_pool=lambda v, limit, **kwargs: ({0: [11, 12, 13], 1: [20]}, {}),
-        source_enchant_pools=lambda v, p: {0: [None], 1: [None]},
-        _swap=swap,
-        RejectedGear=ValueError)
-    source_ids = iter([11, 12, 13, 13])
-    monkeypatch.setattr(gate, "_cold_gear",
-                        lambda *args, **kwargs: swap(base, [next(source_ids), 20]))
-    calls = []
-
-    def score(path, n, mode):
-        item_id = json.loads(path.read_text())["raid"]["parties"][0][
-            "players"][0]["equipment"]["items"][0]["id"]
-        calls.append((item_id, n, mode))
-        # Three balanced fights mis-rank the actual 24-fight finalist:
-        # candidate 11 looks best on screen but loses to candidate 12
-        # in the paid stochastic comparison and frozen 1,000 holdout.
-        return ({11: 900.0, 12: 800.0, 13: 100.0}
-                if mode == "balanced" else
-                {11: 600.0, 12: 730.0, 13: 500.0})[item_id]
-
-    def native(binary, path, n, *, rng_mode):
-        return {"native_dps": score(path, n, rng_mode)}
-
-    def world(binary, path, distance, iterations, *, rng_mode):
-        assert distance == 15
-        return {"world_mean_dps": score(path, iterations, rng_mode),
-                "iterations_done": iterations, "native_damage_events": 10,
-                "native_world_ticks": 20}
-
-    producer = SimpleNamespace(native_source_control=native, run=world)
-    monkeypatch.setattr(gate, "_source_module",
-                        lambda path, name: gear if "p74_gear_search" in str(path)
-                        else producer)
-    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert report["status"] == "PASS"  # Mocked routing only, NOT a true P7 PASS
-    assert report["paid_stochastic_finalists"] == 2
-    assert report["source_legal_cold_candidates_paid"] == 2
-    assert report["cold_winner_gear"][0]["item_id"] == 12
-    assert report["winner_selection"] == "paid_2x24_stochastic_live_native_finalist"
-    assert report["frozen_stochastic_world_dps"] == 730.0
-    assert (12, 24, "stochastic") in calls
-    assert (12, 1000, "stochastic") in calls
 
 
 def test_p74_invalid_full_search_flag_blocks_before_source_work(
@@ -443,36 +340,6 @@ def test_p74_source_paid_elite_archive_preserves_native_diversity_and_cold_resta
     assert len(paid) == 24  # sampling never mutates the measured archive
 
 
-def test_p74_stochastic_feedback_focuses_actual_paid_leaders_without_warm_start():
-    """Stochastic-guided local moves prefer measured top three, not a preset.
-
-    The sparse top-15 exploration remains reachable and balanced-score
-    parents keep the original diversity. This tests search routing, not gate
-    acceptance or an inferred increase in the 1,000-fight DPS.
-    """
-    paid = [(100.0 - i, {"paid_candidate": i}) for i in range(24)]
-    visited_sizes = []
-
-    class PickLast:
-        def choice(self, options):
-            visited_sizes.append(len(options))
-            return options[-1]
-
-    rng = PickLast()
-    assert gate._paid_gear_elite_choice(
-        paid, rng, 1, focus_top=True) == {"paid_candidate": 2}
-    assert gate._paid_gear_elite_choice(
-        paid, rng, 2, focus_top=True) == {"paid_candidate": 2}
-    assert gate._paid_gear_elite_choice(
-        paid, rng, 4, focus_top=True) == {"paid_candidate": 14}
-    assert gate._paid_gear_elite_choice(
-        paid, rng, 1, focus_top=False) == {"paid_candidate": 14}
-    assert gate._paid_gear_elite_choice(
-        paid, rng, 5, focus_top=True) is None
-    assert visited_sizes == [3, 3, 15, 15]
-    assert paid[0] == (100.0, {"paid_candidate": 0})
-
-
 def test_source_ranked_p74_samples_high_stat_sources_without_truncating_pool():
     """Actual complete sorted candidate pool stays reachable, unlike top-N."""
     source_items = list(range(1000))  # ascending ids stand for source rank
@@ -608,84 +475,6 @@ def test_paid_p74_single_slot_neighbor_preserves_other_paid_slots():
     assert player["talentsString"] == "fixed"
     assert player["rotation"] == {"priorityList": []}
     assert elite == old
-
-
-def test_p74_stochastic_paid_finalist_uses_two_independent_seed_pairs(monkeypatch, tmp_path):
-    """Actual paired 24+24 stochastic scoring; no 1k holdout or saved seed."""
-    base = {"simOptions": {"randomSeed": "667"}, "raid": {"parties": [
-        {"players": [{"equipment": {"items": [{"id": 123}]}}]}]}}
-    untouched = copy.deepcopy(base)
-    calls = []
-    seed_scores = {"1947004": 732.0, "1947047": 708.0}
-
-    def native(binary, path, iterations, *, rng_mode):
-        req = __import__("json").loads(path.read_text())
-        calls.append(("native", iterations, rng_mode, req))
-        return {"native_dps": seed_scores[req["simOptions"]["randomSeed"]]}
-
-    def world(binary, path, distance, iterations, *, rng_mode):
-        req = __import__("json").loads(path.read_text())
-        calls.append(("world", iterations, rng_mode, req))
-        assert distance == 15
-        return {"world_mean_dps": seed_scores[req["simOptions"]["randomSeed"]],
-                "iterations_done": 24, "native_damage_events": 5,
-                "native_world_ticks": 10}
-
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda native, world, n: None)
-    production = SimpleNamespace(native_source_control=native, run=world)
-    dps, live = gate._paid_gear_stochastic_finalist(
-        production, tmp_path/"native", base, 15)
-    assert dps == 720.0  # mean of both independent, paid 24-fight seeds
-    assert live["iterations_done"] == 24
-    assert [r[:3] for r in calls] == [
-        ("native", 24, "stochastic"), ("world", 24, "stochastic"),
-        ("native", 24, "stochastic"), ("world", 24, "stochastic")]
-    assert [r[3]["simOptions"]["randomSeed"] for r in calls] == [
-        "1947004", "1947004", "1947047", "1947047"]
-    assert base == untouched
-
-
-def test_p74_freezes_paid_stochastic_winner_not_noisy_balanced_screen():
-    high_screen = (850.0, {"world_mean_dps": 850.0}, "a", {"gear": 1})
-    stochastic = [
-        (710.0, {"world_mean_dps": 710.0}, "a", {"gear": 1}, 850.0),
-        (730.0, {"world_mean_dps": 730.0}, "b", {"gear": 2}, 800.0)]
-    selected = gate._freeze_paid_p74_winner(high_screen, stochastic)
-    assert selected[2] == "b"
-    assert selected[0] == 730.0 and selected[4] == 800.0
-    assert selected[5] == "paid_2x24_stochastic_live_native_finalist"
-    assert gate._freeze_paid_p74_winner(high_screen, [])[2] == "a"
-
-
-
-def test_p74_frozen_winner_prefers_independently_confirmed_paid_finalist():
-    """A noisy late 48-fight outlier must not displace a paid 96-fight winner.
-
-    The 1,000-fight holdout is intentionally unavailable to this decision.
-    All candidates were independently cold-discovered and genuinely paid.
-    """
-    screen_best = (810., {"world_mean_dps": 810.}, "late",
-                   {"gear": "late"})
-    reranked = [
-        (725., {"world_mean_dps": 725.}, "confirmed-a",
-         {"gear": "a"}, 770.),
-        (720., {"world_mean_dps": 720.}, "confirmed-b",
-         {"gear": "b"}, 760.),
-        (735., {"world_mean_dps": 735.}, "late",
-         {"gear": "late"}, 810.),
-    ]
-    selected = gate._freeze_paid_p74_winner(
-        screen_best, reranked, {"confirmed-a", "confirmed-b"})
-    assert selected[2] == "confirmed-a"
-    assert selected[0] == 725.
-    assert selected[5] == (
-        "paid_4x24_stochastic_live_native_confirmed_finalist")
-    assert selected[3] == {"gear": "a"}
-    # Without completed confirmations, later paid finalists remain eligible.
-    provisional = gate._freeze_paid_p74_winner(screen_best, reranked)
-    assert provisional[2] == "late"
-    assert provisional[5] == "paid_2x24_stochastic_live_native_finalist"
 
 
 def test_paid_p74_enchant_only_skips_immutable_slots_even_with_adversarial_rng():
@@ -834,9 +623,9 @@ def test_paid_p74_single_slot_can_change_only_an_enchant():
 
 
 def test_p74_paid_step_guard_prevents_observed_302s_overrun(monkeypatch):
-    """A measured 2.6s finalist may not start at 299s and block holdout.
+    """A measured 2.6s balanced candidate may not start at 299s and block holdout.
 
-    Source-native+2D paid calls are indivisible; final 1,000 stochastic
+    Source-native+2D paid screens are indivisible; final 1,000 stochastic
     iterations are a separate stage outside the 300s search clock.
     """
     clock = SimpleNamespace(now=299.0)
@@ -845,203 +634,9 @@ def test_p74_paid_step_guard_prevents_observed_302s_overrun(monkeypatch):
     assert not gate._paid_step_has_budget(0.0, 0.9)
     clock.now = 295.0
     assert gate._paid_step_has_budget(0.0, 2.6)
-    # Fast 3-fight source-native+2D screens can still run late in the window;
-    # unlike the old fixed 295s rerank cutoff, budget depends on actual cost.
+    # Fast 3-fight balanced screens can still run late in the window when
+    # their measured duration fits; no finalist-only rerank phase exists.
     clock.now = 299.0
     assert gate._paid_step_has_budget(0.0, 0.10)
     clock.now = 299.95
     assert not gate._paid_step_has_budget(0.0, 0.10)
-
-
-def test_paid_p74_fourth_late_leader_is_still_confirmable():
-    """Previously the first three attempts permanently exhausted confirmation.
-
-    A fourth newly reranked paid contender must be eligible in the same 300s
-    cold search, without relaxing the 295–300s fresh-candidate tail.
-    """
-    rows = [(float(800 - i), None, f"sha-{i}", {"candidate": i}, 850.)
-            for i in range(6)]
-    first_three = {"sha-0", "sha-1", "sha-2"}
-    assert gate._next_p74_confirmation(rows, first_three, 259.99) is None
-    choice = gate._next_p74_confirmation(rows, first_three, 290.)
-    assert choice[0] == 3
-    assert choice[1][2] == "sha-3"
-    assert gate._next_p74_confirmation(rows, first_three, 295.) is None
-    assert gate._next_p74_confirmation(rows, set(), 280.)[0] == 0
-    assert gate._next_p74_confirmation(rows[:2], set(), 280.) is None
-
-
-def test_paid_p74_confirmation_reverses_noisy_first_round_within_300s(
-        monkeypatch, tmp_path):
-    """Routing RED->GREEN: 48-fight high outlier loses after paid confirmation.
-
-    All scores below are mocked selected-engine responses, NOT gate acceptance.
-    Confirmations must use separate non-holdout seeds, preserve the 300s
-    boundary, and allow the only final 1000-fight test after freezing.
-    """
-    import json
-
-    base = {"simOptions": {"randomSeed": "667"}, "raid": {"parties": [
-        {"players": [{
-            "class": "ClassDruid", "distanceFromTarget": 15,
-            "talentsString": "fixed", "rotation": {"priorityList": []},
-            "equipment": {"items": [{"id": 10}, {"id": 20}]},
-        }]}]}}
-    binary = tmp_path / "upstream/target/release/forever-engine"
-    binary.parent.mkdir(parents=True)
-    binary.write_text("mock never executed")
-    (binary.parents[2] / "data").mkdir()
-    (binary.parents[2] / "data/items.jsonl").write_text("")
-    (binary.parents[2] / "data/enchants.jsonl").write_text("")
-    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
-    catalogue.parent.mkdir(parents=True)
-    catalogue.write_text("mock")
-    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
-    clock = SimpleNamespace(now=0.0)
-    monkeypatch.setattr(gate.time, "monotonic", lambda: clock.now)
-    monkeypatch.setattr(gate.time, "perf_counter", lambda: 0.0)
-    monkeypatch.setattr(gate.time, "sleep",
-                        lambda duration: setattr(clock, "now", clock.now + duration))
-    monkeypatch.setattr(gate, "_pinned_source_runtime",
-                        lambda *args: (base, {"reference_dps": 728.19}, binary))
-    monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda *args, **kwargs: None)
-
-    class Validator:
-        @staticmethod
-        def require_sqlite_catalogue(path):
-            assert path == catalogue
-
-        def __init__(self, *args):
-            pass
-
-        def close(self):
-            pass
-
-    gear = SimpleNamespace(
-        GearValidator=Validator,
-        candidate_pool=lambda *args, **kwargs: ({0: [11, 12, 13], 1: [20]}, {}),
-        source_enchant_pools=lambda *args: {0: [None], 1: [None]},
-        RejectedGear=ValueError)
-    ids = iter([11, 12, 13, 13])
-    def cold_gear(request, *args, **kwargs):
-        item_id = next(ids)
-        if item_id == 13 and clock.now >= 281.0:
-            clock.now = 300.0
-        candidate = copy.deepcopy(request)
-        candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] = item_id
-        return candidate
-    monkeypatch.setattr(gate, "_cold_gear", cold_gear)
-
-    calls = []
-    def score(path, count, mode):
-        request = json.loads(path.read_text())
-        item_id = request["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
-        seed = request["simOptions"]["randomSeed"]
-        calls.append((item_id, count, mode, seed))
-        if count == 3:
-            clock.now = {11: 1.0, 12: 2.0, 13: 240.0}[item_id]
-            return {11: 900.0, 12: 800.0, 13: 700.0}[item_id]
-        if count == 24:
-            if item_id == 13 and seed == "1947047":
-                clock.now = 281.0
-            if seed in ("1947113", "1947139"):
-                return {11: 690.0, 12: 750.0, 13: 710.0}[item_id]
-            return {11: 740.0, 12: 730.0, 13: 710.0}[item_id]
-        assert count == 1000 and mode == "stochastic"
-        return {11: 695.0, 12: 732.0, 13: 710.0}[item_id]
-    def native(binary, path, n, *, rng_mode):
-        return {"native_dps": score(path, n, rng_mode)}
-    def world(binary, path, distance, iterations, *, rng_mode):
-        assert distance == 15
-        return {"world_mean_dps": score(path, iterations, rng_mode),
-                "iterations_done": iterations, "native_damage_events": 10,
-                "native_world_ticks": 20}
-    production = SimpleNamespace(native_source_control=native, run=world)
-    monkeypatch.setattr(gate, "_source_module",
-                        lambda path, name: gear if "p74_gear_search" in str(path)
-                        else production)
-
-    report = gate.run_live(tmp_path, "druid", 60, spec="balance")
-    assert report["status"] == "PASS"  # mocked routing only, NOT a gate PASS
-    assert report["search_wall_s"] == 300.0
-    assert report["source_legal_cold_candidates_paid"] == 3
-    assert report["paid_stochastic_finalists"] == 3
-    assert report["paid_stochastic_confirmed_finalists"] == 3
-    assert report["cold_winner_gear"][0]["item_id"] == 12
-    assert report["winner_selection"] == (
-        "paid_4x24_stochastic_live_native_confirmed_finalist")
-    assert report["frozen_stochastic_world_dps"] == 732.0
-    assert {(iid, seed) for iid, n, _, seed in calls
-            if n == 24 and seed in ("1947113", "1947139")} == {
-                (iid, seed) for iid in (11, 12, 13)
-                for seed in ("1947113", "1947139")}
-    assert [c[:2] for c in calls if c[1] == 1000] == [(12, 1000), (12, 1000)]
-    assert base["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] == 10
-
-
-def test_p74_stochastic_paid_parents_override_noisy_balanced_elites():
-    """A paid stochastic leader, not a three-fight balanced outlier, guides exploration."""
-    balanced_elites = [
-        (900.0, {"gear": "noisy"}),
-        (850.0, {"gear": "real"}),
-    ]
-    paid_stochastic = [
-        (700.0, {}, "noisy-hash", {"gear": "noisy"}, 900.0),
-        (742.0, {}, "real-hash", {"gear": "real"}, 850.0),
-    ]
-    # Exploit native+2D stochastic winners early, but keep one of every three
-    # exploitation proposals from the paid balanced archive for diversity.
-    preferred = gate._p74_paid_parent_pool(balanced_elites, paid_stochastic, 1)
-    assert preferred[0] == (742.0, {"gear": "real"})
-    assert preferred[1] == (700.0, {"gear": "noisy"})
-    assert gate._p74_paid_parent_pool(balanced_elites, paid_stochastic, 3) is balanced_elites
-    assert gate._p74_paid_parent_pool(balanced_elites, [], 1) is balanced_elites
-    assert paid_stochastic[0][3] == {"gear": "noisy"}  # no mutation of paid requests
-
-
-def test_p74_pays_early_stochastic_reranks_without_stealing_finalist_window():
-    """Only a small bounded early sampling schedule; 240-300s remains existing logic."""
-    due = gate._p74_early_rerank_due
-    assert due(119.9, 0) is False
-    assert due(120.0, 0) is True
-    assert due(139.9, 1) is False
-    assert due(140.0, 1) is True
-    assert due(220.0, 5) is True
-    assert due(230.0, 6) is False
-    assert due(240.0, 2) is False
-    assert due(297.0, 2) is False
-
-
-def test_p74_deep_confirmation_pays_top_confirmed_not_all_96_fight_finalists():
-    """Real 300s P7.4 had 14 confirmed 96-fight finalists, but the
-    727.5476 paid leader fell to 720.2167 on its independent 1k holdout.
-    Prioritize another independent paid 48-fight check of top leaders
-    instead of spending every remaining call on weaker 48/96-fight rows.
-    This is a selection policy test, NOT a gate PASS.
-    """
-    rows = [(float(740 - i), None, f"sha-{i}", {"gear": i}, 790.)
-            for i in range(10)]
-    confirmed = {f"sha-{i}" for i in range(6)}
-    due = gate._next_p74_deep_confirmation
-    assert due(rows, confirmed, set(), 259.99) is None
-    assert due(rows, confirmed, set(), 280.)[1][2] == "sha-0"
-    assert due(rows, confirmed, {"sha-0"}, 280.)[1][2] == "sha-1"
-    assert due(rows, confirmed, {"sha-0", "sha-1"}, 280.) is None
-    assert due(rows, confirmed, set(), 295.) is None
-    assert due(rows[:7], confirmed, set(), 280.) is None
-    assert due(rows, {"sha-0", "sha-1"}, set(), 280.) is None
-
-
-def test_p74_freeze_prefers_paid_144_fight_deep_confirmation_over_96_fight_outlier():
-    """Never use the 1k holdout to choose; prefer fully paid deeper screen."""
-    best = (850., {}, "screen", {"gear": "screen"})
-    rows = [
-        (729., {}, "only-96", {"gear": "only-96"}, 800.),
-        (724., {}, "deep-144", {"gear": "deep-144"}, 780.),
-        (735., {}, "only-48", {"gear": "only-48"}, 820.),
-    ]
-    selected = gate._freeze_paid_p74_winner(
-        best, rows, {"only-96", "deep-144"}, {"deep-144"})
-    assert selected[2] == "deep-144"
-    assert selected[5] == "paid_6x24_stochastic_live_native_deep_confirmed_finalist"

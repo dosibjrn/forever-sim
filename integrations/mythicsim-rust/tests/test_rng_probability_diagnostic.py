@@ -62,7 +62,7 @@ class RngDiagnosticContract(unittest.TestCase):
             def runner(command, **kwargs):
                 import subprocess
                 payload = json.loads(Path(command[command.index("--request") + 1]).read_text())
-                seen.append((payload, kwargs["env"]["WOWSIM_RNG_MODE"]))
+                seen.append((payload, command[command.index("--rng-mode") + 1]))
                 return subprocess.CompletedProcess(command, 101, "", (
                     'RNG_PHYSICAL_CRIT_DIAGNOSTIC spell=12 chance=1.23\n'
                     'RNG_PROBABILITY_DIAGNOSTIC label="Physical Crit Roll" p=1.23\n'

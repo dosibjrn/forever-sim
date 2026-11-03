@@ -6,7 +6,6 @@ import copy
 import hashlib
 import json
 import math
-import os
 from pathlib import Path
 import random
 import sqlite3
@@ -97,8 +96,8 @@ def simulate(binary, request, mode, iterations, seed, deadline):
         _write(a,req)
         try:
             run=subprocess.run(
-                [str(binary.resolve()),"sim","--request",str(a),"--outfile",str(b),"--gate"],
-                env=dict(os.environ,WOWSIM_RNG_MODE=mode),capture_output=True,text=True,
+                [str(binary.resolve()),"sim","--request",str(a),"--outfile",str(b),"--gate","--rng-mode",mode],
+                capture_output=True,text=True,
                 timeout=max(.01,remaining))
         except subprocess.TimeoutExpired as exc:
             raise TimeoutError("strict native simulation deadline exhausted") from exc
@@ -191,13 +190,13 @@ def main():
             if time.monotonic()>rerank_end-.1:break
             req=_swap(reference,candidate["ids"])
             try:
-                score=simulate(a.binary,req,"stochastic",2000,search_seed+555123,rerank_end)
+                score=simulate(a.binary,req,"balanced",2000,search_seed+555123,rerank_end)
                 reranked.append({**candidate,"rerank_dps":score})
             except (TimeoutError,subprocess.TimeoutExpired):break
             except NativeFailure as exc:
                 failed.append({"ids":candidate["ids"],"phase":"rerank",
                                "category":exc.category,"returncode":exc.returncode,"error":str(exc)})
-        if not reranked:raise RuntimeError("no successful stochastic reranking: see failures.json")
+        if not reranked:raise RuntimeError("no successful balanced reranking: see failures.json")
         winner=max(reranked,key=lambda x:x["rerank_dps"])
         audit=validator.audit(winner["ids"])
         req=_swap(reference,winner["ids"])
