@@ -24,7 +24,7 @@ from native_joint_composition import (
     MISSING_TALENT_STRING, CandidateAxis, JointCandidateAdapter, search_joint,
 )
 from native_l60_matrix import (
-    ROOT, create_inventory, digest, fingerprint, player,
+    ROOT, HEAL, TANK, create_inventory, digest, fingerprint, player,
 )
 from native_executor import run
 from native_source_donors import load_source_donor_fixtures
@@ -160,6 +160,14 @@ def native_payload(candidate: dict, iterations: int, seed: int) -> dict:
     return payload
 
 
+def objective_for_profile(profile_id: str) -> str:
+    if profile_id in HEAL:
+        return "HPS"
+    if profile_id in TANK:
+        return "TPS"
+    return "DPS"
+
+
 def native_score_request(
     binary: Path,
     candidate: dict,
@@ -168,9 +176,10 @@ def native_score_request(
     rng_mode: str,
     deadline: float,
     *,
+    objective: str = "DPS",
     runner=run,
 ) -> tuple[dict, dict]:
-    """Score one exact request with an explicit optimizer RNG mode.
+    """Score one exact request on its selected native objective and RNG mode.
 
     This joint-search lane is selection, not holdout: every baseline,
     candidate and exact replay must use the typed balanced backend. Stochastic
@@ -178,11 +187,15 @@ def native_score_request(
     """
     if rng_mode != "balanced":
         raise ValueError("JOINT_OPTIMIZER_REQUIRES_EXPLICIT_BALANCED_RNG")
+    if objective not in {"DPS", "TPS"}:
+        raise ValueError("JOINT_OPTIMIZER_UNSUPPORTED_OBJECTIVE: " + str(objective))
     effective = native_payload(candidate, iterations, seed)
     expected_sha = fingerprint(effective)
-    score, raw, elapsed, scored_sha = runner(
-        binary, candidate, iterations, seed, rng_mode, deadline
-    )
+    runner_args = (binary, candidate, iterations, seed, rng_mode, deadline)
+    if objective == "DPS":
+        score, raw, elapsed, scored_sha = runner(*runner_args)
+    else:
+        score, raw, elapsed, scored_sha = runner(*runner_args, objective=objective)
     if scored_sha != expected_sha:
         raise RuntimeError("Native payload/score provenance mismatch")
     if not math.isfinite(float(score)):
@@ -190,6 +203,7 @@ def native_score_request(
     return {
         "effective_request_sha256": expected_sha,
         "score": float(score),
+        "objective": objective,
         "rng_mode": rng_mode,
         "iterations": iterations,
         "seed": seed,
@@ -545,8 +559,10 @@ def execute(profile_id: str, inventory: list, *,
             binary: Path, engine_src: Path, seconds: float, iterations: int,
             seed: int, outdir: Path,
             donor_fixtures: list[dict] | None = None) -> dict:
+    objective = objective_for_profile(profile_id)
     row = {
-        "profile_id": profile_id, "status": "BLOCKED_SOURCE",
+        "profile_id": profile_id, "objective": objective,
+        "status": "BLOCKED_SOURCE",
         "dimensions_requested": ["gear", "talents", "apl"],
         "native_paid": 0, "baseline_paid": 0, "native_paid_total": 0,
         "baseline_balanced_score": None,
@@ -573,6 +589,10 @@ def execute(profile_id: str, inventory: list, *,
     if reference is None:
         row["blocker"] = inv["blocker"]
         return row
+    if objective == "HPS":
+        row["status"] = "BLOCKED_OBJECTIVE"
+        row["blocker"] = "HPS objective/extractor and compatible source not verified"
+        return row
 
     cls = profile_id.split("/", 1)[0]
     same_class = [req for entry, req in inventory if req is not None
@@ -591,7 +611,7 @@ def execute(profile_id: str, inventory: list, *,
     try:
         baseline_record, baseline_raw = native_score_request(
             binary, reference, iterations, seed, "balanced",
-            time.monotonic() + 30.0,
+            time.monotonic() + 30.0, objective=objective,
         )
     except Exception as exc:
         row["status"] = "BLOCKED_NATIVE_BASELINE"
@@ -634,7 +654,7 @@ def execute(profile_id: str, inventory: list, *,
         return row
     row.update(scope)
     deadline = time.monotonic() + seconds
-    # One evaluator; no home-made DPS, Go scorer or fake score can enter report.
+    # One evaluator; no home-made objective score, Go scorer or fake score can enter report.
     def evaluate(candidate, *, iterations, seed, rng_mode):
         effective = native_payload(candidate, iterations, seed)
         key = fingerprint(effective)
@@ -642,7 +662,8 @@ def execute(profile_id: str, inventory: list, *,
             raise ValueError("JOINT_SEARCH_DOMAIN_REJECTED_BEFORE_NATIVE")
         try:
             native_record, raw = native_score_request(
-                binary, candidate, iterations, seed, rng_mode, deadline
+                binary, candidate, iterations, seed, rng_mode, deadline,
+                objective=objective,
             )
             score = native_record["score"]
             elapsed = native_record["native_duration_s"]
@@ -720,7 +741,7 @@ def execute(profile_id: str, inventory: list, *,
     elif row["status"] == "BLOCKED_NATIVE_REFUSALS":
         row["blocker"] = "MythicSim refused every scored three-axis proposal in this screen"
     elif row["status"] == "BLOCKED_NATIVE_UNSCORED":
-        row["blocker"] = "Native completed the requested distribution but returned no usable DPS mean"
+        row["blocker"] = "Native completed the requested distribution but returned no usable objective mean"
     elif row["status"] == "BLOCKED_NATIVE_EXECUTION_ERROR":
         row["blocker"] = "Native execution/response errors prevented a usable three-axis score"
     elif row["status"] == "NATIVE_JOINT_PAID_WITH_EXECUTION_ERRORS":
@@ -738,7 +759,7 @@ def execute(profile_id: str, inventory: list, *,
         try:
             replay_record, replay_raw = native_score_request(
                 binary, result["best_candidate"], iterations, seed,
-                "balanced", time.monotonic() + 30.0,
+                "balanced", time.monotonic() + 30.0, objective=objective,
             )
             replay = replay_record["score"]
             replay_sha = replay_record["effective_request_sha256"]
