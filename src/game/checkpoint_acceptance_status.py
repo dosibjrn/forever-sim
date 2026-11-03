@@ -57,8 +57,8 @@ def _legacy_six_gate_status(root: Path) -> dict:
 def accepted_checkpoint_status(root: Path) -> dict:
     """Read the canonical live M1 count, retaining separately labeled legacy facts.
 
-    An empty or absent ledger means zero certified checkpoints. Even 11 PASS
-    rows do not certify a checkpoint unless their compatibility IDs agree;
+    An empty or absent ledger means zero certified checkpoints. Even nine active-gate
+    PASS rows do not certify a checkpoint unless their compatibility IDs agree;
     tools.m1_progress.scoreboard owns that predicate. No gate is run here.
     """
     from tools.m1_progress import scoreboard
