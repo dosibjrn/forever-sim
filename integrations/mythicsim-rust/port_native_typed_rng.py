@@ -13,7 +13,12 @@ def edit(root, name, transformations):
     src = path.read_text()
     for old, new, count in transformations:
         actual = src.count(old)
-        if actual == 0 and src.count(new) >= count:
+        # A replacement may deliberately contain its original anchor (e.g.
+        # the RNG enum inserted after RandomRequest). Reapplying the port to
+        # an already-typed published fork must not duplicate that enum.
+        if src.count(new) >= count and (
+            actual == 0 or (old in new and actual == count)
+        ):
             continue
         if actual != count:
             raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: expected {count} of {old[:80]!r}, got {actual}")
@@ -122,13 +127,17 @@ def migrate_test_simulate_calls(root):
     if not tests_root.is_dir():
         raise RuntimeError("RNG_TEST_TREE_MISSING")
     changed = []
+    existing_calls = 0
     for path in sorted(tests_root.rglob("*.rs")):
         original = path.read_text()
+        existing_calls += original.count("simulate_prepared(")
         updated, count = add_explicit_mode_to_test_calls(original)
         if count:
             path.write_text(updated)
             changed.append((str(path.relative_to(root)), count))
-    if not changed:
+    # A second fork-sync sees already-explicit calls and is a valid no-op.
+    # An empty or unexpectedly different upstream test tree still fails closed.
+    if not changed and not existing_calls:
         raise RuntimeError("RNG_TEST_CALLS_NOT_FOUND")
     return changed
 
