@@ -190,3 +190,97 @@ def test_repair_planner_keeps_staged_db_and_fail_closed_contract(tmp_path):
         connection.execute("UPDATE capture_lists SET complete=0")
     with pytest.raises(ValueError, match="no unambiguous complete source-index batch"):
         plan(class_key="druid", level=20, db_path=path)
+
+
+def test_capture_ingesters_import_without_loading_legacy_gameir():
+    """The six source-only ingestion CLIs need the SQLite path, not GameIR."""
+    code = """
+import importlib
+import sys
+
+from src.game.data.forever.source_db_scope import DEFAULT_DB
+
+names = (
+    'wf247_ingest_outgoing',
+    'wf250_ingest_source_capture',
+    'wf252_ingest_companions',
+    'wf253_ingest_seal',
+    'wf254_ingest_paladin_talents',
+    'wf257_ingest_flash_recovery',
+)
+for name in names:
+    module = importlib.import_module('tools.' + name)
+    assert module.DEFAULT_DB is DEFAULT_DB, name
+    assert callable(module.ingest), name
+
+for name in (
+    'src.game.data.forever.sqlite_talents',
+    'src.game.model.ir',
+    'src.game.runtime.simulator',
+):
+    assert name not in sys.modules, name
+
+from src.game.data.forever.sqlite_talents import DEFAULT_DB as legacy_default
+assert legacy_default is DEFAULT_DB
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_outgoing_capture_ingest_explicit_db_remains_idempotent(tmp_path):
+    """A path-only import change must not alter persisted source/proxy facts."""
+    from tools.wf247_ingest_outgoing import ingest
+
+    db = tmp_path / "outgoing.sqlite"
+    assert ingest(db) == (60, 4)
+    assert ingest(db) == (60, 4)
+    with sqlite3.connect(db) as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM outgoing_combat_profile_source_facts"
+        ).fetchone()[0] == 60
+        assert conn.execute(
+            "SELECT COUNT(*) FROM target_armor_debuff_source_facts"
+        ).fetchone()[0] == 4
+        assert conn.execute(
+            "SELECT source_status FROM outgoing_combat_profile_source_facts "
+            "WHERE scenario_key='ordinary_melee_classic_proxy' AND level=20"
+        ).fetchone()[0] == "classic_proxy_not_forever_server_verified"
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
+def test_verified_source_capture_staged_ingest_remains_idempotent(tmp_path):
+    """The source-only capture CLI still honors explicit staging paths."""
+    import json
+
+    from tools.wf250_ingest_source_capture import ingest
+
+    capture = tmp_path / "capture.json"
+    capture.write_text(json.dumps({
+        "captured_at": "2026-11-03",
+        "capture_id": "boundary-test",
+        "granted_actions": [],
+        "spell_ranks": [{
+            "class_key": "mage",
+            "spell_id": 1234,
+            "cast_time_s": 1.5,
+            "mana_cost": 20,
+            "cooldown_s": 0,
+            "tooltip_text": "Source fixture",
+            "source_url": "https://example.invalid/spell/1234",
+            "source_build": "fixture-build",
+            "spell_power_coefficient": 0.5
+        }],
+        "talents": []
+    }), encoding="utf-8")
+    db = tmp_path / "capture.sqlite"
+    ingest(db=db, capture=capture)
+    ingest(db=db, capture=capture)
+    with sqlite3.connect(db) as conn:
+        assert conn.execute(
+            "SELECT spell_id, spell_power_coefficient "
+            "FROM verified_spell_rank_facts"
+        ).fetchall() == [(1234, 0.5)]
+        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"

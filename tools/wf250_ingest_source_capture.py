@@ -6,7 +6,7 @@ canonical SQLite; consumers never import the capture or script.
 from pathlib import Path
 import json
 import sqlite3
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 CAPTURE = Path(__file__).resolve().parents[1] / 'data/forever/source_captures/wf250_mage_verified_2026-10-11.json'
 

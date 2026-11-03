@@ -6,7 +6,7 @@ module and never contains spell/class/rank identities.
 from __future__ import annotations
 import json,sqlite3
 from pathlib import Path
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 CAPTURE=Path(__file__).resolve().parents[1]/'data/forever/source_captures/wf253_paladin_seal_20261011.json'
 
