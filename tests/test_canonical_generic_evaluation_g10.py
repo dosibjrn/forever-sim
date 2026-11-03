@@ -1,7 +1,12 @@
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
 from src.game.data.forever import build_game_ir_slice
-from src.game.evaluation import Evaluation, evaluation_from_combat_timeline
+from src.shared.evaluation import Evaluation
+from src.game.evaluation import Evaluation as LegacyGameEvaluation, evaluation_from_combat_timeline
 from src.game.model import DamageEffect, PeriodicEffect
 from src.game.runtime import ActorState, CombatRuntime, TargetState, action_eligibility
 from src.shared.leveling.objective import representative_hp
@@ -33,9 +38,27 @@ def _wrath_evaluation(level=20):
     return ev, timeline
 
 
-def test_evaluation_contract_is_now_game_layer_authority():
+def test_evaluation_contract_is_shared_with_legacy_game_aliases():
+    assert LegacyGameEvaluation is Evaluation
     assert OptimizerEvaluation is Evaluation
-    assert Evaluation.__module__ == "src.game.evaluation"
+    assert Evaluation.__module__ == "src.shared.evaluation"
+
+
+def test_shared_evaluation_imports_without_loading_game_runtime():
+    root = Path(__file__).resolve().parents[1]
+    probe = '''
+import sys
+from src.shared.evaluation import Evaluation
+from src.v2.class_model import Evaluation as OptimizerEvaluation
+assert Evaluation is OptimizerEvaluation
+assert not any(name == "src.game" or name.startswith("src.game.") for name in sys.modules)
+from src.game.evaluation import Evaluation as LegacyEvaluation
+assert LegacyEvaluation is Evaluation
+from src.game import Evaluation as PublicGameEvaluation
+assert PublicGameEvaluation is Evaluation
+assert not any(name.startswith("src.game.runtime") for name in sys.modules)
+'''
+    subprocess.run([sys.executable, "-c", probe], cwd=root, check=True)
 
 
 def test_g10_evaluation_is_derived_from_runtime_events():
