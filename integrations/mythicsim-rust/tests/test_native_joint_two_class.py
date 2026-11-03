@@ -246,7 +246,7 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         source_snapshot = copy.deepcopy(source)
 
         class TuneOnlyRng:
-            def choices(self, _values, _weights):
+            def choices(self, _values, weights=None):
                 return ["tune_condition"]
 
             def choice(self, values):
