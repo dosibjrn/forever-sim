@@ -92,8 +92,7 @@ mod druid_talent_layout_api_tests {
             }
         }
     }
-}
-"""
+}"""
 
 MAIN_IMPORT_OLD = "contracts::prepared_v2::PreparedV2, native_two_pull_windows,"
 MAIN_IMPORT_NEW = "contracts::prepared_v2::PreparedV2, forever_druid_talent_layout, native_two_pull_windows,"
