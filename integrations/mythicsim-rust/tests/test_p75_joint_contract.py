@@ -2,12 +2,13 @@
 import copy
 import json
 import random
+import inspect
 import sys
 import unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
-from p75_joint_search import make_candidate, candidate_key, player, parse, validate
+from p75_joint_search import make_candidate, candidate_key, player, parse, validate, main
 from apl_mutation import mutate_apl
 REFERENCE=ROOT.parent.parent/"docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
 
@@ -37,6 +38,18 @@ class JointSearchContracts(unittest.TestCase):
         self.assertEqual(key,candidate_key(copy.deepcopy(self.reference)))
         q=copy.deepcopy(self.reference)
         self.assertEqual(key,candidate_key(q))
+
+
+    def test_candidate_scoring_and_reranking_are_balanced_holdout_only_stochastic(self):
+        source=inspect.getsource(main)
+        self.assertIn('run(args.binary,q,args.screen_iterations,source_seed,"balanced",screen_end)',source)
+        self.assertIn('run(args.binary,q,160,source_seed+554433,',source)
+        self.assertIn('"balanced",screen_end)',source)
+        self.assertIn('run(args.binary,q,2000,source_seed+555123,"balanced",rerank_end)',source)
+        self.assertIn('run(args.binary,winner,args.holdout_iterations,args.seed+1300000007,"stochastic",deadline)',source)
+        self.assertIn('"balanced_probes":balanced_probes',source)
+        self.assertNotIn('stochastic_probe_dps',source)
+        self.assertNotIn('stochastic_rerank_dps',source)
 
     def test_cli_rejects_short_holdout_before_opening_assets(self):
         from unittest import mock
