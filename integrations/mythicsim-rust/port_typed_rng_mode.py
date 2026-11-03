@@ -27,27 +27,45 @@ def patch(path: Path, edits: list[tuple[str, str]]) -> None:
 
 
 def patch_test_callers(root: Path) -> None:
-    """Keep Rust-only healer fixtures explicitly stochastic after the API change.
+    """Keep historical Rust-only fixtures explicitly stochastic after the API change.
 
     These tests compare historical stochastic fixture outputs; they must opt in,
-    not inherit a constructor default. This helper is safe on both fresh and
-    already-ported fork branches.
+    not inherit a constructor default. This helper is safe on fresh and already
+    ported fork branches.
     """
     targets = (
         (
             "tests/healer_talents.rs",
             "use forever_engine::{check_prepared, prepare_json_with, simulate_prepared, Rules};",
+            "simulate_prepared(&prepared)",
             1,
         ),
         (
             "tests/healers.rs",
             "use forever_engine::{check_prepared, prepare, prepare_json_with, simulate_prepared, Rules};",
+            "simulate_prepared(&prepared)",
             7,
         ),
+        (
+            "tests/healer_spells.rs",
+            "use forever_engine::{check_prepared, prepare_json_with, simulate_prepared, Rules};",
+            "simulate_prepared(&prepared)",
+            1,
+        ),
+        (
+            "tests/client_70630_mage.rs",
+            "use forever_engine::{\n    contracts::prepared_v2::PreparedV2, prepare_json_with, simulate_prepared, Rules,\n};",
+            "simulate_prepared(&typed)",
+            1,
+        ),
+        (
+            "tests/racials_oct26.rs",
+            "use forever_engine::{\n    contracts::prepared_v2::PreparedV2, prepare_json_with, simulate_prepared, Rules,\n};",
+            "simulate_prepared(&typed)",
+            1,
+        ),
     )
-    old_call = "simulate_prepared(&prepared)"
-    new_call = "simulate_prepared(&prepared, RngMode::Stochastic)"
-    for relative, old_import, expected_calls in targets:
+    for relative, old_import, old_call, expected_calls in targets:
         path = root / relative
         source = path.read_text()
         new_import = old_import.replace(
@@ -55,7 +73,8 @@ def patch_test_callers(root: Path) -> None:
         if source.count(old_import) == 1:
             source = source.replace(old_import, new_import, 1)
         elif source.count(new_import) != 1:
-            raise AssertionError(f"{path}: expected one known healer-test import")
+            raise AssertionError(f"{path}: expected one known simulation-test import")
+        new_call = old_call[:-1] + ", RngMode::Stochastic)"
         old_count = source.count(old_call)
         new_count = source.count(new_call)
         if old_count == expected_calls and new_count == 0:
