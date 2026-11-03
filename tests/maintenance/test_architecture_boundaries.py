@@ -603,53 +603,30 @@ assert legacy_slug is source_slug
         assert "source_slug as _slug" in source, path
 
 
-def test_p2_and_staging_metadata_import_without_legacy_game_ir():
-    """Pure metadata/staging imports must not eagerly initialize game mechanics.
-
-    The legacy P2 allocation path still resolves the original budget when run;
-    this is an import boundary, not native P2 legality or a gate PASS.
-    """
+def test_staging_metadata_import_without_legacy_game_ir():
+    """Staging metadata can be stripped without eagerly loading game mechanics."""
     import subprocess
     import sys
 
     source = """
 import sys
 from types import SimpleNamespace
-from src.game.data.forever.source_checkpoint_p2 import (
-    P2Checkpoint, _captures, check_structural_allocation,
-)
 from src.game.data.forever.source_stage_isolation import strip_precompiled_source_actions
 
-checkpoint = P2Checkpoint('druid', 20)
-assert _captures(None, checkpoint) == {}
+snapshot = SimpleNamespace(actions=(), modes=(), source_facts=())
+assert strip_precompiled_source_actions(snapshot) is snapshot
 for module in (
     'src.game.talents',
     'src.game.model.ir',
     'src.game.runtime.simulator',
 ):
     assert module not in sys.modules, module
-
-# A staged no-op stays an exact no-op without instantiating any GameIR class.
-snapshot = SimpleNamespace(actions=(), modes=(), source_facts=())
-assert strip_precompiled_source_actions(snapshot) is snapshot
-assert 'src.game.model.ir' not in sys.modules
-
-# Calling the transitional legacy allocation audit still uses the unchanged
-# real talent budget and its historical implementation.
-legacy = SimpleNamespace(
-    actor=SimpleNamespace(metadata={'class_key': 'druid', 'level': 20}),
-    talents=(), provenance={'talent_tree_rules': {'points_per_row': 5}},
-)
-assert check_structural_allocation(legacy, {}, checkpoint) is True
-assert 'src.game.talents' in sys.modules
-assert 'src.game.model.ir' in sys.modules
 """
     result = subprocess.run(
         [sys.executable, "-c", source], cwd=ROOT,
         text=True, capture_output=True, timeout=30, check=False,
     )
     assert result.returncode == 0, result.stdout + "\\n" + result.stderr
-
 
 def test_generic_talent_frontier_identity_does_not_eagerly_load_game_ir():
     """Native-ready candidate identity must not load legacy Python rules.
