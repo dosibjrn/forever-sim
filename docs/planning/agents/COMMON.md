@@ -1,0 +1,64 @@
+# Shared autonomous-agent contract
+
+This file contains only rules that apply to all five agents. Read it together with the lightweight router in [AUTONOMOUS_AGENTS.md](../AUTONOMOUS_AGENTS.md) and exactly one role file.
+
+**Canonical repository:** `dosibjrn/forever-sim`, branch `main`. GitHub `main` is shared memory and the source of truth for current assignments and contracts. The goal remains **148/148 genuinely certified checkpoints**; read live counts from the approved evidence, never from this document or an old conversation.
+
+## Authority
+
+- [OVERALL_PLAN](../../OVERALL_PLAN.md) defines **what** the project is building.
+- [PROCESS](../../PROCESS.md) and [gate contracts](../../gates/README.md) define **how** work is accepted.
+- [WORK_PRIORITY](../WORK_PRIORITY.md) is the live, current-only work allocation and ownership queue.
+- This contract and role files organize work; they do not override approved scope, process or gates.
+- Continue the existing owned issue/branch/PR. Do not rely on stale conversation summaries, fixed historical issue numbers or old task prompts. Do not take another agent's owned branch.
+
+## Owner decision #1: MythicSim owns Warcraft mechanics
+
+Forever must not recreate or require trainer/quest/rank acquisition certificates, source-acquisition ledgers, versioned spellbook proofs, index-to-client identity certificates, or an independent Warcraft legality/semantic proof in any P1–P7.5 gate, optimizer or route.
+
+**MythicSim Rust is authoritative** for Warcraft source facts, spell/rank acquisition, talent/gear/enchant/APL legality, combat effects and game-world execution. Forever defines scenarios, generates/optimizes candidates, calls and observes the native engine, and records the existing gates.
+
+- Before every Prio/Work1/Work2/Clean implementation cycle, read current [WORK_PRIORITY](../WORK_PRIORITY.md) and owner decisions [#357](https://github.com/dosibjrn/forever-sim/issues/357) and [#359](https://github.com/dosibjrn/forever-sim/issues/359). Check the selected MythicSim fork and other proven production modules before adding functionality.
+- Never add or extend GameIR, a parallel Python game model, a Forever game-legality/source catalogue, or a Python workaround for missing Rust behavior.
+- Migrate each live caller to the native boundary before removing its replaced Python implementation. Preserve real effects, candidate reachability, native refusals, world/2D/100-mob semantics, approved gates and historical M1/PASS records.
+- The default first task is removing a meaningful live GameIR dependency. Change the Rust fork only for a specifically reproduced missing interface or execution capability required by that caller. Use an ordinary fork branch/PR; `/rust-fork-sync` is only the privileged sync path.
+
+## Trusted-engine boundary: do not validate MythicSim
+
+Do not add tests, audits or Python checks to prove that native talent ranks, spell/gear/enchant/APL legality, ability effects or other Warcraft mechanics are correct. A native `INVALID` or `UNSUPPORTED` response is authoritative, not a claim Forever must independently verify.
+
+Test only changed Forever-owned behavior: request serialization, forwarding to native, response propagation and classification of `VALID` / `INVALID` / `UNSUPPORTED` / execution errors. Use fixtures/mocks for response mapping; add a focused real native integration test only when Forever's invocation or result handling changed and that test is needed to verify the integration.
+
+For a Forever-only change that removes duplicate rules or changes only the adapter, Rust source compilation, native-gameplay tests, independent rules audits and revalidation of the unchanged pinned engine are **not** PR/merge prerequisites. Auto-triggered Rust workflows are informational when no Rust source or gitlink changed. Verify the changed integration when a real engine source/gitlink change requires it; do not turn that into a Warcraft-rules audit.
+
+## Do not invent problems or blockers
+
+- A blocker requires concrete evidence: a reproducible production/source FAIL, a real error, an unmet approved PROCESS/gate requirement, or a specifically named missing capability. Cite the run, source or exact criterion.
+- Distinguish **proven defect**, **not yet tested**, and **possible risk**. A missing PASS from an unrun acceptance test is not proof that implementation, build or source data is broken.
+- The approved gate defines the requirements. Do not add extra exhaustive-combination, source-audit, UI-proof or compatibility conditions unless that gate explicitly requires them.
+- Continue owned work, run the smallest relevant production test when useful, fix the first real FAIL, regress it and proceed. Do not start speculative investigations or slow a working merge with hypothetical risks.
+- Report what is proven, what remains untested and the next actual gate requirement. If evidence is absent, say the test has not run; do not promote a hypothesis to a blocker.
+
+This rule does not relax OVERALL_PLAN, PROCESS or any gate. It prevents invented acceptance requirements and unsupported failure claims.
+
+## Operating model
+
+- Five independent conversations and five separate hourly tasks: Prio XX:00, Work1 XX:10, Work2 XX:20, Merge XX:40, Clean XX:50, Europe/Helsinki. These are intended offsets, not proof that an automation is enabled.
+- Each cycle starts from latest `main`, this shared contract, the agent's own role file, current [WORK_PRIORITY](../WORK_PRIORITY.md), and the relevant owned issue/PR/branch. Read only the relevant sections of OVERALL_PLAN, PROCESS and gate docs.
+- Each agent reads **only its own role file**. Work1 and Work2 also read [WORK_COMMON](WORK_COMMON.md). Read [P7 notes](P7.md) only when the assigned work actually touches P7. Do not load the other agents' contracts.
+- Continue, do not restart: owned issues/branches/PRs are durable handoffs. Change assignment only for a proven priority/dependency reason and hand off unfinished work.
+- Make ordinary technical decisions and carry work through commit/PR/merge within the role's authority. Ask only when blocked by external authority/permissions or a change to approved scope.
+
+## GitHub Actions
+
+At cycle end, consider whether the next real test/build/production run is concretely useful, ready and allowed. Start it on an existing workflow when justified; do not wait for a long run to finish. Link the run, exact ref/SHA, purpose and next check in the existing owned issue or PR. No separate agent logs, timestamp PRs or result registers.
+
+Use existing workflows first. Prefer focused, economical runs. Do not repeat unchanged 300-second searches, 1,000-fight stochastic holdouts or hourly heavy acceptance. A green CI run or starting a workflow does not itself prove a gate PASS. Work1 and Work2 inspect their own relevant completed and in-progress Actions at cycle start; other agents inspect relevant results as needed.
+
+## M1 reporting and ownership
+
+When reporting M1 status, lead with **`M1 measured: X.XXXX% (float=0.XXXXXXXXXX)`**, read from latest `main` using `python tools/m1_progress.py` and its `measured_percent` / `measured_fraction` values. This is partial-inclusive diagnostic coverage, **not** certified checkpoint percentage, acceptance or forecast. Do not derive it from `C/148`, an SVG, CI or a previous conversation. If the live scoreboard is unavailable, say so. Avoid repeating unchanged `0/148` boilerplate.
+
+**Only Merge** launches the trusted M1 recorder and writes, invalidates or commits `docs/planning/M1_PASSES.tsv`. A true PASS requires an accepted production run and PROCESS predicate; PARTIAL remains diagnostic and never increments the certified gate count. Prio, Work1, Work2 and Clean must not edit the ledger, invoke the recorder or promise a numerical increase.
+
+Every production-code PR must contain `M1 affected gates: class:level:spec:gate ...` for concrete affected gates, or `M1 affected gates: none` when no gate behavior changed. This is an execution hint, not a manually assigned verdict. Merge's exact dispatch and recording procedure is in [MERGE](MERGE.md).
