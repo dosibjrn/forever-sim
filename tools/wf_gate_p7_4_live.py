@@ -353,7 +353,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     search_wall_s = search_observed_at - search_start
     search_window_met = p7_search_window_completed(
         full_search=full_search, elapsed_seconds=search_wall_s,
-    )    if best is None:
+    )
+    if best is None:
         return {"status": "FAIL",
                 "reasons": ["P7_4_NO_SOURCE_LEGAL_NATIVE_WORLD_GEAR_CANDIDATE_EXECUTED"],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d",
