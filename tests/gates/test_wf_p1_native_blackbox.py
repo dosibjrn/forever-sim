@@ -1,8 +1,8 @@
-"""P1 source inventory and native single-action request contracts.
+"""P1 Forever native request/response boundary contracts.
 
-Unit tests here validate Forever request plumbing only. Actual native combat
-and the live 2D world bridge are exercised by the pinned-Rust integration
-test in integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py.
+Unit tests validate Forever-owned request plumbing and response handling only.
+The pinned-Rust integration separately exercises the real native call and
+live 2D world bridge.
 """
 from copy import deepcopy
 import json
@@ -17,10 +17,8 @@ from src.engine_client.native_p2_rank_probe import (
     _simulate_prepared,
 )
 
-from tools.p1_native_source_inventory import inventory
 from tools.wf_p1_native_effects import native_single_action_pair, run_native
 
-ROOT = Path(__file__).resolve().parents[2]
 
 
 def _sample_request():
@@ -42,39 +40,6 @@ def _druid_request():
     request = _sample_request()
     request["raid"]["parties"][0]["players"][0]["class"] = "ClassDruid"
     return request
-
-
-def _scope():
-    return {
-        "class": "hunter", "level": 20,
-        "scenario": "current_solo_leveling_100mob_v1",
-        "source_only": True, "game_ir_required": False,
-        "candidates": [{"spell_id": 13550}],
-        "separate": [{"spell_id": 14282, "status": "NOT_A_PROVEN_CASTABLE_ACTION"}],
-    }
-
-
-def test_hunter_l20_source_inventory_no_gameir_and_no_false_pass():
-    result = inventory("hunter", 20)
-    assert result["source_only"] is True
-    assert result["game_ir_required"] is False
-    assert result["effects_tested"] == 0
-    assert result["p1_certified"] is False
-    assert result["candidate_count"] > 0
-    special = {x["spell_id"]: x["status"] for x in result["separate"]}
-    assert special[75] == "NATIVE_AUTO_ATTACK"
-    assert {14282, 13550} <= {x["spell_id"] for x in result["candidates"]}
-
-
-@pytest.mark.parametrize("cls", ("druid", "hunter", "mage", "paladin", "priest",
-                                  "rogue", "shaman", "warlock", "warrior"))
-@pytest.mark.parametrize("level", (20, 60))
-def test_class_level_p1_source_inventory_does_not_require_old_python_adapters(cls, level):
-    result = inventory(cls, level)
-    assert result["class"] == cls
-    assert result["level"] == level
-    assert result["candidate_count"] + result["separate_count"] > 0
-    assert result["p1_certified"] is False
 
 
 def test_native_single_action_pair_keeps_every_non_action_field_identical():
@@ -118,12 +83,11 @@ def test_native_single_action_pair_rejects_hidden_rotation_channels():
         native_single_action_pair(request, 14282)
 
 
-def test_source_inventory_is_not_a_native_eligibility_veto(monkeypatch, tmp_path):
-    """An uncertain source role annotates progress only; native still receives the request."""
+def test_native_probe_has_no_source_inventory_or_shadow_progress_dependency(
+    monkeypatch, tmp_path
+):
     from tools import wf_p1_native_effects as native
 
-    source = _scope()
-    monkeypatch.setattr(native, "inventory", lambda *args, **kwargs: source)
     calls = []
 
     def fake_probe(**kwargs):
@@ -140,54 +104,25 @@ def test_source_inventory_is_not_a_native_eligibility_veto(monkeypatch, tmp_path
         }
 
     monkeypatch.setattr(native, "run_native_p1_direct_effect_probe", fake_probe)
-    binary = tmp_path / "forever-engine"
-    binary.write_bytes(b"unit-test-placeholder-not-an-engine")
     result = native.run_native(
-        binary, _sample_request(), class_key="hunter", level=20, spell_id=14282
+        tmp_path / "forever-engine",
+        _sample_request(),
+        class_key="hunter",
+        level=20,
+        spell_id=14282,
     )
 
     assert len(calls) == 1
     assert calls[0]["spell_id"] == 14282
     assert result["status"] == "NATIVE_DIRECT_BEHAVIOR_VERIFIED"
-    assert result["source_candidate_membership"] is False
-    assert result["source_scope_membership"] is True
-    assert result["p1_native_progress"]["verified"] == 0
-    assert result["p1_native_progress"]["diagnostic_only_spell_ids"] == [14282]
+    assert result["native_executed"] is True
     assert result["p1_certified"] is False
-
-
-def test_source_inventory_failure_does_not_block_native_execution(monkeypatch, tmp_path):
-    from tools import wf_p1_native_effects as native
-
-    calls = []
-
-    def fake_probe(**kwargs):
-        calls.append(kwargs)
-        return {
-            "status": "NATIVE_DIRECT_BEHAVIOR_VERIFIED",
-            "proof_kind": "NATIVE_DIRECT_EFFECT",
-            "executor": "msim-rust",
-            "native_executed": True,
-            "effect_observed": True,
-            "controlled_behavior_assertion_passed": True,
-            "observable_effects": {"dps_delta": 2.0, "actual_2d_ack": True},
-            "p1_certified": False,
-        }
-
-    monkeypatch.setattr(native, "run_native_p1_direct_effect_probe", fake_probe)
-    monkeypatch.setattr(
-        native, "inventory",
-        lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("diagnostic DB unavailable")),
-    )
-    binary = tmp_path / "forever-engine"
-    binary.write_bytes(b"unit-test-placeholder-not-an-engine")
-    result = native.run_native(
-        binary, _sample_request(), class_key="hunter", level=20, spell_id=14282
-    )
-
-    assert len(calls) == 1
-    assert result["status"] == "NATIVE_DIRECT_BEHAVIOR_VERIFIED"
-    assert "diagnostic DB unavailable" in result["p1_native_progress_error"]
+    assert not hasattr(native, "inventory")
+    assert not hasattr(native, "native_p1_progress")
+    assert "source_candidate_membership" not in result
+    assert "source_scope_membership" not in result
+    assert "p1_native_progress" not in result
+    assert "p1_native_progress_error" not in result
 
 
 def test_native_prepare_refusal_is_preserved_without_fallback(monkeypatch, tmp_path):
@@ -334,38 +269,6 @@ def test_native_direct_effect_does_not_claim_success_without_metric_delta(monkey
     assert result["status"] == "NO_DIRECT_EFFECT_OBSERVED"
     assert result["effect_observed"] is False
     assert result["p1_certified"] is False
-
-
-def test_source_only_nonimpact_never_becomes_an_effect_pass():
-    result = inventory("druid", 20)
-    rows = {x["name"]: x["status"] for x in result["separate"]}
-    for name in ("Aquatic Form", "Growl", "Cure Poison", "Rebirth", "Revive"):
-        assert rows[name] == "NOT_RELEVANT_TO_SIMULATION"
-    assert result["p1_certified"] is False
-
-
-
-def _simulate_prepared_report(monkeypatch, tmp_path, report, *, allow_zero=False):
-    binary = tmp_path / "forever-engine"
-    binary.write_bytes(b"mock executable path")
-
-    def fake_run(args, **kwargs):
-        output_path = Path(args[args.index("--outfile") + 1])
-        output_path.write_text(json.dumps(report), encoding="utf-8")
-        return subprocess.CompletedProcess(args, 0, "", "")
-
-    monkeypatch.setattr(
-        "src.engine_client.native_p2_rank_probe.subprocess.run", fake_run
-    )
-    return _simulate_prepared(
-        binary_path=binary,
-        prepared={"sim": {"iterations": 10, "seed": 647003}},
-        rng_mode=NativeRngMode.BALANCED,
-        iterations=10,
-        seed=647003,
-        deadline=time.monotonic() + 60,
-        allow_zero_dps_if_avg_absent=allow_zero,
-    )
 
 
 def test_empty_native_control_report_counts_zero_only_after_all_fights_complete(

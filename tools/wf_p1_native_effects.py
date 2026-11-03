@@ -9,8 +9,8 @@ and all combat mechanics. Forever does not use a Python spellbook, trainer
 ledger, source-index eligibility check, or GameIR action to veto the native
 request.
 
-Source inventory is consulted only after execution to display diagnostic
-candidate-scope progress. It never blocks or changes the native call.
+The diagnostic reports only native execution and observed behavior. It does
+not maintain a Python source catalogue or a shadow progress score.
 """
 from __future__ import annotations
 
@@ -27,8 +27,7 @@ from src.engine_client.native_p1_effect_probe import (
     native_single_action_pair,
     run_native_p1_direct_effect_probe,
 )
-from tools.p1_native_progress import native_p1_progress
-from tools.p1_native_source_inventory import inventory
+
 
 VERIFIED_EFFECT = "NATIVE_DIRECT_BEHAVIOR_VERIFIED"
 
@@ -42,13 +41,12 @@ def run_native(
     spell_id: int,
     timeout_s: float = 120.0,
     root: Path = ROOT,
-    db_path: Path | None = None,
     target_count: int = 2,
     mob_health: float | None = 1200.0,
     iterations: int = 10,
     seed: int = 647003,
 ) -> dict:
-    """Run native first; source inventory can annotate progress but cannot veto."""
+    """Run the native request pair and return only Forever-boundary observations."""
     try:
         report = run_native_p1_direct_effect_probe(
             binary=binary,
@@ -77,33 +75,6 @@ def run_native(
         "p1_certified": False,
     })
 
-    # Candidate inventory is diagnostic-only, after the native call. In
-    # particular, missing or non-castable Python source metadata never blocks
-    # an explicit request from reaching MythicSim.
-    try:
-        scope = inventory(class_key, level, root=root, db_path=db_path)
-        candidates = {row["spell_id"] for row in scope["candidates"]}
-        known = candidates | {row["spell_id"] for row in scope["separate"]}
-        report["source_candidate_membership"] = spell_id in candidates
-        report["source_scope_membership"] = spell_id in known
-        runtime_results = []
-        if spell_id in known:
-            runtime_results.append({
-                "spell_id": spell_id,
-                "status": report.get("status"),
-                "proof_kind": report.get("proof_kind"),
-                "executor": report.get("executor"),
-                "native_executed": report.get("native_executed") is True,
-                "controlled_behavior_assertion_passed":
-                    report.get("controlled_behavior_assertion_passed") is True,
-                "observable_effects": report.get("observable_effects") or {},
-            })
-        report["p1_native_progress"] = native_p1_progress(scope, runtime_results)
-    except Exception as exc:
-        # A diagnostic denominator failure is not a native execution veto.
-        report["p1_native_progress_error"] = (
-            f"{type(exc).__name__}:{exc}"
-        )
     return report
 
 
