@@ -75,6 +75,7 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
         "source_policy_applicability": result.get("source_policy_applicability"),
         "source_executable_stat_axes": result.get("source_executable_stat_axes"),
         "catalogue_stat_axes": result.get("catalogue_stat_axes"),
+        "p3_probe_stats": result.get("p3_probe_stats"),
         "behavior_probes_executed": result.get("behavior_probes_executed"),
         "real_catalogue_slots_scored": result.get("real_catalogue_slots_scored"),
         "actual_search_result_status": result.get("actual_search_result_status"),
@@ -86,6 +87,7 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
         f"source_policy={result.get('source_policy_applicability')!r}; "
         f"executable_axes={result.get('source_executable_stat_axes')!r}; "
         f"catalogue_axes={result.get('catalogue_stat_axes')!r}; "
+        f"probe_stats={result.get('p3_probe_stats')!r}; "
         f"witnesses={witness_summary!r}; "
         f"counts={result.get('pass_count')}/{result.get('reachability_count')}; "
         f"probes={result.get('behavior_probes_executed')}; "
@@ -98,3 +100,5 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
     assert result["behavior_probes_executed"] > 0, detail
     assert result["production_engine"] == "gsim_CombatRuntime", detail
     assert result["real_catalogue_slots_scored"] > 0, detail
+    assert result["source_policy_applicability"]["equipped_weapon_damage_relevant"] is True, detail
+    assert result["real_measured_stat_weights"]["wand_dps"] > 0, detail
