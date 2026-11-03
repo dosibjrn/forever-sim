@@ -1949,8 +1949,12 @@ def _native_p2_range_world_diagnostic(binary, talent_id, rank, tested):
             rng_mode=NativeRngMode.BALANCED,seed=647003,timeout_seconds=60.0)
         probe['source_rank_facts']={
             'talent_id':talent_id,'rank':int(rank),
-            'tree_key':source.get('tree_key'),'source_build':source.get('source_build'),
-            'source_url':source.get('source_url'),
+            'class_key':source.get('class_key'),'level':source.get('level'),
+            'tree_key':source.get('tree_key'),'rank_cap':source.get('rank_cap'),
+            'tree_row':source.get('tree_row'),'points_per_row':source.get('points_per_row'),
+            'source_build':source.get('source_build'),
+            'source_url':source.get('source_url') or l0.get('source_url'),
+            'checkpoint_source_l0':dict(l0),
         }
         return probe
     except (OSError,ValueError,KeyError,TypeError,AttributeError,RuntimeError) as exc:
@@ -1958,6 +1962,127 @@ def _native_p2_range_world_diagnostic(binary, talent_id, rank, tested):
                 'reason':'NATIVE_P2_RANGE_WORLD_GATE_ADAPTER_FAILED:'
                          +type(exc).__name__+':'+str(exc),
                 'accepted_for_p2':False,'counted_in_p2_acceptance':False}
+
+
+def _native_p2_range_world_acceptance(tested, probe, *, legal_pair_verified):
+    """Promote only a source-complete, legal, searchable native 2D range proof.
+
+    The raw world probe remains diagnostic. This separate acceptance record
+    additionally requires the exact source L0 clause, a native-validated
+    before/after talent pair, and the P2 search-reachability witness.
+    """
+    if not legal_pair_verified or tested.get('search_reachable') is not True:
+        return None
+    if not isinstance(tested.get('control_witness'), Mapping) or not isinstance(tested.get('witness'), Mapping):
+        return None
+    source = tested.get('source_rank_facts')
+    if not isinstance(source, Mapping):
+        return None
+    l0 = source.get('checkpoint_source_l0')
+    if not isinstance(l0, Mapping):
+        return None
+    effects = l0.get('effects')
+    if not isinstance(effects, list) or len(effects) != 1:
+        return None
+    expected = l0.get('expected_clause_count')
+    if isinstance(expected, bool) or not isinstance(expected, int) or expected != len(effects):
+        return None
+    effect = effects[0]
+    if not isinstance(effect, Mapping) or effect.get('domain') != 'offensive_spell_range_bonus_fraction':
+        return None
+    try:
+        sourced_value = float(effect.get('sourced_value', effect.get('value')))
+    except (TypeError, ValueError):
+        return None
+    if not isfinite(sourced_value) or sourced_value <= 0:
+        return None
+    source_url = str(source.get('source_url') or l0.get('source_url') or '')
+    source_build = str(source.get('source_build') or '')
+    if not source_url.startswith('https://') or not source_build:
+        return None
+    try:
+        level = int(source.get('level'))
+        rank = int(source.get('rank'))
+        rank_cap = int(source.get('rank_cap'))
+    except (TypeError, ValueError):
+        return None
+    if (source.get('class_key') != 'druid' or level != 60
+            or str(source.get('tree_key') or '').lower() != 'balance'
+            or str(source.get('talent_id') or '') != 'natures_reach'
+            or rank not in (1, 2) or rank > rank_cap):
+        return None
+    if probe.get('status') != 'WORLD_RANGE_PASS':
+        return None
+    try:
+        before_range = float(probe.get('before_max_range_yards'))
+        after_range = float(probe.get('after_max_range_yards'))
+        distance = float(probe.get('distance_yards'))
+        before_damage = float(probe.get('before_world_applied_damage'))
+        after_damage = float(probe.get('after_world_applied_damage'))
+        before_events = int(probe.get('before_native_damage_events'))
+        after_events = int(probe.get('after_native_damage_events'))
+        before_ticks = int(probe.get('before_native_world_ticks'))
+        after_ticks = int(probe.get('after_native_world_ticks'))
+        spell_id = int(probe.get('spell_id'))
+        observed_spell_ids = {int(value) for value in (probe.get('after_observed_spell_ids') or [])}
+        iterations = int(probe.get('iterations'))
+    except (TypeError, ValueError):
+        return None
+    if not (before_range < distance < after_range):
+        return None
+    if before_damage != 0 or after_damage <= 0 or before_events != 0 or after_events <= 0:
+        return None
+    if before_ticks <= 0 or after_ticks <= 0 or spell_id <= 0 or spell_id not in observed_spell_ids:
+        return None
+    if not probe.get('engine_identity') or not probe.get('source_layout_sha256'):
+        return None
+    if not probe.get('before_request_proto_sha256') or not probe.get('after_request_proto_sha256'):
+        return None
+    if str(probe.get('rng_mode') or '').lower() != 'balanced' or iterations != 1:
+        return None
+    rank_key = str(tested.get('rank_key') or '')
+    if rank_key != f'natures_reach:{rank}':
+        return None
+    observation = {
+        'before_max_range_yards': before_range,
+        'after_max_range_yards': after_range,
+        'distance_yards': distance,
+        'before_world_applied_damage': before_damage,
+        'after_world_applied_damage': after_damage,
+        'before_native_damage_events': before_events,
+        'after_native_damage_events': after_events,
+        'before_native_world_ticks': before_ticks,
+        'after_native_world_ticks': after_ticks,
+        'spell_id': spell_id,
+        'after_observed_spell_ids': sorted(observed_spell_ids),
+        'rng_mode': 'balanced',
+        'iterations': iterations,
+        'seed': probe.get('seed'),
+        'before_request_proto_sha256': probe.get('before_request_proto_sha256'),
+        'after_request_proto_sha256': probe.get('after_request_proto_sha256'),
+        'source_layout_sha256': probe.get('source_layout_sha256'),
+    }
+    return {
+        'rank_key': rank_key,
+        'status': 'PASS',
+        'passed': True,
+        'actually_executed': True,
+        'test_id': f'selected_rust_gsim_2d_natures_reach_rank_{rank}',
+        'executor': 'selected_mythicsim_rust+gsim_2d',
+        'production_engine': 'msim+gsim-world',
+        'engine_identity': str(probe.get('engine_identity')),
+        'source_build': source_build,
+        'source_url': source_url,
+        'source_rank_facts': dict(source),
+        'source_l0_effect_domains': ['offensive_spell_range_bonus_fraction'],
+        'source_l0_expected_clause_count': expected,
+        'source_l0_sourced_value': sourced_value,
+        'legal_pair_verified': True,
+        'search_reachable': True,
+        'range_world_observation': observation,
+        'accepted_for_p2': True,
+        'counted_in_p2_acceptance': True,
+    }
 
 
 def _sqlite_connection_path(database):
@@ -1975,10 +2100,20 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
     result={'class':class_key,'level':level,'spec':spec,'gate':'P2',
             'status':'FAIL','reasons':[],'ranks':[], 'unreachable':[],
             'unresolved':[], 'behavior_probes_executed':0,
+            'game_ir_diagnostic_behavior_probes_executed':0,
             'native_rank_probe_results':[],
             'native_rank_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE',
             'native_range_world_probe_results':[],
-            'native_range_world_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE'}
+            'native_range_world_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE',
+            'native_range_world_acceptance_results':[],
+            'native_range_world_acceptance_summary':{
+                'attempted':0,'accepted':0,'counted_in_p2_acceptance':False,
+                'scope':'SOURCE_BACKED_LEGAL_SEARCHABLE_SELECTED_EXECUTOR_BEHAVIOR'},
+            'rank_behavior_results':[],
+            'coverage_basis':'diagnostic_only',
+            'partial_scope':'NO_SELECTED_EXECUTOR_P2_BEHAVIOR',
+            'scope_provisional':True,'coverage_scope_complete':False,
+            'pass_count':0,'reachability_count':0}
     source_db = None
     sqlite_connection_paths = []
     try:
@@ -2116,22 +2251,35 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                     range_probe=_native_p2_range_world_diagnostic(
                         os.environ.get('FOREVER_MYTHICSIM_RUST_BIN'),
                         talent.id,int(rank.rank),tested)
+                    range_probe['rank_key']=key
                     range_probe['executor']='selected_mythicsim_rust+gsim_2d'
                     range_probe['accepted_for_p2']=False
                     range_probe['counted_in_p2_acceptance']=False
+                    legal_pair_verified=False
+                    try:
+                        check_structural_allocation(
+                            compiled,tested.get('control_witness'),checkpoint,
+                            bonus_talent_points=bonus)
+                        check_structural_allocation(
+                            compiled,tested.get('witness'),checkpoint,
+                            bonus_talent_points=bonus)
+                        legal_pair_verified=True
+                    except (ValueError,TypeError,KeyError,AssertionError):
+                        legal_pair_verified=False
+                    range_probe['legal_pair_verified']=legal_pair_verified
+                    range_probe['search_reachable']=tested.get('search_reachable') is True
                     tested['native_range_world_probe']=range_probe
                     result['native_range_world_probe_results'].append(
                         {'rank_key':key, **range_probe})
                     if range_probe.get('status')=='WORLD_RANGE_PASS':
-                        tested['reasons']=[
-                            reason.replace(
-                                'IMPLEMENTATION_MISSING:source_offensive_range_world_behavior',
-                                'GATE_EXECUTOR_MISSING:source_offensive_range_world_behavior_not_yet_consumed_by_full_p2_acceptance')
-                            for reason in tested['reasons']]
                         tested['range_world_behavior_verified_by_selected_executor']=True
-                        tested['status']='FAIL'
+                        acceptance=_native_p2_range_world_acceptance(
+                            tested,range_probe,legal_pair_verified=legal_pair_verified)
+                        if acceptance is not None:
+                            result['native_range_world_acceptance_results'].append(acceptance)
+                            tested['native_p2_range_world_acceptance']=acceptance
                 result['ranks'].append(tested)
-                result['behavior_probes_executed']+=len(tested['behavior_tests'])
+                result['game_ir_diagnostic_behavior_probes_executed']+=len(tested['behavior_tests'])
         native_probes=result['native_rank_probe_results']
         result['native_rank_probe_summary']={
             'scope':'druid:60:balance; source-backed predatory_strikes:1-3; moonkin_form remains engine-smoke-only',
@@ -2152,21 +2300,88 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
             'rng_mode':'balanced',
             'counted_in_p2_acceptance':False,
         }
-        fail=[r for r in result['ranks'] if r['status']!='PASS']
+        game_ir_pass_count=sum(1 for r in result['ranks'] if r.get('status')=='PASS')
+        game_ir_fail_count=len(result['ranks'])-game_ir_pass_count
+        game_ir_diagnostic_reasons=[
+            f"{r['rank_key']}:{'|'.join(r.get('reasons') or [])}"
+            for r in result['ranks'] if r.get('status')!='PASS']
+        accepted=list(result['native_range_world_acceptance_results'])
+        engine_ids={str(item.get('engine_identity') or '') for item in accepted}
+        if len(engine_ids)>1:
+            # Never combine rank proofs from different selected engine identities.
+            accepted=[]
+            result['native_range_world_acceptance_results']=[]
+        accepted_by_key={item['rank_key']:item for item in accepted}
+        range_probe_by_key={item.get('rank_key'):item for item in result['native_range_world_probe_results']}
+        for rank_result in result['ranks']:
+            rank_result['game_ir_diagnostic_status']=rank_result.get('status')
+            rank_result['game_ir_diagnostic_reasons']=list(rank_result.get('reasons') or [])
+            rank_result['game_ir_diagnostic_behavior_tests']=list(rank_result.get('behavior_tests') or [])
+            acceptance=accepted_by_key.get(rank_result.get('rank_key'))
+            if acceptance is not None:
+                rank_result['status']='PASS'
+                rank_result['reasons']=[]
+                rank_result['behavior_tests']=[acceptance]
+                rank_result['selected_executor_behavior']=acceptance
+                rank_result['accepted_for_p2']=True
+                rank_result['counted_in_p2_acceptance']=True
+            else:
+                probe=range_probe_by_key.get(rank_result.get('rank_key'))
+                if probe and probe.get('status')=='WORLD_RANGE_FAIL':
+                    rank_result['status']='FAIL'
+                    rank_result['reasons']=['SELECTED_EXECUTOR_RANGE_WORLD_BEHAVIOR_FAILED']
+                else:
+                    rank_result['status']='UNTESTED_SELECTED_EXECUTOR'
+                    rank_result['reasons']=['SELECTED_EXECUTOR_BEHAVIOR_NOT_YET_PROVEN']
+                rank_result['behavior_tests']=[]
+                rank_result['selected_executor_behavior']=None
+                rank_result['accepted_for_p2']=False
+                rank_result['counted_in_p2_acceptance']=False
+        accepted_count=len(accepted)
+        result['native_range_world_acceptance_summary']={
+            'attempted':len(result['native_range_world_probe_results']),
+            'accepted':accepted_count,
+            'counted_in_p2_acceptance':accepted_count>0,
+            'scope':'SOURCE_BACKED_LEGAL_SEARCHABLE_SELECTED_EXECUTOR_BEHAVIOR',
+            'rank_keys':sorted(accepted_by_key),
+            'engine_identity':next(iter(engine_ids)) if len(engine_ids)==1 and accepted_count else None,
+        }
+        result['rank_behavior_results']=accepted
+        result['game_ir_diagnostic_summary']={
+            'production_engine':'live_game_ir_compiler_and_runtime',
+            'pass_count':game_ir_pass_count,
+            'fail_count':game_ir_fail_count,
+            'counted_in_p2_acceptance':False,
+            'reasons':game_ir_diagnostic_reasons,
+        }
         result['reachability_count']=len(result['ranks'])
-        result['pass_count']=len(result['ranks'])-len(fail)
-        # Each numerator unit is a reached source rank whose actual
-        # CombatRuntime behavior assertions passed, NOT a compiled modifier,
-        # source row, or merely an attempted test.
-        result['coverage_basis']='executed_behavior_or_checked_solo_exclusion'
-        result['partial_scope']='SOURCE_REACHABLE_RANK_RUNTIME_BEHAVIOR'
-        result['fail_count']=len(fail)
+        result['pass_count']=accepted_count
+        result['fail_count']=result['reachability_count']-accepted_count
+        result['behavior_probes_executed']=accepted_count
         result['unresolved_count']=len(result['unresolved'])
         result['unreachable_count']=len(result['unreachable'])
+        result['partial_scope']=(
+            'SELECTED_EXECUTOR_SOURCE_BACKED_RANGE_WORLD_BEHAVIOR'
+            if accepted_count else 'NO_SELECTED_EXECUTOR_P2_BEHAVIOR')
+        result['coverage_basis']='executed_behavior_assertions' if accepted_count else 'diagnostic_only'
+        result['scope_provisional']=accepted_count<result['reachability_count'] or bool(
+            result['unresolved'] or result['unreachable'])
+        result['coverage_scope_complete']=(
+            accepted_count==result['reachability_count']
+            and not result['unresolved'] and not result['unreachable'])
+        result['production_engine']='msim+gsim-world' if accepted_count else 'live_game_ir_compiler_and_runtime'
+        if accepted_count:
+            result['engine_id']=next(iter(engine_ids))
         if len(result['ranks'])+len(result['unreachable'])+len(result['unresolved'])!=result['source_rank_total']:
             result['reasons'].append('RANK_PARTITION_INCOMPLETE')
-        result['reasons'] += [f"{r['rank_key']}:{'|'.join(r['reasons'])}" for r in fail]
         result['reasons'] += [f"{r['rank_key']}:{r['reason']}" for r in result['unresolved']]
+        if accepted_count<result['reachability_count']:
+            result['reasons'].append(
+                f"SELECTED_EXECUTOR_P2_BEHAVIOR_INCOMPLETE:{accepted_count}/{result['reachability_count']}")
+        for rank_result in result['ranks']:
+            if rank_result.get('status')=='FAIL':
+                result['reasons'].append(
+                    f"{rank_result['rank_key']}:{'|'.join(rank_result.get('reasons') or [])}")
         result['status']='PASS' if not result['reasons'] else 'FAIL'
     except (ImportError,ValueError,KeyError,TypeError,AttributeError,sqlite3.Error,OSError) as exc:
         if source_db is not None:
