@@ -162,3 +162,22 @@ def test_reference_cli_uses_explicit_stochastic_mode(monkeypatch, tmp_path, caps
     producer.main()
     assert calls == [("native", "stochastic", 2), ("world", "stochastic", 2)]
     assert "checkpoint_certified" in capsys.readouterr().out
+
+def test_upstream_candidate_verification_passes_explicit_rng_mode():
+    """No source-verification helper may rely on the removed implicit mode default."""
+    import ast
+
+    path = (Path(__file__).resolve().parents[1] /
+            "integrations/mythicsim-rust/verify_upstream_candidate.py")
+    tree = ast.parse(path.read_text())
+    calls = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "run"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "probe"
+    ]
+    assert calls
+    assert all(any(keyword.arg == "rng_mode" for keyword in node.keywords)
+               for node in calls)
