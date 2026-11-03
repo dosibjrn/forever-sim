@@ -407,6 +407,68 @@ def test_native_direct_effect_requires_positive_delta_and_real_world_ack(monkeyp
     assert result["p1_certified"] is False
 
 
+def test_native_nonspatial_direct_effect_skips_unneeded_world_bridge(monkeypatch, tmp_path):
+    from src.engine_client import native_p1_effect_probe as probe
+
+    engine_root = tmp_path / "engine"
+    engine_root.mkdir()
+    binary = engine_root / "forever-engine"
+    binary.write_bytes(b"placeholder")
+    prepared_calls = []
+    simulated = []
+
+    def prepare(**kwargs):
+        prepared_calls.append(kwargs)
+        marker = "with" if kwargs["scenario"].endswith("with-action") else "without"
+        digest = ("a" if marker == "with" else "b") * 64
+        return {
+            "status": "PREPARED", "stage": "prepare",
+            "engine_identity": "selected-pin",
+            "request_sha256": digest,
+            "prepared": {"marker": marker, "request_sha256": digest},
+        }
+
+    def simulate(**kwargs):
+        marker = kwargs["prepared"]["marker"]
+        simulated.append(marker)
+        return {
+            "status": "EXECUTED", "stage": "sim",
+            "dps": 18.0 if marker == "with" else 4.0,
+            "engine_identity": "selected-pin",
+        }
+
+    monkeypatch.setattr(probe, "prepare_native_request", prepare)
+    monkeypatch.setattr(probe, "_simulate_prepared", simulate)
+    monkeypatch.setattr(
+        probe, "_run_world_bridge",
+        lambda *args, **kwargs: pytest.fail("non-spatial direct effect must not start 2D"),
+    )
+    action_row = {"action": {"castSpell": {"spellId": {"spellId": 14282}}}}
+    result = probe.run_native_p1_direct_effect_probe(
+        binary=binary, engine_root=engine_root, request=_sample_request(),
+        spell_id=14282, action_row=action_row, timeout_seconds=5, iterations=1,
+        requires_2d_world=False, target_count=0, world_mob_health=0,
+    )
+
+    assert [call["scenario"] for call in prepared_calls] == [
+        "p1-hunter-single-action-14282-with-action",
+        "p1-hunter-single-action-14282-no-action",
+    ]
+    assert prepared_calls[0]["request"]["raid"]["parties"][0]["players"][0][
+        "rotation"
+    ]["priorityList"] == [action_row]
+    assert simulated == ["with", "without"]
+    assert result["status"] == "NATIVE_DIRECT_EFFECT_VERIFIED"
+    assert result["dps_delta"] == 14.0
+    assert result["effect_observed"] is True
+    assert result["controlled_behavior_assertion_passed"] is True
+    assert result["world_bridge_required"] is False
+    assert result["world_bridge_status"] == "NOT_REQUIRED_NONSPATIAL_EFFECT"
+    assert result["observable_effects"]["dps_delta"] == 14.0
+    assert "world_bridge" not in result
+    assert result["p1_certified"] is False
+
+
 def test_native_direct_effect_does_not_claim_success_without_metric_delta(monkeypatch, tmp_path):
     from src.engine_client import native_p1_effect_probe as probe
 

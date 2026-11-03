@@ -159,5 +159,4 @@ def external_rank_fact(conn, row, *, effect_kind, as_of):
         'external_source_urls':urls,'source_build':obs['source_build'],
         'source_build_date':obs['source_build_date'],'observed_at':obs['observed_at'],
         'observation_sha256':obs['observation_sha256'],
-        'detail_html_independently_verified':False,
-        'checkpoint_eligibility':'BLOCKED_EXTERNAL_WEB_TEXT_NOT_SHA_VERIFIED_DETAIL'}
+        'detail_html_independently_verified':False}

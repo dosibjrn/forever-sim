@@ -6,8 +6,10 @@ availability and all combat mechanics; this client does not consult a
 Python spellbook, trainer ledger, source legality table, or GameIR action
 implementation before sending the request.
 
-A positive native effect delta is paired with the existing live gsim 2D
-world bridge. This is diagnostic evidence only, never a formal P1 PASS.
+A positive native effect delta is sufficient for a non-spatial direct effect.
+Callers explicitly require the live gsim 2D world bridge only when the tested
+effect depends on world-owned geometry, movement or crowd control. This is
+diagnostic evidence only, never a formal P1 PASS.
 """
 from __future__ import annotations
 
@@ -170,8 +172,14 @@ def run_native_p1_direct_effect_probe(
     seed: int = 647003,
     target_count: int = 2,
     world_mob_health: float | None = 1200.0,
+    action_row: dict | None = None,
+    requires_2d_world: bool = True,
 ) -> dict[str, object]:
-    """Prepare/simulate a single native action and a same-request no-action control."""
+    """Run a native action/control pair, with 2D only for world-dependent effects.
+
+    Set requires_2d_world=False only when the caller has established that
+    the tested effect does not depend on world geometry, movement or CC.
+    """
     if isinstance(iterations, bool) or type(iterations) is not int or iterations < 1:
         raise ValueError("NATIVE_P1_ITERATIONS_INVALID")
     if isinstance(seed, bool) or type(seed) is not int:
@@ -179,15 +187,18 @@ def run_native_p1_direct_effect_probe(
     if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)) \
             or not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
         raise ValueError("NATIVE_P1_TIMEOUT_INVALID")
-    if type(target_count) is not int or not 2 <= target_count <= 100:
-        raise ValueError("NATIVE_P1_WORLD_TARGET_COUNT_INVALID")
-    if world_mob_health is not None and (
-        isinstance(world_mob_health, bool)
-        or not isinstance(world_mob_health, (int, float))
-        or not math.isfinite(world_mob_health)
-        or world_mob_health <= 0
-    ):
-        raise ValueError("NATIVE_P1_WORLD_MOB_HEALTH_INVALID")
+    if type(requires_2d_world) is not bool:
+        raise ValueError("NATIVE_P1_WORLD_REQUIREMENT_INVALID")
+    if requires_2d_world:
+        if type(target_count) is not int or not 2 <= target_count <= 100:
+            raise ValueError("NATIVE_P1_WORLD_TARGET_COUNT_INVALID")
+        if world_mob_health is not None and (
+            isinstance(world_mob_health, bool)
+            or not isinstance(world_mob_health, (int, float))
+            or not math.isfinite(world_mob_health)
+            or world_mob_health <= 0
+        ):
+            raise ValueError("NATIVE_P1_WORLD_MOB_HEALTH_INVALID")
 
     binary_path = Path(binary)
     root = Path(engine_root)
@@ -209,7 +220,9 @@ def run_native_p1_direct_effect_probe(
         }
 
     try:
-        positive_request, control_request = native_single_action_pair(request, spell_id)
+        positive_request, control_request = native_single_action_pair(
+            request, spell_id, action_row=action_row
+        )
         for payload in (positive_request, control_request):
             options = payload.get("simOptions")
             if not isinstance(options, dict):
@@ -388,6 +401,7 @@ def run_native_p1_direct_effect_probe(
         "dps_delta": dps_delta,
         "engine_identity": positive_prepare["engine_identity"],
         "native_executed": True,
+        "world_bridge_required": requires_2d_world,
         "p1_certified": False,
     }
     if dps_delta <= 0:
@@ -398,6 +412,22 @@ def run_native_p1_direct_effect_probe(
             "proof_kind": "NATIVE_DIRECT_EFFECT",
             "executor": "msim-rust",
             "controlled_behavior_assertion_passed": False,
+        }
+
+    if not requires_2d_world:
+        return {
+            **common,
+            "status": "NATIVE_DIRECT_EFFECT_VERIFIED",
+            "effect_observed": True,
+            "proof_kind": "NATIVE_DIRECT_EFFECT",
+            "executor": "msim-rust",
+            "controlled_behavior_assertion_passed": True,
+            "world_bridge_status": "NOT_REQUIRED_NONSPATIAL_EFFECT",
+            "observable_effects": {
+                "dps_with_action": positive_dps,
+                "dps_without_action": control_dps,
+                "dps_delta": dps_delta,
+            },
         }
 
     try:
