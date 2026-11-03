@@ -6,13 +6,10 @@ second authority for native spell, talent or combat mechanics.
 """
 from __future__ import annotations
 
-from src.game.model.ir import GameIRSlice
-from .primary_stat_conversions import source_enrich_primary_stats
-from .target_combat_source import source_enrich_target_combat
-from .source_rank_overlay import source_enrich_action_ranks
-from .source_area_overlay import source_enrich_area_actions
-from .source_talent_overlay import source_enrich_indexed_talents
-from .source_incoming_world import source_enrich_incoming_world
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.game.model.ir import GameIRSlice
 
 
 def assemble_source_ir(ir: GameIRSlice, *, class_key: str, level: int,
@@ -22,6 +19,14 @@ def assemble_source_ir(ir: GameIRSlice, *, class_key: str, level: int,
     The caller owns provider dispatch and the active ability_source_scope.
     Staged canonical-source action replacement occurs before compilation.
     """
+    # These legacy overlays are only needed for a real IR build. Importing the
+    # assembly entrypoint alone must not pull in the duplicate Python game model.
+    from .primary_stat_conversions import source_enrich_primary_stats
+    from .target_combat_source import source_enrich_target_combat
+    from .source_rank_overlay import source_enrich_action_ranks
+    from .source_area_overlay import source_enrich_area_actions
+    from .source_talent_overlay import source_enrich_indexed_talents
+    from .source_incoming_world import source_enrich_incoming_world
     # All nine classes receive the same SQLite-indexed action inventory.  The
     # source compiler remains selective until each effect has executable proof;
     # unseen rows are exposed as typed blockers, not omitted from optimization.

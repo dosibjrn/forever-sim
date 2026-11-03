@@ -18,6 +18,15 @@ _TOP_LEVEL_STAGES = (
     "source_enrich_target_combat",
     "source_enrich_incoming_world",
 )
+_TOP_LEVEL_MODULES = {
+    "source_enrich_action_ranks": "source_rank_overlay",
+    "source_enrich_area_actions": "source_area_overlay",
+    "source_enrich_indexed_talents": "source_talent_overlay",
+    "source_enrich_primary_stats": "primary_stat_conversions",
+    "source_enrich_target_combat": "target_combat_source",
+    "source_enrich_incoming_world": "source_incoming_world",
+}
+
 _DYNAMIC_STAGES = (
     ("source_stage_isolation", "strip_precompiled_source_actions"),
     ("source_ability_semantics", "source_ability_actions"),
@@ -45,7 +54,10 @@ def test_assembly_retains_stage_order_and_primary_stat_db_scope(
         return apply
 
     for stage in _TOP_LEVEL_STAGES:
-        monkeypatch.setattr(source_ir_assembly, stage, trace(stage))
+        # Production now resolves these overlays when assembly is invoked.
+        # Patch the source modules, not a removed eager import binding.
+        target = import_module(f"src.game.data.forever.{_TOP_LEVEL_MODULES[stage]}")
+        monkeypatch.setattr(target, stage, trace(stage))
     for module, stage in _DYNAMIC_STAGES:
         target = import_module(f"src.game.data.forever.{module}")
         monkeypatch.setattr(target, stage, trace(stage))
