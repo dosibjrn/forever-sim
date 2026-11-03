@@ -249,6 +249,10 @@ def apply_staged_talent_catalogue(conn:sqlite3.Connection, class_key:str, level:
                     'additional_target':capture.get('additional_target'),
                     'additional_value':(float(capture['additional_rank_values'][n-1])
                         if capture.get('additional_rank_values') else None),
+                    'prerequisite':(dict(capture['prerequisite'])
+                        if isinstance(capture.get('prerequisite'),dict) else None),
+                    'prerequisite_rank_build_bridge_unverified':bool(
+                        capture.get('prerequisite_rank_build_bridge_unverified')),
                     'executable':bool(modifiers),
                     **({'spatial_charge_action_source':spatial_charge_actions[tid]}
                        if tid in spatial_charge_actions and
