@@ -57,6 +57,37 @@ def test_two_paid_gaps_are_measured_from_native_clock_and_resource_events():
     }
 
 
+def test_legacy_native_result_is_compatible_when_recovery_is_zero():
+    assert module._native_recovery_contract_matches({"paid_recovery": False}, 2, 0)
+    assert module._native_recovery_contract_matches({"world_targets_killed": 2}, 2, 0)
+
+
+def test_zero_recovery_rejects_forged_paid_recovery_receipts():
+    assert not module._native_recovery_contract_matches({
+        "paid_recovery": True,
+        "paid_recovery_ns_per_gap": 0,
+        "paid_recovery_ns_total": 0,
+    }, 2, 0)
+    assert not module._native_recovery_contract_matches({
+        "paid_recovery": False,
+        "paid_recovery_ns_per_gap": 1,
+        "paid_recovery_ns_total": 0,
+    }, 2, 0)
+
+
+def test_positive_recovery_requires_exact_native_duration_and_mode():
+    result = {
+        "paid_recovery": True,
+        "paid_recovery_ns_per_gap": GAP_NS,
+        "paid_recovery_ns_total": 2 * GAP_NS,
+        "recovery_mode": "native_scheduled_regeneration_only",
+    }
+    assert module._native_recovery_contract_matches(result, 3, GAP_NS)
+    assert not module._native_recovery_contract_matches(
+        {**result, "recovery_mode": "synthetic"}, 3, GAP_NS
+    )
+
+
 def test_zero_interval_is_not_mislabeled_as_paid_recovery():
     result = _summary([], 3, 0)
     assert result["paid_recovery"] is False
