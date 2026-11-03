@@ -58,6 +58,13 @@ class DruidMechanicsLayout(unittest.TestCase):
         self.assertIn("norecursedirs = release", ini)
         self.assertNotIn("norecursedirs = mechanics", ini)
 
+    def test_druid_leveling_scorers_use_canonical_optimizer_score(self):
+        source = (ROOT / "src/rulesets/forever/classes/druid/mechanics.py").read_text(encoding="utf-8")
+        self.assertIn("from src.optimization.leveling_score import score_combat_cycle", source)
+        self.assertNotIn("leveling.combat_result", source)
+        self.assertEqual(source.count("return score_combat_cycle("), 2)
+        self.assertEqual(source.count("target_hp=representative_hp(level)"), 2)
+
     def test_current_ci_checks_druid_layout(self):
         # The private layout-only workflow was retired; use the maintained CI.
         workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text()
