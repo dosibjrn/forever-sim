@@ -51,6 +51,8 @@ import os
 import random
 import statistics
 
+from src.scenarios.leveling_targets import MOB_BASE_HP
+
 EPS = 1e-9
 TIME_EPS = 1e-7
 HP_EPS = 1e-8  # combat damage arithmetic below this is treated as zero HP
@@ -265,16 +267,6 @@ BASE_MANA = {
 51:1129,52:1150,53:1171,54:1177,55:1198,56:1219,57:1225,58:1246,59:1252,60:1273,
 }
 
-# CMaNGOS warrior-class BaseHealthExp0.  Used as the canonical ordinary melee
-# target curve; callers can apply hp_mult for tougher/softer mob families.
-MOB_BASE_HP = {
-11:222,12:247,13:273,14:300,15:328,16:356,17:386,18:417,19:449,20:484,
-21:521,22:562,23:605,24:651,25:699,26:750,27:800,28:853,29:905,30:955,
-31:1006,32:1057,33:1110,34:1163,35:1220,36:1277,37:1336,38:1395,39:1459,40:1524,
-41:1585,42:1651,43:1716,44:1782,45:1848,46:1919,47:1990,48:2062,49:2138,50:2215,
-51:2292,52:2371,53:2453,54:2533,55:2614,56:2699,57:2784,58:2871,59:2961,60:3052,
-61:3144,62:3237,
-}
 
 # Troll mage base Int/Spirit from MaNGOS-zero player_levelstats.
 TROLL_INT_SPI = {
