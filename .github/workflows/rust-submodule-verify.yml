@@ -1,0 +1,32 @@
+name: Selected MythicSim Rust submodule verification
+
+on:
+  pull_request:
+    paths:
+      - .gitmodules
+      - integrations/mythicsim-rust/engine
+
+permissions:
+  contents: read
+
+jobs:
+  verify-selected-engine:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Require exact selected engine pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          expected="$(git ls-tree HEAD "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$expected" && test "$expected" = "$actual"
+          grep -Fq "https://github.com/dosibjrn/mythicsim-forever-engine.git" .gitmodules
+          echo "PINNED_RUST_SOURCE_SHA=$actual" >> "$GITHUB_STEP_SUMMARY"
+      - name: Build the exact selected engine
+        working-directory: integrations/mythicsim-rust/engine
+        run: cargo build --locked --bin forever-engine
