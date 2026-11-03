@@ -103,6 +103,26 @@ class JointSearchContracts(unittest.TestCase):
             self.assertTrue({spell_key(a) for a in actions}-{None} <= source)
         self.assertEqual(snapshot,ref_actions,"Mutations must never modify their source corpus")
 
+    def test_cold_apl_can_reach_nineteen_actions_from_ten_action_reference(self):
+        ref_actions=self.reference["raid"]["parties"][0]["players"][0]["rotation"]["priorityList"]
+
+        class LongAPLRandom(random.Random):
+            def randint(self, low, high):
+                self.requested_bounds=(low,high)
+                return min(19,high)
+
+        rng=LongAPLRandom(678125)
+        actions=mutate_apl(None,ref_actions,rng,cold=True)
+        self.assertEqual(rng.requested_bounds,(2,20))
+        self.assertEqual(len(actions),19)
+        allowed={json.dumps(a["action"]["castSpell"]["spellId"],sort_keys=True)
+                 for a in ref_actions if "castSpell" in a.get("action",{})}
+        generated={json.dumps(a["action"]["castSpell"]["spellId"],sort_keys=True)
+                   for a in actions if "castSpell" in a.get("action",{})}
+        self.assertTrue(generated <= allowed)
+        self.assertTrue(any("castSpell" in a.get("action",{}) and
+                            "condition" not in a["action"] for a in actions))
+
     def test_generic_apl_grammar_on_other_class_corpus(self):
         # No Balance-specific spell or expression: generic class/gate adapter.
         corpus=[{"action":{"castSpell":{"spellId":{"spellId":12345}}}},
