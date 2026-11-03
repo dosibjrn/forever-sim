@@ -73,6 +73,7 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
         "behavior_probes_executed": result.get("behavior_probes_executed"),
         "real_catalogue_slots_scored": result.get("real_catalogue_slots_scored"),
         "actual_search_result_status": result.get("actual_search_result_status"),
+        "runner_up": result.get("source_naked_runner_up"),
     }
     detail = (
         f"reasons={result.get('reasons')!r}; "
@@ -81,7 +82,8 @@ def test_real_mage_l20_unrestricted_p3_uses_shared_production_path():
         f"counts={result.get('pass_count')}/{result.get('reachability_count')}; "
         f"probes={result.get('behavior_probes_executed')}; "
         f"slots={result.get('real_catalogue_slots_scored')}; "
-        f"search={result.get('actual_search_result_status')}"
+        f"search={result.get('actual_search_result_status')}; "
+        f"runner_up={result.get('source_naked_runner_up')!r}"
     )
     assert result["status"] == "PASS", detail
     assert result["pass_count"] == result["reachability_count"], detail
