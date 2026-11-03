@@ -26,7 +26,7 @@ from src.game.talents import apply_talent_selection, talented_bonus_for_level, a
 from src.game.talent_frontier import source_legal_talent_neighbors
 from src.optimization.talent_frontier import allocation_key
 from src.game.source_objective_relevance import solo_threat_exclusion
-from src.game.native_p2_rank_probe import NativeRngMode, run_native_rank_pair
+from src.game.native_p2_rank_probe import NativeRngMode, run_native_rank_pair, run_native_range_world_pair
 
 
 def _runtime_actor_state_delta(before, after):
@@ -1753,6 +1753,7 @@ def _source_spec_rank_witness(population, talent_id, rank):
 
 _NATIVE_P2_TREE_SCENARIOS = {'balance': 'balance', 'feral': 'cat'}
 _NATIVE_P2_DIAGNOSTIC_RANKS = {('predatory_strikes', 1), ('predatory_strikes', 2), ('predatory_strikes', 3)}
+_NATIVE_P2_RANGE_WORLD_DIAGNOSTIC_RANKS = {('natures_reach', 1), ('natures_reach', 2)}
 
 
 def _native_p2_rank_diagnostic(binary, talent_id, rank, tested):
@@ -1904,6 +1905,61 @@ def _p2_source_db_diagnostics(root, source_db):
     }
 
 
+def _native_p2_range_world_diagnostic(binary, talent_id, rank, tested):
+    """Selected-Rust + gsim 2D range proof; diagnostic only, never P2 credit."""
+    source=tested.get('source_rank_facts')
+    if not isinstance(source,dict):
+        return {'status':'BLOCKED','reason':'CANONICAL_P2_SOURCE_RANK_FACTS_MISSING'}
+    l0=source.get('checkpoint_source_l0')
+    if not isinstance(l0,dict):
+        return {'status':'BLOCKED','reason':'CANONICAL_CHECKPOINT_SOURCE_L0_MISSING'}
+    effects=l0.get('effects')
+    domains=[]
+    if isinstance(effects,list):
+        domains.extend(str(effect.get('domain')) for effect in effects
+                       if isinstance(effect,Mapping) and effect.get('domain'))
+    for key in ('effect_domain','additional_effect_domain'):
+        if l0.get(key):
+            domains.append(str(l0[key]))
+    if 'offensive_spell_range_bonus_fraction' not in domains:
+        return {'status':'BLOCKED','reason':'SOURCE_OFFENSIVE_RANGE_EFFECT_NOT_DECLARED'}
+    if (talent_id!='natures_reach' or int(rank) not in (1,2)
+            or source.get('class_key')!='druid'
+            or int(source.get('level') or 0)!=60
+            or source.get('tree_key')!='balance'):
+        return {'status':'BLOCKED','reason':'NATIVE_P2_RANGE_WORLD_PILOT_SCOPE_UNSUPPORTED'}
+    before=tested.get('control_witness')
+    after=tested.get('witness')
+    if not isinstance(before,dict) or not isinstance(after,dict):
+        return {'status':'BLOCKED','reason':'SOURCE_LEGAL_RANK_PAIR_UNAVAILABLE'}
+    if not binary:
+        return {'status':'BLOCKED','reason':'FOREVER_MYTHICSIM_RUST_BIN_NOT_SET'}
+    binary_path=Path(binary)
+    if not binary_path.is_file():
+        return {'status':'BLOCKED','reason':'SELECTED_RUST_BINARY_MISSING'}
+    scenario=_NATIVE_P2_TREE_SCENARIOS.get(str(source.get('tree_key') or ''))
+    if scenario is None:
+        return {'status':'BLOCKED','reason':'NATIVE_P2_TREE_SCENARIO_UNAVAILABLE'}
+    try:
+        engine_root=binary_path.resolve().parents[2]
+        probe=run_native_range_world_pair(
+            binary=binary_path,engine_root=engine_root,scenario=scenario,
+            before_selection=before,after_selection=after,
+            target_talent_id=talent_id,target_rank=int(rank),
+            rng_mode=NativeRngMode.BALANCED,seed=647003,timeout_seconds=60.0)
+        probe['source_rank_facts']={
+            'talent_id':talent_id,'rank':int(rank),
+            'tree_key':source.get('tree_key'),'source_build':source.get('source_build'),
+            'source_url':source.get('source_url'),
+        }
+        return probe
+    except (OSError,ValueError,KeyError,TypeError,AttributeError,RuntimeError) as exc:
+        return {'status':'BLOCKED',
+                'reason':'NATIVE_P2_RANGE_WORLD_GATE_ADAPTER_FAILED:'
+                         +type(exc).__name__+':'+str(exc),
+                'accepted_for_p2':False,'counted_in_p2_acceptance':False}
+
+
 def _sqlite_connection_path(database):
     value = str(database)
     if value == ':memory:' or value.startswith('file::memory:'):
@@ -1920,7 +1976,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
             'status':'FAIL','reasons':[],'ranks':[], 'unreachable':[],
             'unresolved':[], 'behavior_probes_executed':0,
             'native_rank_probe_results':[],
-            'native_rank_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE'}
+            'native_rank_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE',
+            'native_range_world_probe_results':[],
+            'native_range_world_probe_scope':'DIAGNOSTIC_ONLY_NOT_COUNTED_IN_P2_ACCEPTANCE'}
     source_db = None
     sqlite_connection_paths = []
     try:
@@ -2053,6 +2111,25 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
                     tested['native_rank_probe']=native_probe
                     result['native_rank_probe_results'].append(
                         {'rank_key':key, **native_probe})
+                if (class_key=='druid' and level==60 and spec=='balance'
+                        and (talent.id,int(rank.rank)) in _NATIVE_P2_RANGE_WORLD_DIAGNOSTIC_RANKS):
+                    range_probe=_native_p2_range_world_diagnostic(
+                        os.environ.get('FOREVER_MYTHICSIM_RUST_BIN'),
+                        talent.id,int(rank.rank),tested)
+                    range_probe['executor']='selected_mythicsim_rust+gsim_2d'
+                    range_probe['accepted_for_p2']=False
+                    range_probe['counted_in_p2_acceptance']=False
+                    tested['native_range_world_probe']=range_probe
+                    result['native_range_world_probe_results'].append(
+                        {'rank_key':key, **range_probe})
+                    if range_probe.get('status')=='WORLD_RANGE_PASS':
+                        tested['reasons']=[
+                            reason.replace(
+                                'IMPLEMENTATION_MISSING:source_offensive_range_world_behavior',
+                                'GATE_EXECUTOR_MISSING:source_offensive_range_world_behavior_not_yet_consumed_by_full_p2_acceptance')
+                            for reason in tested['reasons']]
+                        tested['range_world_behavior_verified_by_selected_executor']=True
+                        tested['status']='FAIL'
                 result['ranks'].append(tested)
                 result['behavior_probes_executed']+=len(tested['behavior_tests'])
         native_probes=result['native_rank_probe_results']
@@ -2062,6 +2139,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec='unrestricted',
             'pass_count':sum(p.get('status')=='PROBE_PASS' for p in native_probes),
             'fail_count':sum(p.get('status')=='PROBE_FAIL' for p in native_probes),
             'blocked_count':sum(p.get('status')=='BLOCKED' for p in native_probes),
+            'rng_mode':'balanced',
+            'counted_in_p2_acceptance':False,
+        }
+        range_probes=result['native_range_world_probe_results']
+        result['native_range_world_probe_summary']={
+            'scope':'druid:60:balance; natures_reach ranks 1-2; selected MythicSim Rust + gsim 2D',
+            'attempted':len(range_probes),
+            'pass_count':sum(p.get('status')=='WORLD_RANGE_PASS' for p in range_probes),
+            'fail_count':sum(p.get('status')=='WORLD_RANGE_FAIL' for p in range_probes),
+            'blocked_count':sum(p.get('status')=='BLOCKED' for p in range_probes),
             'rng_mode':'balanced',
             'counted_in_p2_acceptance':False,
         }
