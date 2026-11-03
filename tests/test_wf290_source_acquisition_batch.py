@@ -51,13 +51,15 @@ def test_claimed_learned_rank_still_needs_world_event():
         'BLOCKED_SOURCE_LEVEL_UNKNOWN_OR_TOO_HIGH')
 
 
-def test_world_route_cannot_inherit_bounded_scenario_legality():
+def test_level_state_does_not_require_separate_acquisition_proof():
     ir=build_game_ir_slice(class_key='druid',level=20)
     s=LevelState(class_key='druid',level=20,race_key=ir.actor.metadata['race_key'],
                  talents={},action_ids=(ir.actions[0].id,))
+    # The bounded legacy scenario check is not a trainer/learned-spell gate.
+    # Native MythicSim decides actual spell/rank legality when executed.
     assert validate_level_state(s)['status']=='LEGAL_SOURCE_SCENARIO'
-    with pytest.raises(ValueError,match='world acquisition not verified'):
-        validate_level_state(s,require_world_acquisition=True)
+    assert not hasattr(s, 'world_acquisition_events')
+    assert not hasattr(s, 'world_origin_id')
 
 
 def test_data_only_stale_index_change_blocks(tmp_path):
