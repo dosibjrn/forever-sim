@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 import re
 import subprocess
 import sys
@@ -288,6 +289,15 @@ def prepare_native_request(
         }
 
 
+def _compact_prepare_receipt(result: dict) -> dict[str, object]:
+    keys = (
+        "status", "stage", "reason", "engine_identity", "request_sha256",
+        "prepared_sha256", "elapsed_seconds", "refusal", "returncode",
+        "stdout_tail", "stderr_tail",
+    )
+    return {key: result[key] for key in keys if key in result}
+
+
 def run_native_prepare_pair(
     *,
     binary: str | Path,
@@ -371,8 +381,8 @@ def run_native_prepare_pair(
             "reason": "NATIVE_P2_PREPARE_PAIR_NOT_READY",
             "target_talent_id": target_talent_id,
             "target_rank": int(target_rank),
-            "before": before,
-            "after": after,
+            "before": _compact_prepare_receipt(before),
+            "after": _compact_prepare_receipt(after),
             "accepted_for_p2": False,
         }
     if before.get("engine_identity") != after.get("engine_identity"):
@@ -411,12 +421,12 @@ def run_native_prepare_pair(
         "reason": "SELECTED_RUST_PREPARE_PAIR_EXECUTED",
         "target_talent_id": target_talent_id,
         "target_rank": int(target_rank),
-        "iterations": int(iterations),
-        "seed": int(seed),
         "talents_string_before": before_string,
         "talents_string_after": after_string,
-        "before": before,
-        "after": after,
+        "before": _compact_prepare_receipt(before),
+        "after": _compact_prepare_receipt(after),
+        "_before_prepared": before["prepared"],
+        "_after_prepared": after["prepared"],
         "engine_identity": before["engine_identity"],
         "source_layout_sha256": hashlib.sha256(
             (root / "src" / "classes" / "druid" / "prepare.rs").read_bytes()
@@ -452,6 +462,8 @@ def _simulate_prepared(
     binary_path: Path,
     prepared: dict,
     rng_mode: NativeRngMode,
+    iterations: int,
+    seed: int,
     deadline: float,
 ) -> dict[str, object]:
     """Execute one PreparedV2 input through the selected Rust simulator."""
@@ -459,10 +471,17 @@ def _simulate_prepared(
         root = Path(directory)
         prepared_path = root / "prepared.json"
         report_path = root / "report.json"
-        prepared_path.write_text(
-            json.dumps(prepared, sort_keys=True, separators=(",", ":")),
-            encoding="utf-8",
-        )
+        prepared_payload = copy.deepcopy(prepared)
+        sim_options = prepared_payload.get("sim")
+        if not isinstance(sim_options, dict):
+            return {"status": "ERROR", "stage": "sim",
+                    "reason": "NATIVE_PREPARED_SIM_OPTIONS_MISSING"}
+        sim_options["iterations"] = int(iterations)
+        sim_options["seed"] = int(seed)
+        prepared_bytes = json.dumps(
+            prepared_payload, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        prepared_path.write_bytes(prepared_bytes)
         remaining = deadline - time.monotonic()
         if remaining <= 0.05:
             return {"status": "ERROR", "stage": "sim",
@@ -508,7 +527,8 @@ def _simulate_prepared(
                     "reason": "NATIVE_SIM_REPORT_MISSING",
                     "elapsed_seconds": elapsed}
         try:
-            report = json.loads(report_path.read_bytes())
+            report_bytes = report_path.read_bytes()
+            report = json.loads(report_bytes)
             score = float(_native_runner.dps(report))
         except (UnicodeDecodeError, ValueError, KeyError, TypeError, OverflowError) as exc:
             return {"status": "ERROR", "stage": "sim",
@@ -523,7 +543,9 @@ def _simulate_prepared(
             "stage": "sim",
             "dps": score,
             "elapsed_seconds": elapsed,
-            "report": report,
+            "report_sha256": hashlib.sha256(report_bytes).hexdigest(),
+            "prepared_input_sha256": hashlib.sha256(prepared_bytes).hexdigest(),
+            "engine_identity": report.get("identity"),
         }
 
 
@@ -563,8 +585,6 @@ def run_native_rank_pair(
         after_selection=after_selection,
         target_talent_id=target_talent_id,
         target_rank=int(target_rank),
-        iterations=int(iterations),
-        seed=int(seed),
     )
     if pair.get("status") != "PREPARED":
         return {
@@ -582,15 +602,15 @@ def run_native_rank_pair(
     deadline = time.monotonic() + 120.0
     before = _simulate_prepared(
         binary_path=binary_path,
-        prepared=pair["before"]["prepared"],
+        prepared=pair["_before_prepared"],
         rng_mode=rng_mode,
-        deadline=deadline,
+        iterations=int(iterations), seed=int(seed), deadline=deadline,
     )
     after = _simulate_prepared(
         binary_path=binary_path,
-        prepared=pair["after"]["prepared"],
+        prepared=pair["_after_prepared"],
         rng_mode=rng_mode,
-        deadline=deadline,
+        iterations=int(iterations), seed=int(seed), deadline=deadline,
     )
     if before.get("status") != "EXECUTED" or after.get("status") != "EXECUTED":
         return {
@@ -601,7 +621,7 @@ def run_native_rank_pair(
             "target_rank": int(target_rank),
             "before": before,
             "after": after,
-            "prepare_pair": pair,
+            "prepare_pair": {key: value for key, value in pair.items() if not key.startswith("_")},
             "rng_mode": rng_mode.value,
             "iterations": int(iterations),
             "seed": int(seed),
@@ -610,7 +630,7 @@ def run_native_rank_pair(
 
     delta = float(after["dps"]) - float(before["dps"])
     return {
-        "status": "PROBE_PASS" if delta > 1e-9 else "PROBE_FAIL",
+        "status": "PASS" if delta > 1e-9 else "FAIL",
         "reason": "NATIVE_DPS_INCREASE_OBSERVED"
         if delta > 1e-9
         else "NATIVE_DPS_DID_NOT_INCREASE",
@@ -620,11 +640,11 @@ def run_native_rank_pair(
         "talents_string_before": pair["talents_string_before"],
         "talents_string_after": pair["talents_string_after"],
         "before": {
-            "prepared": pair["before"],
+            "prepare_receipt": pair["before"],
             "simulation": before,
         },
         "after": {
-            "prepared": pair["after"],
+            "prepare_receipt": pair["after"],
             "simulation": after,
         },
         "delta_dps": delta,
