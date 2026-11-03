@@ -12,7 +12,16 @@ from pathlib import Path
 
 def replace_once(source: str, old: str, new: str, marker: str) -> str:
     if marker in source:
-        if source.count(marker) != 1 or new not in source:
+        if source.count(marker) != 1:
+            raise ValueError(f"partial or ambiguous already-applied Rust port: {marker}")
+        if new not in source:
+            # Work2's later early-kill clock port is a verified descendant of
+            # this source method, not a partially applied base migration.
+            if marker == "    pub(crate) fn begin_next_target(&mut self":
+                from port_native_early_retarget import HELPER, NEW_GUARD, TEST
+                if (source.count(HELPER) == 1 and source.count(NEW_GUARD) == 1
+                        and source.count(TEST) == 1):
+                    return source
             raise ValueError(f"partial or ambiguous already-applied Rust port: {marker}")
         return source
     if source.count(old) != 1:
