@@ -658,3 +658,42 @@ assert 'src.game.model.ir' in sys.modules
         text=True, capture_output=True, timeout=30, check=False,
     )
     assert result.returncode == 0, result.stdout + "\\n" + result.stderr
+
+
+def test_generic_talent_frontier_identity_does_not_eagerly_load_game_ir():
+    """Native-ready candidate identity must not load legacy Python rules.
+
+    Calling the legacy neighbor evaluator must still use its original
+    src.game.talents legality and budget implementation.
+    """
+    import subprocess
+    import sys
+
+    source = """
+import sys
+from src.game.talent_frontier import Neighbor, allocation_key, source_legal_talent_neighbors
+
+assert allocation_key({'root': 0, 'arcane': 2, 'feral': 1}) == (
+    ('arcane', 2), ('feral', 1))
+neighbor = Neighbor((('arcane', 2),), 'rank_up', ('arcane',))
+assert neighbor.as_dict() == {
+    'allocation': {'arcane': 2},
+    'operation': 'rank_up',
+    'changed_ids': ['arcane'],
+}
+assert callable(source_legal_talent_neighbors)
+assert 'src.game.talents' not in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+
+# Legacy consumers still resolve the original legality/budget implementation.
+from src.game.talents import available_talent_points, validate_talent_selection
+assert available_talent_points(20) > 0
+assert callable(validate_talent_selection)
+assert 'src.game.model.ir' in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        text=True, capture_output=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, result.stdout + "\\n" + result.stderr
