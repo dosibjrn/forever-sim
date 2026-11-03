@@ -17,7 +17,7 @@ import p73_talent_search_v2 as p73
 import native_executor as native_exec
 import native_l60_matrix as l60_matrix
 import native_joint_two_class as joint
-from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast, mutate_apl
+from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast, _source_action_templates, mutate_apl
 from native_joint_two_class import (
     _ensure_native_damage_action, _native_positive_source_casts,
     _write_native_failure, fingerprint, native_payload, native_score_request,
@@ -267,13 +267,15 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         witnesses = _native_positive_source_casts(source, receipt)
         self.assertEqual([{"spellId": 11713}], witnesses)
         candidate = [self.source(11689) for _ in range(20)]
-        repaired = _ensure_native_damage_action(candidate, witnesses, random.Random(1))
+        repaired = _ensure_native_damage_action(
+            candidate, witnesses, random.Random(1), source_actions=source
+        )
         self.assertEqual(20, len(repaired))
-        self.assertEqual({"spellId": 11713},
-                         repaired[0]["action"]["castSpell"]["spellId"])
-        self.assertNotIn("condition", repaired[0]["action"])
+        self.assertEqual(source[1]["action"], repaired[0]["action"])
+        self.assertEqual(source[1]["action"]["condition"],
+                         repaired[0]["action"]["condition"])
         self.assertEqual(20, len(_ensure_native_damage_action(
-            repaired, witnesses, random.Random(1))))
+            repaired, witnesses, random.Random(1), source_actions=source)))
         self.assertEqual(11689, candidate[0]["action"]["castSpell"]["spellId"]["spellId"])
 
     def test_rogue_stealth_and_vanish_cannot_be_only_unconditional_casts(self):
@@ -284,13 +286,17 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         witnesses = _native_positive_source_casts(source, self.native_response(11281))
         self.assertEqual([{"spellId": 11281}], witnesses)
         candidate = [self.source(1856), self.source(1784)]
-        repaired = _ensure_native_damage_action(candidate, witnesses, random.Random(2))
-        self.assertEqual(11281, repaired[0]["action"]["castSpell"]["spellId"]["spellId"])
+        repaired = _ensure_native_damage_action(
+            candidate, witnesses, random.Random(2), source_actions=source
+        )
+        self.assertEqual(source[2]["action"], repaired[0]["action"])
 
     def test_existing_positive_cast_moves_to_front_without_duplication(self):
         witnesses = [{"spellId": 11713}]
         actions = [self.source(11689), self.source(11713)]
-        repaired = _ensure_native_damage_action(actions, witnesses, random.Random(3))
+        repaired = _ensure_native_damage_action(
+            actions, witnesses, random.Random(3), source_actions=actions
+        )
         self.assertEqual([11713, 11689],
                          [a["action"]["castSpell"]["spellId"]["spellId"] for a in repaired])
 
@@ -303,8 +309,10 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
             source = [self.source(2000 + i, conditional=True)
                       for i in range(conditional_count)]
             snapshot = copy.deepcopy(source)
+            source_actions = source + [self.source(3001), self.source(3002)]
             repaired = _ensure_native_damage_action(
-                source, witnesses, random.Random(7))
+                source, witnesses, random.Random(7), source_actions=source_actions
+            )
             self.assertEqual(20, len(repaired))
             self.assertEqual(
                 list(range(2000, 2018)) + [3001, 3002],
@@ -317,7 +325,7 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
             ))
             self.assertEqual(snapshot, source)
             self.assertEqual(repaired, _ensure_native_damage_action(
-                repaired, witnesses, random.Random(7)))
+                repaired, witnesses, random.Random(7), source_actions=source_actions))
 
     def test_present_empty_condition_is_not_an_unconditional_damage_witness(self):
         witnesses = [{"spellId": 11713}]
@@ -330,18 +338,14 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         snapshot = copy.deepcopy(source)
 
         repaired = _ensure_native_damage_action(
-            source, witnesses, random.Random(8))
-
-        self.assertEqual(2, len(repaired))
-        self.assertEqual(snapshot, repaired[:1])
-        self.assertEqual(
-            {"spellId": 11713},
-            repaired[1]["action"]["castSpell"]["spellId"],
+            source, witnesses, random.Random(8), source_actions=source
         )
-        self.assertNotIn("condition", repaired[1]["action"])
+
+        self.assertEqual([snapshot[0]], repaired)
+        self.assertEqual({}, repaired[0]["action"]["condition"])
         self.assertEqual(snapshot, source)
         self.assertEqual(repaired, _ensure_native_damage_action(
-            repaired, witnesses, random.Random(8)))
+            repaired, witnesses, random.Random(8), source_actions=source))
 
     def test_real_warlock_zero_dps_alternate_talent_needs_multiple_witnesses(self):
         # Stage-5 #41638113867 exact raw receipt 43a719fd...:
@@ -349,21 +353,24 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         # 18932 was native-positive in the baseline, but never cast with the
         # alternate talents; Life Tap 11689 then looped 3280 times.
         witnesses = [{"spellId": spell} for spell in
-                     (18871, 17923, 11713, 18932)]
+                     (18932, 18871, 17923, 11713)]
         candidate = [self.source(18932), self.source(11689), self.source(25309)]
+        source_actions = candidate + [
+            self.source(18871), self.source(17923), self.source(11713)
+        ]
         original = json.loads(json.dumps(candidate))
         repaired = _ensure_native_damage_action(
-            candidate, witnesses, random.Random(3))
+            candidate, witnesses, random.Random(3), source_actions=source_actions)
         ids = [entry["action"]["castSpell"]["spellId"]["spellId"]
                for entry in repaired]
         self.assertEqual([18932, 18871, 17923, 11713, 11689, 25309], ids)
         self.assertEqual(original, candidate)
         self.assertEqual(repaired, _ensure_native_damage_action(
-            repaired, witnesses, random.Random(3)))
+            repaired, witnesses, random.Random(3), source_actions=source_actions))
 
         full = [self.source(18932)] + [self.source(11689) for _ in range(19)]
         bounded = _ensure_native_damage_action(
-            full, witnesses, random.Random(3))
+            full, witnesses, random.Random(3), source_actions=source_actions)
         bounded_ids = [entry["action"]["castSpell"]["spellId"]["spellId"]
                        for entry in bounded]
         self.assertEqual(20, len(bounded))
@@ -379,7 +386,7 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         self.assertEqual([], _native_positive_source_casts(source, zero))
         candidate = [self.source(11689), self.source(11689)]
         self.assertIs(candidate, _ensure_native_damage_action(
-            candidate, [], random.Random(4)))
+            candidate, [], random.Random(4), source_actions=source))
 
 
     def test_damage_witness_is_fallback_after_conditions_and_before_utility_casts(self):
@@ -396,7 +403,8 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         snapshot = json.loads(json.dumps(actions))
 
         repaired = _ensure_native_damage_action(
-            actions, [{"spellId": 11713}], random.Random(5)
+            actions, [{"spellId": 11713}], random.Random(5),
+            source_actions=actions,
         )
 
         self.assertEqual(snapshot, actions)
@@ -455,29 +463,33 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
 
         source_snapshot = copy.deepcopy(source)
 
-        class TuneOnlyRng:
-            def choices(self, _values, weights=None):
-                return ["tune_condition"]
-
-            def choice(self, values):
-                return values[0]
-
-        mutated = mutate_apl(copy.deepcopy(source), source, TuneOnlyRng(), cold=False)
+        mutated = mutate_apl(
+            copy.deepcopy(source), source, random.Random(5), cold=False
+        )
         self.assertEqual(source_snapshot, source, "source APL must remain immutable")
+        source_lifetap_actions = {
+            json.dumps(entry["action"], sort_keys=True)
+            for entry in source
+            if entry["action"].get("castSpell", {}).get("spellId", {}).get("spellId") == 11689
+        }
         self.assertTrue(all(
-            "condition" not in entry["action"]
+            json.dumps(entry["action"], sort_keys=True) in source_lifetap_actions
             for entry in mutated
             if entry["action"].get("castSpell", {}).get("spellId", {}).get("spellId") == 11689
         ))
         repaired = _ensure_native_damage_action(
-            mutated, [{"spellId": 17923}], random.Random(5)
+            mutated, [{"spellId": 17923}], random.Random(5), source_actions=source
         )
-        ids = [
-            entry["action"]["castSpell"]["spellId"]["spellId"]
+        self.assertTrue(any(
+            entry["action"].get("castSpell", {}).get("spellId", {}).get("spellId") == 17923
+            and "condition" not in entry["action"]
             for entry in repaired
-        ]
-        self.assertEqual([25309, 11713, 17923, 11689, 11689], ids)
-        self.assertNotIn("condition", repaired[2]["action"])
+        ))
+        self.assertTrue(all(
+            "condition" in entry["action"]
+            for entry in repaired
+            if entry["action"].get("castSpell", {}).get("spellId", {}).get("spellId") == 11689
+        ))
 
     def test_dot_self_refresh_predicate_is_not_grafted_from_dot_to_life_tap(self):
         condition = {
@@ -498,6 +510,8 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
         ]
         spells, predicates_by_spell, _allowed, compatible, _auras = _corpus(source)
         self.assertIn(condition, compatible)
+        source_action_templates = _source_action_templates(source)
+        source_action_templates = _source_action_templates(source)
 
         class TargetRng:
             def __init__(self, target):
@@ -513,15 +527,17 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
                 return 0.0
 
         life_tap = _new_cast(
-            spells, predicates_by_spell, compatible, TargetRng(11689)
+            spells, predicates_by_spell, compatible, TargetRng(11689),
+            source_action_templates=source_action_templates,
         )
         dot = _new_cast(
-            spells, predicates_by_spell, compatible, TargetRng(25309)
+            spells, predicates_by_spell, compatible, TargetRng(25309),
+            source_action_templates=source_action_templates,
         )
         self.assertNotIn("condition", life_tap["action"])
         self.assertEqual(condition, dot["action"]["condition"])
 
-    def test_valid_cross_spell_dot_refresh_predicate_remains_eligible(self):
+    def test_cross_spell_source_condition_remains_bound_to_original_cast(self):
         condition = {
             "and": {"vals": [
                 {
@@ -565,12 +581,20 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
                 return 0.0
 
         generated = _new_cast(
-            spells, predicates_by_spell, compatible, TargetRng()
+            spells, predicates_by_spell, compatible, TargetRng(),
+            source_action_templates=source_action_templates,
         )
         self.assertEqual(
             9912, generated["action"]["castSpell"]["spellId"]["spellId"]
         )
         self.assertEqual(condition, generated["action"]["condition"])
+        for spell_id in (24977, 9835, 25298):
+            self.assertNotIn(
+                "condition",
+                source_action_templates[
+                    json.dumps({"spellId": spell_id}, sort_keys=True, separators=(",", ":"))
+                ][0],
+            )
 
 
 class NativeObjectiveDonorProbeContracts(unittest.TestCase):
@@ -1286,7 +1310,8 @@ class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
         self.assertEqual([heal_cast], witnesses)
         candidate = [{"action": {"autocastOtherCooldowns": {}}}]
         repaired = _ensure_native_damage_action(
-            candidate, witnesses, random.Random(1), objective="HPS"
+            candidate, witnesses, random.Random(1), objective="HPS",
+            source_actions=source,
         )
         self.assertEqual(heal_cast, repaired[1]["action"]["castSpell"])
         self.assertEqual({"type": "Self"}, repaired[1]["action"]["castSpell"]["target"])
@@ -1304,7 +1329,8 @@ class NativeObjectiveAPLAnchorContracts(unittest.TestCase):
         witnesses = _native_positive_source_casts(source, response, objective="TPS")
         self.assertEqual([threat_cast], witnesses)
         repaired = _ensure_native_damage_action(
-            [], witnesses, random.Random(2), objective="TPS"
+            [], witnesses, random.Random(2), objective="TPS",
+            source_actions=source,
         )
         self.assertEqual(threat_cast, repaired[0]["action"]["castSpell"])
 
