@@ -210,6 +210,7 @@ fi
 # Charge explicit elapsed time on the retained Rust actor and execute only
 # already-scheduled native resource/HoT ticks during each between-mob interval.
 # This does not add an active direct-heal policy or certify P4-P6.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_typed_rng.py" "$PWD"
 python3 "$PROJECT/integrations/mythicsim-rust/port_native_paid_recovery.py" "$PWD"
 git add src/core/queue.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs src/main.rs
 if ! git diff --cached --quiet; then
@@ -218,7 +219,7 @@ fi
 
 # The canonical RNG contract is typed and required at the native boundary.
 # Never publish an environment-selected stochastic optimizer fallback.
-python3 "$PROJECT/integrations/mythicsim-rust/port_native_typed_rng.py" "$PWD"
+# Typed RNG must be present before the paid-recovery API extends its signatures.
 git add src/core/rng.rs src/core/fight.rs src/classes.rs src/engine/prepared.rs \
   src/lib.rs src/main.rs src/classes/*/agent.rs src/classes/*/prepared.rs
 git add tests/
