@@ -11,12 +11,12 @@ on:
       level:
         description: "Character level"
         required: true
-        default: "40"
+        default: "60"
         type: string
       spec:
         description: "Spec key"
         required: true
-        default: unrestricted
+        default: balance
         type: string
       gate_seconds:
         description: "Per-gate timeout in seconds"
@@ -45,8 +45,8 @@ jobs:
     timeout-minutes: 30
     env:
       PROBE_CLASS: ${{ inputs.class_key || 'druid' }}
-      PROBE_LEVEL: ${{ inputs.level || '40' }}
-      PROBE_SPEC: ${{ inputs.spec || 'unrestricted' }}
+      PROBE_LEVEL: ${{ inputs.level || '60' }}
+      PROBE_SPEC: ${{ inputs.spec || 'balance' }}
       PROBE_GATE_SECONDS: ${{ inputs.gate_seconds || '30' }}
       PROBE_TOTAL_SECONDS: ${{ inputs.total_seconds || '300' }}
       FOREVER_P7_LIVE_PROBE_ITERATIONS: "3"
