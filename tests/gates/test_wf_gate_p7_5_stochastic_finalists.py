@@ -1,9 +1,12 @@
 """P7.5 paid stochastic finalist selection; injected interfaces, not gate evidence."""
 import copy
+import hashlib
 import json
 import random
 from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 from tools import wf_gate_p7_5_live as gate
 
@@ -240,12 +243,14 @@ def test_p75_paid_joint_axes_cycle_only_on_seventh_proposal():
             balanced, [], index, random.Random(9)) is None
 
 
+@pytest.mark.parametrize("paid_winner", ["A", "B"])
 def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
-        monkeypatch, tmp_path):
+        monkeypatch, tmp_path, paid_winner):
     """Paid selection uses balanced candidates, then a separate stochastic final.
 
     Injected native/world interfaces do not establish real gate acceptance.
-    The lower-ranked stochastic B must not select the winner during search.
+    Stochastic holdout must never pick the winner; the separately paid
+    balanced rerank can validly select B even when A led the cold screen.
     """
     binary = tmp_path / "upstream/target/release/forever-engine"
     binary.parent.mkdir(parents=True)
@@ -300,7 +305,8 @@ def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
     def paid_finalist(production, binary, request, distance, *, seeds):
         calls.append(("balanced_paid", 6, "balanced",
                       player(request)["talentsString"]))
-        return score(request, 6, "balanced"), {
+        return (900.0 if player(request)["talentsString"] == paid_winner
+                else 800.0), {
             "native_damage_events": 10, "native_world_ticks": 20}
 
     monkeypatch.setattr(gate, "_source_module",
@@ -327,20 +333,28 @@ def test_p75_balanced_finalist_is_ranked_without_stochastic_search(
     assert result["status"] == "PASS", result
     assert result["cold_balanced_screen_best_dps"] == 900.0
     assert result["paid_joint_balanced_finalists"] == 2
-    assert result["frozen_stochastic_world_dps"] == 760.0
+    assert result["frozen_stochastic_world_dps"] == (760.0 if paid_winner == "A" else 770.0)
     # Capture the actual source-paid frozen winner, not the balanced spike A.
     # The production gate can now compare real gear/talent/APL on a FAIL
     # without a duplicate 300s/1000-fight acceptance run.
     assert result["frozen_source_build"] == {
         "equipment": {"items": [{"id": 11}, {"id": 21}]},
-        "talentsString": "A",
+        "talentsString": paid_winner,
         "rotation": {"priorityList": [3, 2, 1]},
     }
+    cold_hash = hashlib.sha256(json.dumps(
+        _candidate("A"), sort_keys=True).encode()).hexdigest()
+    selected_hash = hashlib.sha256(json.dumps(
+        _candidate(paid_winner), sort_keys=True).encode()).hexdigest()
+    assert result["cold_winner_request_sha256"] == cold_hash
+    assert result["selected_balanced_request_sha256"] == selected_hash
+    if paid_winner == "B":
+        assert cold_hash != selected_hash
     assert result["joint_cold_world_dps"] == 900.0
     assert result["selected_validation"] == (
         "paid_2x3_balanced_live_native_finalist")
-    assert ("native", 1000, "stochastic", "A") in calls
-    assert ("world", 1000, "stochastic", "B") not in calls
+    assert ("native", 1000, "stochastic", paid_winner) in calls
+    assert ("world", 1000, "stochastic", "B" if paid_winner == "A" else "A") not in calls
     assert result["source_legal_joint_candidates_paid"] == 2
 
 
@@ -530,6 +544,8 @@ def test_p75_cli_preserves_actual_frozen_paid_build(monkeypatch, capsys):
         "status": "FAIL",
         "reasons": ["P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR"],
         "frozen_source_build": frozen,
+        "cold_winner_request_sha256": "a" * 64,
+        "selected_balanced_request_sha256": "b" * 64,
     })
     rc = cli.main(["--class", "druid", "--level", "60",
                    "--spec", "balance", "--gate", "P7.5"])
@@ -537,6 +553,8 @@ def test_p75_cli_preserves_actual_frozen_paid_build(monkeypatch, capsys):
     assert rc == 1
     assert result["status"] == "FAIL"
     assert result["results"][0]["frozen_source_build"] == frozen
+    assert result["results"][0]["cold_winner_request_sha256"] == "a" * 64
+    assert result["results"][0]["selected_balanced_request_sha256"] == "b" * 64
 
 def test_paid_p75_talent_apl_crossover_skips_gear_only_finalist_for_paid_apl():
     """A differently geared paid finalist is not an APL/talent donor.
