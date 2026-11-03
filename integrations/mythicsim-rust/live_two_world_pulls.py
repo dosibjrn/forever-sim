@@ -164,6 +164,36 @@ def _native_survival_min_health(windows: list[dict], target_count: int) -> float
         health_values.append(float(health))
     return min(health_values)
 
+def _native_mana_continuity(windows: list[dict], target_count: int) -> dict:
+    """Require real source-Rust mana states for every ACKed world kill.
+
+    The sampled mana changes include actual casting costs, mana regeneration
+    and other native resource effects. These are *not* proof of source-native
+    timed between-pull recovery, and must never be treated as a mana-regen
+    receipt or an independently paid 100-mob objective.
+    """
+    if (type(target_count) is not int or target_count <= 0
+            or not isinstance(windows, list) or len(windows) != target_count):
+        raise AssertionError("RUST_MULTI_WORLD_NATIVE_MANA_WINDOWS_INVALID")
+    after_kill = []
+    for index, window in enumerate(windows):
+        if (not isinstance(window, dict) or type(window.get("index")) is not int
+                or window["index"] != index):
+            raise AssertionError("RUST_MULTI_WORLD_NATIVE_MANA_WINDOWS_INVALID")
+        mana = window.get("actor_mana")
+        if (type(mana) not in (int, float) or not isfinite(mana)
+                or mana < 0):
+            raise AssertionError("RUST_MULTI_WORLD_NATIVE_MANA_INVALID")
+        after_kill.append(float(mana))
+    return {
+        "native_actor_mana_after_world_kills": after_kill,
+        "native_actor_mana_delta_between_world_kills": [
+            current - previous for previous, current
+            in zip(after_kill, after_kill[1:])
+        ],
+        "minimum_native_actor_mana": min(after_kill),
+    }
+
 
 def _native_health_damage_summary(windows: list[dict], *,
                                   require_positive: bool,
@@ -459,6 +489,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         elapsed = _verified_world_elapsed(result["windows"], kills)
         min_native_health = _native_survival_min_health(
             result["windows"], target_count)
+        native_mana = _native_mana_continuity(
+            result["windows"], target_count)
         native_health_damage = _native_health_damage_summary(
             result["windows"], require_positive=require_native_health_damage,
             require_zero=require_native_zero_health_damage)
@@ -472,6 +504,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "world_target_provenance": target_metadata,
             "native_windows": result["windows"], "world_kills": kills,
             "minimum_native_actor_health": min_native_health,
+            **native_mana,
             "native_health_damage": native_health_damage,
             "native_damage_events": events, "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
