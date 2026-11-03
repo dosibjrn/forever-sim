@@ -88,6 +88,9 @@ PREP_PATCHES = [
 ]
 
 AGENT_PATCHES = [
+    ("    core::fight::{heals::HealBook, Agent, AuraRef, DotId, Fight, Side, SpellId, SpellResult},",
+     "    core::fight::{heals::HealBook, Agent, AuraRef, DotId, Fight, Outcome, Side, SpellId, SpellResult},",
+     "OUTCOME_IMPORT"),
     ("    InsectSwarm,\n    Innervate,",
      "    InsectSwarm,\n    EntanglingRoots,\n    Innervate,", "ENUM"),
     ('            "insect_swarm" if spell.dot.is_some() => Some(DruidSpell::InsectSwarm),',
@@ -156,6 +159,13 @@ COVERAGE_PATCHES = [
     ('        "insect_swarm" if spell.dot.is_some() => Some("insect_swarm"),',
      '        "insect_swarm" if spell.dot.is_some() => Some("insect_swarm"),\n'
      '        "entangling_roots" if spell.dot.is_some() => Some("entangling_roots"),', "COVERAGE"),
+]
+
+FIGHT_PATCHES = [
+    ("pub(crate) struct Spell<S> {\n    pub(crate) id: ActionId,\n    /// The unit that casts the spell: the player or its pet.",
+     "pub(crate) struct Spell<S> {\n    pub(crate) id: ActionId,\n    /// Source spell rank retained from PreparedV2 for native effect receipts.\n    pub(crate) rank: i32,\n    /// The unit that casts the spell: the player or its pet.", "RANK_FIELD"),
+    ("            spells.push(Spell {\n                flags: Flags::parse(&exported.flags),",
+     "            spells.push(Spell {\n                rank: exported.rank,\n                flags: Flags::parse(&exported.flags),", "RANK_ASSIGN"),
 ]
 
 WORLD_BRIDGE_PATCHES = [
@@ -270,6 +280,7 @@ mod forever_roots_native_control_tests {
 
 def port_text(path: str, contents: str) -> str:
     patches = {
+        "src/core/fight.rs": FIGHT_PATCHES,
         "src/classes/druid/prepare/balance.rs": PREP_PATCHES,
         "src/classes/druid/agent.rs": AGENT_PATCHES,
         "src/classes/druid/prepared/coverage.rs": COVERAGE_PATCHES,
@@ -298,6 +309,7 @@ def port_text(path: str, contents: str) -> str:
     raise ValueError("unsupported port target " + path)
 
 PATHS = [
+    "src/core/fight.rs",
     "src/classes/druid/prepare/balance.rs",
     "src/classes/druid/agent.rs",
     "src/classes/druid/prepared/coverage.rs",
