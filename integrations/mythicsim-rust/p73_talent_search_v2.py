@@ -95,10 +95,15 @@ def run(binary,req,iterations,seed,rng_mode,deadline):
         inp.write_text(json.dumps(payload,separators=(',',':')))
         st=time.monotonic()
         res=subprocess.run([str(binary),'sim','--request',str(inp),'--outfile',str(out),'--gate','--rng-mode',rng_mode],
-                           stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,
+                           stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
                            timeout=max(0.001,deadline-time.monotonic()))
         if res.returncode!=0 or not out.exists():
-            raise RuntimeError('native Rust failed: '+res.stderr[-1400:])
+            raise RuntimeError(
+                "native Rust failed "
+                f"(returncode={res.returncode}, output_exists={out.exists()}): "
+                f"stdout={(res.stdout or '')[-700:]!r}; "
+                f"stderr={(res.stderr or '')[-700:]!r}"
+            )
         output=json.loads(out.read_text())
     return dps(output),output,round(time.monotonic()-st,6),sha(payload)
 

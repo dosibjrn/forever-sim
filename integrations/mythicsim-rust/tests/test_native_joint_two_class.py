@@ -1,12 +1,15 @@
 """Production wrapper contract for balanced native JOINT receipts."""
 from __future__ import annotations
 
+import subprocess
 import sys
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import p73_talent_search_v2 as p73
 from native_joint_two_class import fingerprint, native_payload, native_score_request
 
 
@@ -64,6 +67,28 @@ class NativeJointScoringContracts(unittest.TestCase):
                 time.monotonic() + 5.0, runner=fake_run,
             )
         self.assertEqual([], calls)
+
+
+class NativeExecutionErrorReporting(unittest.TestCase):
+    def test_failed_native_execution_preserves_returncode_stdout_and_stderr(self):
+        completed = subprocess.CompletedProcess(
+            args=["native"], returncode=7,
+            stdout="native stdout detail",
+            stderr="native stderr detail",
+        )
+        with patch.object(p73.subprocess, "run", return_value=completed) as run:
+            with self.assertRaises(RuntimeError) as raised:
+                p73.run(
+                    Path("native"), {"simOptions": {}}, 40, 731, "balanced",
+                    time.monotonic() + 5.0,
+                )
+        message = str(raised.exception)
+        self.assertIn("returncode=7", message)
+        self.assertIn("output_exists=False", message)
+        self.assertIn("native stdout detail", message)
+        self.assertIn("native stderr detail", message)
+        self.assertIs(run.call_args.kwargs["stdout"], subprocess.PIPE)
+        self.assertIs(run.call_args.kwargs["stderr"], subprocess.PIPE)
 
 
 if __name__ == "__main__":
