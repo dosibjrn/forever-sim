@@ -58,6 +58,11 @@ class NativeGearAdapter:
                 original_id = self.base[index].get("id", 0)
                 if not isinstance(iid, int) or iid <= 0 or not isinstance(original_id, int) or original_id <= 0:
                     continue
+                # The exact reference entry is not an alternate. Keep
+                # same-ID variants only when a source fixture changes the
+                # full entry (e.g. enchant/gem payload), not for a copied base.
+                if iid == original_id and entry == self.base[index]:
+                    continue
                 native = items.get(iid)
                 original = items.get(original_id)
                 if not native or not original or native.get("type") != original.get("type"):
