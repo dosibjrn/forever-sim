@@ -52,6 +52,8 @@ def _verified_world_elapsed(windows: list[dict], world_kills: list[dict]) -> dic
     if not windows or len(windows) != len(world_kills):
         raise AssertionError("RUST_WORLD_ELAPSED_TARGET_COUNT_MISMATCH")
     last_ns = -1
+    previous_kill_ns = 0
+    elapsed_per_target_s = []
     for index, (native, world) in enumerate(zip(windows, world_kills)):
         native_ns = native.get("native_kill_ns")
         world_ns = world.get("world_kill_clock_ns")
@@ -60,11 +62,14 @@ def _verified_world_elapsed(windows: list[dict], world_kills: list[dict]) -> dic
                 or native_ns <= last_ns or native_ns <= 0
                 or native_ns != world_ns):
             raise AssertionError("RUST_WORLD_KILL_CLOCK_NOT_CAUSAL")
+        elapsed_per_target_s.append((native_ns - previous_kill_ns) / 1_000_000_000)
+        previous_kill_ns = native_ns
         last_ns = native_ns
     elapsed = last_ns / 1_000_000_000
     return {
         "world_elapsed_seconds": elapsed,
         "world_seconds_per_target_without_paid_recovery": elapsed / len(windows),
+        "world_per_target_elapsed_seconds_without_paid_recovery": elapsed_per_target_s,
     }
 
 
@@ -224,6 +229,10 @@ def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
                     for event in trace)
         if yards == 0 and arrival_s != start_s:
             raise AssertionError("RUST_WORLD_ROUTE_ZERO_DISTANCE_CLOCK_INVALID")
+        if yards > 0 and next_s >= arrival_s and steps == 0:
+            # A fully elapsed walk must have executed real 2D movement
+            # steps. A schedule plus a late lethal clock is not proof.
+            raise AssertionError("RUST_WORLD_ROUTE_COMPLETE_WITHOUT_GSIM_STEPS")
         receipts.append({
             "target_id": leg["target_id"],
             "prior_kill_clock_ns": prior_ns,
