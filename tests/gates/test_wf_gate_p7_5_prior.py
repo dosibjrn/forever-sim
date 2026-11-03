@@ -43,7 +43,7 @@ def _fixtures(tmp_path, monkeypatch, *, statuses=None):
     statuses = statuses or {"P7.1": "PASS", "P7.2": "PASS",
                             "P7.3": "PARTIAL", "P7.4": "PASS"}
     ledger = tmp_path / "docs/planning/M1_PASSES.tsv"
-    ledger.parent.mkdir(parents=True)
+    ledger.parent.mkdir(parents=True, exist_ok=True)
     with ledger.open("w", newline="") as f:
         writer = csv.DictWriter(f, delimiter="\t", fieldnames=FIELDS)
         writer.writeheader()
