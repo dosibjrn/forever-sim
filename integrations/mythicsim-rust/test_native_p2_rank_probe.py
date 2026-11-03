@@ -32,7 +32,7 @@ class NativeP2RankProbeTests(unittest.TestCase):
         cls.engine_binary = Path(engine_binary).resolve()
         cls.source_data, _ = load_source_positions(DEFAULT_DB, 60)
         cls.layout = parse_druid_rust_layout(cls.engine_root)
-        validate_source_layout(cls.source_data, cls.layout)
+        cls.source_rust_tree_order = validate_source_layout(cls.source_data, cls.layout)
         cls.report = run_smoke(cls.engine_root, cls.engine_binary, DEFAULT_DB, 60)
 
     def test_selected_rust_layout_not_legacy_python_positions(self) -> None:
@@ -46,6 +46,10 @@ class NativeP2RankProbeTests(unittest.TestCase):
         self.assertEqual(feral[11]["kind"], "new_talent")
         self.assertEqual(feral[12]["kind"], "new_talent")
         self.assertEqual(restoration[7]["kind"], "new_talent")
+
+    def test_source_tree_row_order_matches_selected_rust_layout(self) -> None:
+        for receipt in self.source_rust_tree_order.values():
+            self.assertEqual(receipt["source_order"], receipt["rust_order"])
 
     def test_source_legal_rank_pairs_serialize_into_native_positions(self) -> None:
         before, after = build_source_legal_rank_pair(
