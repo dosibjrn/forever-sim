@@ -17,10 +17,37 @@ from native_l60_matrix import (
 )
 
 
+def current_provenance(profile):
+    return {
+        "source_sha256": "source-" + profile,
+        "effective_source_request_fingerprint": "effective-" + profile,
+        "engine_git_sha": "engine-sha",
+        "native_binary_sha256": "binary-sha",
+        "native_db_sha256": {
+            "items": "items-sha", "enchants": "enchants-sha", "spells": "spells-sha",
+        },
+    }
+
+
+def prior_row(profile, stage):
+    return {
+        "profile_id": profile,
+        "stage_seconds": stage,
+        **current_provenance(profile),
+        "status": "NATIVE_JOINT_PAID",
+        "native_paid": 100,
+        "three_axis_paid": 10,
+        "replay_matches": True,
+        "native_errors": 0,
+        "native_unscored": 3,
+        "native_refusals": 50,
+    }
+
+
 def inventory():
     names = (["druid/feral_cat", "druid/restoration", "priest/discipline",
               "warrior/protection"] + [f"mage/spec_{i}" for i in range(24)])
-    return [({"profile_id": p, "source_sha256": "source-" + p,
+    return [({"profile_id": p, **current_provenance(p),
               "source_type": "SMOKE_FIXTURE_ONLY",
               "blocker": None}, {"raid": {"parties": []}}) for p in names]
 
@@ -57,28 +84,72 @@ class SweepContracts(unittest.TestCase):
             self.assertEqual(status, preflight(profile, {}, {}, 5)[0])
 
     def test_native_paid_replay_is_sufficient_for_30_second_stage(self):
-        prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 100,
-                 "three_axis_paid": 10, "replay_matches": True, "native_errors": 0,
-                 "native_unscored": 3, "native_refusals": 50}
-        self.assertIsNone(preflight("druid/feral_cat", {}, {}, 30, prior))
+        profile = "druid/feral_cat"
+        prior = prior_row(profile, 5)
+        # Refusals and complete-but-unscored responses do not veto a valid paid replay.
+        self.assertIsNone(preflight(profile, current_provenance(profile), {}, 30, prior))
 
     def test_30_second_stage_rejects_prior_without_native_paid_replay(self):
-        prior = {"status": "BLOCKED_NATIVE_REFUSALS", "native_paid": 0,
-                 "three_axis_paid": 0, "replay_matches": False, "native_errors": 0,
-                 "native_refusals": 100}
+        profile = "druid/feral_cat"
+        prior = prior_row(profile, 5)
+        prior.update({"status": "BLOCKED_NATIVE_REFUSALS", "native_paid": 0,
+                      "three_axis_paid": 0, "replay_matches": False,
+                      "native_refusals": 100})
         self.assertEqual("BLOCKED_PRIOR_STAGE",
-                         preflight("druid/feral_cat", {}, {}, 30, prior)[0])
+                         preflight(profile, current_provenance(profile), {}, 30, prior)[0])
 
     def test_300_second_stage_requires_native_paid_replay_at_30_seconds(self):
+        profile = "druid/feral_cat"
+        source = current_provenance(profile)
         self.assertEqual("BLOCKED_PRIOR_STAGE",
-                         preflight("druid/feral_cat", {}, {}, 300, None)[0])
-        prior = {"status": "NATIVE_JOINT_PAID", "native_paid": 10,
-                 "three_axis_paid": 5, "replay_matches": True, "native_errors": 0,
-                 "native_refusals": 4}
-        self.assertIsNone(preflight("druid/feral_cat", {}, {}, 300, prior))
+                         preflight(profile, source, {}, 300, None)[0])
+        prior = prior_row(profile, 30)
+        self.assertIsNone(preflight(profile, source, {}, 300, prior))
         prior["replay_matches"] = False
         self.assertEqual("BLOCKED_PRIOR_STAGE",
-                         preflight("druid/feral_cat", {}, {}, 300, prior)[0])
+                         preflight(profile, source, {}, 300, prior)[0])
+
+    def test_stage_promotion_rejects_stale_stage_or_mismatched_exact_provenance(self):
+        profile = "druid/feral_cat"
+        source = current_provenance(profile)
+        prior = prior_row(profile, 5)
+        self.assertIsNone(preflight(profile, source, {}, 30, prior))
+
+        mismatches = {
+            "profile_id": "mage/fire",
+            "stage_seconds": 30,
+            "source_sha256": "different-source",
+            "effective_source_request_fingerprint": "different-effective-request",
+            "engine_git_sha": "different-engine",
+            "native_binary_sha256": "different-binary",
+            "native_db_sha256": {
+                "items": "different-items", "enchants": "enchants-sha",
+                "spells": "spells-sha",
+            },
+        }
+        for field, value in mismatches.items():
+            with self.subTest(field=field):
+                stale = dict(prior)
+                stale[field] = value
+                status, reason = preflight(profile, source, {}, 30, stale)
+                self.assertEqual("BLOCKED_PRIOR_STAGE", status)
+                self.assertIn(field, reason)
+
+    def test_build_matrix_does_not_pay_native_for_stale_prior_stage(self):
+        rows = inventory()
+        profile = rows[0][0]["profile_id"]
+        calls = []
+        result = build_matrix(
+            rows, stage=30,
+            run=lambda value: calls.append(value) or {
+                "status": "NATIVE_JOINT_PAID", "native_paid": 1,
+                "three_axis_paid": 1, "native_errors": 0, "replay_matches": True,
+            },
+            prior_rows={profile: prior_row(profile, 30)},
+        )
+        self.assertEqual("BLOCKED_PRIOR_STAGE", result[0]["status"])
+        self.assertIn("stage_seconds", result[0]["blocker"])
+        self.assertNotIn(profile, calls)
 
     def test_gaps_report_only_unresolved_profiles_not_legality_certificates(self):
         rows = build_matrix(inventory(), stage=5,
