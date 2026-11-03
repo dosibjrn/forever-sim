@@ -64,6 +64,18 @@ def patch_test_callers(root: Path) -> None:
             "simulate_prepared(&typed)",
             1,
         ),
+        (
+            "tests/forever_gaps.rs",
+            "use forever_engine::{\n    check_prepared, contracts::prepared_v2::PreparedV2, prepare_json_with, simulate_prepared, Rules,\n};",
+            "simulate_prepared(&prepared)",
+            4,
+        ),
+        (
+            "tests/healer_gear.rs",
+            "use forever_engine::{check_prepared, prepare_json_with, simulate_prepared, Rules};",
+            "simulate_prepared(&prepared)",
+            1,
+        ),
     )
     for relative, old_import, old_call, expected_calls in targets:
         path = root / relative
