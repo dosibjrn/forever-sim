@@ -486,7 +486,7 @@ def evaluate(evidence_dir: Path, class_key: str, level: int, spec: str, gate: st
 
 
 def _run_live_gate(root: Path, class_key: str, level: int, spec: str,
-                   gate: str) -> dict:
+                   gate: str, scenario_id: str = "") -> dict:
     """Execute one active production gate; retired P1/P2 are not callable."""
     if gate not in GATES:
         return {"status": "BLOCKED", "reasons": ["RETIRED_OR_UNKNOWN_GATE:" + gate]}
