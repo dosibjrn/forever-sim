@@ -28,6 +28,7 @@ jobs:
           cargo build --locked --manifest-path "$engine/Cargo.toml" --bin forever-engine
       - name: Verify gsim world-walk time and position regressions
         run: |
+          python3 -m pip install --disable-pip-version-check 'pytest==8.3.5'
           python3 -m pytest -q tests/test_work2_gsim_world_walk.py
       - name: Reproduce first real world-range or native-resource failure
         shell: bash
