@@ -816,6 +816,81 @@ def _p1_scope_metadata(root: Path, class_key: str, level: int) -> dict:
                 data.get('contextual_zero_when_solo_land_mob_no_allies_or_debuffs', {}))}
 
 
+
+NATIVE_P1_BALANCE_SPELL_ID = 9912
+NATIVE_P1_BALANCE_FIXTURE = (
+    Path("integrations") / "mythicsim-rust" / "engine" / "tests"
+    / "classes" / "druid" / "prepare" / "balance.request.json"
+)
+NATIVE_P1_VERIFIED = "NATIVE_DIRECT_BEHAVIOR_VERIFIED"
+
+
+def _native_p1_balance_probe(root: Path) -> tuple[dict, dict]:
+    """Run the selected Druid L60 Balance action through the pinned Rust boundary."""
+    binary_value = (
+        os.environ.get("FOREVER_MYTHICSIM_RUST_BIN")
+        or os.environ.get("FOREVER_ENGINE_BINARY")
+    )
+    fixture = root / NATIVE_P1_BALANCE_FIXTURE
+    if not binary_value:
+        raw = {
+            "status": "BLOCKED", "stage": "prepare",
+            "reason": "FOREVER_MYTHICSIM_RUST_BIN_NOT_SET",
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+    elif not fixture.is_file():
+        raw = {
+            "status": "BLOCKED", "stage": "request",
+            "reason": "NATIVE_P1_BALANCE_REQUEST_FIXTURE_MISSING:" + str(fixture),
+            "native_executed": False, "effect_observed": False,
+            "p1_certified": False,
+        }
+    else:
+        try:
+            from src.engine_client.native_p1_effect_probe import (
+                run_native_p1_direct_effect_probe,
+            )
+            request = json.loads(fixture.read_text(encoding="utf-8"))
+            raw = run_native_p1_direct_effect_probe(
+                binary=Path(binary_value),
+                engine_root=root / "integrations" / "mythicsim-rust" / "engine",
+                request=request,
+                spell_id=NATIVE_P1_BALANCE_SPELL_ID,
+                timeout_seconds=120.0,
+                iterations=10,
+                seed=647003,
+                target_count=2,
+                world_mob_health=1200.0,
+            )
+        except Exception as exc:
+            raw = {
+                "status": "ERROR", "stage": "native_adapter",
+                "reason": f"{type(exc).__name__}:{exc}",
+                "native_executed": False, "effect_observed": False,
+                "p1_certified": False,
+            }
+
+    world = raw.get("world_bridge") if isinstance(raw.get("world_bridge"), dict) else {}
+    summary = {
+        "status": raw.get("status", "ERROR"),
+        "spell_id": NATIVE_P1_BALANCE_SPELL_ID,
+        "native_executed": raw.get("native_executed") is True,
+        "effect_observed": raw.get("effect_observed") is True,
+        "dps_delta": raw.get("dps_delta"),
+        "world_ack": world.get("actual_2d_ack") is True,
+        "native_damage_events": world.get("native_damage_events"),
+        "world_targets_killed": world.get("world_targets_killed"),
+        "engine_identity": raw.get("engine_identity"),
+        "positive_request_sha256": raw.get("positive_request_sha256"),
+        "stage": raw.get("stage"),
+        "reason": raw.get("reason"),
+        "fixture": str(NATIVE_P1_BALANCE_FIXTURE),
+        "p1_certified": False,
+    }
+    return raw, summary
+
+
 def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
              spec:str='unrestricted',scenario_id:str=P1_DEFAULT_SCENARIO)->dict:
     report={'class':class_key,'level':level,'spec':spec,'gate':'P1',
@@ -847,10 +922,46 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
         report['engine_id']=_source_code_fingerprint(root)
         report['ir_id']=ir.id
         nonimpact=_load_p1_scenario_nonimpact(root,class_key,level,scenario_id)
+        native_enabled = class_key == "druid" and level == 60 and str(spec).lower() == "balance"
+        native_raw = None
+        native_summary = None
+        native_action_executor_invoked = False
+        if native_enabled:
+            native_raw, native_summary = _native_p1_balance_probe(root)
+            report["native_action_probe"] = native_summary
+
+        def _executor(i, action):
+            nonlocal native_action_executor_invoked
+            if native_enabled:
+                try:
+                    action_source_ids = {int(value) for value in _source_spell_ids(action)}
+                except Exception:
+                    action_source_ids = set()
+                if NATIVE_P1_BALANCE_SPELL_ID in action_source_ids:
+                    native_action_executor_invoked = True
+                    if (native_raw is not None
+                            and native_raw.get("status") == NATIVE_P1_VERIFIED
+                            and native_raw.get("effect_observed") is True):
+                        return {
+                            "status": "executed",
+                            "events": int(native_summary.get("native_damage_events") or 1),
+                            "effect_observed": True,
+                            "native_executor": "msim-rust",
+                        }
+                    status = (native_summary or {}).get("status", "NOT_RUN")
+                    reason = (native_summary or {}).get("reason") or status
+                    return {
+                        "status": "error",
+                        "effect_observed": False,
+                        "reason": f"NATIVE_P1_SELECTED_ACTION_{status}:{reason}",
+                        "native_executor": "msim-rust",
+                    }
+            return _runtime_exercise(i, action, level)
+
         check=audit_inventory(rows,ir,parser=_source_spell_ids,
                   source_classifier=classify_indexed_ability,
                   policy_builder=from_source_rules,scratch_builder=scratch_policies,
-                  executor=lambda i,a:_runtime_exercise(i,a,level),
+                  executor=_executor,
                   higher_level_rows=excluded_high_level, effect_checker=effect_execution_kind,
                   source_inactive_ids=inactive_ids,
                   scope_facts={**_load_spellbook_observed_scope_facts(root,
@@ -859,6 +970,21 @@ def run_live(root: Path,class_key:str,level:int,db_override:Path|None=None,
                   context_exclusions=scope_meta.get('scope_context_exclusions',{}),
                   scenario_nonimpact=nonimpact,scenario_id=scenario_id)
         report.update(check)
+        if native_enabled:
+            native_omitted = any(
+                issue.get("code") == "OPTIMIZER_OMITS_LEGAL_ACTION"
+                and str(issue.get("ability") or "").split(":", 1)[0]
+                    == str(NATIVE_P1_BALANCE_SPELL_ID)
+                for issue in report.get("problems", [])
+            )
+            candidate_reachable = bool(
+                native_action_executor_invoked and not native_omitted
+            )
+            report["native_action_executor_invoked"] = native_action_executor_invoked
+            report["native_action_candidate_reachable"] = candidate_reachable
+            native_summary["executor_invoked"] = native_action_executor_invoked
+            native_summary["candidate_reachable"] = candidate_reachable
+            report["native_action_probe"] = native_summary
         report['reasons'] = [
             f"{issue['code']}:{issue['ability'] or ''}:{issue['detail'] or ''}"
             for issue in report['problems']
