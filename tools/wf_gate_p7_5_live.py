@@ -154,6 +154,64 @@ def _paid_p75_crossover(candidate, parent, finalists, balanced_elites, source, r
     return True
 
 
+
+def _paid_p75_gear_block_crossover(candidate, parent, finalists,
+                                    balanced_elites, source, validator, rng):
+    """Combine a small block of independently paid gear/enchant pairs.
+
+    The genuine selected-pin P7.5 #41584379499 paid 2,187 source builds but
+    its frozen result remained below the accepted-compatible floor. Existing
+    source-paid crossover only transferred a talent/APL pair, not multiple
+    interacting gear slots. Transfer intact item/enchant pairs solely from
+    another actually executed candidate in THIS independent cold search.
+    The selected source/Rust gear validator must accept the mixed equipment
+    before the usual genuine native+gsim-2D paid evaluation.
+    """
+    items = source.player(candidate)["equipment"]["items"]
+
+    def distinct_paid_gear(rows, request_index, limit):
+        eligible = []
+        for row in sorted(rows, key=lambda row: row[0], reverse=True)[:limit]:
+            paid = row[request_index]
+            if paid == parent:
+                continue
+            other = source.player(paid)["equipment"]["items"]
+            if len(items) != len(other):
+                continue
+            different = [i for i in range(len(items))
+                         if items[i] != other[i]]
+            # This operator is specifically a multi-slot crossover, not
+            # another single-slot edit or an identical-gear no-op.
+            if len(different) >= 2:
+                eligible.append((other, different))
+        return eligible
+
+    # Paid stochastic finalists may differ only in talents or rotation.
+    # Fall back to genuinely paid balanced candidates with distinct gear
+    # rather than wasting this proposal on an unchanged equipment block.
+    donors = distinct_paid_gear(finalists, 3, 3)
+    if not donors:
+        donors = distinct_paid_gear(balanced_elites, 2, 6)
+    if not donors:
+        return False
+    other, different = rng.choice(donors)
+    for _ in range(4):
+        selected = rng.sample(
+            different, min(len(different), rng.randint(2, 5)))
+        mixed = copy.deepcopy(items)
+        for i in selected:
+            mixed[i] = copy.deepcopy(other[i])
+        try:
+            validator.validate(
+                [int(item["id"]) for item in mixed],
+                [int(item.get("enchant") or 0) for item in mixed])
+        except (source.RejectedGear, ValueError, KeyError, TypeError):
+            continue
+        items[:] = mixed
+        return True
+    return False
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.5")
@@ -341,8 +399,17 @@ def run_live(root: Path, class_key: str, level: int, *,
                     # explore combinations unavailable to single-axis edits.
                     crossover = (elite is not None and full_search
                                  and proposals % 13 == 0)
-                    repair_axes = (("gear",) if crossover else
-                                   _p75_paid_joint_axes(proposals)
+                    # Preserve seventh paired edits, eleventh rebuilds,
+                    # thirteenth crossovers and fifth independent restarts.
+                    # Other seventeenth proposals can combine intact blocks
+                    # of gear from two independently scored PAID parents.
+                    gear_crossover = (elite is not None and full_search
+                                      and proposals % 17 == 0
+                                      and proposals % 7 != 0
+                                      and proposals % 11 != 0
+                                      and not crossover)
+                    repair_axes = (("gear",) if crossover or gear_crossover
+                                   else _p75_paid_joint_axes(proposals)
                                    if elite is not None and full_search else None)
                     if (repair_axes is None and elite is not None
                             and full_search):
@@ -355,6 +422,10 @@ def run_live(root: Path, class_key: str, level: int, *,
                         _paid_p75_crossover(
                             candidate, elite, stochastic_finalists,
                             balanced_elites, source, rng)
+                    elif gear_crossover:
+                        _paid_p75_gear_block_crossover(
+                            candidate, elite, stochastic_finalists,
+                            balanced_elites, source, validator, rng)
                 candidate_sha = hashlib.sha256(json.dumps(
                     candidate, sort_keys=True).encode()).hexdigest()
                 if candidate_sha in seen:
