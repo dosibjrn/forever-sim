@@ -650,6 +650,12 @@ def main(argv=None) -> int:
                         "paid_stochastic_finalists",
                         "paid_stochastic_confirmed_finalists",
                         "source_legal_cold_candidates_paid",
+                        "native_scored_candidates_paid",
+                        "native_invalid_candidates",
+                        "native_unsupported_candidates",
+                        "native_unscored_candidates",
+                        "native_execution_errors",
+                        "world_execution_errors",
                         "frozen_stochastic_iterations",
                         "frozen_stochastic_native_dps",
                         "frozen_stochastic_world_dps",
@@ -665,7 +671,8 @@ def main(argv=None) -> int:
                     record[key] = report[key]
             for key in ("winner_selection", "frozen_request_raw_sha256",
                         "frozen_stochastic_failure", "search_strategy",
-                        "source_original_talents", "cold_winner_talents"):
+                        "source_original_talents", "cold_winner_talents",
+                        "native_refusal_samples", "native_unscored_samples"):
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 256:
                     record[key] = value
