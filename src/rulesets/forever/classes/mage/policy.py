@@ -11,7 +11,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 import math
 import random
 
-from src.shared.leveling.timing import between_pull_travel_s
+from src.scenarios.timing import between_pull_travel_s
 
 from . import wowhead_facts as wh
 from .resources import best_mage_water, mana_gem_tier, ooc_mana_regen_per_s
