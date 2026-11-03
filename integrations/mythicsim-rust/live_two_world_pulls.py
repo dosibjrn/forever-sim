@@ -23,6 +23,7 @@ from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
 from src.game.model import ActorDefinition, ResourceDefinition
 from src.game.runtime import ActorState, CombatRuntime, TargetState
 from src.shared.leveling.spaced_pulls import SpacedPullLayout
+from src.shared.leveling.objective import MOB_BASE_HP, representative_hp
 
 
 def _queue_world_walk(world: CombatRuntime, target_id: str, *,
@@ -54,12 +55,39 @@ def _queue_world_walk(world: CombatRuntime, target_id: str, *,
             "start_s": start_s, "arrival_s": arrival_s}
 
 
-def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
-        target_count: int = 2, corrupt_ack: bool = False,
-        require_native_moving: bool = False) -> dict:
-    """Execute N world kills; retain one Rust process, actor and ACK lineage."""
-    if not 0 < mob_health <= 100_000:
+def _target_health_profile(mob_health: float | None, classic_mob_level: int | None) -> tuple[float, dict]:
+    """Source-labeled ordinary leveling target or explicit synthetic diagnostic.
+
+    CMaNGOS is a documented Classic proxy, not verified Forever creature data.
+    Never silently clamp a missing level to another level's target health.
+    """
+    if classic_mob_level is not None:
+        if mob_health is not None:
+            raise ValueError("RUST_WORLD_TARGET_PROFILE_CONFLICT")
+        if type(classic_mob_level) is not int or classic_mob_level not in MOB_BASE_HP:
+            raise ValueError("RUST_WORLD_TARGET_LEVEL_UNSOURCED")
+        return representative_hp(classic_mob_level), {
+            "source_status": "classic_reference_proxy_not_verified_forever",
+            "source_basis": "CMaNGOS warrior BaseHealthExp0 ordinary melee reference",
+            "authority": "src.shared.leveling.objective.MOB_BASE_HP",
+            "level": classic_mob_level,
+        }
+    if mob_health is None:
+        mob_health = 1200.0
+    if isinstance(mob_health, bool) or not 0 < float(mob_health) <= 100_000:
         raise ValueError("RUST_MULTI_WORLD_MOB_HEALTH_INVALID")
+    return float(mob_health), {
+        "source_status": "synthetic_diagnostic",
+        "source_basis": "explicit world-only HP fixture",
+    }
+
+
+def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
+        target_count: int = 2, corrupt_ack: bool = False,
+        require_native_moving: bool = False,
+        classic_mob_level: int | None = None) -> dict:
+    """Execute N world kills; retain one Rust process, actor and ACK lineage."""
+    mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
     if type(target_count) is not int or not 2 <= target_count <= 100:
         raise ValueError("RUST_MULTI_WORLD_TARGET_COUNT_INVALID")
     request = json.loads(prepared.read_text())
@@ -82,8 +110,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
         (ResourceDefinition("health", "Health", "hero",
                             initial_amount=500, capacity=500),), ())
     world = CombatRuntime(
-        actor=actor, target=TargetState.with_health("m0", mob_health),
-        other_targets=tuple(TargetState.with_health(t, mob_health)
+        actor=actor, target=TargetState.with_health("m0", mob_health, **target_metadata),
+        other_targets=tuple(TargetState.with_health(t, mob_health, **target_metadata)
                             for t in targets if t != "m0"),
         spatial_positions_yards=positions,
         enemy_move_speed_yards_s=0., melee_radius_yards=5.,
@@ -231,6 +259,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
             raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
         return {
             "source_sha256": source_hash, "native_pid": proc.pid,
+            "world_target_hp": mob_health,
+            "world_target_provenance": target_metadata,
             "native_windows": result["windows"], "world_kills": kills,
             "native_damage_events": events, "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
@@ -253,15 +283,20 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--prepared", type=Path, required=True)
-    parser.add_argument("--mob-health", type=float, default=1200.)
+    target = parser.add_mutually_exclusive_group()
+    target.add_argument("--mob-health", type=float, default=None)
+    target.add_argument("--classic-mob-level", type=int, default=None,
+                        help="CMaNGOS ordinary-mob reference HP (Classic proxy, not Forever-verified)")
     parser.add_argument("--targets", type=int, default=2)
     parser.add_argument("--require-native-moving", action="store_true")
     args = parser.parse_args()
     valid = run(args.binary, args.prepared, mob_health=args.mob_health,
-                target_count=args.targets, require_native_moving=args.require_native_moving)
+                target_count=args.targets, require_native_moving=args.require_native_moving,
+                classic_mob_level=args.classic_mob_level)
     print("RUST_TWO_REAL_GSIM_WORLD_KILLS", json.dumps(valid, sort_keys=True), flush=True)
     forged = run(args.binary, args.prepared, mob_health=args.mob_health,
-                 target_count=args.targets, corrupt_ack=True)
+                 target_count=args.targets, corrupt_ack=True,
+                 classic_mob_level=args.classic_mob_level)
     print("RUST_TWO_WORLD_FORGED_ACK_REJECTED", json.dumps(forged, sort_keys=True), flush=True)
 
 
