@@ -8,7 +8,7 @@ No game-specific stat-to-effect coefficients or hard-coded item IDs live here.
 """
 from __future__ import annotations
 from math import isfinite
-from .source_checkpoint_p3_weights import PROBE_STEPS
+from src.game.stat_sensitivity import PROBE_STEPS
 
 CRITICAL_COARSE_AXES = frozenset({'agility', 'weapon_dps'})
 
