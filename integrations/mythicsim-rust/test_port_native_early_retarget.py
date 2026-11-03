@@ -33,6 +33,22 @@ class EarlyRetargetPortTests(unittest.TestCase):
         self.assertEqual(patched.count(TEST), 1)
         self.assertEqual(port_source(patched), patched)
 
+    def test_typed_rng_descendant_is_idempotent_and_still_fail_closed(self):
+        patched = port_source(SOURCE)
+        typed_rng = "DruidAgent::fight(&prepared, crate::core::rng::RngMode::Stochastic)"
+        typed = patched.replace("DruidAgent::fight(&prepared)", typed_rng, 1)
+        self.assertEqual(typed.count(TEST), 0)
+        self.assertEqual(typed.count(TEST.replace("DruidAgent::fight(&prepared)", typed_rng, 1)), 1)
+        self.assertEqual(port_source(typed), typed)
+
+        broken = typed.replace(
+            "assert!(fight.accepts_next_target_clock(early, early + 2_000_000, true));",
+            "assert!(!fight.accepts_next_target_clock(early, early + 2_000_000, true));",
+            1,
+        )
+        with self.assertRaisesRegex(ValueError, "partially applied"):
+            port_source(broken)
+
     def test_refuses_missing_native_source_bridge(self):
         with self.assertRaisesRegex(ValueError, "anchors missing"):
             port_source(SOURCE.replace("world_bridge::begin_next_target(at_ns)?", ""))
