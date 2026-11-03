@@ -12,7 +12,7 @@ from src.game.data.forever.checkpoint_p2_execution_gate import _executable_fille
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import apply_talent_selection, available_talent_points, talented_bonus_for_level
-from tools import wf_gate_p2_live as gate
+from tools import wf_talent_runtime as talent_runtime
 from tools.ingest_talent_tree_rows_sqlite import ingest
 
 SOURCE = Path(__file__).resolve().parents[1] / 'evidence/wf482_druid_tree_rows_20261017.json'
@@ -40,7 +40,7 @@ def gcd_ir():
 
 def test_gcd_probe_executes_and_checks_all_action_ranks(gcd_ir):
     before,after,mod=gcd_ir
-    r=gate._gcd_runtime_witness(before,after,mod)
+    r=talent_runtime._gcd_runtime_witness(before,after,mod)
     assert r and r['probe']=='paired_production_gcd_readiness'
     assert r['checked_ir_actions']
     assert set(r['checked_ir_actions'])=={a.id for a in after.actions if a.family_key==mod.target_id}
@@ -49,7 +49,7 @@ def test_gcd_probe_executes_and_checks_all_action_ranks(gcd_ir):
 
 def test_gcd_rejects_wrong_source_delta(gcd_ir):
     before,after,mod=gcd_ir
-    assert gate._gcd_runtime_witness(before,after,replace(mod,value=mod.value*2)) is None
+    assert talent_runtime._gcd_runtime_witness(before,after,replace(mod,value=mod.value*2)) is None
 
 
 def test_gcd_rejects_wrong_ir_rank(gcd_ir):
@@ -59,18 +59,18 @@ def test_gcd_rejects_wrong_ir_rank(gcd_ir):
     assert indices
     i=indices[-1]
     actions[i]=replace(actions[i],gcd_s=actions[i].gcd_s+0.05)
-    assert gate._gcd_runtime_witness(before,replace(after,actions=tuple(actions)),mod) is None
+    assert talent_runtime._gcd_runtime_witness(before,replace(after,actions=tuple(actions)),mod) is None
 
 
 def test_gcd_rejects_nonexecuting_runtime(gcd_ir,monkeypatch):
     before,after,mod=gcd_ir
-    original=gate._action_runtime_probe
+    original=talent_runtime._action_runtime_probe
     def no_effect(ir,action,*,observe_periodic=False):
         result=original(ir,action,observe_periodic=observe_periodic)
         if result is None:return None
         return {**result,'gcd_ready_s':1.5}
     monkeypatch.setattr(gate,'_action_runtime_probe',no_effect)
-    assert gate._gcd_runtime_witness(before,after,mod) is None
+    assert talent_runtime._gcd_runtime_witness(before,after,mod) is None
 
 
 def test_all_eight_rows_are_canonical_sqlite_facts_after_ingest(tmp_path):
@@ -97,7 +97,7 @@ def test_all_eight_rows_are_canonical_sqlite_facts_after_ingest(tmp_path):
 
 
 def test_no_unresolved_reachability_with_source_row_ingestion():
-    result=gate.run_live(Path(__file__).resolve().parents[1], 'druid',20)
+    result=talent_runtime.run_live(Path(__file__).resolve().parents[1], 'druid',20)
     assert result['unresolved_count']==0
     assert result['reachability_count']>=88
     assert result['status']=='FAIL'  # Missing talent implementations are real blockers.
