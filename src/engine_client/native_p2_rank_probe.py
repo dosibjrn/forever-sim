@@ -11,21 +11,9 @@ import hashlib
 import json
 import math
 import re
-import subprocess
-import sys
-import tempfile
 import time
-from enum import Enum
 from collections.abc import Mapping
 from pathlib import Path
-
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_NATIVE_INTEGRATION = _REPO_ROOT / "integrations" / "mythicsim-rust"
-if str(_NATIVE_INTEGRATION) not in sys.path:
-    sys.path.insert(0, str(_NATIVE_INTEGRATION))
-
-import p73_talent_search_v2 as _native_runner
-
 
 from .native_candidate_client import (
     NativeCandidateClientError,
