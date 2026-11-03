@@ -155,8 +155,13 @@ class WF613Controller:
             self.paid = archive
 
     def diagnostics(self):
-        return {"strategy": "wf613",
-                "operator_attempts": dict(self.tries),
-                "operator_best_improvements": dict(self.gains),
-                "paid_archive_size": len(self.paid),
-                "best_paid_balanced_world_dps": (self.best if self.paid else None)}
+        attempts = dict(self.tries)
+        return {
+            "strategy": "wf613",
+            "operator_attempts": attempts,
+            "operator_best_improvements": dict(self.gains),
+            "parent_proposals": sum(attempts.values()) - attempts["fresh"],
+            "fresh_proposals": attempts["fresh"],
+            "paid_archive_size": len(self.paid),
+            "best_paid_balanced_world_dps": (self.best if self.paid else None),
+        }
