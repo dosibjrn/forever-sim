@@ -21,7 +21,6 @@ from .source_effect_atoms import parse_effect_atoms
 from .source_checkpoint_context_proxy import source_context_evidence
 from .source_checkpoint_web_l0 import load_observations
 from .source_checkpoint_detail_observations import load_detail_observations
-from .source_checkpoint_acquisition import acquisition_frontier
 from .source_indexed_action_coverage import _source_spell_ids
 from .source_db_scope import DEFAULT_DB
 from src.scenarios.leveling_targets import representative_hp
@@ -130,8 +129,6 @@ def action_frontier(ir, *, class_key: str, level: int,
         # The source-index table, not the name list, is the enumeration authority.
         source_sha=sha256(''.join(str(r['spell_id'])+r['raw_listview_json'] for r in rows).encode()).hexdigest()
     observed_details = load_detail_observations(detail_observations_path, rows) if detail_observations_path else {}
-    acquisition = acquisition_frontier(class_key=cls,level=level,db_path=path)
-    acquisition_by_id = {r['spell_id']:r for r in acquisition['records']}
     # Sibling rank text supplies a utility *category* when an unchanged
     # canonical index entry carries no tooltip, never its missing magnitude.
     # The original indexed name is an exact group key, not a fuzzy join or
@@ -214,8 +211,6 @@ def action_frontier(ir, *, class_key: str, level: int,
         rec={'spell_id':sid,'name':row['name'],'source_level_hint':row['level_hint'],
             'source_rank_hint':row['rank_hint'],'source_role':role['role'],
             'source_learning_hints':raw.get('source'),
-            'source_acquisition_category':acquisition_by_id[sid]['category'],
-            'source_acquisition_evidence_status':acquisition_by_id[sid]['acquisition_evidence_status'],
             'source_url':row['source_url'],'source_index_batch':row['batch_id'],
             'source_row_sha256':sha256(row['raw_listview_json'].encode()).hexdigest(),
             'ir_action_ids':sorted(x.id for x in matches),
@@ -255,37 +250,31 @@ def action_frontier(ir, *, class_key: str, level: int,
                                     'RUNE_ENGRAVING_DISABLED_BY_DEFAULT'),
                        l0_disposition=('CONTEXTUAL_SETUP_EFFECT_REQUIRES_RUNE_GRANT' if use_runes else
                                        'RUNE_ENGRAVING_NOT_A_LEGAL_ACTION'),
-                       exploration_priority=('UNCERTAIN_NOT_ZERO' if use_runes else 'EXCLUDED_RUNE_SETUP'),
-                       legal_combat_spell_proven=False)
+                       exploration_priority=('UNCERTAIN_NOT_ZERO' if use_runes else 'EXCLUDED_RUNE_SETUP'))
         elif 'rune_grant_unverified' in flags and not confirmed_talent_grant and not use_runes:
             rec.update(eligibility='RUNE_CONDITIONAL_GRANT_DISABLED_TALENT_PATH_UNVERIFIED',
                        l0_disposition='NOT_FREE_ACTION_REQUIRES_VERIFIED_TALENT_GRANT',
-                       exploration_priority='BLOCKED_RUNE_GRANT_NO_PROVEN_TALENT',
-                       legal_combat_spell_proven=False)
+                       exploration_priority='BLOCKED_RUNE_GRANT_NO_PROVEN_TALENT')
         elif (flags.intersection({'not_an_action','passive_modifier',
                                   'trigger_or_component_unverified','proc_or_trigger_unverified'})
               and not matches):
             rec.update(eligibility='AUXILIARY_OR_PASSIVE_NOT_STANDALONE_ACTION',
                        l0_disposition='REQUIRES_PARENT_TRIGGER_OR_PASSIVE_EFFECT_COVERAGE',
-                       exploration_priority='PARENT_INTEGRATION_PENDING',
-                       legal_combat_spell_proven=False)
+                       exploration_priority='PARENT_INTEGRATION_PENDING')
         elif role['role']=='ZERO_OR_UNKNOWN_LEVEL_PASSIVE_TALENT_CANDIDATE':
             rec.update(eligibility='PASSIVE_OR_TALENT_UNRESOLVED',
                        l0_disposition='TALENT_OR_PASSIVE_CONTEXT_NOT_FREE_BUTTON',
-                       exploration_priority='UNCERTAIN_NOT_ZERO',
-                       legal_combat_spell_proven=False)
+                       exploration_priority='UNCERTAIN_NOT_ZERO')
         elif role['role']=='EXPLICITLY_REMOVED_FROM_SOURCE_CHANGESET':
             rec.update(eligibility='REMOVED_CHANGESET_BUILD_APPLICABILITY_UNRESOLVED',
                        l0_disposition='BLOCKED_REMOVED_VERSION_NOT_PROVEN',
-                       exploration_priority='UNCERTAIN_NOT_ZERO',
-                       legal_combat_spell_proven=False)
+                       exploration_priority='UNCERTAIN_NOT_ZERO')
         else:
             rec.update(eligibility='POTENTIALLY_LEGAL_RANK_ACQUISITION_UNRESOLVED',
                        l0_disposition='IR_CONTEXTUAL_PROXY' if matches else
                                       ('INDEX_NUMERIC_PROXY_UNCERTAIN' if effects['atoms'] else
                                        'UNBOUNDED_EFFECT_EXPLORATION_PROXY'),
-                       exploration_priority='UNCERTAIN_NOT_ZERO' if not matches else 'IR_EVALUABLE',
-                       legal_combat_spell_proven=False)
+                       exploration_priority='UNCERTAIN_NOT_ZERO' if not matches else 'IR_EVALUABLE')
             possible.append(sid)
             if matches or effects['atoms']:ranked.append(sid)
         records.append(rec)
@@ -294,7 +283,6 @@ def action_frontier(ir, *, class_key: str, level: int,
             'eligibility':'IR_CONTEXT_ONLY_NOT_SOURCE_INDEX_ROW',
             'l0_disposition':'IR_CONTEXTUAL_PROXY',
             'ir_proxies':[_ir_proxy(action)],
-            'legal_combat_spell_proven':False,
             'exploration_priority':'IR_EVALUABLE'})
     counts=Counter(r['eligibility'] for r in records)
     text_scored=[r for r in records if r.get('eligibility')=='POTENTIALLY_LEGAL_RANK_ACQUISITION_UNRESOLVED'
@@ -326,7 +314,6 @@ def action_frontier(ir, *, class_key: str, level: int,
         'auxiliary_nonbuttons_needing_parent_coverage':counts['AUXILIARY_OR_PASSIVE_NOT_STANDALONE_ACTION'],
         'verified_talent_grant_ids_in_source_data':len(talent_grant_ids),
         'source_index_sha256':source_sha,
-        'source_acquisition_frontier':{k:v for k,v in acquisition.items() if k!='records'},
         'source_index_rows_all_levels':len(rows),
         'out_of_level_rows':len(excluded),
         'within_level_rows':len(records)-len(nonindex),
@@ -351,7 +338,4 @@ def action_frontier(ir, *, class_key: str, level: int,
         'ir_only_context_actions':len(nonindex),
         'profile_constraint_applied':profile is None,
         'l0_proxies_are_search_scores':False,
-        'complete_legal_spell_universe_proven':False,
-        'PASS1':False,
-        'blocker':'UNRESOLVED_LEGAL_ACQUISITION_AND_EFFECTS_NOT_ADMITTED_TO_JOINT_SEARCH',
         'records':records,'excluded_above_level':excluded}
