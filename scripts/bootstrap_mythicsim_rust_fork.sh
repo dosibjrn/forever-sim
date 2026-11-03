@@ -109,6 +109,18 @@ if ! git diff --cached --quiet; then
   git commit -m "fix(forever): retain native post-pull scheduled events"
 fi
 
+# Add the native same-actor next-target primitive and monotonic world ACK
+# continuation to the maintained Rust engine, not a Python game model.
+python3 "$PROJECT/integrations/mythicsim-rust/port_native_persistent_target.py" "$PWD"
+git add src/core/fight.rs src/core/fight/world_bridge.rs
+if ! git diff --cached --quiet; then
+  git commit -m "feat(forever): continue native actor and world ACK across targets"
+fi
+
+# The two-target native state and world ACK regressions must pass before
+# a new fork revision is published; compilation alone is insufficient.
+cargo test --locked --lib persistent_next_target
+
 # This is an engine packaging update, not a gate or native reference test.
 check_engine_source
 sha="$(git rev-parse HEAD)"
