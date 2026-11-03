@@ -258,3 +258,42 @@ assert 'src.game.model.ir' not in sys.modules
         f"Forever source-only import / public builder compatibility failed: "
         f"{result.stdout}\n{result.stderr}"
     )
+
+
+def test_model_overlay_import_does_not_load_legacy_game_ir():
+    """Independent source overlays must not require GameIR model definitions.
+
+    Explicit existing src.game.model public exports stay compatible while the
+    actual legacy runtime and gate consumers migrate incrementally to Rust.
+    """
+    import subprocess
+    import sys
+
+    source = """
+import sys
+import src.game.model as model
+assert 'src.game.model.ir' not in sys.modules
+from src.game.model.overlay import FieldOverlay
+assert FieldOverlay.__name__ == 'FieldOverlay'
+assert 'src.game.model.ir' not in sys.modules
+from src.game.model import GameIRSlice, ActionDefinition
+from src.game.model.ir import GameIRSlice as direct_slice, ActionDefinition as direct_action
+assert GameIRSlice is direct_slice
+assert ActionDefinition is direct_action
+assert model.GameIRSlice is direct_slice
+assert {'GameIRSlice', 'ActionDefinition'}.issubset(dir(model))
+try:
+    model.NotARealModelExport
+except AttributeError:
+    pass
+else:
+    raise AssertionError('unknown legacy model export should raise AttributeError')
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", source], cwd=ROOT,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    assert result.returncode == 0, (
+        f"model import boundary / legacy public exports failed: "
+        f"{result.stdout}\\n{result.stderr}"
+    )
