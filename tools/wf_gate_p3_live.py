@@ -96,15 +96,17 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "P3_SOURCE_PROFILE_PRODUCTION_BUILD_UNAVAILABLE:"
             + str(exc)], "production_component":
             "src.v2.source_bounded_joint_frontier.source_spec_talent_frontier"}
+    max_p3_evaluations = 44
+    schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
         class_key=class_key, level=level, ir_slice=ir,
-        max_evaluations=44, initial_search=12, search_per_gear=3,
+        max_evaluations=max_p3_evaluations, initial_search=12, search_per_gear=3,
         max_gear_states=1, probe_deltas=(5., 20.),
         probe_stats=("armor", "stamina", "strength", "agility", "intellect",
                      "spirit", "spell_power", "attack_power", "mp5",
                      "crit", "hit", "dodge", "parry",
                      "health_regeneration_per_5s", "weapon_dps"),
-        schedule_incoming_attacks=True)
+        schedule_incoming_attacks=schedule_incoming_attacks)
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
     sensitivity = next((x for x in result.get("sensitivity_history", ())
@@ -139,18 +141,29 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # source search's remaining bounded budget.
     extra_evaluations = 0
     source_policy_stat_witnesses = []
+    # Reuse a paid baseline for the same source policy across stat axes. Without
+    # this, repeated baseline runs consume the fixed P3 budget before later
+    # required axes (such as Spirit) receive their own paid perturbation.
+    source_policy_baseline_cache = {}
     for blocker in item_check["blockers"]:
         if not blocker.startswith("NONPOSITIVE_RELEVANT_WEIGHT:"):
             continue
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
             continue
-        remaining = max(0, 44 - int(result.get("attempted", 0)) - extra_evaluations)
-        if remaining < 2:
+        remaining = max(0, max_p3_evaluations - int(result.get("attempted", 0)) - extra_evaluations)
+        cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
+        has_reusable_baseline = any(
+            key[:3] == cache_prefix for key in source_policy_baseline_cache
+        )
+        minimum_evaluations = 1 if has_reusable_baseline else 2
+        if remaining < minimum_evaluations:
             break
         witness = paid_source_policy_stat_witness(
             ir, stat=axis, level=level, probe_deltas=(5., 20.),
-            max_evaluations=remaining, schedule_incoming_attacks=True)
+            max_evaluations=remaining,
+            schedule_incoming_attacks=schedule_incoming_attacks,
+            baseline_cache=source_policy_baseline_cache)
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
         if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":

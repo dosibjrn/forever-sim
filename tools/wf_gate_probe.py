@@ -71,7 +71,10 @@ def probe_gate(class_key: str, level: int, spec: str, gate: str,
                 "scope_provisional", "behavior_probes_executed",
                 "production_engine", "engine_id", "source_id",
                 "source_context_sha256", "real_source_search_evaluated",
-                "real_catalogue_top5_items_scored"):
+                "real_catalogue_top5_items_scored", "source_policy_stat_witnesses",
+                "real_measured_stat_weights", "real_catalogue_legal_items",
+                "real_catalogue_slots_scored", "source_profile_production_build",
+                "actual_search_result_status"):
         if key in result:
             response[key] = result[key]
     return response
@@ -137,6 +140,12 @@ def main(argv=None) -> int:
         if row.get("coverage_component") and row.get("reason"):
             detail += " | " + str(row["reason"])
         print(f"{row['gate']:<7} {row['status']:<8} {measured:<12} {success:<10} {pareto:<10} {engine:<18} {detail[:110]}")
+        if row.get("gate") == "P3":
+            diagnostic_keys = ("source_policy_stat_witnesses", "real_measured_stat_weights",
+                               "real_catalogue_legal_items", "real_catalogue_slots_scored",
+                               "source_profile_production_build", "actual_search_result_status")
+            diagnostics = {key: row[key] for key in diagnostic_keys if key in row}
+            print("P3_SOURCE_DIAGNOSTICS " + json.dumps(diagnostics, ensure_ascii=False, sort_keys=True))
     print("Read-only diagnostic. Only Merge may record accepted PASS/PARTIAL in M1.")
     return 0
 
