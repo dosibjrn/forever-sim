@@ -9,7 +9,7 @@ Runtime-specific conversion and recovery adapters remain in src.game.evaluation.
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
-from src.shared.leveling.timing import TIMING_CONTRACT_VERSION
+from src.scenarios.timing import TIMING_CONTRACT_VERSION
 
 
 @dataclass(frozen=True)
