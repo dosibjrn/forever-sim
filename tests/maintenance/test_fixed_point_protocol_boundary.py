@@ -1,7 +1,7 @@
-"""Fixed-point scoring remains independent of the retired Python GameIR type.
+"""Fixed-point orchestration belongs to the game-independent optimizer layer.
 
 The tested state is a plain native-request-shaped object, not a game simulation.
-This only verifies the existing backend-neutral optimizer orchestration contract.
+The old game-module path remains a compatibility re-export only.
 """
 
 from dataclasses import dataclass
@@ -13,12 +13,20 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_fixed_point_import_does_not_eagerly_load_gameir():
+def test_optimizer_fixed_point_import_is_game_independent_and_legacy_import_is_compatible():
     code = """
 import importlib
 import sys
-module = importlib.import_module('src.game.fixed_point')
+
+module = importlib.import_module('src.optimization.fixed_point')
 assert callable(module.run_optimizer_fixed_point)
+assert 'src.game' not in sys.modules
+assert 'src.game.model.ir' not in sys.modules
+assert 'src.game.runtime.simulator' not in sys.modules
+
+legacy = importlib.import_module('src.game.fixed_point')
+assert legacy.run_optimizer_fixed_point is module.run_optimizer_fixed_point
+assert legacy.FixedPointResult is module.FixedPointResult
 assert 'src.game.model.ir' not in sys.modules
 assert 'src.game.runtime.simulator' not in sys.modules
 """
@@ -39,7 +47,7 @@ class NativeLikeRequest:
 
 
 def test_fixed_point_accepts_plain_native_request_state_without_gameir():
-    from src.game.fixed_point import run_optimizer_fixed_point
+    from src.optimization.fixed_point import run_optimizer_fixed_point
 
     request = NativeLikeRequest(engine_sha="immutable-test-revision", selected_gear="none")
 
@@ -71,5 +79,5 @@ def test_fixed_point_accepts_plain_native_request_state_without_gameir():
     assert first.selected.seconds_per_mob == 9.0
     assert first.selected.gear_candidate_id == "gear-a"
     assert first.as_dict() == second.as_dict()
-    # Keep existing serialized identity for consumers and historical receipts.
+    # Preserve the serialized identity key used by existing consumers/receipts.
     assert "source_game_ir_sha256" in first.selected.state_dimensions
