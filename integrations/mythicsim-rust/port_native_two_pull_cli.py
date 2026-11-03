@@ -14,6 +14,30 @@ FIGHT_MARKER = "    pub(crate) fn native_two_pull_windows(&mut self)"
 PREPARE_MARKER = "    fn prepare_first_native_pull(&mut self) {"
 CLI_MARKER = '    if args[0] == "native-pulls" {'
 ENGINE_MARKER = "pub fn native_two_pull_windows(prepared: &PreparedV2)"
+ENGINE_TYPED_MARKER = "pub fn native_two_pull_windows(prepared: &PreparedV2, rng_mode: crate::core::rng::RngMode)"
+ENGINE_CALL_OLD = "crate::classes::native_two_pull_windows(prepared).map_err(PreparedError::Invalid)"
+ENGINE_TYPED_CALL = "crate::classes::native_two_pull_windows(prepared, rng_mode).map_err(PreparedError::Invalid)"
+PREPARED_METHOD_DOC = "/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery."
+PREPARED_INSERTION_ANCHOR = "/// What gating a prepared v2 input and simulating it when supported came to."
+
+PREPARED_METHOD_UNTYPED = (
+    PREPARED_METHOD_DOC + "\n"
+    + "pub fn native_two_pull_windows(prepared: &PreparedV2)\n"
+    + "    -> Result<serde_json::Value, PreparedError>\n"
+    + "{\n"
+    + "    check(prepared)?;\n"
+    + "    " + ENGINE_CALL_OLD + "\n"
+    + "}\n\n"
+)
+PREPARED_METHOD_TYPED = (
+    PREPARED_METHOD_DOC + "\n"
+    + ENGINE_TYPED_MARKER + "\n"
+    + "    -> Result<serde_json::Value, PreparedError>\n"
+    + "{\n"
+    + "    check(prepared)?;\n"
+    + "    " + ENGINE_TYPED_CALL + "\n"
+    + "}\n\n"
+)
 
 
 def replace_once(source: str, old: str, new: str, name: str) -> str:
@@ -122,22 +146,30 @@ def port_classes(source: str) -> str:
 
 
 def port_prepared(source: str) -> str:
-    if ENGINE_MARKER in source:
-        if source.count(ENGINE_MARKER) != 1:
-            raise ValueError("ambiguous prepared probe")
+    typed_count = source.count(PREPARED_METHOD_TYPED)
+    untyped_count = source.count(PREPARED_METHOD_UNTYPED)
+    if typed_count:
+        if (typed_count != 1
+                or source.count(PREPARED_METHOD_DOC) != 1
+                or source.count(PREPARED_INSERTION_ANCHOR) != 1):
+            raise ValueError("typed prepared two-pull gateway drift")
         return source
-    marker = "/// What gating a prepared v2 input and simulating it when supported came to."
-    code = '''/// A real native two-window same-actor smoke; no world ACK, mob kills or paid recovery.
-pub fn native_two_pull_windows(prepared: &PreparedV2)
-    -> Result<serde_json::Value, PreparedError>
-{
-    check(prepared)?;
-    crate::classes::native_two_pull_windows(prepared).map_err(PreparedError::Invalid)
-}
-
-'''
-    return replace_once(source, marker, code + marker, "prepared gateway")
-
+    if untyped_count:
+        if (untyped_count != 1
+                or source.count(PREPARED_METHOD_DOC) != 1
+                or source.count(PREPARED_INSERTION_ANCHOR) != 1):
+            raise ValueError("untyped prepared two-pull gateway drift")
+        return source
+    if (ENGINE_TYPED_MARKER in source
+            or ENGINE_MARKER in source
+            or PREPARED_METHOD_DOC in source):
+        raise ValueError("partial or ambiguous prepared two-pull gateway")
+    return replace_once(
+        source,
+        PREPARED_INSERTION_ANCHOR,
+        PREPARED_METHOD_UNTYPED + PREPARED_INSERTION_ANCHOR,
+        "prepared gateway",
+    )
 
 def port_lib(source: str) -> str:
     marker = "    check as check_prepared, coverage as prepared_coverage, refusals as prepared_refusals,"
