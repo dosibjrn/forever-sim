@@ -543,6 +543,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         if proc.poll() is None:
             proc.kill()
             proc.wait(timeout=5)
+        # Popen's text wrappers otherwise emit ResourceWarning after each
+        # completed 2D world run. Close all three streams on success and error.
+        for stream in (proc.stdin, proc.stdout, proc.stderr):
+            if stream is not None and not stream.closed:
+                stream.close()
 
 
 def main() -> None:
