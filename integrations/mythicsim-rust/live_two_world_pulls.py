@@ -163,6 +163,54 @@ def _native_health_damage_summary(windows: list[dict], *,
             "damage_events": event_total}
 
 
+
+def _paid_world_route_receipts(kills: list[dict], walks: list[dict],
+                               trace: list) -> tuple[list[dict], float]:
+    """Measure actually elapsed gsim movement time before subsequent world kills.
+
+    A scheduled route is only a plan. The native/2D shared clock, real gsim
+    movement steps and lethal ACK bound the portion actually paid by the actor.
+    This is movement accounting, NOT native health/mana recovery or a gate PASS.
+    """
+    if len(kills) != len(walks) + 1:
+        raise AssertionError("RUST_WORLD_ROUTE_KILL_LEG_COUNT_MISMATCH")
+    receipts = []
+    total_paid_s = 0.0
+    for index, leg in enumerate(walks):
+        prior_ns = kills[index].get("world_kill_clock_ns")
+        next_ns = kills[index + 1].get("world_kill_clock_ns")
+        if type(prior_ns) is not int or type(next_ns) is not int or next_ns <= prior_ns:
+            raise AssertionError("RUST_WORLD_ROUTE_LETHAL_CLOCK_INVALID")
+        first_s, next_s = prior_ns / 1e9, next_ns / 1e9
+        start_s, arrival_s = leg.get("start_s"), leg.get("arrival_s")
+        yards = leg.get("scheduled_yards")
+        if (any(type(v) not in (int, float) or not isfinite(v)
+                for v in (start_s, arrival_s, yards))
+                or yards < 0 or arrival_s < start_s
+                or abs(start_s - first_s) > 1e-6):
+            raise AssertionError("RUST_WORLD_ROUTE_SCHEDULE_INVALID")
+        # A mob can die before its scheduled arrival (e.g. a legal instant
+        # cast on the move). Do not credit the as-yet-unexecuted route tail.
+        through_s = min(next_s, float(arrival_s))
+        paid_s = max(0.0, through_s - start_s) if yards > 0 else 0.0
+        steps = sum(event.kind == "SpatialPlayerMoveStep"
+                    and start_s < event.time_s <= through_s + 1e-9
+                    for event in trace)
+        if yards == 0 and arrival_s != start_s:
+            raise AssertionError("RUST_WORLD_ROUTE_ZERO_DISTANCE_CLOCK_INVALID")
+        receipts.append({
+            "target_id": leg["target_id"],
+            "prior_kill_clock_ns": prior_ns,
+            "next_kill_clock_ns": next_ns,
+            "actual_paid_world_movement_s": paid_s,
+            "observed_gsim_movement_steps": steps,
+            "scheduled_arrival_s": arrival_s,
+            "arrival_reached_before_kill": next_s >= arrival_s,
+        })
+        total_paid_s += paid_s
+    return receipts, total_paid_s
+
+
 def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         target_count: int = 2, corrupt_ack: bool = False,
         require_native_moving: bool = False,
@@ -354,6 +402,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             require_zero=require_native_zero_health_damage)
         if require_native_moving and walks and native_moving_ticks == 0:
             raise AssertionError("RUST_TWO_WORLD_SOURCE_NEVER_OBSERVED_REAL_GSIM_MOVEMENT")
+        route_receipts, paid_world_movement_s = _paid_world_route_receipts(
+            kills, walks, world.trace)
         return {
             "source_sha256": source_hash, "native_pid": proc.pid,
             "world_target_hp": mob_health,
@@ -370,6 +420,8 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "gsim_world_walk_steps": sum(
                 event.kind == "SpatialPlayerMoveStep" for event in world.trace),
             "gsim_route_legs": walks,
+            "gsim_route_paid_receipts": route_receipts,
+            "gsim_route_paid_movement_s": paid_world_movement_s,
             "paid_recovery": False, "checkpoint_certified": False,
         }
     finally:

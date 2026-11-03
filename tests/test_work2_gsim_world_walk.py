@@ -214,3 +214,52 @@ def test_native_survival_refuses_skipped_or_missing_target_receipts():
     ):
         with pytest.raises(AssertionError, match="RUST_MULTI_WORLD_NATIVE_SURVIVAL_WINDOWS_INVALID"):
             validate(windows, count)
+
+
+def test_paid_world_route_receipt_uses_actual_2d_step_clock_not_scheduled_distance():
+    module = _world_module()
+    world = _world()
+    leg = module._queue_world_walk(world, "m1", speed_yards_s=7.)
+    # A full real gsim route must count as paid clock time, not a teleport.
+    world.advance_to(leg["arrival_s"])
+    next_clock_ns = round((leg["arrival_s"] + 1.) * 1e9)
+    receipts, paid = module._paid_world_route_receipts(
+        [{"world_kill_clock_ns": 0}, {"world_kill_clock_ns": next_clock_ns}],
+        [leg], world.trace)
+    assert paid == pytest.approx(20. / 7.)
+    assert receipts[0]["actual_paid_world_movement_s"] == pytest.approx(paid)
+    assert receipts[0]["observed_gsim_movement_steps"] == 10
+    assert receipts[0]["arrival_reached_before_kill"] is True
+
+
+def test_paid_world_route_does_not_count_unexecuted_walk_after_next_kill():
+    module = _world_module()
+    world = _world()
+    leg = module._queue_world_walk(world, "m1", speed_yards_s=7.)
+    # A real instant attack can kill while moving; the remaining planned
+    # route must NOT be billed as elapsed simulation time.
+    world.advance_to(1.)
+    receipts, paid = module._paid_world_route_receipts(
+        [{"world_kill_clock_ns": 0}, {"world_kill_clock_ns": 1_000_000_000}],
+        [leg], world.trace)
+    assert paid == pytest.approx(1.)
+    assert receipts[0]["observed_gsim_movement_steps"] < 10
+    assert receipts[0]["arrival_reached_before_kill"] is False
+
+
+@pytest.mark.parametrize("kills,leg_override,expected", [
+    ([{"world_kill_clock_ns": 1}, {"world_kill_clock_ns": 1}], {},
+     "RUST_WORLD_ROUTE_LETHAL_CLOCK_INVALID"),
+    ([{"world_kill_clock_ns": 0}, {"world_kill_clock_ns": 2_000_000_000}],
+     {"start_s": 0.5}, "RUST_WORLD_ROUTE_SCHEDULE_INVALID"),
+    ([{"world_kill_clock_ns": 0}, {"world_kill_clock_ns": 2_000_000_000}],
+     {"arrival_s": -1.}, "RUST_WORLD_ROUTE_SCHEDULE_INVALID"),
+])
+def test_paid_world_route_rejects_inconsistent_real_kill_clock(
+        kills, leg_override, expected):
+    module = _world_module()
+    world = _world()
+    leg = module._queue_world_walk(world, "m1", speed_yards_s=7.)
+    with pytest.raises(AssertionError, match=expected):
+        module._paid_world_route_receipts(
+            kills, [{**leg, **leg_override}], world.trace)
