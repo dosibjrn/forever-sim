@@ -1,4 +1,5 @@
 import ast
+import csv
 from pathlib import Path
 
 
@@ -118,3 +119,48 @@ def test_fast_validator_targets_exist():
     assert missing == [], f"Stale tools/validate_fast.py test paths: {missing}"
     assert len(TESTS) == len(set(TESTS)), "Duplicate fast-suite targets"
 
+
+
+# Clean architecture boundary: only the Merge-owned M1 ledger certifies checkpoints.
+
+
+def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
+    """Eleven compatible live PASS stamps count; incompatible stamps do not."""
+    from src.game.checkpoint_acceptance_status import accepted_checkpoint_status
+    from tools.m1_progress import FIELDS, GATES
+
+    source = ROOT / 'evidence/wf360/WF360_ACCEPTANCE.json'
+    evidence = tmp_path / 'evidence/wf360'
+    evidence.mkdir(parents=True)
+    (evidence / source.name).write_bytes(source.read_bytes())
+
+    ledger = tmp_path / 'docs/planning/M1_PASSES.tsv'
+    ledger.parent.mkdir(parents=True)
+    stamp = '2026-11-03T00:00:00+00:00'
+    rows = [
+        {'class': 'druid', 'level': '20', 'spec': 'unrestricted',
+         'gate': gate, 'passed_at_utc': stamp, 'commit': 'a' * 40,
+         'run_url': '', 'compatibility_id': 'same-native-scenario-source',
+         'status': 'PASS', 'verified': '', 'applicable': '',
+         'scope_provisional': '', 'measured_at_utc': stamp}
+        for gate in GATES
+    ]
+
+    def save():
+        with ledger.open('w', newline='', encoding='utf-8') as stream:
+            writer = csv.DictWriter(stream, fieldnames=FIELDS, delimiter='\t')
+            writer.writeheader()
+            writer.writerows(rows)
+
+    save()
+    accepted = accepted_checkpoint_status(tmp_path)
+    assert accepted['accepted_checkpoints'] == '1/148'
+    assert accepted['full_checkpoint_certified'] is True
+    assert accepted['legacy_six_gate_accepted_checkpoints'] == '2/148'
+
+    rows[-1]['compatibility_id'] = 'different-source-or-engine'
+    save()
+    incompatible = accepted_checkpoint_status(tmp_path)
+    assert incompatible['accepted_checkpoints'] == '0/148'
+    assert incompatible['full_checkpoint_certified'] is False
+    assert incompatible['legacy_six_gate_accepted_checkpoints'] == '2/148'

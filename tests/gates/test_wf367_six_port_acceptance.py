@@ -13,7 +13,7 @@ def test_fresh_same_source_empirical_acceptance_supersedes_extra_gate():
     # This is historical P1-P6 evidence, never a current P1-P7.5 PASS.
     assert r['accepted_checkpoints']=='0/148'
     assert not r['full_checkpoint_certified']
-    assert r['full_checkpoint_authority']=='NOT_VERIFIED_BY_LEGACY_P1_P6_EVIDENCE'
+    assert r['full_checkpoint_authority']=='CANONICAL_M1_LEDGER_COMPATIBLE_P1_P7_5'
     assert r['legacy_six_gate_accepted_checkpoints']=='2/148'
     assert r['legacy_six_gate_druid_l30']=='PASS'
     assert not r['heldout_global_optimality_proven']
@@ -56,3 +56,4 @@ def test_wf365_revocation_keeps_six_gate_and_full_counts_separate(tmp_path):
     assert r['legacy_six_gate_druid_l30']=='REVOKED'
     assert r['accepted_checkpoints']=='0/148'
     assert not r['full_checkpoint_certified']
+
