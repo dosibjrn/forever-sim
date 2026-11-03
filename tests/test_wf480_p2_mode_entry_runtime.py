@@ -7,7 +7,7 @@ from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_execution_coverage import compile_talent_runtime
 from src.game.talents import apply_talent_selection, talented_bonus_for_level
 from src.game.runtime.state import ActorState
-from tools import wf_gate_p2_live as gate
+from tools import wf_talent_runtime as talent_runtime
 
 
 @pytest.fixture(scope='module')
@@ -34,7 +34,7 @@ def setup_rank(source, rank):
 def test_both_runtime_mode_entry_effects(source,rank):
     old,new,mods=setup_rank(source,rank)
     for mod in mods:
-        witnessed=gate._mode_entry_resource_witness(old,new,mod)
+        witnessed=talent_runtime._mode_entry_resource_witness(old,new,mod)
         assert witnessed is not None, (rank,mod.kind)
         assert witnessed['probe']=='paired_production_mode_transition'
         assert witnessed['after']['amount']>witnessed['before']['amount']
@@ -43,8 +43,8 @@ def test_both_runtime_mode_entry_effects(source,rank):
 def test_wrong_source_increment_rejected(source):
     old,new,mods=setup_rank(source,3)
     for mod in mods:
-        assert gate._mode_entry_resource_witness(old,new,mod)
-        assert gate._mode_entry_resource_witness(old,new,replace(mod,value=mod.value*1.5)) is None
+        assert talent_runtime._mode_entry_resource_witness(old,new,mod)
+        assert talent_runtime._mode_entry_resource_witness(old,new,replace(mod,value=mod.value*1.5)) is None
 
 
 def test_wrong_compiled_resource_gain_rejected(source):
@@ -52,7 +52,7 @@ def test_wrong_compiled_resource_gain_rejected(source):
     bear=next(m for m in new.modes if m.id=='bear')
     altered=replace(bear,entry_resource_modifiers=(replace(bear.entry_resource_modifiers[0],value=999.),))
     broken=replace(new,modes=tuple(altered if m.id=='bear' else m for m in new.modes))
-    assert gate._mode_entry_resource_witness(old,broken,mods[0]) is None
+    assert talent_runtime._mode_entry_resource_witness(old,broken,mods[0]) is None
 
 
 def test_wrong_restore_rate_and_cap_rejected(source):
@@ -62,7 +62,7 @@ def test_wrong_restore_rate_and_cap_rejected(source):
         e=cat.entry_resource_modifiers[0]
         broken_entry=replace(e,**{field:getattr(e,field)+7})
         wrong=replace(new,modes=tuple(replace(m,entry_resource_modifiers=(broken_entry,)) if m.id=='cat' else m for m in new.modes))
-        assert gate._mode_entry_resource_witness(old,wrong,mods[1]) is None
+        assert talent_runtime._mode_entry_resource_witness(old,wrong,mods[1]) is None
 
 
 def test_wrong_runtime_transition_rejected(source,monkeypatch):
@@ -78,4 +78,4 @@ def test_wrong_runtime_transition_rejected(source,monkeypatch):
         return event
     monkeypatch.setattr(ActorState,'transition_mode',sabotaged)
     for mod in mods:
-        assert gate._mode_entry_resource_witness(old,new,mod) is None
+        assert talent_runtime._mode_entry_resource_witness(old,new,mod) is None
