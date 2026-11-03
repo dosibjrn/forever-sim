@@ -120,7 +120,7 @@ def test_real_p75_provider_rejects_equal_dps_with_wrong_world_duration(monkeypat
 
     source = SimpleNamespace(
         GearValidator=Validator,
-        candidate_pool=lambda validator, limit: ({0: [11], 1: [21]}, {}),
+        candidate_pool=lambda validator, limit, **kwargs: ({0: [11], 1: [21]}, {}),
         make_candidate=cold, player=player, RejectedGear=ValueError)
     production = SimpleNamespace(
         native_source_control=lambda binary, path, n, *, rng_mode: {
@@ -356,7 +356,7 @@ def test_full_p75_mutates_its_own_paid_winner_without_reference_warm_start(
 
     source = SimpleNamespace(
         GearValidator=Validator,
-        candidate_pool=lambda validator, limit: ({0: [10], 1: [20]}, {}),
+        candidate_pool=lambda validator, limit, **kwargs: ({0: [10], 1: [20]}, {}),
         source_enchant_pools=lambda validator, pools: {0: [None, 123], 1: [None]},
         make_candidate=source_candidate, player=player,
         RejectedGear=ValueError)
