@@ -108,6 +108,40 @@ class NativeJointScoringContracts(unittest.TestCase):
         self.assertEqual(raw, raised.exception.raw_response)
         self.assertEqual(fingerprint(effective), raised.exception.request_sha256)
 
+
+    def test_missing_talent_string_candidate_reaches_native_and_refusal_is_preserved(self):
+        source = request()
+        source_player = source["raid"]["parties"][0]["players"][0]
+        source_player.pop("talentsString")
+        effective = native_payload(source, 40, 731)
+        raw = {
+            "status": "INVALID",
+            "error": "MythicSim rejected the request without talentsString",
+        }
+        refusal = p73.NativeScoreExtractionError(
+            "native request returned no score after missing-talent refusal",
+            raw_response=raw,
+            elapsed_s=0.012,
+            request_sha256=fingerprint(effective),
+        )
+        seen_presence = []
+
+        def fake_run(binary, candidate, iterations, seed, rng_mode, deadline):
+            candidate_player = candidate["raid"]["parties"][0]["players"][0]
+            seen_presence.append("talentsString" in candidate_player)
+            raise refusal
+
+        with self.assertRaises(p73.NativeScoreExtractionError) as raised:
+            native_score_request(
+                Path("forever-engine"), source, 40, 731, "balanced",
+                time.monotonic() + 5.0, runner=fake_run,
+            )
+
+        self.assertEqual([False], seen_presence)
+        self.assertIs(refusal, raised.exception)
+        self.assertEqual(raw, raised.exception.raw_response)
+        self.assertEqual(fingerprint(effective), raised.exception.request_sha256)
+
     def test_stochastic_mode_is_rejected_before_the_native_runner(self):
         calls = []
 
