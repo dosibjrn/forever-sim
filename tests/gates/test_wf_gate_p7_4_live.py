@@ -301,7 +301,7 @@ def test_late_paid_p74_gear_candidate_gets_stochastic_finalist_comparison(
     assert report["paid_stochastic_finalists"] == 2
     assert report["source_legal_cold_candidates_paid"] == 2
     assert report["cold_winner_gear"][0]["item_id"] == 12
-    assert report["winner_selection"] == "paid_2x24_stochastic_live_native_finalist"
+    assert report["winner_selection"] == "paid_2x24_balanced_live_native_finalist"
     assert report["frozen_stochastic_world_dps"] == 730.0
     assert (12, 24, "balanced") in calls
     assert (12, 1000, "stochastic") in calls
@@ -657,7 +657,7 @@ def test_p74_freezes_paid_stochastic_winner_not_noisy_balanced_screen():
     selected = gate._freeze_paid_p74_winner(high_screen, stochastic)
     assert selected[2] == "b"
     assert selected[0] == 730.0 and selected[4] == 800.0
-    assert selected[5] == "paid_2x24_stochastic_live_native_finalist"
+    assert selected[5] == "paid_2x24_balanced_live_native_finalist"
     assert gate._freeze_paid_p74_winner(high_screen, [])[2] == "a"
 
 
@@ -683,12 +683,12 @@ def test_p74_frozen_winner_prefers_independently_confirmed_paid_finalist():
     assert selected[2] == "confirmed-a"
     assert selected[0] == 725.
     assert selected[5] == (
-        "paid_4x24_stochastic_live_native_confirmed_finalist")
+        "paid_4x24_balanced_live_native_confirmed_finalist")
     assert selected[3] == {"gear": "a"}
     # Without completed confirmations, later paid finalists remain eligible.
     provisional = gate._freeze_paid_p74_winner(screen_best, reranked)
     assert provisional[2] == "late"
-    assert provisional[5] == "paid_2x24_stochastic_live_native_finalist"
+    assert provisional[5] == "paid_2x24_balanced_live_native_finalist"
 
 
 def test_paid_p74_enchant_only_skips_immutable_slots_even_with_adversarial_rng():
@@ -973,7 +973,7 @@ def test_paid_p74_confirmation_reverses_noisy_first_round_within_300s(
     assert report["paid_stochastic_confirmed_finalists"] == 3
     assert report["cold_winner_gear"][0]["item_id"] == 12
     assert report["winner_selection"] == (
-        "paid_4x24_stochastic_live_native_confirmed_finalist")
+        "paid_4x24_balanced_live_native_confirmed_finalist")
     assert report["frozen_stochastic_world_dps"] == 732.0
     assert {(iid, seed) for iid, n, _, seed in calls
             if n == 24 and seed in ("1947113", "1947139")} == {
@@ -1047,4 +1047,4 @@ def test_p74_freeze_prefers_paid_144_fight_deep_confirmation_over_96_fight_outli
     selected = gate._freeze_paid_p74_winner(
         best, rows, {"only-96", "deep-144"}, {"deep-144"})
     assert selected[2] == "deep-144"
-    assert selected[5] == "paid_6x24_stochastic_live_native_deep_confirmed_finalist"
+    assert selected[5] == "paid_6x24_balanced_live_native_deep_confirmed_finalist"
