@@ -15,6 +15,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import p73_talent_search_v2 as p73
 import native_executor as native_exec
+import native_l60_matrix as l60_matrix
 import native_joint_two_class as joint
 from apl_mutation import _condition_spell_identity_keys, _corpus, _new_cast, mutate_apl
 from native_joint_two_class import (
@@ -659,6 +660,7 @@ class NativeJointTalentCastCompatibilityContracts(unittest.TestCase):
 class NativeExecutionErrorReporting(unittest.TestCase):
     def test_joint_and_legacy_p73_paths_share_one_executor(self):
         self.assertIs(joint.run, native_exec.run)
+        self.assertIs(l60_matrix.run, native_exec.run)
         self.assertIs(p73.run, native_exec.run)
         self.assertIs(p73.NativeExecutionError, native_exec.NativeExecutionError)
         self.assertIs(p73.NativeScoreExtractionError, native_exec.NativeScoreExtractionError)
