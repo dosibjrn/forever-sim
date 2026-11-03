@@ -1,4 +1,4 @@
-> **Migration status (2026-11-01): COMPLETE.** [Public P0 issue #25](https://github.com/dosibjrn/forever-sim/issues/25) records the pinned audited source publication: 1,877 permitted paths published from 1,914 tracked private paths, with 37 intentionally protected. [Independent public checkout and LFS hydration](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045) succeeded with 13/13 snapshot tests; 11 SQLite and three large JSON LFS payloads were hydrated. Legacy private auto-trigger workflows remain excluded deliberately. `dosibjrn/mage-level-sim` is historical read-only source. **This is not an active P3–P7.5 checkpoint acceptance; current M1 certification is shown in the live chart below.**
+> **Migration status (2026-11-01): COMPLETE.** [Public P0 issue #25](https://github.com/dosibjrn/forever-sim/issues/25) records the pinned audited source publication: 1,877 permitted paths published from 1,914 tracked private paths, with 37 intentionally protected. [Independent public checkout and LFS hydration](https://github.com/dosibjrn/forever-sim/actions/runs/41255246045) succeeded with 13/13 snapshot tests; 11 SQLite and three large JSON LFS payloads were hydrated. Legacy private auto-trigger workflows remain excluded deliberately. `dosibjrn/mage-level-sim` is historical read-only source. **This is not an active P3–P7.5 checkpoint acceptance; current M1 certification is tracked in the canonical ledger, while the linked chart is historical until Merge regenerates it.**
 
 # WoW Forever — simulator and optimizer
 
@@ -19,7 +19,7 @@ This is an independent Forever simulation and optimization research project. The
 
 **Credit and scope:** this repository is not the official MythicSim project and is not affiliated with its maintainers. Engine references and pinned versions must remain traceable; upstream licenses and notices govern any adapted code.
 
-**Fully certified active-gate checkpoints are counted in the M1 ledger.** The linked SVG is the pre-v2.20 11-gate history until Merge regenerates it. User-accepted P7 subgates are tracked separately; do not mistake them for full active P3–P7.5 checkpoint certification. A green CI job or a standalone reference replay does not certify the active P3–P7.5 checkpoint.
+**The M1 ledger is authoritative for active checkpoint counts.** The linked SVG is the pre-v2.20 11-gate history until Merge regenerates it. User-accepted P7 subgates are tracked separately; do not mistake them for full active P3–P7.5 checkpoint certification. A green CI job or a standalone reference replay does not certify the active P3–P7.5 checkpoint.
 
 ## Work queue and the 148-checkpoint matrix
 
