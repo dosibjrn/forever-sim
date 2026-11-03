@@ -30,6 +30,38 @@ READ_NEW = """            natures_reach: m.i32("natures_reach"),
             natures_splendor: m.bool("natures_splendor"),"""
 
 
+RUST_TEST = """#[cfg(test)]
+mod native_improved_roots_rank_tests {
+    use super::Talents;
+    use crate::prepare::talent_layout;
+
+    #[test]
+    fn native_improved_roots_rank_intake() {
+        for rank in 0..=3 {
+            let build = format!("000000{rank}");
+            let (message, extras) = talent_layout::fill(
+                "proto.DruidTalents",
+                "druid",
+                &build,
+                &super::super::FOREVER_TREES,
+            )
+            .expect("legal Forever Balance Improved Roots rank");
+            assert_eq!(
+                Talents::from_message(&message, &extras).improved_entangling_roots,
+                rank
+            );
+        }
+        assert!(talent_layout::fill(
+            "proto.DruidTalents",
+            "druid",
+            "0000004",
+            &super::super::FOREVER_TREES,
+        )
+        .is_err());
+    }
+}"""
+
+
 def replace_once(source: str, old: str, new: str, label: str) -> str:
     if source.count(new) == 1 and source.count(old) == 0:
         return source
@@ -41,7 +73,12 @@ def replace_once(source: str, old: str, new: str, label: str) -> str:
 def port_text(source: str) -> str:
     source = replace_once(source, COMMENT_OLD, COMMENT_NEW, "COMMENT")
     source = replace_once(source, FIELD_OLD, FIELD_NEW, "FIELD")
-    return replace_once(source, READ_OLD, READ_NEW, "READ")
+    source = replace_once(source, READ_OLD, READ_NEW, "READ")
+    if RUST_TEST in source:
+        return source
+    if "mod native_improved_roots_rank_tests" in source:
+        raise ValueError("NATIVE_IMPROVED_ROOTS_TEST_SOURCE_DRIFT")
+    return source.rstrip() + "\n\n" + RUST_TEST + "\n"
 
 
 def main(argv: list[str]) -> int:
