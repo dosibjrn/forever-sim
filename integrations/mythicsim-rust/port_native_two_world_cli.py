@@ -69,7 +69,7 @@ def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
             start = source.index(beginning)
             end = source.index(anchor)
             older = source[start:end]
-            if start >= end or any(older.count(token) != 1 for token in required):
+            if start >= end or any(token not in older for token in required):
                 raise ValueError(f"RUST_WORLD_MULTI_TARGET_LEGACY_DRIFT_{marker}")
             return source[:start] + replacement + source[end:]
     if marker in source:
