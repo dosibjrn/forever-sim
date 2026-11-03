@@ -23,6 +23,7 @@ from src.engine_client.native_p2_rank_probe import (  # noqa: E402
     prepare_native_request,
     parse_native_druid_layout,
     run_native_prepare_pair,
+    run_native_rank_pair,
 )
 
 ENGINE_ROOT = Path(os.environ.get(
@@ -247,6 +248,87 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
                         if receipt["status"] != "PREPARED":
                             self.assertEqual(receipt["reason"], "native-owned reason")
                             self.assertEqual(receipt["refusal"]["code"], "talents")
+
+    def test_rank_pair_preserves_prepare_refusal_classification(self):
+        """The higher-level production caller must preserve #642's native status."""
+        cases = ("INVALID", "UNSUPPORTED", "ERROR", "BLOCKED")
+        for status in cases:
+            with self.subTest(status=status):
+                pair = {
+                    "status": status,
+                    "reason": "NATIVE_P2_PREPARE_PAIR_NOT_READY",
+                    "before": {"status": status},
+                    "after": {"status": "PREPARED"},
+                    "accepted_for_p2": False,
+                }
+                with patch(
+                    "src.engine_client.native_p2_rank_probe.run_native_prepare_pair",
+                    return_value=pair,
+                ):
+                    result = run_native_rank_pair(
+                        binary=Path("/not-built/forever-engine"),
+                        engine_root=ENGINE_ROOT,
+                        scenario="cat",
+                        before_selection={},
+                        after_selection={"predatory_strikes": 1},
+                        target_talent_id="predatory_strikes",
+                        target_rank=1,
+                        rng_mode=NativeRngMode.BALANCED,
+                        iterations=1,
+                    )
+                self.assertEqual(result["status"], status, result)
+                # Prepare refusals are returned by spreading the native pair
+                # into the public result: both compact side receipts remain
+                # top-level (the nested prepare_pair field is only used after
+                # both prepares succeeded and a simulation fails).
+                self.assertEqual(result["before"]["status"], status)
+                self.assertEqual(result["after"]["status"], "PREPARED")
+                self.assertEqual(result["reason"], "NATIVE_P2_PREPARE_PAIR_NOT_READY")
+                self.assertFalse(result["accepted_for_p2"])
+
+    def test_rank_pair_preserves_native_simulation_failure_classification(self):
+        """Native simulation refusal/errors must not collapse to BLOCKED either."""
+        cases = (
+            ("UNSUPPORTED", "EXECUTED", "UNSUPPORTED"),
+            ("ERROR", "EXECUTED", "ERROR"),
+            ("BLOCKED", "EXECUTED", "BLOCKED"),
+            ("UNSUPPORTED", "ERROR", "ERROR"),
+        )
+        prepared_pair = {
+            "status": "PREPARED",
+            "_before_prepared": {"sim": {}},
+            "_after_prepared": {"sim": {}},
+            "before": {"status": "PREPARED"},
+            "after": {"status": "PREPARED"},
+            "accepted_for_p2": False,
+        }
+        for before_status, after_status, expected in cases:
+            with self.subTest(before=before_status, after=after_status):
+                with patch(
+                    "src.engine_client.native_p2_rank_probe.run_native_prepare_pair",
+                    return_value=prepared_pair,
+                ), patch(
+                    "src.engine_client.native_p2_rank_probe._simulate_prepared",
+                    side_effect=[
+                        {"status": before_status, "reason": "native sim result"},
+                        {"status": after_status, "reason": "native sim result"},
+                    ],
+                ):
+                    result = run_native_rank_pair(
+                        binary=Path("/not-built/forever-engine"),
+                        engine_root=ENGINE_ROOT,
+                        scenario="cat",
+                        before_selection={},
+                        after_selection={"predatory_strikes": 1},
+                        target_talent_id="predatory_strikes",
+                        target_rank=1,
+                        rng_mode=NativeRngMode.BALANCED,
+                        iterations=1,
+                    )
+                self.assertEqual(result["status"], expected, result)
+                self.assertEqual(result["before"]["status"], before_status)
+                self.assertEqual(result["after"]["status"], after_status)
+                self.assertFalse(result["accepted_for_p2"])
 
     def test_rank_pair_rejects_changes_outside_the_target_rank_before_execution(self):
         before = {

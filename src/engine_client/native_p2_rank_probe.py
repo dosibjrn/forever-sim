@@ -576,6 +576,28 @@ def _simulate_prepared(
 
 
 
+def _native_pair_failure_status(*statuses: object) -> str:
+    """Preserve terminal native outcomes when either side of a pair fails.
+
+    PREPARED/EXECUTED are successful intermediate states. Unknown or malformed
+    statuses fail closed as ERROR; native INVALID/UNSUPPORTED are never
+    rewritten as a generic BLOCKED/missing-evidence result.
+    """
+    failures: list[str] = []
+    for status in statuses:
+        if status in ("PREPARED", "EXECUTED"):
+            continue
+        if not isinstance(status, str) or status not in {
+            "BLOCKED", "INVALID", "UNSUPPORTED", "ERROR"
+        }:
+            return "ERROR"
+        failures.append(status)
+    for status in ("ERROR", "INVALID", "UNSUPPORTED", "BLOCKED"):
+        if status in failures:
+            return status
+    return "BLOCKED"
+
+
 def run_native_rank_pair(
     *,
     binary: str | Path,
@@ -615,7 +637,7 @@ def run_native_rank_pair(
     if pair.get("status") != "PREPARED":
         return {
             **pair,
-            "status": "BLOCKED",
+            "status": _native_pair_failure_status(pair.get("status")),
             "scenario": scenario,
             "target_talent_id": target_talent_id,
             "target_rank": int(target_rank),
@@ -640,7 +662,9 @@ def run_native_rank_pair(
     )
     if before.get("status") != "EXECUTED" or after.get("status") != "EXECUTED":
         return {
-            "status": "BLOCKED",
+            "status": _native_pair_failure_status(
+                before.get("status"), after.get("status")
+            ),
             "reason": "NATIVE_P2_SIM_PAIR_NOT_EXECUTED",
             "scenario": scenario,
             "target_talent_id": target_talent_id,

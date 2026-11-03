@@ -162,6 +162,9 @@ def _native_p2_diagnostic_report():
             "pass_count": 1,
             "fail_count": 0,
             "blocked_count": 0,
+            "invalid_count": 0,
+            "unsupported_count": 0,
+            "error_count": 0,
             "rng_mode": "balanced",
             "counted_in_p2_acceptance": False,
         },
@@ -176,6 +179,30 @@ def test_p2_validator_keeps_native_rank_probes_diagnostic_only():
     assert "INCOMPLETE:ranks_with_executed_behavior_tests=0/1" in errors
     assert not any(error.startswith("INVALID_NATIVE_P2") for error in errors)
     assert not any(error.startswith("INCOMPLETE_NATIVE_P2") for error in errors)
+
+
+def test_p2_validator_preserves_native_terminal_refusal_categories():
+    cases = (
+        ("INVALID", "invalid_count"),
+        ("UNSUPPORTED", "unsupported_count"),
+        ("ERROR", "error_count"),
+    )
+    for status, count_field in cases:
+        report = _native_p2_diagnostic_report()
+        row = report["native_rank_probe_results"][0]
+        row.update(
+            status=status,
+            reason="native-owned terminal result",
+            before={"status": status},
+            after={"status": "PREPARED"},
+        )
+        summary = report["native_rank_probe_summary"]
+        summary["pass_count"] = 0
+        summary[count_field] = 1
+        errors = gate._validate_p2(report, {})
+        assert not any(error.startswith("INVALID_NATIVE_P2") for error in errors)
+        assert not any(error.startswith("INCOMPLETE_NATIVE_P2") for error in errors)
+        assert "NATIVE_P2_DIAGNOSTIC_SUMMARY_NOT_FAIL_CLOSED" not in errors
 
 
 def test_p2_validator_rejects_native_probe_receipts_that_claim_acceptance():
