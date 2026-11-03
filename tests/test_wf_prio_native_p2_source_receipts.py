@@ -2,13 +2,41 @@
 from tools import wf_gate_p2_live as p2
 
 
-def test_native_rank_diagnostic_requires_candidate_identity_before_execution():
+def test_native_rank_diagnostic_checks_checkpoint_identity_not_source_receipts():
     result = p2._native_p2_rank_diagnostic(
         None, "moonkin_form", 1,
         {"source_rank_facts": {"talent_id": "moonkin_form"}},
+        checkpoint_class="mage", checkpoint_level=60, tree_key="balance",
     )
     assert result["status"] == "BLOCKED"
-    assert result["reason"] == "CANONICAL_P2_SOURCE_RANK_IDENTITY_MISMATCH"
+    assert result["reason"] == "NATIVE_P2_CHECKPOINT_IDENTITY_MISMATCH"
+
+
+def test_native_rank_diagnostic_runs_without_source_proof(tmp_path, monkeypatch):
+    binary = tmp_path / "engine" / "target" / "debug" / "forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"selected-engine-test-double")
+    calls = []
+
+    def fake_run_native_rank_pair(**kwargs):
+        calls.append(kwargs)
+        return {"status": "UNSUPPORTED", "reason": "NATIVE_EFFECT_UNAVAILABLE",
+                "accepted_for_p2": False}
+
+    monkeypatch.setattr(p2, "run_native_rank_pair", fake_run_native_rank_pair)
+    result = p2._native_p2_rank_diagnostic(
+        str(binary), "predatory_strikes", 1,
+        {"control_witness": {"ferocity": 5},
+         "witness": {"ferocity": 5, "predatory_strikes": 1}},
+        checkpoint_class="druid", checkpoint_level=60, tree_key="feral",
+    )
+    assert len(calls) == 1
+    assert calls[0]["scenario"] == "cat"
+    assert calls[0]["target_rank"] == 1
+    assert result["status"] == "UNSUPPORTED"
+    assert result["reason"] == "NATIVE_EFFECT_UNAVAILABLE"
+    assert result["accepted_for_p2"] is False
+    assert result["source_rank_facts"]["source_url"] is None
 
 
 def test_native_rank_diagnostic_delegates_rank_legality_to_native(tmp_path, monkeypatch):
@@ -52,6 +80,7 @@ def test_native_rank_diagnostic_delegates_rank_legality_to_native(tmp_path, monk
             "control_witness": control,
             "witness": candidate,
         },
+        checkpoint_class="druid", checkpoint_level=60, tree_key="feral",
     )
 
     assert len(calls) == 1
@@ -140,6 +169,7 @@ def test_native_rank_diagnostic_remains_diagnostic_only(tmp_path, monkeypatch):
             "control_witness": control,
             "witness": candidate,
         },
+        checkpoint_class="druid", checkpoint_level=60, tree_key="feral",
     )
 
     assert result["status"] == "PROBE_PASS"
