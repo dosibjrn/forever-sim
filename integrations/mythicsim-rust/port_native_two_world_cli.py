@@ -51,10 +51,44 @@ LEGACY_PORTS = {
 }
 
 
+def typed_rng_descendant(marker: str, replacement: str) -> str | None:
+    """Return the exact selected-pin typed-RNG descendant for this port block."""
+    if marker == CLASS_MARKER:
+        return replacement.replace(
+            "    target_count: usize,\n) -> Result<serde_json::Value, String> {",
+            "    target_count: usize,\n    rng_mode: crate::core::rng::RngMode,\n) -> Result<serde_json::Value, String> {",
+            1,
+        ).replace("::fight(prepared)?", "::fight(prepared, rng_mode)?")
+    if marker == PREPARED_MARKER:
+        return replacement.replace(
+            "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize)",
+            "pub fn native_two_world_targets(prepared: &PreparedV2, target_count: usize, rng_mode: crate::core::rng::RngMode)",
+            1,
+        ).replace(
+            "crate::classes::native_two_world_targets(prepared, target_count)",
+            "crate::classes::native_two_world_targets(prepared, target_count, rng_mode)",
+            1,
+        )
+    if marker == CLI_MARKER:
+        return replacement.replace(
+            'if args.len() != 5 || args[1] != "--infile" || args[3] != "--targets" {',
+            'if args.len() != 7 || args[1] != "--infile" || args[3] != "--targets" || args[5] != "--rng-mode" {',
+            1,
+        ).replace(
+            "let report = native_two_world_targets(&prepared, target_count)",
+            "let mode = RngMode::parse_cli(&args[6])?;\\n        let report = native_two_world_targets(&prepared, target_count, mode)",
+            1,
+        )
+    return None
+
+
 def insert(source: str, anchor: str, marker: str, replacement: str) -> str:
     if source.count(anchor) != 1:
         raise ValueError(f"RUST_WORLD_MULTI_TARGET_ANCHOR_{anchor}")
     if source.count(replacement) == 1:
+        return source
+    typed = typed_rng_descendant(marker, replacement)
+    if typed is not None and source.count(marker) == 1 and source.count(typed) == 1:
         return source
     # The maintained two-world method may already have separately
     # source-validated native health-damage and mana-regeneration receipts.
