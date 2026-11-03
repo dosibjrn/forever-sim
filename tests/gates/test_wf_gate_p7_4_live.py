@@ -1011,3 +1011,37 @@ def test_p74_pays_early_stochastic_reranks_without_stealing_finalist_window():
     assert due(230.0, 6) is False
     assert due(240.0, 2) is False
     assert due(297.0, 2) is False
+
+
+def test_p74_deep_confirmation_pays_top_confirmed_not_all_96_fight_finalists():
+    """Real 300s P7.4 had 14 confirmed 96-fight finalists, but the
+    727.5476 paid leader fell to 720.2167 on its independent 1k holdout.
+    Prioritize another independent paid 48-fight check of top leaders
+    instead of spending every remaining call on weaker 48/96-fight rows.
+    This is a selection policy test, NOT a gate PASS.
+    """
+    rows = [(float(740 - i), None, f"sha-{i}", {"gear": i}, 790.)
+            for i in range(10)]
+    confirmed = {f"sha-{i}" for i in range(6)}
+    due = gate._next_p74_deep_confirmation
+    assert due(rows, confirmed, set(), 259.99) is None
+    assert due(rows, confirmed, set(), 280.)[1][2] == "sha-0"
+    assert due(rows, confirmed, {"sha-0"}, 280.)[1][2] == "sha-1"
+    assert due(rows, confirmed, {"sha-0", "sha-1"}, 280.) is None
+    assert due(rows, confirmed, set(), 295.) is None
+    assert due(rows[:7], confirmed, set(), 280.) is None
+    assert due(rows, {"sha-0", "sha-1"}, set(), 280.) is None
+
+
+def test_p74_freeze_prefers_paid_144_fight_deep_confirmation_over_96_fight_outlier():
+    """Never use the 1k holdout to choose; prefer fully paid deeper screen."""
+    best = (850., {}, "screen", {"gear": "screen"})
+    rows = [
+        (729., {}, "only-96", {"gear": "only-96"}, 800.),
+        (724., {}, "deep-144", {"gear": "deep-144"}, 780.),
+        (735., {}, "only-48", {"gear": "only-48"}, 820.),
+    ]
+    selected = gate._freeze_paid_p74_winner(
+        best, rows, {"only-96", "deep-144"}, {"deep-144"})
+    assert selected[2] == "deep-144"
+    assert selected[5] == "paid_6x24_stochastic_live_native_deep_confirmed_finalist"
