@@ -26,7 +26,7 @@ def replace_once(source: str, old: str, new: str, marker: str) -> str:
                 # Early-world clock adds an adjacent Rust test before this
                 # original test. Require both entire tests to be intact.
                 from port_native_early_retarget import TEST
-                if source.count(TEST) == 1 and source.count(FIGHT_TEST) == 1:
+                if source.count(TEST) == 1 and source.count(FIGHT_TEST.rstrip("\n")) == 1:
                     return source
             raise ValueError(f"partial or ambiguous already-applied Rust port: {marker}")
         return source
