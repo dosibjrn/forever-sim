@@ -948,3 +948,36 @@ def test_paid_p74_confirmation_reverses_noisy_first_round_within_300s(
                 for seed in ("1947113", "1947139")}
     assert [c[:2] for c in calls if c[1] == 1000] == [(12, 1000), (12, 1000)]
     assert base["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"] == 10
+
+
+def test_p74_stochastic_paid_parents_override_noisy_balanced_elites():
+    """A paid stochastic leader, not a three-fight balanced outlier, guides exploration."""
+    balanced_elites = [
+        (900.0, {"gear": "noisy"}),
+        (850.0, {"gear": "real"}),
+    ]
+    paid_stochastic = [
+        (700.0, {}, "noisy-hash", {"gear": "noisy"}, 900.0),
+        (742.0, {}, "real-hash", {"gear": "real"}, 850.0),
+    ]
+    # Exploit native+2D stochastic winners early, but keep one of every three
+    # exploitation proposals from the paid balanced archive for diversity.
+    preferred = gate._p74_paid_parent_pool(balanced_elites, paid_stochastic, 1)
+    assert preferred[0] == (742.0, {"gear": "real"})
+    assert preferred[1] == (700.0, {"gear": "noisy"})
+    assert gate._p74_paid_parent_pool(balanced_elites, paid_stochastic, 3) is balanced_elites
+    assert gate._p74_paid_parent_pool(balanced_elites, [], 1) is balanced_elites
+    assert paid_stochastic[0][3] == {"gear": "noisy"}  # no mutation of paid requests
+
+
+def test_p74_pays_early_stochastic_reranks_without_stealing_finalist_window():
+    """Only a small bounded early sampling schedule; 240-300s remains existing logic."""
+    due = gate._p74_early_rerank_due
+    assert due(119.9, 0) is False
+    assert due(120.0, 0) is True
+    assert due(139.9, 1) is False
+    assert due(140.0, 1) is True
+    assert due(220.0, 5) is True
+    assert due(230.0, 6) is False
+    assert due(240.0, 2) is False
+    assert due(297.0, 2) is False
