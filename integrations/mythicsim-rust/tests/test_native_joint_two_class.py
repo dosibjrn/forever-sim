@@ -142,6 +142,33 @@ class NativeDamageAPLAnchorContracts(unittest.TestCase):
             candidate, [], random.Random(4)))
 
 
+    def test_damage_witness_is_fallback_after_conditions_and_before_utility_casts(self):
+        conditional_damage = self.source(11713, conditional=True)
+        opaque = {
+            "action": {
+                "useItem": {"itemId": 12662},
+                "condition": {"auraIsActive": {"auraId": {"spellId": 12662}}},
+            }
+        }
+        utility = self.source(11689)
+        existing_damage_fallback = self.source(11713)
+        actions = [utility, conditional_damage, opaque, existing_damage_fallback]
+        snapshot = json.loads(json.dumps(actions))
+
+        repaired = _ensure_native_damage_action(
+            actions, [{"spellId": 11713}], random.Random(5)
+        )
+
+        self.assertEqual(snapshot, actions)
+        self.assertEqual(4, len(repaired))
+        self.assertEqual(11713, repaired[0]["action"]["castSpell"]["spellId"]["spellId"])
+        self.assertIn("condition", repaired[0]["action"])
+        self.assertIn("useItem", repaired[1]["action"])
+        self.assertEqual(11713, repaired[2]["action"]["castSpell"]["spellId"]["spellId"])
+        self.assertNotIn("condition", repaired[2]["action"])
+        self.assertEqual(11689, repaired[3]["action"]["castSpell"]["spellId"]["spellId"])
+
+
 class NativeExecutionErrorReporting(unittest.TestCase):
     def test_missing_dps_average_preserves_raw_native_response(self):
         source = request()
