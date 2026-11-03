@@ -8,7 +8,6 @@ on:
       - src/engine_client/native_p2_rank_probe.py
       - tools/wf_p1_native_effects.py
       - tests/gates/test_wf_p1_native_blackbox.py
-      - config/gates/p1_scenario_applicability_v1.json
 
 permissions:
   contents: read
