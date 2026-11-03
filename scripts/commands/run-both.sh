@@ -42,5 +42,6 @@ echo "[both] phase 1/2: Fast analytic proposal search (school=$SCHOOL)" >&2
 python -m src.v2.runner --view smooth --workers 1 --school "$SCHOOL"
 
 echo "[both] phase 2/2: MC search (school=$SCHOOL; native candidates + Fast challengers/priors)" >&2
-./run.sh --optimize-only --school "$SCHOOL"
+# The stable root launcher is not necessarily executable in Git checkouts.
+bash ./run.sh --optimize-only --school "$SCHOOL"
 wait "$LISTENER_PID"
