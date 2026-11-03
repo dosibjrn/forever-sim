@@ -284,6 +284,38 @@ def test_full_p75_freezes_executed_joint_winner_and_keeps_prior_fail_closed(
     assert "runtime_proof" not in rejected
     assert original == unchanged
 
+    # The bounded light recorder must resolve the same accepted comparator,
+    # but it cannot claim a final stochastic result or P7.5 acceptance.
+    monkeypatch.delenv("FOREVER_P7_FULL_SOURCE_SEARCH", raising=False)
+    pool_calls.clear()
+    calls.clear()
+    prior_calls = []
+    def light_prior(*args, **kwargs):
+        prior_calls.append((args, kwargs))
+        return {"dps": 750.0, "compatible_gates": ["P7.4"],
+                "run_urls": ["https://github.com/example/actions/runs/1"]}
+    monkeypatch.setattr(gate, "strongest_accepted_prior", light_prior)
+    clock = iter([0.0, 1.0])
+    monkeypatch.setattr(gate.time, "monotonic", lambda: next(clock, 1.0))
+
+    light = gate.run_live(tmp_path, "druid", 60, spec="balance")
+    assert pool_calls == [15]
+    assert len(prior_calls) == 1
+    assert [(a, b, c) for a, b, c, _ in calls] == [
+        ("native", 3, "balanced"), ("world", 3, "balanced")]
+    assert light["joint_cold_world_dps"] == 729.0
+    assert light["final_required_dps"] == 742.5
+    assert light["strongest_accepted_compatible_prior_dps"] == 750.0
+    assert light["status"] == "BLOCKED"
+    assert light["reasons"] == [
+        "P7_5_FULL_300S_COLD_SEARCH_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED",
+        "P7_5_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED",
+    ]
+    assert "frozen_stochastic_iterations" not in light
+    from tools.wf_gate_coverage import measured_p7_dps_proximity
+    assert measured_p7_dps_proximity("P7.5", light) is None
+    assert original == unchanged
+
 
 def test_p75_rejects_invalid_full_search_mode_before_source_work(monkeypatch, tmp_path):
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "anything")
