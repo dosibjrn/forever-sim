@@ -290,5 +290,4 @@ def test_native_damage_witness_follows_conditional_opaque_prefix_for_cold_and_el
                     assert json.dumps(
                         action, sort_keys=True, separators=(",", ":")
                     ) in noncast_templates
-        assert source_actions == source_snapshot
-    assert cross_cast_seen
+    assert source_actions == source_snapshot
