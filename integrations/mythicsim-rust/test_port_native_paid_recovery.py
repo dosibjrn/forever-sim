@@ -150,3 +150,35 @@ else:
     raise AssertionError("PERSISTENT_TARGET_PORT_MUST_REJECT_PAID_RECOVERY_DRIFT")
 
 print("RUST_PERSISTENT_TARGET_PORT_ACCEPTS_EXACT_PAID_RECOVERY_DESCENDANT")
+
+
+# The full multi-target source-port chain must be idempotent after native
+# recovery extends all three call sites, not just the Rust fight method.
+import port_native_two_world_cli as two_world
+for marker, original, transform in (
+    (two_world.CLASS_MARKER, two_world.CLASS_METHOD, port.port_classes),
+    (two_world.PREPARED_MARKER, two_world.PREPARED_METHOD, port.port_prepared),
+    (two_world.CLI_MARKER, two_world.CLI_METHOD, port.port_main),
+):
+    transformed = transform(original)
+    assert two_world.insert(transformed, {
+        two_world.CLASS_MARKER: two_world.CLASSES_ANCHOR,
+        two_world.PREPARED_MARKER: two_world.PREPARED_ANCHOR,
+        two_world.CLI_MARKER: two_world.CLI_ANCHOR,
+    }[marker], marker, original) == transformed
+    # Any partial source drift must fail closed, not silently pass as idempotent.
+    broken = transformed.replace(
+        {two_world.CLASS_MARKER: port.CLASSES_CALL_NEW,
+         two_world.PREPARED_MARKER: port.PREPARED_CALL_NEW,
+         two_world.CLI_MARKER: '--recovery-ns'}[marker], 'FORGED_PORT_DRIFT', 1)
+    try:
+        two_world.insert(broken, {
+            two_world.CLASS_MARKER: two_world.CLASSES_ANCHOR,
+            two_world.PREPARED_MARKER: two_world.PREPARED_ANCHOR,
+            two_world.CLI_MARKER: two_world.CLI_ANCHOR,
+        }[marker], marker, original)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f"PAID_RECOVERY_COMPOSITION_DRIFT_NOT_REJECTED: {marker}")
+print("RUST_NATIVE_PAID_RECOVERY_MULTI_TARGET_PORT_CHAIN_IDEMPOTENT")
