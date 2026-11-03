@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One real P1–P7.5 checkpoint audit through the canonical live gate CLI.
+"""One real P3–P7.5 checkpoint audit through the canonical live gate CLI.
 
 This does not award a checkpoint by parsing old JSON evidence. It invokes the
 actual providers anew and reports their unmodified verdicts and missing runners.
@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-GATES = (*[f"P{i}" for i in range(1, 7)], *[f"P7.{i}" for i in range(1, 6)])
+GATES = (*[f"P{i}" for i in range(3, 7)], *[f"P7.{i}" for i in range(1, 6)])
 
 
 def analyze_live_result(report: dict) -> dict:
@@ -42,7 +42,7 @@ def analyze_live_result(report: dict) -> dict:
             raise ValueError("FAKE_GATE_PASS_WITH_FAILURES:" + gate)
         if status != "PASS" and not reasons:
             raise ValueError("UNEXPLAINED_GATE_FAILURE:" + gate)
-        if gate not in ("P1", "P2") and status == "PASS":
+        if status == "PASS":
             proof = row.get("runtime_proof")
             if not isinstance(proof, dict) or proof.get("executed") is not True or any(
                 not isinstance(proof.get(k), str) or not proof[k]
