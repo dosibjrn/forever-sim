@@ -758,6 +758,50 @@ def test_p75_native_control_nonzero_exit_preserves_actionable_binary_diagnostic(
     assert "native candidate crashed at source prepare" in str(err.value)
 
 
+def test_wf613_controller_counts_fresh_and_paid_parent_proposals():
+    from importlib.util import module_from_spec, spec_from_file_location
+    from pathlib import Path
+
+    path = (Path(__file__).resolve().parents[2] / "integrations"
+            / "mythicsim-rust" / "wf613_strategy.py")
+    spec = spec_from_file_location("wf613_strategy_under_test", path)
+    assert spec is not None and spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class DeterministicRng:
+        @staticmethod
+        def random():
+            return 0.99
+
+        @staticmethod
+        def choices(population, weights=None):
+            if population and isinstance(population[0], str):
+                return ["gear_large"]
+            return [population[0]]
+
+        @staticmethod
+        def choice(population):
+            return population[0]
+
+    controller = module.WF613Controller()
+    request = _candidate("paid")
+    parent, axes, family = controller.propose(DeterministicRng())
+    assert (parent, axes, family) == (None, None, "fresh")
+    controller.observe(request, 700.0, family)
+
+    parent, axes, family = controller.propose(DeterministicRng())
+    assert parent == request
+    assert axes == ("gear", "gear", "gear")
+    assert family == "gear_large"
+
+    diagnostics = controller.diagnostics()
+    assert diagnostics["fresh_proposals"] == 1
+    assert diagnostics["parent_proposals"] == 1
+    assert diagnostics["operator_attempts"]["fresh"] == 1
+    assert diagnostics["operator_attempts"]["gear_large"] == 1
+
+
 def test_p75_cli_exposes_balanced_paid_confirmation_receipt(monkeypatch, capsys):
     """Observed 750 balanced vs 699 frozen DPS must retain paid-selection
     evidence in the real gate CLI, without changing PASS/FAIL or M1 credit.
@@ -773,6 +817,20 @@ def test_p75_cli_exposes_balanced_paid_confirmation_receipt(monkeypatch, capsys)
         "paid_joint_balanced_confirmed": 9,
         "paid_joint_balanced_deep_confirmed": 2,
         "balanced_parent_proposals": 180,
+        "search_strategy": "wf613",
+        "operator_attempts": {"fresh": 10, "gear_large": 20, "talent_rebuild": 3,
+                              "apl_rebuild": 2, "coupled_talent_apl": 4,
+                              "coupled_gear_apl": 5, "coupled_all": 1,
+                              "destroy_repair": 2, "structural_repair": 6},
+        "operator_best_improvements": {"fresh": 1, "gear_large": 3,
+                                       "talent_rebuild": 0, "apl_rebuild": 0,
+                                       "coupled_talent_apl": 1, "coupled_gear_apl": 1,
+                                       "coupled_all": 0, "destroy_repair": 0,
+                                       "structural_repair": 1},
+        "parent_proposals": 43,
+        "fresh_proposals": 10,
+        "paid_archive_size": 32,
+        "best_paid_balanced_world_dps": 782.0,
         "selected_validation": "paid_6x3_balanced_live_native_deep_confirmed_finalist",
         "balanced_finalist_failures": ["source-exit:" + "x" * 250] * 6,
         "frozen_stochastic_iterations": 1000,
@@ -789,6 +847,12 @@ def test_p75_cli_exposes_balanced_paid_confirmation_receipt(monkeypatch, capsys)
     assert record["paid_joint_balanced_confirmed"] == 9
     assert record["paid_joint_balanced_deep_confirmed"] == 2
     assert record["balanced_parent_proposals"] == 180
+    assert record["wf613_operator_attempts"]["gear_large"] == 20
+    assert record["wf613_operator_best_improvements"]["coupled_talent_apl"] == 1
+    assert record["wf613_parent_proposals"] == 43
+    assert record["wf613_fresh_proposals"] == 10
+    assert record["wf613_paid_archive_size"] == 32
+    assert record["wf613_best_paid_balanced_world_dps"] == 782.0
     assert record["selected_validation"] == (
         "paid_6x3_balanced_live_native_deep_confirmed_finalist")
     assert len(record["balanced_finalist_failures"]) == 4
