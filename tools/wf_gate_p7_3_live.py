@@ -190,6 +190,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "reasons": ["P7_3_NO_NATIVE_SCORED_COLD_TALENT_WORLD_CANDIDATE"],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d",
                 "search_wall_s": search_wall_s,
+                "cold_unique_source_requests": len(seen),
+                "native_scored_candidates_paid": executed,
                 "native_invalid_candidates": native_invalid_candidates,
                 "native_unsupported_candidates": native_unsupported_candidates,
                 "native_unscored_candidates": native_unscored_candidates,
@@ -211,7 +213,7 @@ def run_live(root: Path, class_key: str, level: int, *,
     complete_search = search_window_met
     final = {}
     if complete_search:
-        # Freeze the winning source-legal request before an independent
+        # Freeze the winning native-scored request before an independent
         # stochastic final. The holdout cannot rank or mutate candidates.
         try:
             with tempfile.TemporaryDirectory(prefix="forever_p73_frozen_") as tmp:
@@ -251,7 +253,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                      type(exc).__name__ + ":" + str(exc)[:180]}
 
     # The original saved report source is pinned by shared preflight; the
-    # gate requires executable source-legal candidates, not an exhaustive
+    # gate requires executable native-scored candidates, not an exhaustive
     # enumeration or a second interactive UI capture.
     reasons = []
     if not full_search:
