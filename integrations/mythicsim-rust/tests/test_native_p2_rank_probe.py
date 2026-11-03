@@ -2,7 +2,9 @@
 """Exercise the thin P2 adapter against the exact selected Rust submodule."""
 from __future__ import annotations
 
+import json
 import os
+import time
 from pathlib import Path
 import sys
 import unittest
@@ -12,6 +14,8 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from src.engine_client.native_p2_rank_probe import (  # noqa: E402
     NativeP2ProbeError,
+    encode_native_druid_talents,
+    prepare_native_request,
     parse_native_druid_layout,
     run_native_prepare_pair,
 )
@@ -79,6 +83,32 @@ class NativeP2PrepareAdapterTest(unittest.TestCase):
             after_prepared["reference"]["engine_revision"],
         )
 
+
+    def test_over_cap_rank_is_encoded_for_native_validation(self):
+        # The wire adapter must not implement the engine's talent rank caps.
+        # An out-of-cap but single-digit candidate is sent to Rust, which
+        # owns the authoritative refusal.
+        encoded = encode_native_druid_talents({"moonkin_form": 2}, ENGINE_ROOT)
+        self.assertEqual(encoded.split("-")[0][-1], "2")
+
+    def test_native_prepare_rejects_over_cap_rank_as_invalid(self):
+        binary = Path(os.environ.get("FOREVER_ENGINE_BINARY", ""))
+        if not binary.is_file():
+            self.skipTest("FOREVER_ENGINE_BINARY is not built in this test run")
+        fixture = ENGINE_ROOT / "tests/classes/druid/prepare/balance.request.json"
+        request = json.loads(fixture.read_text(encoding="utf-8"))
+        request["raid"]["parties"][0]["players"][0]["talentsString"] = (
+            encode_native_druid_talents({"moonkin_form": 2}, ENGINE_ROOT)
+        )
+        result = prepare_native_request(
+            binary=binary,
+            request=request,
+            scenario="native-rank-cap-negative",
+            deadline=time.monotonic() + 60,
+        )
+        self.assertEqual(result["status"], "INVALID", result)
+        self.assertEqual(result["refusal"]["code"], "talents")
+        self.assertIn("Moonkin Form", result["reason"])
 
     def test_rank_pair_rejects_changes_outside_the_target_rank_before_execution(self):
         before = {
