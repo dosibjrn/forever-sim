@@ -298,6 +298,26 @@ assert port.port_prepared(paid_combined) == paid_combined
 assert "native_two_world_targets(prepared, target_count, rng_mode, recovery_ns)" in paid_combined
 print("RUST_TWO_PULL_THEN_TWO_WORLD_PAID_PREPARED_CHAIN_PASS")
 
+assert two_pull_cli.PREPARED_ANCHOR != two_world_cli.PREPARED_ANCHOR
+assert two_pull_cli.PREPARED_INSERTION_ANCHOR == two_world_cli.PREPARED_ANCHOR
+typed_two_pull_gateway = (
+    two_pull_cli.ENGINE_TYPED_MARKER + "\\n"
+    + two_pull_cli.ENGINE_TYPED_CALL + "\\n"
+    + two_pull_cli.PREPARED_ANCHOR
+)
+assert two_pull_cli.port_prepared(typed_two_pull_gateway) == typed_two_pull_gateway
+forged_two_pull_gateway = typed_two_pull_gateway.replace(
+    two_pull_cli.ENGINE_TYPED_CALL,
+    two_pull_cli.ENGINE_TYPED_CALL.replace("rng_mode", "default_rng_mode"),
+)
+try:
+    two_pull_cli.port_prepared(forged_two_pull_gateway)
+except ValueError:
+    pass
+else:
+    raise AssertionError("RUST_TYPED_TWO_PULL_PREPARED_GATEWAY_DRIFT_NOT_REJECTED")
+print("RUST_TYPED_TWO_PULL_GATEWAY_PRESERVED_AND_FAIL_CLOSED")
+
 
 # Structural typed-RNG acceptance is deliberately narrower than a marker-only
 # no-op: all native class calls, prepared bridge and explicit CLI mode must agree.
