@@ -18,7 +18,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from src.game.runtime.go_native_world_damage_ack import GsimNativeDamageWorldApplier
+from src.game.runtime.native_roots_world_ack import GsimNativeRootsWorldApplier
 from src.game.runtime.go_world_range_feed import GsimGoRangeFeed
 from tools.wf_gsim_go_live_range_probe import (
     diagnostic_gsim_world, source_target_health_from_request,
@@ -28,6 +28,7 @@ from tools.wf_gate_coverage import P7_FINAL_STOCHASTIC_ITERATIONS, p7_required_d
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
+        enemy_move_speed_yards_s: float = 0.,
         rng_mode: str = "stochastic") -> dict:
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_WORLD_RNG_MODE_INVALID")
@@ -38,16 +39,19 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     assert source["encounter"]["targets"][0]["level"] == 63
     if type(iterations) is not int or iterations < 1:
         raise ValueError("RUST_WORLD_ITERATIONS_INVALID")
+    if (not math.isfinite(enemy_move_speed_yards_s)
+            or enemy_move_speed_yards_s < 0):
+        raise ValueError("RUST_WORLD_ENEMY_MOVE_SPEED_INVALID")
     if facing_switch_at_s is not None and (
             not math.isfinite(facing_switch_at_s) or facing_switch_at_s <= 0 or iterations != 1):
         raise ValueError("RUST_WORLD_FACING_SWITCH_INVALID")
     def new_world():
         world = diagnostic_gsim_world(
-            target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
+            target_spawn_yards=distance, enemy_move_speed_yards_s=enemy_move_speed_yards_s,
             target_health=source_target_health_from_request(raw), source_single_target=True,
             source_in_front_of_target=players[0].get("inFrontOfTarget", False),
         )
-        return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeDamageWorldApplier(world)
+        return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeRootsWorldApplier(world)
     world = feed = applier = None
     raw_sha = hashlib.sha256(raw).hexdigest()
     # Rust's prepared request identity is SHA256 of deterministic protobuf
@@ -69,6 +73,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
     samples = []
     iteration_damage = 0.
     iteration_precombat_damage = 0.
+    iteration_control_events = []
     total_ticks = 0
     facing_switch_clock_ns = None
     source_action_events_before = {}
@@ -102,6 +107,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                         # damage, though native encounter total and actual gsim
                         # target HP include it. Score only in-fight damage.
                         "world_dps": (iteration_damage - iteration_precombat_damage) / (native["native_duration_ns"] / 1e9),
+                        "native_control_events": list(iteration_control_events),
+                        "world_target_position_yards": list(map(float, world._enemy_position_at("m1"))),
+                        "world_target_controls": dict(world.targets["m1"].active_controls),
                     })
                     continue
                 if native.get("type") != "native_rust_world_boundary_request":
@@ -115,6 +123,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     last_tick = -1
                     iteration_damage = 0.
                     iteration_precombat_damage = 0.
+                    iteration_control_events = []
                 clock_ns = native["native_clock_ns"]
                 if clock_ns % 1_000_000 or clock_ns <= last_tick:
                     raise AssertionError("RUST_CLOCK_NOT_GSIM_MILLISECOND_MONOTONIC")
@@ -131,7 +140,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     # puts the hero in front, whereas +X means behind.
                     world.targets["m1"].metadata["facing_xy_yards"] = (-1., 0.)
                     facing_switch_clock_ns = clock_ns
-                tick = feed.next_tick()
+                tick = feed.next_tick(
+                    allow_same_clock=bool(native.get("same_clock_control_boundary", False)))
                 assert tick["sequence"] == native["sequence"]
                 assert tick["native_clock_ns"] == clock_ns
                 tick["previous_world_ack_id"] = previous_ack_id
@@ -154,6 +164,11 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                 assert receipt["native_process_id"] == proc.pid
                 feed.accept_range_receipt(receipt["native_range_receipt"])
                 ack = applier.apply(tick, receipt)
+                for event in receipt.get("native_control_events", []):
+                    iteration_control_events.append({
+                        **event,
+                        "world_position_yards": list(map(float, world._enemy_position_at("m1"))),
+                    })
                 action_counter = (source_action_events_after
                     if facing_switch_clock_ns is not None
                     else source_action_events_before)
