@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
-from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 
 @dataclass(frozen=True)
