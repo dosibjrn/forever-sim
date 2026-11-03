@@ -37,12 +37,17 @@ def run(binary: Path, prepared: Path, *, mob_health: float = 1200.,
         raise ValueError("RUST_TWO_WORLD_PREPARED_SOURCE_INVALID")
     # One actual 2D world for the entire target sequence. This is the
     # existing native combat/world ACK diagnostic, not paid travel/recovery.
-    # Use the shared leveling square-grid geometry, shifted so that every
-    # target has a nonzero real facing vector toward the gsim player.
+    # Use the project's actual 20-yard spaced square grid. Center the
+    # diagnostic world around the player so early targets are reachable without
+    # pretending to have paid a between-pull route. Farther targets still
+    # require future real movement/retargeting; no 100-mob PASS is implied.
     targets = ("m1", "m0") + tuple(f"m{i}" for i in range(2, target_count))
     route = SpacedPullLayout(mob_count=target_count)
-    positions = {target_id: (15. + xy[0], xy[1])
-                 for target_id, xy in zip(targets, route.positions_yards)}
+    points = route.positions_yards
+    center_x = sum(x for x, _ in points) / target_count + 0.123
+    center_y = sum(y for _, y in points) / target_count + 0.257
+    positions = {target_id: (x - center_x, y - center_y)
+                 for target_id, (x, y) in zip(targets, points)}
     actor = ActorState.from_ir(
         ActorDefinition("hero", "player", base_stats={}),
         (ResourceDefinition("health", "Health", "hero",
