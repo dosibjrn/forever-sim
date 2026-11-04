@@ -161,7 +161,7 @@ def main(argv=None) -> int:
                     "source_context_sha256", "real_source_search_attempts",
                     "real_source_search_evaluated", "source_naked_stage",
                     "source_naked_diagnostics", "source_actor_context",
-                    "real_catalogue_top5_items_scored",
+                    "real_native_representative_items_scored",
                     "source_report_url", "source_request_raw_sha256",
                     "native_source_revision", "iterations",
                     "sampled_source_fights", "saved_source_iterations",
@@ -194,7 +194,7 @@ def main(argv=None) -> int:
                         "p3_shared_budget_attempts",
                         "p3_native_pair_reserved_attempts"):
                 value = report.get(key)
-                if type(value) is int and 0 <= value <= 44:
+                if type(value) is int and value >= 0:
                     record[key] = value
             # Preserve the measured source-policy witness and weight vector so
             # a first-contact P3 failure can be repaired from its actual cause.
