@@ -538,15 +538,16 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    allow_paid_winner_after_nonpositive: bool = False) -> dict:
     """Find a measured beneficial stat delta on an executable source policy.
 
-    Keep source-IR policies first. On the Mage L30 native-item path, use the
-    exact winning opening prefix as the source-policy baseline attempt; the
-    empty-prefix attempt is known not to establish the kill objective. The
-    selected paid winner normally remains a baseline fallback only. When its
-    exact fallback action has been enriched from native PreparedV2 spell data,
-    permit one largest native item-sized probe after a nonpositive source-policy
-    result. Reuse the exact already-paid winner baseline; do not spend another
-    baseline evaluation. Every perturbation still runs through the real
-    executor; no synthetic policy, epsilon, or inferred stat weight is used.
+    Keep source-IR policies first. On the native Mage L30 and Shaman L20
+    item paths, use the exact winning opening prefix as the source-policy
+    baseline attempt when the selected fallback has native spell-coefficient
+    provenance. The selected paid winner normally remains a baseline fallback
+    only. When its exact fallback action has been enriched from native
+    PreparedV2 spell data, permit one largest native item-sized probe after a
+    nonpositive source-policy result. Reuse the exact already-paid winner
+    baseline; do not spend another baseline evaluation. Every perturbation still
+    runs through the real executor; no synthetic policy, epsilon, or inferred
+    stat weight is used.
     """
     from src.game.gear import apply_stat_delta
     from src.v2.source_budgeted_prefix import ordered_prefix_executed
