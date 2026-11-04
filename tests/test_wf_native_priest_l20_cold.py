@@ -60,7 +60,12 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
     def world(_binary, request, *, target_count):
         assert target_count == 100
         build = json.loads(request.read_text())
-        assert build == paid_builds[-1]
+        # The real 30/300s search validates its frozen source-paid 30s
+        # candidate after discovery; short regression runs still validate
+        # each current paid proposal immediately.
+        assert build in paid_builds
+        if budget != 300.0:
+            assert build == paid_builds[-1]
         world_builds.append(build)
         now[0] += 5.0
         if first_world_native_failure and len(world_builds) == 1:
@@ -256,4 +261,60 @@ def test_real_native_rating_refusals_do_not_starve_sparse_paid_proposals(tmp_pat
     assert receipt["native_cold_completed_routes_after_30"] == 3
     assert receipt["native_cold_snapshot_30"] is None
     assert receipt["native_cold_final_300"]["route_s_per_mob"] == 8.0
+    assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_300s_source_paid_snapshot_survives_deferred_100mob_validation(tmp_path):
+    # The production 30/300 clock must not spend the first window executing
+    # a possibly >30s route before any genuinely paid candidate is frozen.
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0)
+    assert len(paid) == 5
+    assert len(world) == 1  # Only the *selected* 30s candidate replayed.
+    assert world[0] in paid
+    assert receipt["native_cold_search_wall_s"] == 15.0
+    assert receipt["native_cold_native_paid_before_30"] == 5
+    assert receipt["native_cold_native_paid_after_30"] == 0
+    assert receipt["native_cold_30s_paid_selection"]["paid_completed_elapsed_s"] == 3.0
+    assert receipt["native_cold_30s_post_search_route"]["status"] == "COMPLETE"
+    assert receipt["native_cold_snapshot_30"]["route_s_per_mob"] == 10.0
+    assert receipt["native_cold_snapshot_30"]["real_100mob_receipt"][
+        "native_2d_persistent_world_targets_killed"] == 100
+    assert receipt["native_cold_300s_reached"] is False  # Exhausted, not a 300s pass.
+    assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_deferred_30s_candidate_refusal_never_invents_world_winner(tmp_path):
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0,
+        first_world_native_failure=True)
+    assert len(paid) == 5
+    assert len(world) == 1
+    assert receipt["native_cold_30s_paid_selection"] is not None
+    assert receipt["native_cold_snapshot_30"] is None
+    assert receipt["native_cold_30s_post_search_route"]["status"] == "WORLD_INCOMPLETE"
+    assert receipt["native_cold_30s_post_search_route"][
+        "native_2d_persistent_observed_kills"] == 1
+    assert "RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL" in (
+        receipt["native_cold_30s_post_search_route"]["reason"])
+    assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_deferred_native_sparse_refusals_still_freeze_paid_30s_build(tmp_path):
+    # Native rating UNSUPPORTED decisions are not second-guessed by Python.
+    # A viable sparse proposal can still be selected and authentically
+    # 100-mob-qualified after the immutable 30s discovery window.
+    options = [
+        {"item_id": 11, "slot": "head"},
+        {"item_id": 21, "slot": "chest"},
+        {"item_id": 31, "slot": "legs"},
+    ]
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0, options=options,
+        refuse_dense_at=2, max_attempts=7)
+    assert len(paid) == 7
+    assert len(world) == 1
+    assert receipt["native_cold_native_paid_before_30"] == 3
+    assert receipt["native_cold_30s_post_search_route"]["status"] == "COMPLETE"
+    assert receipt["native_cold_snapshot_30"]["source_build"] in paid
     assert receipt["native_cold_gate_accepted"] is False
