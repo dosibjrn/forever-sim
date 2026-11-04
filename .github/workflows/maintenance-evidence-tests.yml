@@ -160,6 +160,7 @@ jobs:
       - name: Verify retained WF243 policy decoder fail-closed regression
         run: >-
           python -m pytest -q
+          tests/test_wf243_source_joint_repeated_pulls.py::test_policy_from_record_preserves_frozen_rule_sequence_and_provenance
           tests/test_wf243_source_joint_repeated_pulls.py::test_heldout_illegal_action_and_talent_fail_closed
       - name: Compile retained repeated-pull policy consumers
         run: >-
