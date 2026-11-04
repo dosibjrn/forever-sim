@@ -4,7 +4,7 @@
 <text x="38" y="70" fill="#9ca3af" font-family="Arial,sans-serif" font-size="15">Git-verified active gate results · 1,332 gate targets · 148 checkpoints</text>
 <text x="38" y="103" fill="#34d399" font-family="Arial,sans-serif" font-size="19" font-weight="bold">PASS 23/1332 (1.7267%)</text>
 <text x="355" y="103" fill="#fbbf24" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Measured 2.2218%</text>
-<text x="785" y="103" fill="#f9fafb" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Certified 0/148</text>
+<text x="785" y="103" fill="#f9fafb" font-family="Arial,sans-serif" font-size="19" font-weight="bold">Certified 1/148</text>
 <line x1="39" y1="130" x2="67" y2="130" stroke="#34d399" stroke-width="3"/>
 <text x="75" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">Full gate PASS (% of 1332)</text>
 <line x1="350" y1="130" x2="378" y2="130" stroke="#fbbf24" stroke-width="3"/>

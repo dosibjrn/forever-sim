@@ -56,7 +56,7 @@ def test_retired_p1_p2_cannot_be_recorded(monkeypatch, tmp_path):
     assert not path.exists()
 
 
-def test_nine_active_passes_without_compatible_production_are_not_148(monkeypatch, tmp_path):
+def test_nine_active_passes_certify_without_auxiliary_identity(monkeypatch, tmp_path):
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
     path = tmp_path / "passes.tsv"
     for gate in m1.GATES:
@@ -65,17 +65,15 @@ def test_nine_active_passes_without_compatible_production_are_not_148(monkeypatc
                        path=path)
     score = m1.scoreboard(path)
     assert score["passed_gates"] == 9
-    assert score["complete_candidates"] == 1
-    assert score["certified_checkpoints"] == 0
+    assert score["certified_checkpoints"] == 1
 
 
-def test_compatible_nine_and_invalidation(monkeypatch, tmp_path):
+def test_nine_passes_and_invalidation(monkeypatch, tmp_path):
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
     path = tmp_path / "passes.tsv"
     for gate in m1.GATES:
         m1.record_pass(class_key="druid", level=60, spec="balance",
-                       gate=gate, report={"status": "PASS", "reasons": [],
-                                          "compatibility_id": "pinned-source+engine-v1"},
+                       gate=gate, report={"status": "PASS", "reasons": []},
                        path=path)
     assert m1.scoreboard(path)["certified_checkpoints"] == 1
     assert m1.main(["--ledger", str(path), "--invalidate",

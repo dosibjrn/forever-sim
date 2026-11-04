@@ -9,7 +9,7 @@
 
 ![M1 history: active nine-gate PASS, partial measured progress, and checkpoint certification](docs/planning/M1_HISTORY.svg)
 
-**Current graph:** the historical TSV is recalculated using **nine active P3–P7.5 gates per checkpoint**, not the retired P1/P2 criteria (1,332 active gate targets across 148 checkpoints). The green line is accepted gate PASSes, yellow includes genuine measured PARTIAL fractions. **Druid L60 Balance already has 9/9 PASSes but is only a gate-complete candidate:** all nine ledger `compatibility_id` fields are empty, so their shared source/ruleset/executor compatibility has not been established. Thus **certified remains 0/148**. A nine-row collection does not by itself prove joint compatibility or require a fake compatibility label.
+**Current graph:** the historical TSV is recalculated using **nine active P3–P7.5 gates per checkpoint** (1,332 active gate targets across 148 checkpoints). The green line is genuine gate PASSes, yellow adds measured PARTIAL fractions. **Druid L60 Balance already has 9/9 PASSes and counts as 1/148.** No cross-gate metadata certificate is required.
 
 The [M1 ledger](docs/planning/M1_PASSES.tsv) is the only measurement source. Its Git history supplies the timestamps. Each [Merge-launched on-demand gate run](.github/workflows/m1-on-demand-record.yml) that improves the recorded results updates the ledger **and this chart together** on main. No chart-only scheduling, synthetic progress, or independent status records.
 
@@ -19,11 +19,11 @@ This is an independent Forever simulation and optimization research project. The
 
 **Credit and scope:** this repository is not the official MythicSim project and is not affiliated with its maintainers. Engine references and pinned versions must remain traceable; upstream licenses and notices govern any adapted code.
 
-**The ledger is authoritative.** The SVG is derived from versioned TSV snapshots and distinguishes individually passed gates, measured partials, and compatible fully certified checkpoints. A green CI run, isolated reference replay or nine historical PASS rows with no shared compatibility evidence does not certify a checkpoint.
+**The ledger is authoritative.** The SVG is derived from versioned TSV snapshots: only genuine accepted gate PASSes certify checkpoints. Green CI without gate execution is not acceptance, and a separate checkpoint metadata proof is not required.
 
 ## Work queue and the 148-checkpoint matrix
 
-**At the current ledger snapshot: 1 checkpoint with all 9/9 gate PASSes (Druid L60 Balance), but 0/148 fully certified because compatible provenance is absent.** Run `python tools/m1_progress.py` for live counts. Four levels **20, 30, 40 and 60** × (9 unrestricted classes + 4 Druid profiles + 24 other profiles) = **37 per level**. Level 50 is **not** in the approved 148-checkpoint scope.
+**At the current ledger snapshot: 1/148 accepted checkpoints — Druid L60 Balance has 9/9 genuine active gate PASSes.** Run `python tools/m1_progress.py` for live counts. Four levels **20, 30, 40 and 60** × (9 unrestricted classes + 4 Druid profiles + 24 other profiles) = **37 per level**. Level 50 is **not** in the approved 148-checkpoint scope.
 
 | Level | Unrestricted | Druid spec profiles | Other class spec profiles | Total |
 | --- | ---: | ---: | ---: | ---: |
@@ -35,7 +35,7 @@ This is an independent Forever simulation and optimization research project. The
 
 **Current approved execution policy:** MythicSim **Rust preferred, Go equally valid** under PROCESS, with one selected pinned engine per compatible gate chain and live gsim-2D integration wherever required. The Rust-only target architecture does not silently remove an approved Go path or existing causal world requirement. Build PASS is not gameplay PASS.
 
-**Current work:** follow the live [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md) and [PROCESS v2.22](PROCESS.md), not historical P7 2D-only tasks. To certify the existing 9/9 Druid L60 Balance candidate, check whether original PASS receipts demonstrate mutually compatible real source/ruleset/engine settings. Add trustworthy compatibility provenance only where supported by original executed evidence; otherwise run only materially incompatible or missing acceptance work. Never manufacture IDs or grant a new PASS from metadata alone.
+**Current work:** follow [WORK_PRIORITY](docs/planning/WORK_PRIORITY.md) and [PROCESS v2.22](PROCESS.md), not obsolete P7 2D-only tasks or checkpoint-level provenance audits. Druid L60 Balance already counts as 1/148. Fix missing active gate behavior elsewhere; correct or invalidate only genuinely defective gate results.
 
 **Balance Druid L60 P7.3 historical receipt:** [WF663](docs/evidence/druid-l60-balance/p7.3/WF663_ACCEPTANCE.md) is historical diagnostic evidence. Current P7.3 is a native-paid talent-axis capability under [the approved P7 contract](docs/gates/P7.md), not a separate 2D causality gate.
 

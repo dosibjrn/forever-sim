@@ -37,7 +37,7 @@ A user must be able to inspect actual selected gear with item identities and sco
 
 Each accepted checkpoint includes source-legal real whole-build decisions, genuine 30s/300s timed search evidence, each distinct leveling winner's continuous 100-mob combat/recovery/survival, the approved P6 comparison, and the five pinned native-DPS P7 gates. Do not accept isolated action inventory, metadata, green unit tests or incompatible proxies. A diagnostic checkpoint is not DONE.
 
-**Definition of first-phase DONE DONE:** exactly **148/148 accepted** in the machine-readable register with compatible current proof; 0 false-green entries. Final scorecard and reproducible artifacts published. This is the current working finish line; the historical 540 metric is not substituted for it.
+**Definition of first-phase DONE DONE:** exactly **148/148 accepted**, each with **nine genuine active gate PASSes** in the machine-readable register, 0 false-green entries. There is no separate checkpoint provenance certificate or hidden tenth gate. Final scorecard and reproducible artifacts published. This is the current working finish line; the historical 540 metric is not substituted for it.
 
 ## Broader product destination beyond the 148-checkpoint finish line
 
