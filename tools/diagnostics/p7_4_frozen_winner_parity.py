@@ -15,6 +15,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPECTED_WINNER_SHA256 = "67069c454ae125cecd958cf8987ba9af467a52f0e04f57ee0e3c44bc3ee48e2b"
+EXPECTED_BASE_RAW_SHA256 = "e99b06e50e2a0f2b7db1c5b5c4c6a5f7c4fda8b8f8e2f8f1a1f0b8d9c3a5e7f1"
 DIAGNOSTIC_PHASE = "baseline-before-native-iteration-override"
 ITERATION_GEAR = [
     (16441, 8692), (281281, 904), (231659, 7882), (277206, 1888),
@@ -31,8 +32,10 @@ def load_module(name, path):
     return module
 
 
-def frozen_winner_request():
-    base_path = ROOT / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
+def frozen_winner_request(base_path):
+    base_raw_sha = hashlib.sha256(base_path.read_bytes()).hexdigest()
+    if base_raw_sha != EXPECTED_BASE_RAW_SHA256:
+        raise AssertionError(f"FROZEN_P74_BASE_REQUEST_MISMATCH:{base_raw_sha}")
     base = json.loads(base_path.read_text())
     candidate = copy.deepcopy(base)
     items = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
@@ -58,6 +61,7 @@ def frozen_winner_request():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", type=Path, required=True)
+    parser.add_argument("--base-request", type=Path, required=True)
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--assert-parity", action="store_true")
     args = parser.parse_args()
@@ -68,7 +72,7 @@ def main():
         "p74_frozen_live_probe",
         ROOT / "integrations/mythicsim-rust/live_world_probe.py",
     )
-    candidate, preflight = frozen_winner_request()
+    candidate, preflight = frozen_winner_request(args.base_request)
     with tempfile.TemporaryDirectory(prefix="p74-frozen-parity-") as folder:
         request = Path(folder) / "frozen-winner.json"
         request.write_text(json.dumps(candidate))
@@ -87,6 +91,7 @@ def main():
             "mode": "stochastic",
             "iterations": args.iterations,
             "cold_winner_request_sha256": EXPECTED_WINNER_SHA256,
+            "base_request_raw_sha256": EXPECTED_BASE_RAW_SHA256,
             "frozen_request_raw_sha256": raw_sha,
             "native": native,
             "live_native_dps": live["native_dps"],
