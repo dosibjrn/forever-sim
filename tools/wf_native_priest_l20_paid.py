@@ -322,12 +322,12 @@ def score_source_priest_l20_candidates(binary: str | Path,
                          "reason": str(exc)[-400:]})
 
     paid = [row for row in rows if row["status"] == "NATIVE_PAID"]
-    # The selected paid candidate, not a synthetic world-only request, reaches
-    # the existing live Rust↔2D ACK loop once per bounded diagnostic.
-    # A strong native-only score cannot prove that the same build works in
-    # the ACKed 2D world. Try the next genuinely paid source candidate if the
-    # first live request fails or remains nonlethal, within the native-paid frontier budget.
-    # Neither result may count as a persistent 100-mob paid screen.
+    # The selected paid candidate reaches the actual Rust↔2D ACK loop.
+    # A nonlethal ONE-fight ACK does not prove this candidate cannot kill in a
+    # retained native session: the 2–100-target run has its own source-native
+    # actor, world timeline and lethal ACKs. Try it on each ACKed paid build,
+    # not only on builds that already killed in a separate reset fight.
+    # Neither result counts as a completed P4/P5 100-mob paid screen.
     live_attempted = 0
     live_verified = 0
     live_killed = 0
@@ -371,7 +371,6 @@ def score_source_priest_l20_candidates(binary: str | Path,
                     live = world_screen(binary, execution_request)
                     if (isinstance(live, dict)
                             and live.get("native_2d_fight_ack_complete") is True
-                            and live.get("native_2d_world_target_killed") is True
                             and persistent_world is not None):
                         persistent_attempted += 1
                         try:
@@ -429,12 +428,15 @@ def score_source_priest_l20_candidates(binary: str | Path,
                     if live_kill_candidate is None:
                         live_kill_candidate = candidate["candidate"]
                         live_kill_request_sha256 = candidate["native_request_sha256"]
-                    # A lethal one-mob ACK is not a retained-actor screen.
-                    # If this paid candidate cannot continue across targets,
-                    # let another *already native-paid* build attempt the
-                    # same causal persistent world, without extra scoring.
+                    # A one-mob kill does not by itself satisfy the retained
+                    # screen. If continuation failed, try another paid build.
                     if persistent_world is None or persistent_candidate is not None:
                         break
+                if persistent_candidate is not None:
+                    # A retained native actor that genuinely ACKed every
+                    # requested target is stronger evidence than the separate
+                    # one-fight diagnostic. Do not waste paid frontier work.
+                    break
             except (OSError, ValueError, RuntimeError, TimeoutError,
                     AssertionError, KeyError, TypeError,
                     subprocess.SubprocessError) as exc:
