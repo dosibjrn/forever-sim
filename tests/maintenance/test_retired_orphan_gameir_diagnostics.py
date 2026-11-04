@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # One-off Python SQLite unique-equip migration; no runtime or gate callers.
+    "tools/wf345_ingest_equipped_group.py",
     # Historical Warrior L30 SQLite/GameIR staging; current P3 uses selected
     # native item options and selected scorer, not staged Python item facts.
     "tools/wf368_warrior_l30_gear_runtime_bridge.py",
@@ -254,6 +256,7 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf345_ingest_equipped_group",
     "wf368_warrior_l30_gear_runtime_bridge",
     "wf370_warrior_l30_source_bis_stage",
     "m47_paladin_l20_selection",
