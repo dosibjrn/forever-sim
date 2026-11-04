@@ -1,0 +1,62 @@
+name: Work1 P7.4 frozen winner parity diagnostic (no M1)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/work1-p74-frozen-winner-parity-diagnostic.yml"
+      - "tools/diagnostics/p7_frozen_winner_parity.py"
+      - "integrations/mythicsim-rust/live_world_probe.py"
+      - "integrations/mythicsim-rust/port_native_typed_rng.py"
+      - "integrations/mythicsim-rust/engine"
+permissions:
+  contents: read
+
+jobs:
+  frozen-winner-parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_PROFILE_RELEASE_LTO: "off"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install the existing live 2D runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Verify exact selected Rust gitlink and apply the tracked RNG port
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          [[ -n "$recorded" && "$recorded" == "$actual" ]]
+          [[ "$(git -C "$engine" remote get-url origin)" == *"dosibjrn/mythicsim-forever-engine"* ]]
+          python integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
+          python integrations/mythicsim-rust/wf659_rng_boolean_audit.py "$engine/src"
+          grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
+          ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
+          echo "Selected Rust source: $actual" >> "$GITHUB_STEP_SUMMARY"
+      - name: Build the exact selected native Rust engine
+        working-directory: integrations/mythicsim-rust/engine
+        run: cargo build --release --locked --bin forever-engine
+      - name: Reproduce the exact frozen P7.4 winner with bounded no-record native/world pairs
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/p74-frozen-winner-parity.json"
+          python tools/diagnostics/p7_frozen_winner_parity.py \
+            --binary integrations/mythicsim-rust/engine/target/release/forever-engine \
+            --iterations 25 --out "$report"
+          {
+            echo
+            echo "## Exact frozen-winner no-record parity diagnostic"
+            echo
+            cat "$report"
+          } >> "$GITHUB_STEP_SUMMARY"
