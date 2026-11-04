@@ -35,6 +35,15 @@ RETIRED_TOOLS = (
     "tools/wf254_ingest_paladin_talents.py",
     "tools/wf257_ingest_flash_recovery.py",
     "tools/wf257_ingest_paladin_corridor.py",
+    # Retired one-shot GameIR/SQLite observation ingesters; no active native or gate callers.
+    "tools/wf437_ingest_critical_resource_source.py",
+    "tools/wf438_ingest_resource_actions.py",
+    "tools/wf439_ingest_channel_heal.py",
+    "tools/wf440_ingest_direct_control.py",
+    "tools/wf440_ingest_next_cast_instant.py",
+    "tools/wf441_ingest_active_periodic_heal.py",
+    "tools/wf441_ingest_spatial_charge.py",
+    "tools/wf471_ingest_enemy_ap.py",
     # Historical one-shot Python item/stat source stagers; staged SQLite data and consumers remain.
     "tools/wf346_type_resistance_equipment.py",
     "tools/wf385_stage_mage_stamina.py",
