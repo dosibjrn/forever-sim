@@ -86,3 +86,29 @@ def test_feral_bounded_sample_is_never_full_acceptance(tmp_path, monkeypatch):
     result = gate.run_live(tmp_path, "druid", 60, spec="feral")
     assert result["status"] == "BLOCKED"
     assert result["reasons"] == ["P7_1_PINNED_RUST_BINARY_MISSING"]
+
+
+def test_p71_cli_exposes_actual_native_dps_and_frozen_comparator(monkeypatch, capsys):
+    """CLI receipt forwarding only; no synthetic gate PASS or M1 write."""
+    import json
+    from tools import wf_gate as cli
+
+    monkeypatch.setattr(cli, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_1_DPS_BELOW_APPROVED_99_PERCENT_FLOOR"],
+        "native_dps": 792.3,
+        "saved_reference_dps": gate.FERAL_REFERENCE_DPS,
+        "required_dps": gate.FERAL_REFERENCE_DPS * 0.99,
+        "reference_profile": "feral",
+        "selected_validation": "1000_native_stochastic_fights",
+        "iterations": 1000,
+    })
+    assert cli.main(["--class", "druid", "--level", "60",
+                     "--spec", "feral", "--gate", "P7.1"]) == 1
+    receipt = json.loads(capsys.readouterr().out)["results"][0]
+    assert receipt["status"] == "FAIL"
+    assert receipt["native_dps"] == 792.3
+    assert receipt["saved_reference_dps"] == gate.FERAL_REFERENCE_DPS
+    assert receipt["required_dps"] == pytest.approx(gate.FERAL_REFERENCE_DPS * 0.99)
+    assert receipt["reference_profile"] == "feral"
+    assert receipt["selected_validation"] == "1000_native_stochastic_fights"
