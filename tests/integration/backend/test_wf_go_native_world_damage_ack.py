@@ -54,10 +54,10 @@ def test_real_native_lethal_overkill_kills_gsim_target_without_losing_source_dam
     assert ack["world_after_sha256"] == state_hash(snapshot_gsim_world(rt))
 
 
-def test_buffered_native_hit_after_world_lethal_time_fails_before_hp_mutation():
-    # The first genuinely native hit kills the real world mob at time 0.
-    # A second, later native effect in the same buffered ACK is causally
-    # impossible: the Rust actor must stop and retarget after the lethal ACK.
+def test_buffered_events_after_world_death_are_consumed_without_postmortem_effects():
+    # The native engine emits a complete tick batch before gsim can ACK the
+    # first lethal hit. Preserve every source ordinal in the ACK, but do not
+    # apply later overkill or control events to the dead world target.
     rt, tick, reply = fixture()
     target = rt.targets["m1"]
     target.health = target.max_health = 10.0
@@ -71,11 +71,42 @@ def test_buffered_native_hit_after_world_lethal_time_fails_before_hp_mutation():
         {**first, "event_id": "native-effect-2",
          "native_time_ns": 100_000_000},
     ]
-    before = target.health
-    with pytest.raises(NativeDamageWorldApplicationError,
-                       match="WORLD_DAMAGE_ACK_NATIVE_EVENT_AFTER_WORLD_DEATH"):
-        GsimNativeDamageWorldApplier(rt).apply(tick, reply)
-    assert target.health == before and target.alive
+    reply["native_control_events"] = [{
+        "event_id": "native-effect-3",
+        "effect_kind": "control",
+        "control_id": "root",
+        "duration_ns": 1_000_000_000,
+        "break_semantics_status": "unimplemented",
+        "native_time_ns": 100_000_000,
+        "damage": 0.0,
+        "source_action_id": "SpellID: 339",
+        "rank": 1,
+        "landed": True,
+        "crit": False,
+        "periodic": False,
+        "native_target_index": 0,
+        "native_target_unit_index": 1,
+        "native_target_label": "native-enemy",
+        "native_caster_type": "",
+        "native_caster_unit_index": 0,
+        "native_caster_label": "",
+    }]
+    ack = GsimNativeDamageWorldApplier(rt).apply(tick, reply)
+    assert target.health == 0.0 and not target.alive
+    assert ack["applied_event_ids"] == [
+        "native-effect-1", "native-effect-2", "native-effect-3"]
+    assert ack["applied_damage_event_ids"] == [
+        "native-effect-1", "native-effect-2"]
+    assert ack["applied_native_damage"] == 150.0
+    assert ack["world_target_health_before"] == 10.0
+    assert ack["world_target_health_after"] == 0.0
+    assert ack["acknowledged_control_event_ids"] == ["native-effect-3"]
+    assert ack["applied_control_event_ids"] == []
+    assert ack["acknowledged_control_events"][0]["world_application_status"] == (
+        "discarded_after_target_death")
+    assert "root" not in target.active_controls
+    assert ack["world_after_sha256"] == state_hash(snapshot_gsim_world(rt))
+    assert ack["world_after_sha256"] != ack["world_before_sha256"]
 
 
 def test_simultaneous_lethal_native_hits_remain_atomic_on_gsim_target():

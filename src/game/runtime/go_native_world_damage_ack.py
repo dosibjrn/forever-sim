@@ -126,6 +126,10 @@ class GsimNativeDamageWorldApplier:
         # Damage and control share one gapless source-native event ordinal.
         # The wire keeps separate arrays, so merge them before validating or
         # applying anything; never let a control event disappear between IDs.
+        # A native batch can already contain events later than its first lethal
+        # timestamp: the engine cannot observe gsim death until this ACK. Consume
+        # the complete ordered journal, but only effects seen while the target
+        # was alive may mutate its world state.
         ordered = []
         for kind, batch in (("damage", events), ("control", control_events)):
             for event in batch:
@@ -144,7 +148,6 @@ class GsimNativeDamageWorldApplier:
         ordered.sort(key=lambda item: item[0])
 
         health_at_event = old_health
-        lethal_native_time_ns = None
         target_identity = self._native_target_identity
         ids = []
         damage_ids = []
@@ -195,25 +198,19 @@ class GsimNativeDamageWorldApplier:
                     and timestamp < self._target_handoff_ns):
                 raise NativeDamageWorldApplicationError(
                     "WORLD_DAMAGE_ACK_EVENT_BEFORE_TARGET_HANDOFF")
-            if lethal_native_time_ns is not None and timestamp > lethal_native_time_ns:
-                raise NativeDamageWorldApplicationError(
-                    "WORLD_DAMAGE_ACK_NATIVE_EVENT_AFTER_WORLD_DEATH")
-
             if kind == "damage":
                 if (type(value) not in (float, int) or not isfinite(value) or value <= 0
                         or event.get("control_id") is not None
                         or event.get("duration_ns") is not None
                         or event.get("break_semantics_status") is not None):
                     raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_SOURCE_EVENT_INVALID")
+                world_effect_allowed = health_at_event > 0.0
                 health_at_event = max(0.0, health_at_event - float(value))
-                if health_at_event == 0.0 and lethal_native_time_ns is None:
-                    lethal_native_time_ns = timestamp
                 damage += float(value)
                 damage_ids.append(event_id)
             else:
                 duration_ns = event.get("duration_ns")
-                if (health_at_event <= 0.0
-                        or type(value) not in (float, int) or not isfinite(value) or value != 0
+                if (type(value) not in (float, int) or not isfinite(value) or value != 0
                         or event.get("control_id") != "root"
                         or type(duration_ns) is not int or duration_ns <= 0
                         or event.get("break_semantics_status") != "unimplemented"
@@ -224,8 +221,9 @@ class GsimNativeDamageWorldApplier:
                         or caster_type != "" or caster_index != 0 or caster_label != ""
                         or not _roots_action_matches_rank(source_action_id, event["rank"])):
                     raise NativeDamageWorldApplicationError("WORLD_DAMAGE_ACK_CONTROL_EVENT_INVALID")
+                world_effect_allowed = health_at_event > 0.0
             ids.append(event_id)
-            validated.append((kind, event))
+            validated.append((kind, event, world_effect_allowed))
             last_event_id = ordinal
             last_native_time = timestamp
             target_identity = current_native_target
@@ -237,15 +235,22 @@ class GsimNativeDamageWorldApplier:
         acknowledged_control_events = []
         applied_control_ids = []
         applied_control_events = []
-        for kind, event in validated:
+        for kind, event, world_effect_allowed in validated:
             if kind == "damage":
-                target.apply_damage(float(event["damage"]))
+                # A buffered overkill event is still consumed in native
+                # ordinal order, but cannot mutate the already-dead world mob.
+                if world_effect_allowed:
+                    target.apply_damage(float(event["damage"]))
                 continue
             # ACK every valid source event, but preserve its absolute source
             # expiry. If a pre-pull root has already expired before the first
             # world boundary, consume the event without inventing a live root.
             acknowledged_control_ids.append(event["event_id"])
             acknowledged = dict(event)
+            if not world_effect_allowed:
+                acknowledged["world_application_status"] = "discarded_after_target_death"
+                acknowledged_control_events.append(acknowledged)
+                continue
             world_time_s = float(self._runtime.actor.current_time_s)
             remaining_ns = int(event["native_time_ns"]) + int(event["duration_ns"]) - clock_ns
             if remaining_ns <= 0:
@@ -308,7 +313,7 @@ class GsimNativeDamageWorldApplier:
             "acknowledged_control_event_ids": acknowledged_control_ids,
             "acknowledged_control_events": acknowledged_control_events,
             "applied_control_event_ids": applied_control_ids,
-            "applied_events": [dict(event) for _, event in validated],
+            "applied_events": [dict(event) for _, event, _ in validated],
             "applied_control_events": applied_control_events,
             "applied_native_damage": damage,
             "world_target_health_before": old_health,
