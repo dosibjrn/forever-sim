@@ -388,6 +388,16 @@ def score_source_priest_l20_candidates(binary: str | Path,
                                     # after only two ACKed kills. Keep the
                                     # exact count on the same paid candidate.
                                     or retained["native_2d_persistent_world_targets_killed"] != persistent_target_count
+                                    # The 100-target frontier must carry real
+                                    # source-native action event observations
+                                    # for this exact retained actor, not just
+                                    # a native kill/ACK counter.
+                                    or (persistent_target_count == 100 and (
+                                        type(retained.get("native_2d_persistent_source_action_events")) is not int
+                                        or retained["native_2d_persistent_source_action_events"] <= 0
+                                        or not isinstance(retained.get(
+                                            "native_2d_persistent_source_action_counts_by_target"), list)
+                                        or len(retained["native_2d_persistent_source_action_counts_by_target"]) != 100))
                                     or retained.get("native_2d_screen_complete") is not False):
                                 raise RuntimeError("PRIEST_L20_PERSISTENT_WORLD_RECEIPT_INVALID")
                             candidate["native_2d_persistent_world"] = retained
