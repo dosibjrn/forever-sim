@@ -333,14 +333,12 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
                                   mob_spacing_yards: float = 0.0,
                                   movement_speed_yards_s: float = 7.0,
                                   pack_size: int = 1,
-                                  settle_final_recovery: bool = True,
                                   trace_pulls: bool = False) -> dict:
-    """Exactly `mobs` kills on one ActorState.
+    """Exactly `mobs` kills on one ActorState, including final recovery.
 
-    Default full-final-recovery semantics preserve the 100mob benchmark.
-    Quest horizon explicitly ends at the last kill without paying recovery
-    that the requested quest does not require.  Optional traces expose
-    executed recovery/cooldowns; no proxy estimator changes runtime scoring.
+    Every requested mob pays its full final recovery, preserving the
+    100-mob leveling objective. Optional traces expose executed
+    recovery/cooldowns; no proxy estimator changes runtime scoring.
     """
     if mobs<1:
         raise ValueError('mobs must be positive')
@@ -352,8 +350,8 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         raise ValueError('max_cpu_s must be finite and positive')
     if type(pack_size) is not int or not 1 <= pack_size <= mobs:
         raise ValueError('INVALID_SOURCE_2D_PACK_SIZE')
-    if pack_size > 1 and (not settle_final_recovery or trace_pulls):
-        raise ValueError('QUEST_HORIZON_SEQUENTIAL_ONLY_NOT_SILENTLY_2D_APPROXIMATED')
+    if pack_size > 1 and trace_pulls:
+        raise ValueError('PERSISTENT_PACK_TRACE_UNSUPPORTED')
     if pack_size > 1:
         return _evaluate_concurrent_source_packs(candidate,level=level,mobs=mobs,
             pack_size=pack_size,max_total_events=max_total_events,
@@ -495,15 +493,8 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         used_long_cooldowns={aid:sum(a['action_id']==aid for a in result.selected_actions)
                              for aid in long_actions}
         used_long_cooldowns={k:v for k,v in used_long_cooldowns.items() if v}
-        final_unsettled=bool(index==mobs-1 and not settle_final_recovery)
         try:
-            if final_unsettled:
-                recovery_s=0.0
-                must_be_full=False
-                recovery=None
-                step={'events':0,'full_recovery':False,'hot_cast':False,
-                      'water_s':0.0,'food_s':0.0,'recovery_method':None}
-            elif recovery_policy is None:
+            if recovery_policy is None:
                 recovery=recover_actor_to_full(actor=actor,level=level,actions=ir.actions,
                     start_time_s=float(timeline.target_death_s),
                     healing_power=float(actor.stats.get('spell_power',0.0)),
@@ -552,14 +543,10 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
                 'companion_after_recovery':_persistent_companion_state_receipt(companions),
                 'health_mana_energy_after_recovery':{key:actor.resource_amount(key)
                     for key in ('health','mana','energy')},
-                'full_recovery':False if final_unsettled else
-                    (True if recovery_policy is None else bool(step['full_recovery'])),
-                'water_s':0.0 if final_unsettled else (float(recovery.water_s)
-                    if recovery_policy is None else float(step.get('water_s',0.0))),
-                'food_s':0.0 if final_unsettled else (float(recovery.food_s)
-                    if recovery_policy is None else float(step.get('food_s',0.0))),
-                'recovery_method':None if final_unsettled else (recovery.method
-                    if recovery_policy is None else step.get('recovery_method')),
+                'full_recovery':True if recovery_policy is None else bool(step['full_recovery']),
+                'water_s':float(recovery.water_s) if recovery_policy is None else float(step.get('water_s',0.0)),
+                'food_s':float(recovery.food_s) if recovery_policy is None else float(step.get('food_s',0.0)),
+                'recovery_method':recovery.method if recovery_policy is None else step.get('recovery_method'),
                 'long_cooldown_timer_ready_at_pull':ready_long_cooldowns,
                 'long_cooldowns_used':used_long_cooldowns,
                 'long_cooldowns_not_ready_at_kill':{
@@ -570,7 +557,7 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         if not actor.resource_positive('health') or (must_be_full and
             abs(float(actor.resources['health'])-float(actor.resource_capacity['health']))>1e-7):
             return {'status':'BLOCKED_INCOMPLETE_RECOVERY','mob':index+1}
-        events+=runtime.event_transitions+(0 if final_unsettled else (int(step['events']) if recovery_policy is not None else int(recovery.periodic_recovery_events)));skip_count+=len(skipped)
+        events+=runtime.event_transitions+(int(step['events']) if recovery_policy is not None else int(recovery.periodic_recovery_events));skip_count+=len(skipped)
         if (max_total_events is not None and events>max_total_events) or (max_cpu_s is not None and process_time()-cpu_begin>max_cpu_s):
             return {'status':'BLOCKED_EVALUATION_COMPUTE_BUDGET',
                 'mob_completed':index+1,'events':events,'elapsed_cpu_s':process_time()-cpu_begin,
@@ -611,7 +598,7 @@ def evaluate_persistent_candidate(candidate: PreparedCandidate, *, level: int, m
         'source_action_counts':dict(sorted(executed_source_actions.items())),
         'source_control_proc_attempts':control_proc_attempts,
         'source_control_proc_triggered':control_proc_triggered,
-        'settle_final_recovery':bool(settle_final_recovery),
+        'settle_final_recovery':True,
         **({'long_cooldown_source_actions_s':long_actions} if trace_pulls else {}),
         'final_resources':{key:actor.resource_amount(key) for key in ('health','mana','energy')},
         **({'pull_trace':pull_trace,'pull_trace_audit':trace_audit} if trace_pulls else {}),
