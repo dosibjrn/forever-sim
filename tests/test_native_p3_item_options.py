@@ -2,6 +2,7 @@
 import json
 import subprocess
 import sys
+from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import patch
 
@@ -146,3 +147,31 @@ def test_native_p3_partial_unknown_is_measured_but_not_certified():
     assert report["verified_stat_assertions"] == 1
     assert "NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:2267" in report["blockers"]
     assert report["p3_pass"] is False
+
+
+
+@pytest.mark.parametrize("class_key", ["priest", "mage"])
+def test_native_p3_live_gate_fails_closed_without_binary(monkeypatch, class_key):
+    from tools.wf_gate_p3_live import run_live
+
+    monkeypatch.delenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", raising=False)
+    report = run_live(Path("."), class_key, 20)
+    assert report == {
+        "status": "BLOCKED",
+        "reasons": ["P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED"],
+        "production_component": "src.game.native_p3_item_options",
+    }
+
+
+def test_m1_recorder_builds_exact_native_binary_for_priest_mage_p3_only():
+    workflow = Path(".github/workflows/m1-on-demand-record.yml").read_text()
+    assert "p3_native_needed=false" in workflow
+    assert 'IFS=: read -r class level spec gate <<< "$entry"' in workflow
+    assert 'if [[ "$gate" == P3 && ( "$class" == priest || "$class" == mage ) ]]; then' in workflow
+    assert "p3_native_needed=true" in workflow
+    assert "if: steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
+    assert 'git submodule update --init --depth 1 "$engine"' in workflow
+    assert 'git ls-tree HEAD -- "$engine"' in workflow
+    assert "RUST_FORK_SUBMODULE_PIN_MISMATCH" in workflow
+    assert 'cargo build --release --locked --manifest-path "$engine/Cargo.toml" --bin forever-engine' in workflow
+    assert "FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine" in workflow
