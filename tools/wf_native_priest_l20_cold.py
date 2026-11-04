@@ -135,6 +135,66 @@ def _verified_route(receipt: dict) -> float | None:
     return _paid_route_seconds_per_mob(receipt, 100)
 
 
+def _native_cold_winner_receipt_valid(cold: dict, window: str) -> bool:
+    """Verify the selected paid build, frozen clock and same-build 100 kills."""
+    is_early = window == "P4"
+    selection = cold.get("native_cold_30s_paid_selection" if is_early
+                         else "native_cold_300s_paid_selection")
+    winner = cold.get("native_cold_snapshot_30" if is_early
+                      else "native_cold_final_300")
+    if not isinstance(selection, dict) or not isinstance(winner, dict):
+        return False
+    cutoff = 30.0 if is_early else 300.0
+    completed = selection.get("paid_completed_elapsed_s")
+    world_seconds = _verified_route(winner.get("real_100mob_receipt"))
+    return (type(completed) in (int, float) and math.isfinite(completed)
+            and 0 <= completed <= cutoff
+            and selection.get("source_request_sha256")
+                == winner.get("source_request_sha256")
+            and isinstance(selection.get("source_request_sha256"), str)
+            and len(selection["source_request_sha256"]) == 64
+            and selection.get("source_build") == winner.get("source_build")
+            and world_seconds is not None
+            and type(winner.get("route_s_per_mob")) in (float, int)
+            and math.isclose(world_seconds, winner["route_s_per_mob"],
+                             rel_tol=1e-12))
+
+
+def native_cold_gate_verdicts(cold: dict) -> dict:
+    """P4 and P5 use the same cold run but accept independently.
+
+    Every positive predicate is sourced from real paid search/world receipts.
+    A native-executed talent/APL contrast provides the Priest L20 unlock
+    comparison; a proposed-but-uncast action earns nothing. No gate-only
+    combat model, actor revalidation or extra acceptance certificate.
+    """
+    common = []
+    if cold.get("native_cold_300s_reached") is not True:
+        common.append("P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED")
+    witnesses = cold.get("native_cold_talent_action_witnesses")
+    if not (isinstance(witnesses, list) and any(
+            isinstance(w, dict) and w.get("source_talents_changed") is True
+            and type(w.get("native_casts")) is int and w["native_casts"] > 0
+            and isinstance(w.get("native_action_id"), str)
+            for w in witnesses)):
+        common.append("P4_P5_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED")
+    verdicts = {}
+    for gate in ("P4", "P5"):
+        reasons = list(common)
+        if not _native_cold_winner_receipt_valid(cold, gate):
+            reasons.append(gate + "_FROZEN_WINNER_REAL_100MOB_RECEIPT_INCOMPLETE")
+        if gate == "P5":
+            if (type(cold.get("native_cold_native_paid_after_30")) is not int
+                    or cold["native_cold_native_paid_after_30"] < 1):
+                reasons.append("P5_NO_REAL_PAID_CONTINUATION_AFTER_30S")
+            if (type(cold.get("native_cold_paid_world_route_builds")) is not int
+                    or cold["native_cold_paid_world_route_builds"] < 2):
+                reasons.append("P5_DISTINCT_REAL_PAID_WORLD_BUILDS_MISSING")
+        verdicts[gate] = {"status": "FAIL" if reasons else "PASS",
+                          "reasons": reasons}
+    return verdicts
+
+
 def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                                item_options: list[dict], *, score_request=None,
                                world_screen=None, clock=None,
@@ -398,7 +458,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         frozen = copy.deepcopy(best_early)
     # Exhausted candidate spaces and late native calls are reported honestly.
     # The caller may not infer a completed 300s search from a successful exit.
-    return {
+    result = {
         "native_cold_search_wall_s": wall_s,
         "native_cold_search_budget_s": budget_s,
         "native_cold_snapshot_cutoff_s": snapshot_s,
@@ -430,3 +490,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_source": "MYTHICSIM_SOURCE_OPTIONS_PAID_100MOB_NATIVE_2D",
         "native_cold_rows": rows,
     }
+    result["native_cold_gate_verdicts"] = native_cold_gate_verdicts(result)
+    result["native_cold_gate_accepted"] = all(
+        v["status"] == "PASS" for v in result["native_cold_gate_verdicts"].values())
+    return result
