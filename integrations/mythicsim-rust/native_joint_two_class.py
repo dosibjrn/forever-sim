@@ -26,7 +26,8 @@ from native_joint_composition import (
 from native_l60_matrix import (
     HEAL, TANK, ROOT, create_inventory, digest, fingerprint, player,
 )
-from native_executor import objective_action_fields, objective_metric_path, run
+from native_executor import (native_action_cast_receipts, objective_action_fields,
+                             objective_metric_path, run)
 from native_source_donors import load_source_donor_fixtures
 
 
@@ -257,6 +258,7 @@ def native_score_request(
         "native_duration_s": elapsed,
         "native_status": "VALID",
         "raw_response_sha256": fingerprint(raw),
+        "native_action_cast_receipts": native_action_cast_receipts(raw),
     }, raw
 
 

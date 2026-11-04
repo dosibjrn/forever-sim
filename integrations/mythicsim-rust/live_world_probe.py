@@ -84,14 +84,16 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
         facing_switch_at_s: float | None = None,
         distance_switch_at_s: float | None = None,
         distance_after_switch_yards: float | None = None,
-        rng_mode: str) -> dict:
+        rng_mode: str, expected_target_level: int = 63) -> dict:
     if rng_mode not in ("balanced", "stochastic"):
         raise ValueError("RUST_WORLD_RNG_MODE_INVALID")
     raw = request.read_bytes()
     source = json.loads(raw)
     players = [p for party in source["raid"]["parties"] for p in party["players"]]
     assert len(players) == 1 and len(source["encounter"]["targets"]) == 1
-    assert source["encounter"]["targets"][0]["level"] == 63
+    if (type(expected_target_level) is not int or expected_target_level <= 0
+            or source["encounter"]["targets"][0]["level"] != expected_target_level):
+        raise ValueError("RUST_WORLD_SOURCE_TARGET_LEVEL_MISMATCH")
     if type(iterations) is not int or iterations < 1:
         raise ValueError("RUST_WORLD_ITERATIONS_INVALID")
     # Keep the standalone native control and the live world on byte-identical
@@ -111,7 +113,8 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             raise ValueError("RUST_WORLD_RANGE_SWITCH_INVALID")
     elif distance_after_switch_yards is not None:
         raise ValueError("RUST_WORLD_RANGE_SWITCH_WITHOUT_CLOCK")
-    source_target_health = source_target_health_from_request(raw)
+    source_target_health = source_target_health_from_request(
+        raw, expected_target_level=expected_target_level)
     world = feed = applier = None
     raw_sha = hashlib.sha256(raw).hexdigest()
     # Rust's prepared request identity is SHA256 of deterministic protobuf

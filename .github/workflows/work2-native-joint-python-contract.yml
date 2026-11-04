@@ -16,6 +16,7 @@ on:
       - integrations/mythicsim-rust/native_joint_composition.py
       - integrations/mythicsim-rust/native_source_donors.py
       - integrations/mythicsim-rust/tests/test_native_joint_two_class.py
+      - integrations/mythicsim-rust/tests/test_native_l20_paid_cast_receipts.py
       - integrations/mythicsim-rust/tests/test_native_joint_composition.py
       - integrations/mythicsim-rust/tests/test_native_source_donors.py
       - integrations/mythicsim-rust/tests/test_native_matrix_contract.py
@@ -45,6 +46,7 @@ jobs:
       - name: Run native JOINT Python contract tests
         run: |
           python integrations/mythicsim-rust/tests/test_native_joint_two_class.py -v
+          python integrations/mythicsim-rust/tests/test_native_l20_paid_cast_receipts.py -v
           python integrations/mythicsim-rust/tests/test_native_joint_composition.py -v
           python integrations/mythicsim-rust/tests/test_native_gear_adapter.py -v
           python integrations/mythicsim-rust/tests/test_native_source_donors.py -v

@@ -1,0 +1,111 @@
+{
+  "encounter": {
+    "duration": 90,
+    "durationVariation": 0,
+    "executeProportion20": 0.2,
+    "executeProportion25": 0.25,
+    "executeProportion35": 0.35,
+    "executeProportion45": 0.45,
+    "executeProportion90": 0.9,
+    "targets": [
+      {
+        "canCrush": true,
+        "damageSpread": 0,
+        "id": 213336,
+        "level": 20,
+        "minBaseDamage": 0,
+        "name": "CMaNGOS Classic-proxy level 20 ordinary melee",
+        "parryHaste": true,
+        "stats": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          484,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "swingSpeed": 2
+      }
+    ]
+  },
+  "raid": {
+    "parties": [
+      {
+        "players": [
+          {
+            "channelClipDelayMs": 100,
+            "class": "ClassPriest",
+            "distanceFromTarget": 20,
+            "dpsPriest": {
+              "options": {
+                "classOptions": {}
+              }
+            },
+            "equipment": {
+              "items": []
+            },
+            "name": "source-priest-talent-smite",
+            "race": "RaceHuman",
+            "reactionTimeMs": 100,
+            "rotation": {
+              "type": "TypeAPL",
+              "priorityList": [
+                {
+                  "action": {
+                    "castSpell": {
+                      "spellId": {
+                        "spellId": 585
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "talentsString": "1-0-0",
+            "level": 20
+          }
+        ]
+      }
+    ]
+  },
+  "simOptions": {
+    "debugFirstIteration": false,
+    "iterations": 1,
+    "randomSeed": "42"
+  }
+}

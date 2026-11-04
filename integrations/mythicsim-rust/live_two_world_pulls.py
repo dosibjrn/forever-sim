@@ -190,13 +190,95 @@ def _native_mana_continuity(windows: list[dict], target_count: int) -> dict:
                 or mana < 0):
             raise AssertionError("RUST_MULTI_WORLD_NATIVE_MANA_INVALID")
         after_kill.append(float(mana))
-    return {
+    # The selected Rust fork reports actual native mana-tick gains per kill.
+    # Keep these separate from paid between-pull rest: combat regeneration is
+    # not proof that the actor recovered while travelling or drinking.
+    presence = [
+        (("native_combat_mana_regen_actual_gain" in window),
+         ("native_combat_mana_regen_events" in window))
+        for window in windows
+    ]
+    if all(not gain and not events for gain, events in presence):
+        regen_gains = regen_events = None  # Older native pin: unobserved.
+    else:
+        if not all(gain and events for gain, events in presence):
+            raise AssertionError("RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INCOMPLETE")
+        regen_gains, regen_events = [], []
+        for window in windows:
+            gain = window["native_combat_mana_regen_actual_gain"]
+            events = window["native_combat_mana_regen_events"]
+            if (type(gain) not in (int, float) or not isfinite(gain)
+                    or gain < 0 or type(events) is not int or events < 0
+                    or (gain > 0 and events == 0)):
+                raise AssertionError("RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INVALID")
+            regen_gains.append(float(gain))
+            regen_events.append(events)
+    receipt = {
         "native_actor_mana_after_world_kills": after_kill,
         "native_actor_mana_delta_between_world_kills": [
             current - previous for previous, current
             in zip(after_kill, after_kill[1:])
         ],
         "minimum_native_actor_mana": min(after_kill),
+    }
+    # Preserve the established response shape for an older selected engine.
+    # Missing native regeneration is not a fabricated zero-gain observation.
+    if regen_gains is not None:
+        receipt.update({
+            "native_combat_mana_regen_observed": True,
+            "native_combat_mana_regen_actual_gain_by_target": regen_gains,
+            "native_combat_mana_regen_events_by_target": regen_events,
+        })
+    return receipt
+
+
+def _native_paid_recovery_receipts(windows: list[dict], kills: list[dict]) -> dict:
+    """Carry only source-Rust regeneration actually paid on the ACKed 2D clock.
+
+    Older pins lacking native tick receipts remain unobserved. A timed pause
+    without a native regeneration event cannot by itself certify recovery.
+    """
+    if not windows or len(windows) != len(kills):
+        raise AssertionError("RUST_WORLD_PAID_RECOVERY_TARGET_COUNT_INVALID")
+    present = [
+        isinstance(window, dict)
+        and "native_passive_recovery_ns" in window
+        and "native_passive_recovery_ticks" in window
+        for window in windows
+    ]
+    if not any(present):
+        return {
+            "native_passive_recovery_observed": False,
+            "native_passive_recovery_ns_by_target": None,
+            "native_passive_recovery_ticks_by_target": None,
+            "paid_recovery": False,
+        }
+    if not all(present):
+        raise AssertionError("RUST_WORLD_PAID_RECOVERY_RECEIPT_INCOMPLETE")
+    elapsed, ticks_by_target = [], []
+    for index, window in enumerate(windows):
+        ns = window["native_passive_recovery_ns"]
+        ticks = window["native_passive_recovery_ticks"]
+        if type(ns) is not int or ns < 0 or type(ticks) is not int or ticks < 0:
+            raise AssertionError("RUST_WORLD_PAID_RECOVERY_RECEIPT_INVALID")
+        if index == 0:
+            if ns != 0 or ticks != 0:
+                raise AssertionError("RUST_WORLD_FIRST_TARGET_HAS_UNPAID_RECOVERY")
+        else:
+            between_kills_ns = (
+                kills[index]["world_kill_clock_ns"]
+                - kills[index - 1]["world_kill_clock_ns"]
+            )
+            if ns > between_kills_ns or (ns == 0 and ticks > 0):
+                raise AssertionError("RUST_WORLD_PAID_RECOVERY_CLOCK_INVALID")
+        elapsed.append(ns)
+        ticks_by_target.append(ticks)
+    return {
+        "native_passive_recovery_observed": True,
+        "native_passive_recovery_ns_by_target": elapsed,
+        "native_passive_recovery_ticks_by_target": ticks_by_target,
+        "paid_recovery": all(ns > 0 and ticks > 0
+                             for ns, ticks in zip(elapsed[1:], ticks_by_target[1:])),
     }
 
 
@@ -325,8 +407,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         require_native_moving: bool = False,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
-        require_native_zero_health_damage: bool = False) -> dict:
+        require_native_zero_health_damage: bool = False,
+        rng_mode: str = "stochastic") -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_MULTI_WORLD_RNG_MODE_INVALID")
     if require_native_health_damage and require_native_zero_health_damage:
         raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
@@ -382,7 +467,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     proc = subprocess.Popen(
         [str(binary.resolve()), "native-world-pulls", "--infile",
          str(prepared.resolve()), "--targets", str(target_count),
-         "--rng-mode", "stochastic"],
+         "--rng-mode", rng_mode],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
@@ -487,7 +572,13 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 raise AssertionError(("RUST_TWO_WORLD_FORGED_ACK_NOT_REJECTED", status, stderr[-2000:]))
             return {"forged_ack_rejected": True, "native_events": events}
         if status != 0:
-            raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", status, stderr[-3000:]))
+            # The selected Rust actor can run dry before target 100.  The
+            # native process exits nonzero, but each preceding lethal ACK was
+            # already applied by this same gsim world.  Forward that observed
+            # count and native event count to the real gate candidate scorer;
+            # a failed session still cannot become a completed world screen.
+            raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", status,
+                                  stderr[-3000:], len(kills), events))
         if native_report is None or len(kills) != target_count or events < target_count:
             raise AssertionError(("RUST_TWO_WORLD_KILLS_NOT_COMPLETED", native_report, kills, events))
         result = native_report["result"]
@@ -495,7 +586,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 or result["world_targets_killed"] != target_count
                 or not result["continuous_native_actor"]
                 or not result["actual_2d_ack"]
-                or result["paid_recovery"]
+                or type(result.get("paid_recovery")) is not bool
                 or len(result["windows"]) != target_count
                 or any(b["native_kill_ns"] <= a["native_kill_ns"]
                        for a, b in zip(result["windows"], result["windows"][1:]))
@@ -510,6 +601,9 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             result["windows"], target_count)
         native_mana = _native_mana_continuity(
             result["windows"], target_count)
+        recovery = _native_paid_recovery_receipts(result["windows"], kills)
+        if result["paid_recovery"] is not recovery["paid_recovery"]:
+            raise AssertionError("RUST_WORLD_NATIVE_PAID_RECOVERY_FLAG_MISMATCH")
         native_health_damage = _native_health_damage_summary(
             result["windows"], require_positive=require_native_health_damage,
             require_zero=require_native_zero_health_damage)
@@ -524,6 +618,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "native_windows": result["windows"], "world_kills": kills,
             "minimum_native_actor_health": min_native_health,
             **native_mana,
+            **recovery,
             "native_health_damage": native_health_damage,
             "native_damage_events": events, "world_ticks": ticks,
             "native_gsim_moving_ticks": native_moving_ticks,
@@ -537,7 +632,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
             "gsim_route_legs": walks,
             "gsim_route_paid_receipts": route_receipts,
             "gsim_route_paid_movement_s": paid_world_movement_s,
-            "paid_recovery": False, "checkpoint_certified": False,
+            "checkpoint_certified": False,
         }
     finally:
         if proc.poll() is None:

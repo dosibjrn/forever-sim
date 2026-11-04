@@ -1,0 +1,681 @@
+"""Paid native Priest L20 whole-build entry for the active P4/P5 search.
+
+The request is an explicit source/native build, not one reconstructed from
+Forever GameIR. MythicSim decides whether it can prepare and execute it.
+This transport does NOT certify the paid native/2D 100-mob screen.
+"""
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+def _native_scorer():
+    # The selected native subprocess adapter lives in the existing integration.
+    integration = Path(__file__).resolve().parents[1] / "integrations" / "mythicsim-rust"
+    if str(integration) not in sys.path:
+        sys.path.insert(0, str(integration))
+    from native_joint_two_class import native_score_request
+    return native_score_request
+
+
+def _source_cast_identifiers(player: dict) -> set[str]:
+    """Preserve exact native ActionID identity; never infer game legality."""
+    rotation = player.get("rotation")
+    actions = rotation.get("priorityList") if isinstance(rotation, dict) else None
+    if not isinstance(actions, list):
+        return set()
+    ids = set()
+    for entry in actions:
+        action = entry.get("action") if isinstance(entry, dict) else None
+        cast = action.get("castSpell") if isinstance(action, dict) else None
+        identity = cast.get("spellId") if isinstance(cast, dict) else None
+        if isinstance(identity, dict) and identity:
+            ids.add(json.dumps(identity, sort_keys=True, separators=(",", ":")))
+    return ids
+
+
+def score_source_priest_l20(binary: str | Path, request_file: str | Path, *,
+                            score_request=None, budget_s: float = 6.0) -> dict:
+    """Pay for one *real* selected-Rust complete request, with no gate credit.
+
+    Callers must supply an existing, inspectable level-20 Priest source request.
+    Never silently rewrite a level-60 actor, talents or APL into a L20 build.
+    """
+    try:
+        request = json.loads(Path(request_file).read_text(encoding="utf-8"))
+        player = request["raid"]["parties"][0]["players"][0]
+    except (OSError, ValueError, TypeError, KeyError, IndexError) as exc:
+        raise ValueError("P4_P5_NATIVE_SOURCE_REQUEST_UNREADABLE") from exc
+    if (not isinstance(player, dict) or player.get("class") != "ClassPriest"
+            or type(player.get("level")) is not int or player["level"] != 20
+            or not isinstance(request.get("simOptions"), dict)):
+        raise ValueError("P4_P5_NATIVE_PRIEST_L20_SOURCE_REQUEST_REQUIRED")
+    source_ids = _source_cast_identifiers(player)
+    if not source_ids:
+        raise ValueError("P4_P5_NATIVE_SOURCE_APL_CAST_REQUIRED")
+    scorer = score_request if score_request is not None else _native_scorer()
+    record, _raw = scorer(
+        Path(binary), request, iterations=1, seed=42, rng_mode="balanced",
+        deadline=time.monotonic() + budget_s, objective="DPS",
+    )
+    # Only exact native action IDs found in the supplied source APL count.
+    # In particular, tagged procs must not masquerade as source casts.
+    casts = {}
+    for receipt in record.get("native_action_cast_receipts") or ():
+        if not isinstance(receipt, dict) or not isinstance(receipt.get("id"), dict):
+            continue
+        count = receipt.get("casts")
+        if type(count) is not int or count <= 0:
+            continue
+        identity = json.dumps(receipt["id"], sort_keys=True, separators=(",", ":"))
+        if identity in source_ids:
+            casts[identity] = casts.get(identity, 0) + count
+    return {
+        "native_paid_whole_builds": 1,
+        "native_request_sha256": record["effective_request_sha256"],
+        "native_score": record["score"],
+        "native_score_objective": "DPS",
+        "native_source_action_casts": sum(casts.values()),
+        # Forward exact native ActionID identities, not inferred spell names.
+        # A gate can distinguish a real paid policy alternative from a
+        # source APL proposal whose new action never executed.
+        "native_source_action_cast_counts": casts,
+        "native_source_action_ids_cast": len(casts),
+        "native_source_action_id_count": len(source_ids),
+        "native_rng_mode": record["rng_mode"],
+        "native_actor_requested_level": 20,
+        # This is a single native fight; the independent paid 2D/100-mob
+        # source-action screen has deliberately NOT been run.
+        "native_2d_screen_complete": False,
+    }
+
+
+
+def couple_source_priest_l20_world(binary: str | Path,
+                                  request_file: str | Path, *, world_run=None) -> dict:
+    """Execute an actual single native↔gsim-2D ACKed fight for a paid L20 build.
+
+    This reuses the existing live-world production integration. A successful
+    single fight is NOT a continuous kill/recovery/100-mob P4/P5 screen.
+    """
+    from hashlib import sha256
+    from math import isfinite
+
+    path = Path(request_file)
+    source = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        actor = source["raid"]["parties"][0]["players"][0]
+        target = source["encounter"]["targets"]
+        distance = actor["distanceFromTarget"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("PRIEST_L20_WORLD_SOURCE_REQUEST_INCOMPLETE") from exc
+    if (actor.get("class") != "ClassPriest" or type(actor.get("level")) is not int
+            or actor["level"] != 20 or not isinstance(target, list)
+            or len(target) != 1 or target[0].get("level") != 20
+            or type(distance) not in (int, float) or not isfinite(distance)
+            or distance <= 0):
+        raise ValueError("PRIEST_L20_WORLD_ACTOR_TARGET_OR_DISTANCE_INVALID")
+    if world_run is None:
+        integration = Path(__file__).resolve().parents[1] / "integrations" / "mythicsim-rust"
+        if str(integration) not in sys.path:
+            sys.path.insert(0, str(integration))
+        from live_world_probe import run as world_run
+    proof = world_run(
+        Path(binary), path, distance=float(distance), iterations=1,
+        rng_mode="balanced", expected_target_level=20,
+    )
+    # The existing live-world runner checks native PID, protobuf identity,
+    # causal world ACKs, applied damage, and native↔world DPS parity.
+    if (proof.get("source_request_raw_sha256") != sha256(path.read_bytes()).hexdigest()
+            or proof.get("iterations_done") != 1
+            or type(proof.get("native_world_ticks")) is not int
+            or proof["native_world_ticks"] < 1
+            or type(proof.get("native_damage_events")) is not int
+            or proof["native_damage_events"] < 1):
+        raise RuntimeError("PRIEST_L20_LIVE_NATIVE_WORLD_RECEIPT_INCOMPLETE")
+    source_events = proof.get("source_action_events_before")
+    if not isinstance(source_events, dict) or not source_events:
+        raise RuntimeError("PRIEST_L20_LIVE_WORLD_SOURCE_ACTION_EVENTS_MISSING")
+    # Preserve the native bridge's event identifiers verbatim. These are NOT
+    # invented Python spell IDs or proof of all source APL ActionID casts.
+    return {
+        "native_2d_fight_ack_complete": True,
+        "native_2d_world_ticks": proof["native_world_ticks"],
+        "native_2d_world_damage_events": proof["native_damage_events"],
+        "native_2d_source_action_events": source_events,
+        "native_2d_source_request_proto_sha256": proof["source_request_proto_sha256"],
+        "native_2d_source_request_raw_sha256": proof["source_request_raw_sha256"],
+        "native_2d_world_target_killed": proof.get("world_target_lethal_fights") == 1,
+        "native_2d_screen_complete": False,
+    }
+
+
+def couple_source_priest_l20_persistent_world(binary: str | Path,
+                                             request_file: str | Path, *,
+                                             target_count: int = 2,
+                                             world_run=None) -> dict:
+    """Execute consecutive sourced targets on ONE native actor/2D ACK timeline.
+
+    This is a real native-world-pulls integration, not independent reset
+    fights. It deliberately does not claim paid recovery or P4/P5 completion.
+    """
+    from tempfile import TemporaryDirectory
+    from tools.wf_gsim_go_live_range_probe import source_target_health_from_request
+
+    if type(target_count) is not int or not 2 <= target_count <= 100:
+        raise ValueError("PRIEST_L20_PERSISTENT_TARGET_COUNT_INVALID")
+    path = Path(request_file)
+    source = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        player = source["raid"]["parties"][0]["players"][0]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("PRIEST_L20_PERSISTENT_SOURCE_REQUEST_INCOMPLETE") from exc
+    if (not isinstance(player, dict) or player.get("class") != "ClassPriest"
+            or type(player.get("level")) is not int or player["level"] != 20):
+        raise ValueError("PRIEST_L20_PERSISTENT_SOURCE_ACTOR_INVALID")
+    health = source_target_health_from_request(
+        path.read_bytes(), expected_target_level=20)
+    if world_run is None:
+        integration = Path(__file__).resolve().parents[1] / "integrations" / "mythicsim-rust"
+        if str(integration) not in sys.path:
+            sys.path.insert(0, str(integration))
+        from live_two_world_pulls import run as world_run
+    with TemporaryDirectory(prefix="priest-l20-persistent-native-") as folder:
+        prepared = Path(folder) / "prepared.json"
+        subprocess.run(
+            [str(Path(binary).resolve()), "prepare", "--request",
+             str(path.resolve()), "--outfile", str(prepared)],
+            check=True, capture_output=True, text=True, timeout=25)
+        native = json.loads(prepared.read_text(encoding="utf-8"))
+        actor = native.get("player", {})
+        if (not isinstance(actor, dict) or actor.get("class") != "ClassPriest"
+                or type(actor.get("level")) is not int or actor["level"] != 20
+                or not isinstance(native.get("request_sha256"), str)
+                or len(native["request_sha256"]) != 64):
+            raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_PREPARED_ACTOR_INVALID")
+        proof = world_run(
+            Path(binary), prepared, mob_health=health, target_count=target_count,
+            rng_mode="balanced")
+    if (not isinstance(proof, dict)
+            or proof.get("continuous_native_actor") is not True
+            or proof.get("actual_2d_ack") is not True
+            or type(proof.get("world_targets_killed")) is not int
+            or proof["world_targets_killed"] != target_count
+            or len(proof.get("native_windows", ())) != target_count
+            or type(proof.get("paid_recovery")) is not bool):
+        raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_WORLD_RECEIPT_INCOMPLETE")
+    # Native Rust already reports each target's *actual* source-action
+    # damage events in the retained actor's windows. Preserve those receipts
+    # for the P4/P5 paid screen instead of hiding them behind an aggregate
+    # one-fight cast count. A 100-target result with no such evidence is not
+    # an executable source-action screen, even if the target ACKs are real.
+    action_windows = []
+    for index, window in enumerate(proof["native_windows"]):
+        counts = window.get("source_action_counts") if isinstance(window, dict) else None
+        if (not isinstance(counts, dict)
+                or any(not isinstance(action_id, str) or not action_id
+                       or type(events) is not int or events < 0
+                       for action_id, events in counts.items())):
+            if target_count == 100:
+                raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_SOURCE_ACTION_RECEIPT_INVALID")
+            counts = None  # Legacy two-target smoke is not a gate screen.
+        action_windows.append(counts)
+    action_events = sum(
+        events for counts in action_windows if counts is not None
+        for events in counts.values())
+    if target_count == 100 and action_events == 0:
+        raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_SOURCE_ACTIONS_MISSING")
+    return {
+        "native_2d_persistent_world_targets_killed": target_count,
+        "native_2d_persistent_world_ticks": proof["world_ticks"],
+        "native_2d_persistent_source_action_events": action_events,
+        "native_2d_persistent_source_action_counts_by_target": action_windows,
+        # Carry the native/ACKed world resource timeline forward to the
+        # actual P4/P5 caller. This is observed state, not Python-computed
+        # recovery, a reset actor or an independently completed paid screen.
+        "native_2d_persistent_mana_after_kills": proof.get(
+            "native_actor_mana_after_world_kills"),
+        # Forward source-Rust combat mana ticks verbatim. These are NOT
+        # between-pull recovery; keep that separate and uncredited.
+        "native_2d_persistent_combat_mana_regen_observed": proof.get(
+            "native_combat_mana_regen_observed", False),
+        "native_2d_persistent_combat_mana_regen_gains": proof.get(
+            "native_combat_mana_regen_actual_gain_by_target"),
+        "native_2d_persistent_combat_mana_regen_events": proof.get(
+            "native_combat_mana_regen_events_by_target"),
+        "native_2d_persistent_min_actor_health": proof.get(
+            "minimum_native_actor_health"),
+        "native_2d_persistent_elapsed_seconds": proof.get(
+            "world_elapsed_seconds"),
+        "native_2d_persistent_paid_movement_seconds": proof.get(
+            "gsim_route_paid_movement_s"),
+        "native_2d_persistent_native_health_damage": proof.get(
+            "native_health_damage"),
+        "native_2d_persistent_actor_verified": True,
+        "native_2d_persistent_world_ack_verified": True,
+        "native_2d_persistent_paid_recovery": proof["paid_recovery"],
+        "native_2d_persistent_recovery_ns_by_target": proof.get(
+            "native_passive_recovery_ns_by_target"),
+        "native_2d_persistent_recovery_ticks_by_target": proof.get(
+            "native_passive_recovery_ticks_by_target"),
+        "native_2d_screen_complete": False,
+    }
+
+
+def _native_world_completed_kills(exc: BaseException) -> int:
+    """Forward only kills actually ACKed by the running gsim world.
+
+    An incomplete native session raises with its real world-kill list.
+    This is diagnostic partial progress, never a successful 100-mob receipt.
+    """
+    detail = exc.args[0] if len(exc.args) == 1 else None
+    if (isinstance(detail, tuple) and len(detail) >= 4
+            and detail[0] == "RUST_TWO_WORLD_KILLS_NOT_COMPLETED"
+            and isinstance(detail[2], list)):
+        return len(detail[2])
+    # A Rust nonzero exit is the most common genuinely observed failure of
+    # the 100-target actor, not a loss of already ACKed earlier targets.
+    # Only the bridge-supplied nonnegative integer (never stderr text)
+    # counts, and this count never grants native_2d_persistent_verified.
+    if (isinstance(detail, tuple) and len(detail) >= 5
+            and detail[0] == "RUST_TWO_WORLD_NATIVE_FAILED"
+            and type(detail[3]) is int and detail[3] >= 0
+            and type(detail[4]) is int and detail[4] >= detail[3]):
+        return detail[3]
+    return 0
+
+
+def _native_world_error(exc: BaseException) -> str:
+    """Keep native failure code and completed-kill count, not a truncated tuple.
+
+    For a long 100-target run the raw AssertionError includes up to 100 kill
+    receipts. Truncating its string from the right discarded the causal
+    RUST_TWO_WORLD_* error and made the actual failed producer untraceable.
+    """
+    detail = exc.args[0] if len(exc.args) == 1 else None
+    if isinstance(detail, tuple) and detail and isinstance(detail[0], str):
+        code = detail[0]
+        if (code == "RUST_TWO_WORLD_KILLS_NOT_COMPLETED"
+                and len(detail) >= 4 and isinstance(detail[2], list)):
+            return (f"{code}:completed={len(detail[2])}"
+                    f":native_damage_events={detail[3]}")
+        if code == "RUST_TWO_WORLD_NATIVE_FAILED" and len(detail) >= 3:
+            observed = _native_world_completed_kills(exc)
+            progress = (f":completed={observed}:native_damage_events={detail[4]}"
+                        if len(detail) >= 5 and type(detail[4]) is int
+                        and type(detail[3]) is int and detail[3] >= 0
+                        and detail[4] >= detail[3] else "")
+            return f"{code}:exit={detail[1]}{progress}:{str(detail[2])[-280:]}"[-500:]
+        return (code + ":" + str(detail[1:])[-350:])[-500:]
+    return str(exc)[-500:]
+
+
+def score_source_priest_l20_candidates(binary: str | Path,
+                                      source_directory: str | Path, *,
+                                      score_request=None, world_screen=None,
+                                      persistent_world=None,
+                                      budget_s: float = 6.0,
+                                      max_paid_builds: int = 4,
+                                      persistent_target_count: int = 2) -> dict:
+    """Pay a bounded cold frontier of explicit source/native build requests.
+
+    Each JSON supplies its *own* gear, talents and APL. Forever never derives
+    their Warcraft legality, copies L60 data, or reuses another winner.
+    MythicSim evaluates each distinct whole build; no native fight becomes
+    an invented continuous 2D/world gate screen.
+    """
+    from hashlib import sha256
+
+    folder = Path(source_directory)
+    if not folder.is_dir():
+        raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATE_DIRECTORY_REQUIRED")
+    if not (0 < budget_s <= 30 and 1 <= max_paid_builds <= 16):
+        raise ValueError("P4_P5_NATIVE_CANDIDATE_BUDGET_INVALID")
+    if (type(persistent_target_count) is not int
+            or not 2 <= persistent_target_count <= 100):
+        raise ValueError("P4_P5_NATIVE_PERSISTENT_TARGET_COUNT_INVALID")
+    paths = sorted(folder.glob("*.json"))
+    if not paths:
+        raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATES_EMPTY")
+
+    deadline = time.monotonic() + budget_s
+    seen = set()
+    rows = []
+    paid_count = 0
+    comparable_encounter = None
+    for path in paths:
+        # The cap is on native-PAID whole builds, not malformed/refused
+        # requests. A rejected build must not consume a legal candidate's
+        # paid slot; the same wall-clock deadline still bounds all attempts.
+        if paid_count >= max_paid_builds or time.monotonic() >= deadline:
+            break
+        try:
+            request = json.loads(path.read_text(encoding="utf-8"))
+            encounter = request["encounter"]
+            player = request["raid"]["parties"][0]["players"][0]
+            # A native-backed candidate must stay inside the same supplied
+            # world scenario; comparing unlike mobs is not optimization.
+            if not isinstance(encounter, dict) or not isinstance(player, dict):
+                raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATE_INVALID")
+            # Only a successfully native-paid build can establish the
+            # comparison scenario. A rejected or malformed first source
+            # candidate must not veto later independently executable builds.
+            if comparable_encounter is not None and encounter != comparable_encounter:
+                raise ValueError("P4_P5_NATIVE_CANDIDATE_ENCOUNTER_MISMATCH")
+            candidate_key = sha256(json.dumps(
+                request, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")).hexdigest()
+            if candidate_key in seen:
+                continue
+            seen.add(candidate_key)
+            receipt = score_source_priest_l20(
+                binary, path, score_request=score_request,
+                budget_s=max(0.001, deadline - time.monotonic()))
+            if comparable_encounter is None:
+                comparable_encounter = encounter
+            rows.append({"candidate": path.name, "source_request_sha256":
+                         candidate_key, "status": "NATIVE_PAID",
+                         **receipt})
+            paid_count += 1
+        except (OSError, ValueError, RuntimeError, TimeoutError,
+                subprocess.SubprocessError) as exc:
+            # A timed-out or failed native subprocess refuses ONLY this
+            # candidate. Preserve the bounded source-native frontier so an
+            # independent paid build can still run within the same budget.
+            # This is not a successful paid screen or a Python fallback.
+            rows.append({"candidate": path.name, "status": "NATIVE_REFUSED",
+                         "reason": str(exc)[-400:]})
+
+    paid = [row for row in rows if row["status"] == "NATIVE_PAID"]
+    # The selected paid candidate reaches the actual Rust↔2D ACK loop.
+    # A nonlethal ONE-fight ACK does not prove this candidate cannot kill in a
+    # retained native session: the 2–100-target run has its own source-native
+    # actor, world timeline and lethal ACKs. Try it on each ACKed paid build,
+    # not only on builds that already killed in a separate reset fight.
+    # Neither result counts as a completed P4/P5 100-mob paid screen.
+    live_attempted = 0
+    live_verified = 0
+    live_killed = 0
+    live_kill_candidate = None
+    live_kill_request_sha256 = None
+    persistent_attempted = 0
+    persistent_verified = 0
+    persistent_targets_killed = 0
+    persistent_max_observed_kills = 0
+    persistent_candidate = None
+    persistent_request_sha256 = None
+    if world_screen is not None or persistent_world is not None:
+        from tempfile import TemporaryDirectory
+        ranked = sorted(
+            (row for row in paid if row["native_source_action_casts"] > 0),
+            key=lambda row: row["native_score"], reverse=True)
+        # A paid whole build may go straight to the real retained native/2D
+        # screen. The separate one-fight diagnostic is useful but must not
+        # veto a valid continuous actor run, including after its own failure.
+        for candidate in ranked[:max_paid_builds]:
+            if world_screen is not None:
+                live_attempted += 1
+            try:
+                # Replay the exact normalized request paid by the native scorer.
+                # The original source JSON and candidate directory are read-only:
+                # never leak the synthesized replay into later cold frontiers.
+                effective = json.loads(
+                    (folder / candidate["candidate"]).read_text(encoding="utf-8"))
+                effective["simOptions"]["iterations"] = 1
+                effective["simOptions"]["randomSeed"] = "42"
+                effective_sha = sha256(json.dumps(
+                    effective, sort_keys=True, separators=(",", ":")
+                ).encode("utf-8")).hexdigest()
+                if effective_sha != candidate["native_request_sha256"]:
+                    raise RuntimeError(
+                        "PRIEST_L20_PAID_WORLD_EFFECTIVE_REQUEST_IDENTITY_MISMATCH")
+                # The live runner checks its raw request identity, prepared
+                # native protobuf identity, real world ticks and damage ACKs.
+                with TemporaryDirectory(prefix="priest-l20-live-world-") as directory:
+                    execution_request = Path(directory) / "source.json"
+                    execution_request.write_text(
+                        json.dumps(effective, sort_keys=True), encoding="utf-8")
+                    live = None
+                    if world_screen is not None:
+                        try:
+                            live = world_screen(binary, execution_request)
+                        except (OSError, ValueError, RuntimeError, TimeoutError,
+                                AssertionError, KeyError, TypeError,
+                                subprocess.SubprocessError) as exc:
+                            candidate["native_2d_fight_error"] = str(exc)[-500:]
+                    # Only the retained native/2D session decides whether
+                    # this paid build can finish the requested world screen.
+                    # A failed independent one-fight probe is not a veto.
+                    if persistent_world is not None:
+                        persistent_attempted += 1
+                        try:
+                            # Preserve existing two-target behavior by default.
+                            # Opt-in longer runs use the *same* selected native
+                            # process/actor and gsim world ACK loop, not 100
+                            # independent fights or a synthesized route.
+                            if persistent_target_count == 2:
+                                retained = persistent_world(binary, execution_request)
+                            else:
+                                retained = persistent_world(
+                                    binary, execution_request,
+                                    target_count=persistent_target_count)
+                            if (not isinstance(retained, dict)
+                                    or retained.get("native_2d_persistent_actor_verified") is not True
+                                    or retained.get("native_2d_persistent_world_ack_verified") is not True
+                                    or type(retained.get("native_2d_persistent_world_targets_killed")) is not int
+                                    # An explicitly requested 100-mob
+                                    # screen must not be reported as verified
+                                    # after only two ACKed kills. Keep the
+                                    # exact count on the same paid candidate.
+                                    or retained["native_2d_persistent_world_targets_killed"] != persistent_target_count
+                                    # The 100-target frontier must carry real
+                                    # source-native action event observations
+                                    # for this exact retained actor, not just
+                                    # a native kill/ACK counter.
+                                    or (persistent_target_count == 100 and (
+                                        type(retained.get("native_2d_persistent_source_action_events")) is not int
+                                        or retained["native_2d_persistent_source_action_events"] <= 0
+                                        or not isinstance(retained.get(
+                                            "native_2d_persistent_source_action_counts_by_target"), list)
+                                        or len(retained["native_2d_persistent_source_action_counts_by_target"]) != 100))
+                                    or retained.get("native_2d_screen_complete") is not False):
+                                raise RuntimeError("PRIEST_L20_PERSISTENT_WORLD_RECEIPT_INVALID")
+                            candidate["native_2d_persistent_world"] = retained
+                            candidate["native_2d_persistent_observed_kills"] = persistent_target_count
+                            persistent_max_observed_kills = max(
+                                persistent_max_observed_kills, persistent_target_count)
+                            persistent_verified += 1
+                            persistent_targets_killed = retained[
+                                "native_2d_persistent_world_targets_killed"]
+                            persistent_candidate = candidate["candidate"]
+                            persistent_request_sha256 = candidate["native_request_sha256"]
+                        except (OSError, ValueError, RuntimeError, TimeoutError,
+                                AssertionError, KeyError, TypeError,
+                                subprocess.SubprocessError) as exc:
+                            candidate["native_2d_persistent_error"] = _native_world_error(exc)
+                            actual_kills = _native_world_completed_kills(exc)
+                            candidate["native_2d_persistent_observed_kills"] = actual_kills
+                            persistent_max_observed_kills = max(
+                                persistent_max_observed_kills, actual_kills)
+                if world_screen is not None:
+                    if (not isinstance(live, dict)
+                            or live.get("native_2d_fight_ack_complete") is not True):
+                        candidate.setdefault(
+                            "native_2d_fight_error",
+                            "PRIEST_L20_PAID_WORLD_ACK_NOT_VERIFIED")
+                    else:
+                        candidate["native_2d_fight"] = live
+                        live_verified += 1
+                        # A separate lethal fight is diagnostic, not a
+                        # substitute for the continuous native world run.
+                        if live.get("native_2d_world_target_killed") is True:
+                            live_killed += 1
+                            if live_kill_candidate is None:
+                                live_kill_candidate = candidate["candidate"]
+                                live_kill_request_sha256 = candidate["native_request_sha256"]
+                if persistent_candidate is not None:
+                    # True retained native/world success is the stronger
+                    # result. Stop spending the already-paid frontier.
+                    break
+                if (persistent_world is None and isinstance(live, dict)
+                        and live.get("native_2d_fight_ack_complete") is True
+                        and live.get("native_2d_world_target_killed") is True):
+                    break
+            except (OSError, ValueError, RuntimeError, TimeoutError,
+                    AssertionError, KeyError, TypeError,
+                    subprocess.SubprocessError) as exc:
+                candidate["native_2d_fight_error"] = str(exc)[-500:]
+    return {
+        "native_candidate_requests_attempted": len(rows),
+        "native_paid_whole_builds": len(paid),
+        "native_source_action_casts": sum(
+            row["native_source_action_casts"] for row in paid),
+        "native_source_action_ids_cast": max(
+            (row["native_source_action_ids_cast"] for row in paid),
+            default=0),
+        "native_candidate_receipts": rows,
+        "native_2d_live_ack_attempted": live_attempted,
+        "native_2d_live_ack_verified": live_verified,
+        "native_2d_live_world_kills": live_killed,
+        "native_2d_live_kill_candidate": live_kill_candidate,
+        "native_2d_live_kill_request_sha256": live_kill_request_sha256,
+        "native_2d_persistent_attempted": persistent_attempted,
+        "native_2d_persistent_verified": persistent_verified,
+        "native_2d_persistent_targets_killed": persistent_targets_killed,
+        "native_2d_persistent_max_observed_kills": persistent_max_observed_kills,
+        "native_2d_persistent_target_goal": persistent_target_count,
+        "native_2d_persistent_candidate": persistent_candidate,
+        "native_2d_persistent_request_sha256": persistent_request_sha256,
+        "native_2d_screen_complete": False,
+        "native_candidate_search_budget_s": budget_s,
+    }
+
+
+def score_native_priest_l20_item_candidates(binary: str | Path,
+                                          request_file: str | Path,
+                                          native_item_options: list[dict], *,
+                                          score_request=None, world_screen=None,
+                                          persistent_world=None,
+                                          budget_s: float = 6.0,
+                                          max_paid_builds: int = 4,
+                                          persistent_target_count: int = 2) -> dict:
+    """Score progressive source-native multi-slot whole-build requests.
+
+    The source retains its actor, talent, APL and world. Each candidate adds
+    one more item from a *different native-reported slot*, so the real paid
+    frontier can evaluate a useful equipped build rather than isolated
+    one-item builds. Only MythicSim decides whether that complete request is
+    legal/executable; Forever supplies no game stat or equipment rules.
+    """
+    import copy
+    from tempfile import TemporaryDirectory
+
+    try:
+        source = json.loads(Path(request_file).read_text(encoding="utf-8"))
+        actor = source["raid"]["parties"][0]["players"][0]
+        items = actor["equipment"]["items"]
+    except (OSError, ValueError, KeyError, IndexError, TypeError) as exc:
+        raise ValueError("P4_P5_NATIVE_SOURCE_REQUEST_UNREADABLE") from exc
+    if (not isinstance(actor, dict) or actor.get("class") != "ClassPriest"
+            or type(actor.get("level")) is not int or actor["level"] != 20):
+        raise ValueError("P4_P5_NATIVE_PRIEST_L20_SOURCE_REQUEST_REQUIRED")
+    if items != []:
+        raise ValueError("P4_P5_NATIVE_ITEM_PROPOSALS_REQUIRE_EMPTY_SOURCE_GEAR")
+    if not isinstance(native_item_options, list):
+        raise ValueError("P4_P5_NATIVE_ITEM_PROPOSALS_INVALID")
+
+    # First propose cumulative multi-slot whole builds from native ItemSparse.
+    # If the source offers fewer distinct slots than the paid budget, use
+    # remaining evaluations for alternative native items in those SAME slots.
+    # Each alternate replaces the selected item, never equips two items in a
+    # single slot. Rust still owns every equip/legality and scoring decision.
+    # Native refusals do not spend a paid slot. Keep a bounded source-native
+    # backup frontier when the provider offers more items than the paid cap;
+    # only the first max_paid_builds successfully scored builds are paid.
+    proposal_limit = max_paid_builds - 1
+    if len(native_item_options) > max_paid_builds:
+        proposal_limit = min(len(native_item_options), max_paid_builds * 4 - 1)
+    selected = []
+    selected_slots = set()
+    alternates = []
+    seen_item_ids = set()
+    for option in native_item_options:
+        if not isinstance(option, dict):
+            continue
+        item_id, slot = option.get("item_id"), option.get("slot")
+        if (type(item_id) is not int or item_id <= 0
+                or not isinstance(slot, str) or not slot
+                or item_id in seen_item_ids):
+            continue
+        seen_item_ids.add(item_id)
+        if slot in selected_slots:
+            alternates.append((item_id, slot))
+        elif len(selected) < proposal_limit:
+            selected.append((item_id, slot))
+            selected_slots.add(slot)
+
+    requests = [
+        (selected[:index], item_id, slot)
+        for index, (item_id, slot) in enumerate(selected, start=1)
+    ]
+    # A paid frontier dominated by single-item builds cannot exercise the
+    # actual multi-slot search space. Offer a few *different* native-sourced
+    # dense proposals before progressive fallbacks, without spending more
+    # successful native evaluations or making Python equipment decisions.
+    # Prefix/suffix variants explore different native options; MythicSim alone
+    # accepts/refuses each complete equipment request. A refusal remains free.
+    dense_builds_proposed = 0
+    if len(selected) >= max_paid_builds and max_paid_builds > 1:
+        width = min(len(selected), max_paid_builds + 1)
+        dense_variants = [selected[:width]]
+        if len(selected) > width:
+            dense_variants.append(selected[-width:])
+        if len(selected) > 2 * width:
+            dense_variants.append(selected[:2 * width])
+        dense_variants = dense_variants[:max_paid_builds - 1]
+        requests = ([
+            (items, items[-1][0], items[-1][1])
+            for items in dense_variants
+        ] + requests)[:proposal_limit]
+        dense_builds_proposed = len(dense_variants)
+    alternative_builds_proposed = 0
+    for item_id, slot in alternates:
+        if len(requests) >= proposal_limit:
+            break
+        if slot not in selected_slots:
+            continue
+        replacement = [
+            (item_id if selected_slot == slot else selected_id, selected_slot)
+            for selected_id, selected_slot in selected
+        ]
+        requests.append((replacement, item_id, slot))
+        alternative_builds_proposed += 1
+
+    with TemporaryDirectory(prefix="native-priest-l20-options-") as directory:
+        folder = Path(directory)
+        (folder / "000-source-baseline.json").write_text(
+            json.dumps(source), encoding="utf-8")
+        for index, (items, item_id, _slot) in enumerate(requests, start=1):
+            candidate = copy.deepcopy(source)
+            # These are whole-build proposals, not Python legality decisions.
+            candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"] = [
+                {"id": selected_id} for selected_id, _ in items]
+            (folder / f"{index:03d}-native-item-{item_id}.json").write_text(
+                json.dumps(candidate), encoding="utf-8")
+        receipt = score_source_priest_l20_candidates(
+            binary, folder, score_request=score_request,
+            world_screen=world_screen, persistent_world=persistent_world,
+            budget_s=budget_s, max_paid_builds=max_paid_builds,
+            persistent_target_count=persistent_target_count)
+    return {
+        **receipt,
+        "native_item_options_proposed": len(requests),
+        "native_item_option_source_slots_proposed": [slot for _, _, slot in requests],
+        "native_item_option_alternative_builds_proposed": alternative_builds_proposed,
+        "native_item_option_dense_builds_proposed": dense_builds_proposed,
+        "native_candidate_provenance": "MYTHICSIM_ITEM_OPTIONS_AND_SOURCE_L20_REQUEST",
+    }

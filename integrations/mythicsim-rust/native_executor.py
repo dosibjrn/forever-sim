@@ -67,6 +67,39 @@ def dps(out):
     return objective_value(out, "DPS")
 
 
+def native_action_cast_receipts(out):
+    """Preserve actual native first-player action IDs with positive paid casts.
+
+    These are source-Rust combat receipts, not P4/P5 gate credit: the caller
+    must still prove a completed native/world/2D screen and source matching.
+    Keep the full native action identity (including tag/item IDs), so a proc
+    cannot silently become a cast of a differently tagged source action.
+    """
+    try:
+        actions = out["result"]["raidMetrics"]["parties"][0]["players"][0]["actions"]
+    except (KeyError, IndexError, TypeError):
+        return []
+    if not isinstance(actions, list):
+        return []
+    receipts = []
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        identity = action.get("id")
+        targets = action.get("targets")
+        if not isinstance(identity, dict) or not isinstance(targets, list):
+            continue
+        casts = sum(
+            target["casts"] for target in targets
+            if isinstance(target, dict)
+            and type(target.get("casts")) is int
+            and target["casts"] > 0
+        )
+        if casts:
+            receipts.append({"id": copy.deepcopy(identity), "casts": casts})
+    return receipts
+
+
 def _has_complete_distribution(out, iterations, objective="DPS"):
     """Check the requested native metric's complete iteration distribution."""
     try:

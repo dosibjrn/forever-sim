@@ -9,6 +9,11 @@ on:
       - 'integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py'
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
       - 'integrations/mythicsim-rust/engine'
+      - 'integrations/mythicsim-rust/live_world_probe.py'
+      - 'tools/wf_native_priest_l20_paid.py'
+      - 'tools/wf_gate_p4_p5_partial.py'
+      - 'tools/wf_gsim_go_live_range_probe.py'
+      - 'tests/test_wf_native_priest_l20_paid.py'
       - 'docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json'
       - 'tests/test_p75_axis_ablation.py'
       - 'tests/test_work2_native_health_damage_controls.py'
@@ -115,3 +120,54 @@ jobs:
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/feral-bear-druid-defensives.prepared.json \
             --mob-health 1200 --targets 2 --require-native-health-damage
+      - name: Paid Priest L20 candidate through exact native Rust and gsim 2D ACK (not P4/P5 acceptance)
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from src.game.native_p3_item_options import query_native_p3_item_options
+          from tools.wf_native_priest_l20_paid import (
+              couple_source_priest_l20_world,
+              couple_source_priest_l20_persistent_world,
+              score_native_priest_l20_item_candidates,
+          )
+          binary = Path("integrations/mythicsim-rust/engine/target/debug/forever-engine").resolve()
+          fixture = Path("integrations/mythicsim-rust/fixtures/priest-l20-native-smite.request.json")
+          native_options = query_native_p3_item_options(
+              str(binary), "priest", 20, spec="unrestricted")
+          assert native_options["items"], native_options
+          paid = score_native_priest_l20_item_candidates(
+              binary, fixture, native_options["items"],
+              world_screen=couple_source_priest_l20_world,
+              persistent_world=couple_source_priest_l20_persistent_world,
+              budget_s=25., max_paid_builds=4)
+          print("PRIEST_L20_SELECTED_NATIVE_PAID_TO_REAL_2D",
+                json.dumps(paid, sort_keys=True), flush=True)
+          assert paid["native_paid_whole_builds"] > 0, paid
+          assert paid["native_source_action_casts"] > 0, paid
+          assert paid["native_2d_live_ack_attempted"] >= 1, paid
+          assert paid["native_2d_live_ack_verified"] >= 1, paid
+          # The independent one-fight ACK can be nonlethal. Require the
+          # *stronger* proof instead: real native↔2D lethal ACKs on two
+          # distinct ordinary L20 source-proxy mobs with one retained actor.
+          # This is not paid recovery or 100-mob gate acceptance.
+          assert paid["native_2d_persistent_verified"] == 1, paid
+          assert paid["native_2d_persistent_targets_killed"] == 2, paid
+          assert paid["native_2d_screen_complete"] is False, paid
+          assert any(
+              receipt.get("native_2d_fight", {}).get("native_2d_world_ticks", 0) > 0
+              for receipt in paid["native_candidate_receipts"]
+          ), paid
+          print("PRIEST_L20_REAL_PAID_RUST_GSIM2D_ACK_PASS_NOT_100MOB_NOT_GATE",
+                flush=True)
+          PY
+
+      - name: Priest L20 P4 real 100-target native/world no-record probe
+        # This calls the existing production gate, not a fixture PASS or recorder.
+        # An actual FAIL is expected until recovery and full cold search work.
+        env:
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: integrations/mythicsim-rust/engine/target/debug/forever-engine
+          FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST: integrations/mythicsim-rust/fixtures/priest-l20-native-smite.request.json
+          FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD: '1'
+          FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS: '100'
+        run: python tools/wf_gate.py --class priest --level 20 --spec unrestricted --gate P4
