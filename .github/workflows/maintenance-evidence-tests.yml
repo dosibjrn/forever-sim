@@ -12,6 +12,8 @@ on:
       - 'tools/wf244_joint_multi_pull_replay.py'
       - 'tools/wf245_joint_frontier_replay.py'
       - 'tools/wf246_primary_stat_replay.py'
+      - 'tools/wf360_l30_*.py'
+      - 'tests/test_wf360_*.py'
       - 'tests/test_wf303_checkpoint_falsifier.py'
       - 'tests/test_wf305_source_action_scope.py'
       - 'data/forever/source_observations/wf305_druid_l20_engraving_grants.json'
