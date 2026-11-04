@@ -406,6 +406,32 @@ def main(argv=None) -> int:
                         and type(value) in (int, float)
                         and math.isfinite(value))):
                     record[key] = value
+        if gate in ("P4", "P5") and "native_cold_search_wall_s" in report:
+            # Emit bounded live search facts. Full 100-mob receipts stay in
+            # the producer result; no-report CLI does not invent gate credit.
+            for key in ("native_cold_search_wall_s",
+                        "native_cold_search_budget_s",
+                        "native_cold_snapshot_cutoff_s",
+                        "native_cold_native_paid_before_30",
+                        "native_cold_native_paid_after_30",
+                        "native_cold_completed_routes_before_30",
+                        "native_cold_completed_routes_after_30",
+                        "native_cold_attempted_distinct_builds"):
+                value = report.get(key)
+                if type(value) in (float, int) and math.isfinite(value):
+                    record[key] = value
+            for key in ("native_cold_300s_reached", "native_cold_300s_overrun"):
+                if type(report.get(key)) is bool:
+                    record[key] = report[key]
+            for key in ("native_cold_snapshot_30", "native_cold_final_300"):
+                winner = report.get(key)
+                if isinstance(winner, dict):
+                    record[key] = {
+                        field: winner[field] for field in (
+                            "source_request_sha256", "native_request_sha256",
+                            "route_s_per_mob", "paid_completed_elapsed_s")
+                        if field in winner
+                    }
         if gate == "P6":
             # The existing paid evaluator already supplied these outcomes;
             # publishing them reveals the first real incomplete replay reason.
