@@ -156,6 +156,31 @@ jobs:
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_rerank_ledger_replays_all_finalist_evaluations
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_cold_apl_can_generate_19_actions_from_10_action_source_grammar
 
+  work2-p6-shared-cold-no-record:
+    # One changed-HEAD paid diagnostic, not an hourly run or M1 recorder.
+    if: startsWith(github.head_ref, 'work/work2-p6-shared-cold-')
+    needs: source-search
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact Work2 P6 source and pinned data
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          lfs: true
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source runtime dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Pay one real shared 300s source search and P6 100-mob comparison
+        env:
+          FOREVER_P6_FULL_SOURCE_COMPARE: '1'
+        run: |
+          python tools/wf_gate.py --class druid --level 30 --spec unrestricted \
+            --gate P6 --out "${{ runner.temp }}/work2-p6-shared-no-record.json"
+
   selected-native-p72:
     # One selected-engine read-only acceptance probe on Work2's P7.3 lane.
     # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
