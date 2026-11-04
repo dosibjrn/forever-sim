@@ -47,14 +47,6 @@ on:
       - 'tests/test_wf332_runes_default_off.py'
       - 'src/v2/source_budgeted_gear.py'
       - 'src/v2/source_bounded_joint_frontier.py'
-      - 'src/v2/source_multi_pull_joint.py'
-      - 'tools/wf243_joint_multi_pull_replay.py'
-      - 'tools/wf282_source_role_heldout_benchmark.py'
-      - 'tools/wf298_druid_l20_verified_delta.py'
-      - 'tools/wf299_100_mob_continuity_probe.py'
-      - 'tests/test_wf243_source_joint_repeated_pulls.py'
-      - 'tests/test_wf245_policy_frontier.py'
-      - 'tests/test_wf249_source_hit_and_cast_regen.py'
       - 'src/v2/source_persistent_slot_search.py'
       - 'src/v2/source_persistent_joint_finalists.py'
       - 'src/game/data/forever/**'
@@ -130,10 +122,6 @@ jobs:
           tests/gates/test_wf_gate_p7_3_live.py
           tests/gates/test_p7_independent_cold_rediscovery.py
           tests/gates/test_wf_gate_p7_4_live.py
-          tests/test_wf243_source_joint_repeated_pulls.py
-          tests/test_wf245_policy_frontier.py
-          tests/generic/search/test_wf248_source_legal_beam.py
-          tests/test_wf249_source_hit_and_cast_regen.py
           tests/gates/test_wf_gate_probe.py
           tests/gates/test_wf_gate_live_success_percent.py
           tests/test_wf_prio_p1_p3_partials.py

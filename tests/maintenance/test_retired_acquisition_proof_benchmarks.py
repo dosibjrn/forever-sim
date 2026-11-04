@@ -445,3 +445,12 @@ def test_retired_wf463_gameir_search_and_import_path_is_gone():
     ):
         assert not (ROOT / relative).exists(), relative
 
+
+
+def test_retired_p1_source_effect_role_ingestion_is_not_available():
+    """The shared observation CLI must not revive the retired P1 role proof."""
+    tool = (ROOT / "tools/wf470_ingest_available_observations.py").read_text(encoding="utf-8")
+    for retired in ("scope-roles", "ingest_roles", "p1_source_effect_role_facts", "p1_source_effect_roles_v1"):
+        assert retired not in tool, retired
+    assert "add_argument('--queued'" in tool
+    assert "add_argument('--control'" in tool
