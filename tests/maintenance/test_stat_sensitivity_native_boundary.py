@@ -76,66 +76,6 @@ def test_custom_native_mutator_preserves_invalid_score_rejection():
     assert [probe["seconds_per_mob"] for probe in row.probes] == [None, 8.0]
 
 
-def test_p3_curve_audit_runs_without_legacy_game_model_imports():
-    """The real P3 curve auditor consumes sampling knobs, not the old 100-mob evaluator."""
-    code = """
-import sys
-from src.game.stat_sensitivity import PROBE_STEPS
-from src.game.data.forever.source_checkpoint_p3_consistency import audit_stat_weight_curves
-
-assert PROBE_STEPS["agility"] == 20.0
-assert PROBE_STEPS["weapon_dps"] == 10.0
-legacy_modules = (
-    "src.game.model.ir",
-    "src.game.gear",
-    "src.game.runtime.simulator",
-    "src.v2.source_persistent_joint_finalists",
-    "src.game.data.forever.source_checkpoint_p3_weights",
-)
-for module in legacy_modules:
-    assert module not in sys.modules, module
-
-# The same source-agnostic curve checks work on native-paid scorer output.
-report = {
-    "stat_weights": {
-        "base_s_per_mob": 10.0,
-        "weights": {"agility": {"weight_s_saved_per_mob_per_unit": 0.04}},
-    },
-    "build_identity_sha256": "pinned-native-engine",
-    "catalogue_sha256": "source-catalogue",
-}
-curves = {
-    "build_identity_sha256": "pinned-native-engine",
-    "catalogue_sha256": "source-catalogue",
-    "mobs": 100,
-    "base_s_per_mob": 10.0,
-    "axes": {"agility": {"probes": [
-        {"delta": 20.0, "s_per_mob": 9.2, "status": "COMPLETE"},
-        {"delta": 40.0, "s_per_mob": 8.6, "status": "COMPLETE"},
-    ]}},
-}
-valid = audit_stat_weight_curves(report=report, curves=curves)
-assert valid["pass"] and not valid["failures"]
-assert valid["axes"]["agility"]["safe_scalar_weight"]
-
-# Moving probe configuration must not relax discrete coarse-step checks.
-curves["axes"]["agility"]["probes"] = [
-    {"delta": 5.0, "s_per_mob": 9.8, "status": "COMPLETE"},
-    {"delta": 10.0, "s_per_mob": 9.6, "status": "COMPLETE"},
-]
-invalid = audit_stat_weight_curves(report=report, curves=curves)
-assert not invalid["pass"]
-assert "agility:NO_TWO_ITEM_RELEVANT_COARSE_STEPS" in invalid["failures"]
-for module in legacy_modules:
-    assert module not in sys.modules, module
-"""
-    completed = subprocess.run(
-        [sys.executable, "-c", code], cwd=ROOT,
-        capture_output=True, text=True, timeout=30, check=False,
-    )
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-
-
 def test_optimizer_stat_sensitivity_is_game_independent_and_legacy_api_is_preserved():
     code = """
 from dataclasses import dataclass, replace

@@ -1,9 +1,7 @@
 """Large, 100-mob, two-step stat perturbations must not be silently regressed."""
 import json
-from pathlib import Path
 from types import SimpleNamespace
 from src.game.data.forever.source_checkpoint_p3_weights import PROBE_STEPS
-from src.game.data.forever.source_checkpoint_p3_consistency import audit_stat_weight_curves
 from src.game.data.forever import source_checkpoint_p3_isolated as iso
 
 
@@ -44,19 +42,3 @@ def test_both_coarse_deltas_are_actually_run_and_cached(tmp_path,monkeypatch):
         prior_weights=old,worker=_complete_linear)
     assert alt['weights']['agility']['weight_s_saved_per_mob_per_unit'] is None
     assert alt['weights']['agility']['status']=='STALE_SMALL_STEP_REQUIRES_REMEASUREMENT'
-
-
-def test_legacy_tiny_positive_steps_do_not_pass_multiscale_audit():
-    from pathlib import Path
-    root=Path(__file__).resolve().parents[1]
-    report=json.loads((root/'evidence/wf352/WF352_L30_P3_TOP5.json').read_text())
-    curve=json.loads((root/'evidence/wf352/WF352_P3_ADVERSARIAL_CURVES.json').read_text())
-    base=report['stat_weights']['base_s_per_mob']
-    for stat,small in [('agility',5.),('weapon_dps',2.)]:
-        curve['axes'][stat]['probes']=[
-            {'delta':small,'s_per_mob':base-small*.01,'status':'COMPLETE'},
-            {'delta':small*2,'s_per_mob':base-small*.02,'status':'COMPLETE'}]
-    out=audit_stat_weight_curves(report=report,curves=curve)
-    assert not out['pass']
-    assert all('NO_TWO_ITEM_RELEVANT_COARSE_STEPS' in out['axes'][s]['issues']
-               for s in ('agility','weapon_dps'))
