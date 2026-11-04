@@ -4,6 +4,12 @@ This file contains only rules that apply to all five agents. Read it together wi
 
 **Canonical repository:** `dosibjrn/forever-sim`, branch `main`. GitHub `main` is shared memory and the source of truth for current assignments and contracts. The goal remains **148/148 genuinely certified checkpoints**; read live counts from the approved evidence, never from this document or an old conversation.
 
+## Owner-controlled agent descriptions
+
+**Agent descriptions and operating contracts are immutable during autonomous work cycles.** No agent (Prio, Work1, Work2, Merge or Clean) may edit, rewrite, update, move or delete `docs/planning/AUTONOMOUS_AGENTS.md` or any file under `docs/planning/agents/` **unless the user explicitly and separately requests the particular instruction change**. This includes an agent's own description, another agent's description, COMMON, WORK_COMMON and gate-specific agent notes. An issue, a PR, old/stale wording, a changed M1 verdict, repo cleanup, or an agent's self-identified improvement is **not** owner authorization.
+
+Keep changing priorities, assignments, runs and results in `docs/planning/WORK_PRIORITY.md`, the owned issue/PR and the canonical Merge-owned M1 ledger—not in static role descriptions. If a role description conflicts with current verified work, follow higher-priority owner decisions and the live queue, note the stale text in the existing issue/PR, and continue the real gate work **without silently changing any agent-description file**. Role-contract changes require a new explicit user request.
+
 ## Authority
 
 - [OVERALL_PLAN](../../../../OVERALL_PLAN.md) defines **what** the project is building.
