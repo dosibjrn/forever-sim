@@ -710,7 +710,9 @@ def test_native_item_stat_probe_deltas_try_largest_source_delta_first():
 
 def _patch_shaman_live_p3(monkeypatch, *, fallback="lightning_bolt:915",
                           applied_rows=None, query_error=None, attempted=43,
-                          witness_status="NO_POSITIVE_SOURCE_POLICY_WITNESS"):
+                          witness_status="NO_POSITIVE_SOURCE_POLICY_WITNESS",
+                          initial_spell_power_weight=0.0,
+                          initial_pass_count=66, next_pass_count=67):
     from types import SimpleNamespace
     import src.game.checkpoint_p3_smoke as p3_smoke
     import src.game.data.forever.registry as registry
@@ -750,7 +752,7 @@ def _patch_shaman_live_p3(monkeypatch, *, fallback="lightning_bolt:915",
         "sensitivity_history": [{
             "stage": "source_naked",
             "values": {
-                "spell_power": 0.0, "intellect": 0.0, "agility": 0.0,
+                "spell_power": initial_spell_power_weight, "intellect": 0.0, "agility": 0.0,
                 "attack_power": 0.0, "mp5": 0.0, "spirit": 0.0,
             },
         }],
@@ -801,9 +803,10 @@ def _patch_shaman_live_p3(monkeypatch, *, fallback="lightning_bolt:915",
         first = len(smoke_calls) == 1
         return {
             "blockers": (
-                ["NONPOSITIVE_RELEVANT_WEIGHT:spell_power",
-                 "NONPOSITIVE_RELEVANT_WEIGHT:intellect",
-                 "NONPOSITIVE_RELEVANT_WEIGHT:agility"]
+                (["NONPOSITIVE_RELEVANT_WEIGHT:spell_power"]
+                 if initial_spell_power_weight == 0.0 else [])
+                + ["NONPOSITIVE_RELEVANT_WEIGHT:intellect",
+                   "NONPOSITIVE_RELEVANT_WEIGHT:agility"]
                 if first else
                 ["NONPOSITIVE_RELEVANT_WEIGHT:intellect",
                  "NONPOSITIVE_RELEVANT_WEIGHT:agility"]),
@@ -821,7 +824,8 @@ def _patch_shaman_live_p3(monkeypatch, *, fallback="lightning_bolt:915",
             "tested_item_count": 85,
             "slot_count": 17,
             "tested_stat_assertions": 204,
-            "verified_stat_assertions": 66 if first else 67,
+            "verified_stat_assertions": (
+                initial_pass_count if first else next_pass_count),
             "source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
             "native_item_options_status": "ok",
             "native_unverified_candidate_count": 0,
@@ -917,3 +921,34 @@ def test_live_shaman_p3_missing_native_coefficient_preserves_66_of_204(monkeypat
     assert result["real_measured_stat_weights"]["spell_power"] == 0.0
     assert result["reachability_count"] == 204
     assert result["pass_count"] == 66
+
+
+
+def test_live_shaman_p3_requires_paid_spell_power_witness_after_positive_sensitivity(
+        monkeypatch):
+    p3, record, winner_policy, smoke_calls, witness_calls = _patch_shaman_live_p3(
+        monkeypatch,
+        fallback="lightning_bolt:915",
+        attempted=33,
+        initial_spell_power_weight=0.16382978723404254,
+        initial_pass_count=93,
+        next_pass_count=94,
+        witness_status="MEASURED_POSITIVE_SOURCE_POLICY_WITNESS")
+
+    result = p3.run_live(ROOT, "shaman", 20, spec="unrestricted")
+
+    assert len(witness_calls) == 1
+    witness = witness_calls[0]
+    assert witness["stat"] == "spell_power"
+    assert witness["preferred_policy"] is winner_policy
+    assert witness["baseline_record"] is record
+    assert witness["allow_paid_winner_after_nonpositive"] is True
+    assert len(smoke_calls) == 2
+    assert smoke_calls[1]["weights"]["spell_power"] == 0.01
+    assert result["source_policy_stat_witnesses"][0]["status"] == (
+        "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS")
+    assert result["real_measured_stat_weights"]["spell_power"] == 0.01
+    assert result["native_paid_winner_spell_probe_enabled"] is True
+    assert result["reachability_count"] == 204
+    assert result["pass_count"] == 94
+    assert result["real_source_search_evaluated"] == 34
