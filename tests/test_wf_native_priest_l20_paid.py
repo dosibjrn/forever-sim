@@ -1295,3 +1295,76 @@ def test_priest_p4_p5_full_screen_skips_redundant_one_fight_smoke(
     assert report["status"] == "BLOCKED"
     assert report["screen_complete_candidates"] == 0
     assert "pass_count" not in report
+
+
+@pytest.mark.parametrize(("native_receipt", "expected_reason"), [
+    (
+        {
+            "native_2d_persistent_verified": 0,
+            "native_2d_persistent_targets_killed": 0,
+            "native_candidate_receipts": [{
+                "status": "NATIVE_PAID",
+                "native_2d_persistent_error": "RUST_TWO_WORLD_KILLS_NOT_COMPLETED",
+            }],
+        },
+        "P4_P5_NATIVE_2D_100MOB_FAILED:RUST_TWO_WORLD_KILLS_NOT_COMPLETED",
+    ),
+    (
+        {
+            "native_2d_persistent_verified": 1,
+            "native_2d_persistent_targets_killed": 100,
+            "native_candidate_receipts": [{
+                "status": "NATIVE_PAID",
+                "native_2d_persistent_world": {
+                    "native_2d_persistent_world_targets_killed": 100,
+                    "native_2d_persistent_paid_recovery": False,
+                },
+            }],
+        },
+        "P4_P5_NATIVE_PAID_RECOVERY_AND_COLD_SEARCH_NOT_COMPLETE",
+    ),
+])
+def test_p4_p5_native_100mob_gate_exposes_real_outcome_without_fake_pass(
+        tmp_path, monkeypatch, native_receipt, expected_reason):
+    """The gate sees the native-world result, not a generic missing bridge."""
+    from src.game import native_p3_item_options
+    from tools import wf_gate_p4_p5_partial as gate
+    from tools import wf_native_priest_l20_paid
+
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(_request()))
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST", str(source))
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD", "1")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS", "100")
+    monkeypatch.delenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR", raising=False)
+    monkeypatch.setattr(native_p3_item_options, "query_native_p3_item_options",
+                        lambda *a, **k: {
+                            "status": "ok",
+                            "items": [{"item_id": 25, "slot": "chest"}],
+                            "unverified_candidate_count": 0,
+                        })
+    calls = []
+
+    def scorer(*args, **kwargs):
+        calls.append(kwargs)
+        return {
+            "native_paid_whole_builds": 1,
+            "native_source_action_casts": 2,
+            "native_2d_screen_complete": False,
+            **native_receipt,
+        }
+
+    monkeypatch.setattr(wf_native_priest_l20_paid,
+                        "score_native_priest_l20_item_candidates", scorer)
+    report = gate._native_cold_options_without_paid_executor(
+        "priest", 20, "unrestricted")
+
+    assert len(calls) == 1
+    assert calls[0]["persistent_target_count"] == 100
+    assert calls[0]["world_screen"] is None
+    assert report["status"] == "BLOCKED"
+    assert report["reasons"] == [expected_reason]
+    assert report["native_2d_screen_complete"] is False
+    assert report["screen_complete_candidates"] == 0
+    assert "pass_count" not in report
