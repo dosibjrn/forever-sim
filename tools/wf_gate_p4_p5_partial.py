@@ -362,15 +362,34 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
     shortlist = shortlist if isinstance(shortlist, list) else []
     final_index = (int(str(winner_id)) if winner_id is not None
                    and str(winner_id).isdigit() else -1)
+    # The frozen 30s winner can be different from the 300s validated
+    # winner. Verify that its saved shortlist entry is the actual paid
+    # candidate frozen at the cutoff; never alias the later finalist.
+    if (not 0 <= frozen_index < len(shortlist)
+            or not isinstance(shortlist[frozen_index], dict)
+            or shortlist[frozen_index].get("paid_candidate_index")
+               != snapshot_winner.get("paid_candidate_index")
+               if isinstance(snapshot_winner, dict) else True):
+        frozen_index = -1
     winner_index = frozen_index if gate == "P4" else final_index
-    witnesses = ([r for r in rows if isinstance(r, dict)
-                  and str(r.get("id")) == str(winner_id)]
-                 if isinstance(rows, list) else [])
-    row = witnesses[0] if len(witnesses) == 1 else {}
+
+    def receipt_for(index):
+        if type(index) is not int or index < 0 or not isinstance(rows, list):
+            return {}
+        matches = [r for r in rows if isinstance(r, dict)
+                   and str(r.get("id")) == str(index)]
+        return matches[0] if len(matches) == 1 else {}
+
+    # Always use the 100-mob replay of the *selected* window's own build.
+    # Previously P4 used the 300s winner_id row, potentially granting P4
+    # completion/time even when the 30s winner had never survived 100 mobs.
+    row = receipt_for(winner_index)
     seconds = row.get("full_s_per_mob")
+    mobs = row.get("mob_completed", row.get("count"))
     complete = (0 <= winner_index < len(shortlist)
                 and row.get("status") == "COMPLETE"
                 and type(row.get("count")) is int and row["count"] == 100
+                and type(mobs) is int and mobs == 100
                 and type(seconds) in (int, float)
                 and isfinite(seconds) and seconds > 0)
     wall = report.get("wall_s")
@@ -470,9 +489,7 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
     # When both winners have the same shortlist index, the exact same
     # execution receipt suffices; no second identical 100-mob replay.
     def replay_receipt(index, window):
-        matched = [entry for entry in rows if isinstance(entry, dict)
-                   and str(entry.get("id")) == str(index)]
-        entry = matched[0] if len(matched) == 1 else {}
+        entry = receipt_for(index)
         return {"window_s": window, "status": entry.get("status"),
                 "count": entry.get("count"),
                 "mob_completed": entry.get("mob_completed", entry.get("count")),
