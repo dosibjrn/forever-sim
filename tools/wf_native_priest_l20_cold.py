@@ -49,9 +49,8 @@ def _source_native_builds(source: dict, item_options: list[dict]):
             swapped = list(selections[0])
             swapped[slot_index] = alternative
             selections.append(tuple(swapped))
-    selections.extend(itertools.product(*grouped))
     yielded = set()
-    for ids in selections:
+    for ids in itertools.chain(selections, itertools.product(*grouped)):
         if ids in yielded:
             continue
         yielded.add(ids)
@@ -132,6 +131,11 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
             if identity in seen:
                 continue
             seen.add(identity)
+            build["simOptions"]["iterations"] = 1
+            build["simOptions"]["randomSeed"] = "42"
+            identity = hashlib.sha256(json.dumps(
+                build, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")).hexdigest()
             path.write_text(json.dumps(build, sort_keys=True), encoding="utf-8")
             row = {"source_request_sha256": identity, "status": "NATIVE_REFUSED"}
             try:
@@ -139,6 +143,8 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                     binary, path, score_request=score_request,
                     budget_s=max(0.001, min(6.0, deadline - clock())))
                 row["native_request_sha256"] = paid["native_request_sha256"]
+                if paid["native_request_sha256"] != identity:
+                    raise RuntimeError("PRIEST_L20_COLD_NATIVE_REQUEST_IDENTITY_MISMATCH")
                 row["native_source_action_casts"] = paid["native_source_action_casts"]
                 row["status"] = "NATIVE_PAID"
                 if paid["native_source_action_casts"] > 0:
@@ -155,7 +161,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
             elapsed = clock() - start
             row["paid_completed_elapsed_s"] = elapsed
             # Late completions are never paid 30s or 300s candidates.
-            if frozen is None and elapsed >= snapshot_s:
+            if frozen is None and elapsed > snapshot_s:
                 frozen = copy.deepcopy(best_early)
             in_budget = elapsed <= budget_s
             if in_budget and row["status"] != "NATIVE_REFUSED":
@@ -177,7 +183,8 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                         best_early = copy.deepcopy(winner)
                 else:
                     completed_after += 1
-            rows.append(row)
+            rows.append({k: v for k, v in row.items()
+                         if k != "real_100mob_receipt"})
     wall_s = clock() - start
     if frozen is None and wall_s >= snapshot_s:
         frozen = copy.deepcopy(best_early)
