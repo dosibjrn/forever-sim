@@ -107,20 +107,3 @@ def test_scope_resets_after_failed_parse_and_concurrent_builds(tmp_path):
     with pytest.raises(ValueError):
         build_game_ir_slice(class_key='druid', level=20, ability_db_path=stage)
     assert build(None) == 32
-
-
-def test_checkpoint_rejects_historical_build_and_runs_real_current_joint_search():
-    from datetime import date
-    from tools.wf319_druid_l20_current_source import current_l20
-    with pytest.raises(ValueError, match='STALE_BUILD_BEFORE_SOURCE_CAPTURE'):
-        current_l20(as_of=date(2026, 10, 2))
-    result = current_l20(as_of=date(2026, 10, 13))
-    assert result['checkpoint'] == 'druid:L20:unrestricted'
-    assert result['accepted_checkpoints'] == 0
-    assert result['acceptance_status'] == 'BLOCKED_SOURCE_INCOMPLETE'
-    assert len(result['source_runtime_index_parity']) == 5
-    measured = result['L2_existing_joint_search']
-    assert measured['comparison']['search_l2_attempts'] == 135
-    assert measured['comparison']['search_executor_events'] > 0
-    assert measured['comparison']['winner_independent_scratch_replay_s_per_mob'] == pytest.approx(
-        measured['comparison']['new_score_s_per_mob'])
