@@ -260,6 +260,53 @@ def _source_actor_context_summary(ir) -> dict:
     }
 
 
+
+def _native_equipped_p3_reservation(
+        class_key: str, level: int, spec: str, native_binary: str | None) -> int:
+    """Reserve two paid attempts only for the selected Rogue native request."""
+    return (2 if native_binary and str(class_key).lower() == "rogue"
+            and int(level) == 20 and str(spec).lower() == "unrestricted"
+            and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
+
+
+def _paid_native_equipped_probe(root: Path, native_binary: str | None,
+                                item_check: dict, remaining: int):
+    """Use the existing selected-native sim boundary when an exact source
+    request is supplied. Do not convert a level-60 fixture into a claimed
+    level-20 actor or spend outside the shared P3 evaluation cap.
+    """
+    request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
+    if not request_path:
+        return None
+    if remaining < 2:
+        return {"status": "NOT_RUN_PAID_BUDGET_EXHAUSTED", "paid_attempts": 0}
+    if not native_binary:
+        return {"status": "NOT_RUN_NATIVE_BINARY_MISSING", "paid_attempts": 0}
+    import json
+    import subprocess
+    import sys
+
+    script = root / "integrations/mythicsim-rust/native_p3_equipped.py"
+    command = [sys.executable, str(script), "--binary", str(native_binary),
+               "--request", str(request_path)]
+    try:
+        completed = subprocess.run(
+            command, input=json.dumps(item_check.get("slots", {})),
+            capture_output=True, text=True, timeout=150, check=False)
+        if completed.returncode != 0:
+            return {"status": "NATIVE_EQUIPPED_PROBE_ERROR", "paid_attempts": 0,
+                    "error": (completed.stderr or completed.stdout)[-500:]}
+        receipt = json.loads(completed.stdout)
+        if (not isinstance(receipt, dict)
+                or type(receipt.get("paid_attempts")) is not int
+                or not 0 <= receipt["paid_attempts"] <= 2):
+            raise ValueError("P3_NATIVE_EQUIPPED_INVALID_RECEIPT")
+        return receipt
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        return {"status": "NATIVE_EQUIPPED_PROBE_ERROR",
+                "paid_attempts": 0, "error": str(exc)[-500:]}
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     # Selected P3 class/level paths require authoritative native ItemSparse.
     # Unsupported native queries refuse; never fall back to Python/SQLite gear.
@@ -379,10 +426,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 "production_component": "src.game.native_p3_player_context",
             }
     max_p3_evaluations = 44
+    # Reserve a real baseline+equipped Rust pair when a native source request
+    # is supplied. Otherwise the earlier 44-budget Python source search can
+    # consume both slots and the selected-native pair never executes.
+    native_pair_reserved = _native_equipped_p3_reservation(
+        class_key, level, spec, native_binary)
+    source_search_budget = max_p3_evaluations - native_pair_reserved
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
         class_key=class_key, level=level, ir_slice=ir,
-        max_evaluations=max_p3_evaluations, initial_search=12, search_per_gear=3,
+        max_evaluations=source_search_budget, initial_search=12, search_per_gear=3,
         max_gear_states=1, probe_deltas=(5., 20.),
         probe_stats=("armor", "stamina", "strength", "agility", "intellect",
                      "spirit", "spell_power", "attack_power", "mp5",
@@ -561,7 +614,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         else:
             probe_deltas = (5., 20.)
             probe_delta_sources = []
-        remaining = max(0, max_p3_evaluations - int(result.get("attempted", 0)) - extra_evaluations)
+        remaining = max(0, source_search_budget - int(result.get("attempted", 0)) - extra_evaluations)
         cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
         has_reusable_baseline = any(
             key[:3] == cache_prefix
@@ -598,7 +651,21 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
             native_options_binary=native_binary,
             native_options_response=native_options)
+    native_equipped_receipt = (
+        _paid_native_equipped_probe(
+            root, native_binary, item_check,
+            max(0, max_p3_evaluations
+                - int(result.get("attempted", 0)) - extra_evaluations))
+        if rogue_l20_native else None)
     reasons = list(item_check["blockers"])
+    # An item-options source snapshot and Python weighted score alone cannot
+    # certify an actual selected-Rust equipped L20 actor. The native pair
+    # receipt remains explicit until the authoritative actor matches L20.
+    if rogue_l20_native and not (
+            native_equipped_receipt
+            and native_equipped_receipt.get("actor_checkpoint_verified") is True
+            and native_equipped_receipt.get("status") == "PAID_NATIVE_DIFFERENCE"):
+        reasons.append("P3_NATIVE_L20_EQUIPPED_SCORE_NOT_ESTABLISHED")
     # The source policy was paid by CombatRuntime, but item scoring does NOT
     # become native equipped-build execution merely because candidate items
     # originated in Rust. Preserve real provenance and the measured receipt.
@@ -619,6 +686,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_source_search_attempts": result.get("attempted", 0),
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
+        "native_equipped_paid_receipt": native_equipped_receipt,
+        "native_equipped_paid_attempts": (
+            native_equipped_receipt.get("paid_attempts", 0)
+            if native_equipped_receipt else 0),
+        "p3_shared_budget_attempts": (
+            int(result.get("attempted", 0)) + extra_evaluations
+            + (native_equipped_receipt.get("paid_attempts", 0)
+               if native_equipped_receipt else 0)),
+        "p3_native_pair_reserved_attempts": native_pair_reserved,
         # This is the resolver used by the paid source search, not a second
         # P3 applicability rule or an invented zero for absent primary stats.
         "real_stat_probe_axis_selection": result.get("stat_probe_axis_selection"),

@@ -175,6 +175,24 @@ def main(argv=None) -> int:
             if key in report:
                 record[key] = report[key]
         if gate == "P3":
+            # Make the real bounded Rust baseline/equipped pair visible to the
+            # ordinary no-record CLI. Otherwise the producer's native verdict,
+            # paid attempts and actor identity silently disappear from Actions.
+            native_pair = report.get("native_equipped_paid_receipt")
+            if isinstance(native_pair, dict):
+                record["native_equipped_paid_receipt"] = {
+                    key: native_pair[key]
+                    for key in ("status", "paid_attempts", "swap",
+                                "comparison", "evaluations",
+                                "actor_checkpoint_verified", "promotion")
+                    if key in native_pair
+                }
+            for key in ("native_equipped_paid_attempts",
+                        "p3_shared_budget_attempts",
+                        "p3_native_pair_reserved_attempts"):
+                value = report.get(key)
+                if type(value) is int and 0 <= value <= 44:
+                    record[key] = value
             # Preserve the measured source-policy witness and weight vector so
             # a first-contact P3 failure can be repaired from its actual cause.
             # These are bounded diagnostics only; they never alter PASS/M1.
