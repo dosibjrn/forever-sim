@@ -1,6 +1,10 @@
 """Forever-owned request mutation and native outcome mapping (not game rules)."""
 import copy
+import sys
+from pathlib import Path
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from native_matrix import NativeCandidateRefusal
 from native_p3_equipped import compare_equipped_native, first_equipped_proposal
