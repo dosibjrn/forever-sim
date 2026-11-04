@@ -143,8 +143,12 @@ def _paladin_paid_winner_identity_fixture():
     record = {
         "status": "evaluated",
         "score_s_per_mob": 12.0,
+        "kill_s": 9.5,
         "prefix": list(prefix),
-        "selected_actions": [{"action_id": action_id} for action_id in prefix],
+        "selected_actions": [
+            {"action_id": prefix[0], "start_time_s": 0.0, "end_time_s": 1.5},
+            {"action_id": prefix[1], "start_time_s": 1.5, "end_time_s": 3.0},
+        ],
         "fallback": "judgement:20271",
         "guarded_action": "holy_strike:1866",
         "guarded_conditions": [dict(condition) for condition in guarded_conditions],
@@ -298,7 +302,8 @@ def test_paladin_paid_winner_is_attempted_before_unexecutable_source_seed(monkey
     assert calls == [(policy.id, prefix, ("agility", 17.0))]
 
 
-def _run_paladin_p3_live_with_stubs(monkeypatch, policy, record, witness):
+def _run_paladin_p3_live_with_stubs(
+        monkeypatch, policy, record, witness, *, initial_mana=612.0):
     from pathlib import Path
     from types import SimpleNamespace
     import src.game.checkpoint_p3_smoke as smoke_module
@@ -310,11 +315,36 @@ def _run_paladin_p3_live_with_stubs(monkeypatch, policy, record, witness):
 
     source_seed = SimpleNamespace(
         id="paladin:source_seed", provenance={"source": "source_ir"}, rules=())
+    action_cost = lambda amount: SimpleNamespace(resource_id="mana", amount=amount)
+    actions = (
+        SimpleNamespace(
+            id="seal_of_fury:1311656", costs=(action_cost(70.0),), effects=(),
+            cooldown_s=0.0, gcd_s=1.5,
+        ),
+        SimpleNamespace(
+            id="judgement:20271", costs=(action_cost(80.0),), effects=(),
+            cooldown_s=0.0, gcd_s=1.5,
+        ),
+        SimpleNamespace(
+            id="holy_strike:1866", costs=(action_cost(60.0),), effects=(),
+            cooldown_s=0.0, gcd_s=1.5,
+        ),
+    )
+    mana_resource = SimpleNamespace(
+        id="mana", owner_actor_id="paladin", scope="actor",
+        active_by_default=True, initial_amount=float(initial_mana),
+        capacity=float(initial_mana), regeneration_per_s=0.0,
+        event_gain_rules=(),
+    )
     ir = SimpleNamespace(
         id="paladin-l20-fixture",
-        actor=SimpleNamespace(metadata={"class_key": "paladin", "level": 20}),
+        actor=SimpleNamespace(
+            id="paladin",
+            metadata={"class_key": "paladin", "level": 20},
+        ),
         policies=(source_seed,),
-        actions=(),
+        actions=actions,
+        resources=(mana_resource,),
         auto_attacks=(),
     )
     native_context = {
@@ -429,17 +459,20 @@ def test_paladin_l20_p3_uses_native_item_deltas_and_paid_winner_first(monkeypatc
     assert report["paid_search_winner_baseline_validation"] == {
         "accepted": True, "score": 12.0, "reason": None,
     }
-    assert [call["stat"] for call in calls] == ["agility", "intellect"]
-    assert [call["max_evaluations"] for call in calls] == [3, 1]
+    assert [call["stat"] for call in calls] == ["agility"]
+    assert [call["max_evaluations"] for call in calls] == [3]
     assert calls[0]["probe_deltas"] == (17.0, 10.0)
-    assert calls[1]["probe_deltas"] == (20.0, 12.0)
-    assert all(call["preferred_policy"] is policy for call in calls)
-    assert all(call["baseline_record"] is record for call in calls)
-    assert all(call["prefer_paid_search_winner"] is True for call in calls)
-    assert all(call["allow_paid_winner_after_nonpositive"] is False for call in calls)
+    assert calls[0]["preferred_policy"] is policy
+    assert calls[0]["baseline_record"] is record
+    assert calls[0]["prefer_paid_search_winner"] is True
+    assert calls[0]["allow_paid_winner_after_nonpositive"] is False
     assert calls[0]["opening_action_ids"] == prefix
-    assert report["real_source_search_evaluated"] == 43
-    assert report["behavior_probes_executed"] == 43
+    assert report["paladin_in_combat_mana_constraint"]["eligible"] is False
+    assert report["paladin_in_combat_mana_constraint"]["reason"] == (
+        "BASELINE_MANA_REMAINS_ABOVE_NEXT_POLICY_COST")
+    assert report["real_source_search_evaluated"] == 42
+    assert report["behavior_probes_executed"] == 42
+    assert len(report["source_policy_stat_witnesses"]) == 1
     assert report["source_policy_stat_witnesses"][0]["probe_delta_sources"][0] == {
         "kind": "two_distinct_native_item_slots",
         "delta": 17.0,
@@ -449,6 +482,38 @@ def test_paladin_l20_p3_uses_native_item_deltas_and_paid_winner_first(monkeypatc
         ],
     }
     assert report["source_policy_stat_witnesses"][1]["probe_delta_sources"][0]["delta"] == 20.0
+
+
+def test_paladin_l20_p3_attempts_intellect_only_when_mana_limited(monkeypatch):
+    policy, record, _prefix = _paladin_paid_winner_identity_fixture()
+    calls = []
+
+    def witness(_ir, **kwargs):
+        calls.append(kwargs)
+        paid = 2 if kwargs["stat"] == "agility" else 1
+        return {
+            "stat": kwargs["stat"],
+            "status": "NO_POSITIVE_SOURCE_POLICY_WITNESS",
+            "paid_evaluations": paid,
+            "baseline_reused": True,
+            "baseline_seconds_per_mob": 12.0,
+            "perturbed_seconds_per_mob": 12.0,
+            "opening_action_ids": list(kwargs["opening_action_ids"]),
+        }
+
+    report = _run_paladin_p3_live_with_stubs(
+        monkeypatch, policy, record, witness, initial_mana=200.0)
+
+    assert report["paladin_in_combat_mana_constraint"]["eligible"] is True
+    assert report["paladin_in_combat_mana_constraint"]["reason"] == (
+        "BASELINE_MANA_LIMITED_BEFORE_TARGET_DEATH")
+    assert report["paladin_in_combat_mana_constraint"]["estimated_mana_at_kill"] == 50.0
+    assert [call["stat"] for call in calls] == ["agility", "intellect"]
+    assert [call["max_evaluations"] for call in calls] == [3, 1]
+    assert calls[1]["probe_deltas"] == (20.0, 12.0)
+    assert calls[1]["prefer_paid_search_winner"] is True
+    assert report["real_source_search_evaluated"] == 43
+    assert report["behavior_probes_executed"] == 43
 
 
 def test_paladin_l20_p3_rejects_mismatched_paid_winner_without_generic_probe(monkeypatch):
