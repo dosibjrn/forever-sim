@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
     # Retired Python GameIR 100-mob continuity challenger; active gates run through wf_gate.
     "tools/wf299_100_mob_continuity_probe.py",
+    # Retired GameIR-only cold 30s source benchmark; live cold gates use wf_gate.py.
+    "tools/wf299_30s_acceptance.py",
+    "tools/wf299_30s_worker.py",
     "tools/wf261_stateful_benchmark.py",
     "tools/wf263_l1_value_benchmark.py",
     "tools/wf276_resource_prefix_benchmark.py",
@@ -22,7 +25,7 @@ RETIRED_TOOLS = (
     "tools/wf319_druid_l20_index_l2_parity.py",
     # One-off WF300 GameIR talent-neighbor diagnostic had no callers; active runtime regressions remain.
     "tools/wf300_two_stage_adversarial_100mob.py",
-    # One-off equal-terms wrapper; retain the shared WF299 probe and behavior tests.
+    # One-off equal-terms wrapper; its WF299 GameIR probe/test are retired too.
     "tools/wf300_continuous_100_mob_acceptance.py",
     # One-off WF343 report driver had no callers; underlying P3 behavior tests remain.
     "tools/wf343_direct_percent_top5.py",
@@ -162,6 +165,8 @@ RETIRED_IMPORT_NAMES = (
     "wf279_paid_fixed_marginal_benchmark",
     "wf280_real_mode_path_benchmark",
     "wf319_druid_l20_index_l2_parity",
+    "wf299_30s_acceptance",
+    "wf299_30s_worker",
     "wf300_two_stage_adversarial_100mob",
     "wf300_continuous_100_mob_acceptance",
     "wf343_direct_percent_top5",
@@ -320,6 +325,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 RETIRED_TESTS = (
     "tests/test_wf300_continuous_mob.py",
+    "tests/gates/test_wf299_30_second_gate.py",
     "tests/maintenance/test_historical_joint_replay_compat.py",
     "tests/test_wf378_recovery_channel_tdd.py",
     "tests/test_wf365_druid_l30_holdout.py",
