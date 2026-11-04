@@ -55,6 +55,11 @@ jobs:
                       "candidate": path.name, "status": "NATIVE_PAID",
                       "action_casts": paid["native_source_action_casts"],
                       "native_action_ids_cast": paid["native_source_action_cast_counts"],
+                      "mind_flay_15407_casts": sum(
+                          count for identity, count in
+                          paid["native_source_action_cast_counts"].items()
+                          if json.loads(identity).get("spellId") == 15407
+                      ),
                   }
               except (OSError, ValueError, RuntimeError, AssertionError,
                       TimeoutError, subprocess.SubprocessError) as exc:
@@ -62,8 +67,18 @@ jobs:
                          "native_reason": str(exc)[-400:]}
               rows.append(row)
               print("PRIEST_L20_REAL_SOURCE_POLICY_PAID", json.dumps(row, sort_keys=True), flush=True)
-          assert len(rows) >= 3, rows
+          assert len(rows) >= 4, rows
           assert rows[0]["status"] == "NATIVE_PAID" and rows[0]["action_casts"] > 0, rows
+          # P4 requires a reachable talent-unlocked action to be compared
+          # through actual native casts, not merely present in a source APL.
+          # This is a cheap preflight: a native refusal/zero cast stops the
+          # 300s run and exposes the actual reason without inventing credit.
+          assert any(
+              row["candidate"] == "04-source-mind-flay.json"
+              and row["status"] == "NATIVE_PAID"
+              and row.get("mind_flay_15407_casts", 0) > 0
+              for row in rows
+          ), "PRIEST_L20_MIND_FLAY_UNLOCK_NOT_NATIVE_CAST"
           # A new 300s cold run is justified only if at least one changed
           # source talent/APL candidate actually executes in the pinned Rust.
           # A proposed unlock with zero native casts is NOT unlock evidence.
