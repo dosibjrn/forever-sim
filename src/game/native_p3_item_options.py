@@ -205,6 +205,7 @@ def _query_native_spell_coefficients(
     if not isinstance(spells, list):
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_SPELLS_UNAVAILABLE")
     coefficients = {}
+    coefficient_action_ids = {}
     for spell in spells:
         if not isinstance(spell, dict):
             continue
@@ -215,7 +216,13 @@ def _query_native_spell_coefficients(
         # lightning_bolt:915 is the untagged cast, not its native proc.
         # Other ranks/procs must not conflict with this exact transport.
         if class_key == "shaman" and (
-                spell_id != 915 or action_id.get("tag", 0) != 0):
+                spell_id != 915
+                or action_id.get("tag", 0) != 0
+                or action_id.get("item_id", 0) != 0
+                or action_id.get("other_id", "") != ""):
+            # The source action is ActionID(spell_id=915) with every other
+            # identity field at its default. Exclude tagged procs and any
+            # item/other-ID action sharing the same numeric spell ID.
             continue
         coefficient = spell.get("bonus_coefficient")
         if type(spell_id) is not int or type(coefficient) not in (int, float):
@@ -225,8 +232,18 @@ def _query_native_spell_coefficients(
             raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_INVALID_COEFFICIENT")
         previous = coefficients.get(spell_id)
         if previous is not None and abs(previous - coefficient) > 1e-9:
-            raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_DUPLICATE_COEFFICIENT_CONFLICT")
+            detail = {
+                "spell_id": spell_id,
+                "previous_action_id": coefficient_action_ids.get(spell_id),
+                "action_id": action_id,
+                "previous_coefficient": previous,
+                "coefficient": coefficient,
+            }
+            raise NativeItemOptionsError(
+                "P3_NATIVE_SPELLBOOK_DUPLICATE_COEFFICIENT_CONFLICT:"
+                + json.dumps(detail, sort_keys=True)[:360])
         coefficients[spell_id] = coefficient
+        coefficient_action_ids[spell_id] = action_id
     if not coefficients:
         if class_key == "shaman":
             raise NativeItemOptionsError(
