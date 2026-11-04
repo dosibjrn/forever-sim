@@ -102,10 +102,18 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
     # lowering an existing level-60 actor, or count a native-only fight as
     # a completed 2D/100-mob gate screen.
     request_file = os.environ.get("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST")
-    if options and class_key == "priest" and level == 20 and spec == "unrestricted" and request_file:
-        from tools.wf_native_priest_l20_paid import score_source_priest_l20
+    candidate_dir = os.environ.get("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR")
+    if (options and class_key == "priest" and level == 20
+            and spec == "unrestricted" and (request_file or candidate_dir)):
+        from tools.wf_native_priest_l20_paid import (
+            score_source_priest_l20, score_source_priest_l20_candidates)
         try:
-            paid = score_source_priest_l20(binary, request_file)
+            if request_file and candidate_dir:
+                raise ValueError("P4_P5_NATIVE_AMBIGUOUS_SOURCE_REQUEST")
+            if candidate_dir:
+                paid = score_source_priest_l20_candidates(binary, candidate_dir)
+            else:
+                paid = score_source_priest_l20(binary, request_file)
         except (OSError, ValueError, RuntimeError, TimeoutError) as exc:
             report["reasons"] = [
                 "P4_P5_NATIVE_PRIEST_L20_PAID_REFUSED:" + str(exc)[-400:]
@@ -113,7 +121,10 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
             return report
         report.update(paid)
         report["paid_candidates"] = paid["native_paid_whole_builds"]
-        report["reasons"] = ["P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"]
+        report["reasons"] = [
+            "P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"
+            if report["paid_candidates"] else
+            "P4_P5_NATIVE_SOURCE_CANDIDATES_NOT_PAID"]
     return report
 
 
