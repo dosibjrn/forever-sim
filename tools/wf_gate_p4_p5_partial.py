@@ -117,7 +117,25 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         max_cpu_s=float(budget_s), per_candidate_wall_s=.75,
         screen_mobs=2, finalist_mobs=100, pack_size=2,
         search_only=True, screen_evaluator_backend="direct",
+        allow_unallocated_talent_baseline=(
+            str(class_key).lower() == "mage" and int(level) == 30
+            and spec == "unrestricted"),
         refinement_rounds=0, **search_spec)
+    if search.get("status") == "BLOCKED":
+        return {
+            "status": "BLOCKED",
+            "reasons": list(search.get("reasons") or [
+                "BLOCKED_NO_EXECUTABLE_FULL_POINT_SOURCE_TALENT_FRONTIER"]),
+            "production_component": "src.v2.source_bounded_joint_frontier.search_bounded_joint_frontier",
+            "production_engine": "gsim_CombatRuntime",
+            "talent_frontier_mode": search.get("talent_frontier_mode"),
+            "p4_talent_unlock_coverage_pass": False,
+            "p4_talent_unlock_coverage_complete": False,
+            "real_talent_unlocked_actions_cast": 0,
+            "coverage_scope_complete": False,
+            "required_full_search_s": (30 if gate == "P4" else 300),
+            "diagnostic_wall_s": search.get("wall_s"),
+        }
     counts = paid_gear_slot_coverage(search)
     # Explored gear slots are search BREADTH, not correctly functioning
     # behavioral assertions. They must never be a gate success percentage.
@@ -136,6 +154,8 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         gate + "_SELECTED_NATIVE_2D_COMPATIBILITY_NOT_VERIFIED"]
     if counts["executed"] == 0:
         reasons.append("NO_COMPLETE_SOURCE_PAID_RUNTIME_SCREENS")
+    if actions["verified"] == 0:
+        reasons.append("NO_SOURCE_ACTION_CAST_IN_COMPLETE_PAID_SCREEN")
     return {
         "status": "FAIL",
         "reasons": reasons,
@@ -154,8 +174,13 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
             "behavior_probes_executed": actions["executed"],
             "partial_scope": "SOURCE_ACTIONS_CAST_IN_COMPLETE_PAID_SCREEN",
             "coverage_basis": "executed_behavior_assertions",
-        } if actions["applicable"] and actions["executed"] else {}),
+        } if actions["applicable"] and actions["verified"] else {}),
         "real_talent_unlocked_actions_cast": verified_unlocks,
+        "talent_frontier_mode": search.get("talent_frontier_mode"),
+        "p4_talent_unlock_coverage_pass": bool(
+            search.get("p4_talent_unlock_coverage_pass", False)),
+        "p4_talent_unlock_coverage_complete": bool(
+            search.get("p4_talent_unlock_coverage_complete", False)),
         "coverage_scope_complete": False,
         "paid_source_gear_slots": counts["paid_slots"],
         "source_eligible_gear_slots": counts["eligible_slots"],
@@ -167,6 +192,22 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         "source_role": role,
         "selected_backend_integration_pending": True,
     }
+
+
+def _source_frontier_blocked_result(report, error, prefix):
+    blocked_tokens = (
+        "BLOCKED_NO_EXECUTABLE_FULL_POINT_SOURCE_TALENT_FRONTIER",
+        "BLOCKED_NO_EXECUTABLE_SOURCE_POLICY_FRONTIER",
+        "SOURCE_FULL_POINT_TALENT_FRONTIER_EMPTY",
+    )
+    if isinstance(report, dict) and report.get("status") == "BLOCKED":
+        reasons = list(report.get("reasons") or [prefix + "SOURCE_FRONTIER_BLOCKED"])
+        return {"status": "BLOCKED", "reasons": reasons,
+                "production_engine": "gsim_CombatRuntime"}
+    if error and any(token in str(error) for token in blocked_tokens):
+        return {"status": "BLOCKED", "reasons": [prefix + str(error)],
+                "production_engine": "gsim_CombatRuntime"}
+    return None
 
 
 def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
@@ -200,12 +241,18 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
         if gate == "P5":
             baseline, error = _execute(Path(root), ["--budget", "30", *checkpoint_args],
                                        folder / "cold-30.json", 420)
+            blocked = _source_frontier_blocked_result(baseline, error, "P5_30S_")
+            if blocked:
+                return blocked
             if error:
                 return {"status": "FAIL", "reasons": ["P5_30S_" + error],
                         "production_engine": "gsim_CombatRuntime"}
         output = folder / ("cold-300.json" if gate == "P5" else "cold.json")
         report, error = _execute(Path(root), ["--budget", str(budget), *checkpoint_args],
                                  output, timeout_s)
+        blocked = _source_frontier_blocked_result(report, error, gate + "_")
+        if blocked:
+            return blocked
         if error:
             return {"status": "FAIL", "reasons": [gate + "_" + error],
                     "production_engine": "gsim_CombatRuntime"}
