@@ -271,6 +271,8 @@ RETIRED_OUTPUT_PREFIXES = (
 
 RETIRED_SOURCE_EVIDENCE = (
     "data/forever/source_observations/wf305_druid_l20_engraving_grants.json",
+    # P1 source-effect roles only fed the retired P1 proof/ingestion path.
+    "evidence/p1_source_effect_roles_v1.json",
 )
 
 
@@ -365,6 +367,8 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
         assert not (ROOT / relative).exists(), relative
     for prefix in RETIRED_OUTPUT_PREFIXES:
         assert not any(path.name.startswith(prefix) for path in ROOT.iterdir()), prefix
+    for relative in RETIRED_SOURCE_EVIDENCE:
+        assert not (ROOT / relative).exists(), relative
 
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(
         encoding="utf-8"
