@@ -545,7 +545,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                             production, binary, row[3], distance,
                             seeds=(("1955181", "1955207") if is_deep
                                    else ("1955113", "1955139")),
-                            native_only=native_only)
+                            **({"native_only": True} if native_only else {}))
                         # Initial 6, confirmed 12, deep-confirmed 18
                         # genuine paid balanced fights: weight old 12-fight
                         # mean twice when incorporating the last 6.
@@ -579,7 +579,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                         balanced_score, balanced_live = _paid_p75_balanced_finalist(
                             production, binary, candidate, distance,
                             seeds=("1955004", "1955047"),
-                            native_only=native_only)
+                            **({"native_only": True} if native_only else {}))
                         balanced_finalists.append((
                             balanced_score, balanced_live, candidate_sha,
                             candidate, screen_score))
