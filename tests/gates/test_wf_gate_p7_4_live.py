@@ -885,6 +885,13 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
                 "weapon_damage_max": 99, "ilvl": 47,
             }},
         },
+        {
+            # Protobuf JSON omits default-valued enum fields. An absent
+            # ranged_weapon_type is the native enum-zero Unknown proposal;
+            # the native engine still makes the actual admission decision.
+            "id": 9007, "type": relic_type,
+            "scaling_options": {"0": {"ilvl": 57}},
+        },
     ])
 
     items_path = tmp_path / "items.jsonl"
@@ -900,9 +907,10 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
     assert 833 in pool[12] and 833 in pool[13]  # statless native trinket: Lifestone
     assert pool[15][0] == 1000 + item_types.index(relic_type)
     assert 22397 in pool[15]  # statless native relic: Idol of Ferocity
+    assert 9007 in pool[15]  # omitted enum-zero subtype must reach native
     assert 9003 not in pool[15]  # known bow remains outside the druid relic proposal slot
     assert enchant_pools[6] == [None, 2000 + item_types.index(search.RUST_TYPES["hands"])]
     assert metadata == {
-        "unique_item_options": len(item_types) + 4,
+        "unique_item_options": len(item_types) + 5,
         "unique_enchant_options": len(item_types),
     }
