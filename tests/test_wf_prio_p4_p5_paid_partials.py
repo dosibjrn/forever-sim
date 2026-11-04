@@ -389,3 +389,78 @@ def test_mage_l30_partial_returns_structured_blocked_without_unlock_credit(monke
     assert report["p4_talent_unlock_coverage_pass"] is False
     assert report["p4_talent_unlock_coverage_complete"] is False
     assert report["coverage_scope_complete"] is False
+
+
+def test_priest_p4_p5_queries_native_options_without_legacy_role_or_ir(monkeypatch):
+    from tools import wf_gate_p4_p5_partial as gate
+    from src.game.data.forever import gear, registry
+    from src.game import native_p3_item_options as native
+    from src.v2 import source_bounded_joint_frontier as frontier
+
+    monkeypatch.delenv("FOREVER_P4_P5_FULL_SOURCE", raising=False)
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/forever-engine")
+    monkeypatch.setattr(gear, "available_gear_roles", lambda key: ())
+    def legacy_forbidden(**kwargs):
+        raise AssertionError("native-only path must not build GameIR")
+    monkeypatch.setattr(registry, "build_game_ir_slice", legacy_forbidden)
+    monkeypatch.setattr(frontier, "search_bounded_joint_frontier", legacy_forbidden)
+    queries = []
+    def native_options(binary, class_key, level, *, spec):
+        queries.append((binary, class_key, level, spec))
+        return {"status": "partial_level_unknown",
+                "items": [{"item_id": 17}, {"item_id": 18}],
+                "unverified_candidate_count": 3}
+    monkeypatch.setattr(native, "query_native_p3_item_options", native_options)
+
+    for target_gate in ("P4", "P5"):
+        report = gate.run_paid_partial(
+            ROOT, "priest", 20, spec="unrestricted", gate=target_gate)
+        assert report["status"] == "BLOCKED"
+        assert report["reasons"] == [
+            "P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED"]
+        assert report["native_source_option_count"] == 2
+        assert report["native_source_unverified_candidate_count"] == 3
+        assert report["native_source_status"] == "partial_level_unknown"
+        assert report["paid_candidates"] == 0
+        assert report["screen_complete_candidates"] == 0
+        assert report["coverage_scope_complete"] is False
+        assert "pass_count" not in report
+    assert queries == [
+        ("/selected/forever-engine", "priest", 20, "unrestricted")] * 2
+
+
+def test_priest_native_options_refusal_and_missing_binary_do_not_fallback(monkeypatch):
+    from tools import wf_gate_p4_p5_partial as gate
+    from src.game.data.forever import gear, registry
+    from src.game import native_p3_item_options as native
+
+    monkeypatch.delenv("FOREVER_P4_P5_FULL_SOURCE", raising=False)
+    monkeypatch.setattr(gear, "available_gear_roles", lambda key: ())
+    monkeypatch.setattr(registry, "build_game_ir_slice",
+                        lambda **kw: (_ for _ in ()).throw(
+                            AssertionError("no legacy GameIR fallback")))
+    monkeypatch.delenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", raising=False)
+    missing = gate.run_paid_partial(
+        ROOT, "priest", 20, spec="unrestricted", gate="P4")
+    assert missing["reasons"] == ["P4_P5_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED"]
+    assert "pass_count" not in missing
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/forever-engine")
+    def refuse(*args, **kwargs):
+        raise native.NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_REFUSED:CLASS_UNSUPPORTED")
+    monkeypatch.setattr(native, "query_native_p3_item_options", refuse)
+    refused = gate.run_paid_partial(
+        ROOT, "priest", 20, spec="unrestricted", gate="P5")
+    assert refused["status"] == "BLOCKED"
+    assert refused["reasons"] == ["P3_NATIVE_ITEM_OPTIONS_REFUSED:CLASS_UNSUPPORTED"]
+    assert "pass_count" not in refused
+
+    monkeypatch.setattr(native, "query_native_p3_item_options",
+                        lambda *args, **kwargs: {
+                            "status": "empty", "items": [],
+                            "unverified_candidate_count": 0})
+    empty = gate.run_paid_partial(
+        ROOT, "priest", 20, spec="unrestricted", gate="P4")
+    assert empty["reasons"] == ["P4_P5_NATIVE_ITEM_OPTIONS_EMPTY"]
+    assert empty["native_source_option_count"] == 0
+    assert empty["paid_candidates"] == 0
