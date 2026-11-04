@@ -31,6 +31,20 @@ from src.game.runtime.simulator import EventTransitionBudgetExceeded, ComputeDea
 from src.version import SOFTWARE_VERSION
 
 
+def _positive_paid_seconds(value):
+    """Accept only a genuine numeric paid objective, never a coerced receipt.
+
+    A native refusal can carry null, text or a bool-shaped value. Such results
+    consume the caller's paid budget but cannot establish a P3 stat derivative.
+    """
+    if type(value) not in (int, float):
+        return None
+    try:
+        return float(value) if isfinite(value) and value > 0. else None
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
 def _gear_key(selection):
     return tuple(sorted((str(slot), int(item['item_id'])) for slot, item in selection.slots.items()))
 
@@ -53,14 +67,8 @@ def _fixed_opening_score(ir, record, level, incoming, *, meter=None, max_events=
         not ordered_prefix_executed(execution, record['prefix']) or
         not execution.timeline.target_defeated):
         return None
-    # A native/paid evaluator may have a completed kill receipt but no usable
-    # numeric objective. It consumes its budget slot; it is not a measured
-    # sensitivity baseline and must not abort the rest of the P3 search.
-    try:
-        seconds = float(evaluation.seconds_per_mob)
-    except (TypeError, ValueError, AttributeError, OverflowError):
-        return None
-    return seconds if isfinite(seconds) and seconds > 0. else None
+    # A finished kill without a valid objective still consumed a paid probe.
+    return _positive_paid_seconds(getattr(evaluation, 'seconds_per_mob', None))
 
 
 def _source_probe_axis_selection(ir, requested: tuple[str, ...]) -> tuple[tuple[str, ...], dict]:
@@ -702,11 +710,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 })
                 continue
             if cached_baseline is not None:
-                try:
-                    cached_value = float(cached_baseline)
-                except (TypeError, ValueError, AttributeError, OverflowError):
-                    cached_value = float('nan')
-                if isfinite(cached_value) and cached_value > 0.:
+                cached_value = _positive_paid_seconds(cached_baseline)
+                if cached_value is not None:
                     baseline = cached_value
                     baseline_source = (
                         'paid_search_winner_record'
@@ -749,11 +754,9 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             elif not execution.timeline.target_defeated:
                 reason = 'BASELINE_TARGET_NOT_DEFEATED'
             else:
-                try:
-                    baseline_value = float(before.seconds_per_mob)
-                except (TypeError, ValueError, AttributeError, OverflowError):
-                    baseline_value = float('nan')
-                reason = (None if isfinite(baseline_value) and baseline_value > 0.
+                baseline_value = _positive_paid_seconds(
+                    getattr(before, 'seconds_per_mob', None))
+                reason = (None if baseline_value is not None
                           else 'BASELINE_NONPOSITIVE_OR_NONFINITE_OBJECTIVE')
             if reason is not None:
                 baseline_failures.append({
@@ -798,14 +801,9 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                      not ordered_prefix_executed(execution, active_prefix)) or
                     not execution.timeline.target_defeated):
                 continue
-            # A failed native/paid probe can return a result object without a
-            # numerical objective. It has already consumed the budget, but
-            # must not crash P3 or turn into a made-up zero/positive weight.
-            try:
-                paid_seconds = float(after.seconds_per_mob)
-            except (TypeError, ValueError, AttributeError, OverflowError):
-                continue
-            if not isfinite(paid_seconds) or paid_seconds <= 0.:
+            paid_seconds = _positive_paid_seconds(
+                getattr(after, 'seconds_per_mob', None))
+            if paid_seconds is None:
                 continue
             improvement = baseline - paid_seconds
             if improvement > 1e-12:
