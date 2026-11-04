@@ -275,22 +275,19 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             query_native_player_context,
         )
         player_context_binary = os.environ.get("FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN")
-        if not player_context_binary:
-            return {
-                "status": "BLOCKED",
-                "reasons": ["P3_NATIVE_PLAYER_CONTEXT_BINARY_REQUIRED"],
-                "production_component": "src.game.native_p3_player_context",
-            }
-        try:
-            native_player_context = query_native_player_context(
-                player_context_binary, class_key, level)
-            ir = apply_native_player_context(ir, native_player_context)
-        except (NativePlayerContextError, ValueError, TypeError, KeyError) as exc:
-            return {
-                "status": "BLOCKED",
-                "reasons": [str(exc)],
-                "production_component": "src.game.native_p3_player_context",
-            }
+        if player_context_binary:
+            try:
+                native_player_context = query_native_player_context(
+                    player_context_binary, class_key, level)
+                ir = apply_native_player_context(ir, native_player_context)
+            except (NativePlayerContextError, ValueError, TypeError, KeyError) as exc:
+                return {
+                    "status": "BLOCKED",
+                    "reasons": [str(exc)],
+                    "production_component": "src.game.native_p3_player_context",
+                }
+        # Until the exact tested Rust revision is pinned, retain the existing
+        # proxy diagnostic. Its guard below still prevents any P3 gate credit.
     max_p3_evaluations = 44
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
