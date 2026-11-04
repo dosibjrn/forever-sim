@@ -129,3 +129,72 @@ def test_native_execution_failure_keeps_actionable_error(monkeypatch, capsys):
     row = json.loads(capsys.readouterr().out)["results"][0]
     assert row["native_execution_error"] == error
     assert row["native_source_revision"] == "tested-native-pin"
+
+
+def test_native_adapter_preserves_structured_rust_refusal(monkeypatch, tmp_path):
+    """Test Forever transport only; do not second-guess Rust talent legality."""
+    import importlib.util
+    import json
+    from types import SimpleNamespace
+
+    path = ROOT / "integrations/mythicsim-rust/live_world_probe.py"
+    spec = importlib.util.spec_from_file_location("work2_native_refusal", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    request = _copy_authentic_source(tmp_path)
+    reason = 'druid talents "050022-55000032021032212051-053": Predatory Discipline has 1 rank, the string gives 3'
+    monkeypatch.setattr(module.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(
+        returncode=5, stdout=json.dumps({"prepared": False,
+                                           "refusal": {"code": "talents", "reason": reason}}),
+        stderr=""))
+    with pytest.raises(module.NativeSourceRefusal) as failure:
+        module.native_source_control(tmp_path / "forever-engine", request,
+                                     1000, rng_mode="stochastic")
+    assert failure.value.code == "talents"
+    assert failure.value.reason == reason
+    assert failure.value.exit_code == 5
+    assert len(failure.value.request_sha256) == 64
+
+
+def test_feral_rejected_native_source_is_not_a_stochastic_dps_failure(tmp_path, monkeypatch):
+    _copy_authentic_source(tmp_path)
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("transport-only test path")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
+    monkeypatch.setattr(gate, "_selected_rust_submodule", lambda *args: "native-pin")
+    provider = tmp_path / "integrations/mythicsim-rust/live_world_probe.py"
+    provider.parent.mkdir(parents=True)
+    provider.write_text(
+        "class NativeSourceRefusal(RuntimeError):\\n"
+        "    def __init__(self):\\n"
+        "        self.code = 'talents'\\n"
+        "        self.reason = 'Predatory Discipline has 1 rank, the string gives 3'\\n"
+        "def native_source_control(*args, **kwargs):\\n"
+        "    raise NativeSourceRefusal()\\n"
+    )
+    result = gate.run_live(tmp_path, "druid", 60, spec="feral")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == ["P7_1_NATIVE_SOURCE_REFUSED"]
+    assert result["native_refusal_code"] == "talents"
+    assert "Predatory Discipline" in result["native_refusal_reason"]
+    assert "native_dps" not in result
+
+
+def test_cli_keeps_native_refusal_code_and_full_reason(monkeypatch, capsys):
+    import json
+    from tools import wf_gate as cli
+
+    reason = 'druid talents "050022-55000032021032212051-053": ' + 'Predatory Discipline rank refusal; ' * 20
+    monkeypatch.setattr(cli, "_run_live_gate", lambda *args: {
+        "status": "BLOCKED",
+        "reasons": ["P7_1_NATIVE_SOURCE_REFUSED"],
+        "native_refusal_code": "talents",
+        "native_refusal_reason": reason,
+    })
+    assert cli.main(["--class", "druid", "--level", "60",
+                     "--spec", "feral", "--gate", "P7.1"]) != 0
+    row = json.loads(capsys.readouterr().out)["results"][0]
+    assert row["status"] == "BLOCKED"
+    assert row["native_refusal_code"] == "talents"
+    assert row["native_refusal_reason"] == reason

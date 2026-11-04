@@ -296,6 +296,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             binary, request, run_iterations, rng_mode="stochastic")
     except (AssertionError, KeyError, TypeError, ValueError, OSError,
             RuntimeError, subprocess.SubprocessError) as exc:
+        if isinstance(exc, getattr(module, "NativeSourceRefusal", ())):
+            # A real Rust INVALID/UNSUPPORTED refusal is authoritative. No
+            # stochastic fight ran, so this is not a DPS-floor failure.
+            return {"status": "BLOCKED",
+                    "reasons": ["P7_1_NATIVE_SOURCE_REFUSED"],
+                    "native_refusal_code": exc.code,
+                    "native_refusal_reason": exc.reason,
+                    "native_source_revision": selected_rust,
+                    "source_request_raw_sha256": raw_sha}
         return {"status": "FAIL",
                 "reasons": ["P7_1_NATIVE_STOCHASTIC_EXECUTION_FAILED"],
                 "native_execution_error": type(exc).__name__ + ":" + str(exc)[:240],
