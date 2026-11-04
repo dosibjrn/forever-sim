@@ -1570,3 +1570,54 @@ def test_failed_100_target_native_actor_preserves_actual_world_kills(
     assert row["native_2d_persistent_observed_kills"] == 2
     assert row["native_2d_persistent_error"] == expected_reason
     assert result["native_2d_screen_complete"] is False
+
+
+@pytest.mark.parametrize("refuse_first_dense", [False, True])
+def test_priest_native_item_frontier_pays_distinct_dense_builds_before_sparse_fallbacks(
+        tmp_path, refuse_first_dense):
+    """Different native-sourced whole builds get scarce paid slots; Rust can refuse.
+
+    This tests Forever's proposal ordering only, not item legality or game
+    effects. An invalid dense build must leave the remaining paid budget open.
+    """
+    from tools.wf_native_priest_l20_paid import score_native_priest_l20_item_candidates
+
+    source_file = tmp_path / "priest-source.json"
+    source_file.write_text(json.dumps(_request()), encoding="utf-8")
+    options = [
+        {"item_id": 2000 + index, "slot": f"native_slot_{index}"}
+        for index in range(12)
+    ]
+    attempted = []
+
+    def scorer(binary, request, **kwargs):
+        ids = [
+            item["id"] for item in request["raid"]["parties"][0][
+                "players"][0]["equipment"]["items"]
+        ]
+        attempted.append(ids)
+        if refuse_first_dense and ids == list(range(2000, 2005)):
+            raise RuntimeError("RUST_REFUSED_DENSE_BUILD")
+        return {
+            "effective_request_sha256": f"native-{len(attempted)}",
+            "score": float(len(ids) + 1), "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 1}],
+        }, {}
+
+    result = score_native_priest_l20_item_candidates(
+        "/selected/native", source_file, options, score_request=scorer,
+        max_paid_builds=4, budget_s=6.0)
+    expected = [
+        [], list(range(2000, 2005)), list(range(2007, 2012)),
+        list(range(2000, 2010)),
+    ]
+    if refuse_first_dense:
+        expected.append([2000])
+    assert attempted == expected
+    assert result["native_paid_whole_builds"] == 4
+    assert result["native_candidate_requests_attempted"] == len(expected)
+    assert result["native_item_options_proposed"] == 15
+    assert result["native_item_option_alternative_builds_proposed"] == 3
+    assert result["native_2d_screen_complete"] is False
+    assert json.loads(source_file.read_text(encoding="utf-8")) == _request()
