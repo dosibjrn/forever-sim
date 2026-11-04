@@ -257,7 +257,10 @@ def test_form_fixed_source_fact_backed_autoattack_needs_dps_but_not_equipped_mea
     ir = SimpleNamespace(
         id="druid-ir",
         actor=SimpleNamespace(metadata={"class_key": "druid"}),
-        actions=(SimpleNamespace(id="cat-policy", effects=(), requirements=()),),
+        actions=(SimpleNamespace(
+            id="cat-policy", effects=(),
+            requirements=({"kind": "mode_is", "value": "cat"},),
+        ),),
         auto_attacks=(auto,),
     )
     policy = _policy("cat-policy")
