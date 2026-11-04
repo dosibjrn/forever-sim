@@ -7,8 +7,12 @@ import sys
 from hashlib import sha256
 from pathlib import Path
 
+from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
+from src.game.talent_execution_coverage import compile_talent_runtime
+from src.game.talents import apply_talent_selection
 from src.v2 import source_bounded_joint_frontier as frontier
+from src.v2.source_persistent_joint_finalists import evaluate_persistent_candidate
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -72,3 +76,42 @@ def test_druid_l30_full_runner_uses_canonical_db_and_reaches_cold_search(
     assert observed["search_only"] is True
     assert "spec_tree" not in observed
     assert "min_spec_points" not in observed
+
+
+
+def test_canonical_druid_l30_source_still_generates_and_executes_insect_swarm():
+    # The missing staged DB used to supply a checkpoint talent catalogue.
+    # Prove the canonical DB alone still supplies the actual talent grant and
+    # its ordinary paid combat execution; no staged source is reconstructed.
+    canonical = Path(DEFAULT_DB).resolve()
+    raw = build_game_ir_slice(
+        class_key="druid", level=30, ability_db_path=canonical)
+    assert raw is not None
+    source = compile_talent_runtime(raw)[0]
+    stage = frontier.source_cold_start_stage(
+        class_key="druid", level=30, source_ir=source, gear_role="druid_feral")
+
+    allocations, _ = frontier.bounded_full_point_talent_frontier(
+        source, level=30, bonus_talent_points=5, max_frontier=16)
+    allocation = next(
+        (row for row in allocations if row.get("insect_swarm") == 1), None)
+    assert allocation is not None, "canonical source lacks the L30 Insect Swarm talent facts"
+
+    selected, _ = apply_talent_selection(
+        source, allocation, level=30, bonus_talent_points=5)
+    assert "insect_swarm:24974" in {action.id for action in selected.actions}
+
+    witness = next(
+        row for row in frontier.source_talent_unlock_witnesses(
+            source, selected, stage)
+        if row["action_id"] == "insect_swarm:24974")
+    candidate = frontier._prepare_joint_policy_candidate(
+        class_key="druid", level=30, stage=stage, allocation=allocation,
+        source_ir=source, allow_partial_gear_stats=True,
+        policy_label="talent_unlock:insect_swarm:24974",
+        policy=witness["policy"], bonus_talent_points=5)
+    result = evaluate_persistent_candidate(
+        candidate, level=30, mobs=4, max_total_events=200000)
+    assert result["status"] == "COMPLETE", result
+    assert result["source_action_counts"]["insect_swarm:24974"] > 0
+    assert result["source_action_counts"]["wrath:5180"] > 0
