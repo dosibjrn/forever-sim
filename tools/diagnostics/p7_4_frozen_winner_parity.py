@@ -39,9 +39,11 @@ def frozen_winner_request(base_path):
     base = json.loads(base_path.read_text())
     candidate = copy.deepcopy(base)
     items = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
-    if len(items) != len(ITERATION_GEAR):
-        raise AssertionError(f"FROZEN_P74_GEAR_SLOT_COUNT:{len(items)}")
-    for item, (item_id, enchant_id) in zip(items, ITERATION_GEAR):
+    by_slot = {int(item["slot"]): item for item in items}
+    if len(by_slot) != len(ITERATION_GEAR) or set(by_slot) != set(range(len(ITERATION_GEAR))):
+        raise AssertionError(f"FROZEN_P74_GEAR_SLOT_SET:{sorted(by_slot)}")
+    for slot, (item_id, enchant_id) in enumerate(ITERATION_GEAR):
+        item = by_slot[slot]
         item["id"] = item_id
         item.pop("enchant", None)
         if enchant_id is not None:
