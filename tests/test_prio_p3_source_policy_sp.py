@@ -53,3 +53,118 @@ def test_real_unrestricted_l40_p3_reuses_baseline_to_measure_spirit():
     assert spirit["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", result
     assert spirit["baseline_reused"] is True, result
     assert result["behavior_probes_executed"] <= 44, result
+
+
+def test_paid_source_search_winner_reuses_its_paid_baseline_and_prefix(monkeypatch):
+    from types import SimpleNamespace
+    import src.game.gear as gear_module
+    import src.v2.source_budgeted_gear as budgeted
+
+    ir = SimpleNamespace(id="mage-l30-source", policies=())
+    winner = SimpleNamespace(id="paid-source-winner", provenance={})
+    calls = []
+
+    def apply_delta(candidate_ir, stat, delta):
+        return SimpleNamespace(
+            id=candidate_ir.id, policies=(), delta=(stat, float(delta)))
+
+    def evaluate(candidate_ir, *, level, policy_override,
+                 opening_action_ids=(), schedule_incoming_attacks=False):
+        calls.append((policy_override.id, tuple(opening_action_ids),
+                      getattr(candidate_ir, "delta", None)))
+        return (
+            SimpleNamespace(seconds_per_mob=9.0),
+            SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)),
+            {},
+        )
+
+    monkeypatch.setattr(gear_module, "apply_stat_delta", apply_delta)
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", evaluate)
+    cache = {}
+
+    first = budgeted.paid_source_policy_stat_witness(
+        ir, stat="spell_power", level=30, probe_deltas=(5., 20.),
+        max_evaluations=1, schedule_incoming_attacks=True,
+        baseline_cache=cache, primary_policy=winner,
+        primary_opening_action_ids=("mage:fireball",),
+        primary_baseline_seconds_per_mob=10.0)
+    assert first["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", first
+    assert first["baseline_reused"] is True
+    assert first["baseline_source"] == "paid_source_search_winner"
+    assert first["attempted_policies"] == ["paid-source-winner"]
+    assert first["attempted_policy_sources"] == ["paid_source_search_winner"]
+    assert first["paid_evaluations"] == 1
+    assert calls == [("paid-source-winner", ("mage:fireball",),
+                      ("spell_power", 5.0))]
+
+    second = budgeted.paid_source_policy_stat_witness(
+        ir, stat="intellect", level=30, probe_deltas=(5., 20.),
+        max_evaluations=1, schedule_incoming_attacks=True,
+        baseline_cache=cache, primary_policy=winner,
+        primary_opening_action_ids=("mage:fireball",))
+    assert second["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", second
+    assert second["baseline_reused"] is True
+    assert second["baseline_source"] == "source_policy_baseline_cache"
+    assert second["paid_evaluations"] == 1
+    assert calls[-1] == ("paid-source-winner", ("mage:fireball",),
+                         ("intellect", 5.0))
+
+
+def test_live_p3_passes_paid_search_winner_baseline_and_prefix(monkeypatch):
+    from types import SimpleNamespace
+    import src.game.checkpoint_p3_smoke as p3_smoke
+    import src.game.data.forever.registry as registry
+    import src.v2.source_budgeted_gear as budgeted
+    import src.v2.source_stateful_budgeted as stateful
+    import tools.wf_gate_p3_live as p3
+
+    ir = SimpleNamespace(
+        actor=SimpleNamespace(metadata={"class_key": "mage", "level": 30}),
+        policies=(), actions=())
+    monkeypatch.setattr(registry, "build_game_ir_slice",
+                        lambda **kwargs: ir)
+    monkeypatch.setattr(
+        p3, "_source_profile_build_ir",
+        lambda root, source_ir, class_key, level, spec:
+            (source_ir, {"profile": spec, "full_point_source_allocation": None}))
+    record = {
+        "fallback": "fireball", "prefix": ["mage:fireball"],
+        "score_s_per_mob": 12.5, "guarded_action": None,
+        "guarded_conditions": [],
+    }
+    search_result = {
+        "stages": [{"stage": "source_naked", "winner": record}],
+        "sensitivity_history": [{"stage": "source_naked",
+                                 "values": {"spell_power": 0.0}}],
+        "attempted": 42, "evaluated": 42, "status": "EVALUATED_BOUNDED",
+        "source_context_sha256": "test-source-context",
+    }
+    monkeypatch.setattr(budgeted, "run_source_budgeted_gear",
+                        lambda **kwargs: search_result)
+    winner_policy = SimpleNamespace(id="paid-search-winner", provenance={})
+    monkeypatch.setattr(stateful, "_make_policy",
+                        lambda *args, **kwargs: winner_policy)
+    monkeypatch.setattr(
+        p3_smoke, "fast_p3_smoke_for_policy",
+        lambda **kwargs: {
+            "blockers": ["NONPOSITIVE_RELEVANT_WEIGHT:spell_power"],
+            "legal_item_count": 1, "tested_item_count": 1,
+            "slot_count": 1, "tested_stat_assertions": 1,
+        })
+    captured = {}
+
+    def witness(_ir, **kwargs):
+        captured.update(kwargs)
+        return {
+            "status": "NO_POSITIVE_SOURCE_POLICY_WITNESS",
+            "paid_evaluations": 1, "stat": "spell_power",
+            "attempted_policies": [],
+        }
+
+    monkeypatch.setattr(budgeted, "paid_source_policy_stat_witness", witness)
+    result = p3.run_live(ROOT, "mage", 30, spec="unrestricted")
+
+    assert captured["primary_policy"] is winner_policy
+    assert captured["primary_opening_action_ids"] == ("mage:fireball",)
+    assert captured["primary_baseline_seconds_per_mob"] == 12.5
+    assert result["real_source_search_evaluated"] == 43
