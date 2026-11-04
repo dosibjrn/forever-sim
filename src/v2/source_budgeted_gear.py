@@ -424,59 +424,70 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                            'bounded real combat/recovery search, no global optimum']}
 
 
-def paid_search_winner_baseline(preferred_policy, baseline_record, opening_action_ids):
-    """Return a paid search score only when its exact policy execution matches.
+def paid_search_winner_baseline_validation(
+        preferred_policy, baseline_record, opening_action_ids):
+    """Explain whether the paid score belongs to this exact executable policy.
 
-    The source-naked winner is reusable only for the same ordered opening,
-    fallback, guarded continuation and selected-action prefix. A score from a
-    different policy is not a baseline for this policy's stat perturbations.
+    Reuse is allowed only when provenance, ordered opening, selected actions,
+    fallback and guarded continuation all match. The reason codes make a
+    rejected baseline observable without weakening any acceptance condition.
     """
     from src.v2.source_budgeted_prefix import AUTO_ONLY_FALLBACK
 
-    if preferred_policy is None or not isinstance(baseline_record, dict):
-        return None
+    def rejected(reason):
+        return {"accepted": False, "score": None, "reason": reason}
+
+    if preferred_policy is None:
+        return rejected("PREFERRED_POLICY_MISSING")
+    if not isinstance(baseline_record, dict):
+        return rejected("BASELINE_RECORD_NOT_OBJECT")
     provenance = getattr(preferred_policy, 'provenance', None)
-    if (not isinstance(provenance, dict)
-            or provenance.get('authority') != 'source_stateful_budgeted'
-            or provenance.get('search_performed') is not True):
-        return None
+    if not isinstance(provenance, dict):
+        return rejected("POLICY_PROVENANCE_NOT_OBJECT")
+    if provenance.get('authority') != 'source_stateful_budgeted':
+        return rejected("POLICY_AUTHORITY_MISMATCH")
+    if provenance.get('search_performed') is not True:
+        return rejected("POLICY_SEARCH_NOT_PERFORMED")
 
     try:
         if baseline_record.get('status') != 'evaluated':
-            return None
-        score = float(baseline_record.get('score_s_per_mob'))
+            return rejected("RECORD_STATUS_NOT_EVALUATED")
+        try:
+            score = float(baseline_record.get('score_s_per_mob'))
+        except (TypeError, ValueError, OverflowError):
+            return rejected("RECORD_SCORE_NOT_NUMERIC")
         if not isfinite(score) or score <= 0.:
-            return None
+            return rejected("RECORD_SCORE_NOT_POSITIVE_FINITE")
 
         raw_prefix = baseline_record.get('prefix', ())
         if (not isinstance(raw_prefix, (list, tuple))
                 or any(not isinstance(action_id, str) or not action_id
                        for action_id in raw_prefix)):
-            return None
+            return rejected("RECORD_PREFIX_INVALID")
         record_prefix = tuple(raw_prefix)
         if record_prefix != tuple(str(x) for x in opening_action_ids):
-            return None
+            return rejected("OPENING_ACTION_PREFIX_MISMATCH")
         if record_prefix:
             selected = baseline_record.get('selected_actions')
             if not isinstance(selected, (list, tuple)) or len(selected) < len(record_prefix):
-                return None
+                return rejected("SELECTED_ACTION_PREFIX_MISSING")
             selected_prefix = tuple(
                 row.get('action_id') if isinstance(row, dict) else None
                 for row in selected[:len(record_prefix)])
             if selected_prefix != record_prefix:
-                return None
+                return rejected("SELECTED_ACTION_PREFIX_MISMATCH")
 
         record_fallback = baseline_record.get('fallback')
         if not isinstance(record_fallback, str) or not record_fallback:
-            return None
+            return rejected("RECORD_FALLBACK_INVALID")
         guarded_action = baseline_record.get('guarded_action')
         if guarded_action is not None and not isinstance(guarded_action, str):
-            return None
+            return rejected("RECORD_GUARDED_ACTION_INVALID")
         raw_guarded_conditions = baseline_record.get('guarded_conditions') or ()
         if (not isinstance(raw_guarded_conditions, (list, tuple))
                 or any(not isinstance(condition, dict)
                        for condition in raw_guarded_conditions)):
-            return None
+            return rejected("RECORD_GUARDED_CONDITIONS_INVALID")
         expected_guarded_conditions = tuple(
             dict(condition) for condition in raw_guarded_conditions)
 
@@ -490,21 +501,21 @@ def paid_search_winner_baseline(preferred_policy, baseline_record, opening_actio
             (0 if record_fallback == AUTO_ONLY_FALLBACK else 1)
             + (0 if guarded_action is None else 1))
         if len(rules) != expected_rule_count:
-            return None
+            return rejected("POLICY_RULE_COUNT_MISMATCH")
         if record_fallback == AUTO_ONLY_FALLBACK:
             if fallback_rules:
-                return None
+                return rejected("POLICY_HAS_UNEXPECTED_AUTO_FALLBACK_RULE")
         elif (len(fallback_rules) != 1
               or getattr(fallback_rules[0], 'action_id', None) != record_fallback):
-            return None
+            return rejected("POLICY_FALLBACK_ACTION_MISMATCH")
 
         if guarded_action is None:
             if guarded_rules or expected_guarded_conditions:
-                return None
+                return rejected("POLICY_HAS_UNEXPECTED_GUARDED_CONTINUATION")
         else:
             if (len(guarded_rules) != 1
                     or getattr(guarded_rules[0], 'action_id', None) != guarded_action):
-                return None
+                return rejected("POLICY_GUARDED_ACTION_MISMATCH")
             actual_guarded_conditions = []
             for condition in tuple(getattr(guarded_rules[0], 'conditions', ()) or ()):
                 as_dict = getattr(condition, 'as_dict', None)
@@ -513,18 +524,25 @@ def paid_search_winner_baseline(preferred_policy, baseline_record, opening_actio
                 elif isinstance(condition, dict):
                     payload = dict(condition)
                 else:
-                    return None
+                    return rejected("POLICY_GUARDED_CONDITION_SHAPE_INVALID")
                 if not isinstance(payload, dict):
-                    return None
+                    return rejected("POLICY_GUARDED_CONDITION_SHAPE_INVALID")
                 actual_guarded_conditions.append(payload)
             if tuple(actual_guarded_conditions) != expected_guarded_conditions:
-                return None
+                return rejected("POLICY_GUARDED_CONDITIONS_MISMATCH")
 
         if not isinstance(getattr(preferred_policy, 'id', None), str):
-            return None
-        return score
-    except (AttributeError, TypeError, ValueError, OverflowError):
-        return None
+            return rejected("POLICY_ID_INVALID")
+        return {"accepted": True, "score": score, "reason": None}
+    except (AttributeError, TypeError, ValueError, OverflowError) as exc:
+        return rejected("VALIDATOR_EXCEPTION:" + type(exc).__name__)
+
+
+def paid_search_winner_baseline(preferred_policy, baseline_record, opening_action_ids):
+    """Return the paid score only when the strict identity validator accepts it."""
+    validation = paid_search_winner_baseline_validation(
+        preferred_policy, baseline_record, opening_action_ids)
+    return validation["score"] if validation["accepted"] else None
 
 
 def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
@@ -535,18 +553,15 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    opening_action_ids: tuple[str, ...] = (),
                                    preferred_policy=None,
                                    baseline_record: dict | None = None,
-                                   allow_paid_winner_after_nonpositive: bool = False) -> dict:
+                                   allow_paid_winner_after_nonpositive: bool = False,
+                                   prefer_paid_search_winner: bool = False) -> dict:
     """Find a measured beneficial stat delta on an executable source policy.
 
-    Keep source-IR policies first. On the Mage L30 native-item path, use the
-    exact winning opening prefix as the source-policy baseline attempt; the
-    empty-prefix attempt is known not to establish the kill objective. The
-    selected paid winner normally remains a baseline fallback only. When its
-    exact fallback action has been enriched from native PreparedV2 spell data,
-    permit one largest native item-sized probe after a nonpositive source-policy
-    result. Reuse the exact already-paid winner baseline; do not spend another
-    baseline evaluation. Every perturbation still runs through the real
-    executor; no synthetic policy, epsilon, or inferred stat weight is used.
+    Keep source-IR policies first by default. A narrowly scoped caller may
+    prefer the already-paid winner only after the strict identity validator
+    accepts its exact record/policy pairing. Reuse that paid baseline without
+    another baseline evaluation. Every perturbation still runs through the
+    real executor; no synthetic policy, epsilon, or inferred stat weight is used.
     """
     from src.game.gear import apply_stat_delta
     from src.v2.source_budgeted_prefix import ordered_prefix_executed
@@ -571,27 +586,45 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
 
     # This is a genuinely paid source-search score, not a free replay. Reuse it
     # only after exact policy/record identity has been established above.
-    preferred_score = paid_search_winner_baseline(
+    preferred_validation = paid_search_winner_baseline_validation(
         preferred_policy, baseline_record, opening_action_ids)
+    preferred_score = (
+        preferred_validation["score"] if preferred_validation["accepted"] else None)
     preferred_prefix = None
     if preferred_score is not None:
         preferred_prefix = opening_action_ids
         baseline_cache[(*cache_prefix, str(preferred_policy.id),
                         preferred_prefix)] = preferred_score
+    elif prefer_paid_search_winner:
+        return {
+            "status": "PAID_SEARCH_WINNER_BASELINE_REJECTED",
+            "stat": stat,
+            "validation_reason": preferred_validation["reason"],
+            "paid_evaluations": 0,
+            "baseline_reused": False,
+            "opening_action_ids": list(opening_action_ids),
+            "attempted_policies": [],
+            "attempted_policy_sources": [],
+            "attempted_policy_opening_action_ids": [],
+            "baseline_failures": [],
+        }
 
-    candidate_policies = []
+    source_candidate_policies = []
     for policy in ir.policies:
         if not getattr(policy, 'provenance', None):
             continue
         if (preferred_policy is not None and
                 str(policy.id) == str(getattr(preferred_policy, 'id', ''))):
             continue
-        candidate_policies.append((policy, 'source_ir_policy'))
-    # Only spend the remaining budget on the already-paid search winner after
-    # the source policy probes have had their chance to reproduce the positive
-    # native item-sized derivative (Mage L30 Intellect in #825).
-    if preferred_policy is not None and getattr(preferred_policy, 'provenance', None):
-        candidate_policies.append((preferred_policy, 'paid_search_winner'))
+        source_candidate_policies.append((policy, 'source_ir_policy'))
+    paid_winner_candidate = (
+        [(preferred_policy, 'paid_search_winner')]
+        if preferred_score is not None
+        and getattr(preferred_policy, 'provenance', None) else [])
+    if prefer_paid_search_winner:
+        candidate_policies = paid_winner_candidate + source_candidate_policies
+    else:
+        candidate_policies = source_candidate_policies + paid_winner_candidate
 
     # With only one paid evaluation left, a fresh baseline cannot establish a
     # stat slope. Reserve that last evaluation for a previously paid baseline.
