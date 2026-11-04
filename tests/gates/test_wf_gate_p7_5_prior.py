@@ -199,3 +199,52 @@ def test_m1_projection_rejects_bounded_p71_and_mismatched_engine(
     receipts[1]["report"]["runtime_proof"]["engine_revision"] = "wrong-fork"
     path.write_text(json.dumps({"receipts": receipts}))
     assert _read(tmp_path) is None
+
+
+def _native_p71_receipt(dps=765.0):
+    """Genuine-shape P7.1 result from the selected native stationary scorer."""
+    report = _report("P7.1", dps)
+    report["production_engine"] = "pinned_mythicsim_rust_native"
+    report["selected_validation"] = "1000_native_stochastic_fights"
+    report["sampled_source_fights"] = 1000
+    report.pop("world_dps")
+    report.pop("world_damage_events")
+    report.pop("world_boundaries")
+    return report
+
+
+def test_native_only_accepted_p71_is_an_eligible_stochastic_prior(tmp_path, monkeypatch):
+    receipts, path = _fixtures(tmp_path, monkeypatch)
+    receipts[0]["report"] = _native_p71_receipt(765.0)
+    path.write_text(json.dumps({"receipts": receipts}))
+    result = _read(tmp_path)
+    assert result["dps"] == 765.0
+    assert result["compatible_gates"] == ["P7.1", "P7.2", "P7.4"]
+    assert "https://github.com/example/actions/runs/P7.1" in result["run_urls"]
+
+
+@pytest.mark.parametrize("field,value", [
+    ("iterations", 3),
+    ("sampled_source_fights", 3),
+    ("stochastic_rng", False),
+    ("selected_validation", "bounded_native_stochastic_diagnostic"),
+    ("saved_reference_dps", 900.0),
+    ("native_dps", 0.0),
+    ("native_dps", float("nan")),
+])
+def test_native_p71_rejects_unverified_or_bounded_holdout(
+        tmp_path, monkeypatch, field, value):
+    receipts, path = _fixtures(tmp_path, monkeypatch)
+    report = _native_p71_receipt()
+    report[field] = value
+    receipts[0]["report"] = report
+    path.write_text(json.dumps({"receipts": receipts}))
+    assert _read(tmp_path) is None
+
+
+def test_native_stochastic_receipt_cannot_certify_non_p71_axis(
+        tmp_path, monkeypatch):
+    receipts, path = _fixtures(tmp_path, monkeypatch)
+    receipts[1]["report"] = _native_p71_receipt()
+    path.write_text(json.dumps({"receipts": receipts}))
+    assert _read(tmp_path) is None
