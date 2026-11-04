@@ -8,6 +8,7 @@ on:
       - 'tools/wf305_ingest_web_observed_spell_dependencies.py'
       - 'tools/wf240_source_joint_replay.py'
       - 'tools/wf241_source_joint_replay.py'
+      - 'tools/wf250_non_druid_replay.py'
       - 'tests/test_wf303_checkpoint_falsifier.py'
       - 'tests/test_wf305_source_action_scope.py'
       - 'data/forever/source_observations/wf305_druid_l20_engraving_grants.json'
