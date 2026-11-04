@@ -325,8 +325,11 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
         require_native_moving: bool = False,
         classic_mob_level: int | None = None,
         require_native_health_damage: bool = False,
-        require_native_zero_health_damage: bool = False) -> dict:
+        require_native_zero_health_damage: bool = False,
+        rng_mode: str = "stochastic") -> dict:
     """Execute N world kills; retain one Rust process, actor and ACK lineage."""
+    if rng_mode not in ("balanced", "stochastic"):
+        raise ValueError("RUST_MULTI_WORLD_RNG_MODE_INVALID")
     if require_native_health_damage and require_native_zero_health_damage:
         raise ValueError("RUST_WORLD_CONFLICTING_NATIVE_HEALTH_CONTROLS")
     mob_health, target_metadata = _target_health_profile(mob_health, classic_mob_level)
@@ -382,7 +385,7 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
     proc = subprocess.Popen(
         [str(binary.resolve()), "native-world-pulls", "--infile",
          str(prepared.resolve()), "--targets", str(target_count),
-         "--rng-mode", "stochastic"],
+         "--rng-mode", rng_mode],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1, env=env,
     )
