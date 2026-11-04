@@ -508,13 +508,14 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
 
     Keep source-IR policies first. On the Mage L30 native-item path, use the
     exact winning opening prefix as the source-policy baseline attempt; the
-    empty-prefix attempt is known not to establish the kill objective. The
-    selected paid winner normally remains a baseline fallback only. When its
-    exact fallback action has been enriched from native PreparedV2 spell data,
-    permit one largest native item-sized probe after a nonpositive source-policy
-    result. Reuse the exact already-paid winner baseline; do not spend another
-    baseline evaluation. Every perturbation still runs through the real
-    executor; no synthetic policy, epsilon, or inferred stat weight is used.
+    empty-prefix attempt is known not to establish the kill objective. When
+    native PreparedV2 spell data enriches the exact fallback action, spend only
+    the largest native item-sized probe on each source policy before trying the
+    already-paid winner baseline with that same largest delta. This spreads the
+    unchanged bounded budget across more required stat axes. Reuse the exact
+    paid winner baseline; do not spend another baseline evaluation. Every
+    perturbation still runs through the real executor; no synthetic policy,
+    epsilon, or inferred stat weight is used.
     """
     from src.game.gear import apply_stat_delta
     from src.v2.source_budgeted_prefix import ordered_prefix_executed
@@ -529,6 +530,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     attempted_policy_opening_action_ids = []
     baseline_failures = []
     baseline_reused_any = False
+    paid_probe_attempts = []
     opening_action_ids = tuple(str(x) for x in opening_action_ids)
     prefix_options = (
         (opening_action_ids,) if opening_action_ids and preferred_policy is not None
@@ -579,11 +581,10 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             # baseline has been established.
             continue
         policy_probe_deltas = tuple(probe_deltas)
-        if (policy_source == 'paid_search_winner'
-                and source_policy_baseline_established
-                and allow_paid_winner_after_nonpositive):
-            # The selected winner already has a paid baseline. One largest
-            # native item-sized perturbation is the bounded alternative probe.
+        if preferred_policy is not None and allow_paid_winner_after_nonpositive:
+            # The Mage L30 native path shares one hard budget across required
+            # stat axes. Try only the largest native item-sized delta on each
+            # executable policy before moving to the next axis.
             policy_probe_deltas = tuple(probe_deltas[:1])
         baseline = None
         baseline_source = None
@@ -689,6 +690,12 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             if used >= max_evaluations:
                 break
             used += 1
+            paid_probe_attempts.append({
+                'stat': stat,
+                'policy_id': str(policy.id),
+                'policy_source': policy_source,
+                'delta': float(delta),
+            })
             try:
                 changed = apply_stat_delta(ir, stat, float(delta))
                 after, execution, details = _policy_combat_evaluation(
@@ -722,6 +729,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                         and source_policy_baseline_established
                         and allow_paid_winner_after_nonpositive),
                     'paid_evaluations': used,
+                    'paid_probe_attempts': paid_probe_attempts,
                     'baseline_reused': policy_baseline_reused,
                     'baseline_source': baseline_source,
                     'opening_action_ids': list(active_prefix),
@@ -737,6 +745,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
         'status': 'NO_POSITIVE_SOURCE_POLICY_WITNESS',
         'stat': stat, 'probe_deltas': [float(x) for x in probe_deltas],
         'paid_evaluations': used,
+        'paid_probe_attempts': paid_probe_attempts,
         'baseline_reused': baseline_reused_any,
         'opening_action_ids': list(opening_action_ids),
         'attempted_policies': attempted_policies,
