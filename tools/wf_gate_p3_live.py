@@ -107,6 +107,56 @@ def _p3_stat_witness_priority(ir, policy) -> tuple[str, ...]:
     )
 
 
+def _native_item_stat_probe_deltas(item_check: dict, axis: str):
+    """Return source-item-sized perturbations and their exact native origins.
+
+    The first probe is the largest single positive stat amount among the
+    already selected legal top-five items. A second probe, when available,
+    sums the largest amounts from two different slots. This is a measured
+    multi-item stat delta, not a claim that the pair is a jointly legal build.
+    """
+    best_by_slot = {}
+    for slot, slot_report in item_check.get("slots", {}).items():
+        for item in slot_report.get("items", ()):
+            amount = item.get("stat_values", {}).get(axis)
+            item_id = item.get("item_id")
+            if (type(amount) not in (int, float)
+                    or not isfinite(float(amount)) or float(amount) <= 0.
+                    or type(item_id) is not int):
+                continue
+            candidate = {
+                "slot": str(slot), "item_id": item_id,
+                "name": str(item.get("name") or ""),
+                "amount": float(amount),
+            }
+            previous = best_by_slot.get(str(slot))
+            if (previous is None or candidate["amount"] > previous["amount"]
+                    or (candidate["amount"] == previous["amount"]
+                        and candidate["item_id"] < previous["item_id"])):
+                best_by_slot[str(slot)] = candidate
+    ranked = sorted(best_by_slot.values(),
+                    key=lambda item: (-item["amount"], item["slot"], item["item_id"]))
+    if not ranked:
+        return (), []
+    deltas = [ranked[0]["amount"]]
+    sources = [{
+        "kind": "single_native_item",
+        "delta": ranked[0]["amount"],
+        "items": [dict(ranked[0])],
+    }]
+    if len(ranked) >= 2:
+        pair = ranked[:2]
+        total = sum(item["amount"] for item in pair)
+        if total > deltas[0]:
+            deltas.append(total)
+            sources.append({
+                "kind": "two_distinct_native_item_slots",
+                "delta": total,
+                "items": [dict(item) for item in pair],
+            })
+    return tuple(deltas), sources
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     # Priest/Mage L20 and unrestricted Mage L30 P3 use the native
     # ItemSparse provider; all other profiles/levels retain their existing path.
@@ -207,10 +257,25 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         key=lambda blocker: (
             witness_rank.get(blocker.split(":", 1)[1], len(witness_rank)),
             blocker.split(":", 1)[1]))
+    mage_l30_native = (
+        str(class_key).lower() == "mage" and int(level) == 30
+        and str(spec).lower() == "unrestricted"
+        and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    )
     for blocker in witness_blockers:
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
             continue
+        if mage_l30_native:
+            probe_deltas, probe_delta_sources = _native_item_stat_probe_deltas(
+                item_check, axis)
+            # If native top-five items have no positive value for this axis,
+            # do not fall back to guessed generic deltas.
+            if not probe_deltas:
+                continue
+        else:
+            probe_deltas = (5., 20.)
+            probe_delta_sources = []
         remaining = max(0, max_p3_evaluations - int(result.get("attempted", 0)) - extra_evaluations)
         cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
         has_reusable_baseline = any(
@@ -219,15 +284,20 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             and isfinite(value) and value > 0
             for key, value in source_policy_baseline_cache.items()
         )
-        minimum_evaluations = 1 if has_reusable_baseline else 2
+        minimum_evaluations = (
+            1 if has_reusable_baseline
+            else (3 if mage_l30_native and record.get("prefix") else 2)
+        )
         if remaining < minimum_evaluations:
             break
         witness = paid_source_policy_stat_witness(
-            ir, stat=axis, level=level, probe_deltas=(5., 20.),
+            ir, stat=axis, level=level, probe_deltas=probe_deltas,
             max_evaluations=remaining,
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
             opening_action_ids=tuple(record.get("prefix", ())))
+        if mage_l30_native:
+            witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
         if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
