@@ -110,10 +110,16 @@ def pinned_rust_candidate_pool(items_path, enchants_path):
                     "HandTypeTwoHand", "HandTypeUnknown",
                 ) or row.get("weapon_type") == "WeaponTypeShield":
                     continue
-            if slot == "relic" and row.get("ranged_weapon_type") not in (
-                "RangedWeaponTypeIdol", "RangedWeaponTypeUnknown", "",
-            ):
-                continue
+            if slot == "relic":
+                # Protobuf JSON omits default enum values. In the pinned Rust
+                # schema, an absent ranged_weapon_type is enum zero:
+                # RangedWeaponTypeUnknown, which native source control may
+                # accept or refuse.
+                ranged_type = row.get("ranged_weapon_type") or "RangedWeaponTypeUnknown"
+                if ranged_type not in (
+                    "RangedWeaponTypeIdol", "RangedWeaponTypeUnknown",
+                ):
+                    continue
 
             def stat(index):
                 value = stats.get(str(index), stats.get(index, 0.0))
