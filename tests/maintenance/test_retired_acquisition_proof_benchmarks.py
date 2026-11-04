@@ -46,6 +46,7 @@ RETIRED_TOOLS = (
     "tools/wf356_legacy_l30_equipment_audit.py",
     "tools/wf344_source_equipment_merged_report.py",
     "tools/wf352_p3_reaudit.py",
+    "tools/wf352_os_probe.py",
     "tools/ingest_source_acquisition_evidence_sqlite.py",
     "tools/ingest_source_acquisition_entities_sqlite.py",
     "tools/wf_gate_p1_live.py",
