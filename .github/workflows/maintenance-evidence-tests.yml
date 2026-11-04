@@ -6,6 +6,11 @@ on:
       - 'src/v2/mechanics_projection.py'
       - 'src/v2/latent_search.py'
       - 'src/v2/path_validation.py'
+      - 'src/v2/path_score.py'
+      - 'src/v2/parallel_search.py'
+      - 'tests/test_v2_parallel_path.py'
+      - 'tests/generic/search/test_v2_path_score.py'
+      - 'tests/generic/search/test_v2_path_dp_tiebreak.py'
       - 'src/v2/stochastic_diagnostics.py'
       - 'src/v2/stochastic_race.py'
       - 'tests/test_v2_projection.py'
@@ -230,6 +235,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/generic/search/test_v2_path_dp_tiebreak.py
           tests/test_wf305_source_action_scope.py
           tests/gates/test_wf_gate_class_cli.py
           tests/gates/test_wf_gate_runtime_authority.py

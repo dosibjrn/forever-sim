@@ -178,6 +178,9 @@ RETIRED_TOOLS = (
     "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
+    # Unused Mage-v2 per-level multiprocessing and path scorer (test-only callers).
+    "src/v2/parallel_search.py",
+    "src/v2/path_score.py",
     # Orphan Mage analytic projection, route simulation, and v1 stochastic diagnostics.
     "src/v2/mechanics_projection.py",
     "src/v2/latent_search.py",
@@ -198,6 +201,9 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "parallel_search",
+    "score_path_levels",
+    "path_score",
     "mechanics_projection",
     "latent_search",
     "path_validation",
@@ -392,6 +398,8 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/test_v2_parallel_path.py",
+    "tests/generic/search/test_v2_path_score.py",
     "tests/test_v2_projection.py",
     "tests/generic/search/test_v2_path_validation_inputs.py",
     "tests/test_v2_stochastic_diagnostics.py",
