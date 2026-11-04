@@ -90,12 +90,13 @@ def _paid_elite_choice(elites, rng: random.Random, proposal_index: int):
 def _pinned_source_runtime(root: Path, class_key: str, level: int,
                            spec: str, gate: str, *, require_world: bool = True):
     """One exact-source native preflight shared by P7 discovery gates."""
-    # "unrestricted" imposes no Balance/Feral/Restoration profile constraint:
-    # the authenticated level-60 Balance build remains an eligible Druid
-    # reference for P7.2/P7.3/P7.4. P7.5 retains its narrower selection.
+    # An unrestricted checkpoint may optimize any native-legal Druid build.
+    # Reuse the authentic Balance reference encounter without claiming it is
+    # an independently measured unrestricted reference; P7.5 is eligible too.
     if ((class_key, level) != ("druid", 60)
             or not (spec == "balance"
-                    or (gate in ("P7.2", "P7.3", "P7.4") and spec == "unrestricted"))):
+                    or (gate in ("P7.2", "P7.3", "P7.4", "P7.5")
+                        and spec == "unrestricted"))):
         return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
     request = root / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
     witness = root / "docs/evidence/wf633/WF633_VALIDATION.json"
