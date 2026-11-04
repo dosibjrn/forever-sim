@@ -110,16 +110,10 @@ def pinned_rust_candidate_pool(items_path, enchants_path):
                     "HandTypeTwoHand", "HandTypeUnknown",
                 ) or row.get("weapon_type") == "WeaponTypeShield":
                     continue
-            if slot == "relic":
-                # The pinned native protobuf JSON omits enum-zero fields:
-                # missing/empty ranged_weapon_type means Unknown, not an
-                # absent source option. This is proposal shaping only;
-                # native prepare/execute owns item legality and effects.
-                ranged_type = row.get("ranged_weapon_type") or "RangedWeaponTypeUnknown"
-                if ranged_type not in (
-                    "RangedWeaponTypeIdol", "RangedWeaponTypeUnknown",
-                ):
-                    continue
+            if slot == "relic" and row.get("ranged_weapon_type") not in (
+                "RangedWeaponTypeIdol", "RangedWeaponTypeUnknown", "",
+            ):
+                continue
 
             def stat(index):
                 value = stats.get(str(index), stats.get(index, 0.0))
