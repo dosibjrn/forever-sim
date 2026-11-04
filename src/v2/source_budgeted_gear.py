@@ -535,7 +535,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    opening_action_ids: tuple[str, ...] = (),
                                    preferred_policy=None,
                                    baseline_record: dict | None = None,
-                                   allow_paid_winner_after_nonpositive: bool = False) -> dict:
+                                   allow_paid_winner_after_nonpositive: bool = False,
+                                   prefer_verified_paid_winner_first: bool = False) -> dict:
     """Find a measured beneficial stat delta on an executable source policy.
 
     Keep source-IR policies first. On the Mage L30 native-item path, use the
@@ -547,6 +548,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     result. Reuse the exact already-paid winner baseline; do not spend another
     baseline evaluation. Every perturbation still runs through the real
     executor; no synthetic policy, epsilon, or inferred stat weight is used.
+    A strictly verified paid winner may be tried first without a fresh baseline.
     """
     from src.game.gear import apply_stat_delta
     from src.v2.source_budgeted_prefix import ordered_prefix_executed
@@ -587,11 +589,15 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 str(policy.id) == str(getattr(preferred_policy, 'id', ''))):
             continue
         candidate_policies.append((policy, 'source_ir_policy'))
-    # Only spend the remaining budget on the already-paid search winner after
-    # the source policy probes have had their chance to reproduce the positive
-    # native item-sized derivative (Mage L30 Intellect in #825).
+    # For a selected native-context Paladin, the strictly verified paid winner
+    # may receive the first perturbation. Other callers remain source-first.
     if preferred_policy is not None and getattr(preferred_policy, 'provenance', None):
-        candidate_policies.append((preferred_policy, 'paid_search_winner'))
+        winner_candidate = (preferred_policy, 'paid_search_winner')
+        if prefer_verified_paid_winner_first:
+            if preferred_score is not None:
+                candidate_policies.insert(0, winner_candidate)
+        else:
+            candidate_policies.append(winner_candidate)
 
     # With only one paid evaluation left, a fresh baseline cannot establish a
     # stat slope. Reserve that last evaluation for a previously paid baseline.
