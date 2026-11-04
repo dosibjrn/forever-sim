@@ -258,6 +258,7 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
     assert captured["max_evaluations"] == 1
     assert captured["probe_deltas"] == (20.0,)
     assert captured["allow_paid_winner_after_nonpositive"] is True
+    assert captured["prefer_policy_breadth"] is True
     assert len(smoke_calls) == 1
     assert smoke_calls[0]["native_options_binary"] == "native-test-binary"
     assert result["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
