@@ -11,6 +11,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+# Enabled only by the explicit Merge-owned P4+P5 CLI invocation. The first
+# gate executes the genuine source-native 300s cold search; the second derives
+# its independent verdict from that same in-process executed receipt. The
+# cache is never populated from a saved artifact or enabled for single gates.
+_SHARED_PRIEST_L20_COLD: dict | None = None
+
+
+def set_priest_l20_p4_p5_shared_cold(enabled: bool) -> None:
+    global _SHARED_PRIEST_L20_COLD
+    _SHARED_PRIEST_L20_COLD = {} if enabled else None
+
 
 def paid_gear_slot_coverage(search: dict) -> dict:
     """Derive a comparable real paid coverage fraction, not candidate count."""
@@ -138,7 +149,14 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                     raise ValueError("P4_P5_NATIVE_COLD_REQUIRES_SOURCE_LIVE_100MOB")
                 from tools.wf_native_priest_l20_cold import (
                     native_cold_gate_verdicts, run_native_priest_l20_cold)
-                cold = run_native_priest_l20_cold(binary, request_file or candidate_dir, options)
+                if (_SHARED_PRIEST_L20_COLD is not None
+                        and "executed" in _SHARED_PRIEST_L20_COLD):
+                    cold = _SHARED_PRIEST_L20_COLD["executed"]
+                else:
+                    cold = run_native_priest_l20_cold(
+                        binary, request_file or candidate_dir, options)
+                    if _SHARED_PRIEST_L20_COLD is not None:
+                        _SHARED_PRIEST_L20_COLD["executed"] = cold
                 # Optional ordinary Actions artifact of this *executed* source
                 # run, never a second M1 ledger or a replay input authority.
                 receipt_out = os.environ.get(

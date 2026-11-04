@@ -1,34 +1,43 @@
+"""Current single Merge-owned M1 workflow: recording and explicit invalidation.
+
+The retired m1-invalidate.yml / one-off Mage receipt exception is not a
+separate acceptance process. Test the actual main workflow's guardrails.
+"""
 from pathlib import Path
 
 
-def test_m1_invalidation_workflow_is_merge_owned_and_provenance_scoped():
-    workflow = Path(".github/workflows/m1-invalidate.yml").read_text()
-    assert "issue_comment:" in workflow
+WORKFLOW = Path(".github/workflows/m1-on-demand-record.yml")
+
+
+def test_explicit_invalidation_requires_owner_merged_pr_and_live_gate():
+    workflow = WORKFLOW.read_text()
     assert "github.actor == 'dosibjrn'" in workflow
     assert "github.event.issue.pull_request" in workflow
-    assert "M1_INVALIDATION_REQUIRES_MERGED_PR_TO_MAIN" in workflow
-    assert 'target" == "mage:30:unrestricted:P3"' in workflow
-    assert 'expected_run" == "41764632715"' in workflow
-    assert 'row.get("status") != "PARTIAL"' in workflow
-    assert 'row.get("run_url", "")' in workflow
-    assert "M1 - Merge-owned batch live gate recorder" in workflow
-    assert "python tools/m1_progress.py" in workflow
-    assert "--invalidate" in workflow
-    assert "--plot-svg" in workflow
-    assert "push origin HEAD:refs/heads/main" in workflow
-    assert "force=true" not in workflow
-    assert "wf_gate.py" not in workflow
+    assert '[[ "$(jq -r \'.merged\' <<< "$pr")" == true' in workflow
+    assert '$(jq -r \'.base.ref\' <<< "$pr")' in workflow
+    assert '$(jq -r \'.base.repo.full_name\' <<< "$pr")' in workflow
+    assert '[[ "$COMMENT_BODY" == \'/m1-invalidate \'* ]]' in workflow
+    assert "Invalid active M1 invalidation target" in workflow
+    assert "M1 invalidation requires a non-empty reason" in workflow
+    assert 'python tools/m1_progress.py --invalidate "$class" "$level" "$spec" "$gate"' in workflow
+    assert "--plot-svg docs/planning/M1_HISTORY.svg" in workflow
 
 
-def test_general_m1_recorder_does_not_share_invalidation_trigger():
-    recorder = Path(".github/workflows/m1-on-demand-record.yml").read_text()
-    assert "startsWith(github.event.comment.body, '/m1-run ')" in recorder
-    assert "startsWith(github.event.comment.body, '/m1-invalidate ')" not in recorder
+def test_general_m1_recorder_shares_one_dispatch_but_skips_gate_execution_on_invalidation():
+    workflow = WORKFLOW.read_text()
+    assert "startsWith(github.event.comment.body, '/m1-run ')" in workflow
+    assert "startsWith(github.event.comment.body, '/m1-invalidate ')" in workflow
+    assert "if: steps.targets.outputs.invalidate != 'true'" in workflow
+    assert "python tools/wf_gate.py" in workflow
+    assert 'if [[ "$INVALIDATE" == true ]]; then' in workflow
 
 
-def test_invalidation_waits_for_real_recorder_jobs_not_skipped_comment_runs():
-    workflow = Path(".github/workflows/m1-invalidate.yml").read_text()
-    assert 'actions/runs/$run_id/jobs?per_page=100' in workflow
-    assert 'select(.name=="record" and (.status=="queued" or .status=="in_progress"))' in workflow
-    assert 'M1_RECORDER_IN_PROGRESS attempt=$attempt' in workflow
-    assert 'sleep 5' in workflow
+def test_invalidation_uses_fresh_main_and_nonforce_cas_not_a_stale_receipt():
+    workflow = WORKFLOW.read_text()
+    assert "git reset --hard FETCH_HEAD" in workflow
+    assert 'parent="$(git rev-parse HEAD)"' in workflow
+    assert 'current="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main"' in workflow
+    assert 'if [[ "$current" != "$parent" ]]; then' in workflow
+    assert "main advanced during invalidation" in workflow
+    assert "force:false" in workflow
+    assert "M1 invalidation retry limit exhausted" in workflow

@@ -126,7 +126,7 @@ def main(argv=None) -> int:
     parser.add_argument("--class", dest="class_key", required=True)
     parser.add_argument("--level", type=int, required=True)
     parser.add_argument("--spec", default="unrestricted")
-    parser.add_argument("--gate", choices=(*GATES, "P7", "all"), required=True)
+    parser.add_argument("--gate", choices=(*GATES, "P7", "all", "P4+P5", "P4+P5+P6"), required=True)
     parser.add_argument("--out", type=Path,
                         help="Write the freshly executed results and provenance")
     parser.add_argument("--record-pass", "--record-progress", dest="record_pass",
@@ -138,8 +138,19 @@ def main(argv=None) -> int:
             parser.error(f"--{name} requires a lower-case source key")
     if not 1 <= a.level <= 60:
         parser.error("--level must be within 1..60")
+    # One explicitly requested official Priest cold search, independently
+    # evaluated for P4 and P5; no cache or composite mode in normal probes.
+    if a.gate in ("P4+P5", "P4+P5+P6"):
+        import os
+        if ((a.class_key, a.level, a.spec) != ("priest", 20, "unrestricted")
+                or os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") != "1"):
+            parser.error("paired Priest P4/P5/P6 requires explicit native cold producer")
+        from tools.wf_gate_p4_p5_partial import set_priest_l20_p4_p5_shared_cold
+        set_priest_l20_p4_p5_shared_cold(True)
     targets = (GATES if a.gate == "all" else
                tuple(f"P7.{n}" for n in range(1, 6)) if a.gate == "P7"
+               else ("P4", "P5", "P6") if a.gate == "P4+P5+P6"
+               else ("P4", "P5") if a.gate == "P4+P5"
                else (a.gate,))
     results = []
     for gate in targets:
@@ -512,6 +523,8 @@ def main(argv=None) -> int:
         a.out.parent.mkdir(parents=True, exist_ok=True)
         a.out.write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n",
                          encoding="utf-8")
+    if a.gate in ("P4+P5", "P4+P5+P6"):
+        set_priest_l20_p4_p5_shared_cold(False)
     return 0 if verdict == "PASS" else 1
 
 if __name__ == "__main__":
