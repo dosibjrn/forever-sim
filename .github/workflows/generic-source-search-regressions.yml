@@ -29,6 +29,7 @@ on:
       - 'integrations/mythicsim-rust/apl_mutation.py'
       - 'integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py'
       - 'integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py'
+      - 'integrations/mythicsim-rust/tests/test_apl_mutation_source_only.py'
       - 'integrations/mythicsim-rust/rotation_search.py'
       - 'integrations/mythicsim-rust/tests/test_p73_native_search_ci.py'
       - 'integrations/mythicsim-rust/tests/test_p75_joint_contract.py'
@@ -151,6 +152,7 @@ jobs:
           integrations/mythicsim-rust/tests/test_p73_native_search_ci.py
           integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
           integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py
+          integrations/mythicsim-rust/tests/test_apl_mutation_source_only.py
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
           integrations/mythicsim-rust/tests/test_native_p3_equipped.py
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
