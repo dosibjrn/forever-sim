@@ -152,3 +152,37 @@ def test_mode_bound_equipped_auto_cannot_force_caster_policy_weapon_weight():
                        auto_attacks=(SimpleNamespace(id='cat-auto',required_mode_id='cat',
                            damage_source=SimpleNamespace(dps_stat_id='weapon_dps')),))
     assert policy_uses_equipped_weapon_damage(ir,_policy('bolt')) is False
+
+
+def test_source_budgeted_search_measures_naked_policy_without_named_gear_roles(monkeypatch):
+    import src.v2.source_budgeted_gear as budgeted
+
+    ir = build_mage_source_slice(20)
+    assert ir is not None
+    monkeypatch.setattr(budgeted, 'available_gear_roles', lambda _class_key: ())
+    monkeypatch.setattr(
+        budgeted, 'run_source_budgeted_prefix',
+        lambda **_kwargs: {
+            'attempted': 1, 'evaluated': 1, 'blocked': 0,
+            'winner': {
+                'score_s_per_mob': 98.0, 'fallback': ['frostbolt:116'],
+                'prefix': ['frostbolt:116'], 'guarded_action': None,
+                'guarded_conditions': [],
+            },
+            'runner_up': None, 'seed_count': 1,
+            'seed_skipped_by_budget': 0, 'best_vs_budget': [],
+            'context_sha256': 'unit-test-source-context',
+        })
+    monkeypatch.setattr(
+        budgeted, '_fixed_opening_score',
+        lambda candidate_ir, *_args, **_kwargs:
+            100.0 - float(candidate_ir.actor.base_stats.get('intellect', 0.0)))
+    result = budgeted.run_source_budgeted_gear(
+        class_key='mage', level=20, ir_slice=ir,
+        max_evaluations=3, initial_search=1, search_per_gear=1,
+        max_gear_states=1, probe_stats=('intellect',),
+        probe_deltas=(5.0,))
+    assert result['status'] == 'EVALUATED_BOUNDED'
+    assert result['sensitivity_history'][0]['values']['intellect'] == 1.0
+    assert result['named_gear_states_evaluated'] == 0
+    assert result['winner']['stage'] == 'source_naked'
