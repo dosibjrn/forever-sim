@@ -158,7 +158,12 @@ jobs:
   work2-p6-shared-cold-no-record:
     # Opt-in only: changed integration code must not replay the same 300s
     # source search automatically on every subsequent PR push.
-    if: startsWith(github.head_ref, 'work/work2-p6-shared-cold-') && contains(github.event.pull_request.labels.*.name, 'p6-paid-no-record')
+    # One explicit label authorizes one changed-HEAD paid run. The source
+    # branch uses L30; the follow-on frozen-build branch checks L40.
+    if: >-
+      (startsWith(github.head_ref, 'work/work2-p6-shared-cold-') ||
+       startsWith(github.head_ref, 'work/work2-p6-l40-followon-')) &&
+      contains(github.event.pull_request.labels.*.name, 'p6-paid-no-record')
     needs: source-search
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -177,9 +182,10 @@ jobs:
       - name: Pay one real shared 300s source search and P6 100-mob comparison
         env:
           FOREVER_P6_FULL_SOURCE_COMPARE: '1'
+          P6_LEVEL: ${{ startsWith(github.head_ref, 'work/work2-p6-l40-followon-') && '40' || '30' }}
         run: |
-          python tools/wf_gate.py --class druid --level 30 --spec unrestricted \
-            --gate P6 --out "${{ runner.temp }}/work2-p6-shared-no-record.json"
+          python tools/wf_gate.py --class druid --level "$P6_LEVEL" --spec unrestricted \
+            --gate P6 --out "${{ runner.temp }}/work2-p6-L${P6_LEVEL}-no-record.json"
 
   selected-native-p72:
     # One selected-engine read-only acceptance probe on Work2's P7.3 lane.

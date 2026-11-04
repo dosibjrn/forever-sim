@@ -18,6 +18,8 @@ def _report(*, final=None, snapshot=None, continuation=4):
     return {'requested_wall_budget_s': 300, 'search_only': True,
             'search_winner': final, 'source_db_sha256': 'pinned-source',
             'source_gear_catalogue_snapshot': {'catalogue_sha256': 'pinned'},
+            'source_search_space': {'class_key': 'druid',
+                                    'level': 30, 'pack_size': 2},
             'unique_full_builds': 12, 'wall_s': 299.,
             'shared_search_snapshot': {
                 'elapsed_boundary_s': 30., 'winner': snapshot,
@@ -126,3 +128,40 @@ def test_p6_missing_frozen_snapshot_does_not_forge_30s_winner():
     report = _report()
     report['shared_search_snapshot']['winner'] = None
     assert [w['policy_signature'] for w in _shared_replay_winners(report)] == ['a']
+
+
+def test_p6_l40_runs_selected_checkpoint_without_a_second_search():
+    report = _report()
+    report['source_search_space']['level'] = 40
+    calls = []
+    def execute(root, args, output, timeout):
+        calls.append(args)
+        return report, None
+    with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
+        result = run_full_source_comparison(Path('.'), 'druid', 40)
+    assert result['status'] == 'PASS'
+    assert len(calls) == 1
+    assert calls[0][-6:] == [
+        '--checkpoint-class', 'druid', '--checkpoint-level', '40',
+        '--checkpoint-spec', 'unrestricted']
+    assert result['source_search_space'] == report['source_search_space']
+    assert len(result['selected_paid_winners']) == 2
+
+
+def test_p6_incomplete_unselected_row_cannot_crash_selected_paid_replay():
+    report = _report(snapshot=_winner('early'))
+    report['validation_shortlist'] = [{'allocation': {'preview': 1}}]
+    calls = []
+    def execute(root, args, output, timeout):
+        calls.append(args)
+        if '--budget' in args:
+            return report, None
+        return {'validation': {'rows': [{
+            'id': '0', 'status': 'COMPLETE', 'count': 100,
+            'mob_completed': 100, 'full_s_per_mob': 10.}]}}, None
+    with patch('tools.wf_gate_p6_full_source._execute', side_effect=execute):
+        result = run_full_source_comparison(Path('.'), 'druid', 40)
+    assert result['status'] == 'PASS'
+    assert len(calls) == 3
+    assert sum(args[0] == '--replay-from' for args in calls) == 2
+    assert all(row['reused'] is False for row in result['source_replay_results'])
