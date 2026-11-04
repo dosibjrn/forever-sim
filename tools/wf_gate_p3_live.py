@@ -74,13 +74,19 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
     }
 
 
+def native_item_options_required(class_key: str, level: int) -> bool:
+    """Native P3 is currently enabled only for the two verified L20 targets."""
+    return str(class_key).lower() in ('priest', 'mage') and level == 20
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
-    # Priest/Mage P3 is owned by the tested native item-options provider.
-    # Missing activation is BLOCKED, never an implicit SQLite fallback, and
-    # is checked before spending the bounded paid source-search budget.
+    # Priest/Mage L20 P3 is owned by the tested native item-options provider.
+    # Other levels retain their pre-existing path until their own no-record
+    # native-provider evidence is accepted.
+    native_required = native_item_options_required(class_key, level)
     native_binary = (os.environ.get('FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN')
-                     if str(class_key).lower() in ('priest', 'mage') else None)
-    if str(class_key).lower() in ('priest', 'mage') and not native_binary:
+                     if native_required else None)
+    if native_required and not native_binary:
         return {'status': 'BLOCKED',
                 'reasons': ['P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED'],
                 'production_component': 'src.game.native_p3_item_options'}
