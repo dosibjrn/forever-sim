@@ -181,7 +181,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         remaining = max(0, max_p3_evaluations - int(result.get("attempted", 0)) - extra_evaluations)
         cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
         has_reusable_baseline = any(
-            key[:3] == cache_prefix for key in source_policy_baseline_cache
+            key[:3] == cache_prefix
+            and type(value) in (int, float)
+            and isfinite(value) and value > 0
+            for key, value in source_policy_baseline_cache.items()
         )
         minimum_evaluations = 1 if has_reusable_baseline else 2
         if remaining < minimum_evaluations:
@@ -190,7 +193,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             ir, stat=axis, level=level, probe_deltas=(5., 20.),
             max_evaluations=remaining,
             schedule_incoming_attacks=schedule_incoming_attacks,
-            baseline_cache=source_policy_baseline_cache)
+            baseline_cache=source_policy_baseline_cache,
+            opening_action_ids=tuple(record.get("prefix", ())))
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
         if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
