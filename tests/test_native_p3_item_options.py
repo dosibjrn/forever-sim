@@ -175,3 +175,38 @@ def test_m1_recorder_builds_exact_native_binary_for_priest_mage_p3_only():
     assert "RUST_FORK_SUBMODULE_PIN_MISMATCH" in workflow
     assert 'cargo build --release --locked --manifest-path "$engine/Cargo.toml" --bin forever-engine' in workflow
     assert "FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/upstream/target/release/forever-engine" in workflow
+
+
+
+@pytest.mark.parametrize(("status", "unverified_count"), [
+    ("empty", 0),
+    ("partial_level_unknown", 2267),
+])
+def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
+        status, unverified_count):
+    metadata = {
+        "status": status,
+        "unverified_candidate_count": unverified_count,
+        "source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
+    }
+    with patch(
+        "src.game.native_p3_item_options.native_p3_item_records",
+        return_value=((), {}, metadata),
+    ):
+        report = fast_p3_smoke(
+            class_key="priest", level=20, weights={"stamina": 1.0},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=False, native_options_binary="native")
+    assert report["source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    assert report["legal_item_count"] == 0
+    assert report["native_item_options_status"] == status
+    assert report["native_unverified_candidate_count"] == unverified_count
+    assert report["native_item_options_source"] == metadata["source"]
+    assert "NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES" in report["blockers"]
+    if status == "partial_level_unknown":
+        assert (
+            f"NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:{unverified_count}"
+            in report["blockers"]
+        )
+    assert report["p3_pass"] is False

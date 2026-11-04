@@ -31,6 +31,24 @@ def edit(root, name, transformations):
 def one(root, name, old, new):
     edit(root, name, [(old, new, 1)])
 
+def ensure_rng_mode_import(root, name):
+    """Add RngMode to legacy imports, but accept an already-typed multiline import."""
+    path = root / name
+    source = path.read_text()
+    marker = "use forever_engine::{"
+    start = source.find(marker)
+    if start < 0:
+        raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: forever_engine import missing")
+    end = source.find("};", start)
+    if end < 0:
+        raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: unterminated forever_engine import")
+    if "RngMode" in source[start:end]:
+        return
+    one(root, name,
+        "PreparedError, Refusal, Request, Rules, SOURCE_REVISION,",
+        "PreparedError, Refusal, Request, RngMode, Rules, SOURCE_REVISION,")
+
+
 def add_explicit_mode_to_test_calls(source):
     """Add a typed stochastic mode to every legacy one-argument test call.
 
@@ -278,8 +296,7 @@ mod typed_rng_api_tests {
     one(root, eng, "classes::run_prepared(prepared)", "classes::run_prepared(prepared, rng_mode)")
     one(root, "src/lib.rs", "pub mod contracts;", "pub mod contracts;\npub use core::rng::RngMode;")
     main = "src/main.rs"
-    one(root, main, "PreparedError, Refusal, Request, Rules, SOURCE_REVISION,",
-        "PreparedError, Refusal, Request, RngMode, Rules, SOURCE_REVISION,")
+    ensure_rng_mode_import(root, main)
     one(root, main, "    let mut infile = None;", "    let mut rng_mode: Option<RngMode> = None;\n    let mut infile = None;")
     one(root, main,
         '            "--trace" if !trace => trace = true,',

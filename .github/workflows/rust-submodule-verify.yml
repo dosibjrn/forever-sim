@@ -62,9 +62,9 @@ jobs:
           row = report["results"][0]
           assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
           assert row["native_item_options_status"] == "partial_level_unknown"
-          assert type(row["native_unverified_candidate_count"]) is int
-          assert row["native_unverified_candidate_count"] > 0
-          assert row["native_item_options_source"]
+          expected_unknown = {"priest": 2267, "mage": 2239}[class_key]
+          assert row["native_unverified_candidate_count"] == expected_unknown
+          assert row["native_item_options_source"].startswith("mythicsim:")
           assert row["real_catalogue_legal_items"] > 0
           assert row["real_catalogue_slots_scored"] > 0
           assert row["real_catalogue_top5_items_scored"] > 0

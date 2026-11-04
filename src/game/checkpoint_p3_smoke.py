@@ -183,14 +183,16 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
         rows = available_items(class_key, level, required_level_policy=required_level_policy)
         unmapped_by_item = {}
         source_name = 'CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS'
-    if not rows:
+    if not rows and native_options_metadata is None:
         raise ValueError('P3_NO_LEGAL_ITEMS_IN_CURRENT_DB')
     blockers = set()
-    if (native_options_metadata is not None
-            and native_options_metadata['status'] == 'partial_level_unknown'):
-        blockers.add(
-            'NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:'
-            + str(native_options_metadata['unverified_candidate_count']))
+    if native_options_metadata is not None:
+        if native_options_metadata['status'] == 'partial_level_unknown':
+            blockers.add(
+                'NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:'
+                + str(native_options_metadata['unverified_candidate_count']))
+        if not rows:
+            blockers.add('NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES')
     if weight_evidence_kind not in SOURCE_CONTEXT_WEIGHT_KINDS:
         blockers.add('UNVERIFIED_CONTEXT_WEIGHTS')
     parsed = {str(axis): _weight_value(value) for axis, value in weights.items()}

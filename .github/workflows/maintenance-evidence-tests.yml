@@ -35,6 +35,8 @@ on:
       - 'src/game/checkpoint_p3_smoke.py'
       - 'src/game/native_p3_item_options.py'
       - 'tests/test_native_p3_item_options.py'
+      - 'integrations/mythicsim-rust/port_native_typed_rng.py'
+      - 'integrations/mythicsim-rust/tests/test_port_native_typed_rng.py'
       - 'tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py'
       - 'tools/wf_gate_p3_live.py'
       - 'src/game/runtime/simulator.py'
@@ -109,6 +111,7 @@ jobs:
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_prio_p3_source_policy_sp.py
           tests/test_native_p3_item_options.py
+          integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
           tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py
           tests/test_selected_source_plumbing.py
           tests/test_wf311_verified_detail_effect_pipeline.py
