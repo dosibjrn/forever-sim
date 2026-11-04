@@ -168,6 +168,35 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                 # to the selection, not to the independent finalist replay.
                 report["reasons"] = verdict["reasons"]
                 report["coverage_scope_complete"] = verdict["status"] == "PASS"
+                report["production_component"] = (
+                    "tools.wf_native_priest_l20_cold.run_native_priest_l20_cold")
+                report["production_engine"] = "mythicsim-rust-native-world"
+                if verdict["status"] == "PASS":
+                    # CLI acceptance requires provenance from the actual
+                    # executed binary and the paid winner, not a static
+                    # hardcoded PASS flag or a second game-rules audit.
+                    import hashlib
+                    from uuid import uuid4
+                    try:
+                        executed_binary_sha = hashlib.sha256(
+                            Path(binary).read_bytes()).hexdigest()
+                    except OSError:
+                        report["status"] = "FAIL"
+                        report["reasons"] = [
+                            "P4_P5_EXECUTED_NATIVE_BINARY_IDENTITY_UNAVAILABLE"]
+                        report["coverage_scope_complete"] = False
+                    else:
+                        selected = cold["native_cold_snapshot_30" if gate == "P4"
+                                        else "native_cold_final_300"]
+                        report["runtime_proof"] = {
+                            "executed": True,
+                            "engine_revision": "mythicsim-rust-bin-sha256:"
+                                               + executed_binary_sha,
+                            "source_revision": "source-request-sha256:"
+                                               + selected["source_request_sha256"],
+                            "run_id": os.environ.get("GITHUB_RUN_ID")
+                                      or "native-priest-l20-" + uuid4().hex,
+                        }
                 return report
             if candidate_dir:
                 paid = score_source_priest_l20_candidates(
