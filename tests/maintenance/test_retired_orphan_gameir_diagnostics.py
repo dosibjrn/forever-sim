@@ -34,6 +34,10 @@ RETIRED_TOOLS = (
     # WF341 provisional-rating 100-mob probes were used only by retired WF342 reporters.
     "tools/wf341_rating_probe.py",
     "tools/wf341_defense_check.py",
+    # Obsolete WF339/341 fixed-Druid GameIR/SQLite paid-report producers; preserve reports.
+    "tools/wf339_build_weighted_top5.py",
+    "tools/wf339_weighted_slot_pilot.py",
+    "tools/wf341_rating_sensitivity.py",
     "tools/wf300_continuous_source_policy_benchmark.py",
     # One-off Python talent-source transcription; frozen stage retained.
     "tools/wf350_build_source_evidence.py",
@@ -156,6 +160,9 @@ RETIRED_IMPORT_NAMES = (
     "wf427_druid_l30_quest_horizon",
     "wf341_rating_probe",
     "wf341_defense_check",
+    "wf339_build_weighted_top5",
+    "wf339_weighted_slot_pilot",
+    "wf341_rating_sensitivity",
     "wf300_continuous_source_policy_benchmark",
     "wf350_build_source_evidence",
     "wf399_qualification_probe",
@@ -366,6 +373,9 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf325/WF325_BLIND_JOINT.json",
     "evidence/wf325/WF325_REPLAYED_BUDGETED_L2_AND_100MOB.json",
     "evidence/wf347/WF347_FIXED_POLICY_HP5_100MOB.json",
+    "evidence/wf339/WF339_DRUID_L20_WEIGHTED_TOP5_PER_SLOT.json",
+    "evidence/wf339/WF339_WEIGHTED_SLOT_PILOT.json",
+    "evidence/wf341/WF341_DRUID_L20_CHANCE_SENSITIVITY_TOP5.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
     "evidence/wf328/WF328_REAL_MODE_PREFIX_30_PAID_AND_100MOB.json",
     "evidence/wf328/WF328_GEARED_BLIND_100MOB_SAME_SOURCE.json",
