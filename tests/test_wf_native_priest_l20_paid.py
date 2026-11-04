@@ -591,10 +591,27 @@ def test_world_frontier_reaches_third_paid_build_and_returns_lethal_source_ident
             "native_2d_screen_complete": False,
         }
 
+    retained_calls = []
+
+    def persistent_world(binary, source_path):
+        name = json.loads(source_path.read_text())["raid"]["parties"][0][
+            "players"][0]["name"]
+        retained_calls.append(name)
+        return {
+            "native_2d_persistent_actor_verified": True,
+            "native_2d_persistent_world_ack_verified": True,
+            "native_2d_persistent_world_targets_killed": 2,
+            "native_2d_screen_complete": False,
+        }
+
     result = score_source_priest_l20_candidates(
         "/native", tmp_path, score_request=scorer, world_screen=world_screen,
-        max_paid_builds=3)
+        persistent_world=persistent_world, max_paid_builds=3)
     assert result["native_paid_whole_builds"] == 3
+    assert retained_calls == ["c"]
+    assert result["native_2d_persistent_attempted"] == 1
+    assert result["native_2d_persistent_verified"] == 1
+    assert result["native_2d_persistent_targets_killed"] == 2
     assert seen_world == ["a", "b", "c"]
     assert result["native_2d_live_ack_attempted"] == 3
     assert result["native_2d_live_ack_verified"] == 3
@@ -605,3 +622,77 @@ def test_world_frontier_reaches_third_paid_build_and_returns_lethal_source_ident
     assert result["native_2d_screen_complete"] is False
     assert sorted(p.name for p in tmp_path.iterdir()) == [
         "a.json", "b.json", "c.json"]
+
+
+def test_priest_l20_persistent_world_prepares_exact_native_actor_and_reuses_one_session(
+        tmp_path, monkeypatch):
+    """The paid source is prepared by Rust, then one retained two-mob run executes."""
+    import subprocess
+    from tools.wf_native_priest_l20_paid import couple_source_priest_l20_persistent_world
+
+    source = _request()
+    source["encounter"]["targets"][0]["stats"] = [0] * 41
+    source["encounter"]["targets"][0]["stats"][32] = 484
+    path = tmp_path / "source.json"
+    path.write_text(json.dumps(source))
+    prepared_requests = []
+
+    def prepare(args, **kwargs):
+        assert args[1:3] == ["prepare", "--request"]
+        assert kwargs["check"] is True
+        prepared_requests.append(json.loads(Path(args[3]).read_text()))
+        Path(args[5]).write_text(json.dumps({
+            "player": {"class": "ClassPriest", "level": 20},
+            "request_sha256": "a" * 64,
+        }))
+        return subprocess.CompletedProcess(args, 0)
+
+    monkeypatch.setattr(subprocess, "run", prepare)
+    world_calls = []
+
+    def native_world(binary, prepared, *, mob_health, target_count):
+        world_calls.append((json.loads(prepared.read_text()), mob_health, target_count))
+        return {
+            "continuous_native_actor": True, "actual_2d_ack": True,
+            "world_targets_killed": 2, "native_windows": [{}, {}],
+            "world_ticks": 42, "paid_recovery": False,
+        }
+
+    receipt = couple_source_priest_l20_persistent_world(
+        "/selected/native", path, world_run=native_world)
+    assert prepared_requests == [source]
+    assert world_calls == [({
+        "player": {"class": "ClassPriest", "level": 20},
+        "request_sha256": "a" * 64,
+    }, 484.0, 2)]
+    assert receipt["native_2d_persistent_world_targets_killed"] == 2
+    assert receipt["native_2d_persistent_actor_verified"] is True
+    assert receipt["native_2d_screen_complete"] is False
+
+
+def test_priest_l20_persistent_world_rejects_reset_fights_as_continuous(
+        tmp_path, monkeypatch):
+    import subprocess
+    from tools.wf_native_priest_l20_paid import couple_source_priest_l20_persistent_world
+
+    source = _request()
+    source["encounter"]["targets"][0]["stats"] = [0] * 41
+    source["encounter"]["targets"][0]["stats"][32] = 484
+    path = tmp_path / "source.json"
+    path.write_text(json.dumps(source))
+
+    def prepare(args, **kwargs):
+        Path(args[5]).write_text(json.dumps({
+            "player": {"class": "ClassPriest", "level": 20},
+            "request_sha256": "b" * 64,
+        }))
+        return subprocess.CompletedProcess(args, 0)
+
+    monkeypatch.setattr(subprocess, "run", prepare)
+    with pytest.raises(RuntimeError, match="PERSISTENT_NATIVE_WORLD_RECEIPT_INCOMPLETE"):
+        couple_source_priest_l20_persistent_world(
+            "/selected/native", path, world_run=lambda *a, **kw: {
+                "continuous_native_actor": False, "actual_2d_ack": True,
+                "world_targets_killed": 2, "native_windows": [{}, {}],
+                "paid_recovery": False,
+            })
