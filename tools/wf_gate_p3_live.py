@@ -438,13 +438,17 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     )
     native_item_sized_probe = mage_l30_native or shaman_l20_native
     if shaman_l20_native:
-        # This issue is only the Spell Power witness. Other zero axes are
-        # separate P3 defects. If the exact native coefficient/action was not
-        # obtained, retain the existing score without attempting a substitute.
+        # Shaman L20's next allowed witness is Intellect, but only after the
+        # selected native engine has enriched the exact rank-915 fallback.
+        # Spell Power remains independently source-policy-probeable when the
+        # paid winner is not that action; Intellect does not.
+        allowed_shaman_witnesses = {"NONPOSITIVE_RELEVANT_WEIGHT:spell_power"}
+        if native_fallback_action and native_spell_coefficients_error is None:
+            allowed_shaman_witnesses.add("NONPOSITIVE_RELEVANT_WEIGHT:intellect")
         witness_blockers = (
             [] if native_spell_coefficients_error else [
                 blocker for blocker in witness_blockers
-                if blocker == "NONPOSITIVE_RELEVANT_WEIGHT:spell_power"
+                if blocker in allowed_shaman_witnesses
             ])
     # The Shaman paid winner is eligible only when its actual fallback is the
     # exact, native-enriched rank-915 source action.
