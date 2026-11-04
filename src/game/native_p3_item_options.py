@@ -210,6 +210,13 @@ def _query_native_spell_coefficients(
             continue
         action_id = spell.get("action_id")
         spell_id = action_id.get("spell_id") if isinstance(action_id, dict) else None
+        # Shaman registers both castable Lightning Bolt and a tagged
+        # Elemental Overload proc under spell ID 915. The source action
+        # lightning_bolt:915 is the untagged cast, not its native proc.
+        # Other ranks/procs must not conflict with this exact transport.
+        if class_key == "shaman" and (
+                spell_id != 915 or action_id.get("tag", 0) != 0):
+            continue
         coefficient = spell.get("bonus_coefficient")
         if type(spell_id) is not int or type(coefficient) not in (int, float):
             continue
