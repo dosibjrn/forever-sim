@@ -101,7 +101,7 @@ def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
     }]}]}}
     monkeypatch.setattr(
         gate, "_pinned_source_runtime",
-        lambda *args: (base, {"reference_dps": 728.19}, binary),
+        lambda *args, **kwargs: (base, {"reference_dps": 728.19}, binary),
     )
     monkeypatch.setattr(gate, "_source_native_world_parity", lambda *args, **kwargs: None)
 
@@ -147,5 +147,8 @@ def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report["status"] == "FAIL"
     assert proposal_calls == [(upstream / "data/items.jsonl", upstream / "data/enchants.jsonl")]
-    assert native_calls == [(3, "balanced")] * 3
+    # Native sees one source-proposed changed item in every occupied slot;
+    # none is accepted, and no retired P7-only world replay is attempted.
+    assert native_calls == [(3, "balanced")] * 16
+    assert report["source_legal_cold_candidates_paid"] == 0
     assert world_calls == []
