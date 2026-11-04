@@ -2,7 +2,9 @@
 
 Read [COMMON](COMMON.md), this file, current [WORK_PRIORITY](../WORK_PRIORITY.md), and [REPOSITORY_STRUCTURE](../../REPOSITORY_STRUCTURE.md), especially its **Ideal architecture** and **Convergence rules**. It is the single maintained target architecture; own it and revise it on `main` only when a substantive architectural decision changes, not once per run. Do not create a parallel architecture plan. Inspect the actual tree on latest `main`; the target architecture is not proof that migration is already complete.
 
-## First priority every cycle: detect counterproductive work before cleaning code
+## DO THIS FIRST — detect counterproductive work before any cleanup
+
+**Before touching a deletion, migration, layout or documentation task**, inspect the live queue, relevant implementation PR diffs and approved active P3–P7.5 predicates for the largest demonstrable waste. If there is actionable counterproductive work, stop/correct it or hand it to the responsible owner **first** (and escalate to Prio only when the evidence meets the rule below). Only then proceed to code retirement. This review is not a new gate, proof obligation or reason to block a working merge on speculation.
 
 Act as the project's **independent signal-to-noise critic**, not another acceptance authority. Before selecting structural cleanup, make a **bounded, evidence-based review** of current `WORK_PRIORITY`, the most relevant recent merged/open implementation PRs and their actual changed code, and the corresponding active P3–P7.5 gate contract/results. Focus on the largest current waste risk; do not perform an exhaustive repo audit or invent a new reporting workflow.
 
