@@ -129,7 +129,7 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
             or not isinstance(meta.get("reference_dps"), (float, int))
             or meta["reference_dps"] <= 0
             or player["class"] != "ClassDruid"
-            or ("feralCatDruid" if feral else "balanceDruid") not in player
+            or (feral and "feralCatDruid" not in player)
             or len(base["encounter"]["targets"]) != 1
             or base["encounter"]["targets"][0]["level"] != 63):
         return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_SCENARIO_MISMATCH")
