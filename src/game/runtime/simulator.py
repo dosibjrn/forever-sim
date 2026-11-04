@@ -558,7 +558,6 @@ class CombatRuntime:
         incoming_attacks: Sequence[IncomingAttackDefinition] = (),
         mitigation_rules: Sequence[ArmorMitigationDefinition] = (),
         enable_casting_regen: bool = True,
-        allow_source_partial_l1: bool = False,
         other_targets: Sequence[TargetState] = (),
         spatial_positions_yards: Mapping[str, tuple[float, float]] | None = None,
         enemy_move_speed_yards_s: float = 7.0,
@@ -569,12 +568,6 @@ class CombatRuntime:
         if type(sampling_seed) is not int or sampling_seed < 0:
             raise ValueError('COMBAT_SAMPLING_SEED_MUST_BE_NONNEGATIVE_INTEGER')
         self.sampling_seed = sampling_seed
-        # Explicit L1 diagnostics opt-in. Production L2/L3 controllers use the
-        # default strict gate and cannot execute source-incomplete fragments.
-        self.allow_source_partial_l1 = bool(allow_source_partial_l1)
-        if (actor.metadata.get('L1_NOT_SOURCE_VALIDATED_ACTOR_AT_LEVEL')
-                and not self.allow_source_partial_l1):
-            raise ValueError('SOURCE_L1_BOUNDED_ACTOR_FORBIDDEN_IN_PRODUCTION_RUNTIME')
         self.actor = actor
         self.actors = {actor.id: actor}
         for companion in companions:
@@ -1901,9 +1894,6 @@ class CombatRuntime:
                 else base)
 
     def _enqueue_owned_action(self, action: ActionDefinition, *, at_time_s: float | None = None) -> float:
-        if (action.metadata.get('never_l2_legal') or
-                action.metadata.get('execution_tier') == 'L1_PARTIAL_ONLY') and not self.allow_source_partial_l1:
-            raise ValueError('SOURCE_PARTIAL_L1_ACTION_FORBIDDEN_IN_PRODUCTION_RUNTIME')
         # Validate every effect *before* changing the clock, spending resources,
         # or committing a cooldown. Channel dispatch must not bypass this gate.
         if action.metadata.get('aoe_center') == 'actor':
@@ -3549,13 +3539,12 @@ def execute_action_timeline(
 
 def execute_action(
     *, action: ActionDefinition, actor: ActorState, target: TargetState,
-    spell_power: float = 0.0, allow_source_partial_l1: bool = False,
+    spell_power: float = 0.0,
 ) -> ActionExecutionResult:
     """Execute one Action through the persistent generic runtime."""
     start_time = float(actor.current_time_s)
     resources_before = {str(k): float(v) for k, v in actor.resources.items()}
-    runtime = CombatRuntime(actor=actor, target=target, spell_power=spell_power,
-                            allow_source_partial_l1=allow_source_partial_l1)
+    runtime = CombatRuntime(actor=actor, target=target, spell_power=spell_power)
     runtime.schedule_action(action)
     runtime.run_until_idle()
     timeline = runtime.result()
