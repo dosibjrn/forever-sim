@@ -376,6 +376,38 @@ def test_p74_source_paid_elite_archive_preserves_native_diversity_and_cold_resta
     assert len(paid) == 24  # sampling never mutates the measured archive
 
 
+def test_p74_gear_parent_uses_paid_multiseed_finalists_during_search():
+    """Paid six-fight rankings must guide mutations, not just final freezing.
+
+    A noisy three-fight leader can lose after the two independent Balanced
+    finalist seeds. Parent exploitation should use the corrected ranking
+    without removing single-screen diversity or every-fifth cold restarts.
+    """
+    screens = [(900.0, {"paid_candidate": "noisy-screen"})]
+    finalists = [
+        (710.0, {}, "low", {"paid_candidate": "low"}, 900.0),
+        (740.0, {}, "high", {"paid_candidate": "balanced-high"}, 690.0),
+        (720.0, {}, "mid", {"paid_candidate": "mid"}, 730.0),
+        (700.0, {}, "bottom", {"paid_candidate": "bottom"}, 710.0),
+        (705.0, {}, "fifth", {"paid_candidate": "fifth"}, 720.0),
+    ]
+    class First:
+        def choice(self, rows):
+            return rows[0]
+
+    chooser = First()
+    assert gate._paid_gear_elite_choice(
+        screens, chooser, 2, finalists) == {"paid_candidate": "balanced-high"}
+    assert gate._paid_gear_elite_choice(
+        screens, chooser, 3, finalists) == {"paid_candidate": "noisy-screen"}
+    assert gate._paid_gear_elite_choice(
+        screens, chooser, 5, finalists) is None
+    assert gate._paid_gear_elite_choice(
+        screens, chooser, 2, ()) == {"paid_candidate": "noisy-screen"}
+    assert len(finalists) == 5
+    assert finalists[0][2] == "low"  # ranking does not mutate paid archive
+
+
 def test_source_ranked_p74_samples_high_stat_sources_without_truncating_pool():
     """Actual complete sorted candidate pool stays reachable, unlike top-N."""
     source_items = list(range(1000))  # ascending ids stand for source rank
