@@ -106,14 +106,16 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
     if (options and class_key == "priest" and level == 20
             and spec == "unrestricted" and (request_file or candidate_dir)):
         from tools.wf_native_priest_l20_paid import (
-            score_source_priest_l20, score_source_priest_l20_candidates)
+            score_native_priest_l20_item_candidates,
+            score_source_priest_l20_candidates)
         try:
             if request_file and candidate_dir:
                 raise ValueError("P4_P5_NATIVE_AMBIGUOUS_SOURCE_REQUEST")
             if candidate_dir:
                 paid = score_source_priest_l20_candidates(binary, candidate_dir)
             else:
-                paid = score_source_priest_l20(binary, request_file)
+                paid = score_native_priest_l20_item_candidates(
+                    binary, request_file, options)
         except (OSError, ValueError, RuntimeError, TimeoutError) as exc:
             report["reasons"] = [
                 "P4_P5_NATIVE_PRIEST_L20_PAID_REFUSED:" + str(exc)[-400:]
