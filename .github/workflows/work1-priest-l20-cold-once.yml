@@ -38,10 +38,43 @@ jobs:
           test "$selected" = "$actual"
           echo "PRIEST_COLD_HEAD=$GITHUB_SHA RUST_ENGINE_PIN=$actual"
           cargo build --locked --manifest-path integrations/mythicsim-rust/engine/Cargo.toml --bin forever-engine
+      - name: Pay source-authored Priest talent and APL proposals on exact selected native Rust
+        run: |
+          python3 - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          from tools.wf_native_priest_l20_paid import score_source_priest_l20
+          binary = Path("integrations/mythicsim-rust/engine/target/debug/forever-engine").resolve()
+          folder = Path("integrations/mythicsim-rust/fixtures/priest-l20-source-frontier")
+          rows = []
+          for path in sorted(folder.glob("*.json")):
+              try:
+                  paid = score_source_priest_l20(binary, path, budget_s=7.0)
+                  row = {
+                      "candidate": path.name, "status": "NATIVE_PAID",
+                      "action_casts": paid["native_source_action_casts"],
+                      "native_action_ids_cast": paid["native_source_action_cast_counts"],
+                  }
+              except (OSError, ValueError, RuntimeError, AssertionError,
+                      TimeoutError, subprocess.SubprocessError) as exc:
+                  row = {"candidate": path.name, "status": "NATIVE_REFUSED",
+                         "native_reason": str(exc)[-400:]}
+              rows.append(row)
+              print("PRIEST_L20_REAL_SOURCE_POLICY_PAID", json.dumps(row, sort_keys=True), flush=True)
+          assert len(rows) >= 3, rows
+          assert rows[0]["status"] == "NATIVE_PAID" and rows[0]["action_casts"] > 0, rows
+          # A new 300s cold run is justified only if at least one changed
+          # source talent/APL candidate actually executes in the pinned Rust.
+          # A proposed unlock with zero native casts is NOT unlock evidence.
+          assert any(row["status"] == "NATIVE_PAID" and row["action_casts"] > 0
+                     for row in rows[1:]), "NO_PAID_NATIVE_POLICY_OR_TALENT_VARIANT"
+          print("PRIEST_L20_REAL_NATIVE_VARIANT_REACHABLE_NO_GATE_CREDIT", flush=True)
+          PY
       - name: One fresh 300s native paid cold P4/P5 producer, NO RECORD
         env:
           FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: integrations/mythicsim-rust/engine/target/debug/forever-engine
-          FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST: integrations/mythicsim-rust/fixtures/priest-l20-native-smite.request.json
+          FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR: integrations/mythicsim-rust/fixtures/priest-l20-source-frontier
           FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD: '1'
           FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS: '100'
           FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH: '1'
@@ -74,6 +107,11 @@ jobs:
               "final_300_available": receipts["native_cold_final_300"] is not None,
           }, sort_keys=True), flush=True)
           from collections import Counter
+          executed_ids = Counter()
+          for row in receipts.get("native_cold_rows", []):
+              executed_ids.update(row.get("native_source_action_cast_counts") or {})
+          print("PRIEST_NATIVE_COLD_EXECUTED_NATIVE_APL_ACTION_IDS",
+                json.dumps(dict(executed_ids), sort_keys=True), flush=True)
           status_counts = Counter(row.get("status", "UNKNOWN")
                                   for row in receipts.get("native_cold_rows", []))
           refusal_reasons = Counter(
