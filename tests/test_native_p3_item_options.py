@@ -360,6 +360,7 @@ def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
     ("priest", 0),
     ("shaman", 3075),
     ("paladin", 1240),
+    ("rogue", 1789),
 ])
 def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
         class_key, excluded_count):
@@ -409,11 +410,15 @@ def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():
     assert native_item_options_required("mage", 30, "unrestricted")
     assert native_item_options_required("shaman", 20, "unrestricted")
     assert native_item_options_required("paladin", 20, "unrestricted")
+    assert native_item_options_required("rogue", 20, "unrestricted")
+    assert native_item_options_required("ROGUE", 20, "UNRESTRICTED")
     assert native_item_options_required("SHAMAN", 20, "UNRESTRICTED")
     assert not native_item_options_required("shaman", 20, "enhancement")
     assert not native_item_options_required("shaman", 30, "unrestricted")
     assert not native_item_options_required("paladin", 20, "retribution")
     assert not native_item_options_required("paladin", 30, "unrestricted")
+    assert not native_item_options_required("rogue", 20, "combat")
+    assert not native_item_options_required("rogue", 30, "unrestricted")
     assert not native_item_options_required("mage", 30, "feral-cat")
     assert not native_item_options_required("priest", 30, "unrestricted")
     assert not native_item_options_required("mage", 40, "unrestricted")
@@ -724,3 +729,85 @@ def test_native_shaman_spellbook_reports_conflicting_exact_action_ids():
         match=r"DUPLICATE_COEFFICIENT_CONFLICT:.*previous_action_id",
     ):
         query_native_shaman_spell_coefficients("native", runner=_runner(prepared))
+
+
+def test_rogue_p3_requires_selected_native_binary_before_paid_search(monkeypatch):
+    from tools.wf_gate_p3_live import run_live
+
+    monkeypatch.delenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", raising=False)
+    result = run_live(Path("."), "rogue", 20, spec="unrestricted")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == ["P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED"]
+    assert "real_source_search_evaluated" not in result
+
+
+def test_rogue_p3_forwards_native_options_and_preserves_source_response():
+    payload = _response(**{
+        "class": "rogue",
+        "source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
+        "excluded_non_client_item_count": 1789,
+    })
+    commands = []
+
+    def runner(command, **kwargs):
+        commands.append(command)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+
+    response = query_native_p3_item_options(
+        "native", "rogue", 20, spec="unrestricted", slot="all", runner=runner)
+    assert response == payload
+    assert commands == [[
+        "native", "item-options", "--class", "rogue", "--level", "20",
+        "--spec", "unrestricted", "--slot", "all",
+    ]]
+
+
+def test_rogue_p3_propagates_native_refusal_without_paid_or_sqlite_fallback(monkeypatch):
+    from tools.wf_gate_p3_live import run_live
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    with patch(
+        "src.game.native_p3_item_options.query_native_p3_item_options",
+        side_effect=NativeItemOptionsError(
+            "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"),
+    ), patch(
+        "src.game.data.forever.registry.build_game_ir_slice",
+        side_effect=AssertionError("native refusal must precede source paid work"),
+    ):
+        result = run_live(Path("."), "rogue", 20, spec="unrestricted")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == [
+        "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"]
+    assert result["real_source_search_evaluated"] == 0
+
+
+def test_rogue_p3_empty_native_options_never_resume_legacy_selector(monkeypatch):
+    from tools.wf_gate_p3_live import run_live
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    with patch(
+        "src.game.native_p3_item_options.query_native_p3_item_options",
+        return_value=_response(**{"class": "rogue", "status": "empty", "items": []}),
+    ), patch(
+        "src.game.data.forever.registry.build_game_ir_slice",
+        side_effect=AssertionError("empty native result must not search legacy SQLite"),
+    ):
+        result = run_live(Path("."), "rogue", 20, spec="unrestricted")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == ["NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES"]
+    assert result["real_source_search_evaluated"] == 0
+
+
+def test_selected_engine_workflow_executes_rogue_native_and_real_p3_no_record():
+    workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
+    rogue = workflow.split(
+        "Run no-record Rogue L20 P3 native capability and gate receipt", 1
+    )[1].split("Run no-record Priest and Mage L20 P3", 1)[0]
+    assert "--class rogue --level 20 --spec unrestricted --slot all" in rogue
+    assert "python tools/wf_gate.py --class rogue --level 20" in rogue
+    assert "--spec unrestricted --gate P3 --out" in rogue
+    assert '"P3_NATIVE_ITEM_OPTIONS_REFUSED:" + refusal' in rogue
+    assert 'row["real_source_search_evaluated"] == 0' in rogue
+    assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in rogue
+    assert '"P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", [])' in rogue
+    assert "--record-pass" not in rogue

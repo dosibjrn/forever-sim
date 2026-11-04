@@ -84,6 +84,7 @@ def native_item_options_required(
         or (key == "shaman" and level == 20 and profile == "unrestricted")
         or (key == "paladin" and level == 20 and profile == "unrestricted")
         or (key == "mage" and level == 30 and profile == "unrestricted")
+        or (key == "rogue" and level == 20 and profile == "unrestricted")
     )
 
 
@@ -269,8 +270,8 @@ def _allow_cooldown_fallback_for_profile(class_key: str, level: int, spec: str) 
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
-    # Priest/Mage L20, unrestricted Shaman L20, and unrestricted Mage L30
-    # P3 use native ItemSparse; other profiles/levels retain their existing path.
+    # Selected P3 class/level paths require authoritative native ItemSparse.
+    # Unsupported native queries refuse; never fall back to Python/SQLite gear.
     native_required = native_item_options_required(class_key, level, spec)
     native_binary = (os.environ.get('FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN')
                      if native_required else None)
@@ -278,6 +279,25 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return {'status': 'BLOCKED',
                 'reasons': ['P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED'],
                 'production_component': 'src.game.native_p3_item_options'}
+    if (str(class_key).lower() == "rogue" and int(level) == 20
+            and str(spec).lower() == "unrestricted"):
+        # Rogue's selected engine capability was previously untested because
+        # SQLite returned no items. Refuse *before* consuming paid evaluations
+        # until the exact pinned native engine can supply legal options.
+        from src.game.native_p3_item_options import (
+            NativeItemOptionsError, query_native_p3_item_options)
+        try:
+            native_options = query_native_p3_item_options(
+                native_binary, class_key, level, spec=spec, slot="all")
+        except NativeItemOptionsError as exc:
+            return {'status': 'BLOCKED', 'reasons': [str(exc)],
+                    'production_component': 'src.game.native_p3_item_options',
+                    'real_source_search_evaluated': 0}
+        if not native_options['items']:
+            return {'status': 'BLOCKED',
+                    'reasons': ['NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES'],
+                    'production_component': 'src.game.native_p3_item_options',
+                    'real_source_search_evaluated': 0}
 
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
