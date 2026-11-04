@@ -14,7 +14,7 @@ from src.game.runtime import ActorState, CombatRuntime, TargetState
 from src.game.policy import execute_priority_policy, opening_for_persistent_actor
 from src.v2.source_joint_discovery import _gear_envelope
 from src.v2.generic_backend import _policy_combat_evaluation
-from tools.wf243_joint_multi_pull_replay import frozen_policy
+from src.v2.source_multi_pull_joint import policy_from_record
 from src.game.recovery import recover_actor_to_full
 from src.scenarios.leveling_targets import representative_hp
 from src.game.data.forever.target_combat_source import target_combat_metadata
@@ -49,7 +49,7 @@ def run(evidence_path:Path, *, mobs:int=100, historical:bool=False,
               selected_items=tuple(gear['slots'].values()),source='canonical_sqlite_forever_catalogue')
     if applied.unsupported_stats:raise ValueError('UNSUPPORTED_GEAR_STATS')
     if historical:
-        policy=frozen_policy(source['policy'])
+        policy=policy_from_record(source['policy'])
         opening=()
     else:
         record=win['gear_policy_result']['winner']['winner']
