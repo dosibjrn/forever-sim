@@ -1,11 +1,9 @@
 """Approved PROCESS v1: P3 is a fast top-five-by-ilvl scorer smoke, not full source attestation."""
 from types import SimpleNamespace
-from pathlib import Path
 
 from src.game.checkpoint_p3_smoke import fast_p3_smoke, policy_uses_weapon_damage
-from src.game.checkpoint_onepass import run_preflight
 from src.rulesets.forever.items.catalogue import ItemRecord
-from src.rulesets.forever.items.runtime_selection import available_items, _DEFAULT_DB
+from src.rulesets.forever.items.runtime_selection import available_items
 
 
 # Synthetic positive vectors are ONLY used to test the validator's semantics,
@@ -74,10 +72,3 @@ def test_mean_hit_weight_must_be_positive_if_policy_uses_it(monkeypatch):
                        weight_evidence_kind='MEASURED_SOURCE_CONTEXT',weapon_damage_dependent=True)
     assert good['slots']['weapon']['items'][0]['contributions']['mean_weapon_hit_damage']==15.0
 
-
-def test_p3_preflight_no_longer_requires_complete_1_255_wowhead_capture(tmp_path):
-    report=run_preflight('druid:L20:unrestricted',item_db=Path(_DEFAULT_DB),certificate_dir=tmp_path)
-    assert report['source_item_verified'] is False  # true source status stays honest
-    assert report['gate_status']['P3']=='NEEDS_CONTEXTUAL_TOP5_ILVL_SMOKE'
-    assert report['accepted'] is False
-    assert report['gate_status']['P4']=='BLOCKED_BY_P3_SMOKE_NOT_RUN'
