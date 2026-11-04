@@ -57,7 +57,10 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             "effective_request_sha256": digest if native_identity else "wrong",
             "score": 10.0, "rng_mode": "balanced",
             "native_action_cast_receipts": [
-                {"id": {"spellId": 585}, "casts": cast_receipts}],
+                {"id": action["action"]["castSpell"]["spellId"],
+                 "casts": cast_receipts}
+                for action in source["raid"]["parties"][0]["players"][0][
+                    "rotation"]["priorityList"]],
         }, {})
 
     def world(_binary, request, *, target_count):
