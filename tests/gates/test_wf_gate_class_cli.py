@@ -44,7 +44,7 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
         "winner_selection": "paid_4x3_balanced_native_world_confirmed",
         "paid_balanced_finalists": 6,
         "paid_balanced_confirmed": 2,
-        "source_candidate_failure_count": 146,
+        "source_candidate_failure_count": 17,
         "native_gear_options_unique_items": 321,
         "native_gear_options_unique_enchants": 22,
         "native_gear_options_applied": True,
@@ -71,7 +71,7 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
     assert receipt["paid_balanced_finalists"] == 6
     assert receipt["paid_balanced_confirmed"] == 2
     assert receipt["paid_stochastic_finalists"] == 0
-    assert receipt["source_candidate_failure_count"] == 146
+    assert receipt["source_candidate_failure_count"] == 17
     assert receipt["native_gear_options_unique_items"] == 321
     assert receipt["native_gear_options_unique_enchants"] == 22
     assert receipt["native_gear_options_applied"] is True
