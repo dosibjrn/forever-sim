@@ -71,6 +71,8 @@ RETIRED_TOOLS = (
     "tools/wf424_druid_l30_insect_probe.py",
     "tools/wf429_l30_pushback_100mob.py",
     "tools/wf430_l30_starfire_100mob.py",
+    # One-off WF357 staged-SQLite recovery frontier; keep its report as historical evidence.
+    "tools/wf357_l30_recovery_frontier.py",
     # Unreferenced 300 s GameIR search driver retained under evidence/ by mistake.
     "evidence/wf438/run300.py",
 )
@@ -138,6 +140,7 @@ RETIRED_IMPORT_NAMES = (
     "wf424_druid_l30_insect_probe",
     "wf429_l30_pushback_100mob",
     "wf430_l30_starfire_100mob",
+    "wf357_l30_recovery_frontier",
     "test_wf357_source_between_pull_recovery",
     "test_wf391_generic_joint_frontier",
     "test_wf424_insect_source_talent_100mob_tdd",
@@ -220,6 +223,8 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf359/WF359_L30_P3_REBASED_DIRECT_100MOB.json",
     "evidence/wf359/WF359_L30_P3_REBASED_TOP5.json",
     "evidence/wf359/WF359_RECONSTRUCTION.json",
+    # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
+    "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
 )
 
