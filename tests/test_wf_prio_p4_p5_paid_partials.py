@@ -113,3 +113,29 @@ def test_source_action_partial_counts_actual_complete_source_casts_only():
         "verified": 1, "applicable": 3, "executed": 1}
     search["rows"][1]["screen_status"] = "COMPLETE"
     assert paid_source_action_coverage(search, ir_actions)["verified"] == 2
+
+
+
+def test_empty_talent_frontier_is_diagnostic_only_and_never_certifies_unlocks():
+    import pytest
+    from src.v2.source_bounded_joint_frontier import (
+        _ensure_searchable_talent_frontier, _summarize_paid_unlock_coverage)
+
+    allocations, frontier = _ensure_searchable_talent_frontier(
+        [], {"source_unlock_allocation_unresolved": []},
+        search_only=True, spec_tree=None)
+    assert allocations == [{}]
+    assert frontier["empty_talent_frontier_fallback"] == (
+        "EMPTY_SELECTION_BASELINE_FOR_UNRESTRICTED_SHORT_PAID_DIAGNOSTIC_ONLY")
+    _, unlocks_complete = _summarize_paid_unlock_coverage(
+        [], {}, [], frontier)
+    assert unlocks_complete is False
+    assert frontier["source_unlock_allocation_unresolved"] == [
+        {"reason": "NO_EXECUTABLE_FULL_POINT_TALENT_FRONTIER"}]
+
+    with pytest.raises(ValueError, match="SOURCE_FULL_POINT_TALENT_FRONTIER_EMPTY"):
+        _ensure_searchable_talent_frontier(
+            [], {}, search_only=False, spec_tree=None)
+    with pytest.raises(ValueError, match="SOURCE_FULL_POINT_TALENT_FRONTIER_EMPTY"):
+        _ensure_searchable_talent_frontier(
+            [], {}, search_only=True, spec_tree="mage")
