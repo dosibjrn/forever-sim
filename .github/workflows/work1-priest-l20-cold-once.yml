@@ -22,8 +22,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install existing Forever bridge dependency
-        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Install existing Forever bridge and focused test dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4' 'pytest==8.3.5'
+      - name: Focus-test source-native sparse proposals before expensive cold run
+        run: >-
+          python -m pytest -q
+          tests/test_wf_native_priest_l20_cold.py
+          tests/test_wf_native_priest_l20_paid.py
+          tests/test_work1_p4_p5_single_cold_snapshot.py
       - name: Build selected native engine
         run: |
           set -euo pipefail
@@ -65,6 +71,16 @@ jobs:
               "overrun": receipts["native_cold_300s_overrun"],
               "snapshot_30_available": receipts["native_cold_snapshot_30"] is not None,
               "final_300_available": receipts["native_cold_final_300"] is not None,
+          }, sort_keys=True), flush=True)
+          from collections import Counter
+          status_counts = Counter(row.get("status", "UNKNOWN")
+                                  for row in receipts.get("native_cold_rows", []))
+          refusal_reasons = Counter(
+              str(row.get("reason", "")) for row in receipts.get("native_cold_rows", [])
+              if row.get("status") == "NATIVE_REFUSED")
+          print("PRIEST_NATIVE_COLD_REFUSAL_SUMMARY", json.dumps({
+              "status_counts": dict(status_counts),
+              "top_native_refusals": refusal_reasons.most_common(3),
           }, sort_keys=True), flush=True)
           # Expose only genuine executed finalist receipts in the job log.
           # A missing snapshot or winner is an observed result, not a stub
