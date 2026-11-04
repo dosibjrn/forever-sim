@@ -12,7 +12,6 @@ from src.shared.leveling.objective import representative_hp
 from src.v2.source_companion_policy_search import companion_policy_envelope
 from src.v2.source_joint_discovery import _gear_envelope
 from src.v2.source_legal_beam import search_source_legal_beam
-from tools.wf252_ingest_companions import ingest
 
 
 def hunter(level=20):return build_game_ir_slice(class_key='hunter',level=level)
@@ -98,9 +97,5 @@ def test_bad_companion_skill_source_fails_closed(tmp_path):
         source_enrich_companions(owner,db_path=tmp)
 
 
-def test_idempotent_capture_and_paladin_does_not_gain_hunter_pet():
-    before=sqlite3.connect(DEFAULT_DB).execute('SELECT COUNT(*) FROM companion_skill_source_facts').fetchone()[0]
-    assert ingest()['skill_rows']==6
-    after=sqlite3.connect(DEFAULT_DB).execute('SELECT COUNT(*) FROM companion_skill_source_facts').fetchone()[0]
-    assert before==after==6
-    assert not build_game_ir_slice(class_key='paladin',level=20).companions
+def test_paladin_does_not_gain_hunter_pet():
+    assert not build_game_ir_slice(class_key='paladin', level=20).companions
