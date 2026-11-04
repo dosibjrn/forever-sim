@@ -210,3 +210,34 @@ def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
             in report["blockers"]
         )
     assert report["p3_pass"] is False
+
+
+def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five():
+    levels = [3, 12, 7, 11, 9, 10, 8]
+    items = tuple(ItemRecord(
+        item_id=100 + index, name=f"Native chest {index}", slot="chest",
+        item_level=item_level, required_level=1, stamina=2.0,
+        identity_origin="mythicsim_native", source_type="mythicsim_native")
+        for index, item_level in enumerate(levels))
+    metadata = {
+        "status": "ok",
+        "unverified_candidate_count": 0,
+        "source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
+    }
+    with patch(
+        "src.game.native_p3_item_options.native_p3_item_records",
+        return_value=(items, {}, metadata),
+    ), patch(
+        "src.game.checkpoint_p3_smoke.available_items",
+        side_effect=AssertionError("native P3 must not call SQLite availability"),
+    ):
+        report = fast_p3_smoke(
+            class_key="priest", level=20, weights={"stamina": 1.0},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=False, native_options_binary="native")
+    assert report["source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    assert report["legal_item_count"] == 7
+    assert report["tested_item_count"] == 5
+    assert report["slots"]["chest"]["selected_ids"] == [101, 103, 105, 104, 106]
+    assert report["slots"]["chest"]["selection"] == "HIGHEST_ITEM_LEVEL_NOT_SCORE"
