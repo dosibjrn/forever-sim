@@ -432,6 +432,50 @@ def test_item_options_create_actual_native_paid_gear_requests_without_slot_rules
         ),
     ],
 )
+def test_native_paid_frontier_exposes_fuller_build_before_four_paid_slots(tmp_path):
+    """A real native/world attempt must reach more than just 1-3 equipped slots.
+
+    Native ItemSparse supplies the inventory, and only the paid Rust scorer
+    decides whether the resulting full build executes; no Python item rules.
+    """
+    from tools.wf_native_priest_l20_paid import score_native_priest_l20_item_candidates
+
+    source = _request()
+    path = tmp_path / "source.json"
+    path.write_text(json.dumps(source))
+    seen = []
+
+    def scorer(binary, candidate, **kwargs):
+        items = [item["id"] for item in candidate["raid"]["parties"][0][
+            "players"][0]["equipment"]["items"]]
+        seen.append(items)
+        return {
+            "effective_request_sha256": f"native-build-{len(seen)}",
+            "score": float(len(seen)), "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 2}],
+        }, {}
+
+    options = [
+        {"item_id": 201 + index, "slot": slot}
+        for index, slot in enumerate(
+            ["trinket", "shoulder", "legs", "finger", "waist", "ranged"])
+    ]
+    receipt = score_native_priest_l20_item_candidates(
+        "/native", path, options, score_request=scorer,
+        max_paid_builds=4, budget_s=6.0)
+
+    # Earlier native budget: [] / [201] / [201, 202] / [201, 202, 203].
+    # The same four paid requests now include a native-judged five-slot
+    # whole build before the frontier runs out of paid evaluations.
+    assert seen == [
+        [], [201, 202, 203, 204, 205], [201], [201, 202]]
+    assert receipt["native_paid_whole_builds"] == 4
+    assert receipt["native_source_action_casts"] == 8
+    assert receipt["native_2d_screen_complete"] is False
+    assert json.loads(path.read_text()) == source
+
+
 def test_native_item_options_use_spare_paid_budget_for_same_slot_alternatives(
         tmp_path, options, expected_builds, expected_alternatives):
     """A short native slot list must not waste available whole-build evaluations."""
