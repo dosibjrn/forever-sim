@@ -227,7 +227,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             max_evaluations=remaining,
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
-            opening_action_ids=tuple(record.get("prefix", ())))
+            opening_action_ids=tuple(record.get("prefix", ())),
+            selected_policy=policy)
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
         if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
