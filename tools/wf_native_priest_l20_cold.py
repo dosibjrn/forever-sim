@@ -11,6 +11,7 @@ import hashlib
 import itertools
 import json
 import math
+import subprocess
 import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -105,7 +106,9 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         raise ValueError("PRIEST_L20_SOURCE_REQUEST_REQUIRED") from exc
     if (not isinstance(actor, dict) or actor.get("class") != "ClassPriest"
             or type(actor.get("level")) is not int or actor["level"] != 20
-            or actor.get("equipment", {}).get("items") != []):
+            or not isinstance(actor.get("equipment"), dict)
+            or actor["equipment"].get("items") != []
+            or not isinstance(source.get("simOptions"), dict)):
         raise ValueError("PRIEST_L20_COLD_SOURCE_ACTOR_INVALID")
     clock = clock or time.monotonic
     world_screen = world_screen or couple_source_priest_l20_persistent_world
@@ -156,7 +159,8 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                         row["real_100mob_receipt"] = world
                     else:
                         row["status"] = "WORLD_INCOMPLETE"
-            except (OSError, ValueError, RuntimeError, TimeoutError) as exc:
+            except (OSError, ValueError, RuntimeError, TimeoutError,
+                    subprocess.SubprocessError) as exc:
                 row["reason"] = type(exc).__name__ + ":" + str(exc)[-240:]
             elapsed = clock() - start
             row["paid_completed_elapsed_s"] = elapsed
