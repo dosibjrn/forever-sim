@@ -176,6 +176,43 @@ def test_bounded_source_frontier_reports_native_refusals_without_credit(tmp_path
     assert result["native_2d_screen_complete"] is False
 
 
+
+def test_subprocess_timeout_refuses_one_candidate_without_losing_next_paid_build(tmp_path):
+    """A failed native child must not abort the independent paid frontier."""
+    import subprocess
+
+    first = _request()
+    second = copy.deepcopy(first)
+    second["raid"]["parties"][0]["players"][0]["equipment"]["items"] = [
+        {"id": 12345}]
+    (tmp_path / "a-source.json").write_text(json.dumps(first))
+    (tmp_path / "b-source.json").write_text(json.dumps(second))
+    attempted = []
+
+    def scorer(binary, candidate, **kwargs):
+        attempted.append(copy.deepcopy(candidate))
+        if len(attempted) == 1:
+            raise subprocess.TimeoutExpired(["forever-engine", "sim"], 0.01)
+        return {
+            "effective_request_sha256": "second-native-paid-request",
+            "score": 9.0, "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 3}],
+        }, {}
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer, budget_s=6.0)
+    assert len(attempted) == 2
+    assert [r["status"] for r in result["native_candidate_receipts"]] == [
+        "NATIVE_REFUSED", "NATIVE_PAID"]
+    assert "timed out" in result["native_candidate_receipts"][0]["reason"]
+    assert result["native_paid_whole_builds"] == 1
+    assert result["native_source_action_casts"] == 3
+    assert result["native_2d_screen_complete"] is False
+    assert json.loads((tmp_path / "a-source.json").read_text()) == first
+    assert json.loads((tmp_path / "b-source.json").read_text()) == second
+
+
 def test_p4_p5_gate_uses_paid_source_candidate_directory_without_m1_credit(
         tmp_path, monkeypatch):
     from tools import wf_gate_p4_p5_partial as gate
