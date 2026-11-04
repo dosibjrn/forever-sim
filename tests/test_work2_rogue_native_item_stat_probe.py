@@ -171,8 +171,9 @@ def test_p3_forwards_selected_native_items_to_paid_equipped_executable(monkeypat
     assert result["comparison"]["delta_dps"] == 1.0
     assert len(invocations) == 1
     command, kwargs = invocations[0]
-    assert command[-4:] == [
-        "--binary", "selected-native", "--request", "/tmp/rogue-l20-source.json"]
+    assert command[-6:] == [
+        "--binary", "selected-native", "--request", "/tmp/rogue-l20-source.json",
+        "--max-paid-attempts", "2"]
     assert json.loads(kwargs["input"]) == slots
     assert kwargs["timeout"] == 150
 
@@ -190,12 +191,33 @@ def test_p3_native_equipped_pair_does_not_overrun_shared_paid_budget(monkeypatch
         "status": "NOT_RUN_PAID_BUDGET_EXHAUSTED", "paid_attempts": 0}
 
 
-def test_p3_source_search_reserves_two_native_paid_attempts_when_requested(monkeypatch):
+def test_p3_source_search_reserves_bounded_native_slot_budget_when_requested(monkeypatch):
     monkeypatch.delenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", raising=False)
     assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 0
     monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/native-rogue-source.json")
-    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 2
+    assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", "pinned-native") == 18
     assert p3._native_equipped_p3_reservation("rogue", 20, "unrestricted", None) == 0
     assert p3._native_equipped_p3_reservation("rogue", 60, "unrestricted", "pinned-native") == 0
     assert p3._native_equipped_p3_reservation("mage", 20, "unrestricted", "pinned-native") == 0
     assert p3._native_equipped_p3_reservation("rogue", 20, "combat", "pinned-native") == 0
+
+def test_p3_native_slot_sweep_receipt_cannot_exceed_remaining_paid_budget(monkeypatch):
+    import json
+    import subprocess
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ROGUE_REQUEST", "/tmp/native.json")
+    commands = []
+
+    def native_script(command, **kwargs):
+        commands.append(command)
+        return SimpleNamespace(returncode=0, stderr="", stdout=json.dumps({
+            "status": "PAID_NATIVE_DIFFERENCE", "paid_attempts": 19,
+            "actor_checkpoint_verified": True,
+        }))
+
+    monkeypatch.setattr(subprocess, "run", native_script)
+    receipt = p3._paid_native_equipped_probe(
+        Path("."), "selected-native", {"slots": {}}, remaining=18)
+    assert commands[0][-2:] == ["--max-paid-attempts", "18"]
+    assert receipt["status"] == "NATIVE_EQUIPPED_PROBE_ERROR"
+    assert receipt["paid_attempts"] == 0
