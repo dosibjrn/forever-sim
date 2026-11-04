@@ -51,17 +51,18 @@ jobs:
           python-version: '3.11'
       - name: Install existing world runtime dependency
         run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
-      - name: Apply tracked typed RNG port and compile the exact selected public Rust fork
+      - name: Verify published typed RNG and compile the exact selected Rust fork
         run: |
           set -euo pipefail
           selected="$(git ls-tree HEAD integrations/mythicsim-rust/engine | awk '{print $3}')"
           actual="$(git -C integrations/mythicsim-rust/engine rev-parse HEAD)"
           test "$selected" = "$actual"
           echo "SELECTED_RUST_SHA=$actual"
-          # Apply the deterministic, tracked source port to this exact pinned
-          # fork checkout. The gitlink SHA above remains unchanged; no floating
-          # branch or environment-selected RNG mode is used.
-          python integrations/mythicsim-rust/port_native_typed_rng.py integrations/mythicsim-rust/engine
+          # Typed RNG is already published in the pinned fork. Do not reapply
+          # the historical source-rewrite port to its changed Rust CLI imports:
+          # the port's text anchors are not a runtime contract.
+          grep -Fq 'pub enum RngMode' integrations/mythicsim-rust/engine/src/core/rng.rs
+          grep -Fq '"--rng-mode"' integrations/mythicsim-rust/engine/src/main.rs
           grep -Fq '"native_health_damage_taken"' integrations/mythicsim-rust/engine/src/core/fight.rs
           grep -Fq '"native_health_damage_events"' integrations/mythicsim-rust/engine/src/core/fight.rs
           grep -Fq 'pub enum RngMode' integrations/mythicsim-rust/engine/src/core/rng.rs
