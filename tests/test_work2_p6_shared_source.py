@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import patch
 
 from tools.wf_gate_p6_full_source import (run_full_source_comparison,
-    _shared_replay_winners)
+    _shared_replay_winners, _measured_best_frozen_winner)
 from tools.wf_gate import _p6_replay_receipts
 
 
@@ -212,3 +212,53 @@ def test_p6_incomplete_unselected_row_cannot_crash_selected_paid_replay():
     assert len(calls) == 3
     assert sum(args[0] == '--replay-from' for args in calls) == 2
     assert all(row['reused'] is False for row in result['source_replay_results'])
+
+
+def test_measured_100mob_frozen_best_of_keeps_faster_early_incumbent():
+    """Late proxy rank is not an actual 100-mob search objective."""
+    report = _report(final=_winner('late'), snapshot=_winner('early'))
+    candidates = [report['shared_search_snapshot']['winner'],
+                  report['search_winner']]
+    # Late proxy was ranked first by the search, but early is genuinely
+    # faster on the completed paid 100-mob objective.
+    receipt = {'rows': [
+        {'id': '0', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 7.},
+        {'id': '1', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 9.},
+    ]}
+    winner = _measured_best_frozen_winner(report, candidates, receipt)
+    assert winner['policy_signature'] == 'early'
+
+
+def test_measured_100mob_frozen_best_of_promotes_genuine_late_improvement():
+    report = _report(final=_winner('late'), snapshot=_winner('early'))
+    candidates = [report['shared_search_snapshot']['winner'],
+                  report['search_winner']]
+    receipt = {'rows': [
+        {'id': '0', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 9.},
+        {'id': '1', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 7.},
+    ]}
+    winner = _measured_best_frozen_winner(report, candidates, receipt)
+    assert winner['policy_signature'] == 'late'
+
+
+def test_measured_100mob_frozen_best_of_never_promotes_unpaid_or_partial():
+    report = _report(final=_winner('late'), snapshot=_winner('early'))
+    candidates = [report['shared_search_snapshot']['winner'],
+                  report['search_winner']]
+    receipt = {'rows': [
+        {'id': '0', 'status': 'COMPLETE', 'count': 99,
+         'mob_completed': 99, 'full_s_per_mob': 1.},
+        {'id': '1', 'status': 'COMPLETE', 'count': 100,
+         'mob_completed': 100, 'full_s_per_mob': 8.},
+    ]}
+    assert _measured_best_frozen_winner(
+        report, candidates, receipt)['policy_signature'] == 'late'
+    receipt['rows'][1]['id'] = '0'  # Wrong candidate/receipt identity.
+    assert _measured_best_frozen_winner(report, candidates, receipt) is None
+    receipt['rows'][1]['id'] = '1'
+    receipt['rows'][1]['status'] = 'FAIL'
+    assert _measured_best_frozen_winner(report, candidates, receipt) is None
