@@ -94,7 +94,8 @@ def test_breadth_opt_in_requires_verified_paid_baseline(monkeypatch):
 
 
 @pytest.mark.parametrize("invalid_objective", [
-    None, "NATIVE_UNSUPPORTED", float("nan"), float("inf"), 0.0,
+    None, "NATIVE_UNSUPPORTED", "9.0", True,
+    float("nan"), float("inf"), 0.0,
 ])
 def test_paid_source_witness_ignores_unusable_native_probe_objective_but_keeps_budget(
         monkeypatch, invalid_objective):
@@ -130,7 +131,8 @@ def test_paid_source_witness_ignores_unusable_native_probe_objective_but_keeps_b
 
 
 @pytest.mark.parametrize("invalid_objective", [
-    None, "NATIVE_UNSUPPORTED", float("nan"), float("inf"), 0.0,
+    None, "NATIVE_UNSUPPORTED", "9.0", True,
+    float("nan"), float("inf"), 0.0,
 ])
 def test_unusable_paid_source_baseline_is_charged_and_classified(
         monkeypatch, invalid_objective):
@@ -157,7 +159,8 @@ def test_unusable_paid_source_baseline_is_charged_and_classified(
 
 
 @pytest.mark.parametrize("invalid_objective", [
-    None, "NATIVE_UNSUPPORTED", float("nan"), float("inf"), 0.0,
+    None, "NATIVE_UNSUPPORTED", "9.0", True,
+    float("nan"), float("inf"), 0.0,
 ])
 def test_invalid_finished_naked_stat_probe_objective_is_not_measured(
         monkeypatch, invalid_objective):
