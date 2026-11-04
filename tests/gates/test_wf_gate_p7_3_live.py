@@ -319,7 +319,15 @@ def test_one_point_transfers_keep_budget_without_python_legality():
     variants = native_talent_proposals.one_point_transfer_neighbors(
         source, limit=16)
     assert len(variants) == len(set(variants)) == 16
-    assert variants[0] == "5532220115501351--514"
+    # Proposal order is a search heuristic, not a native legality contract.
+    # The bounded stream must reach both same-tree and cross-tree edits.
+    source_tree_points = [sum(int(c) for c in tree) for tree in source.split("-")]
+    proposed_tree_points = [
+        [sum(int(c) for c in tree) for tree in variant.split("-")]
+        for variant in variants
+    ]
+    assert any(points == source_tree_points for points in proposed_tree_points)
+    assert any(points != source_tree_points for points in proposed_tree_points)
     assert all(len(v) == len(source) for v in variants)
     for candidate in variants:
         deltas = [int(after) - int(before)
