@@ -106,12 +106,19 @@ RETIRED_TOOLS = (
     "tools/wf255_paladin_command_replay.py",
     "tools/wf256_paladin_seals_replay.py",
     "tools/wf256_run_full_search.py",
+    # P00b/P00c/P01a source-legality and naked-envelope diagnostic entrypoints.
+    "scripts/evaluate_source_candidates.py",
+    "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
     "src/v2/source_sqlite_spell_semantics.py",
     # Historical six-gate/P1/P2 reader; current certification uses m1_progress.
     "src/game/checkpoint_acceptance_status.py",
+    # Retired P00b/P00c/P01a GameIR-only legality and naked-envelope chain.
+    "src/game/level_legality.py",
+    "src/v2/level_evaluation_trace.py",
+    "src/v2/legal_candidate_enumeration.py",
 )
 
 RETIRED_IMPORT_NAMES = (
@@ -195,6 +202,21 @@ RETIRED_IMPORT_NAMES = (
     "accepted_checkpoint_status",
     "wf252_companion_replay",
     "wf242_validate",
+    "src.game.level_legality",
+    "level_evaluation_trace",
+    "legal_candidate_enumeration",
+    "evaluate_source_candidates",
+    "prove_p00c_legality",
+    "evaluate_source_candidate_envelope",
+    "enumerate_legal_source_candidates",
+    "generate_priority_order_candidates",
+    "evaluate_legal_level_continuation",
+    "evaluate_mode_auto_attack_trace",
+    "compare_level_candidates",
+    "LevelState",
+    "validate_level_state",
+    "validate_level_transition",
+    "require_exact_talent_ranks",
     "wf251_native_replay",
     "wf253_paladin_seal_replay",
     "wf254_paladin_talent_replay",
@@ -250,11 +272,18 @@ RETIRED_TESTS = (
     "tests/test_wf359_druid_l30_p3_rebase.py",
     "tests/test_wf427_quest_horizon_paid_tdd.py",
     "tests/test_wf356_export_legacy_druid30.py",
+    "tests/test_level_evaluation_trace_p00b.py",
+    "tests/test_level_legality_p00c.py",
+    "tests/test_wf_p01a_legal_candidates.py",
+    "tests/test_wf_p01a2_mode_candidate.py",
+    "tests/generic/search/test_wf_gen01_priority_search.py",
 )
 
 RETIRED_COMMANDS = (
     "python tools/wf_checkpoint_druid_balance_l60.py",
     "python tools/wf_native_session_capability.py",
+    "python scripts/evaluate_source_candidates.py",
+    "python scripts/prove_p00c_legality.py",
 )
 
 

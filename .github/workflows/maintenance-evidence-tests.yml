@@ -99,7 +99,6 @@ on:
       - 'src/game/evaluation.py'
       - 'src/optimization/evaluation.py'
       - 'src/v2/class_model.py'
-      - 'src/game/level_legality.py'
       - 'src/game/data/forever/source_indexed_action_coverage.py'
       - 'tests/test_wf270_index_to_ir_action_frontier.py'
       - 'tests/test_wf272_source_ranked_periodic_finisher.py'
@@ -118,7 +117,6 @@ on:
       - 'tests/test_prio_p3_live_sourced_chance_gear.py'
       - 'tests/test_prio_p3_source_policy_sp.py'
       - 'tests/test_work2_paladin_p3_source_naked.py'
-      - 'tests/test_level_legality_p00c.py'
       - 'src/v2/generic_frontier.py'
       - 'src/v2/generic_melee_routes.py'
       - 'src/v2/generic_backend.py'
@@ -168,7 +166,6 @@ jobs:
           tests/test_wf305_source_action_scope.py
           tests/gates/test_wf_gate_class_cli.py
           tests/gates/test_wf_gate_runtime_authority.py
-          tests/test_level_legality_p00c.py
           tests/test_wf270_index_to_ir_action_frontier.py
           tests/test_wf272_source_ranked_periodic_finisher.py
           tests/test_wf328_mode_joint_prefix_admission.py
