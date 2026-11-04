@@ -107,8 +107,11 @@ def test_p3_cli_preserves_native_item_options_partial_metadata(monkeypatch, caps
         "native_paid_winner_spell_probe_enabled": True,
         "real_catalogue_legal_items": 1314,
         "real_catalogue_slots_scored": 16,
-        "real_catalogue_top5_items_scored": 42,
-        "real_source_search_evaluated": 44,
+        "real_native_representative_items_scored": 20,
+        "real_source_search_evaluated": 123,
+        "native_equipped_paid_attempts": 72,
+        "p3_shared_budget_attempts": 65,
+        "p3_native_pair_reserved_attempts": 58,
         "reachability_count": 12,
         "pass_count": 0,
     }
@@ -128,7 +131,11 @@ def test_p3_cli_preserves_native_item_options_partial_metadata(monkeypatch, caps
     assert row["native_spell_coefficients_applied"] == report["native_spell_coefficients_applied"]
     assert row["native_paid_winner_spell_probe_enabled"] is True
     assert row["real_catalogue_legal_items"] == 1314
-    assert row["real_catalogue_top5_items_scored"] == 42
+    assert row["real_native_representative_items_scored"] == 20
+    assert row["real_source_search_evaluated"] == 123
+    assert row["native_equipped_paid_attempts"] == 72
+    assert row["p3_shared_budget_attempts"] == 65
+    assert row["p3_native_pair_reserved_attempts"] == 58
 
 
 

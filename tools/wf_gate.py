@@ -161,13 +161,18 @@ def main(argv=None) -> int:
                     "source_context_sha256", "real_source_search_attempts",
                     "real_source_search_evaluated", "source_naked_stage",
                     "source_naked_diagnostics", "source_actor_context",
-                    "real_catalogue_top5_items_scored",
+                    "real_native_representative_items_scored",
                     "source_report_url", "source_request_raw_sha256",
                     "native_source_revision", "iterations",
                     "sampled_source_fights", "saved_source_iterations",
                     "native_first_duration_s", "world_first_duration_s",
-                    "source_replay_Tfirst_Tsecond", "source_replay_numeric_saturation",
-                    "joint_cold_world_dps", "external_reference_only_floor",
+                    "source_replay_Tfirst_Tsecond", "source_replay_T30_T300",
+                    "source_replay_T30_s_per_mob", "source_replay_T300_s_per_mob",
+                    "selected_paid_winners", "source_replay_numeric_saturation",
+                    "joint_cold_world_dps", "joint_cold_native_dps",
+                    "frozen_stochastic_iterations", "frozen_stochastic_native_dps",
+                    "frozen_request_raw_sha256", "search_wall_s",
+                    "external_reference_only_floor",
                     "final_required_dps", "source_legal_joint_candidates_paid",
                     "cold_winner_request_sha256",
                     "selected_balanced_request_sha256",
@@ -175,6 +180,24 @@ def main(argv=None) -> int:
             if key in report:
                 record[key] = report[key]
         if gate == "P3":
+            # Make the real bounded Rust baseline/equipped pair visible to the
+            # ordinary no-record CLI. Otherwise the producer's native verdict,
+            # paid attempts and actor identity silently disappear from Actions.
+            native_pair = report.get("native_equipped_paid_receipt")
+            if isinstance(native_pair, dict):
+                record["native_equipped_paid_receipt"] = {
+                    key: native_pair[key]
+                    for key in ("status", "paid_attempts", "swap",
+                                "comparison", "evaluations",
+                                "actor_checkpoint_verified", "promotion")
+                    if key in native_pair
+                }
+            for key in ("native_equipped_paid_attempts",
+                        "p3_shared_budget_attempts",
+                        "p3_native_pair_reserved_attempts"):
+                value = report.get(key)
+                if type(value) is int and value >= 0:
+                    record[key] = value
             # Preserve the measured source-policy witness and weight vector so
             # a first-contact P3 failure can be repaired from its actual cause.
             # These are bounded diagnostics only; they never alter PASS/M1.
@@ -282,6 +305,28 @@ def main(argv=None) -> int:
                 value = report.get(key)
                 if isinstance(value, list):
                     record[key] = value[:4]
+        if gate in ("P7.2", "P7.3", "P7.4"):
+            # The approved single-axis producers score changed APL, talent or
+            # gear directly on selected native Rust. Forward actual paid native
+            # scores; no legacy 2D or stochastic proxy can stand in for them.
+            score = report.get("winner_native_dps")
+            if (type(score) in (int, float) and math.isfinite(score)
+                    and score >= 0):
+                record["winner_native_dps"] = score
+            for key in ("original_apl_hash", "source_original_talents",
+                        "cold_winner_talents", "selected_validation",
+                        "reference_profile", "checkpoint_spec"):
+                value = report.get(key)
+                if isinstance(value, str) and len(value) <= 128:
+                    record[key] = value
+            for flag in ("source_fixed_gear_and_talents", "fixed_rotation_and_gear",
+                         "source_fixed_rotation_and_talents"):
+                if type(report.get(flag)) is bool:
+                    record[flag] = report[flag]
+            apl = report.get("cold_winner_apl")
+            if (isinstance(apl, list) and 0 < len(apl) <= 50
+                    and len(json.dumps(apl, ensure_ascii=False).encode("utf-8")) <= 8192):
+                record["cold_winner_apl"] = apl
         if gate == "P7.5":
             # The live provider now returns the exact independently paid
             # frozen winner. Preserve it in the CLI/M1 Actions receipt so a

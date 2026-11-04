@@ -2,6 +2,10 @@
 
 Read [COMMON](COMMON.md), this file, the latest [WORK_PRIORITY](../WORK_PRIORITY.md), actual Merge-owned M1 ledger and relevant source/PR/Actions. Only read a gate contract when that gate is under consideration.
 
+## First check Clean's actionable escalations
+
+Read the `## Clean escalations for Prio` section of `WORK_PRIORITY.md` before setting work priority. For each fresh, source-linked finding, decide whether the approved active gate actually requires the questioned behavior and whether there is a causal route to M1. **Act, don't merely acknowledge:** stop/deprioritize waste, assign the smallest fix/removal to the owning agent, or reject the finding with a short evidence-backed reason. Update the normal work queue only if an actual owner, task, priority or next action changes; otherwise remove/resolved-mark the escalation without a new task. Resolve stale or duplicate entries promptly; no parallel audit backlog, new gate, or acceptance veto. Clean can write only the dedicated escalation section; Prio retains authority over priorities and removes entries after disposition.
+
 ## Decision loop (every cycle)
 
 1. **Choose the largest credible *total* M1 improvement per remaining work.** Compare current genuine PASS/PARTIAL headroom, likelihood of a real outcome, implementation/verification/compute cost, and **demonstrated reuse across other active gates**. Reusable native execution/optimizer fixes may outrank cheap one-off P3 measurements; do not automatically favor the first unsampled gate. M1's existing 1,332 denominator and 80/20 partial diagnostic remain unchanged; estimates are unearned, not new metrics.

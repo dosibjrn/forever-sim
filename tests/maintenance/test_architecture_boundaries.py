@@ -570,8 +570,6 @@ def test_source_slug_helper_is_not_entangled_with_legacy_talent_compiler():
     script = """
 import sys
 from src.shared.identifiers import source_slug
-from tools.wf362_stage_warrior30_talents import _slug as stage_slug
-assert stage_slug is source_slug
 assert source_slug('Cat\\'s Paw') == 'cats_paw'
 assert source_slug('  Holy/Fire  ') == 'holy_fire'
 assert source_slug('Rank 1') == 'rank_1'
@@ -592,7 +590,6 @@ assert legacy_slug is source_slug
         "src/game/data/forever/source_enemy_melee_ap_debuff.py",
         "src/game/data/forever/source_rank_overlay.py",
         "src/game/data/forever/source_control_action_compiler.py",
-        "tools/wf362_stage_warrior30_talents.py",
         "tools/parse_verified_detail_to_staging.py",
     ]
     for path in migrated:

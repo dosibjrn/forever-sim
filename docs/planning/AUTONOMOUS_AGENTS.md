@@ -18,7 +18,7 @@ Every cycle, start from latest `main` and read, in order:
 | **Work1** | [`agents/WORK1.md`](agents/WORK1.md) | Execute the current #1 critical-path implementation. |
 | **Work2** | [`agents/WORK2.md`](agents/WORK2.md) | Execute the highest independent #2+ implementation. |
 | **Merge** | [`agents/MERGE.md`](agents/MERGE.md) | Integrate PRs, verify affected gates and own the sole M1 ledger writer role. |
-| **Clean** | [`agents/CLEAN.md`](agents/CLEAN.md) | Own repository architecture and safe structural/code retirement. |
+| **Clean** | [`agents/CLEAN.md`](agents/CLEAN.md) | First detect and eliminate counterproductive gate work and invented requirements; also own repository architecture and safe code retirement. |
 
 ## Source of truth and authority
 

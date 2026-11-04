@@ -142,6 +142,41 @@ def measured_p7_dps_proximity(gate: str, report: dict) -> dict | None:
         return None
     if not isinstance(report, dict) or report.get("status") not in ("FAIL", "BLOCKED", "PASS"):
         return None
+    if gate == "P7.5" and report.get("production_engine") == "pinned_mythicsim_rust_native":
+        # The unrestricted P7.5 stationary reference runs directly in the
+        # selected Rust scorer. No world ACKs or duplicate 2D score can be
+        # required to report its genuine stochastic DPS objective.
+        reference = report.get("saved_reference_dps")
+        actual = report.get("frozen_stochastic_native_dps")
+        prior = report.get("strongest_accepted_compatible_prior_dps")
+        if (not report.get("source_request_raw_sha256")
+                or not report.get("native_source_revision")
+                or not report.get("frozen_request_raw_sha256")
+                or type(report.get("frozen_stochastic_iterations")) is not int
+                or report["frozen_stochastic_iterations"] != P7_FINAL_STOCHASTIC_ITERATIONS
+                or type(reference) not in (int, float)
+                or not isfinite(reference) or reference <= 0
+                or type(actual) not in (int, float)
+                or not isfinite(actual) or actual < 0
+                or (prior is not None and (
+                    type(prior) not in (int, float)
+                    or not isfinite(prior) or prior <= 0))):
+            return None
+        required = p7_required_dps(
+            gate, float(reference),
+            strongest_accepted_compatible_prior=(
+                float(prior) if prior is not None else float(reference)))
+        c = min(1., float(actual) / required)
+        return {
+            "dps_objective_actual": round(float(actual), 4),
+            "dps_objective_required": round(required, 4),
+            "dps_objective_proximity_percent": round(100 * c, 2),
+            "dps_objective_pareto_effort_estimate_percent": round(
+                100 * pareto_effort_fraction(c), 2),
+            "dps_objective_scope": "PINNED_NATIVE_STOCHASTIC_DPS_ONLY",
+            "dps_objective_provisional": True,
+            "dps_objective_gate_pass": False,
+        }
     if report.get("production_engine") != "pinned_mythicsim_rust_gsim_2d":
         return None
     if not (report.get("source_request_raw_sha256")

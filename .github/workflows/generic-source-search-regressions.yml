@@ -1,13 +1,18 @@
 name: Generic source-paid search regressions
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'tests/generic/search/**'
       - 'tests/generic/publication/**'
       - 'tests/gates/test_wf_gate_p7_5_stochastic_finalists.py'
       - 'tests/gates/test_wf_gate_p7_5_live.py'
+      - 'tests/gates/test_wf_gate_p7_5_native_unrestricted.py'
+      - 'tests/gates/test_wf_gate_p7_5_prior.py'
+      - 'tools/wf_gate_p7_5_prior.py'
       - 'tools/wf_gate_p7_5_live.py'
       - 'tests/gates/test_wf_gate_p7_2_live.py'
+      - 'tests/test_work2_p72_native_axis.py'
       - 'tools/wf_gate_p7_2_live.py'
       - 'tests/gates/test_wf_gate_p7_3_live.py'
       - 'tests/gates/test_wf_gate_p7_4_live.py'
@@ -17,7 +22,6 @@ on:
       - 'tests/gates/test_wf_gate_class_cli.py'
       - 'tests/gates/test_wf_gate_probe.py'
       - 'tests/gates/test_wf_gate_live_success_percent.py'
-      - 'tests/test_wf_prio_p1_p3_partials.py'
       - 'integrations/mythicsim-rust/p73_talent_search_v2.py'
       - 'integrations/mythicsim-rust/p74_gear_search.py'
       - 'integrations/mythicsim-rust/p75_joint_search.py'
@@ -30,6 +34,8 @@ on:
       - 'integrations/mythicsim-rust/tests/test_p75_joint_contract.py'
       - 'integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py'
       - 'integrations/mythicsim-rust/tests/test_native_gear_adapter.py'
+      - 'integrations/mythicsim-rust/native_p3_equipped.py'
+      - 'integrations/mythicsim-rust/tests/test_native_p3_equipped.py'
       - 'integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py'
       - 'tests/test_work1_p7_balanced_native_world_rng.py'
       - 'tests/test_work1_p7_1_live_entry.py'
@@ -61,17 +67,13 @@ on:
       - 'tools/wf_gate_p4_p5_partial.py'
       - 'tools/wf_gate_p6_live.py'
       - 'tools/wf437_direct_budgeted_run.py'
+      - 'tools/wf_gate_p6_full_source.py'
+      - 'tests/test_work2_p6_shared_source.py'
       - 'tests/gates/test_wf35_product_spec_profile_contract.py'
       - 'tests/test_source_spec_profile.py'
       - 'tests/test_source_rank_fullpoint_frontier.py'
       - 'tests/test_wf_prio_p4_p5_paid_partials.py'
       - 'tests/test_work2_818_mage_paid_policy_breadth.py'
-      - 'tests/test_work1_p4_p5_single_cold_snapshot.py'
-      - 'tests/test_wf_native_priest_l20_paid.py'
-      - 'tests/test_wf_native_priest_l20_cold.py'
-      - 'tools/wf_native_priest_l20_paid.py'
-      - 'tools/wf_native_priest_l20_cold.py'
-      - 'integrations/mythicsim-rust/fixtures/priest-l20-native-smite.request.json'
       - '.github/workflows/generic-source-search-regressions.yml'
 
 permissions:
@@ -103,6 +105,7 @@ jobs:
           tests/generic/publication/test_generic_registry_g47b.py
           tests/generic/search/test_work2_refinement_mode_slot.py
           tests/generic/search/test_wf437_direct_budgeted_run_source.py
+          tests/test_work2_p6_shared_source.py
           tests/generic/search/test_source_wand_paid_slot_proposals.py
           tests/generic/search/test_source_paid_gear_witness_priority.py
           tests/test_work2_818_mage_paid_policy_breadth.py
@@ -111,9 +114,6 @@ jobs:
           tests/test_source_spec_profile.py
           tests/test_source_rank_fullpoint_frontier.py
           tests/test_wf_prio_p4_p5_paid_partials.py
-          tests/test_work1_p4_p5_single_cold_snapshot.py
-          tests/test_wf_native_priest_l20_paid.py
-          tests/test_wf_native_priest_l20_cold.py
           tests/generic/search/test_per_level_fixed_point_v0114846.py
           tests/generic/search/test_stat_weight_model.py
           tests/generic/search/test_v2_analytic_scorer.py
@@ -130,13 +130,15 @@ jobs:
           tests/test_wf_feral01_sqlite_talent_execution.py::test_unknown_talent_effect_is_not_a_zero_cost_noop
           tests/gates/test_wf_gate_p7_5_stochastic_finalists.py
           tests/gates/test_wf_gate_p7_5_live.py
+          tests/gates/test_wf_gate_p7_5_native_unrestricted.py
+          tests/gates/test_wf_gate_p7_5_prior.py
           tests/gates/test_wf_gate_p7_2_live.py
+          tests/test_work2_p72_native_axis.py
           tests/gates/test_wf_gate_p7_3_live.py
           tests/gates/test_p7_independent_cold_rediscovery.py
           tests/gates/test_wf_gate_p7_4_live.py
           tests/gates/test_wf_gate_probe.py
           tests/gates/test_wf_gate_live_success_percent.py
-          tests/test_wf_prio_p1_p3_partials.py
           tests/test_work1_p7_native_item_authority.py
           tests/test_work1_p7_full_gear_pool.py
           tests/test_p7_search_deadline_contract.py
@@ -144,6 +146,7 @@ jobs:
           integrations/mythicsim-rust/tests/test_apl_mutation_length_reachability.py
           integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py
           integrations/mythicsim-rust/tests/test_native_gear_adapter.py
+          integrations/mythicsim-rust/tests/test_native_p3_equipped.py
           integrations/mythicsim-rust/tests/test_rng_probability_diagnostic.py
           tests/test_work1_p7_balanced_native_world_rng.py
           tests/test_work1_p7_1_live_entry.py
@@ -151,3 +154,156 @@ jobs:
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_screen_survives_failed_balanced_probe
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_rerank_ledger_replays_all_finalist_evaluations
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_cold_apl_can_generate_19_actions_from_10_action_source_grammar
+
+  work2-p6-shared-cold-no-record:
+    # Opt-in only: changed integration code must not replay the same 300s
+    # source search automatically on every subsequent PR push.
+    # One explicit label authorizes one changed-HEAD paid run. The source
+    # branch uses L30; the follow-on frozen-build branch checks L40.
+    if: >-
+      (startsWith(github.head_ref, 'work/work2-p6-shared-cold-') ||
+       startsWith(github.head_ref, 'work/work2-p6-l40-followon-')) &&
+      contains(github.event.pull_request.labels.*.name, 'p6-paid-no-record')
+    needs: source-search
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact Work2 P6 source and pinned data
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          lfs: true
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source runtime dependencies
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Pay one real shared 300s source search and P6 100-mob comparison
+        env:
+          FOREVER_P6_FULL_SOURCE_COMPARE: '1'
+          P6_LEVEL: ${{ startsWith(github.head_ref, 'work/work2-p6-l40-followon-') && '40' || '30' }}
+        run: |
+          python tools/wf_gate.py --class druid --level "$P6_LEVEL" --spec unrestricted \
+            --gate P6 --out "${{ runner.temp }}/work2-p6-L${P6_LEVEL}-no-record.json"
+
+  selected-native-p72:
+    # One selected-engine read-only acceptance probe on Work2's P7.3 lane.
+    # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
+    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact P7.2 PR HEAD with selected Rust fork
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: true
+          lfs: true
+          fetch-depth: 0
+      - name: Verify native engine SHA matches selected gitlink
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$recorded" && test "$recorded" = "$actual"
+          echo "HEAD=$(git rev-parse HEAD) RUST_GITLINK=$actual"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Build selected native scorer
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_RELEASE_LTO: 'off'
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+        run: cargo build --release --locked --bin forever-engine
+      - name: Pay real P7.3 changed-talents candidate without recording M1
+        env:
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.3
+
+  selected-native-p71:
+    # One selected-engine P7.1 native 1000-fight stochastic no-record probe.
+    # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
+    if: startsWith(github.head_ref, 'work/work2-p71-native-stochastic-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact P7.1 PR HEAD with selected Rust fork
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: true
+          lfs: true
+          fetch-depth: 0
+      - name: Verify native engine SHA matches selected gitlink
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$recorded" && test "$recorded" = "$actual"
+          echo "HEAD=$(git rev-parse HEAD) RUST_GITLINK=$actual"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Build selected native scorer
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_RELEASE_LTO: 'off'
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+        run: cargo build --release --locked --bin forever-engine
+      - name: Measure P7.1 authenticated native stochastic sample without recording M1
+        env:
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.1
+
+  selected-native-p75:
+    # Pay exactly one changed-HEAD unrestricted P7.5 300s native cold search
+    # and 1000-fight stochastic holdout. No --record-pass or M1 mutation.
+    if: startsWith(github.head_ref, 'work/work2-p75-unrestricted-native-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact Work2 P7.5 HEAD and selected Rust source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: true
+          lfs: true
+          fetch-depth: 0
+      - name: Verify actual selected Rust gitlink
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$recorded" && test "$recorded" = "$actual"
+          echo "PR_HEAD=$(git rev-parse HEAD) RUST_GITLINK=$actual"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Build selected native scorer (no alternate engine)
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_RELEASE_LTO: 'off'
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+        run: cargo build --release --locked --bin forever-engine
+      - name: One real paid 300s P7.5 native joint search and stochastic frozen holdout
+        env:
+          FOREVER_P7_FULL_SOURCE_SEARCH: '1'
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.5 --out "${{ runner.temp }}/p75-native-result.json"

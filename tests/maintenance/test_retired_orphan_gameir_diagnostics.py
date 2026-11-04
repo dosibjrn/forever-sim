@@ -9,6 +9,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Standalone legacy GameIR talent/gear/policy bounded search CLI; live gates use wf_gate.py.
+    "scripts/run_staged_joint_search.py",
+    # Retired WF442 P2 source-rank ingester (source captures remain historical).
+    "tools/wf442_ingest_source_rank_observations.py",
+    # Retired P2-only Warrior/Mage talent snapshot builders (historical staged files retained).
+    "tools/wf362_stage_warrior30_talents.py",
+    "tools/wf381_stage_mage_talent_positions.py",
+    # Retired Paladin P2 talent ingestion and uncalled one-shot source rank stagers.
+    "tools/wf254_ingest_paladin_talents.py",
+    "tools/wf257_ingest_flash_recovery.py",
+    "tools/wf257_ingest_paladin_corridor.py",
+    # Historical one-shot Python item/stat source stagers; staged SQLite data and consumers remain.
+    "tools/wf346_type_resistance_equipment.py",
+    "tools/wf385_stage_mage_stamina.py",
+    # P2-era Druid talent SQLite stager: the generated staged database was already retired.
+    "tools/wf350_stage_druid30_talents.py",
     # Retired gsim-only 1/2/100-mob historical replay (no active native gate caller).
     "tools/wf61_live_persistent_replay.py",
     # WF260 historical GameIR talent/gear/policy and frozen Mage challenger runner; active gates use native producers.
@@ -173,11 +189,25 @@ RETIRED_TOOLS = (
     "tools/wf255_paladin_command_replay.py",
     "tools/wf256_paladin_seals_replay.py",
     "tools/wf256_run_full_search.py",
+    # Retired WF238/239 GameIR talent-sampling scripts; no active gate or optimizer caller.
+    "scripts/run_wf_coverage238_sample.py",
+    "scripts/run_wf_coverage239_sample.py",
     # P00b/P00c/P01a source-legality and naked-envelope diagnostic entrypoints.
     "scripts/evaluate_source_candidates.py",
     "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
+    # Unused Mage-v2 per-level multiprocessing and path scorer (test-only callers).
+    "src/v2/parallel_search.py",
+    "src/v2/path_score.py",
+    # Orphan Mage analytic projection, route simulation, and v1 stochastic diagnostics.
+    "src/v2/mechanics_projection.py",
+    "src/v2/latent_search.py",
+    "src/v2/path_validation.py",
+    "src/v2/stochastic_diagnostics.py",
+    "src/v2/stochastic_race.py",
+    # WF380 orphan GameIR-only recovery-threshold optimizer (exclusive test retired).
+    "src/game/recovery_threshold_search.py",
     # Exclusive Python source/legal empirical P3 proxy and 100-mob causal reporter.
     "src/game/data/forever/source_checkpoint_p3_empirical_weights.py",
     "src/game/data/forever/source_checkpoint_p3_causal_summary.py",
@@ -192,6 +222,24 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf442_ingest_source_rank_observations",
+    "test_wf444_joint_critical_proc_tdd",
+    "test_wf445_joint_incoming_dodge_resource_tdd",
+    "test_wf442_generic_avoidance_resource_red",
+    "test_wf442_generic_direct_heal_crit_red",
+    "wf254_ingest_paladin_talents",
+    "wf257_ingest_flash_recovery",
+    "wf257_ingest_paladin_corridor",
+    "parallel_search",
+    "score_path_levels",
+    "path_score",
+    "mechanics_projection",
+    "latent_search",
+    "path_validation",
+    "stochastic_diagnostics",
+    "stochastic_race",
+    "recovery_threshold_search",
+    "search_recovery_thresholds",
     "wf260_run_budgeted_joint",
     "wf_combat232_weapon_evidence",
     "wf_combat233_source_armor_replay",
@@ -333,6 +381,8 @@ RETIRED_IMPORT_NAMES = (
     "validate_level_state",
     "validate_level_transition",
     "require_exact_talent_ranks",
+    "run_wf_coverage238_sample",
+    "run_wf_coverage239_sample",
     "wf251_native_replay",
     "wf253_paladin_seal_replay",
     "wf254_paladin_talent_replay",
@@ -381,6 +431,19 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # Retired synthetic Python GameIR Warcraft mechanics, not Forever-owned contracts.
+    "tests/test_wf442_generic_avoidance_resource_red.py",
+    "tests/test_wf442_generic_direct_heal_crit_red.py",
+    "tests/test_wf444_joint_critical_proc_tdd.py",
+    "tests/test_wf445_joint_incoming_dodge_resource_tdd.py",
+    "tests/maintenance/test_wf_coverage_sample_wrappers.py",
+    "tests/test_wf254_paladin_rank_batch.py",
+    "tests/test_v2_parallel_path.py",
+    "tests/generic/search/test_v2_path_score.py",
+    "tests/test_v2_projection.py",
+    "tests/generic/search/test_v2_path_validation_inputs.py",
+    "tests/test_v2_stochastic_diagnostics.py",
+    "tests/test_v2_stochastic_race.py",
     "tests/test_wf61_live_persistent_replay.py",
     "tests/generic/search/test_wf260_budgeted_joint_talents.py",
     "tests/test_wf358_p3_contextual_top5.py",

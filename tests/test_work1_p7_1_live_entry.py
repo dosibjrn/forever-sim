@@ -12,8 +12,8 @@ from tools import wf_gate_p7_1_live as gate
 def _fixture(root):
     request = root / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
     witness = root / "docs/evidence/wf633/WF633_VALIDATION.json"
-    request.parent.mkdir(parents=True)
-    witness.parent.mkdir(parents=True)
+    request.parent.mkdir(parents=True, exist_ok=True)
+    witness.parent.mkdir(parents=True, exist_ok=True)
     request.write_text(json.dumps({
         "raid": {"parties": [{"players": [{"class": "ClassDruid",
                                          "balanceDruid": {},
@@ -365,11 +365,8 @@ def test_p7_native_world_parity_rejects_nonfinite_first_fight_duration():
                 "P7_1_NATIVE_WORLD_DURATION_INVALID")
 
 
-def test_full_1000_stochastic_result_not_vetoed_by_ui_or_source_count(
-        monkeypatch, tmp_path):
-    """A mocked routing receipt; this test is NOT a real native/2D gate PASS."""
-    import subprocess
-
+def _native_p71_mock(tmp_path, monkeypatch, *, dps=730.0, fights=None):
+    """Stub only the native transport; never claim a mock as M1 evidence."""
     request = _fixture(tmp_path)
     source = json.loads(request.read_text())
     source["simOptions"]["iterations"] = 7
@@ -377,51 +374,71 @@ def test_full_1000_stochastic_result_not_vetoed_by_ui_or_source_count(
     monkeypatch.setattr(gate, "SAVED_BALANCE_RAW_SHA",
                         hashlib.sha256(request.read_bytes()).hexdigest())
     binary = tmp_path / "upstream/target/release/forever-engine"
-    binary.parent.mkdir(parents=True)
+    binary.parent.mkdir(parents=True, exist_ok=True)
     binary.write_text("unit-test stub")
-    ingress = tmp_path / "upstream/src/core/fight/world_bridge.rs"
-    ingress.parent.mkdir(parents=True)
-    ingress.write_text("// unit-test stub")
     monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
     selected = "1f170913f0af47f0de455c2b91581d777e713d3a"
     monkeypatch.setattr(gate, "_selected_rust_submodule",
                         lambda root, upstream: selected)
-
     provider = tmp_path / "integrations/mythicsim-rust/live_world_probe.py"
-    provider.parent.mkdir(parents=True)
-    provider.write_text("""
-import hashlib
-def native_source_control(binary, request, iterations, *, rng_mode):
-    assert rng_mode == "stochastic"
-    return {"iterations": iterations, "native_dps": 730.0, "first_duration_s": 120.0}
-def run(binary, request, *, distance, iterations, rng_mode):
-    assert rng_mode == "stochastic"
-    return {"iterations_done": iterations, "native_dps": 730.0,
-            "world_mean_dps": 730.0, "sampled_duration_s": 120.0,
-            "native_damage_events": iterations, "native_world_ticks": iterations,
-            "source_request_raw_sha256": hashlib.sha256(request.read_bytes()).hexdigest(),
-            "per_iteration": [{"iteration_index": i, "duration_s": 120.0,
-                               "world_dps": 730.0, "world_applied_damage": 87600.0}
-                              for i in range(iterations)]}
-def run_range_perturbation_pair(binary, request):
-    return {
-        "native_ack_chain_verified": True,
-        "source_request_raw_sha256": hashlib.sha256(request.read_bytes()).hexdigest(),
-        "control_post_switch_direct_action_events": 47,
-        "perturbed_post_switch_direct_action_events": 1,
-    }
-""")
+    provider.parent.mkdir(parents=True, exist_ok=True)
+    provider.write_text(
+        "def native_source_control(binary, request, iterations, *, rng_mode):\n"
+        "    assert rng_mode == 'stochastic'\n"
+        "    return {'iterations': " + (
+            "iterations" if fights is None else str(fights)) +
+        ", 'native_dps': " + repr(dps) + "}\n"
+        "def run(*args, **kwargs):\n"
+        "    raise AssertionError('P7.1 must not execute 2D world')\n"
+        "def run_range_perturbation_pair(*args, **kwargs):\n"
+        "    raise AssertionError('P7.1 must not require range perturbation')\n")
+    return request, selected
+
+
+def test_full_1000_stochastic_native_result_without_retired_world_requirement(
+        monkeypatch, tmp_path):
+    """Checks native forwarding, immutable reference and unrestricted labeling."""
+    request, selected = _native_p71_mock(tmp_path, monkeypatch)
     from tools.wf_gate import _run_live_gate
-    result = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.1", "")
-    assert result["status"] == "PASS"
-    assert result["reasons"] == []
-    assert result["p7_1_1_reference_pinned"] is True
-    assert result["p7_1_world_range_causality_verified"] is True
-    assert result["world_range_perturbation"]["native_ack_chain_verified"] is True
-    assert result["world_range_perturbation"]["source_request_raw_sha256"] == (
-        hashlib.sha256(request.read_bytes()).hexdigest())
-    assert result["iterations"] == 1000
-    assert result["saved_source_iterations"] == 7
-    assert result["runtime_proof"]["executed"] is True
-    assert result["runtime_proof"]["source_revision"] == hashlib.sha256(request.read_bytes()).hexdigest()
-    assert result["runtime_proof"]["engine_revision"] == selected
+    for spec in ("balance", "unrestricted"):
+        result = _run_live_gate(tmp_path, "druid", 60, spec, "P7.1", "")
+        assert result["status"] == "PASS"  # mocked transport, not actual M1
+        assert result["reasons"] == []
+        assert result["p7_1_1_reference_pinned"] is True
+        assert result["p7_1_2_native_reproduced"] is True
+        assert "p7_1_3_live_reproduced" not in result
+        assert "world_range_perturbation" not in result
+        assert result["production_engine"] == "pinned_mythicsim_rust_native"
+        assert result["reference_profile"] == "balance"
+        assert result["checkpoint_spec"] == spec
+        assert result["iterations"] == 1000
+        assert result["saved_source_iterations"] == 7
+        assert result["runtime_proof"]["executed"] is True
+        assert result["runtime_proof"]["source_revision"] == (
+            hashlib.sha256(request.read_bytes()).hexdigest())
+        assert result["runtime_proof"]["engine_revision"] == selected
+
+
+def test_p71_bounded_sample_and_invalid_native_receipt_never_pass(
+        monkeypatch, tmp_path):
+    _native_p71_mock(tmp_path, monkeypatch)
+    monkeypatch.setenv("FOREVER_P7_LIVE_PROBE_ITERATIONS", "3")
+    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    assert report["status"] == "FAIL"
+    assert report["reasons"] == [
+        "P7_1_BOUNDED_DIAGNOSTIC_NOT_FULL_SAVED_REFERENCE"]
+    assert report["sampled_source_fights"] == 3
+
+    monkeypatch.delenv("FOREVER_P7_LIVE_PROBE_ITERATIONS")
+    _native_p71_mock(tmp_path, monkeypatch, fights=999)
+    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    assert report["status"] == "FAIL"
+    assert report["reasons"] == ["P7_1_NATIVE_STOCHASTIC_RESULT_INVALID"]
+
+
+def test_p71_genuine_native_score_below_floor_cannot_pass(
+        monkeypatch, tmp_path):
+    _native_p71_mock(tmp_path, monkeypatch, dps=700.0)
+    report = gate.run_live(tmp_path, "druid", 60, spec="unrestricted")
+    assert report["status"] == "FAIL"
+    assert report["reasons"] == ["P7_1_DPS_BELOW_APPROVED_99_PERCENT_FLOOR"]

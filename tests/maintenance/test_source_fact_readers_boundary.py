@@ -193,7 +193,7 @@ def test_repair_planner_keeps_staged_db_and_fail_closed_contract(tmp_path):
 
 
 def test_capture_ingesters_import_without_loading_legacy_gameir():
-    """The six source-only ingestion CLIs need the SQLite path, not GameIR."""
+    """The remaining source-only ingestion CLIs need SQLite, not GameIR."""
     code = """
 import importlib
 import sys
@@ -201,12 +201,7 @@ import sys
 from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 names = (
-    'wf247_ingest_outgoing',
-    'wf250_ingest_source_capture',
-    'wf252_ingest_companions',
     'wf253_ingest_seal',
-    'wf254_ingest_paladin_talents',
-    'wf257_ingest_flash_recovery',
 )
 for name in names:
     module = importlib.import_module('tools.' + name)
@@ -230,61 +225,6 @@ assert legacy_default is DEFAULT_DB
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_outgoing_capture_ingest_explicit_db_remains_idempotent(tmp_path):
-    """A path-only import change must not alter persisted source/proxy facts."""
-    from tools.wf247_ingest_outgoing import ingest
-
-    db = tmp_path / "outgoing.sqlite"
-    assert ingest(db) == (60, 4)
-    assert ingest(db) == (60, 4)
-    with sqlite3.connect(db) as conn:
-        assert conn.execute(
-            "SELECT COUNT(*) FROM outgoing_combat_profile_source_facts"
-        ).fetchone()[0] == 60
-        assert conn.execute(
-            "SELECT COUNT(*) FROM target_armor_debuff_source_facts"
-        ).fetchone()[0] == 4
-        assert conn.execute(
-            "SELECT source_status FROM outgoing_combat_profile_source_facts "
-            "WHERE scenario_key='ordinary_melee_classic_proxy' AND level=20"
-        ).fetchone()[0] == "classic_proxy_not_forever_server_verified"
-        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
-
-
-def test_verified_source_capture_staged_ingest_remains_idempotent(tmp_path):
-    """The source-only capture CLI still honors explicit staging paths."""
-    import json
-
-    from tools.wf250_ingest_source_capture import ingest
-
-    capture = tmp_path / "capture.json"
-    capture.write_text(json.dumps({
-        "captured_at": "2026-11-03",
-        "capture_id": "boundary-test",
-        "granted_actions": [],
-        "spell_ranks": [{
-            "class_key": "mage",
-            "spell_id": 1234,
-            "cast_time_s": 1.5,
-            "mana_cost": 20,
-            "cooldown_s": 0,
-            "tooltip_text": "Source fixture",
-            "source_url": "https://example.invalid/spell/1234",
-            "source_build": "fixture-build",
-            "spell_power_coefficient": 0.5
-        }],
-        "talents": []
-    }), encoding="utf-8")
-    db = tmp_path / "capture.sqlite"
-    ingest(db=db, capture=capture)
-    ingest(db=db, capture=capture)
-    with sqlite3.connect(db) as conn:
-        assert conn.execute(
-            "SELECT spell_id, spell_power_coefficient "
-            "FROM verified_spell_rank_facts"
-        ).fetchall() == [(1234, 0.5)]
-        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
-
 
 def test_historical_capture_stage_clis_avoid_gameir():
     """Source-only operators must not load the transitional Python compiler."""
@@ -295,11 +235,8 @@ import sys
 from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 operations = {
-    'wf251_ingest_two_classes': 'ingest',
     'wf255_ingest_command': 'ingest',
     'wf256_ingest_seals': 'ingest',
-    'wf257_ingest_paladin_corridor': 'ingest',
-    'wf381_stage_mage_talent_positions': 'stage',
 }
 for name, function_name in operations.items():
     module = importlib.import_module('tools.' + name)
@@ -322,52 +259,6 @@ assert legacy_default is DEFAULT_DB
         capture_output=True, text=True, timeout=30, check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-
-
-def test_historical_mage_stager_keeps_explicit_db_and_source_identity(tmp_path):
-    """The import-only change must preserve the staged SQLite output contract."""
-    import hashlib
-    import json
-
-    import pytest
-    from tools.wf381_stage_mage_talent_positions import stage
-
-    base = tmp_path / "canonical.sqlite"
-    source = tmp_path / "talent_positions.json"
-    target = tmp_path / "staged.sqlite"
-    with sqlite3.connect(base) as db:
-        db.execute("CREATE TABLE keep_me (value TEXT)")
-        db.execute("INSERT INTO keep_me VALUES ('canonical')")
-    payload = {
-        "schema": "forever_source_talent_positions_v1",
-        "source_build": "fixture-build",
-        "class_key": "mage",
-        "min_level": 30,
-        "talents": [{"name": "fixture talent"}],
-    }
-    source.write_text(json.dumps(payload), encoding="utf-8")
-    original = base.read_bytes()
-    result = stage(source=source, base=base, target=target)
-
-    assert base.read_bytes() == original
-    assert result["base_sha256"] == hashlib.sha256(original).hexdigest()
-    assert result["source_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
-    assert result["positions"] == 1
-    assert result["source_build"] == "fixture-build"
-    assert result["sqlite_integrity"] == "ok"
-    with sqlite3.connect(target) as db:
-        assert db.execute("SELECT value FROM keep_me").fetchone() == ("canonical",)
-        row = db.execute(
-            "SELECT class_key, source_build, min_level, source_json "
-            "FROM checkpoint_talent_source_positions"
-        ).fetchone()
-        assert row[:3] == ("mage", "fixture-build", 30)
-        assert json.loads(row[3]) == payload
-        assert db.execute("PRAGMA integrity_check").fetchone() == ("ok",)
-
-    with pytest.raises(ValueError, match="STAGED_TALENT_SOURCE_DB_MUST_NOT_BE_OVERWRITTEN"):
-        stage(source=source, base=base, target=base)
-    assert base.read_bytes() == original
 
 
 def test_armor_source_rule_reader_import_does_not_load_gameir():

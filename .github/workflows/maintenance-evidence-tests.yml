@@ -3,6 +3,20 @@ on:
   pull_request:
     paths:
       - 'src/game/checkpoint_pipeline.py'
+      - 'src/v2/mechanics_projection.py'
+      - 'src/v2/latent_search.py'
+      - 'src/v2/path_validation.py'
+      - 'src/v2/path_score.py'
+      - 'src/v2/parallel_search.py'
+      - 'tests/test_v2_parallel_path.py'
+      - 'tests/generic/search/test_v2_path_score.py'
+      - 'tests/generic/search/test_v2_path_dp_tiebreak.py'
+      - 'src/v2/stochastic_diagnostics.py'
+      - 'src/v2/stochastic_race.py'
+      - 'tests/test_v2_projection.py'
+      - 'tests/generic/search/test_v2_path_validation_inputs.py'
+      - 'tests/test_v2_stochastic_diagnostics.py'
+      - 'tests/test_v2_stochastic_race.py'
       - 'tests/gates/test_wf384_generic_checkpoint_pipeline.py'
       - 'tests/test_wf390_generic_talent_execution_pipeline.py'
       - 'tests/test_wf429_process_v2_p3_preflight_tdd.py'
@@ -17,6 +31,11 @@ on:
       - 'tools/wf408_rerun_druid20_p3.py'
       - 'tools/wf410_druid20_live_p3.py'
       - 'tools/wf412_druid20_paid_stat_probe.py'
+      - 'tools/wf442_ingest_source_rank_observations.py'
+      - 'tests/test_wf442_generic_avoidance_resource_red.py'
+      - 'tests/test_wf442_generic_direct_heal_crit_red.py'
+      - 'tests/test_wf444_joint_critical_proc_tdd.py'
+      - 'tests/test_wf445_joint_incoming_dodge_resource_tdd.py'
       - 'tests/maintenance/**'
       - 'src/game/data/forever/source_action_scope.py'
       - 'tools/wf303_checkpoint_falsifier.py'
@@ -221,6 +240,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/generic/search/test_v2_path_dp_tiebreak.py
           tests/test_wf305_source_action_scope.py
           tests/gates/test_wf_gate_class_cli.py
           tests/gates/test_wf_gate_runtime_authority.py
