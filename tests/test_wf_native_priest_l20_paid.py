@@ -928,6 +928,9 @@ def test_priest_l20_persistent_world_prepares_exact_native_actor_and_reuses_one_
             "world_targets_killed": 2, "native_windows": [{}, {}],
             "world_ticks": 42, "paid_recovery": False,
             "native_actor_mana_after_world_kills": [180., 145.],
+            "native_combat_mana_regen_observed": True,
+            "native_combat_mana_regen_actual_gain_by_target": [2.5, 4.],
+            "native_combat_mana_regen_events_by_target": [1, 2],
             "minimum_native_actor_health": 320.,
             "world_elapsed_seconds": 17.5,
             "gsim_route_paid_movement_s": 2.5,
@@ -944,6 +947,10 @@ def test_priest_l20_persistent_world_prepares_exact_native_actor_and_reuses_one_
     assert receipt["native_2d_persistent_world_targets_killed"] == 2
     assert receipt["native_2d_persistent_actor_verified"] is True
     assert receipt["native_2d_persistent_mana_after_kills"] == [180., 145.]
+    assert receipt["native_2d_persistent_combat_mana_regen_observed"] is True
+    assert receipt["native_2d_persistent_combat_mana_regen_gains"] == [2.5, 4.]
+    assert receipt["native_2d_persistent_combat_mana_regen_events"] == [1, 2]
+    assert receipt["native_2d_persistent_paid_recovery"] is False
     assert receipt["native_2d_persistent_min_actor_health"] == 320.
     assert receipt["native_2d_persistent_elapsed_seconds"] == 17.5
     assert receipt["native_2d_persistent_paid_movement_seconds"] == 2.5
@@ -1370,3 +1377,65 @@ def test_p4_p5_native_100mob_gate_exposes_real_outcome_without_fake_pass(
     assert report["native_2d_screen_complete"] is False
     assert report["screen_complete_candidates"] == 0
     assert "pass_count" not in report
+
+
+def test_priest_retained_world_preserves_native_regen_without_claiming_paid_rest():
+    """Actual Rust mana-tick receipts are distinct from between-pull recovery."""
+    from importlib.util import module_from_spec, spec_from_file_location
+    script = (Path(__file__).resolve().parents[1] /
+              "integrations/mythicsim-rust/live_two_world_pulls.py")
+    spec = spec_from_file_location("work1_priest_native_mana_receipts", script)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    windows = [
+        {"index": 0, "actor_mana": 180.,
+         "native_combat_mana_regen_actual_gain": 2.5,
+         "native_combat_mana_regen_events": 1},
+        {"index": 1, "actor_mana": 145.,
+         "native_combat_mana_regen_actual_gain": 4.,
+         "native_combat_mana_regen_events": 2},
+    ]
+    receipt = module._native_mana_continuity(windows, 2)
+    assert receipt["native_actor_mana_after_world_kills"] == [180., 145.]
+    assert receipt["native_combat_mana_regen_observed"] is True
+    assert receipt["native_combat_mana_regen_actual_gain_by_target"] == [2.5, 4.]
+    assert receipt["native_combat_mana_regen_events_by_target"] == [1, 2]
+    assert "paid_recovery" not in receipt
+
+    # A prior selected fork without these native fields must remain unknown.
+    older = module._native_mana_continuity(
+        [{"index": 0, "actor_mana": 180.},
+         {"index": 1, "actor_mana": 145.}], 2)
+    assert older["native_combat_mana_regen_observed"] is False
+    assert older["native_combat_mana_regen_actual_gain_by_target"] is None
+    assert older["native_combat_mana_regen_events_by_target"] is None
+
+
+@pytest.mark.parametrize("broken,reason", [
+    ({"native_combat_mana_regen_actual_gain": 1.},
+     "RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INCOMPLETE"),
+    ({"native_combat_mana_regen_actual_gain": -1.,
+      "native_combat_mana_regen_events": 1},
+     "RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INVALID"),
+    ({"native_combat_mana_regen_actual_gain": 1.,
+      "native_combat_mana_regen_events": 0},
+     "RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INVALID"),
+    ({"native_combat_mana_regen_actual_gain": 1.,
+      "native_combat_mana_regen_events": True},
+     "RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INVALID"),
+])
+def test_priest_retained_world_refuses_incomplete_native_regen_receipts(broken, reason):
+    from importlib.util import module_from_spec, spec_from_file_location
+    script = (Path(__file__).resolve().parents[1] /
+              "integrations/mythicsim-rust/live_two_world_pulls.py")
+    spec = spec_from_file_location("work1_priest_native_mana_bad", script)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    windows = [
+        {"index": 0, "actor_mana": 180.,
+         "native_combat_mana_regen_actual_gain": 2.,
+         "native_combat_mana_regen_events": 1},
+        {"index": 1, "actor_mana": 145., **broken},
+    ]
+    with pytest.raises(AssertionError, match=reason):
+        module._native_mana_continuity(windows, 2)
