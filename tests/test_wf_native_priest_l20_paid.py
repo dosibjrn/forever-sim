@@ -413,25 +413,6 @@ def test_item_options_create_actual_native_paid_gear_requests_without_slot_rules
 
 
 
-@pytest.mark.parametrize(
-    ("options", "expected_builds", "expected_alternatives"),
-    [
-        (
-            [{"item_id": 102, "slot": "chest"},
-             {"item_id": 103, "slot": "chest"},
-             {"item_id": 104, "slot": "chest"},
-             {"item_id": 105, "slot": "chest"}],
-            [[], [102], [103], [104]], 2,
-        ),
-        (
-            [{"item_id": 102, "slot": "chest"},
-             {"item_id": 103, "slot": "chest"},
-             {"item_id": 104, "slot": "head"},
-             {"item_id": 105, "slot": "head"}],
-            [[], [102], [102, 104], [103, 104]], 1,
-        ),
-    ],
-)
 def test_native_paid_frontier_exposes_fuller_build_before_four_paid_slots(tmp_path):
     """A real native/world attempt must reach more than just 1-3 equipped slots.
 
@@ -467,15 +448,37 @@ def test_native_paid_frontier_exposes_fuller_build_before_four_paid_slots(tmp_pa
 
     # Earlier native budget: [] / [201] / [201, 202] / [201, 202, 203].
     # The same four paid requests now include a native-judged five-slot
-    # whole build before the frontier runs out of paid evaluations.
+    # distinct prefix/suffix builds before the budget runs out.
     assert seen == [
-        [], [201, 202, 203, 204, 205], [201], [201, 202]]
+        [], [201, 202, 203, 204, 205], [202, 203, 204, 205, 206], [201]]
+    assert receipt["native_item_options_proposed"] == 6
+    assert receipt["native_item_option_dense_builds_proposed"] == 2
+    assert receipt["native_item_option_alternative_builds_proposed"] == 0
     assert receipt["native_paid_whole_builds"] == 4
     assert receipt["native_source_action_casts"] == 8
     assert receipt["native_2d_screen_complete"] is False
     assert json.loads(path.read_text()) == source
 
 
+@pytest.mark.parametrize(
+    ("options", "expected_builds", "expected_alternatives"),
+    [
+        (
+            [{"item_id": 102, "slot": "chest"},
+             {"item_id": 103, "slot": "chest"},
+             {"item_id": 104, "slot": "chest"},
+             {"item_id": 105, "slot": "chest"}],
+            [[], [102], [103], [104]], 2,
+        ),
+        (
+            [{"item_id": 102, "slot": "chest"},
+             {"item_id": 103, "slot": "chest"},
+             {"item_id": 104, "slot": "head"},
+             {"item_id": 105, "slot": "head"}],
+            [[], [102], [102, 104], [103, 104]], 1,
+        ),
+    ],
+)
 def test_native_item_options_use_spare_paid_budget_for_same_slot_alternatives(
         tmp_path, options, expected_builds, expected_alternatives):
     """A short native slot list must not waste available whole-build evaluations."""
