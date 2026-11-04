@@ -108,8 +108,8 @@ jobs:
           PY
       - name: Replay exact P7.4 frozen winner for five stochastic fights (no record)
         run: |
-          python tools/diagnostics/p7_4_frozen_winner_parity.py \\
-            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \\
+          python tools/diagnostics/p7_4_frozen_winner_parity.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --iterations 5
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
