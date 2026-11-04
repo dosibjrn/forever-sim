@@ -26,6 +26,8 @@ RETIRED_TOOLS = (
     "tools/wf431_modified_action_paid_search.py",
     # WF359 one-off P3 rebase depended on the retired staged P2 SQLite database.
     "tools/wf359_druid_l30_p3_rebase.py",
+    # WF427 quest-horizon replay was an optional diagnostic, not an active gate objective.
+    "tools/wf427_druid_l30_quest_horizon.py",
     # Historical GameIR/SQLite continuity runner; no active callers.
     # WF341 provisional-rating 100-mob probes were used only by retired WF342 reporters.
     "tools/wf341_rating_probe.py",
@@ -102,6 +104,7 @@ RETIRED_IMPORT_NAMES = (
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
     "wf359_druid_l30_p3_rebase",
+    "wf427_druid_l30_quest_horizon",
     "wf341_rating_probe",
     "wf341_defense_check",
     "wf300_continuous_source_policy_benchmark",
@@ -205,6 +208,7 @@ RETIRED_TESTS = (
     "tests/test_wf430_source_compound_stun_tdd.py",
     "tests/gates/test_wf367_six_port_acceptance.py",
     "tests/test_wf359_druid_l30_p3_rebase.py",
+    "tests/test_wf427_quest_horizon_paid_tdd.py",
 )
 
 RETIRED_COMMANDS = (
@@ -218,6 +222,9 @@ RETAINED_BEHAVIOR_TESTS = (
     "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
     "tests/test_actor_recovery_channel.py",
+    "tests/test_wf61_live_persistent_replay.py",
+    "tests/test_wf61_companion_persistence.py",
+    "tests/test_work2_persistent_pack_budget.py",
 )
 
 
@@ -234,6 +241,9 @@ RETAINED_HISTORICAL_EVIDENCE = (
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
+    # WF427 inputs and result remain historical evidence; only the producer is retired.
+    "evidence/wf427/WF427_L30_COLD_FINALISTS.json",
+    "evidence/wf427/DRUID_L30_QUEST_HORIZONS_2_4_8_16.json",
 )
 
 
