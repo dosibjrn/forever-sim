@@ -157,6 +157,22 @@ params=dict(class_key=class_key,level=level,source_ir=ir,seed_stage=stage,
     **spec_params)
 print('START',args.budget,'params',str({k:v for k,v in params.items() if k not in ('source_ir','seed_stage')}),flush=True)
 r=search_bounded_joint_frontier(**params)
+# The single 300s cold run retains the genuine best paid 30s snapshot.
+# Replay that snapshot winner alongside 300s finalists if it was not
+# already shortlisted. This is a real extra 100-mob candidate, not a
+# fabricated 30s second search or duplicate replay of identical builds.
+snapshot=r.get('snapshot_30')
+if args.budget==300 and isinstance(snapshot,dict):
+    frozen=snapshot.get('winner')
+    if isinstance(frozen,dict):
+        index=frozen['paid_candidate_index']
+        finalists=r['validation_shortlist']
+        matching=next((i for i,row in enumerate(finalists)
+                       if row['paid_candidate_index']==index),None)
+        if matching is None:
+            matching=len(finalists)
+            finalists.append(frozen)
+        snapshot['validation_shortlist_index']=matching
 print('SEARCH_FINISHED',args.budget,'wall',r['wall_s'],'attempts',r['paid_candidates'],
       'unique',r['unique_full_builds'],'screen_complete',r['screen_complete_candidates'],
       'refine_rounds',r['refinement']['rounds_completed'],'stat_probes',r['refinement']['stat_probes'],
