@@ -2,6 +2,8 @@
 
 This file applies to **Work1 and Work2 only**. Read it with [COMMON](COMMON.md) and your own role file. It does not transfer branch ownership or Merge's integration authority.
 
+**One-probe stop/reprioritize:** Implement the smallest production change with a credible reusable active-gate outcome; run the smallest genuine changed-behavior test. If the comparable M1 gate does not improve, stop that probe lane unless the run reveals a new reproducible causal defect. Tell Prio what changed and let it reassess, rather than repeatedly paying to force a stat witness, proof, or green test. An unfinished genuinely reusable capability may continue when its observed intermediate behavior justifies the remaining work.
+
 ## Start every cycle with the real handoff
 
 1. Read current `main`, [WORK_PRIORITY](../WORK_PRIORITY.md), your owned issue and all your open/draft implementation PRs.
