@@ -223,6 +223,7 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
     # Both builds were frozen during the one cold search; this pays no extra
     # replay and does not change P6's 1% acceptance predicate.
     retained_incumbent_after_replay = False
+    displaced_late_paid_receipt = None
     if (not same_winner
             and all(r.get('status') == 'COMPLETE'
                     and r.get('count') == 100
@@ -231,6 +232,9 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
                     and isfinite(r['s_per_mob']) and r['s_per_mob'] > 0
                     for r in (result30, result300))
             and result30['s_per_mob'] <= result300['s_per_mob']):
+        # Preserve the measured slower route for the ordinary production
+        # receipt; it must remain inspectable after the temp search is gone.
+        displaced_late_paid_receipt = result300
         winner300 = winner30
         result300 = {**result30, 'shared_with_30s': True}
         retained_incumbent_after_replay = True
@@ -291,6 +295,8 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
         # parameters after the temporary WF437 search report is removed.
         'source_search_space': report.get('source_search_space'),
         'source_replay_results': results,
+        'retained_paid_30s_incumbent_after_replay': retained_incumbent_after_replay,
+        'unselected_late_paid_100mob_receipt': displaced_late_paid_receipt,
         'source_replay_T30_T300': ratio,
         'source_replay_T30_s_per_mob': t30,
         'source_replay_T300_s_per_mob': t300,
