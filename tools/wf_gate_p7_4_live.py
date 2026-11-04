@@ -326,7 +326,7 @@ def run_live(root: Path, class_key: str, level: int, *,
             "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
             "item_candidate_admission": "pinned_rust_native_gear_options",
         }
-        while True:
+    while True:
         elapsed = time.monotonic() - search_start if full_search else 0.0
         if (full_search and elapsed >= 300.0
                 or not full_search and proposals >= 3):
