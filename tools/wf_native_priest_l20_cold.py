@@ -137,6 +137,12 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
     frozen = None
     best_early = None
     best_final = None
+    # In the real 30/300s run, freeze the *paid* 30s candidate before
+    # invoking any potentially >30s 100-mob finalist qualification. P4
+    # explicitly permits its selected 100-mob execution after the search.
+    # Native DPS is a screening score, NOT a verified world objective or PASS.
+    deferred_snapshot = budget_s == 300 and snapshot_s == 30
+    early_paid = None
     rows = []
     seen = set()
     scored_before = 0
@@ -169,12 +175,33 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 if paid["native_request_sha256"] != identity:
                     raise RuntimeError("PRIEST_L20_COLD_NATIVE_REQUEST_IDENTITY_MISMATCH")
                 row["native_source_action_casts"] = paid["native_source_action_casts"]
+                row["native_screen_score"] = paid.get("native_score")
                 # A native fight with no source-action casts is an executed
                 # refusal for this leveling frontier, not a valid paid
                 # whole-build continuation or a 30s winner.
                 row["status"] = ("NATIVE_PAID" if paid["native_source_action_casts"] > 0
                                  else "NATIVE_NO_SOURCE_CAST")
-                if paid["native_source_action_casts"] > 0:
+                if (paid["native_source_action_casts"] > 0
+                        and deferred_snapshot and clock() - start <= snapshot_s):
+                    # 100 native-world pulls can exceed 30s of *wall* time.
+                    # Do not let that validation consume the immutable cold
+                    # discovery window. Freeze the genuine scored native
+                    # whole-build request; separately execute its 100-mob
+                    # route after the continuous search has finished.
+                    score = paid.get("native_score")
+                    if type(score) in (int, float) and math.isfinite(score):
+                        row["status"] = "NATIVE_PAID_SNAPSHOT_SCREEN"
+                        if early_paid is None or score > early_paid["native_score"]:
+                            early_paid = {
+                                "source_build": copy.deepcopy(build),
+                                "source_request_sha256": identity,
+                                "native_request_sha256": paid["native_request_sha256"],
+                                "native_score": score,
+                                "paid_completed_elapsed_s": clock() - start,
+                            }
+                    else:
+                        row["status"] = "NATIVE_UNSCORABLE"
+                elif paid["native_source_action_casts"] > 0:
                     world = world_screen(binary, path, target_count=100)
                     route_s = _verified_route(world)
                     if route_s is not None:
@@ -201,7 +228,8 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 frozen = copy.deepcopy(best_early)
             in_budget = elapsed <= budget_s
             if in_budget and row["status"] in (
-                    "NATIVE_PAID", "WORLD_INCOMPLETE", "COMPLETE"):
+                    "NATIVE_PAID", "NATIVE_PAID_SNAPSHOT_SCREEN",
+                    "WORLD_INCOMPLETE", "COMPLETE"):
                 if elapsed <= snapshot_s:
                     scored_before += 1
                 else:
@@ -222,7 +250,38 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                     completed_after += 1
             rows.append({k: v for k, v in row.items()
                          if k != "real_100mob_receipt"})
+    # Measure the cold search BEFORE the independent real 100-mob replay.
+    # The route can finish after the 300s cutoff without rewriting the
+    # actual candidate-selection clock or introducing a second cold search.
     wall_s = clock() - start
+    snapshot_validation = None
+    if deferred_snapshot and early_paid is not None:
+        with TemporaryDirectory(prefix="priest-l20-frozen-route-") as directory:
+            frozen_path = Path(directory) / "frozen-30s.json"
+            frozen_path.write_text(json.dumps(
+                early_paid["source_build"], sort_keys=True), encoding="utf-8")
+            try:
+                receipt = world_screen(binary, frozen_path, target_count=100)
+                route_s = _verified_route(receipt)
+                if route_s is None:
+                    snapshot_validation = {"status": "WORLD_INCOMPLETE"}
+                else:
+                    frozen = {
+                        **copy.deepcopy(early_paid),
+                        "route_s_per_mob": route_s,
+                        "real_100mob_receipt": receipt,
+                        "snapshot_selection_objective": "NATIVE_DPS_SCREEN_ONLY",
+                    }
+                    snapshot_validation = {"status": "COMPLETE",
+                                           "route_s_per_mob": route_s}
+            except (OSError, ValueError, RuntimeError, AssertionError,
+                    TimeoutError, subprocess.SubprocessError) as exc:
+                snapshot_validation = {
+                    "status": "WORLD_INCOMPLETE",
+                    "reason": _native_world_error(exc),
+                    "native_2d_persistent_observed_kills":
+                        _native_world_completed_kills(exc),
+                }
     if frozen is None and wall_s >= snapshot_s:
         frozen = copy.deepcopy(best_early)
     # Exhausted candidate spaces and late native calls are reported honestly.
@@ -232,6 +291,8 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_search_budget_s": budget_s,
         "native_cold_snapshot_cutoff_s": snapshot_s,
         "native_cold_snapshot_30": frozen,
+        "native_cold_30s_paid_selection": copy.deepcopy(early_paid),
+        "native_cold_30s_post_search_route": snapshot_validation,
         "native_cold_final_300": copy.deepcopy(best_final),
         "native_cold_native_paid_before_30": scored_before,
         "native_cold_native_paid_after_30": scored_after,
