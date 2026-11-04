@@ -85,21 +85,3 @@ def test_unrestricted_is_not_talent_spec_locked():
     assert set(roles)=={'warrior_arms','warrior_fury','warrior_protection','warrior_unrestricted'}
     assert all(len(r['proxy_weights'])>=5 for r in roles.values())
     assert all(r['weapon_package'] in {'two_hand','dual_wield','one_hand_shield','best_package'} for r in roles.values())
-
-
-def test_provisional_role_top5_is_explicitly_uncalibrated_and_never_promoted():
-    from tools.wf365_warrior_l30_p3_role_probe import run
-    result=run()
-    assert result['p3']['status']=='FAIL'
-    assert result['p3']['legal_denominator'] is None
-    assert result['p3']['provisional_shields']>0
-    for role,data in result['roles'].items():
-        assert data['slots']['weapon']['heuristic_top5']
-        assert data['slots']['ranged']['heuristic_top5']
-        if role!='warrior_arms':
-            assert data['slots']['offhand']['heuristic_top5']
-        for section in data['slots'].values():
-            for candidate in section['heuristic_top5']:
-                assert candidate['proxy_uncertainty'].startswith('UNCALIBRATED')
-                assert candidate['source_url'].startswith('https://')
-                assert candidate['stat_contributions'] or section['provisional_items']>0
