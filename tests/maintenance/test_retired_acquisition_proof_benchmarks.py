@@ -46,6 +46,11 @@ RETIRED_TOOLS = (
     "tools/wf356_legacy_l30_equipment_audit.py",
     "tools/wf344_source_equipment_merged_report.py",
     "tools/wf352_p3_reaudit.py",
+    "tools/wf352_os_probe.py",
+    "tools/wf463_spec_druid_l30_search.py",
+    "tools/wf_gate_import_search.py",
+    "tools/wf_gate_engine_fingerprint.py",
+    "tests/gates/test_wf_gate_import_search.py",
     "tools/ingest_source_acquisition_evidence_sqlite.py",
     "tools/ingest_source_acquisition_entities_sqlite.py",
     "tools/wf_gate_p1_live.py",
@@ -405,3 +410,16 @@ def test_legacy_evidence_reader_rejects_retired_p1_p2(tmp_path):
         report = evaluate(tmp_path, "druid", 20, "unrestricted", gate, {})
         assert report["status"] == "FAIL"
         assert report["reasons"] == ["RETIRED_OR_UNKNOWN_GATE:" + gate]
+
+def test_retired_wf463_gameir_search_and_import_path_is_gone():
+    """The Druid-L30 WF463 GameIR importer is not an active P4/P5/P6 gate."""
+    gate_cli = (ROOT / "tools/wf_gate.py").read_text(encoding="utf-8")
+    assert "WF463_SOURCE_SEARCH_REPLAY" not in gate_cli
+    for relative in (
+        "tools/wf463_spec_druid_l30_search.py",
+        "tools/wf_gate_import_search.py",
+        "tools/wf_gate_engine_fingerprint.py",
+        "tests/gates/test_wf_gate_import_search.py",
+    ):
+        assert not (ROOT / relative).exists(), relative
+

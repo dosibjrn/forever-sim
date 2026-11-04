@@ -278,18 +278,6 @@ def evaluate(evidence_dir: Path, class_key: str, level: int, spec: str, gate: st
             prior = previous.get(preceding, {}).get("evidence", {})
             if prior and any(e.get(x) != prior.get(x) for x in ("source_id", "engine_id", "scenario_id")):
                 errors.append(f"INCOMPARABLE_WITH_{preceding}_SOURCE_ENGINE_SCENARIO")
-    if gate in ('P4','P5','P6') and e.get('evidence_kind') == 'WF463_SOURCE_SEARCH_REPLAY':
-        try:
-            from wf_gate_engine_fingerprint import runtime_fingerprint
-            current_id=runtime_fingerprint(ROOT)
-            if current_id != e.get('engine_id'):
-                errors.append('SEARCH_ENGINE_STALE_SINCE_EVIDENCE_RECORDED')
-            source_db=ROOT/'data/forever/staged_druid_l30_talents_70338.sqlite'
-            import hashlib
-            if not source_db.is_file() or hashlib.sha256(source_db.read_bytes()).hexdigest()!=e.get('source_id'):
-                errors.append('SEARCH_DB_STALE_OR_MISSING_SINCE_EVIDENCE_RECORDED')
-        except (OSError,ImportError) as exc:
-            errors.append('CANNOT_REVERIFY_CURRENT_RUNTIME_CODE:'+type(exc).__name__)
     result["reasons"] = errors
     result["status"] = "PASS" if not errors else "FAIL"
     result["evidence"] = e
