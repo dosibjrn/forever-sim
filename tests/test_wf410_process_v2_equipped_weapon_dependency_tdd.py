@@ -131,6 +131,9 @@ def test_equipped_weapon_action_requires_matching_mode_source_and_both_weights(m
     )
     assert "MISSING_APPLICABLE_DPS_WEIGHT" in result["blockers"]
     assert "MISSING_WEIGHT:mean_weapon_hit_damage" in result["blockers"]
+    assert result["source_policy"]["equipped_weapon_dps_relevant"] is True
+    assert result["source_policy"]["equipped_weapon_mean_hit_relevant"] is True
+    assert result["source_policy"]["equipped_weapon_dependency_derived_from_canonical_mode_facts_only"] is True
 
 
 def test_mode_free_proxy_autoattack_without_source_fact_is_not_equipped_weapon_dependency():
