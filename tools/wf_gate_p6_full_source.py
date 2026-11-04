@@ -170,9 +170,13 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
                     'production_engine': 'gsim_CombatRuntime'}
         result30 = _paid_winner_receipt(root, report, winner30, folder,
                                         'snapshot-30', checkpoint_args)
-        result300 = (result30 if same_winner else
-                     _paid_winner_receipt(root, report, winner300, folder,
-                                          'final-300', checkpoint_args))
+        if same_winner:
+            # This is the same paid 100-mob receipt, not another replay.
+            # Preserve that fact in the ordinary gate output for reviewers.
+            result300 = {**result30, 'shared_with_30s': True}
+        else:
+            result300 = _paid_winner_receipt(root, report, winner300, folder,
+                                             'final-300', checkpoint_args)
     results = [{**r, 'budget_s': budget} for budget, r
                in ((30, result30), (300, result300))]
     complete = all(r.get('status') == 'COMPLETE'

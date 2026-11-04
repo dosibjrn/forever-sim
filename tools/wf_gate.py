@@ -98,9 +98,10 @@ def _p6_replay_receipts(report: dict) -> list[dict] | None:
     rows = report.get("source_replay_results")
     if not isinstance(rows, list):
         return None
-    allowed = ("cold_search_budget_s", "status", "reason", "count",
+    allowed = ("cold_search_budget_s", "budget_s", "status", "reason", "count",
                "mob_completed", "failed_pull_index", "paid_screens",
-               "mean_s_per_mob", "s_per_mob", "events")
+               "mean_s_per_mob", "s_per_mob", "events", "reused",
+               "shared_with_30s")
     out = []
     for row in rows[:2]:
         if not isinstance(row, dict):
@@ -109,7 +110,9 @@ def _p6_replay_receipts(report: dict) -> list[dict] | None:
         clean = {}
         for key in allowed:
             value = row.get(key)
-            if type(value) is str:
+            if type(value) is bool:
+                clean[key] = value
+            elif type(value) is str:
                 clean[key] = value[:240]
             elif type(value) in (int, float) and math.isfinite(value):
                 clean[key] = value
