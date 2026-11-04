@@ -27,8 +27,11 @@ def _source_scenario_capture_id(
             payload = json.loads(capture_path.read_text())
         except (OSError, ValueError):
             continue
-        for candidate in payload.get("classes", ()):
-            if candidate.get("class_key") != class_key:
+        classes = payload.get("classes", ()) if isinstance(payload, dict) else ()
+        if not isinstance(classes, (list, tuple)):
+            continue
+        for candidate in classes:
+            if not isinstance(candidate, dict) or candidate.get("class_key") != class_key:
                 continue
             if candidate.get("mana_scenario") != scenario or candidate.get("auto") != auto:
                 continue
