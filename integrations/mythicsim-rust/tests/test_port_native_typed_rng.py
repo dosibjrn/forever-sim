@@ -13,10 +13,10 @@ from port_native_typed_rng import (add_explicit_mode_to_test_calls, edit,
 class TypedRngImportTests(unittest.TestCase):
     def test_adds_mode_to_multiline_legacy_import_and_is_idempotent(self):
         source = (
-            "use forever_engine::{\\n"
-            "    PreparedError, Refusal,\\n"
-            "    Request, Rules, SOURCE_REVISION,\\n"
-            "};\\n"
+            "use forever_engine::{\n"
+            "    PreparedError, Refusal,\n"
+            "    Request, Rules, SOURCE_REVISION,\n"
+            "};\n"
         )
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -31,10 +31,10 @@ class TypedRngImportTests(unittest.TestCase):
 
     def test_accepts_existing_wrapped_mode_import_unchanged(self):
         source = (
-            "use forever_engine::{\\n"
-            "    PreparedError, Refusal,\\n"
-            "    Request, RngMode, Rules, SOURCE_REVISION,\\n"
-            "};\\n"
+            "use forever_engine::{\n"
+            "    PreparedError, Refusal,\n"
+            "    Request, RngMode, Rules, SOURCE_REVISION,\n"
+            "};\n"
         )
         with TemporaryDirectory() as directory:
             root = Path(directory)
