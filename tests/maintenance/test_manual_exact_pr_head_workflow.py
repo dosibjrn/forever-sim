@@ -62,8 +62,9 @@ class ManualExactHeadContract(unittest.TestCase):
         # migration guard may be retired after public source migration without
         # weakening exact-HEAD validation or allowing arbitrary commands.
         for suite_name in ("native-ack-unit", "paid-replay-unit",
-                           "p1p2-unit", "source-periodic-unit"):
+                           "source-periodic-unit"):
             self.assertIn(suite_name, suite)
+        self.assertNotIn("p1p2-unit", TEXT)
         self.assertIn("Suite not allowlisted", TEXT)
 
     def test_relocated_service_queue_tests_have_a_bounded_manual_suite(self):

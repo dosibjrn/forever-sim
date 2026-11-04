@@ -1,118 +1,96 @@
-"""Regression: gate authority comes from running code, never from hand-written JSON."""
+"""Regression: active gate authority comes from executing the live provider."""
 import json
 from types import SimpleNamespace
+
+import pytest
 
 from tools import wf_gate
 
 
-def _forged_json(tmp_path, gate, **values):
-    path = tmp_path / 'druid' / 'L60' / 'balance' / f'{gate}.json'
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({'class': 'druid', 'level': 60,
-                                'spec': 'balance', 'gate': gate,
-                                'status': 'PASS', 'source_id': 'forged',
-                                'engine_id': 'forged',
-                                'search_wall_s': 300,
-                                'all_top5_items_source_legal': True,
-                                **values}))
-    return path
+def test_legacy_evidence_directory_is_not_a_cli_input(tmp_path):
+    with pytest.raises(SystemExit) as error:
+        wf_gate.main(["--class", "druid", "--level", "60", "--gate", "P3",
+                      "--evidence-dir", str(tmp_path)])
+    assert error.value.code == 2
 
 
-def test_forged_p3_json_does_not_certify(tmp_path, monkeypatch, capsys):
-    _forged_json(tmp_path, 'P3')
-    # P3 now has a real provider. Assert the gate CLI calls it and ignores
-    # imported PASS-shaped JSON, independent of the provider's evolving failures.
-    from tools import wf_gate_p3_live
-    calls = []
-    def live(*args, **kwargs):
-        calls.append((args, kwargs))
-        return {'status': 'FAIL', 'reasons': ['LIVE_PRODUCTION_REJECTION']}
-    monkeypatch.setattr(wf_gate_p3_live, 'run_live', live)
-    assert wf_gate.main(['--class','druid','--level','60','--spec','balance',
-                         '--gate','P3','--evidence-dir',str(tmp_path)]) == 1
-    report = json.loads(capsys.readouterr().out)
-    assert calls and report['status'] == 'FAIL'
-    assert report['results'][0]['reasons'] == ['LIVE_PRODUCTION_REJECTION']
-
-
-def test_forged_p75_json_does_not_certify(tmp_path, capsys):
-    _forged_json(tmp_path, 'P7.5', dps=9000, acceptance='PASS')
-    assert wf_gate.main(['--class','druid','--level','60','--spec','balance',
-                         '--gate','P7.5','--evidence-dir',str(tmp_path)]) == 1
-    report=json.loads(capsys.readouterr().out)
-    assert report['status']=='BLOCKED'
-    assert report['results'][0]['gate']=='P7.5'
-
-
-def test_real_code_provider_is_invoked_not_evidence(tmp_path, monkeypatch, capsys):
-    _forged_json(tmp_path, 'P4', search_wall_s=30)
+def test_real_code_provider_is_invoked_and_response_propagated(monkeypatch, capsys):
     called = []
+
     def run_live(root, class_key, level, *, spec):
         called.append((root, class_key, level, spec))
-        return {'status':'FAIL', 'reasons':['ACTUAL_RUNTIME_REPLAY_FAILED']}
+        return {"status": "FAIL", "reasons": ["ACTUAL_RUNTIME_REPLAY_FAILED"]}
+
     original = wf_gate.importlib.import_module
+
     def load(name):
-        if name == 'tools.wf_gate_p4_live':
+        if name == "tools.wf_gate_p4_live":
             return SimpleNamespace(run_live=run_live)
         return original(name)
-    monkeypatch.setattr(wf_gate.importlib, 'import_module', load)
-    assert wf_gate.main(['--class','druid','--level','60','--spec','balance',
-                         '--gate','P4','--evidence-dir',str(tmp_path)]) == 1
-    result=json.loads(capsys.readouterr().out)
-    assert called == [(wf_gate.ROOT,'druid',60,'balance')]
-    assert result['results'][0]['reasons']==['ACTUAL_RUNTIME_REPLAY_FAILED']
+
+    monkeypatch.setattr(wf_gate.importlib, "import_module", load)
+    assert wf_gate.main(["--class", "druid", "--level", "60", "--spec", "balance",
+                         "--gate", "P4"]) == 1
+    result = json.loads(capsys.readouterr().out)
+    assert called == [(wf_gate.ROOT, "druid", 60, "balance")]
+    assert result["results"][0]["reasons"] == ["ACTUAL_RUNTIME_REPLAY_FAILED"]
 
 
 def test_runner_cannot_claim_pass_without_runtime_proof(monkeypatch, capsys):
     original = wf_gate.importlib.import_module
+
     def load(name):
-        if name == 'tools.wf_gate_p5_live':
-            return SimpleNamespace(run_live=lambda *a,**k:{
-                'status':'PASS','reasons':[],'source_id':'LLM-generated'})
+        if name == "tools.wf_gate_p5_live":
+            return SimpleNamespace(run_live=lambda *a, **k: {
+                "status": "PASS", "reasons": [], "source_id": "LLM-generated"})
         return original(name)
-    monkeypatch.setattr(wf_gate.importlib,'import_module',load)
-    assert wf_gate.main(['--class','druid','--level','60',
-                         '--gate','P5']) == 1
-    report=json.loads(capsys.readouterr().out)
-    assert report['status']=='FAIL'
-    assert report['results'][0]['reasons']==['MISSING_EXECUTED_RUNTIME_PROOF']
+
+    monkeypatch.setattr(wf_gate.importlib, "import_module", load)
+    assert wf_gate.main(["--class", "druid", "--level", "60", "--gate", "P5"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "FAIL"
+    assert report["results"][0]["reasons"] == ["MISSING_EXECUTED_RUNTIME_PROOF"]
 
 
 def test_live_provider_exceptions_fail_closed(monkeypatch, capsys):
-    original=wf_gate.importlib.import_module
+    original = wf_gate.importlib.import_module
+
     def error(*a, **k):
-        raise RuntimeError('combat engine error')
+        raise RuntimeError("combat engine error")
+
     def load(name):
-        if name == 'tools.wf_gate_p7_2_live':
+        if name == "tools.wf_gate_p7_2_live":
             return SimpleNamespace(run_live=error)
         return original(name)
-    monkeypatch.setattr(wf_gate.importlib,'import_module',load)
-    assert wf_gate.main(['--class','druid','--level','60',
-                         '--gate','P7.2']) == 1
-    report=json.loads(capsys.readouterr().out)
-    assert report['status']=='FAIL'
-    assert 'LIVE_GATE_EXECUTION_FAILED:RuntimeError' in report['results'][0]['reasons'][0]
+
+    monkeypatch.setattr(wf_gate.importlib, "import_module", load)
+    assert wf_gate.main(["--class", "druid", "--level", "60", "--gate", "P7.2"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "FAIL"
+    assert "LIVE_GATE_EXECUTION_FAILED:RuntimeError" in report["results"][0]["reasons"][0]
 
 
-def test_p7_aggregate_requires_all_five_real_subgates(monkeypatch,capsys):
-    called=[]
-    def fake(root,cls,lv,spec,gate,scenario):
+def test_p7_aggregate_requires_all_five_real_subgates(monkeypatch, capsys):
+    called = []
+
+    def fake(root, cls, level, spec, gate, scenario):
         called.append(gate)
-        return {'status':'BLOCKED','reasons':['NOT_EXECUTED']}
-    monkeypatch.setattr(wf_gate,'_run_live_gate',fake)
-    assert wf_gate.main(['--class','druid','--level','60','--gate','P7'])==1
-    report=json.loads(capsys.readouterr().out)
-    assert called==['P7.1','P7.2','P7.3','P7.4','P7.5']
-    assert report['status']=='BLOCKED'
+        return {"status": "BLOCKED", "reasons": ["NOT_EXECUTED"]}
+
+    monkeypatch.setattr(wf_gate, "_run_live_gate", fake)
+    assert wf_gate.main(["--class", "druid", "--level", "60", "--gate", "P7"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert called == ["P7.1", "P7.2", "P7.3", "P7.4", "P7.5"]
+    assert report["status"] == "BLOCKED"
 
 
-def test_out_is_result_only_not_a_source(tmp_path,capsys):
-    stored=tmp_path/'result.json'
-    assert wf_gate.main(['--class','druid','--level','60',
-                         '--gate','P7.3','--out',str(stored)])==1
-    assert json.loads(stored.read_text())['status']=='BLOCKED'
+def test_out_is_result_only_not_a_source(tmp_path, capsys):
+    stored = tmp_path / "result.json"
+    assert wf_gate.main(["--class", "druid", "--level", "60",
+                         "--gate", "P7.3", "--out", str(stored)]) == 1
+    assert json.loads(stored.read_text())["status"] == "BLOCKED"
     capsys.readouterr()
     stored.write_text('{"status":"PASS"}')
-    assert wf_gate.main(['--class','druid','--level','60',
-                         '--gate','P7.3','--out',str(stored)])==1
-    assert json.loads(stored.read_text())['status']=='BLOCKED'
+    assert wf_gate.main(["--class", "druid", "--level", "60",
+                         "--gate", "P7.3", "--out", str(stored)]) == 1
+    assert json.loads(stored.read_text())["status"] == "BLOCKED"
