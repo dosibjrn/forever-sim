@@ -305,3 +305,34 @@ def test_native_p3_rejects_invalid_shared_attempt_cap(cap):
             "pinned-native", _reference(), _selection(),
             max_paid_attempts=cap,
             evaluator=lambda *a, **k: pytest.fail("Must not evaluate"))
+
+def test_p3_cli_exposes_actual_native_slot_paid_results(monkeypatch, capsys):
+    from tools import wf_gate
+
+    def gate(*_args, **_kwargs):
+        return {
+            "status": "FAIL", "reasons": ["MISSING_WEIGHT:strength"],
+            "native_equipped_paid_receipt": {
+                "status": "PAID_NATIVE_DIFFERENCE", "paid_attempts": 3,
+                "actor_checkpoint_verified": True,
+                "native_slots_paid": 2, "native_slots_valid": 1,
+                "native_slot_attempt_cap": 18,
+                "native_slot_evaluations": [
+                    {"swap": {"slot": "weapon", "to_id": 24071},
+                     "status": "VALID", "score": 33.0, "delta_dps": 29.0},
+                    {"swap": {"slot": "head", "to_id": 1234},
+                     "status": "UNSUPPORTED", "score": None, "delta_dps": None},
+                ],
+            },
+        }
+
+    monkeypatch.setattr(wf_gate, "_run_live_gate", gate)
+    assert wf_gate.main(["--class", "rogue", "--level", "20",
+                         "--spec", "unrestricted", "--gate", "P3"]) == 1
+    row = json.loads(capsys.readouterr().out)["results"][0]
+    receipt = row["native_equipped_paid_receipt"]
+    assert receipt["native_slots_paid"] == 2
+    assert receipt["native_slots_valid"] == 1
+    assert receipt["native_slot_attempt_cap"] == 18
+    assert receipt["native_slot_evaluations"][1]["status"] == "UNSUPPORTED"
+    assert receipt["native_slot_evaluations"][1]["delta_dps"] is None
