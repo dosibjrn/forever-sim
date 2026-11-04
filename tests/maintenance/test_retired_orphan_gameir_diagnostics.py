@@ -23,6 +23,8 @@ RETIRED_TOOLS = (
     "tools/wf258_run_budgeted_prefix.py",
     "tools/wf264_decision_sustained.py",
     "tools/wf269_rake_l27_real_replay.py",
+    "tools/wf259_run_budgeted_gear.py",
+    "tools/wf262_run_stateful_joint.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf303_source_wide_100mob",
@@ -40,6 +42,8 @@ RETIRED_IMPORT_NAMES = (
     "wf258_run_budgeted_prefix",
     "wf264_decision_sustained",
     "wf269_rake_l27_real_replay",
+    "wf259_run_budgeted_gear",
+    "wf262_run_stateful_joint",
 )
 
 
@@ -49,6 +53,12 @@ RETIRED_OUTPUTS = ("evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",)
 RETAINED_BEHAVIOR_TESTS = (
     "tests/test_wf241_mixed_hot_recovery.py",
     "tests/test_wf378_recovery_channel_tdd.py",
+)
+
+
+RETAINED_SEARCH_TESTS = (
+    "tests/generic/search/test_wf259_real_budgeted_gear.py",
+    "tests/test_wf262_stateful_joint_integration.py",
 )
 
 
@@ -65,6 +75,13 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
         assert relative not in workflow, relative
     for relative in RETAINED_BEHAVIOR_TESTS:
         assert relative in workflow, f"retained recovery regression is not run: {relative}"
+    for relative in RETAINED_SEARCH_TESTS:
+        assert (ROOT / relative).is_file(), f"retained search regression was removed: {relative}"
+
+    for workflow_path in (ROOT / ".github/workflows").glob("*.yml"):
+        workflow_source = workflow_path.read_text(encoding="utf-8")
+        for relative in RETIRED_TOOLS:
+            assert relative not in workflow_source, f"retired CLI invoked by {workflow_path}: {relative}"
 
     this_test = Path(__file__).resolve()
     for root in (ROOT / "src", ROOT / "tools", ROOT / "tests", ROOT / "scripts",
