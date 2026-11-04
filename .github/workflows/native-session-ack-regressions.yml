@@ -143,8 +143,11 @@ jobs:
                 json.dumps(paid, sort_keys=True), flush=True)
           assert paid["native_paid_whole_builds"] > 0, paid
           assert paid["native_source_action_casts"] > 0, paid
-          assert paid["native_2d_live_ack_attempted"] == 1, paid
-          assert paid["native_2d_live_ack_verified"] == 1, paid
+          assert paid["native_2d_live_ack_attempted"] >= 1, paid
+          assert paid["native_2d_live_ack_verified"] >= 1, paid
+          # Unlike the prior 10k-HP smoke, the selected ordinary L20
+          # CMaNGOS-proxy target must die by a real native↔2D world ACK.
+          assert paid["native_2d_live_world_kills"] == 1, paid
           assert paid["native_2d_screen_complete"] is False, paid
           assert any(
               receipt.get("native_2d_fight", {}).get("native_2d_world_ticks", 0) > 0
