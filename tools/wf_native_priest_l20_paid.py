@@ -235,6 +235,14 @@ def couple_source_priest_l20_persistent_world(binary: str | Path,
         # recovery, a reset actor or an independently completed paid screen.
         "native_2d_persistent_mana_after_kills": proof.get(
             "native_actor_mana_after_world_kills"),
+        # Forward source-Rust combat mana ticks verbatim. These are NOT
+        # between-pull recovery; keep that separate and uncredited.
+        "native_2d_persistent_combat_mana_regen_observed": proof.get(
+            "native_combat_mana_regen_observed", False),
+        "native_2d_persistent_combat_mana_regen_gains": proof.get(
+            "native_combat_mana_regen_actual_gain_by_target"),
+        "native_2d_persistent_combat_mana_regen_events": proof.get(
+            "native_combat_mana_regen_events_by_target"),
         "native_2d_persistent_min_actor_health": proof.get(
             "minimum_native_actor_health"),
         "native_2d_persistent_elapsed_seconds": proof.get(
