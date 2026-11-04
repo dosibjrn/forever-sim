@@ -863,6 +863,12 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
         "scaling_options": {"0": {"stats": {"5": 100.0}}},
         "ranged_weapon_type": "RangedWeaponTypeBow",
     })
+    item_rows.append({
+        "id": 9004, "type": relic_type,
+        "scaling_options": {"0": {"ilvl": 65}},
+        "ranged_weapon_type": "RangedWeaponTypeIdol",
+        "item_effects": [{"buff_id": 27851, "buff_name": "Reduced Claw and Rake Cost"}],
+    })
 
     items_path = tmp_path / "items.jsonl"
     enchants_path = tmp_path / "enchants.jsonl"
@@ -874,9 +880,10 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
 
     assert pool[0][:2] == [9999, 1000 + item_types.index(head_type)]
     assert pool[14] == [1000 + item_types.index(weapon_type)]
-    assert pool[15] == [1000 + item_types.index(relic_type)]
+    assert pool[15][0] == 1000 + item_types.index(relic_type)
+    assert 9004 in pool[15]  # real relics can have item_effects but no stat map
     assert enchant_pools[6] == [None, 2000 + item_types.index(search.RUST_TYPES["hands"])]
     assert metadata == {
-        "unique_item_options": len(item_types) + 1,
+        "unique_item_options": len(item_types) + 2,
         "unique_enchant_options": len(item_types),
     }

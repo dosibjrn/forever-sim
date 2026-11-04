@@ -95,7 +95,13 @@ def pinned_rust_candidate_pool(items_path, enchants_path):
             scaling = scaling_options.get("0", scaling_options.get(0))
             if not isinstance(scaling, dict):
                 continue
+            # Native relics such as druid idols carry their behavior in
+            # item_effects and legitimately have no stat map. Keep them in
+            # the source proposal universe with a zero stat-order score;
+            # native prepare/execute remains the only legality/effect gate.
             stats = scaling.get("stats")
+            if stats is None:
+                stats = {}
             if not isinstance(stats, dict):
                 continue
             if slot == "weapon":
