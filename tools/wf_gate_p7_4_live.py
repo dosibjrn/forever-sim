@@ -27,6 +27,13 @@ from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
 from tools.wf_gate_p7_2_live import _source_module, _pinned_source_runtime
 
 
+# Keep the broad 3-fight cold search, then spend a bounded final slice reducing
+# BalancedRng quota-rounding error on the strongest paid candidates.
+P74_BALANCED_FINALIST_COUNT = 6
+P74_BALANCED_FINALIST_ITERATIONS = 60
+P74_BALANCED_FINALIST_RESERVE_S = 45.0
+
+
 def _source_ranked_item_choice(items, rng: random.Random, *, ranked: bool):
     """Sample *all* admitted source items, while exploiting their stat order.
 
@@ -175,17 +182,16 @@ def _paid_gear_elite_choice(elites, rng, proposal_index):
     return rng.choice(elites[:min(15, len(elites))])[1]
 
 
-def _paid_step_has_budget(search_start: float, observed_max_s: float) -> bool:
-    """Do not launch an indivisible native+2D paid call too near 300s.
+def _paid_step_has_budget(search_start: float, observed_max_s: float,
+                          *, deadline_s: float = 300.0) -> bool:
+    """Do not launch an indivisible native+2D paid call too near its deadline.
 
-    A full candidate/rerank includes multiple subprocess calls. The old loop
-    only checked time at its head, so a 24-fight finalist started at 299s
-    could finish at 302s and prevent the independent 1,000-fight holdout.
-    Reserve 1.5x the slowest observed same-kind step plus 250ms, while
-    leaving the final 300s deadline and all source-paid results unchanged.
+    Reserve 1.5x the slowest observed same-kind step plus 250ms. The optional
+    earlier deadline protects the cold-search slice; the default 300s deadline
+    preserves the final balanced-rerank and full-search callers.
     """
     reserve_s = max(0.25, observed_max_s * 1.5 + 0.25)
-    return time.monotonic() + reserve_s < search_start + 300.0
+    return time.monotonic() + reserve_s < search_start + deadline_s
 
 
 def _p74_early_rerank_due(elapsed_s, reranked_count):
@@ -264,6 +270,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     validator = gear_search.GearValidator(catalogue, items, enchants, base)
     search_start = time.monotonic()
     search_deadline = search_start + 300.0
+    candidate_deadline = search_deadline - (
+        P74_BALANCED_FINALIST_RESERVE_S if full_search else 0.0)
     worst_screen_s = 0.0
     try:
         # The existing source+Rust item validator enumerates the pool once;
@@ -280,11 +288,12 @@ def run_live(root: Path, class_key: str, level: int, *,
             **({"independent_enchants": True} if full_search else {}))
         enchant_pools = (gear_search.source_enchant_pools(validator, pool)
                          if full_search else None)
-        while (time.monotonic() < search_deadline
+        while (time.monotonic() < candidate_deadline
                if full_search else proposals < 3):
             if full_search and not _paid_step_has_budget(
-                    search_start, worst_screen_s):
-                break  # preserve time for the final 1,000-fight holdout
+                    search_start, worst_screen_s,
+                    deadline_s=300.0 - P74_BALANCED_FINALIST_RESERVE_S):
+                break  # preserve the reserved balanced-finalist slice
             paid_start = time.perf_counter()
             proposals += 1
             try:
@@ -348,10 +357,61 @@ def run_live(root: Path, class_key: str, level: int, *,
                     worst_screen_s, time.perf_counter() - paid_start)
     finally:
         validator.close()
+
+    # A 3-fight BalancedRng screen is deterministic but its per-proc quota
+    # rounding can be coarse (for example, a 10% proc cannot occur in 3 fights).
+    # Re-score the strongest already-paid candidates with 60 iterations in one
+    # Balanced process. BalancedRng ignores seed changes, so this longer single
+    # run is informative; repeating more 3-fight runs with different seeds is not.
+    reranked = []
+    rerank_failures = []
+    worst_rerank_s = worst_screen_s * (
+        P74_BALANCED_FINALIST_ITERATIONS / 3.0)
     if full_search:
-        # Unused tail time is too short for an observed paid native+2D step.
-        # Complete the actual 300s independent wall-time window rather than
-        # starting a long blocking call that can overrun it.
+        for screen_score, finalist in elites[:P74_BALANCED_FINALIST_COUNT]:
+            if not _paid_step_has_budget(search_start, worst_rerank_s):
+                break
+            rerank_started = time.perf_counter()
+            try:
+                with tempfile.TemporaryDirectory(
+                        prefix="forever_p74_balanced_finalist_") as tmp:
+                    path = Path(tmp) / "balanced-finalist.json"
+                    path.write_text(json.dumps(finalist))
+                    native = production.native_source_control(
+                        binary, path, P74_BALANCED_FINALIST_ITERATIONS,
+                        rng_mode="balanced")
+                    live = production.run(
+                        binary, path, distance=player["distanceFromTarget"],
+                        iterations=P74_BALANCED_FINALIST_ITERATIONS,
+                        rng_mode="balanced")
+                    parity_failure = _source_native_world_parity(
+                        native, live, P74_BALANCED_FINALIST_ITERATIONS)
+                    if parity_failure is not None:
+                        raise ValueError(
+                            "BALANCED_FINALIST_NATIVE_WORLD_PARITY_FAILED:"
+                            + parity_failure)
+                if (live.get("iterations_done") != P74_BALANCED_FINALIST_ITERATIONS
+                        or live.get("native_damage_events", 0) <= 0
+                        or live.get("native_world_ticks", 0) <= 0):
+                    raise ValueError("BALANCED_FINALIST_NATIVE_WORLD_INCOMPLETE")
+                finalist_score = float(live["world_mean_dps"])
+                if not 0 <= finalist_score < float("inf"):
+                    raise ValueError("BALANCED_FINALIST_INVALID_WORLD_DPS")
+                finalist_sha = hashlib.sha256(json.dumps(
+                    finalist, sort_keys=True).encode()).hexdigest()
+                reranked.append((finalist_score, live, finalist_sha,
+                                 finalist, screen_score))
+            except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
+                    TypeError, AssertionError, subprocess.SubprocessError) as exc:
+                rerank_failures.append(
+                    type(exc).__name__ + ":" + str(exc)[:180])
+            finally:
+                worst_rerank_s = max(
+                    worst_rerank_s, time.perf_counter() - rerank_started)
+
+    if full_search:
+        # Unused tail time is too short for another observed paid step.
+        # Complete the actual 300s window before the independent holdout.
         time.sleep(max(0.0, search_deadline - time.monotonic()))
     search_observed_at = time.monotonic()
     search_wall_s = search_observed_at - search_start
@@ -365,11 +425,22 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "search_wall_s": search_wall_s,
                 "source_candidate_failures": failures[:4]}
 
-    # Freeze the best balanced-scored loadout before the independent
-    # stochastic acceptance holdout. No stochastic score feeds search ranking.
-    score, live, candidate_sha, frozen_winner = best
-    winner_screen_dps = score
-    winner_selection = "best_balanced_live_screen"
+    # Select only from the higher-fidelity Balanced reranks. The 1,000-fight
+    # stochastic result below is an independent acceptance holdout, never a
+    # search/ranking input.
+    cold_search_best_screen_dps, _, cold_search_best_sha, _ = best
+    if reranked:
+        score, live, candidate_sha, frozen_winner, winner_screen_dps = max(
+            reranked, key=lambda row: row[0])
+        winner_selection = "best_balanced_60_fight_finalist"
+        selected_validation = (
+            f"{P74_BALANCED_FINALIST_ITERATIONS}_native_world_fights_per_"
+            "paid_balanced_finalist")
+    else:
+        score, live, candidate_sha, frozen_winner = best
+        winner_screen_dps = score
+        winner_selection = "best_balanced_live_screen"
+        selected_validation = "3_native_world_fights_per_cold_gear_candidate"
     complete_search = search_window_met
     final = {}
     if complete_search:
@@ -448,9 +519,17 @@ def run_live(root: Path, class_key: str, level: int, *,
             for slot, item in enumerate(frozen_winner["raid"]["parties"][0]
                                         ["players"][0]["equipment"]["items"])
         ],
+        "cold_search_best_screen_dps": cold_search_best_screen_dps,
+        "cold_search_best_screen_request_sha256": cold_search_best_sha,
         "winner_live_dps": score,
         "winner_screen_dps": winner_screen_dps,
         "winner_selection": winner_selection,
+        "paid_balanced_finalists": len(reranked),
+        "paid_balanced_finalist_iterations": (
+            P74_BALANCED_FINALIST_ITERATIONS if reranked else 0),
+        "balanced_finalist_failures": rerank_failures[:4],
+        "finalist_rerank_reserve_s": (
+            P74_BALANCED_FINALIST_RESERVE_S if full_search else 0.0),
         "paid_stochastic_finalists": 0,
         "paid_stochastic_confirmed_finalists": 0,
         "paid_stochastic_deep_confirmed_finalists": 0,
@@ -472,7 +551,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         "item_candidate_admission": "source_catalogue_proposals_native_authoritative",
         "python_item_candidate_pre_veto": False,
         "source_fixed_rotation_and_talents": True,
-        "selected_validation": "3_native_world_fights_per_cold_gear_candidate",
+        "selected_validation": selected_validation,
         "search_rng_mode": "balanced",
         "coverage_scope_complete": False,
     }
