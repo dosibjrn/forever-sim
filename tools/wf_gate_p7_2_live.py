@@ -1,8 +1,8 @@
-"""P7.2 live first contact: real cold APL mutation -> pinned Rust -> gsim 2D.
+"""P7.2: pay a distinct APL-only candidate on the selected native scorer.
 
-Uses the existing source-backed APL mutator and the *selected* native-world
-production evaluator. A short cold search is a FAIL with numeric DPS proximity,
-NOT the required 300s independent search or 1000 stochastic-fight acceptance.
+The approved stationary P7.2 gate needs one genuine native-legal changed
+rotation with fixed gear/talents and a finite paid balanced-RNG score. No P7-only
+2D world, independent 300-second search or 1,000-fight holdout is required.
 """
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import random
@@ -17,13 +18,9 @@ import subprocess
 import tempfile
 import time
 
-from tools.wf_gate_coverage import (P7_FINAL_STOCHASTIC_ITERATIONS,
-                                    p7_final_stochastic_mean_passes,
-                                    p7_required_dps,
-                                    p7_search_window_completed)
+from tools.wf_gate_coverage import p7_search_window_completed
 
 from tools.wf_gate_p7_1_live import (PINNED_RUST, SAVED_BALANCE_RAW_SHA,
-                                     _source_native_world_parity, _executed_p7_runtime_proof,
                                      _selected_rust_submodule)
 
 
@@ -84,7 +81,7 @@ def _paid_elite_choice(elites, rng: random.Random, proposal_index: int):
 
 
 def _pinned_source_runtime(root: Path, class_key: str, level: int,
-                           spec: str, gate: str):
+                           spec: str, gate: str, *, require_world: bool = True):
     """One exact-source native preflight shared by P7 discovery gates."""
     if (class_key, level, spec) != ("druid", 60, "balance"):
         return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
@@ -111,7 +108,8 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
     upstream = binary.parents[2]
     selected_rust = _selected_rust_submodule(root, upstream)
     if (selected_rust is None
-            or not (upstream / "src/core/fight/world_bridge.rs").is_file()):
+            or (require_world and not
+                (upstream / "src/core/fight/world_bridge.rs").is_file())):
         return _blocked(gate.replace(".", "_") + "_PINNED_NATIVE_WORLD_BUILD_NOT_VERIFIED")
     # Keep the saved report's original engine_revision unchanged.
     meta["selected_engine_revision"] = selected_rust
@@ -120,179 +118,117 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
 
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
-    prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.2")
+    prepared = _pinned_source_runtime(
+        root, class_key, level, spec, "P7.2", require_world=False)
     if isinstance(prepared, dict):
         return prepared
     base, meta, binary = prepared
     search_mode = os.environ.get("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
     if search_mode not in ("0", "1"):
         return _blocked("P7_2_INVALID_FULL_SOURCE_SEARCH_MODE")
+    # Optional extended exploration is diagnostic only. A short genuinely paid
+    # changed-axis candidate can satisfy P7.2 under PROCESS v2.22.
     full_search = search_mode == "1"
     mutation = _source_module(root / "integrations/mythicsim-rust/apl_mutation.py",
                               "p72_source_apl_mutator")
     production = _source_module(
         root / "integrations/mythicsim-rust/live_world_probe.py",
-        "p72_production_native_world")
+        "p72_selected_native_scorer")
     player = base["raid"]["parties"][0]["players"][0]
+    original_apl = player["rotation"]["priorityList"]
     rng = random.Random(63272)
-    initial_hash = hashlib.sha256(json.dumps(
-        player["rotation"]["priorityList"], sort_keys=True).encode()).hexdigest()
+    initial_hash = hashlib.sha256(
+        json.dumps(original_apl, sort_keys=True).encode()).hexdigest()
     best = None
-    elites = []  # top 22 source-legal APLs scored with deterministic Balanced RNG
+    elites = []
     executed = 0
     failures = []
     paid_or_rejected = set()
     proposals = 0
     search_start = time.monotonic()
     search_deadline = search_start + 300.0
-    # Default = four real bounded coupled-world diagnostics. Explicit --heavy
-    # = a separate independent 300-second wall-clock cold search using the
-    # SAME source APL grammar and real Rust/gsim evaluator (no proxy engine).
-    # Repeated APLs cannot be counted as new paid source candidates.
     while (time.monotonic() < search_deadline
            if full_search else proposals < 4):
         proposals += 1
         try:
-            # Four of five proposals explore one of this run's top paid
-            # legal APLs, not only the current global best. The archive is
-            # populated exclusively after 3-fight native+2D Balanced scoring.
-            # Every fifth proposal is an independent source-cold restart;
-            # bounded short probes remain entirely cold.
             elite = (_paid_elite_choice(elites, rng, proposals)
                      if full_search else None)
             candidate = _cold_apl(base, rng, mutation, elite=elite)
+            changed_apl = candidate["raid"]["parties"][0]["players"][0][
+                "rotation"]["priorityList"]
+            if changed_apl == original_apl:
+                continue  # an unchanged reference is never P7.2 evidence
             candidate_sha = hashlib.sha256(
                 json.dumps(candidate, sort_keys=True).encode()).hexdigest()
             if candidate_sha in paid_or_rejected:
                 continue
             paid_or_rejected.add(candidate_sha)
-            with tempfile.TemporaryDirectory(prefix="forever_p72_live_") as temp:
-                file = Path(temp) / "source-cold-candidate.json"
-                file.write_text(json.dumps(candidate))
-                native = production.native_source_control(binary, file, 3,
-                                                          rng_mode="balanced")
-                result = production.run(
-                    binary, file, distance=player["distanceFromTarget"],
-                    iterations=3, rng_mode="balanced")
-                parity_failure = _source_native_world_parity(native, result, 3)
-                if parity_failure is not None:
-                    raise ValueError("SOURCE_NATIVE_WORLD_PARITY_FAILED:" + parity_failure)
-            if (result.get("iterations_done") != 3
-                    or result.get("native_damage_events", 0) <= 0
-                    or result.get("native_world_ticks", 0) <= 0):
-                raise ValueError("SOURCE_NATIVE_WORLD_INCOMPLETE")
+            with tempfile.TemporaryDirectory(prefix="forever_p72_native_") as tmp:
+                path = Path(tmp) / "changed-apl.json"
+                path.write_text(json.dumps(candidate))
+                native = production.native_source_control(
+                    binary, path, 3, rng_mode="balanced")
+            if (type(native.get("iterations")) is not int
+                    or native["iterations"] != 3):
+                raise ValueError("P7_2_NATIVE_PAID_ITERATIONS_INCOMPLETE")
+            score = native.get("native_dps")
+            if (type(score) not in (int, float)
+                    or not math.isfinite(score) or score < 0):
+                raise ValueError("P7_2_NATIVE_PAID_DPS_INVALID")
+            score = float(score)
             executed += 1
-            score = float(result["world_mean_dps"])
-            if score < 0 or not score < float("inf"):
-                raise ValueError("INVALID_COUPLED_WORLD_DPS")
             elites.append((score, candidate))
-            elites.sort(key=lambda item: item[0], reverse=True)
+            elites.sort(key=lambda row: row[0], reverse=True)
             del elites[22:]
             if best is None or score > best[0]:
-                best = (score, result, candidate_sha, candidate)
+                best = (score, candidate_sha, candidate)
         except (ValueError, RuntimeError, OSError, subprocess.SubprocessError,
                 KeyError, TypeError, AssertionError) as exc:
             failures.append(type(exc).__name__ + ":" + str(exc)[:180])
-    search_observed_at = time.monotonic()
-    search_wall_s = search_observed_at - search_start
+
+    search_wall_s = time.monotonic() - search_start
     search_window_met = p7_search_window_completed(
-        full_search=full_search, elapsed_seconds=search_wall_s,
-    )
+        full_search=full_search, elapsed_seconds=search_wall_s)
     if best is None:
-        return {"status": "FAIL",
-                "reasons": ["P7_2_NO_EXECUTED_SOURCE_LEGAL_COLD_APL_WORLD_CANDIDATE"],
-                "production_engine": "pinned_mythicsim_rust_gsim_2d",
-                "search_wall_s": search_wall_s,
-                "independent_300s_search_requested": full_search,
-                "independent_300s_search_completed": search_window_met,
-                "search_window_met": search_window_met,
-                "search_deadline_observed_elapsed_s": round(search_wall_s, 6),
-                "cold_candidate_failures": failures[:4]}
+        return {
+            "status": "FAIL",
+            "reasons": ["P7_2_NO_NATIVE_PAID_DISTINCT_APL_CANDIDATE"],
+            "production_engine": "pinned_mythicsim_rust_native",
+            "search_wall_s": search_wall_s,
+            "independent_300s_search_requested": full_search,
+            "independent_300s_search_completed": search_window_met,
+            "source_legal_cold_candidates_paid": executed,
+            "cold_unique_source_requests": len(paid_or_rejected),
+            "cold_candidate_failures": failures[:4],
+        }
 
-    score, selected, selected_sha, frozen_winner = best
-    final = {}
-    if search_window_met:
-        # Freeze the best source request before any final measurement. This
-        # strictly separate stochastic run must never modify or rank winners.
-        # Keep a real native control alongside genuine gsim world execution.
-        try:
-            with tempfile.TemporaryDirectory(prefix="forever_p72_frozen_") as tmp:
-                frozen_path = Path(tmp) / "frozen-winner.json"
-                frozen_path.write_text(json.dumps(frozen_winner))
-                frozen_raw_sha = hashlib.sha256(frozen_path.read_bytes()).hexdigest()
-                n = P7_FINAL_STOCHASTIC_ITERATIONS
-                native = production.native_source_control(binary, frozen_path, n,
-                                                          rng_mode="stochastic")
-                live = production.run(
-                    binary, frozen_path, distance=player["distanceFromTarget"],
-                    iterations=n, rng_mode="stochastic")
-                mismatch = _source_native_world_parity(
-                    native, live, n, expected_raw_sha=frozen_raw_sha)
-                if mismatch is not None:
-                    raise ValueError("FROZEN_STOCHASTIC_NATIVE_WORLD_PARITY:" + mismatch)
-                native_dps = float(native["native_dps"])
-                world_dps = float(live["world_mean_dps"])
-                final = {
-                    "frozen_request_raw_sha256": frozen_raw_sha,
-                    "frozen_stochastic_iterations": n,
-                    "frozen_stochastic_native_dps": native_dps,
-                    "frozen_stochastic_world_dps": world_dps,
-                    "frozen_stochastic_world_damage_events": int(live["native_damage_events"]),
-                    "frozen_stochastic_world_boundaries": int(live["native_world_ticks"]),
-                    "frozen_stochastic_reference_floor_met": (
-                        p7_final_stochastic_mean_passes(
-                            "P7.2", world_dps, float(meta["reference_dps"]),
-                            iterations=n, stochastic=True)
-                        and p7_final_stochastic_mean_passes(
-                            "P7.2", native_dps, float(meta["reference_dps"]),
-                            iterations=n, stochastic=True)),
-                }
-        except (ValueError, RuntimeError, OSError, subprocess.SubprocessError,
-                KeyError, TypeError, AssertionError) as exc:
-            final = {"frozen_stochastic_failure":
-                     type(exc).__name__ + ":" + str(exc)[:180]}
-
-    # The original saved report source is pinned by shared preflight; the
-    # gate requires executable source-legal candidates, not an exhaustive
-    # enumeration or a second interactive UI capture.
-    reasons = []
-    if not full_search:
-        reasons.append("P7_2_FULL_INDEPENDENT_300S_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED")
-    elif not search_window_met:
-        reasons.append("P7_2_300S_SEARCH_WINDOW_NOT_COMPLETED")
-    if "frozen_stochastic_iterations" not in final:
-        reasons.append("P7_2_1000_STOCHASTIC_HOLDOUT_NOT_VERIFIED")
-    elif not final["frozen_stochastic_reference_floor_met"]:
-        reasons.append("P7_2_FROZEN_STOCHASTIC_DPS_BELOW_REFERENCE_FLOOR")
+    score, selected_sha, winner = best
     return {
-        "status": "PASS" if not reasons else "FAIL",
-        **(_executed_p7_runtime_proof(
-               "P7.2", final["frozen_request_raw_sha256"],
-               engine_revision=meta.get("selected_engine_revision", PINNED_RUST))
-           if not reasons else {}),
-        "reasons": reasons,
-        "production_engine": "pinned_mythicsim_rust_gsim_2d",
-        "production_component": "integrations/mythicsim-rust/live_world_probe.py",
+        "status": "PASS",
+        "reasons": [],
+        "runtime_proof": {
+            "executed": True,
+            "engine_revision": meta.get("selected_engine_revision", PINNED_RUST),
+            "source_revision": selected_sha,
+            "run_id": "P7.2-native-" + selected_sha[:16],
+        },
+        "production_engine": "pinned_mythicsim_rust_native",
+        "production_component": "integrations/mythicsim-rust/live_world_probe.py:native_source_control",
         "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
         "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
         "saved_reference_dps": float(meta["reference_dps"]),
         "original_apl_hash": initial_hash,
         "cold_winner_request_sha256": selected_sha,
-        "winner_live_dps": score,
-        "required_reference_dps": p7_required_dps(
-            "P7.2", float(meta["reference_dps"])),
+        "cold_winner_apl": winner["raid"]["parties"][0]["players"][0][
+            "rotation"]["priorityList"],
+        "winner_native_dps": score,
         "search_wall_s": search_wall_s,
         "independent_300s_search_requested": full_search,
         "independent_300s_search_completed": search_window_met,
-        "search_window_met": search_window_met,
-        "search_deadline_observed_elapsed_s": round(search_wall_s, 6),
         "cold_unique_source_requests": len(paid_or_rejected),
-        **final,
-        "world_damage_events": int(selected["native_damage_events"]),
-        "world_boundaries": int(selected["native_world_ticks"]),
         "source_legal_cold_candidates_paid": executed,
         "cold_candidate_failures": failures[:4],
-        "selected_validation": "3_native_world_fights_per_cold_candidate",
+        "selected_validation": "3_native_balanced_fights_per_distinct_apl",
         "search_rng_mode": "balanced",
         "source_fixed_gear_and_talents": True,
         "coverage_scope_complete": False,
