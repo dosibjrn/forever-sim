@@ -75,6 +75,16 @@ def _source_profile_build_ir(root: Path, ir, class_key: str, level: int, spec: s
 
 
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
+    # Priest/Mage P3 is owned by the tested native item-options provider.
+    # Missing activation is BLOCKED, never an implicit SQLite fallback, and
+    # is checked before spending the bounded paid source-search budget.
+    native_binary = (os.environ.get('FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN')
+                     if str(class_key).lower() in ('priest', 'mage') else None)
+    if str(class_key).lower() in ('priest', 'mage') and not native_binary:
+        return {'status': 'BLOCKED',
+                'reasons': ['P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED'],
+                'production_component': 'src.game.native_p3_item_options'}
+
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
     from src.v2.source_budgeted_gear import (run_source_budgeted_gear,
@@ -129,10 +139,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     weights = dict(sensitivity["values"])
     if not all(type(v) in (int, float) and isfinite(v) for v in weights.values()):
         return {"status": "FAIL", "reasons": ["P3_REAL_PRODUCTION_WEIGHTS_NONFINITE"]}
-    # Activate only with a tested, pinned native item-options binary. No
-    # Python/SQLite fallback is permitted after native is explicitly selected.
-    native_binary = (os.environ.get('FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN')
-                     if class_key in ('priest', 'mage') else None)
+    # Native Priest/Mage activation was required before paid search above;
+    # other classes continue through their existing P3 source path.
     try:
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
