@@ -52,6 +52,10 @@ RETIRED_TOOLS = (
     "tools/wf249_ingest_talent_scope.py",
     "tools/wf302_persistent_joint_optimizer.py",
     # Orphaned WF389/WF408/WF410/WF412 Python GameIR P3/100-mob report runners.
+    # Historical WF412 P3 recertifier demanded positive Spirit/MP5/etc and
+    # pinned obsolete PROCESS hashes; neither is active P3 acceptance.
+    "tools/wf412_recertify_druid20_p3.py",
+    "tests/test_wf412_p3_same_winner_evidence_tdd.py",
     "tools/wf389_paid_weapon_package_probe.py",
     "tools/wf408_rerun_druid20_p3.py",
     "tools/wf410_druid20_live_p3.py",
