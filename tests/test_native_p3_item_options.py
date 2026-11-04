@@ -49,6 +49,36 @@ def test_native_p3_forwards_request_and_preserves_source_candidates():
                           "--level", "20", "--spec", "unrestricted", "--slot", "all"]
     assert seen[0][1]["timeout"] == 60
 
+@pytest.mark.parametrize("level", [20, 30])
+def test_native_p3_mage_client_universe_counts_are_explicit_and_forwarded(level):
+    # Forever transports the native exclusion/unknown distinction untouched.
+    # It does not independently judge which Warcraft items belong in ItemSparse.
+    item = {"item_id": 25, "item_level": 3, "required_level": 1,
+            "slot": "chest", "stats": {"Stamina": 2.0}}
+    payload = _response(**{"class": "mage", "level": level,
+                           "excluded_non_client_item_count": 2239,
+                           "items": [item]})
+    actual = query_native_p3_item_options(
+        "native", "mage", level, runner=_runner(payload))
+    assert actual == payload
+    assert actual["status"] == "ok"
+    assert actual["unverified_candidate_count"] == 0
+    assert actual["excluded_non_client_item_count"] == 2239
+    assert actual["items"] == [item]
+
+
+@pytest.mark.parametrize("level", [20, 30])
+def test_native_p3_mage_rejects_missing_client_exclusion_receipt(level):
+    payload = _response(**{"class": "mage", "level": level})
+    del payload["excluded_non_client_item_count"]
+    with pytest.raises(
+        NativeItemOptionsError,
+        match="EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE",
+    ):
+        query_native_p3_item_options(
+            "native", "mage", level, runner=_runner(payload))
+
+
 def test_native_p3_forwards_shaman_request_and_preserves_source_candidates():
     item = {
         "item_id": 25, "name": "Sourced Shaman chest", "item_level": 3,
