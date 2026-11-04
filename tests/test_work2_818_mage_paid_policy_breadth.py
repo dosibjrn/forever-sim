@@ -5,6 +5,8 @@ This tests Forever scheduling and receipts, not Warcraft rules or native validit
 """
 from types import SimpleNamespace
 
+import pytest
+
 import src.game.gear as gear
 import src.v2.source_budgeted_gear as budgeted
 
@@ -91,8 +93,11 @@ def test_breadth_opt_in_requires_verified_paid_baseline(monkeypatch):
     assert calls == ["source", "source", "source"]
 
 
+@pytest.mark.parametrize("invalid_objective", [
+    None, "NATIVE_UNSUPPORTED", float("nan"), float("inf"), 0.0,
+])
 def test_paid_source_witness_ignores_unusable_native_probe_objective_but_keeps_budget(
-        monkeypatch):
+        monkeypatch, invalid_objective):
     """Native refusal/invalid objective costs a paid call, not an invented weight."""
     source = SimpleNamespace(id="source-mage", provenance={"source": "fixture"})
     ir = SimpleNamespace(id="mage-l30", policies=(source,))
@@ -103,7 +108,7 @@ def test_paid_source_witness_ignores_unusable_native_probe_objective_but_keeps_b
         assert level == 30 and schedule_incoming_attacks
         delta = getattr(candidate, "delta", None)
         calls.append(delta)
-        seconds = 10.0 if delta is None else (None if delta == 20.0 else 9.0)
+        seconds = 10.0 if delta is None else (invalid_objective if delta == 20.0 else 9.0)
         return (SimpleNamespace(seconds_per_mob=seconds),
                 SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)), {})
 
