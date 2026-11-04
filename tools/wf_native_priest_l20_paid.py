@@ -199,13 +199,27 @@ def couple_source_priest_l20_persistent_world(binary: str | Path,
     if (not isinstance(proof, dict)
             or proof.get("continuous_native_actor") is not True
             or proof.get("actual_2d_ack") is not True
-            or proof.get("world_targets_killed") != target_count
+            or type(proof.get("world_targets_killed")) is not int
+            or proof["world_targets_killed"] != target_count
             or len(proof.get("native_windows", ())) != target_count
             or proof.get("paid_recovery") is not False):
         raise RuntimeError("PRIEST_L20_PERSISTENT_NATIVE_WORLD_RECEIPT_INCOMPLETE")
     return {
         "native_2d_persistent_world_targets_killed": target_count,
         "native_2d_persistent_world_ticks": proof["world_ticks"],
+        # Carry the native/ACKed world resource timeline forward to the
+        # actual P4/P5 caller. This is observed state, not Python-computed
+        # recovery, a reset actor or an independently completed paid screen.
+        "native_2d_persistent_mana_after_kills": proof.get(
+            "native_actor_mana_after_world_kills"),
+        "native_2d_persistent_min_actor_health": proof.get(
+            "minimum_native_actor_health"),
+        "native_2d_persistent_elapsed_seconds": proof.get(
+            "world_elapsed_seconds"),
+        "native_2d_persistent_paid_movement_seconds": proof.get(
+            "gsim_route_paid_movement_s"),
+        "native_2d_persistent_native_health_damage": proof.get(
+            "native_health_damage"),
         "native_2d_persistent_actor_verified": True,
         "native_2d_persistent_world_ack_verified": True,
         "native_2d_persistent_paid_recovery": False,
@@ -346,7 +360,11 @@ def score_source_priest_l20_candidates(binary: str | Path,
                                     or retained.get("native_2d_persistent_actor_verified") is not True
                                     or retained.get("native_2d_persistent_world_ack_verified") is not True
                                     or type(retained.get("native_2d_persistent_world_targets_killed")) is not int
-                                    or retained["native_2d_persistent_world_targets_killed"] < 2
+                                    # An explicitly requested 100-mob
+                                    # screen must not be reported as verified
+                                    # after only two ACKed kills. Keep the
+                                    # exact count on the same paid candidate.
+                                    or retained["native_2d_persistent_world_targets_killed"] != persistent_target_count
                                     or retained.get("native_2d_screen_complete") is not False):
                                 raise RuntimeError("PRIEST_L20_PERSISTENT_WORLD_RECEIPT_INVALID")
                             candidate["native_2d_persistent_world"] = retained
