@@ -76,49 +76,96 @@ def _blocked(reason: str, **details) -> dict:
 
 
 def _source_native_world_parity(
-        native: dict, live: dict, iterations: int, *,
-        expected_raw_sha: str | None = None) -> str | None:
+        native: dict | None, live: dict, iterations: int, *,
+        expected_raw_sha: str | None = None,
+        allow_world_lethal: bool = False) -> str | None:
     """Fail closed on source identity and every ACK-scored world fight.
 
-    An equal aggregate DPS cannot establish P7.1.3 if the world probe
-    omitted, reordered or duplicated a fight. The real Rust/gsim executor
-    supplies these measurements; this is only an acceptance assertion.
+    A finite source target can die in the live 2D world. Its lethal ACK stops
+    the coupled native fight, while a standalone source-only control has no
+    world HP feedback and continues the encounter. Those aggregate scores are
+    not comparable after a lethal world fight. P7.4 may opt into that narrowly
+    scoped case, but still requires the coupled native DPS to equal the full
+    per-fight gsim damage/duration ledger. P7.1 remains strict by default.
     """
-    if (live["iterations_done"] != iterations
-            or native["iterations"] != iterations
-            or len(live["per_iteration"]) != iterations
-            or live["native_damage_events"] <= 0
-            or live["native_world_ticks"] < iterations):
+    samples = live.get("per_iteration")
+    if (live.get("iterations_done") != iterations
+            or (native is not None and native.get("iterations") != iterations)
+            or not isinstance(samples, list) or len(samples) != iterations
+            or live.get("native_damage_events", 0) <= 0
+            or live.get("native_world_ticks", 0) < iterations):
         return "P7_1_NATIVE_WORLD_EXECUTION_INCOMPLETE"
     if expected_raw_sha is not None and (
             live.get("source_request_raw_sha256") != expected_raw_sha):
         return "P7_1_LIVE_SOURCE_REQUEST_IDENTITY_DIVERGED"
-    # NaN makes ordinary abs(actual - expected) >= tolerance comparisons
-    # false. Reject nonnumeric/nonfinite native and 2D scores BEFORE parity,
-    # or a forged full stochastic receipt could appear compatible at every P7 gate.
+
+    target_lethal = []
     try:
-        scores = (native["native_dps"], live["native_dps"],
-                  live["world_mean_dps"])
+        for row in samples:
+            health_keys = (
+                "world_target_health_remaining",
+                "world_target_max_health",
+                "world_target_lethal",
+            )
+            present = [key in row for key in health_keys]
+            if any(present) and not all(present):
+                return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INCOMPLETE"
+            if not any(present):
+                target_lethal.append(False)
+                continue
+            health = row["world_target_health_remaining"]
+            maximum = row["world_target_max_health"]
+            lethal = row["world_target_lethal"]
+            if (type(health) not in (int, float)
+                    or not math.isfinite(health) or health < 0
+                    or type(maximum) not in (int, float)
+                    or not math.isfinite(maximum) or maximum <= 0
+                    or health > maximum + 1e-6
+                    or type(lethal) is not bool
+                    or lethal != (health <= 0.0)):
+                return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INVALID"
+            target_lethal.append(lethal)
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return "P7_1_WORLD_TARGET_HEALTH_LEDGER_INCOMPLETE"
+    world_lethal = any(target_lethal)
+    lethal_comparison_allowed = allow_world_lethal and world_lethal
+
+    # NaN makes ordinary abs(actual - expected) >= tolerance comparisons
+    # false. Reject nonnumeric/nonfinite coupled native and 2D scores BEFORE
+    # parity, even when a standalone native-only control is not comparable.
+    try:
+        live_scores = (live["native_dps"], live["world_mean_dps"])
         if any(type(value) not in (int, float)
                or not math.isfinite(value) or value < 0
-               for value in scores):
+               for value in live_scores):
             return "P7_1_NATIVE_WORLD_DPS_INVALID"
-        durations = (native["first_duration_s"], live["sampled_duration_s"])
-        if any(type(value) not in (int, float)
-               or not math.isfinite(value) or value <= 0
-               for value in durations):
+        live_duration = live["sampled_duration_s"]
+        if (type(live_duration) not in (int, float)
+                or not math.isfinite(live_duration) or live_duration <= 0):
             return "P7_1_NATIVE_WORLD_DURATION_INVALID"
+        if native is not None:
+            native_score = native["native_dps"]
+            native_duration = native["first_duration_s"]
+            if (type(native_score) not in (int, float)
+                    or not math.isfinite(native_score) or native_score < 0):
+                return "P7_1_NATIVE_WORLD_DPS_INVALID"
+            if (type(native_duration) not in (int, float)
+                    or not math.isfinite(native_duration) or native_duration <= 0):
+                return "P7_1_NATIVE_WORLD_DURATION_INVALID"
     except (KeyError, TypeError, ValueError, OverflowError):
         return "P7_1_NATIVE_WORLD_SCALARS_MISSING"
-    samples = live["per_iteration"]
+
     try:
         if any(
                 type(row["iteration_index"]) is not int
                 or row["iteration_index"] != i
+                or type(row["duration_s"]) not in (int, float)
                 or not math.isfinite(row["duration_s"])
                 or row["duration_s"] <= 0
+                or type(row["world_dps"]) not in (int, float)
                 or not math.isfinite(row["world_dps"])
                 or row["world_dps"] < 0
+                or type(row["world_applied_damage"]) not in (int, float)
                 or not math.isfinite(row["world_applied_damage"])
                 or row["world_applied_damage"] < 0
                 for i, row in enumerate(samples)):
@@ -129,12 +176,28 @@ def _source_native_world_parity(
             return "P7_1_WORLD_FIGHT_MEAN_DIVERGED"
     except (KeyError, TypeError, ValueError, OverflowError):
         return "P7_1_WORLD_FIGHT_LEDGER_INCOMPLETE"
-    if (abs(native["first_duration_s"] - live["sampled_duration_s"]) >= 1e-9
-            or abs(samples[0]["duration_s"] - live["sampled_duration_s"]) >= 1e-9):
+
+    # The coupled native result must always equal the gsim-applied world
+    # score. This is the actual source-native↔2D parity assertion.
+    if abs(live["native_dps"] - live["world_mean_dps"]) >= 1e-5:
+        return "P7_1_NATIVE_LIVE_WORLD_DPS_PARITY_FAILED"
+    # The sample ledger's first duration must always agree with the native
+    # world-bridged result, including when that first fight ends by lethal ACK.
+    if abs(samples[0]["duration_s"] - live_duration) >= 1e-9:
         return "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED"
-    if (abs(native["native_dps"] - live["native_dps"]) >= 1e-6
-            or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
-        return "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
+    # A standalone source-only first fight remains comparable if the first
+    # world target survived. If it died, its shorter coupled duration is valid.
+    if (native is not None
+            and not (lethal_comparison_allowed and target_lethal[0])
+            and abs(native["first_duration_s"] - live_duration) >= 1e-9):
+        return "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED"
+    if native is None and not lethal_comparison_allowed:
+        return "P7_1_NATIVE_SOURCE_CONTROL_MISSING"
+    if native is not None and not lethal_comparison_allowed:
+        if (abs(native["native_dps"] - live["native_dps"]) >= 1e-6
+                or abs(native["native_dps"] - live["world_mean_dps"]) >= 1e-5):
+            return "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
+
     try:
         # Real live_world_probe records actual gsim-applied native damage
         # (including any negative-time/pre-pull damage) and scores only the
