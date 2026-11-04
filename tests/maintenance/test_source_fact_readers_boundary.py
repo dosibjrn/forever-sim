@@ -202,7 +202,6 @@ from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 names = (
     'wf247_ingest_outgoing',
-    'wf250_ingest_source_capture',
     'wf252_ingest_companions',
     'wf253_ingest_seal',
 )
@@ -249,41 +248,6 @@ def test_outgoing_capture_ingest_explicit_db_remains_idempotent(tmp_path):
         assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
-def test_verified_source_capture_staged_ingest_remains_idempotent(tmp_path):
-    """The source-only capture CLI still honors explicit staging paths."""
-    import json
-
-    from tools.wf250_ingest_source_capture import ingest
-
-    capture = tmp_path / "capture.json"
-    capture.write_text(json.dumps({
-        "captured_at": "2026-11-03",
-        "capture_id": "boundary-test",
-        "granted_actions": [],
-        "spell_ranks": [{
-            "class_key": "mage",
-            "spell_id": 1234,
-            "cast_time_s": 1.5,
-            "mana_cost": 20,
-            "cooldown_s": 0,
-            "tooltip_text": "Source fixture",
-            "source_url": "https://example.invalid/spell/1234",
-            "source_build": "fixture-build",
-            "spell_power_coefficient": 0.5
-        }],
-        "talents": []
-    }), encoding="utf-8")
-    db = tmp_path / "capture.sqlite"
-    ingest(db=db, capture=capture)
-    ingest(db=db, capture=capture)
-    with sqlite3.connect(db) as conn:
-        assert conn.execute(
-            "SELECT spell_id, spell_power_coefficient "
-            "FROM verified_spell_rank_facts"
-        ).fetchall() == [(1234, 0.5)]
-        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
-
-
 def test_historical_capture_stage_clis_avoid_gameir():
     """Source-only operators must not load the transitional Python compiler."""
     code = """
@@ -293,7 +257,6 @@ import sys
 from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 operations = {
-    'wf251_ingest_two_classes': 'ingest',
     'wf255_ingest_command': 'ingest',
     'wf256_ingest_seals': 'ingest',
 }
