@@ -143,10 +143,32 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
             return report
         report.update(paid)
         report["paid_candidates"] = paid["native_paid_whole_builds"]
-        report["reasons"] = [
-            "P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"
-            if report["paid_candidates"] else
-            "P4_P5_NATIVE_SOURCE_CANDIDATES_NOT_PAID"]
+        if not report["paid_candidates"]:
+            report["reasons"] = ["P4_P5_NATIVE_SOURCE_CANDIDATES_NOT_PAID"]
+        elif (persistent_targets == 100
+              and paid.get("native_2d_persistent_verified") == 1
+              and paid.get("native_2d_persistent_targets_killed") == 100):
+            # Genuine 100 distinct native/2D ACKed kills are an executable
+            # result, not a missing bridge. They are still NOT a completed
+            # P4/P5 gate: native-paid recovery and the cold 30/300s search
+            # have not been established by this bounded producer.
+            report["reasons"] = [
+                "P4_P5_NATIVE_PAID_RECOVERY_AND_COLD_SEARCH_NOT_COMPLETE"]
+        else:
+            # Keep the *observed* source/native-world failure on the active
+            # gate result. Previously this was buried on a candidate row
+            # under a generic "not connected" reason, hiding the first
+            # reproducible failure even when the actual runner was invoked.
+            native_error = next((
+                row["native_2d_persistent_error"]
+                for row in paid.get("native_candidate_receipts", ())
+                if row.get("status") == "NATIVE_PAID"
+                and row.get("native_2d_persistent_error")
+            ), None)
+            report["reasons"] = [
+                ("P4_P5_NATIVE_2D_100MOB_FAILED:" + str(native_error)[-400:])
+                if native_error and persistent_targets == 100
+                else "P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"]
     return report
 
 
