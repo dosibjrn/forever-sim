@@ -507,7 +507,16 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         shaman_l20_spellbook
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
-    native_item_sized_probe = mage_l30_native or shaman_l20_native
+    rogue_l20_native = (
+        str(class_key).lower() == "rogue" and int(level) == 20
+        and str(spec).lower() == "unrestricted"
+        and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    )
+    # The Rogue item catalogue now comes from the same selected native
+    # ItemSparse provider as Mage/Shaman. Probe real top-five item stat sizes,
+    # not guessed (5, 20) deltas; every weight still needs a paid comparison.
+    native_item_sized_probe = (
+        mage_l30_native or shaman_l20_native or rogue_l20_native)
     if shaman_l20_native:
         # This issue is only the Spell Power witness. Other zero axes are
         # separate P3 defects. If the exact native coefficient/action was not
