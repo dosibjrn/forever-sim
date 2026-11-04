@@ -170,7 +170,7 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
 
     ir = SimpleNamespace(
         actor=SimpleNamespace(metadata={"class_key": "mage", "level": 30}),
-        policies=(), actions=())
+        policies=(), actions=(SimpleNamespace(id="fireball", effects=()),))
     monkeypatch.setattr(registry, "build_game_ir_slice",
                         lambda **kwargs: ir)
     monkeypatch.setattr(
@@ -292,7 +292,7 @@ def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
 
     ir = SimpleNamespace(
         actor=SimpleNamespace(metadata={"class_key": "mage", "level": 30}),
-        policies=(), actions=())
+        policies=(), actions=(SimpleNamespace(id="fireball", effects=()),))
     monkeypatch.setattr(registry, "build_game_ir_slice",
                         lambda **kwargs: ir)
     monkeypatch.setattr(
@@ -453,7 +453,75 @@ def test_source_policy_witness_reuses_paid_search_winner_baseline(monkeypatch):
     assert result["baseline_reused"] is True
     assert result["paid_evaluations"] == 1
     assert result["attempted_policy_sources"] == ["paid_search_winner"]
+    assert result["delta"] == 20.0
     assert calls == [("paid-search-winner", ("mage:fireball",),
-                      ("spell_power", 5.0))]
+                      ("spell_power", 20.0))]
     assert cache[(id(ir), 30, True, "paid-search-winner",
                   ("mage:fireball",))] == 10.0
+
+
+
+def test_source_ir_fallback_keeps_full_native_probe_deltas_after_paid_winner(monkeypatch):
+    """A nonpositive winner probe must not starve the proven source-policy delta series."""
+    from types import SimpleNamespace
+    import src.game.gear as gear_module
+    import src.v2.source_budgeted_gear as budgeted
+
+    source_policy = SimpleNamespace(
+        id="canonical-source-policy", provenance={"source": "fixture"}, rules=())
+    preferred_policy = SimpleNamespace(
+        id="paid-search-winner",
+        provenance={"authority": "source_stateful_budgeted", "search_performed": True},
+        rules=(SimpleNamespace(id="fallback:0", action_id="mage:fireball"),))
+    ir = SimpleNamespace(id="mage-l30", policies=(source_policy,))
+    record = {
+        "status": "evaluated", "score_s_per_mob": 10.0,
+        "prefix": ["mage:fireball"], "fallback": "mage:fireball",
+        "selected_actions": [{"action_id": "mage:fireball"}],
+    }
+    calls = []
+
+    def apply_delta(candidate_ir, stat, delta):
+        return SimpleNamespace(
+            id=candidate_ir.id, policies=candidate_ir.policies,
+            delta=(stat, float(delta)))
+
+    def evaluate(candidate_ir, *, level, policy_override,
+                 opening_action_ids=(), schedule_incoming_attacks=False):
+        delta = getattr(candidate_ir, "delta", None)
+        calls.append((policy_override.id, tuple(opening_action_ids), delta))
+        execution = SimpleNamespace(
+            timeline=SimpleNamespace(target_defeated=True),
+            selected_actions=[{"action_id": "mage:fireball"}])
+        if policy_override is source_policy and not opening_action_ids:
+            return None, None, {}
+        if delta is None:
+            return SimpleNamespace(seconds_per_mob=10.0), execution, {}
+        if policy_override is preferred_policy:
+            return SimpleNamespace(seconds_per_mob=10.0), execution, {}
+        if delta == ("spell_power", 5.0):
+            return SimpleNamespace(seconds_per_mob=10.0), execution, {}
+        return SimpleNamespace(seconds_per_mob=9.0), execution, {}
+
+    monkeypatch.setattr(gear_module, "apply_stat_delta", apply_delta)
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", evaluate)
+    result = budgeted.paid_source_policy_stat_witness(
+        ir, stat="spell_power", level=30, probe_deltas=(5., 20.),
+        max_evaluations=5, schedule_incoming_attacks=True,
+        baseline_cache={}, opening_action_ids=("mage:fireball",),
+        preferred_policy=preferred_policy, baseline_record=record)
+
+    assert result["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS", result
+    assert result["policy_source"] == "source_ir_policy"
+    assert result["policy_id"] == "canonical-source-policy"
+    assert result["delta"] == 20.0
+    assert result["paid_evaluations"] == 5
+    assert result["attempted_policy_sources"] == [
+        "paid_search_winner", "source_ir_policy"]
+    assert calls == [
+        ("paid-search-winner", ("mage:fireball",), ("spell_power", 20.0)),
+        ("canonical-source-policy", (), None),
+        ("canonical-source-policy", ("mage:fireball",), None),
+        ("canonical-source-policy", ("mage:fireball",), ("spell_power", 5.0)),
+        ("canonical-source-policy", ("mage:fireball",), ("spell_power", 20.0)),
+    ]
