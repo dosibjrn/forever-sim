@@ -23,6 +23,7 @@ on:
       - 'tests/test_wf359_druid_l30_p3_rebase.py'
       - 'tools/wf300_continuous_source_policy_benchmark.py'
       - 'tools/wf350_build_source_evidence.py'
+      - 'tools/wf342_*.py'
       - 'tools/wf357_recovery_probe.py'
       - 'tools/wf391_generic_joint_probe.py'
       - 'tools/wf417_source_root_2d_probe.py'
