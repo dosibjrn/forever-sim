@@ -480,6 +480,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "item_options_source": item_check["source"],
         "native_item_options_status": item_check.get("native_item_options_status"),
         "native_unverified_candidate_count": item_check.get("native_unverified_candidate_count", 0),
+        "native_excluded_non_client_item_count": item_check.get(
+            "native_excluded_non_client_item_count", 0),
         "native_item_options_source": item_check.get("native_item_options_source"),
         "real_measured_stat_weight_axes": sorted(weights),
         "actual_search_result_status": result.get("status"),

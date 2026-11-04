@@ -191,7 +191,7 @@ def main(argv=None) -> int:
             for key in ("real_catalogue_legal_items", "real_catalogue_slots_scored",
                         "actual_search_result_status", "item_options_source",
                         "native_item_options_status", "native_unverified_candidate_count",
-                        "native_item_options_source"):
+                        "native_excluded_non_client_item_count", "native_item_options_source"):
                 value = report.get(key)
                 if type(value) is int or isinstance(value, str):
                     record[key] = value

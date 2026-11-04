@@ -312,6 +312,8 @@ def fast_p3_smoke(*, class_key: str, level: int, weights: Mapping,
             'native_item_options_status': (native_options_metadata or {}).get('status'),
             'native_unverified_candidate_count': (native_options_metadata or {}).get(
                 'unverified_candidate_count', 0),
+            'native_excluded_non_client_item_count': (native_options_metadata or {}).get(
+                'excluded_non_client_item_count', 0),
             'native_item_options_source': (native_options_metadata or {}).get('source'),
             'blockers': sorted(blockers), 'p3_pass': not blockers,
             'scope': 'PROCESS_V2_FAST_P3_SMOKE_NOT_GLOBAL_BIS'}
