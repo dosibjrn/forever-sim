@@ -406,13 +406,14 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     only non-use by THAT policy. Test the actual paid-search winner first,
     then source-authored executable alternatives for the same talent IR.
 
-    Preserve the existing source-policy baseline first. If it cannot establish
-    a killing baseline, retry that same policy with the exact ordered opening
-    prefix from the successful source-naked search. The chosen prefix (empty or
-    non-empty) is used for both baseline and perturbation, and is part of the
-    cache key. Cache failed baseline attempts too, so an unexecutable no-prefix
-    candidate is not paid for again on every stat axis. No synthetic policy,
-    epsilon, or inferred stat weight is introduced.
+    For each candidate, retry a failed empty-prefix baseline with the exact
+    ordered opening prefix from the successful source-naked search. The chosen
+    prefix (empty or non-empty) is used for both baseline and perturbation, and
+    is part of the cache key. Cache failed baseline attempts too, so an
+    unexecutable no-prefix candidate is not paid for again on every stat axis.
+    The paid-search winner is source-derived and is tried before source-IR
+    alternatives. No synthetic policy, epsilon, or inferred stat weight is
+    introduced.
     """
     from src.game.gear import apply_stat_delta
     from src.v2.source_budgeted_prefix import ordered_prefix_executed
@@ -503,6 +504,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 reason = f'BASELINE_EVALUATION_ERROR:{type(exc).__name__}:{exc}'
                 baseline_failures.append({
                     'policy_id': str(policy.id),
+                    'policy_source': policy_source,
                     'opening_action_ids': list(candidate_prefix),
                     'reason': reason,
                 })
