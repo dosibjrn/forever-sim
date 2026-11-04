@@ -30,7 +30,7 @@ def _options():
 def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             paid_recovery=True, native_identity=True,
             first_world_native_failure=False, cast_receipts=1,
-            options=None, refuse_dense_at=None):
+            options=None, refuse_dense_at=None, full_route_delay=5.0):
     source_path = tmp_path / "source.json"
     source_path.write_text(json.dumps(_source()))
     now = [0.0]
@@ -67,7 +67,7 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             assert build == paid_builds[-1]
         if target_count == 100:
             world_builds.append(build)
-        now[0] += 5.0
+        now[0] += full_route_delay if target_count == 100 else 5.0
         if first_world_native_failure and target_count == 100 and len(world_builds) == 1:
             raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", 1,
                 "prepared input rejected: RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL",
@@ -296,9 +296,10 @@ def test_300s_paid_world_snapshot_survives_deferred_100mob_validation(tmp_path):
 
 def test_slow_100mob_finalist_does_not_retime_paid_30s_route(tmp_path):
     receipt, paid, world = _runner(
-        tmp_path, budget=300.0, snapshot=30.0)
-    # Route measurements are paid, comparable, and source-world-native;
-    # post-search 100-mob runs are not part of the cold 30s frontier.
+        tmp_path, budget=300.0, snapshot=30.0, full_route_delay=170.0)
+    # Each 100-mob finalist lasts 170s in fake wall time: the first
+    # crosses the true 300s deadline after search. Neither late validation
+    # rewrites the 30/300s candidate-selection clock nor creates a winner.
     assert receipt["native_cold_search_wall_s"] == 40.0
     assert receipt["native_cold_30s_paid_selection"][
         "paid_completed_elapsed_s"] == 24.0
