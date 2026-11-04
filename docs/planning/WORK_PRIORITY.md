@@ -1,6 +1,6 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `0d02162d047b77323e162380116b907beb43d6f9`. Canonical ledger blob: `ab3e8ad0faa686e8782c236b45177e0042fb6eb3`; scoreboard script blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
+Refreshed against main `fa8bf383c9be5bc1aa00866d4cc81784a292ebf8`. Canonical ledger blob: `ab3e8ad0faa686e8782c236b45177e0042fb6eb3`; scoreboard script blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
 
 ## M1 scoreboard
 
