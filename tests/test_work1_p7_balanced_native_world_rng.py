@@ -231,6 +231,7 @@ def _world_parity_fixture(*, first_lethal=False, second_lethal=True,
 def test_p7_native_world_parity_remains_strict_when_targets_survive():
     parity, native, live = _world_parity_fixture(
         first_lethal=False, second_lethal=False,
+        live_native_dps=75.0, world_mean_dps=75.0,
     )
     assert parity(native, live, 2, expected_raw_sha="fixture-source-sha") == (
         "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
@@ -281,7 +282,7 @@ def test_p7_native_world_parity_rejects_forged_world_lethal_health_receipt():
 def test_p7_native_world_parity_never_relaxes_coupled_native_to_world_dps():
     parity, native, live = _world_parity_fixture(
         first_lethal=False, second_lethal=True,
-        live_native_dps=87.5, world_mean_dps=87.4,
+        live_native_dps=87.4, world_mean_dps=87.5,
     )
     assert parity(
         native, live, 2, expected_raw_sha="fixture-source-sha",
