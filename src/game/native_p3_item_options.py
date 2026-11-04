@@ -19,6 +19,10 @@ class NativeItemOptionsError(ValueError):
     """Native item-options was unavailable or returned an unusable response."""
 
 
+# Paladin L20 uses the pinned class-wide SkillLine/SkillRaceClassInfo projection.
+# Race-restricted Sword rows remain excluded; non-client catalogue rows are counted
+# separately from unverified ItemSparse.RequiredLevel candidates.
+
 def query_native_p3_item_options(
     binary: str | Path, class_key: str, level: int, *,
     spec: str = "unrestricted", slot: str = "all",
@@ -58,7 +62,7 @@ def query_native_p3_item_options(
     unverified_count = response.get("unverified_candidate_count")
     if type(unverified_count) is not int or unverified_count < 0:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_UNVERIFIED_COUNT")
-    if str(class_key).lower() == "shaman" and "excluded_non_client_item_count" not in response:
+    if str(class_key).lower() in {"shaman", "paladin"} and "excluded_non_client_item_count" not in response:
         raise NativeItemOptionsError(
             "P3_NATIVE_ITEM_OPTIONS_EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE")
     excluded_count = response.get("excluded_non_client_item_count", 0)
