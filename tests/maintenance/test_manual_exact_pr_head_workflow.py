@@ -62,7 +62,7 @@ class ManualExactHeadContract(unittest.TestCase):
         # migration guard may be retired after public source migration without
         # weakening exact-HEAD validation or allowing arbitrary commands.
         for suite_name in ("native-ack-unit", "paid-replay-unit",
-                           "source-periodic-unit"):
+                           "source-periodic-unit", "source-profile-unit"):
             self.assertIn(suite_name, suite)
         self.assertNotIn("p1p2-unit", TEXT)
         self.assertIn("Suite not allowlisted", TEXT)

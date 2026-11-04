@@ -19,6 +19,7 @@ on:
           - native-ack-unit
           - paid-replay-unit
           - source-periodic-unit
+          - source-profile-unit
           - service-queue-unit
 
 permissions:
@@ -47,7 +48,7 @@ jobs:
           [[ "$PR_NUMBER" =~ ^[1-9][0-9]{0,5}$ ]] || { echo 'Invalid PR number' >&2; exit 2; }
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid expected SHA' >&2; exit 2; }
           case "$SUITE" in
-            native-ack-unit|paid-replay-unit|source-periodic-unit|service-queue-unit) ;;
+            native-ack-unit|paid-replay-unit|source-periodic-unit|source-profile-unit|service-queue-unit) ;;
             *) echo 'Suite not allowlisted' >&2; exit 2 ;;
           esac
           pr_json="$(gh api -H 'Accept: application/vnd.github+json' "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
@@ -125,6 +126,9 @@ jobs:
               ;;
             source-periodic-unit)
               python -m pytest -q tests/test_wf242_persisted_periodics_and_multi_pull.py tests/test_wf374_final_pack_recovery.py
+              ;;
+            source-profile-unit)
+              python -m pytest -q tests/gates/test_wf35_product_spec_profile_contract.py
               ;;
             service-queue-unit)
               # All seven relocated G50 integration modules; browser-only
