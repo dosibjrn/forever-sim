@@ -947,3 +947,39 @@ def test_pinned_rust_candidate_pool_accepts_actual_engine_jsonl():
     assert metadata["unique_item_options"] > 0
     assert metadata["unique_enchant_options"] > 0
     assert all(choices and choices[0] is None for choices in enchant_pools.values())
+
+def test_pinned_rust_candidate_pool_keeps_actual_effect_only_items():
+    """The exact pinned JSONL rows for relic, trinket and weapon stay proposed."""
+    import os
+    import pytest
+    import sys
+    from pathlib import Path
+
+    root = Path(gate.__file__).resolve().parents[1]
+    engine_data = root / "integrations/mythicsim-rust/engine/data"
+    items_path = engine_data / "items.jsonl"
+    enchants_path = engine_data / "enchants.jsonl"
+    if not items_path.is_file() or not enchants_path.is_file():
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            pytest.fail("Generic source-paid CI must check out the pinned Rust data submodule")
+        pytest.skip("pinned MythicSim source data is not checked out")
+
+    source_dir = root / "integrations/mythicsim-rust"
+    sys.path.insert(0, str(source_dir))
+    try:
+        search = gate._source_module(
+            source_dir / "p74_gear_search.py", "p74_actual_effect_only_item_search_test")
+    finally:
+        sys.path.remove(str(source_dir))
+
+    pool, enchant_pools, metadata = search.pinned_rust_candidate_pool(
+        items_path, enchants_path)
+
+    assert set(pool) == set(range(len(search.SLOTS)))
+    assert all(pool[index] for index in range(len(search.SLOTS)))
+    assert 754 in pool[14]  # Shortsword of Vengeance, statless weapon row
+    assert 833 in pool[12] and 833 in pool[13]  # Lifestone, statless trinket row
+    assert 22397 in pool[15]  # Idol of Ferocity, statless ranged/relic row
+    assert metadata["unique_item_options"] > 0
+    assert metadata["unique_enchant_options"] > 0
+    assert len(enchant_pools) == len(search.SLOTS)
