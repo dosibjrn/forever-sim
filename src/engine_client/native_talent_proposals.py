@@ -75,3 +75,22 @@ def mutate_talent_string(parent: str, rng: random.Random) -> str:
         proposed[recipient] += 1
     candidate = _encode(parts, proposed)
     return candidate if candidate != parent else cold_talent_string(parent, rng)
+
+
+def lower_one_rank_neighbors(parent: str) -> list[str]:
+    """Enumerate minimal rank-removal proposals from a runnable source build.
+
+    This is a class-neutral string mutation, NOT a legality judgement: some
+    resulting allocations may violate native rules, and MythicSim alone
+    accepts or refuses them. Trying one less point avoids the destructive
+    random redistribution of all points on the first P7.3 probe.
+    """
+    parts, digits = _decode(parent)
+    alternatives = []
+    for index in range(len(digits) - 1, -1, -1):
+        if digits[index] == 0:
+            continue
+        changed = digits.copy()
+        changed[index] -= 1
+        alternatives.append(_encode(parts, changed))
+    return alternatives
