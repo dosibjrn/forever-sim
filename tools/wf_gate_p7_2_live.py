@@ -17,6 +17,7 @@ import random
 import subprocess
 import tempfile
 import time
+from uuid import uuid4
 
 from tools.wf_gate_coverage import p7_search_window_completed
 
@@ -210,7 +211,7 @@ def run_live(root: Path, class_key: str, level: int, *,
             "executed": True,
             "engine_revision": meta.get("selected_engine_revision", PINNED_RUST),
             "source_revision": selected_sha,
-            "run_id": "P7.2-native-" + selected_sha[:16],
+            "run_id": "P7.2-native-" + str(uuid4()),
         },
         "production_engine": "pinned_mythicsim_rust_native",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py:native_source_control",
