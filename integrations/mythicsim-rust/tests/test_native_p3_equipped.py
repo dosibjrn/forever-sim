@@ -93,3 +93,40 @@ def test_native_p3_rejects_non_rogue_reference_without_paying():
     reference["raid"]["parties"][0]["players"][0]["class"] = "ClassWarrior"
     with pytest.raises(ValueError, match="CLASS_MISMATCH"):
         compare_equipped_native("pinned-native", reference, _selection())
+
+
+def test_native_p3_prioritizes_native_sourced_weapon_over_armor():
+    reference = _reference()
+    selection = {"head": {"selected_ids": [900]},
+                 "weapon": {"selected_ids": [950]}}
+    candidate, swap = first_equipped_proposal(reference, selection)
+    assert swap["slot"] == "weapon"
+    assert swap["slot_index"] == 14
+    assert swap["to_id"] == 950
+    assert candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][14] == {"id": 950}
+    assert candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][0] == {"id": 100}
+
+
+@pytest.mark.parametrize("slot,index", [
+    ("weapon", 14), ("offhand", 15), ("ranged", 16),
+    ("ring1", 10), ("ring2", 11),
+    ("trinket1", 12), ("trinket2", 13),
+])
+def test_native_p3_accepts_native_equipment_positions(slot, index):
+    candidate, swap = first_equipped_proposal(
+        _reference(), {slot: {"selected_ids": [2000]}})
+    assert (swap["slot"], swap["slot_index"], swap["to_id"]) == (slot, index, 2000)
+    equipment = candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+    assert equipment[index] == {"id": 2000}
+    assert all(entry["id"] == 100 + i for i, entry in enumerate(equipment)
+               if i != index)
+
+
+def test_native_p3_skips_missing_ranged_slot_in_16_entry_request():
+    reference = _reference()
+    reference["raid"]["parties"][0]["players"][0]["equipment"]["items"].pop()
+    candidate, swap = first_equipped_proposal(
+        reference, {"ranged": {"selected_ids": [999]},
+                    "chest": {"selected_ids": [812]}})
+    assert swap["slot"] == "chest"
+    assert candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"][4] == {"id": 812}
