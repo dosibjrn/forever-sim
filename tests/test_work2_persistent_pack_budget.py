@@ -188,3 +188,11 @@ def test_spaced_travel_carries_sequential_paid_compute_and_event_limits(monkeypa
     assert len(observed) == 1
     assert result["status"] == "BLOCKED_SPACED_TRAVEL_BUDGET"
     assert result["mob_completed"] == 1
+
+ 
+def test_concurrent_pack_trace_is_rejected_before_dispatch():
+    candidate = SimpleNamespace(
+        ir=SimpleNamespace(provenance={}), policy=object(), opening=())
+    with pytest.raises(ValueError, match="PERSISTENT_PACK_TRACE_UNSUPPORTED"):
+        finalists.evaluate_persistent_candidate(
+            candidate, level=30, mobs=2, pack_size=2, trace_pulls=True)
