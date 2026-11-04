@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'tests/maintenance/**'
+      - 'src/game/data/forever/source_action_scope.py'
+      - 'tools/wf303_checkpoint_falsifier.py'
+      - 'tools/wf305_ingest_web_observed_spell_dependencies.py'
+      - 'tests/test_wf303_checkpoint_falsifier.py'
+      - 'tests/test_wf305_source_action_scope.py'
+      - 'data/forever/source_observations/wf305_druid_l20_engraving_grants.json'
       - 'src/v2/source_sqlite_spell_facts.py'
       - 'src/v2/source_sqlite_spell_semantics.py'
       - 'tests/integration/source/**'
@@ -94,6 +100,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/test_wf305_source_action_scope.py
           tests/gates/test_wf_gate_class_cli.py
           tests/gates/test_wf_gate_runtime_authority.py
           tests/test_level_legality_p00c.py

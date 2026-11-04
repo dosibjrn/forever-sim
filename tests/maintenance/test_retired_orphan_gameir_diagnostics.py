@@ -32,6 +32,8 @@ RETIRED_TOOLS = (
     "tools/wf_native_session_capability.py",
     "tools/wf369_druid_l30_apl_probe.py",
     "tools/wf353_l30_p3_context_replay.py",
+    "tools/wf303_checkpoint_falsifier.py",
+    "tools/wf305_ingest_web_observed_spell_dependencies.py",
 )
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
@@ -65,12 +67,21 @@ RETIRED_IMPORT_NAMES = (
     "wf353_l30_p3_context_replay",
     "source_sqlite_spell_facts",
     "source_sqlite_spell_semantics",
+    "wf303_checkpoint_falsifier",
+    "wf305_ingest_web_observed_spell_dependencies",
+    "source_spell_dependency_observations",
+    "source_gap_audit",
+    "scope_audit(",
 )
 
 
 RETIRED_OUTPUTS = (
     "evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",
     "evidence/wf369/WF369_DRUID_L30_APL_PROBE.json",
+)
+
+RETIRED_SOURCE_EVIDENCE = (
+    "data/forever/source_observations/wf305_druid_l20_engraving_grants.json",
 )
 
 
@@ -80,6 +91,7 @@ RETIRED_TESTS = (
     "tests/test_wf_gen03a4c2_sqlite_materialization.py",
     "tests/test_wf_gen03a4c2b2_semantic.py",
     "tests/test_wf_gen03a4c2b2_coverage.py",
+    "tests/test_wf303_checkpoint_falsifier.py",
 )
 
 RETIRED_COMMANDS = (
@@ -111,11 +123,12 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(
         encoding="utf-8"
     )
+    workflow_jobs = workflow.split("jobs:", 1)[1] if "jobs:" in workflow else ""
     for relative in RETIRED_TOOLS:
-        assert relative not in workflow, relative
+        assert relative not in workflow_jobs, relative
     for relative in RETIRED_TESTS:
         assert not (ROOT / relative).exists(), relative
-        assert relative not in workflow, relative
+        assert relative not in workflow_jobs, relative
     first_checkpoint_doc = (ROOT / "docs/evidence/druid-l60-balance/first-checkpoint/README.md").read_text(
         encoding="utf-8"
     )
@@ -129,8 +142,9 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
 
     for workflow_path in (ROOT / ".github/workflows").glob("*.yml"):
         workflow_source = workflow_path.read_text(encoding="utf-8")
+        workflow_jobs = workflow_source.split("jobs:", 1)[1] if "jobs:" in workflow_source else ""
         for relative in RETIRED_TOOLS:
-            assert relative not in workflow_source, f"retired CLI invoked by {workflow_path}: {relative}"
+            assert relative not in workflow_jobs, f"retired CLI invoked by {workflow_path}: {relative}"
 
     this_test = Path(__file__).resolve()
     for root in (ROOT / "src", ROOT / "tools", ROOT / "tests", ROOT / "scripts",
