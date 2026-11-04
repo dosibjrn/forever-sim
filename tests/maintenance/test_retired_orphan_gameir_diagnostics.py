@@ -80,6 +80,13 @@ RETIRED_TOOLS = (
     "tools/wf430_l30_starfire_100mob.py",
     # One-off WF357 staged-SQLite recovery frontier; keep its report as historical evidence.
     "tools/wf357_l30_recovery_frontier.py",
+    # WF322's one-off staged build-parity producer; the input and behavior regressions remain.
+    "tools/wf322_druid_l20_build_parity.py",
+    # WF328's one-off GameIR/SQLite report producers; keep their historical JSON and prefix regression.
+    "tools/wf328_druid_l20_mode_search_evidence.py",
+    "tools/wf328_geared_blind_joint_check.py",
+    # Orphaned WF_FERAL01 Druid L20 evidence generator; no retained consumer.
+    "tools/run_wf_feral01_evidence.py",
     # Unreferenced 300 s GameIR search driver retained under evidence/ by mistake.
     "evidence/wf438/run300.py",
 )
@@ -152,6 +159,10 @@ RETIRED_IMPORT_NAMES = (
     "wf430_l30_starfire_100mob",
     "wf441_100mob_swiftmend_evidence",
     "wf357_l30_recovery_frontier",
+    "wf322_druid_l20_build_parity",
+    "wf328_druid_l20_mode_search_evidence",
+    "wf328_geared_blind_joint_check",
+    "run_wf_feral01_evidence",
     "test_wf357_source_between_pull_recovery",
     "test_wf391_generic_joint_frontier",
     "test_wf424_insect_source_talent_100mob_tdd",
@@ -218,6 +229,8 @@ RETIRED_COMMANDS = (
 
 
 RETAINED_BEHAVIOR_TESTS = (
+    "tests/test_wf322_druid_l20_web_observed_build_parity.py",
+    "tests/test_wf328_mode_joint_prefix_admission.py",
     "tests/test_wf270_index_to_ir_action_frontier.py",
     "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
@@ -241,6 +254,9 @@ RETAINED_HISTORICAL_EVIDENCE = (
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
+    "evidence/wf328/WF328_REAL_MODE_PREFIX_30_PAID_AND_100MOB.json",
+    "evidence/wf328/WF328_GEARED_BLIND_100MOB_SAME_SOURCE.json",
+    "evidence/WF322_DRUID_L20_WEB_TEXT_OBSERVATIONS_70338.json",
     # WF427 inputs and result remain historical evidence; only the producer is retired.
     "evidence/wf427/WF427_L30_COLD_FINALISTS.json",
     "evidence/wf427/DRUID_L30_QUEST_HORIZONS_2_4_8_16.json",
