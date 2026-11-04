@@ -128,6 +128,7 @@ jobs:
           from src.game.native_p3_item_options import query_native_p3_item_options
           from tools.wf_native_priest_l20_paid import (
               couple_source_priest_l20_world,
+              couple_source_priest_l20_persistent_world,
               score_native_priest_l20_item_candidates,
           )
           binary = Path("integrations/mythicsim-rust/engine/target/debug/forever-engine").resolve()
@@ -138,6 +139,7 @@ jobs:
           paid = score_native_priest_l20_item_candidates(
               binary, fixture, native_options["items"],
               world_screen=couple_source_priest_l20_world,
+              persistent_world=couple_source_priest_l20_persistent_world,
               budget_s=25., max_paid_builds=4)
           print("PRIEST_L20_SELECTED_NATIVE_PAID_TO_REAL_2D",
                 json.dumps(paid, sort_keys=True), flush=True)
@@ -148,6 +150,10 @@ jobs:
           # Unlike the prior 10k-HP smoke, the selected ordinary L20
           # CMaNGOS-proxy target must die by a real native↔2D world ACK.
           assert paid["native_2d_live_world_kills"] == 1, paid
+          # A separate retained-actor session must kill two distinct sourced
+          # targets without resets; this is not paid recovery or 100 mobs.
+          assert paid["native_2d_persistent_verified"] == 1, paid
+          assert paid["native_2d_persistent_targets_killed"] == 2, paid
           assert paid["native_2d_screen_complete"] is False, paid
           assert any(
               receipt.get("native_2d_fight", {}).get("native_2d_world_ticks", 0) > 0
