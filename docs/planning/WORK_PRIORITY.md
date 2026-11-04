@@ -1,11 +1,11 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `8271748ceb5e14f6583089456187d631c64a2cab`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
+Refreshed against main `4a3bc9cf6dba8b8158ab67bbf179895d2525f310`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
 
 ## Current M1 scoreboard
 
 - **M1 measured: 2.1148%** (`measured_fraction=0.0211477102`).
-- **28.169 / 1,332** measured gate-equivalents; **23 PASS / 18 PARTIAL** active-scope gate rows.
+- **28.169 / 1,332** measured gate-equivalents; **23 PASS / 9 PARTIAL** active-scope gate rows (retired P1/P2 partial rows excluded).
 - **0 / 148** certified checkpoints. The measured float is diagnostic coverage, not certification. Only Merge writes `M1_PASSES.tsv`.
 
 ## Immediate dependency-ordered queue
@@ -42,7 +42,7 @@ Refreshed against main `8271748ceb5e14f6583089456187d631c64a2cab`. Canonical led
 - **Druid L60 Balance P7.4** current-code PASS on both post-#840 heavy runs [#41786536534](https://github.com/dosibjrn/forever-sim/actions/runs/41786536534) and [#41786566461](https://github.com/dosibjrn/forever-sim/actions/runs/41786566461); the canonical receipt remains the single accepted row. No further P7.4 run.
 - Hunter L20 P3: `BLOCKED_NO_NAKED_SUCCESS`, zero paid source evaluations; no unchanged retry.
 - Mage L20 P3: preserve the 88/224 high-water; no unchanged retry.
-- **Mage L30 unrestricted P3:** Work2 PR #831 merged as `7c46654`; official recorder [#41793008067](https://github.com/dosibjrn/forever-sim/actions/runs/41793008067) completed SUCCESS and recorded **PARTIAL 129/224** (57.59%), up from 85/224. The exact no-record result used 44 paid evaluations and scored 85 native top-five items; Spell Power, Intellect and Hit are positive. Gate remains FAIL; no unchanged rerun. The canonical M1 score is now 2.1148%, 28.169/1,332 measured equivalents, 23 PASS / 18 PARTIAL, 0/148 certified.
+- **Mage L30 unrestricted P3:** Work2 PR #831 merged as `7c46654`; official recorder [#41793008067](https://github.com/dosibjrn/forever-sim/actions/runs/41793008067) completed SUCCESS and recorded **PARTIAL 129/224** (57.59%), up from 85/224. The exact no-record result used 44 paid evaluations and scored 85 native top-five items; Spell Power, Intellect and Hit are positive. Gate remains FAIL; no unchanged rerun. The canonical M1 score is now 2.1148%, 28.169/1,332 measured equivalents, 23 PASS / 9 PARTIAL, 0/148 certified.
 - Shaman L20 P3: the one light recorder #41789474594 returned `P3_NO_LEGAL_ITEMS_IN_CURRENT_DB`; this is a terminal measured FAIL, not an unmeasured gate or a PASS. Native source-candidate repair is queued as #847; no unchanged retry.
 
 ## Operating constraints
