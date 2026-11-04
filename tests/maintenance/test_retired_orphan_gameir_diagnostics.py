@@ -27,6 +27,9 @@ RETIRED_TOOLS = (
     "tools/wf240_source_joint_replay.py",
     "tools/wf241_source_joint_replay.py",
     "tools/wf250_non_druid_replay.py",
+    "tools/wf244_joint_multi_pull_replay.py",
+    "tools/wf245_joint_frontier_replay.py",
+    "tools/wf246_primary_stat_replay.py",
     "tools/wf242_multi_pull_replay.py",
     "tools/wf244_effect_batch_replay.py",
     "tools/wf257_l30_full_gear.py",
@@ -72,6 +75,9 @@ RETIRED_IMPORT_NAMES = (
     "wf240_source_joint_replay",
     "wf241_source_joint_replay",
     "wf250_non_druid_replay",
+    "wf244_joint_multi_pull_replay",
+    "wf245_joint_frontier_replay",
+    "wf246_primary_stat_replay",
     "wf242_multi_pull_replay",
     "wf244_effect_batch_replay",
     "wf257_l30_full_gear",
@@ -107,6 +113,9 @@ RETIRED_OUTPUTS = (
     "WF240_DRUID_L20_JOINT_REPLAY.json",
     "WF241_DRUID_L20_JOINT_REPLAY.json",
     "WF250_NON_DRUID_JOINT_REPLAY.json",
+    "WF244_INDEPENDENT_JOINT_REPEATED_PULL.json",
+    "WF245_INDEPENDENT_JOINT_REPLAY.json",
+    "WF246_PRIMARY_STATS_JOINT_REPLAY.json",
 )
 
 RETIRED_SOURCE_EVIDENCE = (
