@@ -1,13 +1,13 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `57f41743fdf5231d62c432fa2e24b4232ac47a82`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
+Refreshed against main `3c184737fd12bf6dbf3536ed5ef17b4c59e0c963`. Canonical ledger blob: `c45f50ea4fe1aad3d9cf972d24a1981b823600ad`.
 
 ## Current M1 scoreboard
 
 - **M1 measured: 2.1391%** (`measured_fraction=0.0213906002`).
 - **28.492 / 1,332** measured gate-equivalents; **23 PASS / 10 PARTIAL** active-scope gate rows (retired P1/P2 partial rows excluded).
 - **0 / 148** certified checkpoints. The measured float is diagnostic coverage, not certification. Only Merge writes `M1_PASSES.tsv`.
-- **Prio recheck — selected next Work1 action: `shaman:20:unrestricted:P3` Spell Power witness (#859).** The official Shaman row is now PARTIAL **66/204** and the exact remaining source-policy defect is a missing positive Spell Power witness for existing `lightning_bolt:915`: `native_spell_coefficients_applied=[]`, while native PreparedV2 coefficient transport is currently wired only for Mage L30. Extending that existing source-backed path is narrower than implementing the new native Priest L20 actor plus paid P4/P5 screen (#817), so it is the better expected M1 gain per work. Each added comparable assertion is **+0.000368 pp**; the count is unknown until a changed-HEAD run. #817 remains Work1's next task after #859; Work2 #845 remains independent. Canonical ledger blob `c45f50ea4fe1aad3d9cf972d24a1981b823600ad`; M1 measured **2.1391%** (`float=0.0213906002`), 28.492/1,332, 23 PASS / 10 PARTIAL, 0/148 certified.
+- **Prio recheck — selected next Work1 action: `shaman:20:unrestricted:P3` Spell Power witness (#859).** The official Shaman row is now PARTIAL **66/204** and the exact remaining source-policy defect is a missing positive Spell Power witness for existing `lightning_bolt:915`: `native_spell_coefficients_applied=[]`, while native PreparedV2 coefficient transport is currently wired only for Mage L30. Extending that existing source-backed path is narrower than implementing the new native Priest L20 actor plus paid P4/P5 screen (#817), so it is the better expected M1 gain per work. Each added comparable assertion is **+0.000368 pp**; the count is unknown until a changed-HEAD run. #817 remains Work1's next task after #859. Work2 #845/#851 is merged but remains blocked by proxy actor/weapon; Merge's single official command is posted, with no receipt/ledger row yet. Canonical ledger blob `c45f50ea4fe1aad3d9cf972d24a1981b823600ad`; M1 measured **2.1391%** (`float=0.0213906002`), 28.492/1,332, 23 PASS / 10 PARTIAL, 0/148 certified.
 
 ## Immediate dependency-ordered queue
 
@@ -29,8 +29,9 @@ Refreshed against main `57f41743fdf5231d62c432fa2e24b4232ac47a82`. Canonical led
 ### Parallel Work2 — Paladin L20 unrestricted P3 source-backed actor and weapon
 
 - Existing owner task [#845](https://github.com/dosibjrn/forever-sim/issues/845), independent of Work1's #859/#817 sequence but potentially able to reuse #817's native L20 actor.
-- Work2 PR [#851](https://github.com/dosibjrn/forever-sim/pull/851) fixed the first production search failure: no-record run [#41799055428](https://github.com/dosibjrn/forever-sim/actions/runs/41799055428) moved source-naked from 0 attempts/0 evaluated to **12 attempts/11 evaluated**, selecting sourced `holy_strike:1866`, within the 44-evaluation cap. The actual P3 result remains **BLOCKED** (`P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON`), with **zero eligible source evaluations**, because actor base stats and the 14-DPS weapon are proxies.
-- **Next action:** establish source-backed Paladin L20 actor and equipped-weapon facts in MythicSim; reuse #817's native level-aware actor if its real source contract supports Paladin, rather than creating another Forever actor provider. Then run one changed-HEAD no-record P3 producer proving eligible paid item/stat scoring. No proxy credit, synthetic action, global default change or unchanged official recorder.
+- Work2 PR [#851](https://github.com/dosibjrn/forever-sim/pull/851) is now **MERGED** as `bafafb1ecbd28872c7997a295e81c35860390a82`. Its exact changed-HEAD no-record result [#41799055428](https://github.com/dosibjrn/forever-sim/actions/runs/41799055428) moved source-naked from 0 attempts/0 evaluated to **12 attempts/11 evaluated**, selecting sourced `holy_strike:1866`, within the 44-evaluation cap. The actual P3 result remains **BLOCKED** (`P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON`), with **zero eligible source evaluations**, because actor base stats and the 14-DPS weapon are proxies.
+- Merge has posted the single `/m1-run paladin:20:unrestricted:P3` command on merged PR #851; the issue handoff does not yet expose a run ID and the canonical ledger has no Paladin row. Do not post a duplicate command or claim M1 credit.
+- **Next action:** establish source-backed Paladin L20 actor and equipped-weapon facts in MythicSim; reuse #817's native level-aware actor if its real source contract supports Paladin, rather than creating another Forever actor provider. Then let Merge's one official recorder determine eligibility. No proxy credit, synthetic action, global default change or unchanged producer.
 
 ## Completed / no unchanged redispatch
 
