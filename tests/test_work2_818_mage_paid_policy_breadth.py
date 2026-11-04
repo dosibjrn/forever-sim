@@ -233,3 +233,104 @@ def test_paid_p3_existing_zero_witness_survives_missing_axis_receipt():
         weights, (), ("spirit", "stamina"))
     assert result == ["spirit"]
     assert weights == {"spirit": 0.0}
+
+
+def test_paid_equal_objectives_produce_real_zero_receipt_not_fabricated_weight(monkeypatch):
+    """A target-defeating paid baseline and perturbation establish exact zero."""
+    source = SimpleNamespace(id="mage-source-policy", provenance={"source": "fixture"})
+    ir = SimpleNamespace(id="mage-l30", policies=(source,))
+    calls = []
+
+    def evaluate(candidate, *, level, policy_override, opening_action_ids,
+                 schedule_incoming_attacks):
+        calls.append(getattr(candidate, "delta", None))
+        return (SimpleNamespace(seconds_per_mob=10.0),
+                SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)), {})
+
+    monkeypatch.setattr(gear, "apply_stat_delta",
+                        lambda ir_arg, stat, delta: SimpleNamespace(delta=delta))
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", evaluate)
+    receipt = budgeted.paid_source_policy_stat_witness(
+        ir, stat="intellect", level=30, probe_deltas=(20.,),
+        max_evaluations=2)
+    assert calls == [None, 20.]
+    assert receipt["status"] == "MEASURED_ZERO_SOURCE_POLICY_WITNESS"
+    assert receipt["weight_s_saved_per_mob_per_unit"] == 0.0
+    assert receipt["baseline_seconds_per_mob"] == 10.0
+    assert receipt["perturbed_seconds_per_mob"] == 10.0
+    assert receipt["delta"] == 20.0
+    assert receipt["paid_evaluations"] == 2
+    assert receipt["policy_id"] == "mage-source-policy"
+    assert receipt["method"] == (
+        "same_paid_source_policy_real_combat_and_recovery_before_after")
+
+
+def test_positive_paid_witness_wins_over_earlier_exact_zero(monkeypatch):
+    a = SimpleNamespace(id="source-zero", provenance={"source": "fixture"})
+    b = SimpleNamespace(id="source-positive", provenance={"source": "fixture"})
+    ir = SimpleNamespace(id="mage-l30", policies=(a, b))
+    calls = []
+
+    def evaluate(candidate, *, level, policy_override, opening_action_ids,
+                 schedule_incoming_attacks):
+        delta = getattr(candidate, "delta", None)
+        calls.append((policy_override.id, delta))
+        seconds = 9.0 if policy_override.id == "source-positive" and delta else 10.0
+        return (SimpleNamespace(seconds_per_mob=seconds),
+                SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)), {})
+
+    monkeypatch.setattr(gear, "apply_stat_delta",
+                        lambda ir_arg, stat, delta: SimpleNamespace(delta=delta))
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", evaluate)
+    receipt = budgeted.paid_source_policy_stat_witness(
+        ir, stat="spirit", level=30, probe_deltas=(20.,),
+        max_evaluations=4)
+    assert calls == [
+        ("source-zero", None), ("source-zero", 20.),
+        ("source-positive", None), ("source-positive", 20.)]
+    assert receipt["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
+    assert receipt["policy_id"] == "source-positive"
+    assert receipt["paid_evaluations"] == 4
+    assert receipt["weight_s_saved_per_mob_per_unit"] == 0.05
+
+
+def test_p3_paid_zero_only_populates_missing_weight_after_actual_receipt():
+    from tools.wf_gate_p3_live import _accept_paid_p3_stat_witness
+
+    weights = {"spell_power": 0.2, "hit": -0.04, "spirit": 0.0}
+    zero = {"stat": "stamina", "status": "MEASURED_ZERO_SOURCE_POLICY_WITNESS",
+            "weight_s_saved_per_mob_per_unit": 0.0}
+    assert _accept_paid_p3_stat_witness(weights, "stamina", zero)
+    assert weights == {"spell_power": 0.2, "hit": -0.04,
+                       "spirit": 0.0, "stamina": 0.0}
+    assert not _accept_paid_p3_stat_witness(weights, "spirit",
+        {**zero, "stat": "spirit"})
+    assert not _accept_paid_p3_stat_witness(weights, "strength",
+        {**zero, "stat": "strength", "weight_s_saved_per_mob_per_unit": -0.2})
+    assert not _accept_paid_p3_stat_witness(weights, "strength",
+        {"stat": "strength", "status": "NO_POSITIVE_SOURCE_POLICY_WITNESS",
+         "weight_s_saved_per_mob_per_unit": 0.0})
+    assert not _accept_paid_p3_stat_witness(weights, "strength",
+        {"stat": "strength", "status": "MEASURED_ZERO_SOURCE_POLICY_WITNESS",
+         "weight_s_saved_per_mob_per_unit": float("nan")})
+    assert "strength" not in weights
+
+
+def test_negative_paid_effect_is_never_recoded_as_zero(monkeypatch):
+    source = SimpleNamespace(id="source-negative", provenance={"source": "fixture"})
+    ir = SimpleNamespace(id="mage-l30", policies=(source,))
+
+    def evaluate(candidate, *, level, policy_override, opening_action_ids,
+                 schedule_incoming_attacks):
+        return (SimpleNamespace(seconds_per_mob=(
+                    11.0 if getattr(candidate, "delta", None) else 10.0)),
+                SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)), {})
+
+    monkeypatch.setattr(gear, "apply_stat_delta",
+                        lambda ir_arg, stat, delta: SimpleNamespace(delta=delta))
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", evaluate)
+    receipt = budgeted.paid_source_policy_stat_witness(
+        ir, stat="agility", level=30, probe_deltas=(20.,),
+        max_evaluations=2)
+    assert receipt["paid_evaluations"] == 2
+    assert receipt["status"] == "NO_POSITIVE_SOURCE_POLICY_WITNESS"
