@@ -228,6 +228,9 @@ def _query_native_spell_coefficients(
             raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_DUPLICATE_COEFFICIENT_CONFLICT")
         coefficients[spell_id] = coefficient
     if not coefficients:
+        if class_key == "shaman":
+            raise NativeItemOptionsError(
+                "P3_NATIVE_SHAMAN_LIGHTNING_BOLT_915_COEFFICIENT_UNAVAILABLE")
         raise NativeItemOptionsError("P3_NATIVE_SPELLBOOK_NO_DAMAGE_COEFFICIENTS")
     reference = prepared.get("reference")
     engine_revision = (
