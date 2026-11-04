@@ -162,3 +162,73 @@ def score_source_priest_l20_candidates(binary: str | Path,
         "native_2d_screen_complete": False,
         "native_candidate_search_budget_s": budget_s,
     }
+
+
+def score_native_priest_l20_item_candidates(binary: str | Path,
+                                          request_file: str | Path,
+                                          native_item_options: list[dict], *,
+                                          score_request=None,
+                                          budget_s: float = 6.0,
+                                          max_paid_builds: int = 4) -> dict:
+    """Score native item-options proposals as actual whole-build requests.
+
+    The level-20 request supplies the unchanged actor, talent, APL and world.
+    MythicSim's item-options supplies each item ID, and the native prepare
+    endpoint alone determines which equipment slot / eligibility applies.
+    No Python item model, gear stats, or legality filter is involved.
+    """
+    import copy
+    from tempfile import TemporaryDirectory
+
+    try:
+        source = json.loads(Path(request_file).read_text(encoding="utf-8"))
+        actor = source["raid"]["parties"][0]["players"][0]
+        items = actor["equipment"]["items"]
+    except (OSError, ValueError, KeyError, IndexError, TypeError) as exc:
+        raise ValueError("P4_P5_NATIVE_SOURCE_REQUEST_UNREADABLE") from exc
+    if (not isinstance(actor, dict) or actor.get("class") != "ClassPriest"
+            or type(actor.get("level")) is not int or actor["level"] != 20):
+        raise ValueError("P4_P5_NATIVE_PRIEST_L20_SOURCE_REQUEST_REQUIRED")
+    if items != []:
+        raise ValueError("P4_P5_NATIVE_ITEM_PROPOSALS_REQUIRE_EMPTY_SOURCE_GEAR")
+    if not isinstance(native_item_options, list):
+        raise ValueError("P4_P5_NATIVE_ITEM_PROPOSALS_INVALID")
+
+    # Propose a few different source-returned slots, not a duplicate list of
+    # the same item type. Native Rust still has the only equip decision.
+    proposals = []
+    used_slots = set()
+    for option in native_item_options:
+        if not isinstance(option, dict):
+            continue
+        item_id, slot = option.get("item_id"), option.get("slot")
+        if (type(item_id) is not int or item_id <= 0
+                or not isinstance(slot, str) or not slot
+                or slot in used_slots):
+            continue
+        used_slots.add(slot)
+        proposals.append((item_id, slot))
+        if len(proposals) >= max_paid_builds - 1:
+            break
+
+    with TemporaryDirectory(prefix="native-priest-l20-options-") as directory:
+        folder = Path(directory)
+        (folder / "000-source-baseline.json").write_text(
+            json.dumps(source), encoding="utf-8")
+        for index, (item_id, _slot) in enumerate(proposals, start=1):
+            candidate = copy.deepcopy(source)
+            # Item specs are a native request transport only. The selected
+            # engine resolves the item's real slot and accepts/refuses it.
+            candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"] = [
+                {"id": item_id}]
+            (folder / f"{index:03d}-native-item-{item_id}.json").write_text(
+                json.dumps(candidate), encoding="utf-8")
+        receipt = score_source_priest_l20_candidates(
+            binary, folder, score_request=score_request, budget_s=budget_s,
+            max_paid_builds=max_paid_builds)
+    return {
+        **receipt,
+        "native_item_options_proposed": len(proposals),
+        "native_item_option_source_slots_proposed": [slot for _, slot in proposals],
+        "native_candidate_provenance": "MYTHICSIM_ITEM_OPTIONS_AND_SOURCE_L20_REQUEST",
+    }
