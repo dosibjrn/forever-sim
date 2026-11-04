@@ -226,11 +226,29 @@ jobs:
           python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
           echo "Measured production HEAD: $(git rev-parse HEAD)"
           read -r -a entries <<< "$TARGETS"
+          # An explicit heavy Priest P4+P5 batch must execute exactly ONE
+          # 300s source-native cold producer and record two independent gates.
+          # Other classes, gates, and single-target runs stay unchanged.
+          priest_pair=false
+          if [[ "$ALLOW_HEAVY" == true &&
+                " $TARGETS " == *" priest:20:unrestricted:P4 "* &&
+                " $TARGETS " == *" priest:20:unrestricted:P5 "* ]]; then
+            priest_pair=true
+          fi
           echo "## M1 live-gate results" >> "$GITHUB_STEP_SUMMARY"
           echo "| Gate | Verdict | Measured component / objective |" >> "$GITHUB_STEP_SUMMARY"
           echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
           for entry in "${entries[@]}"; do
+            if [[ "$priest_pair" == true &&
+                  "$entry" == priest:20:unrestricted:P5 ]]; then
+              continue  # P5 is recorded in the same P4 native cold process.
+            fi
             IFS=: read -r class level spec gate <<< "$entry"
+            cli_gate="$gate"
+            if [[ "$priest_pair" == true &&
+                  "$entry" == priest:20:unrestricted:P4 ]]; then
+              cli_gate="P4+P5"
+            fi
             echo "::group::M1 $entry"
             report="$(mktemp)"
             rc=0
@@ -312,26 +330,27 @@ jobs:
               unset FOREVER_P7_ACCEPTED_PRIOR_RECEIPTS || true
             fi
             timeout "${timeout_s}s" python tools/wf_gate.py --class "$class" --level "$level" \
-              --spec "$spec" --gate "$gate" --record-progress --out "$report" || rc=$?
+              --spec "$spec" --gate "$cli_gate" --record-progress --out "$report" || rc=$?
             python -c 'import json,sys; from pathlib import Path; d=json.loads(Path(sys.argv[1]).read_text()); rc=int(sys.argv[2]); assert d["status"] in ("PASS","FAIL","BLOCKED") and rc in (0,1) and ((rc==0)==(d["status"]=="PASS")), "Incomplete or inconsistent live gate"; print(json.dumps(d, ensure_ascii=False))' "$report" "$rc"
             python - "$report" "$entry" <<'PY'
           import json, os, sys
           from pathlib import Path
           d=json.loads(Path(sys.argv[1]).read_text())
-          item=d["results"][0]
-          measure=(
-              f'{item["verified"]:g}/{item["applicable"]:g}'
-              if isinstance(item.get("verified"), (int, float))
-              and isinstance(item.get("applicable"), (int, float))
-              else f'{item["dps_objective_actual"]:g}/{item["dps_objective_required"]:g} DPS'
-              if "dps_objective_actual" in item
-              else f'{item["joint_cold_world_dps"]:g} DPS (P7.5 prior floor unavailable)'
-              if "joint_cold_world_dps" in item
-              else f'T30/T300 proxy={item["source_replay_Tfirst_Tsecond"]:.5f}'
-              if isinstance(item.get("source_replay_Tfirst_Tsecond"), (float, int))
-              else "not measurable")
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
-              f.write(f'| `{sys.argv[2]}` | {d["status"]} | {measure} |\n')
+              for item in d["results"]:
+                  measure=(
+                      f'{item["verified"]:g}/{item["applicable"]:g}'
+                      if isinstance(item.get("verified"), (int, float))
+                      and isinstance(item.get("applicable"), (int, float))
+                      else f'{item["dps_objective_actual"]:g}/{item["dps_objective_required"]:g} DPS'
+                      if "dps_objective_actual" in item
+                      else f'{item["joint_cold_world_dps"]:g} DPS (P7.5 prior floor unavailable)'
+                      if "joint_cold_world_dps" in item
+                      else f'T30/T300 proxy={item["source_replay_Tfirst_Tsecond"]:.5f}'
+                      if isinstance(item.get("source_replay_Tfirst_Tsecond"), (float, int))
+                      else "not measurable")
+                  token=sys.argv[2].rsplit(":", 1)[0] + ":" + item["gate"]
+                  f.write(f'| `{token}` | {item["status"]} | {measure} |\n')
           PY
             rm -f "$report" "${accepted_receipts:-}"
             unset accepted_receipts || true
