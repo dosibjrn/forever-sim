@@ -1,13 +1,13 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `3c51d6012e18cdd27ad57b14f66b9af2046cb361`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
+Refreshed against main `ce7b50eeef8028d5bb316580558d00ac8cb883da`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
 
 ## Current M1 scoreboard
 
 - **M1 measured: 2.1148%** (`measured_fraction=0.0211477102`).
 - **28.169 / 1,332** measured gate-equivalents; **23 PASS / 9 PARTIAL** active-scope gate rows (retired P1/P2 partial rows excluded).
 - **0 / 148** certified checkpoints. The measured float is diagnostic coverage, not certification. Only Merge writes `M1_PASSES.tsv`.
-- **Prio recheck:** Work1's Shaman P3 repair is already in draft MythicSim PR #11; do not compete with #847. The best independent next action remains Paladin L20 P3 [#845](https://github.com/dosibjrn/forever-sim/issues/845): two official runs are blocked before paid scoring, 6,849 class-eligible items exist, and the tested stateful + source-auto-fallback path supports one bounded 44-evaluation producer. Full-PASS ceiling **+0.07508 pp**, not forecast. The Mage/Priest partials and saturated Druid P6 rows offer no narrower evidenced action; no unmeasured likely-PASS path is documented.
+- **Prio recheck:** Work1 #847 is in draft MythicSim PR #11; Work2 #845 is in draft Forever PR #851. PR #851 is diagnostic only: it exposes the prefix `source_naked` failure and demonstrates a stateful auto-fallback `AutoAttackSwing` within 44 evaluations, but its actor stats and 14-DPS weapon are proxies, so no P3 coverage is earned. The next unstarted gate task is Priest L20 P4/P5 [#817](https://github.com/dosibjrn/forever-sim/issues/817) after #847: the official baseline is BLOCKED before paid screens; a shared native L20 actor + paid whole-build path has a conditional **+0.05005 pp** partial opportunity for 2/6 on each gate. Mage P4/P5 partials still lack full 30/300-second search and independent 100-mob/native-2D acceptance; Mage/Priest P3 partials have multiple unmet stat axes; Druid P6 is saturated at 200/200. No documented cheap unmeasured likely-PASS path.
 
 ## Immediate dependency-ordered queue
 
@@ -26,7 +26,8 @@ Refreshed against main `3c51d6012e18cdd27ad57b14f66b9af2046cb361`. Canonical led
 - Light recorders [#41787910137](https://github.com/dosibjrn/forever-sim/actions/runs/41787910137) and duplicate [#41787945906](https://github.com/dosibjrn/forever-sim/actions/runs/41787945906) returned **BLOCKED_NO_NAKED_SUCCESS**, `real_source_search_evaluated=0`; no paid scoring and no ledger row.
 - Unlike Shaman, the canonical catalogue has **6,849 Paladin class-eligible item IDs**. The first stop is the `source_naked` no-winner path before gear scoring, not missing item candidates.
 - **Code evidence on main:** `tools/wf_gate_p3_live.py::run_live` omits backend flags, so `run_source_budgeted_gear` uses its default `policy_search_backend="prefix"`. The same gear runner supports `policy_search_backend="stateful", stateful_search_auto_fallback=True`; `tests/generic/search/test_wf287_source_auto_continuation.py::test_same_auto_continuation_reoptimizes_named_gear_and_talent_root` already exercises that path for Paladin L20 and requires `EVALUATED_BOUNDED` with `AUTO_ONLY_FALLBACK`. Its companion test verifies a real `AutoAttackSwing` timeline event. This is a source-backed, tested alternative—not proof of the P3 root cause.
-- **Next action:** reproduce the Paladin L20 P3 `source_naked` stage with the tested stateful + source-auto-fallback configuration under the existing 44-evaluation cap. Wire it into the P3 caller only if a changed-HEAD no-record producer demonstrates a real source-backed winner and paid item/stat scoring. Do not change global defaults, synthesize an action or accept a proxy.
+- **In-flight draft PR #851:** preserves the real prefix `source_naked` trace and reproduces stateful + `AUTO_ONLY_FALLBACK` under 44 evaluations. It verifies a real `AutoAttackSwing`, but the actor base stats and 14-DPS weapon are explicitly scenario proxies; this is diagnostic only, not a source-backed P3 winner or M1 coverage. Keep #845 open.
+- **Next action after #851:** use the production trace to isolate the first executable failure. Establish source-backed Paladin L20 actor/weapon context only if the trace proves it is required; wire stateful fallback only if a changed-HEAD no-record P3 producer then demonstrates a source-backed winner and paid item/stat scoring. Do not stop at another report-only change, change global defaults, synthesize an action or accept a proxy.
 - One changed-HEAD no-record light producer must show `real_source_search_evaluated>0` and actual first paid item/stat assertions (or the exact remaining BLOCKED reason). Merge records once only if eligible measured coverage results. No unchanged retry.
 - Conditional full-PASS ceiling: `1/1332` = **+0.07508 percentage points**; near-term gain and cost remain unknown. This is the next independent Work2 task after #831's receipt, while Work1 remains on the separate Rust Shaman/Player work.
 
