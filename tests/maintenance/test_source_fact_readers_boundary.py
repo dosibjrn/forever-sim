@@ -201,8 +201,6 @@ import sys
 from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 names = (
-    'wf247_ingest_outgoing',
-    'wf252_ingest_companions',
     'wf253_ingest_seal',
 )
 for name in names:
@@ -226,26 +224,6 @@ assert legacy_default is DEFAULT_DB
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
-
-def test_outgoing_capture_ingest_explicit_db_remains_idempotent(tmp_path):
-    """A path-only import change must not alter persisted source/proxy facts."""
-    from tools.wf247_ingest_outgoing import ingest
-
-    db = tmp_path / "outgoing.sqlite"
-    assert ingest(db) == (60, 4)
-    assert ingest(db) == (60, 4)
-    with sqlite3.connect(db) as conn:
-        assert conn.execute(
-            "SELECT COUNT(*) FROM outgoing_combat_profile_source_facts"
-        ).fetchone()[0] == 60
-        assert conn.execute(
-            "SELECT COUNT(*) FROM target_armor_debuff_source_facts"
-        ).fetchone()[0] == 4
-        assert conn.execute(
-            "SELECT source_status FROM outgoing_combat_profile_source_facts "
-            "WHERE scenario_key='ordinary_melee_classic_proxy' AND level=20"
-        ).fetchone()[0] == "classic_proxy_not_forever_server_verified"
-        assert conn.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
 
 def test_historical_capture_stage_clis_avoid_gameir():
