@@ -289,6 +289,8 @@ def score_source_priest_l20_candidates(binary: str | Path,
     persistent_attempted = 0
     persistent_verified = 0
     persistent_targets_killed = 0
+    persistent_candidate = None
+    persistent_request_sha256 = None
     if world_screen is not None:
         from tempfile import TemporaryDirectory
         ranked = sorted(
@@ -338,6 +340,8 @@ def score_source_priest_l20_candidates(binary: str | Path,
                             persistent_verified += 1
                             persistent_targets_killed = retained[
                                 "native_2d_persistent_world_targets_killed"]
+                            persistent_candidate = candidate["candidate"]
+                            persistent_request_sha256 = candidate["native_request_sha256"]
                         except (OSError, ValueError, RuntimeError, TimeoutError,
                                 AssertionError, KeyError, TypeError,
                                 subprocess.SubprocessError) as exc:
@@ -352,9 +356,15 @@ def score_source_priest_l20_candidates(binary: str | Path,
                 # lethal world ACK, without treating either as a 100-mob screen.
                 if live.get("native_2d_world_target_killed") is True:
                     live_killed += 1
-                    live_kill_candidate = candidate["candidate"]
-                    live_kill_request_sha256 = candidate["native_request_sha256"]
-                    break
+                    if live_kill_candidate is None:
+                        live_kill_candidate = candidate["candidate"]
+                        live_kill_request_sha256 = candidate["native_request_sha256"]
+                    # A lethal one-mob ACK is not a retained-actor screen.
+                    # If this paid candidate cannot continue across targets,
+                    # let another *already native-paid* build attempt the
+                    # same causal persistent world, without extra scoring.
+                    if persistent_world is None or persistent_candidate is not None:
+                        break
             except (OSError, ValueError, RuntimeError, TimeoutError,
                     AssertionError, KeyError, TypeError,
                     subprocess.SubprocessError) as exc:
@@ -376,6 +386,8 @@ def score_source_priest_l20_candidates(binary: str | Path,
         "native_2d_persistent_attempted": persistent_attempted,
         "native_2d_persistent_verified": persistent_verified,
         "native_2d_persistent_targets_killed": persistent_targets_killed,
+        "native_2d_persistent_candidate": persistent_candidate,
+        "native_2d_persistent_request_sha256": persistent_request_sha256,
         "native_2d_screen_complete": False,
         "native_candidate_search_budget_s": budget_s,
     }
