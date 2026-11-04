@@ -15,6 +15,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPECTED_WINNER_SHA256 = "67069c454ae125cecd958cf8987ba9af467a52f0e04f57ee0e3c44bc3ee48e2b"
+DIAGNOSTIC_PHASE = "baseline-before-native-iteration-override"
 ITERATION_GEAR = [
     (16441, 8692), (281281, 904), (231659, 7882), (277206, 1888),
     (21351, 7648), (272571, 7665), (22501, 8491), (240045, None),
@@ -82,6 +83,7 @@ def main():
         first_world_duration = live["per_iteration"][0]["duration_s"]
         report = {
             "gate": "P7.4",
+            "diagnostic_phase": DIAGNOSTIC_PHASE,
             "mode": "stochastic",
             "iterations": args.iterations,
             "cold_winner_request_sha256": EXPECTED_WINNER_SHA256,
