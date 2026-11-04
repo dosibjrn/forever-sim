@@ -9,7 +9,8 @@ import pytest
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.source_budgeted_prefix import (
-    AUTO_ONLY_FALLBACK, source_prefix_envelope, _verified_auto_fallback)
+    AUTO_ONLY_FALLBACK, source_prefix_envelope, run_source_budgeted_prefix,
+    _verified_auto_fallback)
 from src.v2.source_stateful_budgeted import run_source_stateful_budgeted
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_stateful_budgeted import _make_policy
@@ -57,6 +58,66 @@ def test_missing_auto_source_or_wrong_mode_is_not_legal_fallback():
         ir_slice=no_provenance,max_l2_attempts=12,max_event_transitions=2500,
         use_l1=False,search_auto_fallback=True)
     assert result['status']=='BLOCKED_NO_EXECUTABLE_ACTIONS'
+
+
+def test_strict_p3_auto_fallback_rejects_paladin_proxy_actor_and_weapon():
+    ir=build_game_ir_slice(class_key='paladin',level=20)
+    assert ir.actor.metadata['base_stats_are_zero_proxy'] is True
+
+    # The generic exploratory path can see this captured auto, but its
+    # provenance explicitly labels both actor/weapon values as proxies.
+    exploratory=source_prefix_envelope(
+        ir,level=20,include_auto_fallback=True)
+    assert AUTO_ONLY_FALLBACK in exploratory['fillers']
+
+    strict=source_prefix_envelope(
+        ir,level=20,include_auto_fallback=True,
+        require_source_verified_auto=True)
+    assert AUTO_ONLY_FALLBACK not in strict['fillers']
+    assert strict['auto_fallback_ids']==()
+    assert len(strict['auto_fallback_rejections'])==1
+    rejection=strict['auto_fallback_rejections'][0]
+    assert rejection['id']==ir.auto_attacks[0].id
+    assert {
+        'actor_base_stats_are_zero_proxy',
+        'actor_provenance_declares_proxy',
+        'actor_source_identity_missing',
+        'auto_provenance_declares_proxy',
+    } <= set(rejection['reasons'])
+    assert any(row['reason']=='auto_fallback_not_source_verified'
+               for row in strict['blocked'])
+
+
+def test_paladin_l20_p3_prefix_reports_exact_source_naked_fallback_block():
+    from src.v2.source_budgeted_gear import run_source_budgeted_gear
+
+    ir=build_game_ir_slice(class_key='paladin',level=20)
+    prefix=run_source_budgeted_prefix(
+        class_key='paladin',level=20,max_evaluations=12,ir_slice=ir,
+        include_auto_fallback=True,require_source_verified_auto=True)
+    assert prefix['status']=='BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK'
+    assert prefix['attempted']==0 and prefix['evaluated']==0
+    assert 'holy_strike:1866' in prefix['envelope']['actions']
+    assert prefix['envelope']['fillers']==()
+    assert prefix['envelope']['auto_fallback_ids']==()
+    assert prefix['envelope']['auto_fallback_rejections']
+    assert any(row['reason']=='auto_fallback_not_source_verified'
+               for row in prefix['envelope']['blocked'])
+
+    gear=run_source_budgeted_gear(
+        class_key='paladin',level=20,max_evaluations=12,
+        initial_search=12,search_per_gear=1,max_gear_states=1,
+        probe_stats=('strength',),probe_deltas=(5.,),
+        ir_slice=ir,policy_search_backend='prefix',
+        prefix_search_auto_fallback=True,
+        prefix_require_source_verified_auto=True)
+    assert gear['status']=='BLOCKED_NO_NAKED_SUCCESS'
+    assert gear['attempted']==0 and gear['evaluated']==0
+    assert gear['source_naked_search_status']=='BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK'
+    diagnostic=gear['source_naked_diagnostic']
+    assert diagnostic['actions']==prefix['envelope']['actions']
+    assert diagnostic['fillers']==()
+    assert diagnostic['auto_fallback_rejections']
 
 
 def test_auto_continuation_uses_real_existing_executor_not_fake_action():
