@@ -121,6 +121,9 @@ RETIRED_TOOLS = (
     "tools/wf_feral01b_source_damage_probe.py",
     "tools/wf_feral01c2c_replay.py",
     "tools/wf_feral01c2d1_replay.py",
+    # WF326/WF327 orphaned Druid L20 GameIR/SQLite evidence generators; retain reports.
+    "tools/wf326_druid20_slot_search.py",
+    "tools/wf327_druid_l20_action_proxy.py",
     # WF325 scratch-path-only replay drivers and WF347 fixed-policy HP5 probe.
     "tools/wf325_druid_l20_blind_joint.py",
     "tools/wf325_druid_l20_paid_persistent_replay.py",
@@ -244,6 +247,8 @@ RETIRED_IMPORT_NAMES = (
     "wf_feral01b_source_damage_probe",
     "wf_feral01c2c_replay",
     "wf_feral01c2d1_replay",
+    "wf326_druid20_slot_search",
+    "wf327_druid_l20_action_proxy",
     "wf325_druid_l20_blind_joint",
     "wf325_druid_l20_paid_persistent_replay",
     "wf347_hp5_persistent_probe",
@@ -392,6 +397,9 @@ RETAINED_HISTORICAL_EVIDENCE = (
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
     "evidence/wf357/WF357_L30_P3_RECOVERY_RECALIBRATION.json",
+    # Preserve original WF326/WF327 reports after deleting their orphaned generators.
+    "evidence/wf326/WF326_SLOT_SEARCH_EVIDENCE.json",
+    "evidence/wf327/WF327_DRUID20_ACTION_PROXY_AND_L2.json",
     # Preserve the original measured results; retire only the one-off producers.
     "evidence/wf325/WF325_BLIND_JOINT.json",
     "evidence/wf325/WF325_REPLAYED_BUDGETED_L2_AND_100MOB.json",

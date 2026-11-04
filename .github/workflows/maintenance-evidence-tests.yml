@@ -77,6 +77,8 @@ on:
       - 'tools/wf_feral01b_source_damage_probe.py'
       - 'tools/wf_feral01c2c_replay.py'
       - 'tools/wf_feral01c2d1_replay.py'
+      - 'tools/wf326_druid20_slot_search.py'
+      - 'tools/wf327_druid_l20_action_proxy.py'
       - 'tools/wf325_druid_l20_blind_joint.py'
       - 'tools/wf325_druid_l20_paid_persistent_replay.py'
       - 'tools/wf347_hp5_persistent_probe.py'
