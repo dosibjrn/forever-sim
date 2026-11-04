@@ -68,7 +68,16 @@ def test_independent_search_scores_pet_with_same_incoming_recovery_objective():
         max_allocations=2,screening_gear_count=1,finalists=1,policy_cap=5,beam_width=1)
     winner=result['independent_winner']
     assert winner['seconds_per_mob']>0
-    assert len(winner['gear_slots'])==16
+    gear_slots = set(winner['gear_slots'])
+    core_slots = {
+        'head', 'neck', 'shoulder', 'back', 'chest', 'wrist', 'hands',
+        'waist', 'legs', 'feet', 'ring1', 'ring2', 'trinket1',
+        'trinket2', 'weapon', 'ranged',
+    }
+    assert core_slots <= gear_slots
+    # Source-verified Hunter weapon packages may add an offhand; the shared
+    # selector also includes real shirt/relic catalogue slots when available.
+    assert gear_slots - core_slots <= {'offhand', 'shirt', 'relic'}
     assert winner['best_policy']['companion_policies']
     assert winner['talent_allocation']=={}  # explicitly incomplete source, not 11 points silently granted
     assert any(p['damage_by_role']['pet']>0 for p in winner['best_policy']['pulls'])
