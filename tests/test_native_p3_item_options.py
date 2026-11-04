@@ -414,7 +414,7 @@ def test_selected_engine_workflow_runs_paladin_l20_native_p3_without_record():
     assert 'GH_TOKEN: ${{ github.token }}' in paladin
     assert 'FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine' in paladin
     assert 'FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine' in paladin
-    assert r'\\${{' not in paladin
+    assert r'\${{' not in paladin
     assert 'row["native_item_options_status"] == "ok"' in paladin
     assert 'row["native_unverified_candidate_count"] == 0' in paladin
     assert 'row["native_excluded_non_client_item_count"] > 0' in paladin
