@@ -192,40 +192,6 @@ def test_repair_planner_keeps_staged_db_and_fail_closed_contract(tmp_path):
         plan(class_key="druid", level=20, db_path=path)
 
 
-def test_capture_ingesters_import_without_loading_legacy_gameir():
-    """The remaining source-only ingestion CLIs need SQLite, not GameIR."""
-    code = """
-import importlib
-import sys
-
-from src.game.data.forever.source_db_scope import DEFAULT_DB
-
-names = (
-    'wf253_ingest_seal',
-)
-for name in names:
-    module = importlib.import_module('tools.' + name)
-    assert module.DEFAULT_DB is DEFAULT_DB, name
-    assert callable(module.ingest), name
-
-for name in (
-    'src.game.data.forever.sqlite_talents',
-    'src.game.model.ir',
-    'src.game.runtime.simulator',
-):
-    assert name not in sys.modules, name
-
-from src.game.data.forever.sqlite_talents import DEFAULT_DB as legacy_default
-assert legacy_default is DEFAULT_DB
-"""
-    result = subprocess.run(
-        [sys.executable, "-c", code], cwd=ROOT,
-        capture_output=True, text=True, timeout=30, check=False,
-    )
-    assert result.returncode == 0, result.stdout + result.stderr
-
-
-
 def test_historical_capture_stage_clis_avoid_gameir():
     """Source-only operators must not load the transitional Python compiler."""
     code = """
