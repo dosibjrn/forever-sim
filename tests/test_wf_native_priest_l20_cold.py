@@ -620,7 +620,17 @@ def test_priest_native_p6_reuses_real_frozen_100mob_receipts_without_replay():
     changed["native_cold_final_300"]["real_100mob_receipt"][
         "native_2d_persistent_elapsed_seconds"] = 4000.0
     changed["native_cold_final_300"]["route_s_per_mob"] = 40.0
-    assert "P6_NATIVE_COLD_NUMERIC_SATURATION_FAIL" in (
+    # A substantially BETTER 300s finalist must not be rejected.
+    assert native_cold_p6_verdict(changed)["status"] == "PASS"
+    changed["native_cold_final_300"]["real_100mob_receipt"][
+        "native_2d_persistent_elapsed_seconds"] = 4242.0
+    changed["native_cold_final_300"]["route_s_per_mob"] = 42.42
+    # Less than 1% slower is within the owner-approved tolerance.
+    assert native_cold_p6_verdict(changed)["status"] == "PASS"
+    changed["native_cold_final_300"]["real_100mob_receipt"][
+        "native_2d_persistent_elapsed_seconds"] = 4250.0
+    changed["native_cold_final_300"]["route_s_per_mob"] = 42.50
+    assert "P6_300S_REGRESSION_EXCEEDS_1_PERCENT" in (
         native_cold_p6_verdict(changed)["reasons"])
     changed = copy.deepcopy(cold)
     changed["native_cold_native_paid_after_30"] = 0
