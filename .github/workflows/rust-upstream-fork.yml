@@ -29,6 +29,7 @@ on:
       - integrations/mythicsim-rust/test_port_native_entangling_roots_dot.py
       - integrations/mythicsim-rust/port_native_typed_rng.py
       - integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
+      - integrations/mythicsim-rust/port_native_sim_iterations.py
       - integrations/mythicsim-rust/port_native_persistent_target.py
       - integrations/mythicsim-rust/test_port_native_early_retarget.py
 
@@ -58,6 +59,7 @@ jobs:
           python3 -m py_compile integrations/mythicsim-rust/port_native_entangling_roots_dot.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_typed_rng.py
           python3 integrations/mythicsim-rust/tests/test_port_native_typed_rng.py
+          python3 -m py_compile integrations/mythicsim-rust/port_native_sim_iterations.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_pull_queue.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_persistent_target.py
           python3 -m py_compile integrations/mythicsim-rust/port_native_two_pull_cli.py
@@ -88,7 +90,8 @@ jobs:
               "FOREVER_RUST_FORK_TOKEN", "who", "actual_parent",
               "git push fork refs/remotes/origin/main:refs/heads/main",
               "check_engine_source", "cargo check --locked",
-              "port_upstream_paladin_typed_rng.py", "port_native_talent_layout_api.py", "git merge --no-ff",
+              "port_upstream_paladin_typed_rng.py", "port_native_talent_layout_api.py",
+              "port_native_sim_iterations.py", "git merge --no-ff",
               "FORK_ENGINE_SHA",
           ):
               assert required in s, required
@@ -151,7 +154,13 @@ jobs:
           second_hash="$(git -C /tmp/forever-selected-rust hash-object src/core/fight.rs src/core/fight/world_bridge.rs src/classes.rs src/engine/prepared.rs src/lib.rs src/main.rs src/classes/druid/prepare.rs src/classes/druid/prepare/talents.rs src/classes/druid/prepare/balance.rs src/classes/druid/prepare/export.rs src/contracts/prepared_v2.rs src/classes/druid/agent.rs src/classes/druid/prepared/coverage.rs tests/classes/druid/prepare.rs | sha256sum)"
           test "$first_hash" = "$second_hash"
           python3 integrations/mythicsim-rust/port_native_typed_rng.py /tmp/forever-selected-rust
+          python3 integrations/mythicsim-rust/port_native_sim_iterations.py /tmp/forever-selected-rust
+          first_iteration_hash="$(git -C /tmp/forever-selected-rust hash-object src/main.rs tests/cli.rs README.md | sha256sum)"
+          python3 integrations/mythicsim-rust/port_native_sim_iterations.py /tmp/forever-selected-rust
+          second_iteration_hash="$(git -C /tmp/forever-selected-rust hash-object src/main.rs tests/cli.rs README.md | sha256sum)"
+          test "$first_iteration_hash" = "$second_iteration_hash"
           cargo check --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml
+          cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --test cli sim_iteration_override_limits_prefix_without_rewriting_source_identity
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib typed_rng_api_tests
           cargo build --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --bin forever-engine
           cargo test --locked --manifest-path /tmp/forever-selected-rust/Cargo.toml --lib druid_talent_layout_api_tests
