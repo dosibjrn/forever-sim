@@ -169,7 +169,7 @@ def test_m1_recorder_builds_exact_native_binary_for_priest_mage_p3_only():
     assert 'IFS=: read -r class level spec gate <<< "$entry"' in workflow
     assert 'if [[ "$gate" == P3 && "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]]; then' in workflow
     assert "p3_native_needed=true" in workflow
-    assert "if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
+    assert "if: steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
     assert 'git submodule update --init --depth 1 "$engine"' in workflow
     assert 'git ls-tree HEAD -- "$engine"' in workflow
     assert "RUST_FORK_SUBMODULE_PIN_MISMATCH" in workflow
