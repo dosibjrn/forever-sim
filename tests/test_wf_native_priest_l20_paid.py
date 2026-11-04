@@ -1406,9 +1406,9 @@ def test_priest_retained_world_preserves_native_regen_without_claiming_paid_rest
     older = module._native_mana_continuity(
         [{"index": 0, "actor_mana": 180.},
          {"index": 1, "actor_mana": 145.}], 2)
-    assert older["native_combat_mana_regen_observed"] is False
-    assert older["native_combat_mana_regen_actual_gain_by_target"] is None
-    assert older["native_combat_mana_regen_events_by_target"] is None
+    assert "native_combat_mana_regen_observed" not in older
+    assert "native_combat_mana_regen_actual_gain_by_target" not in older
+    assert "native_combat_mana_regen_events_by_target" not in older
 
 
 @pytest.mark.parametrize("broken,reason", [
