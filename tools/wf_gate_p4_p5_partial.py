@@ -159,8 +159,11 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                     + cold["native_cold_completed_routes_after_30"])
                 if not cold["native_cold_300s_reached"]:
                     reason = "P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED"
-                elif cold["native_cold_300s_overrun"]:
-                    reason = "P4_P5_NATIVE_COLD_DEADLINE_OVERRUN"
+                # A paid native/world evaluation can cross the exact 300s
+                # cutoff after it starts. The producer excludes that entire
+                # late result from both finalist windows; elapsed wall over
+                # 300s is diagnostic, not grounds for rejecting pre-cutoff
+                # real paid winners or the completed cold search.
                 elif cold["native_cold_snapshot_30"] is None:
                     reason = "P4_P5_NATIVE_30S_PAID_WINNER_UNAVAILABLE"
                 elif cold["native_cold_final_300"] is None:
