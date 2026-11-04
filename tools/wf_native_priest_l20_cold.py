@@ -517,6 +517,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                     }
 
         frozen, snapshot_validation = qualify_finalist(early_paid)
+        completed_distinct_finalists = int(frozen is not None)
         if (final_paid is not None and early_paid is not None
                 and final_paid["source_request_sha256"]
                 == early_paid["source_request_sha256"]):
@@ -528,6 +529,8 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 final_validation["reused_30s_receipt"] = True
         else:
             best_final, final_validation = qualify_finalist(final_paid)
+            completed_distinct_finalists = (
+                int(frozen is not None) + int(best_final is not None))
             # The 300s search frontier includes the 30s winner. Its
             # two-target screening score can rank a different build first,
             # but P4/P5/P6 ultimately optimize the PAID 100-target objective.
@@ -556,11 +559,10 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_30s_post_search_route": snapshot_validation,
         "native_cold_300s_post_search_route": final_validation,
         "native_cold_300s_paid_selection": copy.deepcopy(final_paid),
-        "native_cold_completed_100mob_finalists": (int(frozen is not None)
-                                                  + int(best_final is not None and
-                                                        (frozen is None or best_final["source_request_sha256"]
-                                                         != frozen["source_request_sha256"]))
-                                                  if deferred_snapshot else 0),
+        # Count distinct actually completed 100-mob qualification routes,
+        # even when the 300s best-of chooses the faster early receipt.
+        "native_cold_completed_100mob_finalists": (
+            completed_distinct_finalists if deferred_snapshot else 0),
         "native_cold_final_300": copy.deepcopy(best_final),
         "native_cold_native_paid_before_30": scored_before,
         "native_cold_native_paid_after_30": scored_after,
