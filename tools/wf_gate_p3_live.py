@@ -473,6 +473,47 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         source_policy_stat_witnesses.append(witness)
         if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
             weights[axis] = witness["weight_s_saved_per_mob_per_unit"]
+    # A native rank coefficient can make the paid source-naked sensitivity
+    # positive before P3 emits a NONPOSITIVE blocker. Still require the explicit
+    # one-delta paid before/after witness for this Shaman Spell Power task.
+    if (shaman_l20_native and native_spell_winner
+            and weights.get("spell_power", 0.0) > 0.0
+            and not any(w.get("stat") == "spell_power"
+                        for w in source_policy_stat_witnesses)):
+        probe_deltas, probe_delta_sources = _native_item_stat_probe_deltas(
+            item_check, "spell_power")
+        if probe_deltas:
+            remaining = max(
+                0, max_p3_evaluations - int(result.get("attempted", 0))
+                - extra_evaluations)
+            cache_prefix = (id(ir), int(level), bool(schedule_incoming_attacks))
+            has_reusable_baseline = any(
+                key[:3] == cache_prefix
+                and type(value) in (int, float)
+                and isfinite(value) and value > 0
+                for key, value in source_policy_baseline_cache.items()
+            )
+            minimum_evaluations = (
+                1 if (has_reusable_baseline or paid_winner_baseline_available)
+                else (3 if record.get("prefix") else 2)
+            )
+            if remaining >= minimum_evaluations:
+                witness = paid_source_policy_stat_witness(
+                    ir, stat="spell_power", level=level,
+                    probe_deltas=(probe_deltas[0],),
+                    max_evaluations=remaining,
+                    schedule_incoming_attacks=schedule_incoming_attacks,
+                    baseline_cache=source_policy_baseline_cache,
+                    opening_action_ids=tuple(record.get("prefix", ())),
+                    preferred_policy=policy,
+                    baseline_record=record,
+                    allow_paid_winner_after_nonpositive=True)
+                witness["probe_delta_sources"] = probe_delta_sources[:1]
+                extra_evaluations += int(witness["paid_evaluations"])
+                source_policy_stat_witnesses.append(witness)
+                if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
+                    weights["spell_power"] = witness[
+                        "weight_s_saved_per_mob_per_unit"]
     if any(w["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
            for w in source_policy_stat_witnesses):
         item_check = fast_p3_smoke_for_policy(
