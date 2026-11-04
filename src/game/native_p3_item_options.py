@@ -90,9 +90,9 @@ def native_p3_item_records(binary: str | Path, class_key: str, level: int,
                            *, runner: Callable = subprocess.run):
     """Project Rust items into the existing scorer's shape.
 
-    Return (records, unmapped_by_item). Nonzero unmapped source axes become
-    explicit P3 blockers instead of invented zero/positive scorer evidence.
-    The candidate set itself is never filtered by Python.
+    Return (records, unmapped_by_item, source_metadata). Nonzero unmapped
+    source axes become explicit P3 blockers instead of invented scorer
+    evidence. The candidate set itself is never filtered by Python.
     """
     from src.rulesets.forever.items.catalogue import ItemRecord
 
