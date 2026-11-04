@@ -309,7 +309,8 @@ def main(argv=None) -> int:
             if (type(score) in (int, float) and math.isfinite(score)
                     and score >= 0):
                 record["winner_native_dps"] = score
-            for key in ("original_apl_hash", "selected_validation"):
+            for key in ("original_apl_hash", "selected_validation",
+                        "reference_profile", "checkpoint_spec"):
                 value = report.get(key)
                 if isinstance(value, str) and len(value) <= 128:
                     record[key] = value
