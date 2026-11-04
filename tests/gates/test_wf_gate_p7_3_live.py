@@ -19,7 +19,8 @@ def test_cold_talent_discovery_preserves_full_gear_apl_and_original():
     baseline = copy.deepcopy(original)
     proposals = SimpleNamespace(
         cold_talent_string=lambda template, rng: "independent-proposal",
-        mutate_talent_string=lambda parent, rng: "mutated-proposal")
+        mutate_talent_string=lambda parent, rng: "mutated-proposal",
+        lower_one_rank_neighbors=lambda reference: ["5532220115501351--504"])
     new = gate._cold_talents(original, random.Random(647003), proposals)
     assert new != original
     assert new["raid"]["parties"][0]["players"][0]["talentsString"] == "independent-proposal"
@@ -66,7 +67,8 @@ def test_native_candidate_refusals_are_classified_without_world_fallback(
     serial = iter(range(8))
     proposals = SimpleNamespace(
         cold_talent_string=lambda template, rng: "cold-" + str(next(serial)),
-        mutate_talent_string=lambda parent, rng: "mutated-" + str(next(serial)))
+        mutate_talent_string=lambda parent, rng: "mutated-" + str(next(serial)),
+        lower_one_rank_neighbors=lambda reference: [])
     monkeypatch.setattr(gate, "native_talent_proposals", proposals)
     statuses = iter(("INVALID", "UNSUPPORTED", "ERROR", "INVALID",
                      "UNSUPPORTED", "ERROR", "INVALID", "UNSUPPORTED"))
@@ -135,13 +137,13 @@ def test_p73_changed_talent_is_paid_directly_by_native_without_retired_gates(
     import json
     paid = json.loads(calls[0][2])["raid"]["parties"][0]["players"][0]
     original = base["raid"]["parties"][0]["players"][0]
-    assert paid["talentsString"] == "mutated-proposal"
+    assert paid["talentsString"] == "5532220115501351--504"
     assert paid["equipment"] == original["equipment"]
     assert paid["rotation"] == original["rotation"]
     assert report["status"] == "PASS"
     assert report["winner_native_dps"] == 729.0
     assert report["source_original_talents"] == original["talentsString"]
-    assert report["cold_winner_talents"] == "mutated-proposal"
+    assert report["cold_winner_talents"] == "5532220115501351--504"
     assert report["checkpoint_spec"] == "unrestricted"
     assert report["reference_profile"] == "balance"
     assert report["native_source_revision"] == "selected-rust"
@@ -275,7 +277,8 @@ def test_p73_unchanged_talents_never_credit_a_native_gate(monkeypatch, tmp_path)
     reference = base["raid"]["parties"][0]["players"][0]["talentsString"]
     monkeypatch.setattr(gate, "native_talent_proposals", SimpleNamespace(
         cold_talent_string=lambda template, rng: reference,
-        mutate_talent_string=lambda parent, rng: reference))
+        mutate_talent_string=lambda parent, rng: reference,
+        lower_one_rank_neighbors=lambda parent: []))
     def native(*args, **kwargs):
         pytest.fail("unchanged talent string must never be paid or credited")
     monkeypatch.setattr(gate, "_source_module", lambda *args: SimpleNamespace(
@@ -284,3 +287,15 @@ def test_p73_unchanged_talents_never_credit_a_native_gate(monkeypatch, tmp_path)
     assert report["status"] == "FAIL"
     assert report["cold_unique_source_requests"] == 0
     assert report["source_legal_cold_candidates_paid"] == 0
+
+
+def test_minimal_rank_neighbors_are_generic_source_edits_not_legality_checks():
+    original = "5532220115501351--505"
+    variants = native_talent_proposals.lower_one_rank_neighbors(original)
+    assert variants
+    assert len(variants) == sum(c != "0" for c in original if c.isdigit())
+    assert len(set(variants)) == len(variants)
+    assert all(sum(map(int, (c for c in s if c.isdigit()))) ==
+               sum(map(int, (c for c in original if c.isdigit()))) - 1
+               for s in variants)
+    assert all(v.count("-") == original.count("-") for v in variants)
