@@ -199,11 +199,16 @@ def test_full_p74_freezes_best_60_fight_balanced_finalist_for_stochastic_holdout
         for slot, item in enumerate(frozen_items)]
     assert report["source_legal_cold_candidates_paid"] == 2
     assert report["cold_search_best_screen_dps"] == 729.0
+    assert report["cold_search_best_screen_request_sha256"] == hashlib.sha256(
+        json.dumps(json.loads(calls[0][3]), sort_keys=True).encode()).hexdigest()
+    assert report["cold_search_best_screen_request_sha256"] != (
+        report["cold_winner_request_sha256"])
     assert report["winner_screen_dps"] == 725.0
     assert report["winner_live_dps"] == 725.0
     assert report["winner_selection"] == "best_balanced_60_fight_finalist"
     assert report["paid_balanced_finalists"] == 2
     assert report["paid_balanced_finalist_iterations"] == 60
+    assert report["finalist_rerank_reserve_s"] == 45.0
     assert report["selected_validation"] == (
         "60_native_world_fights_per_paid_balanced_finalist")
     assert report["search_rng_mode"] == "balanced"
@@ -652,8 +657,8 @@ def test_p74_paid_step_guard_prevents_observed_302s_overrun(monkeypatch):
     assert not gate._paid_step_has_budget(0.0, 0.9)
     clock.now = 295.0
     assert gate._paid_step_has_budget(0.0, 2.6)
-    # Fast 3-fight balanced screens can still run late in the window when
-    # their measured duration fits; no finalist-only rerank phase exists.
+    # A short paid step may fit near the 300s boundary; full-search cold
+    # screens use the earlier reserved candidate deadline.
     clock.now = 299.0
     assert gate._paid_step_has_budget(0.0, 0.10)
     clock.now = 299.95
