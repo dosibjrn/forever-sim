@@ -18,3 +18,9 @@ def test_m1_invalidation_workflow_is_merge_owned_and_provenance_scoped():
     assert "push origin HEAD:refs/heads/main" in workflow
     assert "force=true" not in workflow
     assert "wf_gate.py" not in workflow
+
+
+def test_general_m1_recorder_does_not_share_invalidation_trigger():
+    recorder = Path(".github/workflows/m1-on-demand-record.yml").read_text()
+    assert "startsWith(github.event.comment.body, '/m1-run ')" in recorder
+    assert "startsWith(github.event.comment.body, '/m1-invalidate ')" not in recorder
