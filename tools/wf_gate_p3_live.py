@@ -218,6 +218,106 @@ def _native_item_stat_probe_deltas(item_check: dict, axis: str):
             [source for _delta, source in ordered])
 
 
+
+def _paid_native_equipped_item_alternatives(
+        ir, record: dict, level: int, item_check: dict, weights: dict,
+        *, max_evaluations: int, incoming: bool) -> dict:
+    """Score native-authorized equipped alternatives in the existing paid runtime.
+
+    This is a bounded source-option -> gear application -> paid scorer bridge.
+    It does not infer item legality, manufacture weights or introduce a second
+    combat model. A source winner is the already-paid naked comparator; each
+    equipped attempt, including a refusal, consumes one remaining P3 evaluation.
+    """
+    from src.game.gear import apply_gear_selection, executable_gear_stats
+    from src.v2.source_budgeted_gear import _fixed_opening_score
+
+    available = set(executable_gear_stats(ir))
+    baseline = float(record["score_s_per_mob"])
+    if not isfinite(baseline) or baseline <= 0:
+        return {"status": "NO_PAID_NAKED_BASELINE", "attempted": 0,
+                "evaluated": 0, "comparisons": []}
+    candidates = []
+    for slot, slot_report in sorted(item_check.get("slots", {}).items()):
+        for option in slot_report.get("items", ()):
+            item_id = option.get("item_id")
+            stats = option.get("stat_values") or {}
+            if type(item_id) is not int or not isinstance(stats, dict):
+                continue
+            executable = {
+                axis: float(amount) for axis, amount in stats.items()
+                if axis in available and type(amount) in (int, float)
+                and isfinite(amount) and amount != 0.0
+            }
+            if not executable:
+                continue
+            expected = sum(float(weights.get(axis, 0.0) or 0.0) * amount
+                           for axis, amount in executable.items())
+            candidates.append({
+                "slot": str(slot), "item_id": item_id,
+                "name": str(option.get("name") or ""),
+                "stats": dict(stats), "executable": executable,
+                "expected": expected,
+            })
+    # Prioritize a source item with an already-paid relevant stat; try a
+    # second legal option for the same slot before expanding to other slots.
+    candidates.sort(key=lambda x: (
+        -x["expected"], -len(x["executable"]), x["slot"], x["item_id"]))
+    primary_slot = candidates[0]["slot"] if candidates else None
+    candidates.sort(key=lambda x: (
+        x["slot"] != primary_slot, -x["expected"], x["slot"], x["item_id"]))
+    attempts = 0
+    evaluated = 0
+    comparisons = []
+    for candidate in candidates:
+        if attempts >= max_evaluations or evaluated >= 2:
+            break
+        attempts += 1
+        item = {
+            "slot": candidate["slot"], "item_id": candidate["item_id"],
+            "name": candidate["name"],
+            "weapon_dps": float(candidate["stats"].get("weapon_dps", 0.0)),
+            "weapon_speed": float(candidate["stats"].get("weapon_speed", 0.0)),
+        }
+        outcome = {
+            "item_id": candidate["item_id"], "slot": candidate["slot"],
+            "name": candidate["name"], "source": item_check.get("source"),
+            "source_stats": candidate["stats"],
+            "executable_stats": candidate["executable"],
+            "paid_naked_seconds_per_mob": baseline,
+            "paid_equipped_seconds_per_mob": None,
+            "seconds_saved_per_mob": None,
+        }
+        try:
+            geared, applied = apply_gear_selection(
+                ir, aggregate_stats=candidate["stats"],
+                selected_items=(item,), source="mythicsim_native_item_options")
+            outcome["applied_stats"] = dict(applied.applied_stats)
+            outcome["unsupported_stats"] = dict(applied.unsupported_stats)
+            score = _fixed_opening_score(
+                geared, record, level, incoming)
+            if type(score) in (int, float) and isfinite(score) and score > 0:
+                outcome["paid_equipped_seconds_per_mob"] = float(score)
+                outcome["seconds_saved_per_mob"] = baseline - float(score)
+                evaluated += 1
+            else:
+                outcome["refusal"] = "PAID_EQUIPPED_KILL_OR_SCORE_UNAVAILABLE"
+        except (ValueError, RuntimeError, TypeError, KeyError) as exc:
+            outcome["refusal"] = "PAID_EQUIPPED_APPLICATION_REFUSED:" + str(exc)
+        comparisons.append(outcome)
+    difference = any(
+        row["seconds_saved_per_mob"] is not None
+        and abs(row["seconds_saved_per_mob"]) > 1e-9
+        for row in comparisons)
+    return {
+        "status": ("PAID_EQUIPPED_DIFFERENCE" if difference else
+                   "PAID_EQUIPPED_NO_DIFFERENCE" if evaluated else
+                   "PAID_EQUIPPED_REFUSED" if attempts else "NO_EXECUTABLE_NATIVE_ITEMS"),
+        "attempted": attempts, "evaluated": evaluated,
+        "comparisons": comparisons,
+    }
+
+
 def _source_actor_context_summary(ir) -> dict:
     """Expose source actor/weapon provenance when the paid naked search blocks."""
     actor = getattr(ir, "actor", None)
@@ -595,6 +695,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             source_ir=ir, policy=policy, class_key=class_key, level=level,
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
             native_options_binary=native_binary)
+    native_equipped = {"status": "NOT_APPLICABLE", "attempted": 0,
+                       "evaluated": 0, "comparisons": []}
+    if rogue_l20_native:
+        native_equipped = _paid_native_equipped_item_alternatives(
+            ir, record, level, item_check, weights,
+            max_evaluations=max(0, max_p3_evaluations
+                                - int(result.get("attempted", 0)) - extra_evaluations),
+            incoming=schedule_incoming_attacks)
+        extra_evaluations += native_equipped["attempted"]
     reasons = list(item_check["blockers"])
     # The same source-legal selected IR was used for actual CombatRuntime
     # sensitivity and the real item scorer. Never fake a positive stat weight.
@@ -617,6 +726,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_source_search_attempts": result.get("attempted", 0),
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
+        "native_equipped_item_status": native_equipped["status"],
+        "native_equipped_item_attempted": native_equipped["attempted"],
+        "native_equipped_item_evaluated": native_equipped["evaluated"],
+        "native_equipped_item_comparisons": native_equipped["comparisons"],
         # This is the resolver used by the paid source search, not a second
         # P3 applicability rule or an invented zero for absent primary stats.
         "real_stat_probe_axis_selection": result.get("stat_probe_axis_selection"),
