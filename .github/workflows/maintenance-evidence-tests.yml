@@ -2,6 +2,10 @@ name: Repository maintenance regressions
 on:
   pull_request:
     paths:
+      - 'src/game/checkpoint_pipeline.py'
+      - 'tests/gates/test_wf384_generic_checkpoint_pipeline.py'
+      - 'tests/test_wf390_generic_talent_execution_pipeline.py'
+      - 'tests/test_wf429_process_v2_p3_preflight_tdd.py'
       - 'tools/wf260_run_budgeted_joint.py'
       - 'tests/generic/search/test_wf260_budgeted_joint_talents.py'
       - 'tools/wf_combat232_weapon_evidence.py'
@@ -209,6 +213,10 @@ jobs:
           tools/wf_gate_p3_live.py
           src/game/native_p3_player_context.py
           tests/test_p7_search_deadline_contract.py
+      - name: Verify retained bounded-joint source helpers and caller import
+        run: |
+          python -m py_compile src/game/checkpoint_pipeline.py src/v2/source_bounded_joint_frontier.py
+          python -m pytest -q tests/gates/test_wf384_generic_checkpoint_pipeline.py tests/test_wf390_generic_talent_execution_pipeline.py
       - name: Verify grouped mechanics layout and preserved evidence assertions
         run: >-
           python -m pytest -q
