@@ -454,7 +454,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                 best = (score, live, candidate_sha, candidate)
         except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
                 TypeError, AssertionError, subprocess.SubprocessError) as exc:
-            failures.append(type(exc).__name__ + ":" + str(exc)[:180])
+            failures.append(type(exc).__name__ + ":" + str(exc)[:800])
         finally:
             worst_screen_s = max(
                 worst_screen_s, time.perf_counter() - paid_start)
@@ -474,6 +474,12 @@ def run_live(root: Path, class_key: str, level: int, *,
                 "reasons": ["P7_4_NO_SOURCE_LEGAL_NATIVE_WORLD_GEAR_CANDIDATE_EXECUTED"],
                 "production_engine": "pinned_mythicsim_rust_gsim_2d",
                 "search_wall_s": search_wall_s,
+                "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
+                "native_gear_options_reference_revision": options_meta["source_revision"],
+                "native_gear_options_unique_items": options_meta["unique_item_options"],
+                "native_gear_options_unique_enchants": options_meta["unique_enchant_options"],
+                "item_candidate_admission": "pinned_rust_native_gear_options",
+                "source_candidate_failure_count": len(failures),
                 "source_candidate_failures": failures[:4]}
 
     # Freeze the best balanced-scored loadout before the independent
@@ -581,9 +587,15 @@ def run_live(root: Path, class_key: str, level: int, *,
         "world_damage_events": int(live["native_damage_events"]),
         "world_boundaries": int(live["native_world_ticks"]),
         "source_legal_cold_candidates_paid": executed,
+        "source_candidate_failure_count": len(failures),
         "source_candidate_failures": failures[:4],
+        "balanced_finalist_failures": rerank_failures[:4],
         "source_gear_and_native_item_legality_applied": True,
-        "item_candidate_admission": "source_catalogue_proposals_native_authoritative",
+        "native_gear_options_applied": True,
+        "item_candidate_admission": "pinned_rust_native_gear_options",
+        "native_gear_options_reference_revision": options_meta["source_revision"],
+        "native_gear_options_unique_items": options_meta["unique_item_options"],
+        "native_gear_options_unique_enchants": options_meta["unique_enchant_options"],
         "python_item_candidate_pre_veto": False,
         "source_fixed_rotation_and_talents": True,
         "selected_validation": (
