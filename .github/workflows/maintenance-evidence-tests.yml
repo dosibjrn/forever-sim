@@ -35,6 +35,9 @@ on:
       - 'src/game/checkpoint_p3_smoke.py'
       - 'tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py'
       - 'tools/wf_gate_p3_live.py'
+      - 'src/game/runtime/simulator.py'
+      - 'tests/test_wf311_verified_detail_effect_pipeline.py'
+      - 'tests/test_wf313_source_batch_quarantine.py'
       - 'tests/test_selected_source_plumbing.py'
       - 'tests/test_prio_p3_live_sourced_chance_gear.py'
       - 'tests/test_prio_p3_source_policy_sp.py'
@@ -107,6 +110,8 @@ jobs:
           tests/test_prio_p3_source_policy_sp.py
           tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py
           tests/test_selected_source_plumbing.py
+          tests/test_wf311_verified_detail_effect_pipeline.py
+          tests/test_wf313_source_batch_quarantine.py
           tests/test_prio_p3_live_sourced_chance_gear.py
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/test_wf241_mixed_hot_recovery.py
