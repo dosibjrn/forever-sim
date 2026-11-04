@@ -1,46 +1,44 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `e4257dd5743215274967a0ecd4320ee554b02b2e`. Canonical ledger blob: `311bfb194ebd720d1105561d6e032a15359b3273`.
+Refreshed against main `384e584089dac13d6101b3ea7e67d53de83332b0`. Canonical ledger blob: `311bfb194ebd720d1105561d6e032a15359b3273`.
 
 ## Current M1 scoreboard
 
 - **M1 measured: 2.1000%** (`measured_fraction=0.0210002413`).
-- **27.972 / 1,332** measured gate-equivalents.
-- **23 PASS / 17 PARTIAL** active-scope gate rows.
-- **0 / 148** certified checkpoints. Druid L60 Balance has nine PASS gate rows, but the rows do not share a certified compatibility identity; do not claim a completed checkpoint.
+- **27.972 / 1,332** measured gate-equivalents; **23 PASS / 17 PARTIAL** active-scope gate rows.
+- **0 / 148** certified checkpoints. The measured float is diagnostic coverage, not certification. Only Merge writes `M1_PASSES.tsv`.
 
-The exact scoreboard is from the canonical `python tools/m1_progress.py` output in post-#840 Merge recorder #41786536534/#41786566461. Prio does not edit `M1_PASSES.tsv`.
+## Immediate dependency-ordered queue
 
-## Immediate queue
+### 1. Merge — Shaman L20 unrestricted P3 (single light measurement)
 
-### 1. Merge — Paladin L20 unrestricted P3 (dispatch request posted)
+- **Gate:** `shaman:20:unrestricted:P3`; canonical ledger has **no row** (not yet measured, not PASS/FAIL).
+- Existing `registry.py` Shaman source provider declares L10–L20 coverage; `wf_gate_p3_live.py` uses the real bounded **44-evaluation** paid scorer and selected native item-options client. This is a credible cheap first measurement, **not** a promise that the source-naked policy or item context succeeds.
+- **Executable dispatch:** [one `M1-DISPATCH-REQUEST` on owner issue #131](https://github.com/dosibjrn/forever-sim/issues/131#issuecomment-6624706584). Merge checks no ACK/active writer, then launches **exactly one** light production recorder on fresh main. If BLOCKED, preserve the actual reason and do not repeat unchanged.
+- Conditional maximum full-PASS gain: `1/1332` = **+0.07508 percentage points**. Any eligible PARTIAL earns only the actual measured fraction. No gain is credited before a trusted recorder.
 
-- The canonical ledger has **no** `paladin:20:unrestricted:P3` row; this is unmeasured, not a known PASS or FAIL.
-- Current main registers the existing Paladin native source provider for L10–L30 and has existing `paladin_ret` / `paladin_tank` gear roles and runtime selection. The real P3 production path uses the existing bounded paid scorer and a 44-evaluation budget; this is not a 100-mob or 300-second acceptance.
-- A full PASS would add at most `1/1332 = 0.07508` percentage points; an eligible PARTIAL contributes only its actual measured fraction. This is a conditional opportunity, not a predicted result.
-- The single `M1-DISPATCH-REQUEST` is on the existing owner issue [#131 comment](https://github.com/dosibjrn/forever-sim/issues/131#issuecomment-6624527408). Merge should launch exactly one light production run on fresh main. If the source scenario or legal item path is BLOCKED, retain the exact reason and do not retry unchanged. No separate queue issue.
+### 2. Work1 — Priest L20 unrestricted P4/P5: unpark real native gear-options path
 
-### 2. Work2 — Mage L30 P3 source-witness repair
+- Existing owner [issue #817](https://github.com/dosibjrn/forever-sim/issues/817). Both gates were **BLOCKED** in [#41775113953](https://github.com/dosibjrn/forever-sim/actions/runs/41775113953): `SOURCE_COLD_SEARCH_IR_OR_GEAR_ROLE_UNAVAILABLE`; no ledger rows.
+- Current `available_gear_roles('priest')` supplies no role. Remove that **live pre-veto** by using source-authorized candidate options from the selected MythicSim native boundary in the real paid cold-search path; no invented Python gear role, duplicate GameIR or new gate. The existing native item-options transport is available. Only change Rust for a specifically reproduced missing active capability.
+- **Unpark now:** this two-gate repair is independent of Work2's Mage P3 branch; waiting for Mage to finish has no demonstrated technical dependency. Smallest proof: focused native request/refusal tests plus **one changed-HEAD no-record bounded** Priest L20 P4/P5 production invocation with actual paid screen/source-action counts. Merge records only if eligible progress is demonstrated.
+- Conditional `2/6` measured for each would yield **+0.05005 percentage points** combined. Full PASS still requires the approved 30/300s and 100-mob criteria; no automatic PASS.
 
-- Owner issue [#818](https://github.com/dosibjrn/forever-sim/issues/818); current PR [#831](https://github.com/dosibjrn/forever-sim/pull/831), API head `e74e951`, base `547c18a` (behind current main `e4257dd`). The PR body is stale: it still describes `4c88590` as HEAD.
-- Last validated production behavior on `6f3ce498`: selected-engine/no-record [#41785534565](https://github.com/dosibjrn/forever-sim/actions/runs/41785534565) remains **FAIL 85/224**, equal to the accepted #825 high-water. The +50 Intellect witness is preserved; native +74/+101 Spell Power probes remain nonpositive on both source-IR and paid-winner policies. No M1 increment.
-- The later test-only head `4c88590` also returned 85/224; maintenance [#41786092998](https://github.com/dosibjrn/forever-sim/actions/runs/41786092998) exposed two invalid fixtures whose mock IR omitted `mage:fireball`. Current PR head `e74e951` changes those fixtures but has no exact-head validation yet.
-- Next Work2 action: rebase onto fresh main, update the PR body to the real HEAD, get exact-head maintenance green, then inspect a genuinely native/source-authorized executable alternative for Spell Power. **No synthetic weights, no gate weakening, no merge or M1 dispatch at 85/224.**
+### 3. Work2 — Mage L30 unrestricted P3: repair real paid stat witness
 
-### 3. Work1 — Priest L20 P4/P5 remains parked
+- Owner [issue #818](https://github.com/dosibjrn/forever-sim/issues/818); current [PR #831](https://github.com/dosibjrn/forever-sim/pull/831), head `f3f9187` rebased onto current main. Canonical high-water is **PARTIAL 85/224** from merged #825; latest no-record experiment on `740ceb2` remained **85/224**, with no new Spell Power witness.
+- Exact-head maintenance [#41788709671](https://github.com/dosibjrn/forever-sim/actions/runs/41788709671) is **FAIL**: `test_paid_winner_fallback_runs_when_source_baseline_fails` still expects an extra source-policy stat probe despite the two-evaluation cap. Fix the test expectation/actual call sequence **without increasing the paid budget**, then rerun focused and exact-head maintenance. Generic CI was still in progress at the last inspection.
+- No merge or official M1 recorder at unchanged 85/224. Next real gate advance requires source-authorized executable Spell Power sensitivity (or another genuinely improved applicable stat), no invented epsilon/weights. Maximum remaining from 85/224 to full PASS is approximately **+0.04659 percentage points**.
 
-- Existing owner issue [#817](https://github.com/dosibjrn/forever-sim/issues/817) tracks the missing native level-aware player/base-stat contract for the real P4/P5 path.
-- Keep parked until the Mage L30 P3 source-witness investigation is reconciled. P7.4 is now validated on current production code; it is no longer a dependency for this lane. This is an implementation-sized dependency, not a reason to build a parallel simulator or add diagnostic-only work.
+### 4. Backlog — Paladin L20 unrestricted P3 source-naked executable baseline
+
+- [Issue #845](https://github.com/dosibjrn/forever-sim/issues/845) records the first reproducible defect. Both official light runs [#41787910137](https://github.com/dosibjrn/forever-sim/actions/runs/41787910137) and duplicate [#41787945906](https://github.com/dosibjrn/forever-sim/actions/runs/41787945906) returned **BLOCKED_NO_NAKED_SUCCESS**, `real_source_search_evaluated=0`. Workflow SUCCESS was **not** gate PASS; ledger unchanged.
+- Investigate actual naked-policy execution/refusal before attributing failure to the proxy actor; repair the first proven source/native invocation deficiency without inventing Warcraft mechanics. Work1 takes this after #817 or a later evidence-based reprioritization. **No unchanged recorder rerun.**
 
 ## Completed / no unchanged redispatch
 
-- **Druid L60 Balance P7.4 current-code PASS.** Pre-#840 official recorder [#41784946720](https://github.com/dosibjrn/forever-sim/actions/runs/41784946720) passed. After PR #840 changed the executable live path, exact 25-fight diagnostic [#41785767359](https://github.com/dosibjrn/forever-sim/actions/runs/41785767359) passed, and both post-#840 heavy recorders returned PASS: [#41786536534](https://github.com/dosibjrn/forever-sim/actions/runs/41786536534) (300.000125689 s, 2,064 paid candidates, 1,000 fights, 1,154.2412009309785 native / 1,154.2412009309776 world DPS) and duplicate [#41786566461](https://github.com/dosibjrn/forever-sim/actions/runs/41786566461) (300.000095246 s, 998 paid candidates, 1,000 fights, 960.7776624099068 native / 960.7776624099073 world DPS). Both met the 720.9117 floor. The duplicate did not double-count or change the canonical ledger. No further P7.4 run.
-- Hunter L20 P3: `BLOCKED_NO_NAKED_SUCCESS`, zero paid source evaluations. Do not rerun unchanged.
-- Mage L20 P3: retain the existing 88/224 high-water; do not rerun unchanged.
-- Mage L30 P3: retain the official 85/224 high-water from #825; #831/#837/#838 experiments have not exceeded it.
-
-## Operating constraints
-
-- Merge alone dispatches official M1 recorders and writes `M1_PASSES.tsv`; Prio only maintains this queue and submits requests on existing owner issues.
-- Never launch a second M1 writer while a recorder is active. Never duplicate a request already ACKed/launched.
-- Prioritize real active P3–P7.5 production progress. No P1/P2 work, no retired GameIR search runner, no HPS/TPS witness work, no MythicSim self-validation, no invented positive weights, and no fabricated M1 rows.
+- **Druid L60 Balance P7.4** current-code PASS on both post-#840 heavy runs [#41786536534](https://github.com/dosibjrn/forever-sim/actions/runs/41786536534) and [#41786566461](https://github.com/dosibjrn/forever-sim/actions/runs/41786566461); canonical receipt preserved. No new P7.4 run.
+- Hunter L20 P3: `BLOCKED_NO_NAKED_SUCCESS`, zero paid source evaluations; no unchanged retry.
+- Mage L20 P3: preserve 88/224 high-water; no unchanged retry.
+- Mage L30 P3: preserve 85/224 high-water until a changed real producer exceeds it.
+- P1/P2 retired; no GameIR rebuild, MythicSim self-validation or invented P3 weights. Only Merge dispatches official M1 runs and writes the canonical ledger.
