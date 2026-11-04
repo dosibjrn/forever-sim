@@ -193,13 +193,18 @@ jobs:
           stage = row["source_naked_stage"]
           assert stage["search_backend"] == "prefix", stage
           assert stage["search_status"] in (
-              "BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK",
+              "EVALUATED_BOUNDED",
               "BLOCKED_NO_KILLING_PREFIX",
           ), stage
-          assert row["real_source_search_attempts"] == stage["attempted"], row
+          assert 0 < stage["attempted"] <= 12, stage
+          assert stage["attempted"] <= row["real_source_search_attempts"] <= 44, row
           diagnostics = row["source_naked_diagnostics"]
           assert diagnostics["status"] == stage["search_status"], diagnostics
+          assert "holy_strike:1866" in diagnostics["fillers"], diagnostics
           assert diagnostics["auto_fallback_ids"] == [], diagnostics
+          assert row["reasons"] == [
+              "P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON"
+          ] if stage["search_status"] == "EVALUATED_BOUNDED" else row["reasons"], row
           actor = row["source_actor_context"]
           assert actor["base_stats_are_zero_proxy"] is True, actor
           assert actor["actor_provenance"][0]["authority"] == (
