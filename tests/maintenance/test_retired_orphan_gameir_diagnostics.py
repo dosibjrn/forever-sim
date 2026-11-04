@@ -9,6 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # PR #912 nonoverlapping orphaned historical frontends, retired after #913.
+    "tools/audit_l20_fidelity.py",
+    "tools/wf249_ingest_talent_scope.py",
+    "tools/wf302_persistent_joint_optimizer.py",
     # Orphaned WF389/WF408/WF410/WF412 Python GameIR P3/100-mob report runners.
     "tools/wf389_paid_weapon_package_probe.py",
     "tools/wf408_rerun_druid20_p3.py",
@@ -181,6 +185,9 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "audit_l20_fidelity",
+    "wf249_ingest_talent_scope",
+    "wf302_persistent_joint_optimizer",
     "wf389_paid_weapon_package_probe",
     "wf408_rerun_druid20_p3",
     "wf410_druid20_live_p3",

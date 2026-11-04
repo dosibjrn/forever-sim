@@ -2,6 +2,9 @@ name: Repository maintenance regressions
 on:
   pull_request:
     paths:
+      - 'tools/audit_l20_fidelity.py'
+      - 'tools/wf249_ingest_talent_scope.py'
+      - 'tools/wf302_persistent_joint_optimizer.py'
       - 'tools/wf389_paid_weapon_package_probe.py'
       - 'tools/wf408_rerun_druid20_p3.py'
       - 'tools/wf410_druid20_live_p3.py'
