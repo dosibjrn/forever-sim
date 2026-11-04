@@ -41,10 +41,14 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
             {"slot": 1, "item_id": 225, "enchant_id": 201}],
         "winner_live_dps": 717.5,
         "winner_screen_dps": 720.0,
-        "winner_selection": "paid_2x24_stochastic_live_native_finalist",
-        "paid_stochastic_finalists": 4,
+        "winner_selection": "paid_4x3_balanced_native_world_confirmed",
+        "paid_balanced_finalists": 4,
+        "paid_balanced_confirmed": 1,
+        "paid_stochastic_finalists": 0,
+        "paid_stochastic_confirmed_finalists": 0,
         "source_candidate_failures": ["SOURCE_REJECT_" + "x" * 300] * 5,
-        "paid_stochastic_finalist_failures": ["NATIVE_TIMEOUT_" + "y" * 300] * 6,
+        "balanced_finalist_failures": ["BALANCED_TIMEOUT_" + "y" * 300] * 6,
+        "paid_stochastic_finalist_failures": [],
         "frozen_stochastic_world_dps": 717.5,
         "frozen_stochastic_iterations": 1000,
     })
@@ -58,11 +62,16 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
         {"slot": 1, "item_id": 225, "enchant_id": 201}]
     assert receipt["winner_live_dps"] == 717.5
     assert receipt["winner_screen_dps"] == 720.0
-    assert receipt["winner_selection"] == "paid_2x24_stochastic_live_native_finalist"
-    assert receipt["paid_stochastic_finalists"] == 4
+    assert receipt["winner_selection"] == "paid_4x3_balanced_native_world_confirmed"
+    assert receipt["paid_balanced_finalists"] == 4
+    assert receipt["paid_balanced_confirmed"] == 1
+    # Do not publish the P7.4 provider's hard-coded stochastic placeholders.
+    assert "paid_stochastic_finalists" not in receipt
+    assert "paid_stochastic_confirmed_finalists" not in receipt
+    assert "paid_stochastic_finalist_failures" not in receipt
     assert len(receipt["source_candidate_failures"]) == 4
-    assert len(receipt["paid_stochastic_finalist_failures"]) == 4
+    assert len(receipt["balanced_finalist_failures"]) == 4
     assert all(len(message) == 180 for name in
-               ("source_candidate_failures", "paid_stochastic_finalist_failures")
+               ("source_candidate_failures", "balanced_finalist_failures")
                for message in receipt[name])
     assert receipt["status"] == "FAIL"
