@@ -186,7 +186,7 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
         "stages": [{"stage": "source_naked", "winner": record}],
         "sensitivity_history": [{"stage": "source_naked",
                                  "values": {"spell_power": 0.0}}],
-        "attempted": 42, "evaluated": 42, "status": "EVALUATED_BOUNDED",
+        "attempted": 41, "evaluated": 42, "status": "EVALUATED_BOUNDED",
         "source_context_sha256": "test-source-context",
     }
     monkeypatch.setattr(budgeted, "run_source_budgeted_gear",
@@ -205,6 +205,10 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
             "slot_count": 1, "tested_stat_assertions": 1,
             "verified_stat_assertions": 1,
             "source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+            "slots": {"chest": {"items": [
+                {"item_id": 499, "name": "Native robe",
+                 "stat_values": {"spell_power": 20.0}},
+            ]}},
             "native_item_options_status": "partial_level_unknown",
             "native_unverified_candidate_count": 2239,
             "native_item_options_source": "mythicsim:test-ItemSparse.RequiredLevel",
@@ -225,6 +229,7 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
     result = p3.run_live(ROOT, "mage", 30, spec="unrestricted")
 
     assert captured["opening_action_ids"] == ("mage:fireball",)
+    assert captured["probe_deltas"] == (20.0,)
     assert len(smoke_calls) == 1
     assert smoke_calls[0]["native_options_binary"] == "native-test-binary"
     assert result["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
@@ -321,7 +326,21 @@ def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
     ]
     monkeypatch.setattr(p3_smoke, "fast_p3_smoke_for_policy", lambda **kwargs: {
         "blockers": blockers,
-        "legal_item_count": 1, "tested_item_count": 1, "slot_count": 1,
+        "slots": {
+            "chest": {"items": [
+                {"item_id": 401, "name": "Native caster chest",
+                 "stat_values": {"spell_power": 20.0}},
+            ]},
+            "ring": {"items": [
+                {"item_id": 402, "name": "Native caster ring",
+                 "stat_values": {"spell_power": 15.0}},
+            ]},
+            "back": {"items": [
+                {"item_id": 403, "name": "Native caster back",
+                 "stat_values": {"agility": 10.0}},
+            ]},
+        },
+        "legal_item_count": 1, "tested_item_count": 3, "slot_count": 3,
         "tested_stat_assertions": 6, "verified_stat_assertions": 0,
         "source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
         "native_item_options_status": "partial_level_unknown",
@@ -332,7 +351,8 @@ def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
     witness_calls = []
 
     def witness(_ir, **kwargs):
-        witness_calls.append((kwargs["stat"], kwargs["max_evaluations"]))
+        witness_calls.append((kwargs["stat"], kwargs["max_evaluations"],
+                              tuple(kwargs["probe_deltas"])))
         return {
             "status": "NO_POSITIVE_SOURCE_POLICY_WITNESS",
             "paid_evaluations": kwargs["max_evaluations"],
@@ -345,6 +365,19 @@ def test_live_p3_prioritizes_selected_caster_policy_stat_witnesses(monkeypatch):
 
     # Four evaluations remain. The old alphabetical order spent them on
     # Agility; the selected caster policy must test Spell Power first.
-    assert witness_calls == [("spell_power", 4)]
+    assert witness_calls == [("spell_power", 4, (20.0, 35.0))]
+    witness = result["source_policy_stat_witnesses"][0]
+    assert witness["probe_delta_sources"] == [
+        {"kind": "single_native_item", "delta": 20.0,
+         "items": [{"slot": "chest", "item_id": 401,
+                    "name": "Native caster chest", "amount": 20.0}]},
+        {"kind": "two_distinct_native_item_slots", "delta": 35.0,
+         "items": [
+             {"slot": "chest", "item_id": 401,
+              "name": "Native caster chest", "amount": 20.0},
+             {"slot": "ring", "item_id": 402,
+              "name": "Native caster ring", "amount": 15.0},
+         ]},
+    ]
     assert result["real_source_search_evaluated"] == 44
     assert result["status"] == "FAIL"
