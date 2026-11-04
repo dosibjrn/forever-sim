@@ -108,8 +108,8 @@ class MaintenanceTestLayout(unittest.TestCase):
         self.assertTrue((ROOT / "tests/release").is_dir())
 
 
-    def test_p2_profile_contract_is_grouped_and_manually_runnable(self):
-        """Retain the P2 profile helper regression; P1 acceptance tests are retired."""
+    def test_source_profile_contract_is_grouped_and_manually_runnable(self):
+        """Retain the shared source-profile helper regression; P1/P2 acceptance tests are retired."""
         names = (
             "test_wf35_product_spec_profile_contract.py",
         )

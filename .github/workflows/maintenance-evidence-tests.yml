@@ -16,6 +16,8 @@ on:
       - 'tools/wf_gate_p7_3_live.py'
       - 'src/engine_client/native_talent_proposals.py'
       - 'tools/wf_gate.py'
+      - 'tests/gates/test_wf_gate_class_cli.py'
+      - 'tests/gates/test_wf_gate_runtime_authority.py'
       - 'tools/wf_gate_p7_4_live.py'
       - 'tools/wf_gate_p7_5_live.py'
       - 'tests/gates/test_wf_gate_p7_5_receipts.py'
@@ -81,6 +83,8 @@ jobs:
         run: >-
           python -m pytest -q
           tests/maintenance
+          tests/gates/test_wf_gate_class_cli.py
+          tests/gates/test_wf_gate_runtime_authority.py
           tests/test_level_legality_p00c.py
           tests/test_wf272_source_ranked_periodic_finisher.py
           tests/gates/test_wf327_checkpoint_action_l0.py

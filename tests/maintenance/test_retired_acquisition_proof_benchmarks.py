@@ -68,6 +68,9 @@ RETIRED_TOOLS = (
     "tests/generic/search/test_wf390_generic_talent_subset_search.py",
     "tests/generic/search/test_source_talent_allocation_adapter.py",
     "tools/wf390_generic_talent_search.py",
+    "tools/wf_druid_progress.py",
+    "tests/gates/test_wf_gate_p3_approved.py",
+    "tests/test_prio_p5_contract_alignment.py",
     "tests/test_wf318_index_composite_batch.py",
     "src/engine_client/native_p2_rank_probe.py",
     "integrations/mythicsim-rust/test_native_p2_rank_probe.py",
@@ -381,7 +384,15 @@ def test_retired_p2_gate_and_checkpoint_chain_has_no_code_or_actions():
 
     gate_cli = (ROOT / "tools/wf_gate.py").read_text(encoding="utf-8")
     assert "native_rank_probe" not in gate_cli
-    assert 'VALIDATORS = {"P3": _validate_p3,' in gate_cli
+    assert "def evaluate(" not in gate_cli
+    assert "_validate_p3" not in gate_cli
+    assert "--evidence-dir" not in gate_cli
+    manual = (ROOT / ".github/workflows/manual-exact-pr-head.yml").read_text(encoding="utf-8")
+    assert "p1p2-unit" not in manual
+    assert "test_wf469_p1_alignment.py" not in manual
+    assert "def evaluate(" not in gate_cli
+    assert "_validate_p3" not in gate_cli
+    assert "--evidence-dir" not in gate_cli
 
     rust_workflow = (ROOT / ".github/workflows/rust-upstream-fork.yml").read_text(encoding="utf-8")
     assert "native_p2_rank_probe" not in rust_workflow
@@ -402,14 +413,6 @@ def test_retired_p2_gate_and_checkpoint_chain_has_no_code_or_actions():
     assert "test_wf_p2_source_witness_priority.py" not in generic
     assert "cargo build --locked --bin forever-engine" in submodule_workflow
 
-
-def test_legacy_evidence_reader_rejects_retired_p1_p2(tmp_path):
-    from tools.wf_gate import evaluate
-
-    for gate in ("P1", "P2"):
-        report = evaluate(tmp_path, "druid", 20, "unrestricted", gate, {})
-        assert report["status"] == "FAIL"
-        assert report["reasons"] == ["RETIRED_OR_UNKNOWN_GATE:" + gate]
 
 def test_retired_wf463_gameir_search_and_import_path_is_gone():
     """The Druid-L30 WF463 GameIR importer is not an active P4/P5/P6 gate."""

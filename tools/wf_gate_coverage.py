@@ -32,17 +32,7 @@ def measured_live_coverage(report: dict) -> dict | None:
     # This marker alone is never enough: the executed-probe check below,
     # source-backed positive/negative regression tests and Merge review
     # must all hold. No arbitrary metadata-only progress is allowed.
-    # The retired P2 solo-exclusion fraction remains readable by legacy
-    # diagnostic tests only. m1_progress rejects P1/P2 before calling here.
-    if (report.get("gate") == "P2"
-            and report.get("production_engine") not in {
-                "gsim", "msim", "msim+gsim-world"}):
-        return None
-    basis = report.get("coverage_basis")
-    if basis == "executed_behavior_or_checked_solo_exclusion":
-        if report.get("gate") != "P2":
-            return None
-    elif basis != "executed_behavior_assertions":
+    if report.get("coverage_basis") != "executed_behavior_assertions":
         return None
     n, d = report.get("pass_count"), report.get("reachability_count")
     if not (type(n) is int and type(d) is int and 0 <= n <= d and d > 0):

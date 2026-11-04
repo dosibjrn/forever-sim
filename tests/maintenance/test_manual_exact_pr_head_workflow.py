@@ -62,14 +62,17 @@ class ManualExactHeadContract(unittest.TestCase):
         # migration guard may be retired after public source migration without
         # weakening exact-HEAD validation or allowing arbitrary commands.
         for suite_name in ("native-ack-unit", "paid-replay-unit",
-                           "p1p2-unit", "source-periodic-unit"):
+                           "source-periodic-unit", "source-profile-unit"):
             self.assertIn(suite_name, suite)
+        self.assertNotIn("p1p2-unit", TEXT)
+        self.assertIn("source-profile-unit)", TEXT)
+        self.assertIn("python -m pytest -q tests/gates/test_wf35_product_spec_profile_contract.py", TEXT)
         self.assertIn("Suite not allowlisted", TEXT)
 
     def test_relocated_service_queue_tests_have_a_bounded_manual_suite(self):
         # Same PR identity, SHA and read-only token constraints as other suites.
         self.assertIn("          - service-queue-unit", TEXT)
-        self.assertIn("source-periodic-unit|service-queue-unit) ;;", TEXT)
+        self.assertIn("source-periodic-unit|source-profile-unit|service-queue-unit) ;;", TEXT)
         self.assertIn("source-periodic-unit|service-queue-unit)", TEXT)
         self.assertIn("tests/integration/service/test_g50[c-i]_*.py", TEXT)
         self.assertIn("tests/maintenance/test_manual_exact_pr_head_workflow.py", TEXT)
