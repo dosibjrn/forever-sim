@@ -18,6 +18,10 @@ RETIRED_TOOLS = (
     "tools/wf279_paid_fixed_marginal_benchmark.py",
     "tools/wf280_real_mode_path_benchmark.py",
     "tools/wf319_druid_l20_index_l2_parity.py",
+    # One-off WF343 report driver had no callers; underlying P3 behavior tests remain.
+    "tools/wf343_direct_percent_top5.py",
+    # WF431 one-off paid GameIR search runner; retained evidence is diagnostic only.
+    "tools/wf431_modified_action_paid_search.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
     "tools/wf384_generic_checkpoint_screen.py",
@@ -75,6 +79,8 @@ RETIRED_IMPORT_NAMES = (
     "wf279_paid_fixed_marginal_benchmark",
     "wf280_real_mode_path_benchmark",
     "wf319_druid_l20_index_l2_parity",
+    "wf343_direct_percent_top5",
+    "wf431_modified_action_paid_search",
     "wf399_qualification_probe",
     "wf399_replay_winner",
     "wf384_generic_checkpoint_screen",
@@ -185,6 +191,10 @@ RETAINED_BEHAVIOR_TESTS = (
 
 RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf365/WF365_DRUID_L30_REVOCATION.json",
+    "evidence/wf343/WF343_SOURCE_DISPLAY_PERCENT_TOP5.json",
+    "evidence/wf343/WF343_TOP5_READABLE_REPORT.md",
+    "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_DIAGONAL.json",
+    "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_MARGINAL_SCREEN.json",
 )
 
 
