@@ -505,8 +505,10 @@ def paid_search_winner_baseline(preferred_policy, baseline_record, opening_actio
     try:
         if baseline_record.get('status') != 'evaluated':
             return None
-        score = float(baseline_record.get('score_s_per_mob'))
-        if not isfinite(score) or score <= 0.:
+        # A paid winner receipt must obey the same strict objective contract
+        # as fresh paid probes; bool/text cannot become a reused baseline.
+        score = _positive_paid_seconds(baseline_record.get('score_s_per_mob'))
+        if score is None:
             return None
 
         raw_prefix = baseline_record.get('prefix', ())
