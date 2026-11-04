@@ -12,6 +12,10 @@ RETIRED_TOOLS = (
     # Retired P2-only Warrior/Mage talent snapshot builders (historical staged files retained).
     "tools/wf362_stage_warrior30_talents.py",
     "tools/wf381_stage_mage_talent_positions.py",
+    # Retired Paladin P2 talent ingestion and uncalled one-shot source rank stagers.
+    "tools/wf254_ingest_paladin_talents.py",
+    "tools/wf257_ingest_flash_recovery.py",
+    "tools/wf257_ingest_paladin_corridor.py",
     # Historical one-shot Python item/stat source stagers; staged SQLite data and consumers remain.
     "tools/wf346_type_resistance_equipment.py",
     "tools/wf385_stage_mage_stamina.py",
@@ -211,6 +215,9 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf254_ingest_paladin_talents",
+    "wf257_ingest_flash_recovery",
+    "wf257_ingest_paladin_corridor",
     "parallel_search",
     "score_path_levels",
     "path_score",
@@ -410,6 +417,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/test_wf254_paladin_rank_batch.py",
     "tests/test_v2_parallel_path.py",
     "tests/generic/search/test_v2_path_score.py",
     "tests/test_v2_projection.py",
