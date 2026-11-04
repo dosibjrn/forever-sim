@@ -58,6 +58,13 @@ def query_native_p3_item_options(
     unverified_count = response.get("unverified_candidate_count")
     if type(unverified_count) is not int or unverified_count < 0:
         raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_INVALID_UNVERIFIED_COUNT")
+    if str(class_key).lower() == "shaman" and "excluded_non_client_item_count" not in response:
+        raise NativeItemOptionsError(
+            "P3_NATIVE_ITEM_OPTIONS_EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE")
+    excluded_count = response.get("excluded_non_client_item_count", 0)
+    if type(excluded_count) is not int or excluded_count < 0:
+        raise NativeItemOptionsError(
+            "P3_NATIVE_ITEM_OPTIONS_INVALID_EXCLUDED_NON_CLIENT_COUNT")
     if status == "partial_level_unknown":
         if unverified_count == 0:
             raise NativeItemOptionsError("P3_NATIVE_ITEM_OPTIONS_STATUS_COUNT_MISMATCH")
@@ -372,5 +379,6 @@ def native_p3_item_records(binary: str | Path, class_key: str, level: int,
     return tuple(records), unmapped_by_item, {
         "status": response["status"],
         "unverified_candidate_count": response["unverified_candidate_count"],
+        "excluded_non_client_item_count": response.get("excluded_non_client_item_count", 0),
         "source": response.get("source"),
     }
