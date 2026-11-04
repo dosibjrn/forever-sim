@@ -20,6 +20,8 @@ RETIRED_TOOLS = (
     "tools/wf319_druid_l20_index_l2_parity.py",
     # One-off WF300 GameIR talent-neighbor diagnostic had no callers; active runtime regressions remain.
     "tools/wf300_two_stage_adversarial_100mob.py",
+    # One-off equal-terms wrapper; retain the shared WF299 probe and behavior tests.
+    "tools/wf300_continuous_100_mob_acceptance.py",
     # One-off WF343 report driver had no callers; underlying P3 behavior tests remain.
     "tools/wf343_direct_percent_top5.py",
     # WF431 one-off paid GameIR search runner; retained evidence is diagnostic only.
@@ -110,6 +112,7 @@ RETIRED_IMPORT_NAMES = (
     "wf280_real_mode_path_benchmark",
     "wf319_druid_l20_index_l2_parity",
     "wf300_two_stage_adversarial_100mob",
+    "wf300_continuous_100_mob_acceptance",
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
     "wf359_druid_l30_p3_rebase",
@@ -284,6 +287,8 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(
         encoding="utf-8"
     )
+    workflow_triggers = workflow.split("permissions:", 1)[0]
+    assert "      - 'tools/wf300_continuous_100_mob_acceptance.py'" in workflow_triggers
     workflow_jobs = workflow.split("jobs:", 1)[1] if "jobs:" in workflow else ""
     for relative in RETIRED_TOOLS:
         assert relative not in workflow_jobs, relative
