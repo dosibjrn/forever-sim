@@ -114,13 +114,13 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
     from src.v2.source_bounded_joint_frontier import (
         source_cold_start_stage, search_bounded_joint_frontier)
 
-    ir = build_game_ir_slice(class_key=class_key, level=level)
     roles = available_gear_roles(class_key)
     if not roles:
         # A missing Forever SQLite role is not evidence of missing native
         # Priest gear. Ask the selected Rust item-options source directly.
         # Never pass those items through the legacy Python legality/runtime.
         return _native_cold_options_without_paid_executor(class_key, level, spec)
+    ir = build_game_ir_slice(class_key=class_key, level=level)
     if ir is None:
         return {"status": "BLOCKED", "reasons": [
             "SOURCE_COLD_SEARCH_IR_UNAVAILABLE"]}
