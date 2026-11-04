@@ -248,16 +248,29 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "src.v2.source_bounded_joint_frontier.source_spec_talent_frontier"}
     native_spell_facts = None
     native_spell_coefficients_applied = []
-    if (str(class_key).lower() == "mage" and int(level) == 30
-            and str(spec).lower() == "unrestricted"):
+    mage_l30_spellbook = (
+        str(class_key).lower() == "mage" and int(level) == 30
+        and str(spec).lower() == "unrestricted")
+    shaman_l20_spellbook = (
+        str(class_key).lower() == "shaman" and int(level) == 20
+        and str(spec).lower() == "unrestricted")
+    if mage_l30_spellbook or shaman_l20_spellbook:
         from src.game.native_p3_item_options import (
             NativeItemOptionsError, apply_native_mage_spell_coefficients,
+            apply_native_shaman_lightning_bolt_coefficient,
             query_native_mage_spell_coefficients,
+            query_native_shaman_spell_coefficients,
         )
         try:
-            native_spell_facts = query_native_mage_spell_coefficients(native_binary)
-            ir, native_spell_coefficients_applied = (
-                apply_native_mage_spell_coefficients(ir, native_spell_facts))
+            if shaman_l20_spellbook:
+                native_spell_facts = query_native_shaman_spell_coefficients(native_binary)
+                ir, native_spell_coefficients_applied = (
+                    apply_native_shaman_lightning_bolt_coefficient(
+                        ir, native_spell_facts))
+            else:
+                native_spell_facts = query_native_mage_spell_coefficients(native_binary)
+                ir, native_spell_coefficients_applied = (
+                    apply_native_mage_spell_coefficients(ir, native_spell_facts))
         except (NativeItemOptionsError, ValueError, TypeError, OSError) as exc:
             return {
                 "status": "BLOCKED",
@@ -385,8 +398,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         and str(spec).lower() == "unrestricted"
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
+    # The Shaman winner is eligible for the paid native-coefficient
+    # continuation only when its actual fallback is the enriched rank 915.
+    native_spell_winner = (
+        mage_l30_native or (
+            shaman_l20_spellbook
+            and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+            and native_fallback_action))
     paid_winner_baseline_available = (
-        mage_l30_native
+        native_spell_winner
         and paid_search_winner_baseline(
             policy, record, tuple(record.get("prefix") or ())) is not None
     )
@@ -394,7 +414,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
             continue
-        if mage_l30_native:
+        if native_spell_winner:
             probe_deltas, probe_delta_sources = _native_item_stat_probe_deltas(
                 item_check, axis)
             # If native top-five items have no positive value for this axis,
@@ -414,7 +434,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         )
         minimum_evaluations = (
             1 if (has_reusable_baseline or paid_winner_baseline_available)
-            else (3 if mage_l30_native and record.get("prefix") else 2)
+            else (3 if native_spell_winner and record.get("prefix") else 2)
         )
         if remaining < minimum_evaluations:
             break
@@ -424,10 +444,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
             opening_action_ids=tuple(record.get("prefix", ())),
-            preferred_policy=(policy if mage_l30_native else None),
-            baseline_record=(record if mage_l30_native else None),
+            preferred_policy=(policy if native_spell_winner else None),
+            baseline_record=(record if native_spell_winner else None),
             allow_paid_winner_after_nonpositive=native_fallback_action)
-        if mage_l30_native:
+        if native_spell_winner:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
