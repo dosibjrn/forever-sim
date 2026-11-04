@@ -581,7 +581,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    opening_action_ids: tuple[str, ...] = (),
                                    preferred_policy=None,
                                    baseline_record: dict | None = None,
-                                   allow_paid_winner_after_nonpositive: bool = False) -> dict:
+                                   allow_paid_winner_after_nonpositive: bool = False,
+                                   breadth_first_verified_native_winner: bool = False) -> dict:
     """Find a measured beneficial stat delta on an executable source policy.
 
     Keep source-IR policies first. On the Mage L30 native-item path, use the
@@ -657,6 +658,15 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             # baseline has been established.
             continue
         policy_probe_deltas = tuple(probe_deltas)
+        if (breadth_first_verified_native_winner
+                and preferred_score is not None
+                and policy_source == 'source_ir_policy'):
+            # With a verified, already-paid winner available, spend one
+            # largest source-item-sized delta on each distinct source policy
+            # before exhausting the hard budget on a second unsuccessful
+            # delta for the first policy. This does not waive any paid
+            # execution or infer a positive weight from a failed probe.
+            policy_probe_deltas = tuple(probe_deltas[:1])
         if (policy_source == 'paid_search_winner'
                 and source_policy_baseline_established
                 and allow_paid_winner_after_nonpositive):
