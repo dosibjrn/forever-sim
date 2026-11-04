@@ -9,7 +9,7 @@
 ### #1 — Merge: one-shot Hunter L20 unrestricted P3 measurement — [#827](https://github.com/dosibjrn/forever-sim/issues/827) <ready>
 
 - **Baseline:** no `hunter:20:unrestricted:P3` row in the current M1 ledger and no existing task for this exact measurement.
-- **Why this is the best next measurement:** Hunter's production profile is verified through L20, its existing gear bridge has a Hunter role and canonical per-level item data, and P3 is the fast gear-scoring smoke (bounded source search, up to 44 evaluations). This is a more credible cheap attempt than unverified deeper Hunter levels or Paladin's experimental profile, and it does not duplicate the Priest/Mage work already underway.
+- **Why this is the best next measurement:** Hunter's production profile is verified through L20 and its existing gear bridge has a Hunter role, and P3 is the fast gear-scoring smoke (bounded source search, up to 44 evaluations). This is a more credible cheap attempt than unverified deeper Hunter levels or Paladin's experimental profile, and it does not duplicate the Priest/Mage work already underway.
 - **Action:** run once on fresh `main` through the trusted Merge recorder: `python tools/wf_gate.py --class hunter --level 20 --spec unrestricted --gate P3`. Both earlier recorders are terminal; there is no active trusted M1 writer. Do not add code or change the predicate.
 - **Conditional upside, not earned:** one genuine PASS adds `1/1332` = **+0.07508 percentage points**. If the real run fails, only the recorder's eligible measured PARTIAL may count; report the actual result and do not retry unchanged code.
 
@@ -21,7 +21,7 @@
 - **Next action:** construct/prepare a real Priest L20 native candidate and connect it to the existing paid whole-build/world screen. Then run one bounded no-record P4/P5 producer. Only hand off to Merge after actual COMPLETE paid screens and source-action casts. No Python Priest role, SQLite fallback or GameIR adapter.
 - **Conditional upside, not earned:** if both gates genuinely reach 2/6, about **+0.05005 percentage points** combined. No 30/300-second or 100-mob acceptance merely to collect partial credit.
 
-### #3 — Work2: Mage L30 unrestricted P3 paid stat-witness repair — [#818](https://github.com/dosibjrn/forever-sim/pull/825)
+### #3 — Work2: Mage L30 unrestricted P3 paid stat-witness repair — [issue #818](https://github.com/dosibjrn/forever-sim/issues/818)
 
 - **Baseline:** official [#41775113953](https://github.com/dosibjrn/forever-sim/actions/runs/41775113953) recorded FAIL / PARTIAL **44/224**.
 - **Latest no-record production result:** [#41778805293](https://github.com/dosibjrn/forever-sim/actions/runs/41778805293) on Work2 HEAD `ccb5a8a6d11054caf9990fedfb5a7bc70c54c9fa` still returned **44/224**: 1,458 known-legal native items, 2,239 unknown-required-level exclusions, 85 top-five items scored, 44 source-search evaluations. No M1 improvement.
