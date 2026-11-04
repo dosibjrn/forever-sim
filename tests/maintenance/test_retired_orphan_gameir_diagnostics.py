@@ -91,6 +91,8 @@ RETIRED_TOOLS = (
     # WF328's one-off GameIR/SQLite report producers; keep their historical JSON and prefix regression.
     "tools/wf328_druid_l20_mode_search_evidence.py",
     "tools/wf328_geared_blind_joint_check.py",
+    # Historical 100-mob GameIR/SQLite comparison is not active P3-P7.5 acceptance.
+    "tools/wf328_geared_comparison.py",
     # Orphaned WF_FERAL01 Druid L20 evidence generator; no retained consumer.
     "tools/run_wf_feral01_evidence.py",
     # Obsolete WF-FERAL01 GameIR probes/replays; independent mechanics tests remain.
@@ -200,6 +202,7 @@ RETIRED_IMPORT_NAMES = (
     "wf322_druid_l20_build_parity",
     "wf328_druid_l20_mode_search_evidence",
     "wf328_geared_blind_joint_check",
+    "wf328_geared_comparison",
     "run_wf_feral01_evidence",
     "wf_feral01b_source_damage_probe",
     "wf_feral01c2c_replay",
@@ -301,6 +304,7 @@ RETIRED_TESTS = (
     "tests/test_wf359_druid_l30_p3_rebase.py",
     "tests/test_wf427_quest_horizon_paid_tdd.py",
     "tests/test_wf356_export_legacy_druid30.py",
+    "tests/test_wf328_geared_reference_replay.py",
     "tests/test_level_evaluation_trace_p00b.py",
     "tests/test_level_legality_p00c.py",
     "tests/test_wf_p01a_legal_candidates.py",
@@ -390,6 +394,8 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     assert "      - 'tests/test_wf356_export_legacy_druid30.py'" in workflow_triggers
     assert "      - 'tools/wf252_companion_replay.py'" in workflow_triggers
     assert "      - 'tools/wf242_validate.py'" in workflow_triggers
+    assert "      - 'tools/wf328_geared_comparison.py'" in workflow_triggers
+    assert "      - 'tests/test_wf328_geared_reference_replay.py'" in workflow_triggers
     workflow_jobs = workflow.split("jobs:", 1)[1] if "jobs:" in workflow else ""
     for relative in RETIRED_TOOLS:
         assert relative not in workflow_jobs, relative
