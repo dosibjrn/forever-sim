@@ -54,6 +54,8 @@ RETIRED_TOOLS = (
     "tools/wf305_ingest_web_observed_spell_dependencies.py",
     "tools/wf357_l30_fresh_replay.py",
     "tools/wf358_l30_fresh_joint_replay.py",
+    # WF373 was an orphaned Druid L30 GameIR/SQLite 100-mob diagnostic; its staged database is retired.
+    "tools/wf373_druid_l30_primal_vs_swipe_100mob.py",
     # 2026-11-04: orphaned one-off probes; their staged P2 databases were retired.
     "tools/wf357_recovery_probe.py",
     "tools/wf391_generic_joint_probe.py",
@@ -115,6 +117,7 @@ RETIRED_IMPORT_NAMES = (
     "wf305_ingest_web_observed_spell_dependencies",
     "wf357_l30_fresh_replay",
     "wf358_l30_fresh_joint_replay",
+    "wf373_druid_l30_primal_vs_swipe_100mob",
     "wf357_recovery_probe",
     "wf391_generic_joint_probe",
     "wf417_source_root_2d_probe",
