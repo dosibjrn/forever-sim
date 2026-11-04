@@ -229,3 +229,44 @@ jobs:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
           python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.1
+
+  selected-native-p75:
+    # Pay exactly one changed-HEAD unrestricted P7.5 300s native cold search
+    # and 1000-fight stochastic holdout. No --record-pass or M1 mutation.
+    if: startsWith(github.head_ref, 'work/work2-p75-unrestricted-native-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact Work2 P7.5 HEAD and selected Rust source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          submodules: true
+          lfs: true
+          fetch-depth: 0
+      - name: Verify actual selected Rust gitlink
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          recorded="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$recorded" && test "$recorded" = "$actual"
+          echo "PR_HEAD=$(git rev-parse HEAD) RUST_GITLINK=$actual"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+      - name: Build selected native scorer (no alternate engine)
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_RELEASE_LTO: 'off'
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+        run: cargo build --release --locked --bin forever-engine
+      - name: One real paid 300s P7.5 native joint search and stochastic frozen holdout
+        env:
+          FOREVER_P7_FULL_SOURCE_SEARCH: '1'
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
+        run: |
+          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.5 --out "${{ runner.temp }}/p75-native-result.json"
