@@ -338,16 +338,17 @@ def score_source_priest_l20_candidates(binary: str | Path,
     persistent_targets_killed = 0
     persistent_candidate = None
     persistent_request_sha256 = None
-    if world_screen is not None:
+    if world_screen is not None or persistent_world is not None:
         from tempfile import TemporaryDirectory
         ranked = sorted(
             (row for row in paid if row["native_source_action_casts"] > 0),
             key=lambda row: row["native_score"], reverse=True)
-        # Native DPS alone is not a 2D kill criterion: every already-paid
-        # source build in this bounded frontier can be genuinely world-tested.
-        # Stop at the first ACKed lethal world result, never at a nonlethal ACK.
+        # A paid whole build may go straight to the real retained native/2D
+        # screen. The separate one-fight diagnostic is useful but must not
+        # veto a valid continuous actor run, including after its own failure.
         for candidate in ranked[:max_paid_builds]:
-            live_attempted += 1
+            if world_screen is not None:
+                live_attempted += 1
             try:
                 # Replay the exact normalized request paid by the native scorer.
                 # The original source JSON and candidate directory are read-only:
@@ -368,10 +369,18 @@ def score_source_priest_l20_candidates(binary: str | Path,
                     execution_request = Path(directory) / "source.json"
                     execution_request.write_text(
                         json.dumps(effective, sort_keys=True), encoding="utf-8")
-                    live = world_screen(binary, execution_request)
-                    if (isinstance(live, dict)
-                            and live.get("native_2d_fight_ack_complete") is True
-                            and persistent_world is not None):
+                    live = None
+                    if world_screen is not None:
+                        try:
+                            live = world_screen(binary, execution_request)
+                        except (OSError, ValueError, RuntimeError, TimeoutError,
+                                AssertionError, KeyError, TypeError,
+                                subprocess.SubprocessError) as exc:
+                            candidate["native_2d_fight_error"] = str(exc)[-500:]
+                    # Only the retained native/2D session decides whether
+                    # this paid build can finish the requested world screen.
+                    # A failed independent one-fight probe is not a veto.
+                    if persistent_world is not None:
                         persistent_attempted += 1
                         try:
                             # Preserve existing two-target behavior by default.
@@ -415,27 +424,29 @@ def score_source_priest_l20_candidates(binary: str | Path,
                                 AssertionError, KeyError, TypeError,
                                 subprocess.SubprocessError) as exc:
                             candidate["native_2d_persistent_error"] = str(exc)[-500:]
-                if (not isinstance(live, dict)
-                        or live.get("native_2d_fight_ack_complete") is not True):
-                    raise RuntimeError("PRIEST_L20_PAID_WORLD_ACK_NOT_VERIFIED")
-                candidate["native_2d_fight"] = live
-                live_verified += 1
-                # ACK alone can leave the sourced target alive. Retain that
-                # honest receipt and try the next paid whole build for a real
-                # lethal world ACK, without treating either as a 100-mob screen.
-                if live.get("native_2d_world_target_killed") is True:
-                    live_killed += 1
-                    if live_kill_candidate is None:
-                        live_kill_candidate = candidate["candidate"]
-                        live_kill_request_sha256 = candidate["native_request_sha256"]
-                    # A one-mob kill does not by itself satisfy the retained
-                    # screen. If continuation failed, try another paid build.
-                    if persistent_world is None or persistent_candidate is not None:
-                        break
+                if world_screen is not None:
+                    if (not isinstance(live, dict)
+                            or live.get("native_2d_fight_ack_complete") is not True):
+                        candidate.setdefault(
+                            "native_2d_fight_error",
+                            "PRIEST_L20_PAID_WORLD_ACK_NOT_VERIFIED")
+                    else:
+                        candidate["native_2d_fight"] = live
+                        live_verified += 1
+                        # A separate lethal fight is diagnostic, not a
+                        # substitute for the continuous native world run.
+                        if live.get("native_2d_world_target_killed") is True:
+                            live_killed += 1
+                            if live_kill_candidate is None:
+                                live_kill_candidate = candidate["candidate"]
+                                live_kill_request_sha256 = candidate["native_request_sha256"]
                 if persistent_candidate is not None:
-                    # A retained native actor that genuinely ACKed every
-                    # requested target is stronger evidence than the separate
-                    # one-fight diagnostic. Do not waste paid frontier work.
+                    # True retained native/world success is the stronger
+                    # result. Stop spending the already-paid frontier.
+                    break
+                if (persistent_world is None and isinstance(live, dict)
+                        and live.get("native_2d_fight_ack_complete") is True
+                        and live.get("native_2d_world_target_killed") is True):
                     break
             except (OSError, ValueError, RuntimeError, TimeoutError,
                     AssertionError, KeyError, TypeError,
