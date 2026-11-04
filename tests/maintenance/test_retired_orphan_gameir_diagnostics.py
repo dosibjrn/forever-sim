@@ -491,7 +491,6 @@ RETIRED_COMMANDS = (
 
 
 RETAINED_BEHAVIOR_TESTS = (
-    "tests/test_wf322_druid_l20_web_observed_build_parity.py",
     "tests/test_wf328_mode_joint_prefix_admission.py",
     "tests/test_wf270_index_to_ir_action_frontier.py",
     "tests/test_wf272_source_ranked_periodic_finisher.py",
