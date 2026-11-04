@@ -176,3 +176,48 @@ def test_invalid_finished_naked_stat_probe_objective_is_not_measured(
         SimpleNamespace(), {"fallback": "source-spell", "prefix": ()},
         level=30, incoming=True)
     assert result is None
+
+
+def test_paid_p3_missing_weight_retries_only_a_real_source_executable_axis():
+    """Missing source-executable stat is offered a paid probe, not a fake zero."""
+    from tools.wf_gate_p3_live import _p3_executable_weight_witness_axes
+
+    blockers = [
+        "MISSING_WEIGHT:stamina",
+        "MISSING_WEIGHT:strength",
+        "MISSING_WEIGHT:armor",
+        "MISSING_WEIGHT:intellect",
+        "NONPOSITIVE_RELEVANT_WEIGHT:spirit",
+        "NONPOSITIVE_RELEVANT_WEIGHT:hit",
+        "NONPOSITIVE_RELEVANT_WEIGHT:spell_power",
+        "SLOT_ITEM_REQUIRED_LEVEL_UNKNOWN:head",
+    ]
+    # Real selected Mage L30 source can perturb Armor, Intellect, Spirit and
+    # Hit; neither Stamina nor Strength is executable in the default IR.
+    actual_source_axes = ("armor", "intellect", "spirit", "hit", "spell_power")
+    weights = {"spirit": 0.0, "hit": -0.05, "spell_power": 0.2}
+    result = _p3_executable_weight_witness_axes(
+        blockers, weights, actual_source_axes,
+        ("spell_power", "intellect", "spirit", "hit", "armor"))
+    assert result == ["intellect", "spirit", "armor"]
+    assert "stamina" not in result and "strength" not in result
+    assert "hit" not in result and "spell_power" not in result
+
+
+def test_paid_p3_missing_weight_not_reclassified_as_measured_zero():
+    from tools.wf_gate_p3_live import _p3_executable_weight_witness_axes
+
+    # No source effect -> no attempt and no fabricated weight. The helper
+    # only schedules possible paid calls; it does not alter weights.
+    weights = {}
+    result = _p3_executable_weight_witness_axes(
+        ["MISSING_WEIGHT:stamina"], weights, ("intellect",), ("stamina",))
+    assert result == []
+    assert weights == {}
+    # Once source supports the perturbation, keep the missing weight absent
+    # until a real paid scorer reports a finite result.
+    result = _p3_executable_weight_witness_axes(
+        ["MISSING_WEIGHT:stamina"], weights, ("intellect", "stamina"),
+        ("stamina",))
+    assert result == ["stamina"]
+    assert weights == {}
