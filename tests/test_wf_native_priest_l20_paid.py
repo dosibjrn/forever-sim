@@ -97,7 +97,7 @@ def test_p4_p5_paid_native_receipt_does_not_claim_2d_completion(tmp_path, monkey
                             "status": "ok", "items": [{"item_id": 25, "slot": "chest"}],
                             "unverified_candidate_count": 0,
                         })
-    monkeypatch.setattr(wf_native_priest_l20_paid, "score_source_priest_l20",
+    monkeypatch.setattr(wf_native_priest_l20_paid, "score_native_priest_l20_item_candidates",
                         lambda *a, **k: {
                             "native_paid_whole_builds": 1,
                             "native_source_action_casts": 2,
@@ -208,3 +208,60 @@ def test_p4_p5_gate_uses_paid_source_candidate_directory_without_m1_credit(
     assert report["coverage_scope_complete"] is False
     assert report["reasons"] == ["P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"]
     assert "pass_count" not in report
+
+
+def test_item_options_create_actual_native_paid_gear_requests_without_slot_rules(
+        tmp_path):
+    from tools.wf_native_priest_l20_paid import score_native_priest_l20_item_candidates
+
+    source = _request()
+    source_file = tmp_path / "source.json"
+    source_file.write_text(json.dumps(source))
+    evaluated = []
+
+    def scorer(binary, candidate, **kwargs):
+        evaluated.append(copy.deepcopy(candidate))
+        return {
+            "effective_request_sha256": "native-" + str(len(evaluated)),
+            "score": 5.0 + len(evaluated), "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 2}],
+        }, {}
+
+    receipt = score_native_priest_l20_item_candidates(
+        "/native", source_file, [
+            {"item_id": 102, "slot": "chest"},
+            {"item_id": 103, "slot": "chest"},  # Same slot: do not spend again.
+            {"item_id": 104, "slot": "head"},
+            {"item_id": 105, "slot": "neck"},
+        ], score_request=scorer, max_paid_builds=3)
+    assert len(evaluated) == 3
+    assert [request["raid"]["parties"][0]["players"][0]["equipment"]["items"]
+            for request in evaluated] == [
+                [], [{"id": 102}], [{"id": 104}]]
+    assert all(request["encounter"] == source["encounter"]
+               for request in evaluated)
+    assert all(request["raid"]["parties"][0]["players"][0]["level"] == 20
+               for request in evaluated)
+    assert receipt["native_item_options_proposed"] == 2
+    assert receipt["native_item_option_source_slots_proposed"] == ["chest", "head"]
+    assert receipt["native_paid_whole_builds"] == 3
+    assert receipt["native_source_action_casts"] == 6
+    assert receipt["native_2d_screen_complete"] is False
+    assert json.loads(source_file.read_text()) == source
+
+
+def test_native_item_proposals_do_not_overwrite_an_already_equipped_source(
+        tmp_path):
+    from tools.wf_native_priest_l20_paid import score_native_priest_l20_item_candidates
+
+    source = _request()
+    source["raid"]["parties"][0]["players"][0]["equipment"]["items"] = [
+        {"id": 123}]
+    source_file = tmp_path / "equipped.json"
+    source_file.write_text(json.dumps(source))
+    with pytest.raises(ValueError, match="REQUIRE_EMPTY_SOURCE_GEAR"):
+        score_native_priest_l20_item_candidates(
+            "/native", source_file, [{"item_id": 456, "slot": "head"}],
+            score_request=lambda *a, **k: (_ for _ in ()).throw(
+                AssertionError("must not silently replace source gear")))
