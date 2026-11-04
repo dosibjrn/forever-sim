@@ -67,6 +67,8 @@ on:
       - 'tools/wf322_druid_l20_build_parity.py'
       - 'tools/wf328_druid_l20_mode_search_evidence.py'
       - 'tools/wf328_geared_blind_joint_check.py'
+      - 'tools/wf328_geared_comparison.py'
+      - 'tests/test_wf328_geared_reference_replay.py'
       - 'tools/run_wf_feral01_evidence.py'
       - 'tools/wf_feral01b_source_damage_probe.py'
       - 'tools/wf_feral01c2c_replay.py'
