@@ -30,6 +30,8 @@ on:
       - 'tools/wf270_action_source_coverage.py'
       - 'tests/test_wf272_source_ranked_periodic_finisher.py'
       - 'src/v2/source_budgeted_gear.py'
+      - 'src/game/checkpoint_p3_smoke.py'
+      - 'tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py'
       - 'tools/wf_gate_p3_live.py'
       - 'tests/test_selected_source_plumbing.py'
       - 'tests/test_prio_p3_live_sourced_chance_gear.py'
@@ -79,7 +81,7 @@ jobs:
           tests/test_p7_search_deadline_contract.py
       - name: Verify grouped mechanics layout and preserved evidence assertions
         run: >-
-          python -m pytest -q
+          python -m pytest -q -s
           tests/maintenance
           tests/test_level_legality_p00c.py
           tests/test_wf272_source_ranked_periodic_finisher.py
@@ -99,6 +101,7 @@ jobs:
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_prio_p3_source_policy_sp.py
+          tests/test_wf410_process_v2_equipped_weapon_dependency_tdd.py
           tests/test_selected_source_plumbing.py
           tests/test_prio_p3_live_sourced_chance_gear.py
           tests/test_wf380_legacy_bonus_talent_budget.py
