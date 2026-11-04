@@ -41,5 +41,6 @@ mage	30	unrestricted	P4		c7a29f414e349809cf54970c27f40488472b5863	https://github
 mage	30	unrestricted	P5		ae3bddda49c2ec3297f883b96f787074d38072d7	https://github.com/dosibjrn/forever-sim/actions/runs/41773832688		PARTIAL	2	6	1	2026-11-04T04:32:57.297884+00:00
 paladin	20	unrestricted	P3		7a0d197e309e6687b92e9d85b7110400975f4f42	https://github.com/dosibjrn/forever-sim/actions/runs/41819051081		PARTIAL	154	210	1	2026-11-04T11:14:06.424327+00:00
 priest	20	unrestricted	P3		9e5b4196ea5a1c19b399dea0d49f43f08470840c	https://github.com/dosibjrn/forever-sim/actions/runs/41769057124		PARTIAL	44	220	1	2026-11-04T03:51:19.912069+00:00
+priest	20	unrestricted	P4	2026-11-04T21:16:29.495670+00:00	f98c7446d93694f70f7aecd85a5d7e29174ad5d2	https://github.com/dosibjrn/forever-sim/actions/runs/41912663802		PASS				2026-11-04T21:16:29.495670+00:00
 rogue	20	unrestricted	P3		6fac3f0a564a60aadd05ac5aa1991b6175f3a316	https://github.com/dosibjrn/forever-sim/actions/runs/41865112718		PARTIAL	49	207	1	2026-11-04T16:19:10.776619+00:00
 shaman	20	unrestricted	P3		d0185e1ad7e0b3ceb6ead1133af846ff06db71df	https://github.com/dosibjrn/forever-sim/actions/runs/41808193281		PARTIAL	93	204	1	2026-11-04T09:37:34.044931+00:00
