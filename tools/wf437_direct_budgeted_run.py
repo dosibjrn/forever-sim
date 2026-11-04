@@ -12,6 +12,8 @@ from src.v2.source_paid_cold_comparison import (source_gear_catalogue_snapshot,
 
 ap=argparse.ArgumentParser()
 ap.add_argument('--budget',type=int,choices=(30,300))
+ap.add_argument('--p6-shared-finalists',action='store_true',
+    help='One 300s cold run: refine early and replay only frozen P6 winners')
 ap.add_argument('--checkpoint-class',default='druid')
 ap.add_argument('--checkpoint-level',type=int,default=30)
 ap.add_argument('--checkpoint-spec',default='unrestricted')
@@ -23,6 +25,8 @@ ap.add_argument('--compare-30',help='Saved independent 30s cold source report')
 ap.add_argument('--compare-300',help='Saved independent 300s cold source report')
 ap.add_argument('--output',required=True)
 args=ap.parse_args()
+if args.p6_shared_finalists and args.budget != 300:
+    ap.error('--p6-shared-finalists requires a fresh --budget 300 cold search')
 if args.gear_slot_offset<0:
     ap.error('--gear-slot-offset must be nonnegative')
 if args.gear_slot_offset and (args.compare_30 is not None or args.compare_300 is not None
@@ -143,6 +147,11 @@ params=dict(class_key=class_key,level=level,source_ir=ir,seed_stage=stage,
     max_paid_builds=(1000 if args.budget==30 else 20000),
     max_cpu_s=float(args.budget),
     snapshot_at_s=(30. if args.budget==300 else None),
+    # P6 measured T30/T300=1.313 on the prior 60%-exploration schedule:
+    # refinement began at ~180s, too late to improve the frozen 30s build.
+    # Start the *same* paid refinement at 15s, backfill remaining frontier
+    # thereafter; do not change P3/P4/P5's default search scheduling.
+    screen_budget_fraction=(.05 if args.p6_shared_finalists else None),
     screen_mobs=2,finalist_mobs=100,
     per_candidate_wall_s=1.,search_only=True,screen_evaluator_backend='direct',
     # The short search previously promoted only four paid parent builds;
@@ -164,9 +173,18 @@ print('SEARCH_FINISHED',args.budget,'wall',r['wall_s'],'attempts',r['paid_candid
       'refine_rounds',r['refinement']['rounds_completed'],'stat_probes',r['refinement']['stat_probes'],
       'gear_probes',r['refinement']['gear_probes'],'winner_proxy',
       (r['search_winner'] or {}).get('screen_s_per_mob'),flush=True)
-rv=replay_joint_shortlist_100mob(r,source_ir=ir,seed_stage=stage,
+# P6 needs just the genuine 30s and 300s selected builds. Replaying all
+# exploratory 2-mob finalists adds unnecessary 100-mob work *after* the cold
+# clock and can conceal the two relevant receipts behind an inflated timeout.
+if args.p6_shared_finalists:
+    from tools.wf_gate_p6_full_source import _shared_replay_winners
+    validation_shortlist = _shared_replay_winners(r)
+else:
+    validation_shortlist = r['validation_shortlist']
+replay_source = {**r, 'validation_shortlist': validation_shortlist}
+rv=replay_joint_shortlist_100mob(replay_source,source_ir=ir,seed_stage=stage,
     class_key=class_key,level=level,bonus_talent_points=bonus,pack_size=2,
-    max_per_candidate_wall_s=60.) if r['validation_shortlist'] else {'status':'NO_VALIDATION_SHORTLIST'}
+    max_per_candidate_wall_s=60.) if validation_shortlist else {'status':'NO_VALIDATION_SHORTLIST'}
 print('VALIDATION',args.budget,'status',rv['status'],'wall',rv.get('wall_s_outside_search_budget'),
       'replayed',rv.get('100mob_replays'),'completed',rv.get('complete_100mob_replays'),
       'ranking_reversal',rv.get('ranking_reversal'),'result',[(x['screen_s_per_mob'],x['full_s_per_mob']) for x in rv.get('rows',[])],flush=True)
@@ -196,10 +214,10 @@ summary['validation']=rv
 # Preserve exact source-legal gear, talent ranks, APL, opening and recovery.
 # Without this, a failed 300s finalist cannot be replayed without rerunning
 # the entire cold search, and its first failed pull cannot be investigated.
-summary['validation_shortlist']=r['validation_shortlist']
+summary['validation_shortlist']=validation_shortlist
 summary['shortlist_summary']=[{k:x.get(k) for k in ('allocation','gear_move','policy','recovery',
     'policy_signature','screen_status','screen_s_per_mob','refinement_round','stat_weights_measured')}
-    for x in r['validation_shortlist']]
+    for x in validation_shortlist]
 summary['p4_acceptance_status']='NOT_ACCEPTED_SOURCE_COVERAGE_GATES_NOT_PROVEN'
 summary['p5_acceptance_status']='NOT_ACCEPTED_SOURCE_COVERAGE_GATES_NOT_PROVEN'
 summary['p6_acceptance_status']='SHARED_SEARCH_REQUIRES_COMPARABLE_100MOB_REPLAY'
