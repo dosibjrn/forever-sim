@@ -65,6 +65,8 @@ class ManualExactHeadContract(unittest.TestCase):
                            "source-periodic-unit", "source-profile-unit"):
             self.assertIn(suite_name, suite)
         self.assertNotIn("p1p2-unit", TEXT)
+        self.assertIn("source-profile-unit)", TEXT)
+        self.assertIn("python -m pytest -q tests/gates/test_wf35_product_spec_profile_contract.py", TEXT)
         self.assertIn("Suite not allowlisted", TEXT)
 
     def test_relocated_service_queue_tests_have_a_bounded_manual_suite(self):
