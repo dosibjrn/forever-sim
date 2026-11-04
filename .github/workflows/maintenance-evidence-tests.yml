@@ -2,6 +2,10 @@ name: Repository maintenance regressions
 on:
   pull_request:
     paths:
+      - 'tools/wf389_paid_weapon_package_probe.py'
+      - 'tools/wf408_rerun_druid20_p3.py'
+      - 'tools/wf410_druid20_live_p3.py'
+      - 'tools/wf412_druid20_paid_stat_probe.py'
       - 'tests/maintenance/**'
       - 'src/game/data/forever/source_action_scope.py'
       - 'tools/wf303_checkpoint_falsifier.py'

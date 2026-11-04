@@ -9,6 +9,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Orphaned WF389/WF408/WF410/WF412 Python GameIR P3/100-mob report runners.
+    "tools/wf389_paid_weapon_package_probe.py",
+    "tools/wf408_rerun_druid20_p3.py",
+    "tools/wf410_druid20_live_p3.py",
+    "tools/wf412_druid20_paid_stat_probe.py",
     # Historical WF324 Druid L20 bounded GameIR searches; no active gate/optimizer caller.
     "tools/wf324_druid_l20_talent_screening.py",
     "tools/wf324_persistent_blind_selection.py",
@@ -176,6 +181,10 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf389_paid_weapon_package_probe",
+    "wf408_rerun_druid20_p3",
+    "wf410_druid20_live_p3",
+    "wf412_druid20_paid_stat_probe",
     "wf324_druid_l20_talent_screening",
     "wf324_persistent_blind_selection",
     "wf324_refine_persistent_discovered",
@@ -410,6 +419,10 @@ RETAINED_BEHAVIOR_TESTS = (
 
 
 RETAINED_HISTORICAL_EVIDENCE = (
+    # Frozen WF408/WF410/WF412 reports remain historical; only generators retire.
+    "evidence/wf408/WF408_DRUID20_MERGED_P3_LIVE.json",
+    "evidence/wf410/WF410_DRUID20_PROCESS_V2_P3_LIVE.json",
+    "evidence/wf412/WF412_DRUID20_PAID_REOPTIMIZED_STAT_PROBES.json",
     # Snapshot of the discontinued WF358 source-IR 100-mob contextual study.
     "evidence/wf358/WF358_L30_P3_TOP5_DIRECT_REPLAYS.json",
     "evidence/wf358/WF358_L30_P3_CONTEXTUAL_TOP5_AND_WEIGHTS.json",
