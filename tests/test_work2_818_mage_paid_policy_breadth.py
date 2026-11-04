@@ -127,3 +127,48 @@ def test_paid_source_witness_ignores_unusable_native_probe_objective_but_keeps_b
     assert witness["baseline_seconds_per_mob"] == 10.0
     assert witness["perturbed_seconds_per_mob"] == 9.0
     assert witness["weight_s_saved_per_mob_per_unit"] == 0.2
+
+
+@pytest.mark.parametrize("invalid_objective", [
+    None, "NATIVE_UNSUPPORTED", float("nan"), float("inf"), 0.0,
+])
+def test_unusable_paid_source_baseline_is_charged_and_classified(
+        monkeypatch, invalid_objective):
+    """A source kill with no numerical objective is not a paid stat baseline."""
+    source = SimpleNamespace(id="source-mage", provenance={"source": "fixture"})
+    ir = SimpleNamespace(id="mage-l30", policies=(source,))
+    calls = []
+
+    def evaluate(candidate, *, level, policy_override, opening_action_ids,
+                 schedule_incoming_attacks):
+        calls.append(policy_override.id)
+        return (SimpleNamespace(seconds_per_mob=invalid_objective),
+                SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)), {})
+
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", evaluate)
+    witness = budgeted.paid_source_policy_stat_witness(
+        ir, stat="spirit", level=30, max_evaluations=2)
+    assert calls == ["source-mage"]
+    assert witness["status"] == "NO_POSITIVE_SOURCE_POLICY_WITNESS"
+    assert witness["paid_evaluations"] == 1
+    assert witness["baseline_failures"][0]["reason"] == (
+        "BASELINE_NONPOSITIVE_OR_NONFINITE_OBJECTIVE")
+    assert witness["attempted_policies"] == []
+
+
+@pytest.mark.parametrize("invalid_objective", [
+    None, "NATIVE_UNSUPPORTED", float("nan"), float("inf"), 0.0,
+])
+def test_invalid_finished_naked_stat_probe_objective_is_not_measured(
+        monkeypatch, invalid_objective):
+    """Even a defeated target cannot justify an unscored stat derivative."""
+    monkeypatch.setattr(budgeted, "_make_policy", lambda *args, **kwargs: object())
+    monkeypatch.setattr(
+        budgeted, "_policy_combat_evaluation",
+        lambda *args, **kwargs: (
+            SimpleNamespace(seconds_per_mob=invalid_objective),
+            SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)), {}))
+    result = budgeted._fixed_opening_score(
+        SimpleNamespace(), {"fallback": "source-spell", "prefix": ()},
+        level=30, incoming=True)
+    assert result is None
