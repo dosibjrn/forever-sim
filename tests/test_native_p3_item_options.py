@@ -24,6 +24,7 @@ def _response(*, status="ok", items=None, **overrides):
     return {"status": status, "class": "priest", "level": 20,
             "spec": "unrestricted", "slot": "all",
             "required_level_supported": True, "unverified_candidate_count": 0,
+            "excluded_non_client_item_count": 0,
             "source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
             "items": items, "refusal": None} | overrides
 
@@ -52,7 +53,12 @@ def test_native_p3_forwards_shaman_request_and_preserves_source_candidates():
         "item_id": 25, "name": "Sourced Shaman chest", "item_level": 3,
         "required_level": 1, "slot": "chest", "stats": {"Stamina": 4.0},
     }
-    payload = _response(items=[item], **{"class": "shaman"})
+    payload = _response(
+        items=[item], **{
+            "class": "shaman",
+            "source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel+SkillLine+SkillRaceClassInfo",
+            "excluded_non_client_item_count": 3075,
+        })
     seen = []
 
     def runner(command, **kwargs):
@@ -72,8 +78,21 @@ def test_native_p3_forwards_shaman_request_and_preserves_source_candidates():
     assert unmapped == {}
     assert metadata["status"] == "ok"
     assert metadata["unverified_candidate_count"] == 0
-    assert metadata["source"].startswith("mythicsim:")
+    assert metadata["excluded_non_client_item_count"] == 3075
+    assert metadata["source"] == (
+        "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel+SkillLine+SkillRaceClassInfo"
+    )
 
+
+
+def test_native_p3_shaman_requires_client_exclusion_accounting():
+    payload = _response(**{"class": "shaman"})
+    del payload["excluded_non_client_item_count"]
+    with pytest.raises(
+        NativeItemOptionsError,
+        match="EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE",
+    ):
+        query_native_p3_item_options("native", "shaman", 20, runner=_runner(payload))
 
 
 def test_native_p3_empty_is_distinct_from_refusal():
@@ -166,7 +185,7 @@ def test_native_p3_partial_unknown_is_measured_but_not_certified():
         return_value=((item,), {}, metadata),
     ):
         report = fast_p3_smoke(
-            class_key="priest", level=20, weights={"stamina": 1.0},
+            class_key=class_key, level=20, weights={"stamina": 1.0},
             weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
             weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
             defensive_positive_required=False, native_options_binary="native")
@@ -184,6 +203,7 @@ def test_native_p3_partial_unknown_is_measured_but_not_certified():
     ("priest", 20, "unrestricted"),
     ("mage", 20, "unrestricted"),
     ("mage", 30, "unrestricted"),
+    ("shaman", 20, "unrestricted"),
 ])
 def test_native_p3_live_gate_fails_closed_without_binary(
         monkeypatch, class_key, level, spec):
@@ -251,17 +271,26 @@ def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
     assert report["p3_pass"] is False
 
 
-def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five():
+@pytest.mark.parametrize(("class_key", "excluded_count"), [
+    ("priest", 0),
+    ("shaman", 3075),
+])
+def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
+        class_key, excluded_count):
     levels = [3, 12, 7, 11, 9, 10, 8]
     items = tuple(ItemRecord(
         item_id=100 + index, name=f"Native chest {index}", slot="chest",
         item_level=item_level, required_level=1, stamina=2.0,
         identity_origin="mythicsim_native", source_type="mythicsim_native")
         for index, item_level in enumerate(levels))
+    source = "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel"
+    if class_key == "shaman":
+        source += "+SkillLine+SkillRaceClassInfo"
     metadata = {
         "status": "ok",
         "unverified_candidate_count": 0,
-        "source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
+        "excluded_non_client_item_count": excluded_count,
+        "source": source,
     }
     with patch(
         "src.game.native_p3_item_options.native_p3_item_records",
@@ -277,6 +306,7 @@ def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five():
             defensive_positive_required=False, native_options_binary="native")
     assert report["source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     assert report["legal_item_count"] == 7
+    assert report["native_excluded_non_client_item_count"] == excluded_count
     assert report["tested_item_count"] == 5
     assert report["slots"]["chest"]["selected_ids"] == [101, 103, 105, 104, 106]
     assert report["slots"]["chest"]["selection"] == "HIGHEST_ITEM_LEVEL_NOT_SCORE"
@@ -310,6 +340,7 @@ def test_selected_engine_workflow_runs_shaman_l20_native_p3_without_record():
     assert '--spec unrestricted --gate P3 --out "$report"' in shaman
     assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in shaman
     assert 'row["real_source_search_evaluated"] <= 44' in shaman
+    assert 'row["native_excluded_non_client_item_count"] > 0' in shaman
     assert "--record-pass" not in shaman
 
 def test_selected_engine_workflow_runs_mage_l30_native_p3_without_record():

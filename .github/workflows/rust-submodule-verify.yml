@@ -114,6 +114,7 @@ jobs:
           assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
           assert row["native_item_options_status"] == "ok"
           assert row["native_unverified_candidate_count"] == 0
+          assert row["native_excluded_non_client_item_count"] > 0
           source = row["native_item_options_source"]
           assert isinstance(source, str) and source.startswith("mythicsim:")
           assert row["real_catalogue_legal_items"] > 0
@@ -126,7 +127,8 @@ jobs:
                 "top5_scored", row["real_catalogue_top5_items_scored"],
                 "reachability", row["reachability_count"],
                 "paid_evaluations", row["real_source_search_evaluated"],
-                "native_status", row["native_item_options_status"], flush=True)
+                "native_status", row["native_item_options_status"],
+                "excluded_non_client", row["native_excluded_non_client_item_count"], flush=True)
           PY
 
       - name: Run no-record Mage L30 P3 with native item options
