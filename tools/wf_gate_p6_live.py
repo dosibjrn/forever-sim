@@ -111,9 +111,10 @@ def _run_priest_native_p6(class_key: str, level: int, spec: str) -> dict:
         "source_replay_T30_s_per_mob": verdict["T30_s_per_mob"],
         "source_replay_T300_s_per_mob": verdict["T300_s_per_mob"],
         "source_replay_T30_T300": verdict["ratio_T30_T300"],
-        "source_replay_numeric_saturation": bool(
-            verdict["ratio_T30_T300"] is not None
-            and verdict["ratio_T30_T300"] <= 1.01),
+        "source_replay_300s_nonregression": bool(
+            verdict["T30_s_per_mob"] is not None
+            and verdict["T300_s_per_mob"] is not None
+            and verdict["T300_s_per_mob"] <= 1.01 * verdict["T30_s_per_mob"]),
         "native_cold_identical_winner_build": verdict["identical_winner_build"],
         "coverage_scope_complete": verdict["status"] == "PASS",
     }
