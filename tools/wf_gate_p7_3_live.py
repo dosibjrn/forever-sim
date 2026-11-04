@@ -85,6 +85,8 @@ def _native_refusal(exc: Exception) -> tuple[str, str]:
                 message = str(refusal.get("reason", ""))[:400]
                 if code == "talents":
                     return "INVALID", "NATIVE_TALENTS:" + message
+                if code == "gear":
+                    return "INVALID", "NATIVE_GEAR:" + message
                 if code == "unsupported":
                     return "UNSUPPORTED", "NATIVE_UNSUPPORTED:" + message
         except (json.JSONDecodeError, TypeError, ValueError):
