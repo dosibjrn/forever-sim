@@ -1453,6 +1453,13 @@ def test_priest_retained_world_refuses_incomplete_native_regen_receipts(broken, 
         "RUST_TWO_WORLD_NATIVE_FAILED:exit=1:native mana exhausted on third target",
     ),
     (
+        AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", 1,
+                        "prepared input rejected: RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL",
+                        2, 32)),
+        "RUST_TWO_WORLD_NATIVE_FAILED:exit=1:completed=2:native_damage_events=32:"
+        "prepared input rejected: RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL",
+    ),
+    (
         RuntimeError("RUST_NATIVE_PREPARE_REFUSED"),
         "RUST_NATIVE_PREPARE_REFUSED",
     ),
@@ -1466,8 +1473,21 @@ def test_100_target_native_failure_keeps_causal_reason(native_failure, expected)
     assert _native_world_error(native_failure) == expected
 
 
-def test_failed_100_target_native_actor_preserves_actual_world_kills(tmp_path):
-    """Real gsim ACK count survives a failed retained session without PASS."""
+@pytest.mark.parametrize(("native_failure", "expected_reason"), [
+    ((
+        "RUST_TWO_WORLD_KILLS_NOT_COMPLETED", None,
+        [{"target_id": "m1"}, {"target_id": "m0"}], 32,
+    ), "RUST_TWO_WORLD_KILLS_NOT_COMPLETED:completed=2:native_damage_events=32"),
+    ((
+        "RUST_TWO_WORLD_NATIVE_FAILED", 1,
+        "prepared input rejected: RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL",
+        2, 32,
+    ), "RUST_TWO_WORLD_NATIVE_FAILED:exit=1:completed=2:native_damage_events=32:"
+       "prepared input rejected: RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL"),
+])
+def test_failed_100_target_native_actor_preserves_actual_world_kills(
+        tmp_path, native_failure, expected_reason):
+    """Actual native nonzero exit still preserves already ACKed kills; no PASS."""
     from hashlib import sha256
     from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
 
@@ -1487,10 +1507,7 @@ def test_failed_100_target_native_actor_preserves_actual_world_kills(tmp_path):
 
     def failed_world(binary, request_path, *, target_count):
         assert target_count == 100
-        raise AssertionError((
-            "RUST_TWO_WORLD_KILLS_NOT_COMPLETED", None,
-            [{"target_id": "m1"}, {"target_id": "m0"}], 32,
-        ))
+        raise AssertionError(native_failure)
 
     result = score_source_priest_l20_candidates(
         "/selected/native", tmp_path, score_request=scorer,
@@ -1504,6 +1521,5 @@ def test_failed_100_target_native_actor_preserves_actual_world_kills(tmp_path):
     assert result["native_2d_persistent_targets_killed"] == 0
     assert result["native_2d_persistent_max_observed_kills"] == 2
     assert row["native_2d_persistent_observed_kills"] == 2
-    assert row["native_2d_persistent_error"] == (
-        "RUST_TWO_WORLD_KILLS_NOT_COMPLETED:completed=2:native_damage_events=32")
+    assert row["native_2d_persistent_error"] == expected_reason
     assert result["native_2d_screen_complete"] is False
