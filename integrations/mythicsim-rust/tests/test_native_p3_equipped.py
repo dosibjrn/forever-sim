@@ -12,7 +12,7 @@ from native_p3_equipped import compare_equipped_native, first_equipped_proposal
 
 def _reference():
     return {"raid": {"parties": [{"players": [{
-        "class": "ClassRogue", "talentsString": "0-0-0",
+        "class": "ClassRogue", "level": 20, "talentsString": "0-0-0",
         "rotation": {"type": "TypeAPL", "priorityList": []},
         "equipment": {"items": [{"id": 100 + index} for index in range(17)]},
     }]}]}, "encounter": {"duration": 30},
@@ -59,7 +59,29 @@ def test_native_p3_pays_both_unmodified_baseline_and_equipped_with_identical_con
     assert receipt["comparison"]["delta_dps"] == 4.0
     assert receipt["evaluations"][0]["status"] == "VALID"
     assert receipt["evaluations"][1]["status"] == "VALID"
-    assert receipt["actor_checkpoint_verified"] is False
+    assert receipt["actor_checkpoint_verified"] is True
+    assert receipt["actor_requested_level"] == 20
+    assert receipt["promotion"] == "MATCHED_ROGUE_L20_NATIVE_SCORED_DIFFERENCE"
+
+
+@pytest.mark.parametrize("level", [None, 60, "20", True])
+def test_native_p3_rejects_unmatched_rogue_source_without_paid_execution(level):
+    reference = _reference()
+    if level is None:
+        del reference["raid"]["parties"][0]["players"][0]["level"]
+    else:
+        reference["raid"]["parties"][0]["players"][0]["level"] = level
+
+    def should_not_evaluate(*args, **kwargs):
+        pytest.fail("Unmatched source must never consume native paid attempts")
+
+    result = compare_equipped_native(
+        "pinned-native", reference, _selection(), evaluator=should_not_evaluate)
+    assert result["status"] == "NATIVE_REQUEST_CHECKPOINT_MISMATCH"
+    assert result["paid_attempts"] == 0
+    assert result["comparison"] is None
+    assert result["actor_checkpoint_verified"] is False
+    assert result["promotion"] == "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR"
 
 
 def test_native_p3_preserves_native_refusal_and_does_not_fake_delta():
@@ -78,6 +100,7 @@ def test_native_p3_preserves_native_refusal_and_does_not_fake_delta():
     assert receipt["evaluations"][1]["status"] == "UNSUPPORTED"
     assert receipt["evaluations"][1]["request_sha256"] == "refused-sha"
     assert receipt["comparison"] is None
+    assert receipt["actor_checkpoint_verified"] is False
 
 
 def test_native_p3_does_not_pay_if_no_distinct_native_item():
