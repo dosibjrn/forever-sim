@@ -63,6 +63,22 @@ def _iteration_limited_request(source: dict, iterations: int):
     return request_dir, path
 
 
+def _fresh_source_world(*, distance: float, target_health: float,
+                        source_in_front: bool):
+    """Create a new 2D target with the saved HP for each native iteration."""
+    world = diagnostic_gsim_world(
+        target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
+        target_health=target_health, source_single_target=True,
+        source_in_front_of_target=source_in_front,
+    )
+    target = world.targets["m1"]
+    if (not target.alive
+            or not math.isclose(float(target.max_health), target_health, rel_tol=0, abs_tol=1e-6)
+            or not math.isclose(float(target.health), target_health, rel_tol=0, abs_tol=1e-6)):
+        raise AssertionError("RUST_WORLD_FINITE_TARGET_HEALTH_NOT_RESET")
+    return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeDamageWorldApplier(world)
+
+
 def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False,
         iterations: int = 1, periodic_world_poll: bool = False,
         facing_switch_at_s: float | None = None,
@@ -95,13 +111,7 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
             raise ValueError("RUST_WORLD_RANGE_SWITCH_INVALID")
     elif distance_after_switch_yards is not None:
         raise ValueError("RUST_WORLD_RANGE_SWITCH_WITHOUT_CLOCK")
-    def new_world():
-        world = diagnostic_gsim_world(
-            target_spawn_yards=distance, enemy_move_speed_yards_s=0.,
-            target_health=source_target_health_from_request(raw), source_single_target=True,
-            source_in_front_of_target=players[0].get("inFrontOfTarget", False),
-        )
-        return world, GsimGoRangeFeed(world, native_player_index=0), GsimNativeDamageWorldApplier(world)
+    source_target_health = source_target_health_from_request(raw)
     world = feed = applier = None
     raw_sha = hashlib.sha256(raw).hexdigest()
     # Rust's prepared request identity is SHA256 of deterministic protobuf
@@ -178,7 +188,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     assert native["iteration_index"] == iteration + 1 == len(samples)
                     assert native["sequence"] == 0
                     iteration = native["iteration_index"]
-                    world, feed, applier = new_world()
+                    world, feed, applier = _fresh_source_world(
+                        distance=distance, target_health=source_target_health,
+                        source_in_front=players[0].get("inFrontOfTarget", False))
                     previous_ack_id = ""
                     last_tick = -1
                     iteration_damage = 0.
