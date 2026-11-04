@@ -208,14 +208,18 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
             identity = hashlib.sha256(json.dumps(
                 build, sort_keys=True, separators=(",", ":")
             ).encode("utf-8")).hexdigest()
-            if identity in seen:
-                continue
-            seen.add(identity)
+            # The native paid evaluator fixes iterations/seed to the same
+            # deterministic source comparison. Deduplicate AFTER canonical
+            # normalization: source requests varying only by those fields
+            # are one actual paid build, not separate 30s search effort.
             build["simOptions"]["iterations"] = 1
             build["simOptions"]["randomSeed"] = "42"
             identity = hashlib.sha256(json.dumps(
                 build, sort_keys=True, separators=(",", ":")
             ).encode("utf-8")).hexdigest()
+            if identity in seen:
+                continue
+            seen.add(identity)
             path.write_text(json.dumps(build, sort_keys=True), encoding="utf-8")
             row = {"source_request_sha256": identity, "status": "NATIVE_REFUSED"}
             try:
@@ -226,6 +230,10 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 if paid["native_request_sha256"] != identity:
                     raise RuntimeError("PRIEST_L20_COLD_NATIVE_REQUEST_IDENTITY_MISMATCH")
                 row["native_source_action_casts"] = paid["native_source_action_casts"]
+                row["native_source_action_cast_counts"] = paid.get(
+                    "native_source_action_cast_counts", {})
+                row["native_source_action_ids_cast"] = paid.get(
+                    "native_source_action_ids_cast", 0)
                 row["native_screen_score"] = paid.get("native_score")
                 # A native fight with no source-action casts is an executed
                 # refusal for this leveling frontier, not a valid paid
