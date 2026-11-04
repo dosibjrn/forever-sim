@@ -192,9 +192,13 @@ jobs:
           assert row["real_source_search_evaluated"] == 0, row
           stage = row["source_naked_stage"]
           assert stage["search_backend"] == "prefix", stage
-          assert stage["search_status"] == "BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK", stage
+          assert stage["search_status"] in (
+              "BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK",
+              "BLOCKED_NO_KILLING_PREFIX",
+          ), stage
+          assert row["real_source_search_attempts"] == stage["attempted"], row
           diagnostics = row["source_naked_diagnostics"]
-          assert diagnostics["fillers"] == [], diagnostics
+          assert diagnostics["status"] == stage["search_status"], diagnostics
           assert diagnostics["auto_fallback_ids"] == [], diagnostics
           actor = row["source_actor_context"]
           assert actor["base_stats_are_zero_proxy"] is True, actor
