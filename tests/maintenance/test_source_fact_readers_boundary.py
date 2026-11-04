@@ -257,7 +257,6 @@ import sys
 from src.game.data.forever.source_db_scope import DEFAULT_DB
 
 operations = {
-    'wf251_ingest_two_classes': 'ingest',
     'wf255_ingest_command': 'ingest',
     'wf256_ingest_seals': 'ingest',
 }
