@@ -89,3 +89,36 @@ def test_breadth_opt_in_requires_verified_paid_baseline(monkeypatch):
     assert row["paid_evaluations"] == 3
     # With no verified reuse, source policy retains both real paid deltas.
     assert calls == ["source", "source", "source"]
+
+
+def test_paid_source_witness_ignores_unusable_native_probe_objective_but_keeps_budget(
+        monkeypatch):
+    """Native refusal/invalid objective costs a paid call, not an invented weight."""
+    source = SimpleNamespace(id="source-mage", provenance={"source": "fixture"})
+    ir = SimpleNamespace(id="mage-l30", policies=(source,))
+    calls = []
+
+    def evaluate(candidate, *, level, policy_override, opening_action_ids,
+                 schedule_incoming_attacks):
+        assert level == 30 and schedule_incoming_attacks
+        delta = getattr(candidate, "delta", None)
+        calls.append(delta)
+        seconds = 10.0 if delta is None else (None if delta == 20.0 else 9.0)
+        return (SimpleNamespace(seconds_per_mob=seconds),
+                SimpleNamespace(timeline=SimpleNamespace(target_defeated=True)), {})
+
+    monkeypatch.setattr(gear, "apply_stat_delta",
+                        lambda ir_arg, stat, delta: SimpleNamespace(
+                            id=ir_arg.id, policies=ir_arg.policies, delta=delta))
+    monkeypatch.setattr(budgeted, "_policy_combat_evaluation", evaluate)
+
+    witness = budgeted.paid_source_policy_stat_witness(
+        ir, stat="mp5", level=30, probe_deltas=(20.0, 5.0),
+        max_evaluations=3)
+    assert calls == [None, 20.0, 5.0]
+    assert witness["paid_evaluations"] == 3
+    assert witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
+    assert witness["delta"] == 5.0
+    assert witness["baseline_seconds_per_mob"] == 10.0
+    assert witness["perturbed_seconds_per_mob"] == 9.0
+    assert witness["weight_s_saved_per_mob_per_unit"] == 0.2
