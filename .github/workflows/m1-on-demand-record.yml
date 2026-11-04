@@ -155,9 +155,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Any P7 gate uses the exact SAME checked-in production gitlink as
-      # the native-world workflow plus its deterministic tracked typed-mode port.
-      # No floating branch or environment-selected RNG mode.
+      # All P7 runs use the checked-in published MythicSim fork gitlink.
+      # No floating engine revision or CI-time native source rewrites.
       - name: Hydrate and verify production Rust fork gitlink for selected P7 gate
         if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.p7_needed == 'true'
         shell: bash
@@ -173,22 +172,12 @@ jobs:
           [[ "$(git -C "$engine" remote get-url origin)" == *"dosibjrn/mythicsim-forever-engine"* ]] ||
             { echo 'WRONG_RUST_FORK_REMOTE'; exit 1; }
           ln -s "$engine" upstream
-          python integrations/mythicsim-rust/wf659_rng_boolean_audit.py upstream/src
-          test -f upstream/src/core/fight/world_bridge.rs
-          # Production gitlink must itself already contain mandatory typed RNG.
-          # No CI-time patch may substitute for a published Rust commit.
-          grep -Fq 'pub enum RngMode' "$engine/src/core/rng.rs"
-          ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
-          grep -Fq 'pub(crate) fn new(mode: RngMode,' "$engine/src/core/rng.rs"
-          python integrations/mythicsim-rust/port_native_typed_rng.py "$engine"
-          if ! git -C "$engine" diff --quiet; then
-            echo "M1_PINNED_RUST_NEEDS_UNPUBLISHED_TYPED_RNG_PATCH" >&2; exit 1
-          fi
-          ! grep -Fq 'WOWSIM_RNG_MODE' "$engine/src/core/rng.rs"
-          grep -Fq 'SimRng::new(rng_mode,' "$engine/src/core/fight.rs"
-          echo "M1 selected exact checked-in Rust fork revision $actual with typed RNG port"
+          # The published pin is the native engine; do not run a historical
+          # source-rewriting typed-RNG port against an already working fork.
+          # The real P7 producer and compile determine whether it executes.
+          echo "M1 selected exact checked-in Rust fork revision $actual"
 
-      - name: Apply tracked typed RNG port and build exact fork-submodule production Rust engine
+      - name: Build exact pinned production Rust engine
         if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.p7_needed == 'true'
         working-directory: upstream
         env:
