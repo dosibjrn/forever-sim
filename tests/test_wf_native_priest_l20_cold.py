@@ -83,8 +83,9 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             "native_2d_persistent_source_action_counts_by_target":
                 [{"spell:585": 1} for _ in range(target_count)],
             "native_2d_persistent_elapsed_seconds": (
-                1100.0 - len(paid_builds) * 100.0 if target_count == 100
-                else 60.0 - len(paid_builds) * 2.0),
+                1100.0 - (paid_builds.index(build) + 1) * 100.0
+                if target_count == 100 else
+                60.0 - (paid_builds.index(build) + 1) * 2.0),
         }
 
     receipt = run_native_priest_l20_cold(
