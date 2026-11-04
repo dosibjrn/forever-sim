@@ -56,6 +56,25 @@ def _fixed_opening_score(ir, record, level, incoming, *, meter=None, max_events=
     return float(evaluation.seconds_per_mob)
 
 
+def _source_probe_axis_selection(ir, requested: tuple[str, ...]) -> tuple[tuple[str, ...], dict]:
+    """Resolve the *actual* P3 probe axes from the source-selected executor.
+
+    Do not turn a requested axis or a native item stat into an executable
+    effect. Missing Stamina/Strength stay absent until an authoritative
+    conversion is available to this same paid runtime.
+    """
+    available = set(executable_gear_stats(ir))
+    selected = tuple(axis for axis in requested if axis in available)
+    return selected, {
+        "requested": list(requested),
+        "selected_for_paid_probe": list(selected),
+        "not_executable_in_source_ir": [
+            axis for axis in requested if axis not in available
+        ],
+        "resolver": "src.game.gear.executable_gear_stats",
+    }
+
+
 def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int,
                              search_per_gear: int = 24, initial_search: int = 24,
                              max_gear_states: int = 4, probe_stats: tuple[str, ...] = (
@@ -242,8 +261,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                 'event_transitions':event_total,'policy_search_backend':policy_search_backend}
 
     current_ir, current_record = ir, naked['winner']
-    axis_set = set(executable_gear_stats(ir))
-    axes = tuple(x for x in probe_stats if x in axis_set)
+    axes, axis_receipt = _source_probe_axis_selection(ir, probe_stats)
     sensitivity_history = []
 
     def reweight(ir_for_probe, policy_record, label):
@@ -300,6 +318,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
         return {'status':'EVALUATED_BOUNDED','budget':max_evaluations,
                 'attempted':tried,'evaluated':successes,'blocked':blockers,
                 'stages':stages,'sensitivity_history':sensitivity_history,
+                'stat_probe_axis_selection':axis_receipt,
                 'event_transitions':event_total,'policy_search_backend':policy_search_backend,
                 'source_context_sha256':context,'best_vs_budget':best_vs_budget,
                 'winner':stages[0]}
@@ -397,6 +416,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     return {'status':final_status,
             'class_key':class_key,'level':level,'source_ir_id':ir.id,
             'source_context_sha256':context,'budget':max_evaluations,
+            'stat_probe_axis_selection':axis_receipt,
             'attempted':tried,'evaluated':successes,'blocked':blockers,
             'unspent_budget':max_evaluations-tried,
             'named_gear_states_evaluated':len(selections),
