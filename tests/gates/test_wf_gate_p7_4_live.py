@@ -88,13 +88,6 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     binary = tmp_path / "upstream/target/release/forever-engine"
     binary.parent.mkdir(parents=True)
     binary.write_text("fake executable; never invoked")
-    upstream = binary.parents[2]
-    (upstream / "data").mkdir()
-    (upstream / "data/items.jsonl").write_text("")
-    (upstream / "data/enchants.jsonl").write_text("")
-    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
-    catalogue.parent.mkdir(parents=True)
-    catalogue.write_text("fake catalogue; validator injected")
 
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
     # Routing clock: start, two paid candidates, then 300s observation.
@@ -107,26 +100,15 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
     monkeypatch.setattr(gate, "_source_native_world_parity",
                         lambda *a, **kw: None)
 
-    pool_calls = []
-    class Validator:
-        @staticmethod
-        def require_sqlite_catalogue(path):
-            assert path == catalogue
-
-        def __init__(self, *args):
-            assert args[-1] is base
-
-        def validate(self, ids, enchants=None):
-            assert ids == [11, 21]
-            if enchants is not None:
-                assert len(enchants) == 2
-
-        def close(self):
-            pass
-
-    def candidate_pool(validator, limit, **kwargs):
-        pool_calls.append(limit)
-        return ({0: [11], 1: [21]}, {})
+    options_calls = []
+    def native_candidate_pool(engine_binary):
+        options_calls.append(engine_binary)
+        return (
+            {0: [11], 1: [21]},
+            {0: [None, 201], 1: [None]},
+            {"source_revision": "test-native-source",
+             "unique_item_options": 2, "unique_enchant_options": 1},
+        )
 
     def swap(request, ids):
         result = copy.deepcopy(request)
@@ -137,9 +119,8 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         return result
 
     gear = SimpleNamespace(
-        GearValidator=Validator, candidate_pool=candidate_pool, _swap=swap,
+        native_candidate_pool=native_candidate_pool, _swap=swap,
         preflight=lambda reference, candidate: True,
-        source_enchant_pools=lambda validator, pools: {0: [None, 201], 1: [None]},
         RejectedGear=ValueError)
     # Force two actually paid mock candidates. The first wins, the last
     # candidate loses: reporting the final loop SHA would misidentify it.
@@ -166,7 +147,7 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
 
     from tools.wf_gate import _run_live_gate
     report = _run_live_gate(tmp_path, "druid", 60, "balance", "P7.4", "")
-    assert pool_calls == [None], "Full search must keep all admitted source items"
+    assert options_calls == [binary], "Full search must query the pinned Rust options API"
     assert [(kind, n, mode) for kind, n, mode, _ in calls] == [
         ("native", 3, "balanced"), ("world", 3, "balanced"),
         ("native", 3, "balanced"), ("world", 3, "balanced"),
@@ -183,6 +164,12 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         {"slot": slot, "item_id": item["id"], "enchant_id": item.get("enchant")}
         for slot, item in enumerate(frozen_items)]
     assert report["source_legal_cold_candidates_paid"] == 2
+    assert report["item_candidate_admission"] == "pinned_rust_native_gear_options"
+    assert report["native_gear_options_applied"] is True
+    assert report["native_gear_options_reference_revision"] == "test-native-source"
+    assert report["native_gear_options_unique_items"] == 2
+    assert report["native_gear_options_unique_enchants"] == 1
+    assert report["source_candidate_failure_count"] == 0
     assert report["winner_selection"] == "best_balanced_live_screen"
     assert report["search_rng_mode"] == "balanced"
     assert report["paid_stochastic_finalists"] == 0
@@ -749,12 +736,6 @@ def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
     binary = tmp_path / "upstream/target/release/forever-engine"
     binary.parent.mkdir(parents=True)
     binary.write_text("fake, never executed")
-    (binary.parents[2] / "data").mkdir()
-    (binary.parents[2] / "data/items.jsonl").write_text("")
-    (binary.parents[2] / "data/enchants.jsonl").write_text("")
-    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
-    catalogue.parent.mkdir(parents=True)
-    catalogue.write_text("mock")
 
     monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "1")
     # Start, three paid screens, three independent re-screens, confirmation,
@@ -770,20 +751,12 @@ def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
     monkeypatch.setattr(gate, "_source_native_world_parity",
                         lambda *args, **kw: None)
 
-    class Validator:
-        @staticmethod
-        def require_sqlite_catalogue(path):
-            assert path == catalogue
-
-        def __init__(self, *args):
-            pass
-
-        def close(self):
-            pass
-
     gear = SimpleNamespace(
-        GearValidator=Validator, candidate_pool=lambda *a, **kw: ({0: [11, 12, 13]}, {}),
-        source_enchant_pools=lambda *a: {0: [None]},
+        native_candidate_pool=lambda engine_binary: (
+            {0: [11, 12, 13]}, {0: [None]},
+            {"source_revision": "test-native-source",
+             "unique_item_options": 3, "unique_enchant_options": 0},
+        ),
         RejectedGear=ValueError)
     candidates = iter((11, 12, 13))
     def cold(reference, *args, **kwargs):
