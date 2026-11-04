@@ -77,7 +77,7 @@ def pinned_rust_candidate_pool(items_path, enchants_path):
     acceptance remains the paid native source-control simulation.
     """
     rust_items = read_jsonl(items_path)
-    rust_enchants = read_jsonl(enchants_path)
+    rust_enchants = read_jsonl(enchants_path, key="effect_id")
     pool = {}
     enchant_pools = {}
     for slot_index, slot in enumerate(SLOTS):
@@ -134,7 +134,7 @@ def pinned_rust_candidate_pool(items_path, enchants_path):
         for enchant in rust_enchants.values():
             if not isinstance(enchant, dict):
                 continue
-            enchant_id = enchant.get("id")
+            enchant_id = enchant.get("effect_id")
             if type(enchant_id) is not int or enchant_id <= 0:
                 continue
             types = [
