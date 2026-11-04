@@ -160,6 +160,48 @@ def _native_item_stat_probe_deltas(item_check: dict, axis: str):
             [source for _delta, source in ordered])
 
 
+def _source_actor_context_summary(ir) -> dict:
+    """Expose source actor/weapon provenance when the paid naked search blocks."""
+    actor = getattr(ir, "actor", None)
+    if actor is None:
+        return {}
+    metadata = getattr(actor, "metadata", {}) or {}
+    try:
+        base_stats = dict(getattr(actor, "base_stats", {}) or {})
+    except (TypeError, ValueError):
+        base_stats = {}
+    actor_provenance = getattr(actor, "provenance", ()) or ()
+    if not isinstance(actor_provenance, (list, tuple)):
+        actor_provenance = (actor_provenance,)
+    auto_attacks = []
+    for attack in getattr(ir, "auto_attacks", ()) or ():
+        source = getattr(attack, "damage_source", None)
+        provenance = getattr(attack, "provenance", ()) or ()
+        if not isinstance(provenance, (list, tuple)):
+            provenance = (provenance,)
+        auto_attacks.append({
+            "id": getattr(attack, "id", None),
+            "attack_type": getattr(attack, "attack_type", None),
+            "required_mode_id": getattr(attack, "required_mode_id", None),
+            "swing_time_s": getattr(attack, "swing_time_s", None),
+            "damage_source": {
+                "kind": getattr(source, "kind", None),
+                "flat_dps": getattr(source, "flat_dps", None),
+                "dps_stat_id": getattr(source, "dps_stat_id", None),
+                "attack_power_stat_id": getattr(source, "attack_power_stat_id", None),
+            },
+            "provenance": list(provenance),
+        })
+    return {
+        "state_status": getattr(actor, "state_status", None),
+        "base_stats": base_stats,
+        "base_stats_are_zero_proxy": metadata.get("base_stats_are_zero_proxy"),
+        "race_key": metadata.get("race_key"),
+        "actor_provenance": list(actor_provenance),
+        "auto_attacks": auto_attacks,
+    }
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     # Priest/Mage L20 and unrestricted Mage L30 P3 use the native
     # ItemSparse provider; all other profiles/levels retain their existing path.
@@ -234,7 +276,17 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             + str(result.get("status"))],
             "production_component": "src.v2.source_budgeted_gear.run_source_budgeted_gear",
             "real_source_search_attempts": result.get("attempted", 0),
-            "real_source_search_evaluated": result.get("evaluated", 0)}
+            "real_source_search_evaluated": result.get("evaluated", 0),
+            "source_naked_stage": ({
+                "search_backend": naked.get("search_backend"),
+                "search_status": naked.get("search_status"),
+                "attempted": naked.get("attempted", 0),
+                "evaluated": naked.get("evaluated", 0),
+                "blocked": naked.get("blocked", 0),
+            } if naked else None),
+            "source_naked_diagnostics": (
+                naked.get("source_search_diagnostics") if naked else None),
+            "source_actor_context": _source_actor_context_summary(ir)}
     record = naked["winner"]
     native_spell_action_ids = {
         str(row.get("action_id")) for row in native_spell_coefficients_applied
