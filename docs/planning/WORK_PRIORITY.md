@@ -1,11 +1,11 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `faee286dde1bc02cbb7e315d3770ddbda627a44b`. Canonical ledger blob: `5cab5f4e4ae87db153730bd3bb02149eae3cdde6`; scoreboard script blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
+Refreshed against main `0ddb513dfa75007e244c85056358935abc4e4d13`. Canonical ledger blob: `5cab5f4e4ae87db153730bd3bb02149eae3cdde6`; scoreboard script blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
 
 ## M1 scoreboard
 
 - **M1 measured: 2.2041% (float=0.0220405148)**; **29.358 / 1,332** measured gate-equivalents; **23 PASS / 11 active PARTIAL**.
-- Paladin L20 unrestricted P3 is official **PARTIAL 154/210** from [Merge recorder #41819051081](https://github.com/dosibjrn/forever-sim/actions/runs/41819051081). Shaman L20 remains **PARTIAL 93/204**; final Intellect no-record [#41821688601](https://github.com/dosibjrn/forever-sim/actions/runs/41821688601) did not improve it.
+- Paladin L20 unrestricted P3 is official **PARTIAL 154/210** from [Merge recorder #41819051081](https://github.com/dosibjrn/forever-sim/actions/runs/41819051081). Shaman L20 remains **PARTIAL 93/204**; the final Intellect no-record attempt did not improve it.
 - Merge alone launches trusted recorders and writes `M1_PASSES.tsv`. No other agent edits the ledger or claims unrecorded float.
 
 ## Work1 — Priest L20 unrestricted P4/P5 ([#817](https://github.com/dosibjrn/forever-sim/issues/817))
@@ -16,16 +16,17 @@ Refreshed against main `faee286dde1bc02cbb7e315d3770ddbda627a44b`. Canonical led
 
 ## Completed Work2 attempt — Shaman L20 unrestricted P3 Intellect ([#871](https://github.com/dosibjrn/forever-sim/issues/871), [closed PR #883](https://github.com/dosibjrn/forever-sim/pull/883), [closed PR #884](https://github.com/dosibjrn/forever-sim/pull/884))
 
-- Exact-HEAD selected-engine no-record [#41820628935](https://github.com/dosibjrn/forever-sim/actions/runs/41820628935) and final exact-head no-record [#41821688601](https://github.com/dosibjrn/forever-sim/actions/runs/41821688601) both leave Shaman P3 at **93/204 PARTIAL**. Spell Power is positive; Intellect is **NO_POSITIVE_SOURCE_POLICY_WITNESS**.
-- The final PR #884 run built the selected engine and tested native ItemSparse Intellect deltas **47** and **25**. Intellect remained **0.0**; total paid work was **38/44**. The paid objective is combat-only and does not measure the Intellect-to-mana recovery benefit; this is a measured negative, not an engine failure.
-- Maintenance [#41821688630](https://github.com/dosibjrn/forever-sim/actions/runs/41821688630) passed **526 tests** and generic source-paid [#41821688606](https://github.com/dosibjrn/forever-sim/actions/runs/41821688606) passed **317 tests**. #871 is closed as completed; PR #883 is closed as a duplicate and PR #884 is **closed unmerged**. No Merge recorder and no M1 increase; do not repeat or merge this witness path.
+- Exact-head no-record [#41820628935](https://github.com/dosibjrn/forever-sim/actions/runs/41820628935) and final exact-head no-record [#41821688601](https://github.com/dosibjrn/forever-sim/actions/runs/41821688601) both leave Shaman P3 at **93/204 PARTIAL**. Spell Power is positive; Intellect is **NO_POSITIVE_SOURCE_POLICY_WITNESS** using native ItemSparse deltas 47 and 25. No comparable assertions were added.
+- The P3 paid objective is **combat-only**; it does not measure between-mob Intellect-to-mana recovery. Do not add a recovery proxy, repeat an unchanged Shaman probe, or request a Merge recorder.
+- The latest PR #884 head [3bd4dd3](https://github.com/dosibjrn/forever-sim/commit/3bd4dd3fb101017f9416c47cf8aa51132efb5c84) still had no positive Intellect derivative. Its selected-engine check [#41822765937](https://github.com/dosibjrn/forever-sim/actions/runs/41822765937) failed the explicit positive-Intellect / greater-than-93 assertion. Latest maintenance [#41822766290](https://github.com/dosibjrn/forever-sim/actions/runs/41822766290) had **1 failed / 527 passed**: a hard-coded spell_id=915 filter disabled the existing Mage L30 Fireball 8401 paid-winner continuation. Generic source-paid [#41822766251](https://github.com/dosibjrn/forever-sim/actions/runs/41822766251) passed 317 tests.
+- #871 is closed as completed; PR #883 is closed as a duplicate and PR #884 is **closed unmerged**. No Merge recorder and no M1 increase.
 
 ## Next Work2 — Paladin L20 unrestricted P3 paid-winner Agility/Intellect witness ([#885](https://github.com/dosibjrn/forever-sim/issues/885))
 
 - **Unblocked from latest main:** Shaman #871 is closed and both PRs #883/#884 are closed unmerged; do not reuse either branch.
 - Official Paladin baseline [#41819051081](https://github.com/dosibjrn/forever-sim/actions/runs/41819051081): **PARTIAL 154/210**. The actual report's only witness was Agility through `paladin:source_seed`; it spent 3 evaluations and failed with `BASELINE_NO_EVALUATION`. Intellect was not attempted. The already-paid winner's opening sequence is `seal_of_fury:1311656` + `judgement:20271`.
 - Current `tools/wf_gate_p3_live.py` offers a paid search winner as a witness candidate only for Mage L30/Shaman L20. Paladin's exact paid winner is not passed to the witness helper, so the remaining budget is spent retrying the unexecutable source-IR policy. The existing `paid_search_winner_baseline()` has strict prefix/selected-action/fallback/guarded/provenance checks; do not weaken them. The existing native item-sized delta helper is also not enabled for Paladin L20 despite its native ItemSparse item list.
-- **Next:** from latest main, prove whether Paladin's exact paid winner passes the existing strict baseline validator. If it does, offer that winner first to the paid witness path (Agility first, Intellect only if budget remains) and use real native top-five item-sized deltas. If the validator rejects it, report the exact invariant and stop; no bypass, generic delta fallback, invented action or extra budget. Keep the 44-evaluation cap.
+- **Next:** from latest main, prove whether Paladin's exact paid winner passes the existing strict baseline validator. If it does, offer that winner first to the paid witness path (Agility first, Intellect only if the selected policy has an actual in-combat mana constraint) and use real native top-five item-sized deltas. The paid objective is combat-only; do not add between-mob mana recovery. If the validator rejects it, report the exact invariant and stop; no bypass, generic delta fallback, invented action or extra budget. Keep the 44-evaluation cap.
 - Run one changed-HEAD no-record light P3 producer. Require a positive derivative and more than 154/210 comparable assertions before Merge is asked for one official recorder. Otherwise no recorder and no ledger change. Each additional verified assertion would contribute `1 / 210 / 1332` M1 float (about **+0.0003575 percentage points**); the actual count and result are unearned. At most 56/210 remains before a full P3 PASS (+0.0200 pp), not a forecast.
 - The separate `mean_weapon_hit_damage` residual is outside #885; it needs a real equipped-hit perturbation, not a guessed alias for weapon DPS.
 
