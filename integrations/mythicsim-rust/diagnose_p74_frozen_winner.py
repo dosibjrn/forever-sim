@@ -68,8 +68,8 @@ def main() -> None:
         raise AssertionError(
             f"P74_WINNER_GEAR_SLOT_COUNT:{len(items)}!={len(WINNER_GEAR)}"
         )
-    for item, (slot, item_id, enchant_id) in zip(items, WINNER_GEAR):
-        if slot != items.index(item):
+    for index, (item, (slot, item_id, enchant_id)) in enumerate(zip(items, WINNER_GEAR)):
+        if slot != index:
             raise AssertionError("P74_WINNER_GEAR_SLOT_ORDER_DIVERGED")
         item["id"] = item_id
         item.pop("enchant", None)
