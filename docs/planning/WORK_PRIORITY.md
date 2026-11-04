@@ -1,6 +1,6 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `4a3bc9cf6dba8b8158ab67bbf179895d2525f310`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
+Refreshed against main `9ebd794bf4799cd19229333254484d685970dc03`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
 
 ## Current M1 scoreboard
 
@@ -23,7 +23,8 @@ Refreshed against main `4a3bc9cf6dba8b8158ab67bbf179895d2525f310`. Canonical led
 - Existing [issue #845](https://github.com/dosibjrn/forever-sim/issues/845) is now Work2's next independent implementation, **unblocked after official Mage L30 P3 receipt #41793008067**. Work1 remains on Shaman #847, then Priest #817; the two lanes are independent.
 - Light recorders [#41787910137](https://github.com/dosibjrn/forever-sim/actions/runs/41787910137) and duplicate [#41787945906](https://github.com/dosibjrn/forever-sim/actions/runs/41787945906) returned **BLOCKED_NO_NAKED_SUCCESS**, `real_source_search_evaluated=0`; no paid scoring and no ledger row.
 - Unlike Shaman, the canonical catalogue has **6,849 Paladin class-eligible item IDs**. The first stop is the `source_naked` no-winner path before gear scoring, not missing item candidates.
-- **Next action:** inspect actual `source_naked` attempted/blocked reasons and selected Paladin L20 actions/policy. Check whether the existing source-authorized `include_auto_fallback` path is the missing repeatable filler, but treat it as a candidate—not a proven root cause. Repair only the first demonstrated production deficiency; do not accept proxy stats or invent mechanics.
+- **Code evidence on main:** `tools/wf_gate_p3_live.py::run_live` omits backend flags, so `run_source_budgeted_gear` uses its default `policy_search_backend="prefix"`. The same gear runner supports `policy_search_backend="stateful", stateful_search_auto_fallback=True`; `tests/generic/search/test_wf287_source_auto_continuation.py::test_same_auto_continuation_reoptimizes_named_gear_and_talent_root` already exercises that path for Paladin L20 and requires `EVALUATED_BOUNDED` with `AUTO_ONLY_FALLBACK`. Its companion test verifies a real `AutoAttackSwing` timeline event. This is a source-backed, tested alternative—not proof of the P3 root cause.
+- **Next action:** reproduce the Paladin L20 P3 `source_naked` stage with the tested stateful + source-auto-fallback configuration under the existing 44-evaluation cap. Wire it into the P3 caller only if a changed-HEAD no-record producer demonstrates a real source-backed winner and paid item/stat scoring. Do not change global defaults, synthesize an action or accept a proxy.
 - One changed-HEAD no-record light producer must show `real_source_search_evaluated>0` and actual first paid item/stat assertions (or the exact remaining BLOCKED reason). Merge records once only if eligible measured coverage results. No unchanged retry.
 - Conditional full-PASS ceiling: `1/1332` = **+0.07508 percentage points**; near-term gain and cost remain unknown. This is the next independent Work2 task after #831's receipt, while Work1 remains on the separate Rust Shaman/Player work.
 
