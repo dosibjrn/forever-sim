@@ -914,3 +914,36 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
         "unique_item_options": len(item_types) + 5,
         "unique_enchant_options": len(item_types),
     }
+
+
+def test_pinned_rust_candidate_pool_accepts_actual_engine_jsonl():
+    """Exercise the actual pinned item/enchant rows and all 16 slot pools."""
+    import pytest
+    import sys
+    from pathlib import Path
+
+    root = Path(gate.__file__).resolve().parents[1]
+    engine_data = root / "integrations/mythicsim-rust/engine/data"
+    items_path = engine_data / "items.jsonl"
+    enchants_path = engine_data / "enchants.jsonl"
+    if not items_path.is_file() or not enchants_path.is_file():
+        pytest.skip("pinned MythicSim source data is not checked out")
+
+    source_dir = root / "integrations/mythicsim-rust"
+    sys.path.insert(0, str(source_dir))
+    try:
+        search = gate._source_module(
+            source_dir / "p74_gear_search.py", "p74_actual_engine_jsonl_search_test")
+    finally:
+        sys.path.remove(str(source_dir))
+    pool, enchant_pools, metadata = search.pinned_rust_candidate_pool(
+        items_path, enchants_path)
+
+    assert set(pool) == set(range(len(search.SLOTS)))
+    assert all(pool[index] for index in range(len(search.SLOTS)))
+    assert 22397 in pool[15]  # Idol of Ferocity: statless effect-only relic
+    assert 833 in pool[12] and 833 in pool[13]  # Lifestone: statless trinket
+    assert 754 in pool[14]  # Shortsword of Vengeance: statless weapon
+    assert metadata["unique_item_options"] > 0
+    assert metadata["unique_enchant_options"] > 0
+    assert all(choices and choices[0] is None for choices in enchant_pools.values())
