@@ -1168,3 +1168,51 @@ def test_retained_100_target_native_world_is_not_vetoed_by_one_fight_probe(
         assert "native_2d_fight_error" not in row
     assert sorted(p.name for p in tmp_path.iterdir()) == ["source.json"]
     assert json.loads((tmp_path / "source.json").read_text()) == source
+
+
+@pytest.mark.parametrize("target_count", [2, 100])
+def test_priest_p4_p5_full_screen_skips_redundant_one_fight_smoke(
+        tmp_path, monkeypatch, target_count):
+    """The real 100-mob producer reaches the retained native world directly."""
+    from tools import wf_gate_p4_p5_partial as gate
+    from src.game import native_p3_item_options
+    from tools import wf_native_priest_l20_paid as priest
+
+    request = tmp_path / "source.json"
+    request.write_text(json.dumps(_request()))
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/native")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST", str(request))
+    monkeypatch.delenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR", raising=False)
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD", "1")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS", str(target_count))
+    monkeypatch.setattr(
+        native_p3_item_options, "query_native_p3_item_options",
+        lambda *a, **k: {
+            "status": "ok", "items": [{"item_id": 25, "slot": "chest"}],
+            "unverified_candidate_count": 0,
+        })
+    calls = []
+
+    def scorer(binary, request_file, options, **kwargs):
+        calls.append((binary, request_file, options, kwargs))
+        return {"native_paid_whole_builds": 1,
+                "native_source_action_casts": 2,
+                "native_2d_screen_complete": False,
+                "native_2d_persistent_verified": 0}
+
+    monkeypatch.setattr(priest, "score_native_priest_l20_item_candidates", scorer)
+    report = gate._native_cold_options_without_paid_executor(
+        "priest", 20, "unrestricted")
+    assert len(calls) == 1
+    binary, request_file, options, forwarded = calls[0]
+    assert binary == "/native"
+    assert request_file == str(request)
+    assert options == [{"item_id": 25, "slot": "chest"}]
+    assert forwarded["persistent_world"] is priest.couple_source_priest_l20_persistent_world
+    assert forwarded["persistent_target_count"] == target_count
+    assert forwarded["world_screen"] is (
+        None if target_count == 100 else priest.couple_source_priest_l20_world)
+    assert report["paid_candidates"] == 1
+    assert report["status"] == "BLOCKED"
+    assert report["screen_complete_candidates"] == 0
+    assert "pass_count" not in report
