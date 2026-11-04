@@ -539,6 +539,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_source_search_attempts": result.get("attempted", 0),
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
+        # This is the resolver used by the paid source search, not a second
+        # P3 applicability rule or an invented zero for absent primary stats.
+        "real_stat_probe_axis_selection": result.get("stat_probe_axis_selection"),
         "real_measured_stat_weights": dict(sorted(weights.items())),
         "real_catalogue_legal_items": item_check["legal_item_count"],
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
