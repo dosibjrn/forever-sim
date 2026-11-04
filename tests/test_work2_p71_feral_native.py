@@ -112,3 +112,20 @@ def test_p71_cli_exposes_actual_native_dps_and_frozen_comparator(monkeypatch, ca
     assert receipt["required_dps"] == pytest.approx(gate.FERAL_REFERENCE_DPS * 0.99)
     assert receipt["reference_profile"] == "feral"
     assert receipt["selected_validation"] == "1000_native_stochastic_fights"
+
+
+def test_native_execution_failure_keeps_actionable_error(monkeypatch, capsys):
+    import json
+    from tools import wf_gate as cli
+    error = "RuntimeError:NATIVE_SOURCE_CONTROL_FAILED exit=1 request_sha256=abc output=source rejected"
+    monkeypatch.setattr(cli, "_run_live_gate", lambda *args: {
+        "status": "FAIL",
+        "reasons": ["P7_1_NATIVE_STOCHASTIC_EXECUTION_FAILED"],
+        "native_execution_error": error,
+        "native_source_revision": "tested-native-pin",
+    })
+    assert cli.main(["--class", "druid", "--level", "60",
+                     "--spec", "feral", "--gate", "P7.1"]) == 1
+    row = json.loads(capsys.readouterr().out)["results"][0]
+    assert row["native_execution_error"] == error
+    assert row["native_source_revision"] == "tested-native-pin"
