@@ -252,6 +252,8 @@ RETAINED_BEHAVIOR_TESTS = (
     "tests/test_wf61_live_persistent_replay.py",
     "tests/test_wf61_companion_persistence.py",
     "tests/test_work2_persistent_pack_budget.py",
+    # Keep the real shared Hunter companion source/search path covered after runner retirement.
+    "tests/test_wf252_companion_joint.py",
 )
 
 
