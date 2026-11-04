@@ -690,7 +690,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "native_equipped_paid_attempts": (
             native_equipped_receipt.get("paid_attempts", 0)
             if native_equipped_receipt else 0),
-        "p3_shared_paid_attempts": (
+        "p3_shared_budget_attempts": (
             int(result.get("attempted", 0)) + extra_evaluations
             + (native_equipped_receipt.get("paid_attempts", 0)
                if native_equipped_receipt else 0)),
