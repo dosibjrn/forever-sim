@@ -268,7 +268,7 @@ def execute_source_replays(*, class_key: str, level: int, stage_path: Path,
         try:
             actual = evaluate_persistent_candidate(
                 candidate, level=level, mobs=count, trace_pulls=True,
-                max_wall_s=max_wall_s, pack_size=1, settle_final_recovery=True,
+                max_wall_s=max_wall_s, pack_size=1,
                 mob_spacing_yards=mob_spacing_yards,
             )
         except Exception as exc:
