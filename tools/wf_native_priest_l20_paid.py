@@ -491,34 +491,54 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
     if not isinstance(native_item_options, list):
         raise ValueError("P4_P5_NATIVE_ITEM_PROPOSALS_INVALID")
 
-    # Propose a few different source-returned slots, not a duplicate list of
-    # the same item type. Native Rust still has the only equip decision.
-    proposals = []
-    used_slots = set()
+    # First propose cumulative multi-slot whole builds from native ItemSparse.
+    # If the source offers fewer distinct slots than the paid budget, use
+    # remaining evaluations for alternative native items in those SAME slots.
+    # Each alternate replaces the selected item, never equips two items in a
+    # single slot. Rust still owns every equip/legality and scoring decision.
+    selected = []
+    selected_slots = set()
+    alternates = []
+    seen_item_ids = set()
     for option in native_item_options:
         if not isinstance(option, dict):
             continue
         item_id, slot = option.get("item_id"), option.get("slot")
         if (type(item_id) is not int or item_id <= 0
                 or not isinstance(slot, str) or not slot
-                or slot in used_slots):
+                or item_id in seen_item_ids):
             continue
-        used_slots.add(slot)
-        proposals.append((item_id, slot))
-        if len(proposals) >= max_paid_builds - 1:
+        seen_item_ids.add(item_id)
+        if slot in selected_slots:
+            alternates.append((item_id, slot))
+        elif len(selected) < max_paid_builds - 1:
+            selected.append((item_id, slot))
+            selected_slots.add(slot)
+
+    requests = [
+        (selected[:index], item_id, slot)
+        for index, (item_id, slot) in enumerate(selected, start=1)
+    ]
+    for item_id, slot in alternates:
+        if len(requests) >= max_paid_builds - 1:
             break
+        if slot not in selected_slots:
+            continue
+        replacement = [
+            (item_id if selected_slot == slot else selected_id, selected_slot)
+            for selected_id, selected_slot in selected
+        ]
+        requests.append((replacement, item_id, slot))
 
     with TemporaryDirectory(prefix="native-priest-l20-options-") as directory:
         folder = Path(directory)
         (folder / "000-source-baseline.json").write_text(
             json.dumps(source), encoding="utf-8")
-        for index, (item_id, _slot) in enumerate(proposals, start=1):
+        for index, (items, item_id, _slot) in enumerate(requests, start=1):
             candidate = copy.deepcopy(source)
-            # Progressive whole-build proposals retain every earlier
-            # native-sourced distinct-slot item. These are mere requests:
-            # Rust alone resolves equip slots, legality and actual effects.
+            # These are whole-build proposals, not Python legality decisions.
             candidate["raid"]["parties"][0]["players"][0]["equipment"]["items"] = [
-                {"id": selected_id} for selected_id, _ in proposals[:index]]
+                {"id": selected_id} for selected_id, _ in items]
             (folder / f"{index:03d}-native-item-{item_id}.json").write_text(
                 json.dumps(candidate), encoding="utf-8")
         receipt = score_source_priest_l20_candidates(
@@ -528,7 +548,8 @@ def score_native_priest_l20_item_candidates(binary: str | Path,
             persistent_target_count=persistent_target_count)
     return {
         **receipt,
-        "native_item_options_proposed": len(proposals),
-        "native_item_option_source_slots_proposed": [slot for _, slot in proposals],
+        "native_item_options_proposed": len(requests),
+        "native_item_option_source_slots_proposed": [slot for _, _, slot in requests],
+        "native_item_option_alternative_builds_proposed": len(requests) - len(selected),
         "native_candidate_provenance": "MYTHICSIM_ITEM_OPTIONS_AND_SOURCE_L20_REQUEST",
     }
