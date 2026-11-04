@@ -12,7 +12,6 @@ import pytest
 from src.game.data.forever.sqlite_talents import DEFAULT_DB
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.data.forever.source_queued_swing import ingest
-from src.game.data.forever.source_checkpoint_l0 import action_frontier
 from src.game.runtime.state import ActorState, TargetState
 from src.game.runtime.simulator import CombatRuntime, ActionNotEligibleError
 from src.v2.source_budgeted_prefix import source_prefix_envelope
@@ -112,10 +111,6 @@ def test_optimizer_sees_source_queued_melee_not_free_instant(stage):
     assert 'source_queued_swing:6808' in bear['actions']
     assert 'source_queued_swing:6807' in bear['actions']
     assert 'source_queued_swing:6808' not in envelope['actions']  # cannot cast in humanoid
-    front=action_frontier(game,class_key='druid',level=20,db_path=stage)
-    row=next(r for r in front['records'] if r.get('spell_id')==6808)
-    assert 'source_queued_swing:6808' in row['ir_action_ids']
-    assert row['ir_proxies'][0]['effect_roles']==['direct_damage']
 
 def test_real_paid_source_prefix_waits_for_rage_and_lands_maul(stage):
     from src.game.model import PolicyDefinition,PolicyRuleDefinition

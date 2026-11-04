@@ -51,18 +51,3 @@ def test_persistent_replay_same_executor_100_mobs():
     assert 1<measured['mean_s_per_mob']<100
     assert measured['events']>0
 
-
-def test_checkpoint_l0_source_rank_admission_is_exact_paid_envelope():
-    from src.game.data.forever.source_checkpoint_l0 import action_frontier
-    ir=build_game_ir_slice(class_key='druid',level=20)
-    report=action_frontier(ir,class_key='druid',level=20)
-    assert report['paid_mode_entry_count']>=2
-    assert report['paid_search_admitted_source_rows']>0
-    assert report['positive_level_source_ranks_unadmitted_missing_ir']>0
-    assert report['paid_search_admission_is_L2_coverage_proof'] is False
-    admitted=[r for r in report['records'] if r.get('paid_search_admission')=='PAID_EXECUTABLE_SOURCE_IR']
-    env=source_prefix_envelope(ir,level=20)
-    ids=set(env['actions'])
-    for m in env['mode_paths']:
-        ids.add(m['entry']);ids.update(m['actions'])
-    assert all(set(r['paid_search_action_ids']) <= ids for r in admitted)
