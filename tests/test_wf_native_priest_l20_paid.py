@@ -152,6 +152,46 @@ def test_bounded_source_candidate_frontier_scores_distinct_native_builds(tmp_pat
     assert result["native_2d_screen_complete"] is False
 
 
+def test_refused_first_native_build_does_not_poison_comparable_world(tmp_path):
+    """The first *paid* build anchors the scenario, not an invalid JSON candidate."""
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    refused = _request()
+    refused["raid"]["parties"][0]["players"][0]["level"] = 60
+    refused["encounter"]["targets"][0]["level"] = 60
+    valid = _request()
+    mismatched = copy.deepcopy(valid)
+    mismatched["encounter"]["targets"][0]["level"] = 21
+    for name, request in (("a-refused.json", refused),
+                          ("b-valid.json", valid),
+                          ("c-mismatched.json", mismatched)):
+        (tmp_path / name).write_text(json.dumps(request))
+    actual_native = []
+
+    def scorer(binary, request, **kwargs):
+        actual_native.append(copy.deepcopy(request))
+        return {
+            "effective_request_sha256": "native-paid-priest-l20",
+            "score": 9.0, "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 2}],
+        }, {}
+
+    receipt = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer)
+    assert actual_native == [valid]
+    assert [r["status"] for r in receipt["native_candidate_receipts"]] == [
+        "NATIVE_REFUSED", "NATIVE_PAID", "NATIVE_REFUSED"]
+    assert "P4_P5_NATIVE_PRIEST_L20_SOURCE_REQUEST_REQUIRED" in (
+        receipt["native_candidate_receipts"][0]["reason"])
+    assert "P4_P5_NATIVE_CANDIDATE_ENCOUNTER_MISMATCH" in (
+        receipt["native_candidate_receipts"][2]["reason"])
+    assert receipt["native_paid_whole_builds"] == 1
+    assert receipt["native_source_action_casts"] == 2
+    assert receipt["native_2d_screen_complete"] is False
+    assert json.loads((tmp_path / "b-valid.json").read_text()) == valid
+
+
 def test_bounded_source_frontier_reports_native_refusals_without_credit(tmp_path):
     from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
 
