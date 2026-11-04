@@ -98,7 +98,39 @@ def _parsed_effect(template, tooltip: str, source: dict[str, Any]):
     return None
 
 
-def _parse_rank(action, row):
+def _source_rank_spell_power_coefficient(class_key, family_key, rank):
+    """Read an existing sourced per-rank coefficient table when the index row omits it.
+
+    The indexed spell row remains authoritative for rank identity, tooltip,
+    cost, cast and cooldown. This fills only its missing SP coefficient from
+    the class's explicit Wowhead Forever per-rank fact table; absent tables or
+    out-of-range ranks remain unverified rather than receiving a derived value.
+    """
+    class_key = str(class_key or "").strip().lower()
+    family_key = str(family_key or "").strip().lower()
+    try:
+        from importlib import import_module
+        module_name = f"src.rulesets.forever.classes.{class_key}.wowhead_facts"
+        facts = import_module(module_name)
+    except ModuleNotFoundError as exc:
+        missing = str(getattr(exc, "name", "") or "")
+        if missing and (module_name == missing or module_name.startswith(missing + ".")):
+            return None
+        raise
+    constant = f"{family_key.upper()}_SP_COEFF_BY_RANK"
+    values = getattr(facts, constant, None)
+    if not isinstance(values, (tuple, list)):
+        return None
+    rank = int(rank)
+    if rank < 1 or rank > len(values):
+        return None
+    coefficient = float(values[rank - 1])
+    if not 0.0 <= coefficient <= 3.0:
+        raise ValueError("INVALID_SOURCE_RANK_SPELL_POWER_COEFFICIENT")
+    return coefficient, f"{module_name}.{constant}"
+
+
+def _parse_rank(action, row, *, class_key=None):
     from src.game.model.ir import ResourceCost
     spell_id, rank, level, batch_id, url, raw = row
     payload = json.loads(raw)
@@ -118,10 +150,20 @@ def _parse_rank(action, row):
         return None, 'cast_cooldown_or_mana_cost_unverified'
     if len(action.costs) != 1 or action.costs[0].resource_id != 'mana':
         return None, 'unsupported_resource_cost_shape'
+    coefficient = after.get('spell_power_coefficient')
+    coefficient_source = None
+    if coefficient is None:
+        sourced = _source_rank_spell_power_coefficient(
+            class_key, action.family_key, rank)
+        if sourced is not None:
+            coefficient, coefficient_source = sourced
     source = {'authority': 'wowhead_forever_index_capture', 'source_url': url,
-              'spell_power_coefficient': after.get('spell_power_coefficient'),
+              'spell_power_coefficient': coefficient,
               'capture_batch_id': batch_id, 'spell_id': spell_id, 'rank': rank,
               'required_level': level, 'tooltip': after['text']}
+    if coefficient_source is not None:
+        source['spell_power_coefficient_source'] = coefficient_source
+        source['spell_power_coefficient_authority'] = 'current_public_forever_rank_fact_table'
     parsed = tuple(_parsed_effect(e, after['text'], source) for e in action.effects)
     if any(e is None for e in parsed):
         return None, 'effect_not_fully_normalized'
@@ -209,7 +251,7 @@ def source_enrich_action_ranks(ir, *, db_path=None):
         for candidate in candidates:
             if candidate[1] != latest_rank:
                 continue
-            result, failure = _parse_rank(action, candidate)
+            result, failure = _parse_rank(action, candidate, class_key=class_key)
             if result is None:
                 failures.append((candidate, failure))
             else:
