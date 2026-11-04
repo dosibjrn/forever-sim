@@ -1,6 +1,6 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `1643c99d8978a9cccbe68ec2fd5af072e7644672`. Canonical ledger blob: `311bfb194ebd720d1105561d6e032a15359b3273`.
+Refreshed against main `1648dd5996d41f68635922651634f4503f908f8b`. Canonical ledger blob: `311bfb194ebd720d1105561d6e032a15359b3273`.
 
 ## Current M1 scoreboard
 
@@ -20,10 +20,10 @@ Refreshed against main `1643c99d8978a9cccbe68ec2fd5af072e7644672`. Canonical led
 
 ### 2. Work2 — Mage L30 unrestricted P3 source-witness repair
 
-- Owner [issue #818](https://github.com/dosibjrn/forever-sim/issues/818); current [PR #831](https://github.com/dosibjrn/forever-sim/pull/831), latest checked head `45c67c1060aca4a5d32f4ad1c051f308456d2075`, based on main `384e584` (the intervening main commits are Prio queue updates).
+- Owner [issue #818](https://github.com/dosibjrn/forever-sim/issues/818); current [PR #831](https://github.com/dosibjrn/forever-sim/pull/831), latest checked head `5597453fc47efcb732c6d8d7c022c7e943844e82`, based on main `384e584` (behind current main's Prio-only queue updates).
 - Canonical high-water remains **PARTIAL 85/224** from merged #825. The positive +50 Intellect witness is preserved; no new Spell Power witness or M1 increment is demonstrated.
-- Previous exact head `f3f9187` maintenance [#41788709671](https://github.com/dosibjrn/forever-sim/actions/runs/41788709671) failed one fixture: it expected three calls, but the bounded production sequence is two evaluations — source-policy baseline with the observed `mage:fireball` opening fails, then the exact paid-search-winner perturbation uses that same opening. The source-policy perturbation must not run without a valid source-policy baseline. Do not increase the 44-evaluation cap or invent a baseline.
-- On the latest checked head `45c67c`, exact-head maintenance [#41789543108](https://github.com/dosibjrn/forever-sim/actions/runs/41789543108), selected-Rust verification [#41789543123](https://github.com/dosibjrn/forever-sim/actions/runs/41789543123), and generic source-paid [#41789543137](https://github.com/dosibjrn/forever-sim/actions/runs/41789543137) were **in progress**. Wait for exact-head results, then run one no-record Mage L30 P3 producer and compare against 85/224. No merge or official M1 dispatch at an unchanged result. No synthetic weights or GameIR workaround.
+- Prior exact heads exposed two real classes of regression: (a) the fallback fixture expected a third source-policy stat probe even though the source baseline failed and the paid budget is two; the valid production sequence is source-policy baseline then paid-winner perturbation, both with the observed `mage:fireball` opening; (b) subsequent native spellbook work exposed a missing witness call/opening prefix, missing `query_native_mage_spell_coefficients` import, positional use of keyword-only `build_game_ir_slice`, and an empty-stderr native `prepare` failure. Do not increase the 44-evaluation cap, invent a baseline or hide native return/stdout/stderr.
+- Latest checked head `5597453` has exact-head maintenance [#41790750112](https://github.com/dosibjrn/forever-sim/actions/runs/41790750112) and selected-Rust verification [#41790750138](https://github.com/dosibjrn/forever-sim/actions/runs/41790750138) **in progress**; generic source-paid [#41790750100](https://github.com/dosibjrn/forever-sim/actions/runs/41790750100) is **pending**. Wait for all exact-head results, rebase/refresh the PR against current main when stable, then run one no-record Mage L30 P3 producer and compare against 85/224. No merge or official M1 dispatch at an unchanged result. No synthetic weights or GameIR workaround.
 
 ### 3. Work1 — Priest L20 unrestricted P4/P5 native level-aware actor
 
