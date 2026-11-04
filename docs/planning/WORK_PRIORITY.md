@@ -1,6 +1,6 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `494ad2bfe675b96a5aabfd9f22f912b8aaf9ec1e`. Canonical ledger blob: `ab3e8ad0faa686e8782c236b45177e0042fb6eb3`; current `tools/m1_progress.py` blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
+Refreshed against main `c50813aa7d628fb988e6c70ffc033c76589127a3`. Canonical ledger blob: `ab3e8ad0faa686e8782c236b45177e0042fb6eb3`; current `tools/m1_progress.py` blob: `93b3f38c4f663e742d154f7ad90a7b05e0c4defc`.
 
 ## Current M1 scoreboard
 
