@@ -181,6 +181,9 @@ def main(argv=None) -> int:
             witnesses = report.get("source_policy_stat_witnesses")
             if isinstance(witnesses, list):
                 record["source_policy_stat_witnesses"] = witnesses[:8]
+            axis_selection = report.get("real_stat_probe_axis_selection")
+            if isinstance(axis_selection, dict):
+                record["real_stat_probe_axis_selection"] = axis_selection
             weights = report.get("real_measured_stat_weights")
             if isinstance(weights, dict):
                 record["real_measured_stat_weights"] = {
