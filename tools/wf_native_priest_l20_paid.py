@@ -293,9 +293,10 @@ def score_source_priest_l20_candidates(binary: str | Path,
             # world scenario; comparing unlike mobs is not optimization.
             if not isinstance(encounter, dict) or not isinstance(player, dict):
                 raise ValueError("P4_P5_NATIVE_SOURCE_CANDIDATE_INVALID")
-            if comparable_encounter is None:
-                comparable_encounter = encounter
-            elif encounter != comparable_encounter:
+            # Only a successfully native-paid build can establish the
+            # comparison scenario. A rejected or malformed first source
+            # candidate must not veto later independently executable builds.
+            if comparable_encounter is not None and encounter != comparable_encounter:
                 raise ValueError("P4_P5_NATIVE_CANDIDATE_ENCOUNTER_MISMATCH")
             candidate_key = sha256(json.dumps(
                 request, sort_keys=True, separators=(",", ":")
@@ -306,6 +307,8 @@ def score_source_priest_l20_candidates(binary: str | Path,
             receipt = score_source_priest_l20(
                 binary, path, score_request=score_request,
                 budget_s=max(0.001, deadline - time.monotonic()))
+            if comparable_encounter is None:
+                comparable_encounter = encounter
             rows.append({"candidate": path.name, "source_request_sha256":
                          candidate_key, "status": "NATIVE_PAID",
                          **receipt})
