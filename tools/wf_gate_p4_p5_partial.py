@@ -134,10 +134,10 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
             # search. Its 30s snapshot and 300s winner share one execution;
             # normal hourly P4/P5 probes remain cheap and unchanged.
             if os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") == "1":
-                if not request_file or not live_enabled or persistent_targets != 100:
+                if not (request_file or candidate_dir) or not live_enabled or persistent_targets != 100:
                     raise ValueError("P4_P5_NATIVE_COLD_REQUIRES_SOURCE_LIVE_100MOB")
                 from tools.wf_native_priest_l20_cold import run_native_priest_l20_cold
-                cold = run_native_priest_l20_cold(binary, request_file, options)
+                cold = run_native_priest_l20_cold(binary, request_file or candidate_dir, options)
                 # Optional ordinary Actions artifact of this *executed* source
                 # run, never a second M1 ledger or a replay input authority.
                 receipt_out = os.environ.get(
