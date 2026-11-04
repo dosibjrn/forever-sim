@@ -796,3 +796,18 @@ def test_rogue_p3_empty_native_options_never_resume_legacy_selector(monkeypatch)
     assert result["status"] == "BLOCKED"
     assert result["reasons"] == ["NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES"]
     assert result["real_source_search_evaluated"] == 0
+
+
+def test_selected_engine_workflow_executes_rogue_native_and_real_p3_no_record():
+    workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
+    rogue = workflow.split(
+        "Run no-record Rogue L20 P3 native capability and gate receipt", 1
+    )[1].split("Run no-record Priest and Mage L20 P3", 1)[0]
+    assert "--class rogue --level 20 --spec unrestricted --slot all" in rogue
+    assert "python tools/wf_gate.py --class rogue --level 20" in rogue
+    assert "--spec unrestricted --gate P3 --out" in rogue
+    assert '"P3_NATIVE_ITEM_OPTIONS_REFUSED:" + refusal' in rogue
+    assert 'row["real_source_search_evaluated"] == 0' in rogue
+    assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in rogue
+    assert '"P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", [])' in rogue
+    assert "--record-pass" not in rogue
