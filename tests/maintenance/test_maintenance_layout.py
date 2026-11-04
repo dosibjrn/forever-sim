@@ -70,7 +70,6 @@ class MaintenanceTestLayout(unittest.TestCase):
         policy_consumers = (
             ROOT / "tools" / "wf282_source_role_heldout_benchmark.py",
             ROOT / "tools" / "wf298_druid_l20_verified_delta.py",
-            ROOT / "tools" / "wf299_100_mob_continuity_probe.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
             ROOT / "tests" / "test_wf245_policy_frontier.py",
         )

@@ -59,10 +59,8 @@ on:
       - 'tools/wf243_joint_multi_pull_replay.py'
       - 'tools/wf282_source_role_heldout_benchmark.py'
       - 'tools/wf298_druid_l20_verified_delta.py'
-      - 'tools/wf299_100_mob_continuity_probe.py'
       - 'tests/test_wf243_source_joint_repeated_pulls.py'
       - 'tests/test_wf245_policy_frontier.py'
-      - 'tests/test_wf300_continuous_mob.py'
       - 'WF243_INDEPENDENT_JOINT_REPEATED_PULL.json'
       - 'tools/wf251_native_replay.py'
       - 'tools/wf253_paladin_seal_replay.py'
@@ -183,7 +181,6 @@ jobs:
           src/v2/source_multi_pull_joint.py
           tools/wf282_source_role_heldout_benchmark.py
           tools/wf298_druid_l20_verified_delta.py
-          tools/wf299_100_mob_continuity_probe.py
       - name: Compile live P7 gate providers
         run: >-
           python -m py_compile
