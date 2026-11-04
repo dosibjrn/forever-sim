@@ -334,7 +334,7 @@ def _run_paladin_p3_live_with_stubs(
         id="mana", owner_actor_id="paladin", scope="actor",
         active_by_default=True, initial_amount=float(initial_mana),
         capacity=float(initial_mana), regeneration_per_s=0.0,
-        event_gain_rules=(),
+        event_gain_rules=(), metadata={"base_mana": 100.0},
     )
     ir = SimpleNamespace(
         id="paladin-l20-fixture",
