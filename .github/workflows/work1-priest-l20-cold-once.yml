@@ -66,6 +66,24 @@ jobs:
               "snapshot_30_available": receipts["native_cold_snapshot_30"] is not None,
               "final_300_available": receipts["native_cold_final_300"] is not None,
           }, sort_keys=True), flush=True)
+          # Expose only genuine executed finalist receipts in the job log.
+          # A missing snapshot or winner is an observed result, not a stub
+          # PASS; the artifact keeps the full source-native receipt if present.
+          for window in ("native_cold_snapshot_30", "native_cold_final_300"):
+              winner = receipts.get(window)
+              if not isinstance(winner, dict):
+                  print("PRIEST_NATIVE_COLD_WINDOW", window, "NO_EXECUTED_WINNER", flush=True)
+                  continue
+              world = winner.get("real_100mob_receipt") or {}
+              print("PRIEST_NATIVE_COLD_WINDOW", json.dumps({
+                  "window": window,
+                  "source_request_sha256": winner.get("source_request_sha256"),
+                  "paid_completed_elapsed_s": winner.get("paid_completed_elapsed_s"),
+                  "real_route_s_per_mob": winner.get("route_s_per_mob"),
+                  "native_world_kills": world.get("native_2d_persistent_world_targets_killed"),
+                  "native_source_action_events": world.get("native_2d_persistent_source_action_events"),
+                  "native_paid_recovery": world.get("native_2d_persistent_paid_recovery"),
+              }, sort_keys=True), flush=True)
           assert gate["status"] != "PASS", "No-record producer must not silently certify"
           assert receipts["native_cold_attempted_distinct_builds"] > 0, "No genuine candidate attempted"
           PY
