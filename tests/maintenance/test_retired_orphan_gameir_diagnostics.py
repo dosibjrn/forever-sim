@@ -9,6 +9,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Orphan WF-COMBAT232/233 GameIR weapon and armor paid-report runners.
+    "tools/wf_combat232_weapon_evidence.py",
+    "tools/wf_combat233_source_armor_replay.py",
     # PR #912 nonoverlapping orphaned historical frontends, retired after #913.
     "tools/audit_l20_fidelity.py",
     "tools/wf249_ingest_talent_scope.py",
@@ -185,6 +188,8 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf_combat232_weapon_evidence",
+    "wf_combat233_source_armor_replay",
     "audit_l20_fidelity",
     "wf249_ingest_talent_scope",
     "wf302_persistent_joint_optimizer",

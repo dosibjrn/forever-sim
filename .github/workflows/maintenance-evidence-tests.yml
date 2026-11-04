@@ -2,6 +2,8 @@ name: Repository maintenance regressions
 on:
   pull_request:
     paths:
+      - 'tools/wf_combat232_weapon_evidence.py'
+      - 'tools/wf_combat233_source_armor_replay.py'
       - 'tools/audit_l20_fidelity.py'
       - 'tools/wf249_ingest_talent_scope.py'
       - 'tools/wf302_persistent_joint_optimizer.py'
