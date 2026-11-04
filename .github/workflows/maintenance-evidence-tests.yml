@@ -31,6 +31,7 @@ on:
       - 'evidence/wf430/WF430_STARFIRE_100MOB.json'
       - 'evidence/wf430/WF430_RED_*.log'
       - 'evidence/wf430/WF430_REFACTOR_*.log'
+      - 'evidence/wf438/run300.py'
       - 'tests/test_wf360_*.py'
       - 'tests/test_wf303_checkpoint_falsifier.py'
       - 'tests/test_wf305_source_action_scope.py'
