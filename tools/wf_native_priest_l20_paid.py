@@ -309,9 +309,12 @@ def score_source_priest_l20_candidates(binary: str | Path,
             rows.append({"candidate": path.name, "source_request_sha256":
                          candidate_key, "status": "NATIVE_PAID",
                          **receipt})
-        except (OSError, ValueError, RuntimeError, TimeoutError) as exc:
-            # Explicit native refusal is a measured candidate failure, never
-            # a successful paid screen or a reason to try a Python model.
+        except (OSError, ValueError, RuntimeError, TimeoutError,
+                subprocess.SubprocessError) as exc:
+            # A timed-out or failed native subprocess refuses ONLY this
+            # candidate. Preserve the bounded source-native frontier so an
+            # independent paid build can still run within the same budget.
+            # This is not a successful paid screen or a Python fallback.
             rows.append({"candidate": path.name, "status": "NATIVE_REFUSED",
                          "reason": str(exc)[-400:]})
 
