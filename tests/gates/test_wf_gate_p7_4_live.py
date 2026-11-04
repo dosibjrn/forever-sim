@@ -875,7 +875,7 @@ def test_native_candidate_pool_uses_pinned_rust_item_and_enchant_options(
         str(binary.resolve()), "gear-options", "--item-types", ",".join(item_types)]
     assert calls[0][1]["capture_output"] is True
     assert calls[0][1]["text"] is True
-    assert pool[0][:2] == [9999, 1000]
+    assert pool[0][:2] == [9999, 1000 + item_types.index(head_type)]
     assert pool[14] == [1000 + item_types.index(weapon_type)]
     assert pool[15] == [1000 + item_types.index(relic_type)]
     assert enchant_pools[6] == [None, 2000 + item_types.index(search.RUST_TYPES["hands"])]
