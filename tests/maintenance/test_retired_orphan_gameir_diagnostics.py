@@ -22,6 +22,8 @@ RETIRED_TOOLS = (
     "tools/wf343_direct_percent_top5.py",
     # WF431 one-off paid GameIR search runner; retained evidence is diagnostic only.
     "tools/wf431_modified_action_paid_search.py",
+    # WF359 one-off P3 rebase depended on the retired staged P2 SQLite database.
+    "tools/wf359_druid_l30_p3_rebase.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
     "tools/wf384_generic_checkpoint_screen.py",
@@ -85,6 +87,7 @@ RETIRED_IMPORT_NAMES = (
     "wf319_druid_l20_index_l2_parity",
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
+    "wf359_druid_l30_p3_rebase",
     "wf399_qualification_probe",
     "wf399_replay_winner",
     "wf384_generic_checkpoint_screen",
@@ -181,6 +184,7 @@ RETIRED_TESTS = (
     "tests/test_wf424_insect_source_talent_100mob_tdd.py",
     "tests/test_wf430_source_compound_stun_tdd.py",
     "tests/gates/test_wf367_six_port_acceptance.py",
+    "tests/test_wf359_druid_l30_p3_rebase.py",
 )
 
 RETIRED_COMMANDS = (
@@ -203,6 +207,10 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf343/WF343_TOP5_READABLE_REPORT.md",
     "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_DIAGONAL.json",
     "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_MARGINAL_SCREEN.json",
+    # WF359 output is retained as historical diagnostic evidence, not re-run.
+    "evidence/wf359/WF359_L30_P3_REBASED_DIRECT_100MOB.json",
+    "evidence/wf359/WF359_L30_P3_REBASED_TOP5.json",
+    "evidence/wf359/WF359_RECONSTRUCTION.json",
 )
 
 
