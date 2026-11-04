@@ -186,7 +186,6 @@ def test_full_p74_freezes_best_60_fight_balanced_finalist_for_stochastic_holdout
         ("native", 60, "balanced"), ("world", 60, "balanced"),
         ("native", 60, "balanced"), ("world", 60, "balanced"),
         ("native", 1000, "stochastic"), ("world", 1000, "stochastic")]
-        json.loads(calls[0][3]) != json.loads(calls[8][3]))
     assert json.loads(calls[2][3]) == json.loads(calls[8][3])
     assert json.loads(calls[0][3]) != json.loads(calls[2][3])
     assert report["frozen_request_raw_sha256"] == hashlib.sha256(
