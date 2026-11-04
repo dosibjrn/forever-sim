@@ -43,6 +43,7 @@ def test_priest_p4_p5_one_cold_two_independent_gate_verdicts(
         patch("tools.wf_native_priest_l20_cold.native_cold_gate_verdicts",
               return_value=verdicts),
         patch("tools.m1_progress.record_pass") as record,
+        patch("tools.m1_progress.record_partial"),
     ):
         rc = wf_gate.main(["--class", "priest", "--level", "20",
                            "--spec", "unrestricted", "--gate", "P4+P5",
