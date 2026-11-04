@@ -9,6 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Historical Paladin SQLite/GameIR source mechanics ingesters; active gates use MythicSim.
+    "tools/wf253_ingest_seal.py",
+    "tools/wf255_ingest_command.py",
+    "tools/wf256_ingest_seals.py",
     # One-off Python SQLite unique-equip migration; no runtime or gate callers.
     "tools/wf345_ingest_equipped_group.py",
     # Historical Warrior L30 SQLite/GameIR staging; current P3 uses selected
@@ -256,6 +260,9 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf253_ingest_seal",
+    "wf255_ingest_command",
+    "wf256_ingest_seals",
     "wf345_ingest_equipped_group",
     "wf368_warrior_l30_gear_runtime_bridge",
     "wf370_warrior_l30_source_bis_stage",
@@ -470,6 +477,10 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # Exclusive source-ingest/Paladin GameIR mechanics tests, not native-gate regressions.
+    "tests/test_wf253_seal_judgement_vertical.py",
+    "tests/test_wf255_paladin_command_weapon.py",
+    "tests/test_wf256_paladin_seal_family.py",
     # Exclusive old Warrior staged-SQLite GameIR and item-source checks.
     "tests/test_wf368_warrior_l30_gear_execution.py",
     "tests/test_wf370_warrior_l30_bis_reconciliation.py",
