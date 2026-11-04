@@ -61,6 +61,7 @@ RETIRED_TOOLS = (
     "integrations/mythicsim-rust/tests/test_native_p1_effect_probe.py",
     "tools/wf318_nine_class_composite_batch.py",
     "tests/generic/search/test_wf390_generic_talent_subset_search.py",
+    "tests/generic/search/test_source_talent_allocation_adapter.py",
     "tools/wf390_generic_talent_search.py",
     "tests/test_wf318_index_composite_batch.py",
     "src/engine_client/native_p2_rank_probe.py",
