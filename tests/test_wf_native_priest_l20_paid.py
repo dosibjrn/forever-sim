@@ -753,6 +753,11 @@ def test_paid_lethal_candidate_falls_back_when_retained_actor_cannot_finish(tmp_
             "native_2d_persistent_actor_verified": True,
             "native_2d_persistent_world_ack_verified": True,
             "native_2d_persistent_world_targets_killed": target_count,
+            # Mocked transport receipts: these prove forwarding/refusal only,
+            # not a real source-native 100-target world execution.
+            "native_2d_persistent_source_action_events": target_count,
+            "native_2d_persistent_source_action_counts_by_target": [
+                {"spellId:585": 1} for _ in range(target_count)],
             "native_2d_screen_complete": False,
         }
 
@@ -779,7 +784,9 @@ def test_paid_lethal_candidate_falls_back_when_retained_actor_cannot_finish(tmp_
     assert sorted(p.name for p in tmp_path.iterdir()) == ["a.json", "b.json"]
 
 
-def test_priest_paid_100_target_request_does_not_accept_two_kill_receipt(tmp_path):
+@pytest.mark.parametrize("reported_kills", [2, 100])
+def test_priest_paid_100_target_request_rejects_short_or_actionless_receipt(
+        tmp_path, reported_kills):
     """The selected source build must achieve ALL requested persistent kills."""
     from hashlib import sha256
     from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
@@ -804,7 +811,7 @@ def test_priest_paid_100_target_request_does_not_accept_two_kill_receipt(tmp_pat
         return {
             "native_2d_persistent_actor_verified": True,
             "native_2d_persistent_world_ack_verified": True,
-            "native_2d_persistent_world_targets_killed": 2,
+            "native_2d_persistent_world_targets_killed": reported_kills,
             "native_2d_screen_complete": False,
         }
 
