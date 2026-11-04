@@ -424,14 +424,26 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # exact, native-enriched rank-915 source action.
     native_spell_winner = (
         mage_l30_native or (shaman_l20_native and native_fallback_action))
+    force_native_shaman_spell_power_witness = (
+        shaman_l20_native and native_spell_winner
+        and native_spell_coefficients_error is None
+        and bool(native_spell_coefficients_applied))
+    witness_axes = [blocker.split(":", 1)[1] for blocker in witness_blockers]
+    if (force_native_shaman_spell_power_witness
+            and "spell_power" not in witness_axes):
+        # The native coefficient can make the initial CombatRuntime sensitivity
+        # positive, removing the NONPOSITIVE blocker. Still require the explicit
+        # paid source-policy witness for the exact native fallback action.
+        witness_axes.insert(0, "spell_power")
     paid_winner_baseline_available = (
         native_spell_winner
         and paid_search_winner_baseline(
             policy, record, tuple(record.get("prefix") or ())) is not None
     )
-    for blocker in witness_blockers:
-        axis = blocker.split(":", 1)[1]
-        if weights.get(axis) != 0.0:
+    for axis in witness_axes:
+        if (weights.get(axis) != 0.0
+                and not (force_native_shaman_spell_power_witness
+                         and axis == "spell_power")):
             continue
         if native_item_sized_probe:
             probe_deltas, probe_delta_sources = _native_item_stat_probe_deltas(
