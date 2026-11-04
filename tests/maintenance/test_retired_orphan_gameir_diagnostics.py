@@ -1,8 +1,9 @@
 """Keep retired one-off GameIR and checkpoint diagnostics out of the live CLI surface.
 
 The retired tool modules had no direct production, test, workflow, or
-documentation callers. Separate source/runtime regression tests remain.
-Their implementation history is retained in Git.
+documentation callers. P1/P2-only source-talent proofs and probes tied to the
+removed staged databases are retired; active Forever-owned regressions remain.
+Git history retains the implementation archaeology.
 """
 from pathlib import Path
 
@@ -49,6 +50,13 @@ RETIRED_TOOLS = (
     "tools/wf305_ingest_web_observed_spell_dependencies.py",
     "tools/wf357_l30_fresh_replay.py",
     "tools/wf358_l30_fresh_joint_replay.py",
+    # 2026-11-04: orphaned one-off probes; their staged P2 databases were retired.
+    "tools/wf357_recovery_probe.py",
+    "tools/wf391_generic_joint_probe.py",
+    "tools/wf417_source_root_2d_probe.py",
+    "tools/wf424_druid_l30_insect_probe.py",
+    "tools/wf429_l30_pushback_100mob.py",
+    "tools/wf430_l30_starfire_100mob.py",
 )
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
@@ -99,6 +107,16 @@ RETIRED_IMPORT_NAMES = (
     "wf305_ingest_web_observed_spell_dependencies",
     "wf357_l30_fresh_replay",
     "wf358_l30_fresh_joint_replay",
+    "wf357_recovery_probe",
+    "wf391_generic_joint_probe",
+    "wf417_source_root_2d_probe",
+    "wf424_druid_l30_insect_probe",
+    "wf429_l30_pushback_100mob",
+    "wf430_l30_starfire_100mob",
+    "test_wf357_source_between_pull_recovery",
+    "test_wf391_generic_joint_frontier",
+    "test_wf424_insect_source_talent_100mob_tdd",
+    "test_wf430_source_compound_stun_tdd",
     "source_spell_dependency_observations",
     "source_gap_audit",
     "scope_audit(",
@@ -116,6 +134,16 @@ RETIRED_OUTPUTS = (
     "WF244_INDEPENDENT_JOINT_REPEATED_PULL.json",
     "WF245_INDEPENDENT_JOINT_REPLAY.json",
     "WF246_PRIMARY_STATS_JOINT_REPLAY.json",
+    "evidence/wf357/WF357_RECOVERY_100MOB.json",
+    "evidence/wf424/WF424_DRUID_L30_INSECT_SWARM_100MOB.json",
+    "evidence/wf429/WF429_L30_26PT_PUSHBACK_100MOB.json",
+    "evidence/wf430/WF430_STARFIRE_100MOB.json",
+    "evidence/wf430/WF430_RED_2D_STUN.log",
+    "evidence/wf430/WF430_RED_COMPOUND.log",
+    "evidence/wf430/WF430_RED_PROC_TELEMETRY.log",
+    "evidence/wf430/WF430_RED_MAX_RANK_FRONTIER.log",
+    "evidence/wf430/WF430_REFACTOR_2D_PASS.log",
+    "evidence/wf430/WF430_REFACTOR_CROSS_PASS.log",
 )
 
 RETIRED_SOURCE_EVIDENCE = (
@@ -133,6 +161,10 @@ RETIRED_TESTS = (
     "tests/test_wf_gen03a4c2b2_semantic.py",
     "tests/test_wf_gen03a4c2b2_coverage.py",
     "tests/test_wf303_checkpoint_falsifier.py",
+    "tests/test_wf357_source_between_pull_recovery.py",
+    "tests/generic/search/test_wf391_generic_joint_frontier.py",
+    "tests/test_wf424_insect_source_talent_100mob_tdd.py",
+    "tests/test_wf430_source_compound_stun_tdd.py",
 )
 
 RETIRED_COMMANDS = (
