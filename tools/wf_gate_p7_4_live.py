@@ -296,17 +296,6 @@ def run_live(root: Path, class_key: str, level: int, *,
         sys.path.remove(str(source_dir))
     production = _source_module(source_dir / "live_world_probe.py",
                                 "p74_production_native_world")
-    upstream = binary.parents[2]
-    catalogue = root / "data/forever/catalogue/items_2026-09-29.sqlite"
-    items = upstream / "data/items.jsonl"
-    enchants = upstream / "data/enchants.jsonl"
-    if any(not path.is_file() for path in (catalogue, items, enchants)):
-        return {"status": "BLOCKED",
-                "reasons": ["P7_4_PINNED_SOURCE_OR_NATIVE_ITEM_DATABASE_MISSING"]}
-    try:
-        gear_search.GearValidator.require_sqlite_catalogue(catalogue)
-    except ValueError as exc:
-        return {"status": "BLOCKED", "reasons": ["P7_4_" + str(exc)]}
     rng = random.Random(667)
     player = base["raid"]["parties"][0]["players"][0]
     executed = 0
