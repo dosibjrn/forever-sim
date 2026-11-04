@@ -33,6 +33,12 @@ RETIRED_IMPORT_NAMES = (
 RETIRED_OUTPUTS = ("evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",)
 
 
+RETAINED_BEHAVIOR_TESTS = (
+    "tests/test_wf241_mixed_hot_recovery.py",
+    "tests/test_wf378_recovery_channel_tdd.py",
+)
+
+
 def test_orphan_gameir_diagnostic_clis_stay_retired():
     for relative in RETIRED_TOOLS:
         assert not (ROOT / relative).exists(), relative
@@ -44,6 +50,8 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     )
     for relative in RETIRED_TOOLS:
         assert relative not in workflow, relative
+    for relative in RETAINED_BEHAVIOR_TESTS:
+        assert relative in workflow, f"retained recovery regression is not run: {relative}"
 
     this_test = Path(__file__).resolve()
     for root in (ROOT / "src", ROOT / "tools", ROOT / "tests", ROOT / "scripts",
