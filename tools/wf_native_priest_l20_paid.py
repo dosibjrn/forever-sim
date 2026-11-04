@@ -80,6 +80,10 @@ def score_source_priest_l20(binary: str | Path, request_file: str | Path, *,
         "native_score": record["score"],
         "native_score_objective": "DPS",
         "native_source_action_casts": sum(casts.values()),
+        # Forward exact native ActionID identities, not inferred spell names.
+        # A gate can distinguish a real paid policy alternative from a
+        # source APL proposal whose new action never executed.
+        "native_source_action_cast_counts": casts,
         "native_source_action_ids_cast": len(casts),
         "native_source_action_id_count": len(source_ids),
         "native_rng_mode": record["rng_mode"],
