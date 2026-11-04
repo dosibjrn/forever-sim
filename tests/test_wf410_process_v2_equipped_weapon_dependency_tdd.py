@@ -15,7 +15,7 @@ def _policy(action_id):
                            rules=(SimpleNamespace(action_id=action_id),))
 
 
-def test_real_druid_l20_claw_feral_weapon_effect_is_not_equipped_weapon_stat():
+def test_real_druid_l20_claw_feral_weapon_effect_uses_equipped_dps_but_fixed_speed():
     ir = build_source_slice(20)
     claw = next(a for a in ir.actions if a.family_key == 'claw')
     p = _policy(claw.id)
@@ -23,10 +23,11 @@ def test_real_druid_l20_claw_feral_weapon_effect_is_not_equipped_weapon_stat():
     effect = next(e for e in claw.effects if e.effect_type == 'weapon_damage')
     assert effect.damage_source.flat_dps > 0
     assert effect.damage_source.dps_stat_id is None
-    assert policy_uses_equipped_weapon_damage(ir, p) is False
+    assert policy_uses_equipped_weapon_damage(ir, p) is True
+    assert policy_uses_equipped_weapon_mean_hit(ir, p) is False
 
 
-def test_source_druid_claw_allows_zero_gear_weapon_dps_and_mean_hit(monkeypatch):
+def test_source_druid_claw_requires_gear_dps_but_not_mean_hit(monkeypatch):
     weapon = ItemRecord(94001,'Feral stat mace','two_hand',item_level=21,
                         required_level=19,stamina=5,weapon_dps=10,
                         weapon_min_damage=11,weapon_max_damage=29)
@@ -37,9 +38,9 @@ def test_source_druid_claw_allows_zero_gear_weapon_dps_and_mean_hit(monkeypatch)
     result=fast_p3_smoke_for_policy(source_ir=ir,policy=_policy(claw.id),
         class_key='druid',level=20,weights={'stamina':0.1,'weapon_dps':0},
         weight_evidence_kind='MEASURED_SOURCE_CONTEXT')
-    assert result['p3_pass'],result['blockers']
+    assert 'MISSING_APPLICABLE_DPS_WEIGHT' in result['blockers']
     assert result['weapon_damage_dependent'] is False
-    assert result['equipped_weapon_dps_relevant'] is False
+    assert result['equipped_weapon_dps_relevant'] is True
     assert result['slots']['weapon']['items'][0]['score']==0.5
 
 
@@ -59,7 +60,7 @@ def test_equipped_weapon_dependent_action_requires_both_weights(monkeypatch):
         actions=(action,),auto_attacks=())
     fact=SimpleNamespace(mode_label='Human',source_stat='weapon_dps',
         damage_source_kind='equipped_weapon',weapon_speed_semantics='equipped')
-    monkeypatch.setattr('src.game.checkpoint_p3_smoke._weapon_facts_for_ir',
+    monkeypatch.setattr('src.game.gear._weapon_facts_for_ir',
                         lambda _ir:((fact,'human'),))
     p=_policy('strike')
     assert policy_uses_equipped_weapon_damage(ir,p) is True
@@ -80,7 +81,7 @@ def test_unconditional_action_matches_global_equipped_weapon_source_fact(monkeyp
         actions=(action,),auto_attacks=())
     fact=SimpleNamespace(mode_label='*',source_stat='weapon_dps',
         damage_source_kind='equipped_weapon',weapon_speed_semantics='equipped')
-    monkeypatch.setattr('src.game.checkpoint_p3_smoke._weapon_facts_for_ir',
+    monkeypatch.setattr('src.game.gear._weapon_facts_for_ir',
                         lambda _ir:((fact,None),))
     p=_policy('strike')
     assert policy_uses_equipped_weapon_damage(ir,p) is True
@@ -123,7 +124,7 @@ def test_mode_free_auto_attack_with_matching_source_fact_is_equipped_weapon_depe
         actions=(SimpleNamespace(id='rally',effects=()),),auto_attacks=(auto,))
     fact=SimpleNamespace(mode_label='*',source_stat='weapon_dps',
         damage_source_kind='equipped_weapon',weapon_speed_semantics='equipped')
-    monkeypatch.setattr('src.game.checkpoint_p3_smoke._weapon_facts_for_ir',
+    monkeypatch.setattr('src.game.gear._weapon_facts_for_ir',
                         lambda _ir:((fact,None),))
     p=_policy('rally')
     assert policy_uses_equipped_weapon_damage(ir,p) is True
