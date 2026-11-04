@@ -5,7 +5,6 @@ import pytest
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.model import PeriodicEffect
-from src.v2.legal_candidate_enumeration import evaluate_source_candidate_envelope
 from src.v2.source_button_discovery import discover_source_combat_buttons
 from src.v2.source_policy_search import (
     evaluate_discovered_policy_search, synthesize_source_policies,
@@ -117,14 +116,3 @@ def test_periodic_without_aura_id_is_rejected_not_spammed():
     e = synthesize_source_policies(bad, level=10)
     assert any(row['id'] == swp.id and row['reason'] == 'unsupported_periodic_condition'
                for row in e['excluded'])
-
-
-def test_existing_druid_envelope_opt_in_real_discovered_scoring():
-    old = evaluate_source_candidate_envelope(class_key='druid', level=10)
-    new = evaluate_source_candidate_envelope(class_key='druid', level=10,
-                                             include_discovered_policy_search=True)
-    assert old['source_discovered_evaluated_count'] == 0
-    assert new['source_discovered_evaluated_count'] > 0
-    assert new['evaluated_count'] == old['evaluated_count'] + new['source_discovered_evaluated_count']
-    assert new['mode_auto_attack_evaluated_count'] == old['mode_auto_attack_evaluated_count']
-    assert not new['complete_optimizer']

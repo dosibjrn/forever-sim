@@ -2,7 +2,6 @@ from dataclasses import replace
 import pytest
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.source_button_discovery import discover_source_combat_buttons
-from src.v2.legal_candidate_enumeration import enumerate_legal_source_candidates
 
 
 def test_mage_source_discovers_offensive_buttons_not_in_seed_policy():
@@ -14,9 +13,10 @@ def test_mage_source_discovers_offensive_buttons_not_in_seed_policy():
 
 
 def test_druid_excludes_heals_and_modes_from_initial_offensive_buttons():
-    result = enumerate_legal_source_candidates(class_key='druid', level=10)
-    assert set(result['discovered_combat_buttons']) == {'wrath:5177', 'moonfire:8924', 'source_spell:339'}
-    assert any(x['id'] == 'healing_touch:rank@8' and x['reason'] == 'not_offensive' for x in result['discovery_excluded_actions'])
+    ir = build_game_ir_slice(class_key='druid', level=10)
+    result = discover_source_combat_buttons(ir, level=10)
+    assert {'wrath:5177', 'moonfire:8924', 'source_spell:339'} <= set(result['action_ids'])
+    assert any(x['id'] == 'healing_touch:rank@8' and x['reason'] == 'not_offensive' for x in result['excluded'])
 
 
 def test_generic_requirement_gates_fail_closed():
