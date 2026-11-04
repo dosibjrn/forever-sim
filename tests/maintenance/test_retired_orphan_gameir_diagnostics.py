@@ -9,6 +9,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Historical Warrior L30 SQLite/GameIR staging; current P3 uses selected
+    # native item options and selected scorer, not staged Python item facts.
+    "tools/wf368_warrior_l30_gear_runtime_bridge.py",
+    "tools/wf370_warrior_l30_source_bis_stage.py",
     # M47 GameIR-scored baseline/adversarial report CLIs and their exclusive
     # historical report checks; retained M47 mechanics tests are independent.
     "tools/m47_3x3_baseline.py",
@@ -237,6 +241,8 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf368_warrior_l30_gear_runtime_bridge",
+    "wf370_warrior_l30_source_bis_stage",
     "m47_paladin_l20_selection",
     "m47_paladin_l20_adversarial",
     "wf442_ingest_source_rank_observations",
@@ -448,6 +454,9 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    # Exclusive old Warrior staged-SQLite GameIR and item-source checks.
+    "tests/test_wf368_warrior_l30_gear_execution.py",
+    "tests/test_wf370_warrior_l30_bis_reconciliation.py",
     # Exclusive M47 L20 adversarial test read an absent generated root-level JSON.
     "tests/test_m47_paladin_l20_adversarial_v011471.py",
     # Retired synthetic Python GameIR Warcraft mechanics, not Forever-owned contracts.
