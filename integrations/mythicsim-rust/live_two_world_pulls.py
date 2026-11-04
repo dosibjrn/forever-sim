@@ -190,6 +190,29 @@ def _native_mana_continuity(windows: list[dict], target_count: int) -> dict:
                 or mana < 0):
             raise AssertionError("RUST_MULTI_WORLD_NATIVE_MANA_INVALID")
         after_kill.append(float(mana))
+    # The selected Rust fork reports actual native mana-tick gains per kill.
+    # Keep these separate from paid between-pull rest: combat regeneration is
+    # not proof that the actor recovered while travelling or drinking.
+    presence = [
+        (("native_combat_mana_regen_actual_gain" in window),
+         ("native_combat_mana_regen_events" in window))
+        for window in windows
+    ]
+    if all(not gain and not events for gain, events in presence):
+        regen_gains = regen_events = None  # Older native pin: unobserved.
+    else:
+        if not all(gain and events for gain, events in presence):
+            raise AssertionError("RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INCOMPLETE")
+        regen_gains, regen_events = [], []
+        for window in windows:
+            gain = window["native_combat_mana_regen_actual_gain"]
+            events = window["native_combat_mana_regen_events"]
+            if (type(gain) not in (int, float) or not isfinite(gain)
+                    or gain < 0 or type(events) is not int or events < 0
+                    or (gain > 0 and events == 0)):
+                raise AssertionError("RUST_MULTI_WORLD_NATIVE_REGEN_RECEIPT_INVALID")
+            regen_gains.append(float(gain))
+            regen_events.append(events)
     return {
         "native_actor_mana_after_world_kills": after_kill,
         "native_actor_mana_delta_between_world_kills": [
@@ -197,6 +220,9 @@ def _native_mana_continuity(windows: list[dict], target_count: int) -> dict:
             in zip(after_kill, after_kill[1:])
         ],
         "minimum_native_actor_mana": min(after_kill),
+        "native_combat_mana_regen_observed": regen_gains is not None,
+        "native_combat_mana_regen_actual_gain_by_target": regen_gains,
+        "native_combat_mana_regen_events_by_target": regen_events,
     }
 
 
