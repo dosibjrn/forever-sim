@@ -14,6 +14,8 @@ RETIRED_TOOLS = (
     "tools/wf384_generic_checkpoint_screen.py",
     "tools/wf385_mage_stamina_100mob.py",
     "tools/wf294_l1_partial_nine_class.py",
+    "tools/wf241_recovery_e2e.py",
+    "tools/wf378_evocation_recovery.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf303_source_wide_100mob",
@@ -23,11 +25,18 @@ RETIRED_IMPORT_NAMES = (
     "wf384_generic_checkpoint_screen",
     "wf385_mage_stamina_100mob",
     "wf294_l1_partial_nine_class",
+    "wf241_recovery_e2e",
+    "wf378_evocation_recovery",
 )
+
+
+RETIRED_OUTPUTS = ("evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",)
 
 
 def test_orphan_gameir_diagnostic_clis_stay_retired():
     for relative in RETIRED_TOOLS:
+        assert not (ROOT / relative).exists(), relative
+    for relative in RETIRED_OUTPUTS:
         assert not (ROOT / relative).exists(), relative
 
     workflow = (ROOT / ".github/workflows/maintenance-evidence-tests.yml").read_text(
