@@ -95,6 +95,7 @@ def test_p3_cli_preserves_native_item_options_partial_metadata(monkeypatch, caps
         "item_options_source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
         "native_item_options_status": "partial_level_unknown",
         "native_unverified_candidate_count": 2267,
+        "native_excluded_non_client_item_count": 3075,
         "native_item_options_source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
         "native_spell_coefficients_source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
         "native_spell_coefficients_engine_revision": "native-engine-revision",
@@ -120,6 +121,7 @@ def test_p3_cli_preserves_native_item_options_partial_metadata(monkeypatch, caps
     assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     assert row["native_item_options_status"] == "partial_level_unknown"
     assert row["native_unverified_candidate_count"] == 2267
+    assert row["native_excluded_non_client_item_count"] == 3075
     assert row["native_item_options_source"] == report["native_item_options_source"]
     assert row["native_spell_coefficients_source"] == "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS"
     assert row["native_spell_coefficients_engine_revision"] == "native-engine-revision"
