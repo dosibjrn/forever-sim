@@ -17,3 +17,7 @@
 - **Anti-churn first:** Clean should find and eliminate concrete misprioritized proof tasks, unsupported assertions and obsolete active requirements before discretionary dead-code removal. Architecture retirement then proceeds only for demonstrably uncalled source staging; no P1/P2 rebuild or MythicSim game-mechanics audit.
 
 **Scope:** 148 checkpoints × nine active P3–P6/P7.1–P7.5 gates = **1,332 pairs**. Only [PROCESS](../../PROCESS.md) and [gate contracts](../gates/README.md) define acceptance. Details/history stay on owned issues/PRs; this file is the current dispatch, not an event log.
+
+## Clean escalations for Prio
+
+None pending. Clean records only fresh, verifiable, high-impact anti-waste findings here (maximum three); Prio triages and clears them. This is a live handoff, not an audit ledger or a second priority queue.
