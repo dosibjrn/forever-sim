@@ -86,6 +86,50 @@ def run_live(root: Path, class_key: str, level: int, *,
     # Full 30/300s paid searches are deliberately explicit, never hourly.
     # This is the SAME source-paid production runner, not a gate-only scorer.
     import os
+    # Priest L20 has a selected-Rust source/native-world producer already
+    # paying ONE cold 300s search for both frozen finalists. Use its real
+    # 100-mob receipts for P6 rather than falling back to GameIR/gsim.
+    # This explicit opt-in must not start expensive searches in hourly CI.
+    if ((class_key, level, spec) == ("priest", 20, "unrestricted")
+            and os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") == "1"):
+        from hashlib import sha256
+        from uuid import uuid4
+        from tools.wf_gate_p4_p5_partial import (
+            _native_cold_options_without_paid_executor)
+        from tools.wf_native_priest_l20_cold import native_cold_p6_verdict
+
+        paid = _native_cold_options_without_paid_executor(
+            class_key, level, spec, gate="P4")
+        if "native_cold_search_wall_s" not in paid:
+            # Preserve the actual native-request refusal; no fallback search
+            # or imaginary complete P6 receipts on an unavailable producer.
+            return paid
+        verdict = native_cold_p6_verdict(paid)
+        result = {**paid, **verdict}
+        if verdict["status"] == "PASS":
+            binary = os.environ.get("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN")
+            try:
+                engine_sha = sha256(Path(binary).read_bytes()).hexdigest()
+            except (OSError, TypeError):
+                result["status"] = "FAIL"
+                result["reasons"] = [
+                    "P6_EXECUTED_NATIVE_BINARY_IDENTITY_UNAVAILABLE"]
+                result["coverage_scope_complete"] = False
+                result["full_p6_selected_backend_acceptance"] = False
+            else:
+                finalists = verdict["selected_paid_winners"]
+                source_identity = "|".join(
+                    winner["source_request_sha256"] for winner in finalists)
+                result["runtime_proof"] = {
+                    "executed": True,
+                    "engine_revision": "mythicsim-rust-bin-sha256:" + engine_sha,
+                    "source_revision": "native-p6-finalists-sha256:"
+                                       + sha256(source_identity.encode()).hexdigest(),
+                    "run_id": os.environ.get("GITHUB_RUN_ID")
+                              or "native-priest-l20-p6-" + uuid4().hex,
+                }
+        return result
+
     if os.environ.get("FOREVER_P6_FULL_SOURCE_COMPARE") == "1":
         from tools.wf_gate_p6_full_source import run_full_source_comparison
         return run_full_source_comparison(root, class_key, level, spec=spec)
