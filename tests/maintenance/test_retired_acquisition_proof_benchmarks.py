@@ -155,6 +155,8 @@ RETIRED_TOOLS = (
 )
 RETIRED_SOURCE_PROOF_MODULES = (
     "src/game/data/forever/source_checkpoint_acquisition.py",
+    "src/game/data/forever/source_checkpoint_spellbook.py",
+    "src/game/data/forever/source_build_delta.py",
     "src/v2/source_sqlite_semantic_proof.py",
     "src/v2/source_sqlite_semantic_audit.py",
     "src/v2/source_sqlite_direct_damage_oracle.py",
@@ -185,6 +187,8 @@ RETIRED_IMPORT_NAMES = (
     "wf331_druid20_web_l0_evidence",
     "wf332_rune_policy_evidence",
     "source_checkpoint_acquisition",
+    "source_checkpoint_spellbook",
+    "source_build_delta",
     "source_checkpoint_p7_legacy",
     "wf355_p7_preflight",
     "P7_LEGACY_HOLDOUT",
