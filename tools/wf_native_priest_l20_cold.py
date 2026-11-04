@@ -200,6 +200,77 @@ def native_cold_gate_verdicts(cold: dict) -> dict:
     return verdicts
 
 
+
+def native_cold_p6_verdict(cold: dict) -> dict:
+    """Compare the real 30s/300s native-world finalists from ONE cold search.
+
+    P6 does not pay a second search or substitute the two-mob discovery score
+    for either finalist's actual, retained-actor 100-mob route.
+    """
+    reasons = []
+    if cold.get("native_cold_300s_reached") is not True:
+        reasons.append("P6_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED")
+    if (type(cold.get("native_cold_native_paid_after_30")) is not int
+            or cold["native_cold_native_paid_after_30"] < 1):
+        reasons.append("P6_NO_REAL_PAID_CONTINUATION_AFTER_30S")
+    if (type(cold.get("native_cold_paid_world_route_builds")) is not int
+            or cold["native_cold_paid_world_route_builds"] < 2):
+        reasons.append("P6_DISTINCT_PAID_WORLD_BUILDS_MISSING")
+
+    replay_rows = []
+    selected_paid_winners = []
+    timings = []
+    for gate, budget, winner_key in (
+            ("P4", 30, "native_cold_snapshot_30"),
+            ("P5", 300, "native_cold_final_300")):
+        winner = cold.get(winner_key)
+        selected = cold.get("native_cold_30s_paid_selection" if budget == 30
+                            else "native_cold_300s_paid_selection")
+        valid = _native_cold_winner_receipt_valid(cold, gate)
+        seconds = (_verified_route(winner.get("real_100mob_receipt"))
+                   if valid else None)
+        if seconds is None:
+            reasons.append("P6_" + str(budget)
+                           + "S_FROZEN_WINNER_REAL_100MOB_RECEIPT_INCOMPLETE")
+        timings.append(seconds)
+        replay_rows.append({
+            "cold_search_budget_s": budget,
+            "status": "COMPLETE" if seconds is not None else "INCOMPLETE",
+            "count": 100 if seconds is not None else 0,
+            "mob_completed": 100 if seconds is not None else 0,
+            "s_per_mob": seconds,
+        })
+        if isinstance(selected, dict) and isinstance(winner, dict):
+            selected_paid_winners.append({
+                "budget_s": budget,
+                "source_request_sha256": selected.get("source_request_sha256"),
+                "source_build": copy.deepcopy(selected.get("source_build")),
+                "route_s_per_mob": seconds,
+            })
+
+    t30, t300 = timings
+    ratio = t30 / t300 if t30 is not None and t300 is not None else None
+    saturated = ratio is not None and t30 <= 1.01 * t300
+    if ratio is not None and not saturated:
+        reasons.append("P6_NUMERIC_SATURATION_EXCEEDS_1_PERCENT")
+    return {
+        "status": "FAIL" if reasons else "PASS",
+        "reasons": reasons,
+        "production_engine": "mythicsim-rust-native-world",
+        "production_component":
+            "tools.wf_native_priest_l20_cold.run_native_priest_l20_cold",
+        "source_replay_results": replay_rows,
+        "source_replay_T30_s_per_mob": t30,
+        "source_replay_T300_s_per_mob": t300,
+        "source_replay_T30_T300": ratio,
+        "source_replay_numeric_saturation": saturated,
+        "selected_paid_winners": selected_paid_winners,
+        "shared_cold_search": True,
+        "coverage_scope_complete": not reasons,
+        "full_p6_selected_backend_acceptance": not reasons,
+    }
+
+
 def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                                item_options: list[dict], *, score_request=None,
                                world_screen=None, clock=None,
