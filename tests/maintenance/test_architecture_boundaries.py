@@ -129,13 +129,7 @@ def test_fast_validator_targets_exist():
 
 def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
     """Nine compatible live PASS stamps count; incompatible stamps do not."""
-    from src.game.checkpoint_acceptance_status import accepted_checkpoint_status
-    from tools.m1_progress import FIELDS, GATES
-
-    source = ROOT / 'evidence/wf360/WF360_ACCEPTANCE.json'
-    evidence = tmp_path / 'evidence/wf360'
-    evidence.mkdir(parents=True)
-    (evidence / source.name).write_bytes(source.read_bytes())
+    from tools.m1_progress import FIELDS, GATES, scoreboard
 
     ledger = tmp_path / 'docs/planning/M1_PASSES.tsv'
     ledger.parent.mkdir(parents=True)
@@ -151,24 +145,20 @@ def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
 
     def save():
         with ledger.open('w', newline='', encoding='utf-8') as stream:
-            writer = csv.DictWriter(stream, fieldnames=FIELDS, delimiter='\t')
+            writer = csv.DictWriter(stream, fieldnames=FIELDS, delimiter='\\t')
             writer.writeheader()
             writer.writerows(rows)
 
     save()
-    accepted = accepted_checkpoint_status(tmp_path)
-    assert accepted['accepted_checkpoints'] == '1/148'
-    assert accepted['full_checkpoint_certified'] is True
-    assert accepted['legacy_six_gate_accepted_checkpoints'] == '2/148'
+    accepted = scoreboard(ledger)
+    assert accepted['certified_checkpoints'] == 1
+    assert accepted['passed_gates'] == len(GATES)
 
     rows[-1]['compatibility_id'] = 'different-source-or-engine'
     save()
-    incompatible = accepted_checkpoint_status(tmp_path)
-    assert incompatible['accepted_checkpoints'] == '0/148'
-    assert incompatible['full_checkpoint_certified'] is False
-    assert incompatible['legacy_six_gate_accepted_checkpoints'] == '2/148'
-
-
+    incompatible = scoreboard(ledger)
+    assert incompatible['certified_checkpoints'] == 0
+    assert incompatible['passed_gates'] == len(GATES)
 def test_registry_metadata_selection_defers_legacy_class_builder_imports(monkeypatch):
     """Presentation/eligibility reads must not instantiate every GameIR provider."""
     from types import SimpleNamespace

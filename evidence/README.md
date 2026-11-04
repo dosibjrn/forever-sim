@@ -4,6 +4,6 @@ This folder stores historical raw simulations, source observations, run logs, an
 
 **Current accepted gate and build status:** [root README](../README.md) → [curated docs/evidence](../docs/evidence/README.md). A historical file named `PASS` is not sufficient to certify a current checkpoint.
 
-**Compatibility warning:** Some actual code reads this tree by fixed relative path; for example `src/game/checkpoint_acceptance_status.py` reads `evidence/wf360`, `evidence/wf365`, and `evidence/wf367`. Do not rename or move this tree merely to consolidate folder names. Require targeted consumer and regression checks first.
+**Historical acceptance records:** WF360/WF365/WF367 remain here as historical artifacts only. The legacy six-gate reader has been retired; current checkpoint certification is derived exclusively from `docs/planning/M1_PASSES.tsv` via `tools/m1_progress.py`. These historical files do not participate in active gate acceptance.
 
 [Repository structure and migration plan](../docs/REPOSITORY_STRUCTURE.md).
