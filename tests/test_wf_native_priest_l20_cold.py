@@ -3,6 +3,8 @@ import copy
 import hashlib
 import json
 
+import pytest
+
 from tools.wf_native_priest_l20_cold import (
     _source_native_builds, run_native_priest_l20_cold,
 )
@@ -30,7 +32,8 @@ def _options():
 def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             paid_recovery=True, native_identity=True,
             first_world_native_failure=False, cast_receipts=1,
-            options=None, refuse_dense_at=None, full_route_delay=5.0):
+            options=None, refuse_dense_at=None, full_route_delay=5.0,
+            source_request=None):
     source_path = tmp_path / "source.json"
     source_path.write_text(json.dumps(_source()))
     now = [0.0]
@@ -89,7 +92,8 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
         }
 
     receipt = run_native_priest_l20_cold(
-        "/native", source_path, _options() if options is None else options,
+        "/native", source_request if source_request is not None else source_path,
+        _options() if options is None else options,
         score_request=paid, world_screen=world, clock=clock, budget_s=budget,
         snapshot_s=snapshot, max_attempts=max_attempts)
     return receipt, paid_builds, world_builds
@@ -345,3 +349,87 @@ def test_deferred_native_sparse_refusals_still_freeze_paid_30s_build(tmp_path):
     assert receipt["native_cold_30s_post_search_route"]["status"] == "COMPLETE"
     assert receipt["native_cold_snapshot_30"]["source_build"] in paid
     assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_cold_source_directory_pays_distinct_source_talent_apl_candidates(tmp_path):
+    # This is source request transport, not a Python Warcraft talent audit:
+    # MythicSim alone decides whether either proposed whole build is legal.
+    folder = tmp_path / "source-native-candidates"
+    folder.mkdir()
+    first = _source()
+    second = _source()
+    second_actor = second["raid"]["parties"][0]["players"][0]
+    second_actor["talentsString"] = "1-0-0"
+    second_actor["rotation"]["priorityList"].append(
+        copy.deepcopy(second_actor["rotation"]["priorityList"][0]))
+    (folder / "01.json").write_text(json.dumps(first))
+    (folder / "02.json").write_text(json.dumps(second))
+
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0, options=[],
+        source_request=folder)
+    assert len(paid) == 2  # Both full source requests were actually scored.
+    assert paid[0]["raid"] != paid[1]["raid"]
+    assert paid[1]["raid"]["parties"][0]["players"][0]["talentsString"] == "1-0-0"
+    # The world objective, not the identical native DPS, selects the latter.
+    assert receipt["native_cold_30s_paid_selection"]["source_build"] == paid[1]
+    assert receipt["native_cold_300s_paid_selection"]["source_build"] == paid[1]
+    assert len(world) == 1  # Exactly one identical 100-mob finalist replay.
+    assert receipt["native_cold_snapshot_30"]["source_build"] == paid[1]
+    assert receipt["native_cold_completed_100mob_finalists"] == 1
+    assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_cold_source_directory_rejects_incomparable_worlds(tmp_path):
+    folder = tmp_path / "mismatched-source-worlds"
+    folder.mkdir()
+    first = _source()
+    changed = _source()
+    changed["encounter"]["targets"][0]["level"] = 21
+    (folder / "01.json").write_text(json.dumps(first))
+    (folder / "02.json").write_text(json.dumps(changed))
+    with pytest.raises(
+            ValueError, match="PRIEST_L20_COLD_COMPARABLE_ENCOUNTER_MISMATCH"):
+        _runner(tmp_path, options=[], source_request=folder)
+
+
+def test_gate_cold_source_directory_forwards_real_source_requests(
+        tmp_path, monkeypatch):
+    from tools import wf_gate_p4_p5_partial as gate
+    from tools import wf_native_priest_l20_cold as cold
+    from src.game import native_p3_item_options as items
+
+    source_folder = tmp_path / "source-variants"
+    source_folder.mkdir()
+    (source_folder / "one.json").write_text(json.dumps(_source()))
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/native")
+    monkeypatch.delenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST", raising=False)
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR",
+                       str(source_folder))
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD", "1")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS", "100")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH", "1")
+    monkeypatch.setattr(items, "query_native_p3_item_options",
+                        lambda *args, **kwargs: {
+                            "items": _options(), "status": "ok",
+                            "unverified_candidate_count": 0,
+                        })
+    forwarded = []
+    def fake_cold(binary, request, options):
+        forwarded.append((binary, request, options))
+        return {
+            "native_cold_300s_reached": False,
+            "native_cold_snapshot_30": None,
+            "native_cold_final_300": None,
+            "native_cold_native_paid_before_30": 0,
+            "native_cold_native_paid_after_30": 0,
+            "native_cold_completed_routes_before_30": 0,
+            "native_cold_completed_routes_after_30": 0,
+            "native_cold_completed_100mob_finalists": 0,
+        }
+    monkeypatch.setattr(cold, "run_native_priest_l20_cold", fake_cold)
+    report = gate._native_cold_options_without_paid_executor(
+        "priest", 20, "unrestricted")
+    assert forwarded == [("/native", str(source_folder), _options())]
+    assert report["status"] == "FAIL"
+    assert report["reasons"] == ["P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED"]
