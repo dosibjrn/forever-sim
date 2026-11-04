@@ -5,6 +5,9 @@ on:
       - 'src/game/runtime/native_step_protocol.py'
       - 'src/game/runtime/go_native_world_damage_ack.py'
       - 'integrations/mythicsim-rust/live_two_world_pulls.py'
+      - 'integrations/mythicsim-rust/live_world_probe.py'
+      - 'tools/diagnostics/p7_4_frozen_winner_parity.py'
+      - 'tests/test_work1_p7_balanced_native_world_rng.py'
       - 'integrations/mythicsim-rust/apl_mutation.py'
       - 'integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py'
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
@@ -103,6 +106,11 @@ jobs:
               "BALANCED_TYPED_RNG_MODE_IGNORED_BY_SELECTED_RUST", outputs)
           print("REAL_SELECTED_RUST_BALANCED_STOCHASTIC_NATIVE_2D_SMOKE_GREEN_NOT_GATE", flush=True)
           PY
+      - name: Replay exact P7.4 frozen winner for five stochastic fights (no record)
+        run: |
+          python tools/diagnostics/p7_4_frozen_winner_parity.py \\
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \\
+            --iterations 5
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
