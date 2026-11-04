@@ -5,7 +5,6 @@ and weapon values are explicitly scenario proxies. Never promote that result
 to P3 evidence until a source-backed actor/weapon context replaces them.
 """
 import json
-from tools.wf_gate_p3_live import _allow_cooldown_fallback_for_profile
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_budgeted_gear import run_source_budgeted_gear
@@ -111,9 +110,18 @@ def test_paladin_l20_real_cooldown_action_is_a_paid_prefix_continuation():
     assert ir.actor.metadata["base_stats_are_zero_proxy"] is True
 
 
-def test_cooldown_fallback_is_scoped_to_paladin_l20_unrestricted_p3():
-    assert _allow_cooldown_fallback_for_profile("paladin", 20, "unrestricted")
-    assert _allow_cooldown_fallback_for_profile("PALADIN", 20, "UNRESTRICTED")
-    assert not _allow_cooldown_fallback_for_profile("hunter", 20, "unrestricted")
-    assert not _allow_cooldown_fallback_for_profile("paladin", 19, "unrestricted")
-    assert not _allow_cooldown_fallback_for_profile("paladin", 20, "feral")
+def test_paladin_l30_auto_melee_does_not_require_spammable_source_filler():
+    """The fallback is existing scheduled melee, never a fake policy action."""
+    ir = build_game_ir_slice(class_key="paladin", level=30)
+    envelope = source_prefix_envelope(
+        ir, level=30, include_auto_fallback=True, allow_cooldown_fallback=True)
+    assert AUTO_ONLY_FALLBACK in envelope["fillers"], envelope
+    result = run_source_budgeted_prefix(
+        class_key="paladin", level=30, ir_slice=ir,
+        max_evaluations=6, include_auto_fallback=True,
+        allow_cooldown_fallback=True)
+    assert 0 < result["attempted"] <= 6, result
+    assert result["status"] != "BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK"
+    assert result["envelope"]["auto_fallback_ids"]
+    # Existing scenario weapon/actor is still a proxy: this is not P3 PASS.
+    assert ir.actor.metadata["base_stats_are_zero_proxy"] is True

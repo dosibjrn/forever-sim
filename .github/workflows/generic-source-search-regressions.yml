@@ -65,6 +65,7 @@ on:
       - 'tests/test_source_spec_profile.py'
       - 'tests/test_source_rank_fullpoint_frontier.py'
       - 'tests/test_wf_prio_p4_p5_paid_partials.py'
+      - 'tests/test_work2_818_mage_paid_policy_breadth.py'
       - 'tests/test_work1_p4_p5_single_cold_snapshot.py'
       - 'tests/test_wf_native_priest_l20_paid.py'
       - 'tools/wf_native_priest_l20_paid.py'
@@ -102,6 +103,8 @@ jobs:
           tests/generic/search/test_wf437_direct_budgeted_run_source.py
           tests/generic/search/test_source_wand_paid_slot_proposals.py
           tests/generic/search/test_source_paid_gear_witness_priority.py
+          tests/test_work2_818_mage_paid_policy_breadth.py
+          tests/test_work2_rogue_native_item_stat_probe.py
           tests/gates/test_wf35_product_spec_profile_contract.py
           tests/test_source_spec_profile.py
           tests/test_source_rank_fullpoint_frontier.py

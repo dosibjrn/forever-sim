@@ -6,6 +6,7 @@ import pytest
 
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.gear import apply_gear_selection, executable_gear_stats
+from src.v2.source_budgeted_gear import _source_probe_axis_selection
 
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=ROOT/'data/forever/staged_mage_l30_talent_positions_70374.sqlite'
@@ -54,3 +55,27 @@ def test_without_sourced_conversion_stamina_stays_unknown_not_zero():
     geared, report=apply_gear_selection(ir,aggregate_stats={'stamina':10.},db_path=SOURCE)
     assert report.unsupported_stats['stamina']==10.
     assert _health(geared).capacity==_health(ir).capacity
+
+
+def test_mage_l30_default_source_axes_are_not_fabricated():
+    ir = build_game_ir_slice(class_key='mage', level=30)
+    requested = ('armor', 'stamina', 'strength', 'intellect', 'spell_power')
+    selected, receipt = _source_probe_axis_selection(ir, requested)
+    assert 'stamina' not in selected
+    assert 'strength' not in selected
+    assert 'intellect' in selected and 'spell_power' in selected
+    assert receipt == {
+        'requested': list(requested),
+        'selected_for_paid_probe': list(selected),
+        'not_executable_in_source_ir': ['stamina', 'strength'],
+        'resolver': 'src.game.gear.executable_gear_stats',
+    }
+
+
+def test_mage_l30_source_conversion_enters_exact_probe_selection(source_db):
+    ir = build_game_ir_slice(class_key='mage', level=30,
+                             ability_db_path=source_db)
+    selected, receipt = _source_probe_axis_selection(
+        ir, ('stamina', 'strength', 'intellect'))
+    assert selected == ('stamina', 'intellect')
+    assert receipt['not_executable_in_source_ir'] == ['strength']

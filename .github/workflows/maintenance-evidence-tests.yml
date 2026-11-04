@@ -2,6 +2,21 @@ name: Repository maintenance regressions
 on:
   pull_request:
     paths:
+      - 'src/game/checkpoint_pipeline.py'
+      - 'tests/gates/test_wf384_generic_checkpoint_pipeline.py'
+      - 'tests/test_wf390_generic_talent_execution_pipeline.py'
+      - 'tests/test_wf429_process_v2_p3_preflight_tdd.py'
+      - 'tools/wf260_run_budgeted_joint.py'
+      - 'tests/generic/search/test_wf260_budgeted_joint_talents.py'
+      - 'tools/wf_combat232_weapon_evidence.py'
+      - 'tools/wf_combat233_source_armor_replay.py'
+      - 'tools/audit_l20_fidelity.py'
+      - 'tools/wf249_ingest_talent_scope.py'
+      - 'tools/wf302_persistent_joint_optimizer.py'
+      - 'tools/wf389_paid_weapon_package_probe.py'
+      - 'tools/wf408_rerun_druid20_p3.py'
+      - 'tools/wf410_druid20_live_p3.py'
+      - 'tools/wf412_druid20_paid_stat_probe.py'
       - 'tests/maintenance/**'
       - 'src/game/data/forever/source_action_scope.py'
       - 'tools/wf303_checkpoint_falsifier.py'
@@ -17,6 +32,10 @@ on:
       - 'tools/wf300_two_stage_adversarial_100mob.py'
       - 'tools/wf300_continuous_100_mob_acceptance.py'
       - 'tools/wf353_l30_current_*.py'
+      - 'tools/wf353_l30_p3_direct_swaps.py'
+      - 'tools/wf353_l30_p3_joint_item_swaps.py'
+      - 'tools/wf358_l30_p3_causal_weights.py'
+      - 'tools/wf358_l30_p3_joint_challengers.py'
       - 'tools/wf373_druid_l30_primal_vs_swipe_100mob.py'
       - 'tools/wf343_direct_percent_top5.py'
       - 'tools/wf431_modified_action_paid_search.py'
@@ -35,6 +54,9 @@ on:
       - 'tools/wf350_build_source_evidence.py'
       - 'tools/wf341_rating_probe.py'
       - 'tools/wf341_defense_check.py'
+      - 'tools/wf339_build_weighted_top5.py'
+      - 'tools/wf339_weighted_slot_pilot.py'
+      - 'tools/wf341_rating_sensitivity.py'
       - 'tools/wf342_*.py'
       - 'tools/wf357_recovery_probe.py'
       - 'tools/wf391_generic_joint_probe.py'
@@ -52,11 +74,8 @@ on:
       - 'tools/wf243_joint_multi_pull_replay.py'
       - 'tools/wf282_source_role_heldout_benchmark.py'
       - 'tools/wf298_druid_l20_verified_delta.py'
-      - 'tools/wf299_100_mob_continuity_probe.py'
       - 'tests/test_wf243_source_joint_repeated_pulls.py'
       - 'tests/test_wf245_policy_frontier.py'
-      - 'tests/test_wf283_online_source_corridors.py'
-      - 'tests/test_wf300_continuous_mob.py'
       - 'WF243_INDEPENDENT_JOINT_REPEATED_PULL.json'
       - 'tools/wf251_native_replay.py'
       - 'tools/wf253_paladin_seal_replay.py'
@@ -73,6 +92,8 @@ on:
       - 'tools/wf_feral01b_source_damage_probe.py'
       - 'tools/wf_feral01c2c_replay.py'
       - 'tools/wf_feral01c2d1_replay.py'
+      - 'tools/wf326_druid20_slot_search.py'
+      - 'tools/wf327_druid_l20_action_proxy.py'
       - 'tools/wf325_druid_l20_blind_joint.py'
       - 'tools/wf325_druid_l20_paid_persistent_replay.py'
       - 'tools/wf347_hp5_persistent_probe.py'
@@ -177,7 +198,6 @@ jobs:
           src/v2/source_multi_pull_joint.py
           tools/wf282_source_role_heldout_benchmark.py
           tools/wf298_druid_l20_verified_delta.py
-          tools/wf299_100_mob_continuity_probe.py
       - name: Compile live P7 gate providers
         run: >-
           python -m py_compile
@@ -193,6 +213,10 @@ jobs:
           tools/wf_gate_p3_live.py
           src/game/native_p3_player_context.py
           tests/test_p7_search_deadline_contract.py
+      - name: Verify retained bounded-joint source helpers and caller import
+        run: |
+          python -m py_compile src/game/checkpoint_pipeline.py src/v2/source_bounded_joint_frontier.py
+          python -m pytest -q tests/gates/test_wf384_generic_checkpoint_pipeline.py tests/test_wf390_generic_talent_execution_pipeline.py
       - name: Verify grouped mechanics layout and preserved evidence assertions
         run: >-
           python -m pytest -q
@@ -230,7 +254,6 @@ jobs:
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/test_wf241_mixed_hot_recovery.py
           tests/test_actor_recovery_channel.py
-          tests/test_wf61_live_persistent_replay.py
           tests/test_wf61_companion_persistence.py
           tests/test_work2_persistent_pack_budget.py
           tests/test_wf252_companion_joint.py

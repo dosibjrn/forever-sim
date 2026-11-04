@@ -128,7 +128,7 @@ def test_fast_validator_targets_exist():
 
 
 def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
-    """Nine compatible live PASS stamps count; incompatible stamps do not."""
+    """Nine real active gate PASSes certify without a separate identity gate."""
     from tools.m1_progress import FIELDS, GATES, scoreboard
 
     ledger = tmp_path / 'docs/planning/M1_PASSES.tsv'
@@ -137,7 +137,7 @@ def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
     rows = [
         {'class': 'druid', 'level': '20', 'spec': 'unrestricted',
          'gate': gate, 'passed_at_utc': stamp, 'commit': 'a' * 40,
-         'run_url': '', 'compatibility_id': 'same-native-scenario-source',
+         'run_url': '', 'compatibility_id': '',
          'status': 'PASS', 'verified': '', 'applicable': '',
          'scope_provisional': '', 'measured_at_utc': stamp}
         for gate in GATES
@@ -154,11 +154,17 @@ def test_canonical_m1_ledger_is_only_full_checkpoint_authority(tmp_path):
     assert accepted['certified_checkpoints'] == 1
     assert accepted['passed_gates'] == len(GATES)
 
-    rows[-1]['compatibility_id'] = 'different-source-or-engine'
+    # Historical metadata may differ; it does not create a tenth gate.
+    rows[-1]['compatibility_id'] = 'other-label'
     save()
-    incompatible = scoreboard(ledger)
-    assert incompatible['certified_checkpoints'] == 0
-    assert incompatible['passed_gates'] == len(GATES)
+    assert scoreboard(ledger)['certified_checkpoints'] == 1
+
+    # A genuinely missing gate PASS still prevents checkpoint acceptance.
+    rows[-1].update(status='PARTIAL', passed_at_utc='',
+                    verified='1', applicable='2', scope_provisional='1')
+    save()
+    assert scoreboard(ledger)['certified_checkpoints'] == 0
+    assert scoreboard(ledger)['passed_gates'] == len(GATES) - 1
 
 
 def test_registry_metadata_selection_defers_legacy_class_builder_imports(monkeypatch):

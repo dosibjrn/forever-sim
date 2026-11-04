@@ -103,7 +103,7 @@ def record_pass(*, class_key, level, spec, gate, report, root=ROOT, path=LEDGER)
                verified="", applicable="", scope_provisional="")
     rows = _rows(path)
     if rows.get(_key(row), {}).get("status") == "PASS":
-        return False  # An old compatible PASS is not retimestamped every run.
+        return False  # An existing PASS is not retimestamped every run.
     rows[_key(row)] = row
     _write(rows, path)
     return True
@@ -120,6 +120,7 @@ def _provenance(class_key, level, spec, gate, report, root):
                f"{os.getenv('GITHUB_REPOSITORY', 'dosibjrn/forever-sim')}"
                f"/actions/runs/{run_id}") if run_id else ""
     proof = report.get("runtime_proof") or {}
+    # Legacy TSV metadata only, never a checkpoint gate.
     compatibility = report.get("compatibility_id") or proof.get("compatibility_id") or ""
     return {"class": class_key, "level": str(level), "spec": spec, "gate": gate,
             "passed_at_utc": "", "commit": sha, "run_url": run_url,
@@ -259,11 +260,11 @@ def scoreboard(path=LEDGER):
                      if c == class_key and int(lev) == level}
             if len(specs) > (5 if class_key == "druid" else 4):
                 raise ValueError("Too many M1 profiles for a class/level")
-    complete = [group for group in by_checkpoint.values()
-                if {r["gate"] for r in group} == set(GATES)]
-    compatible = sum(bool(group[0]["compatibility_id"]) and
-                     len({r["compatibility_id"] for r in group}) == 1
-                     for group in complete)
+    # The nine real active gate PASSes are the whole checkpoint contract.
+    # Source/runtime correctness belongs inside each gate's production runner.
+    # An optional cross-gate metadata ID is not a tenth acceptance gate.
+    certified = sum({r["gate"] for r in group} == set(GATES)
+                    for group in by_checkpoint.values())
     accepted = sum(r["status"] == "PASS" and r["gate"] in GATES for r in rows.values())
     fractional = sum(x["coverage"] for x in partials)
     measured_fraction = (accepted + fractional) / TOTAL
@@ -274,8 +275,7 @@ def scoreboard(path=LEDGER):
             "measured_percent": 100 * measured_fraction,
             "partial_gates": sorted(partials, key=lambda x:
                                     (x["class"], x["level"], x["spec"], x["gate"])),
-            "complete_candidates": len(complete),
-            "certified_checkpoints": compatible,
+            "certified_checkpoints": certified,
             "total_checkpoints": 148}
 
 
@@ -342,6 +342,8 @@ def render_history_svg(output, ledger=LEDGER):
         f'font-size="19" font-weight="bold">Measured {current["measured_percent"]:.4f}%</text>',
         f'<text x="785" y="103" fill="#f9fafb" font-family="Arial,sans-serif" '
         f'font-size="19" font-weight="bold">Certified {current["certified_checkpoints"]}/148</text>',
+        '<text x="785" y="124" fill="#9ca3af" font-family="Arial,sans-serif" '
+        'font-size="12">9 actual gate PASSes = 1 checkpoint</text>',
         '<line x1="39" y1="130" x2="67" y2="130" stroke="#34d399" stroke-width="3"/>',
         '<text x="75" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">'
         f'Full gate PASS (% of {TOTAL})</text>',
@@ -429,9 +431,7 @@ def main(argv=None):
               f"({100 * p['coverage']:.1f}% {unit}, "
               f"{100 * p['pareto_effort']:.1f}% Pareto-modeled work){tentative}")
     print(f"Whole checkpoints: {result['certified_checkpoints']}/148; "
-          f"{len(GATES)} active gates per checkpoint; "
-          f"{result['complete_candidates']} complete candidates")
-    print("Unlinked/mismatched compatibility IDs never certify a whole checkpoint.")
+          f"{len(GATES)} real active PASS gates per checkpoint; no extra gate.")
     return 0
 
 

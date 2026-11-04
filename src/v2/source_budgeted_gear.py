@@ -31,6 +31,20 @@ from src.game.runtime.simulator import EventTransitionBudgetExceeded, ComputeDea
 from src.version import SOFTWARE_VERSION
 
 
+def _positive_paid_seconds(value):
+    """Accept only a genuine numeric paid objective, never a coerced receipt.
+
+    A native refusal can carry null, text or a bool-shaped value. Such results
+    consume the caller's paid budget but cannot establish a P3 stat derivative.
+    """
+    if type(value) not in (int, float):
+        return None
+    try:
+        return float(value) if isfinite(value) and value > 0. else None
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
 def _gear_key(selection):
     return tuple(sorted((str(slot), int(item['item_id'])) for slot, item in selection.slots.items()))
 
@@ -53,7 +67,52 @@ def _fixed_opening_score(ir, record, level, incoming, *, meter=None, max_events=
         not ordered_prefix_executed(execution, record['prefix']) or
         not execution.timeline.target_defeated):
         return None
-    return float(evaluation.seconds_per_mob)
+    # A finished kill without a valid objective still consumed a paid probe.
+    return _positive_paid_seconds(getattr(evaluation, 'seconds_per_mob', None))
+
+
+def _source_probe_axis_selection(ir, requested: tuple[str, ...]) -> tuple[tuple[str, ...], dict]:
+    """Resolve the *actual* P3 probe axes from the source-selected executor.
+
+    Do not turn a requested axis or a native item stat into an executable
+    effect. Missing Stamina/Strength stay absent until an authoritative
+    conversion is available to this same paid runtime.
+    """
+    available = set(executable_gear_stats(ir))
+    selected = tuple(axis for axis in requested if axis in available)
+    return selected, {
+        "requested": list(requested),
+        "selected_for_paid_probe": list(selected),
+        "not_executable_in_source_ir": [
+            axis for axis in requested if axis not in available
+        ],
+        "resolver": "src.game.gear.executable_gear_stats",
+    }
+
+
+def _paid_measured_stat_weights(measurement: dict) -> tuple[dict[str, float], list[str]]:
+    """Distinguish an executed zero marginal from an unexecuted stat probe.
+
+    The shared sensitivity algorithm returns 0.0 both when every paid delta
+    fails and when a paid delta completes without improving the objective.
+    P3 must not treat an all-blocked axis as a finite measured zero. Keep real
+    negative derivatives visible; never clamp them into passing weights.
+    """
+    measured = {}
+    unmeasured = []
+    for row in measurement["ranked"]:
+        axis = str(row["stat"])
+        successful = any(
+            type(probe.get("seconds_per_mob")) in (int, float)
+            and isfinite(probe["seconds_per_mob"])
+            and probe["seconds_per_mob"] > 0
+            for probe in row["probes"]
+        )
+        if successful:
+            measured[axis] = float(row["value"])
+        else:
+            unmeasured.append(axis)
+    return measured, unmeasured
 
 
 def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int,
@@ -65,6 +124,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                              required_level_policy: str = 'catalogue', ir_slice=None,
                              policy_search_backend: str = 'prefix',
                              allow_cooldown_fallback: bool = False,
+                             source_search_auto_fallback: bool = False,
                              max_event_transitions: int | None = None,
                              stateful_use_l1: bool = False,
                              stateful_l1_mode: str = 'value_gated',
@@ -140,7 +200,8 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
             return run_source_budgeted_prefix(class_key=class_key,level=level,
                 max_evaluations=search_budget,ir_slice=search_ir,
                 schedule_incoming_attacks=schedule_incoming_attacks,
-                allow_cooldown_fallback=allow_cooldown_fallback)
+                allow_cooldown_fallback=allow_cooldown_fallback,
+                include_auto_fallback=source_search_auto_fallback)
         remaining=(15000 if max_event_transitions is None else max_event_transitions-event_total)
         if remaining<=0:
             return {'attempted':0,'evaluated':0,'blocked':0,'best_vs_budget':[],
@@ -242,8 +303,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                 'event_transitions':event_total,'policy_search_backend':policy_search_backend}
 
     current_ir, current_record = ir, naked['winner']
-    axis_set = set(executable_gear_stats(ir))
-    axes = tuple(x for x in probe_stats if x in axis_set)
+    axes, axis_receipt = _source_probe_axis_selection(ir, probe_stats)
     sensitivity_history = []
 
     def reweight(ir_for_probe, policy_record, label):
@@ -290,6 +350,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
             sensitivity_history.append({'stage':label,'reason':str(exc),'status':'blocked'})
             return None
         row = found.as_dict()
+        row['values'], row['unmeasured_axes'] = _paid_measured_stat_weights(row)
         row['stage']=label
         row['evaluation_budget_after']=tried
         sensitivity_history.append(row)
@@ -300,6 +361,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
         return {'status':'EVALUATED_BOUNDED','budget':max_evaluations,
                 'attempted':tried,'evaluated':successes,'blocked':blockers,
                 'stages':stages,'sensitivity_history':sensitivity_history,
+                'stat_probe_axis_selection':axis_receipt,
                 'event_transitions':event_total,'policy_search_backend':policy_search_backend,
                 'source_context_sha256':context,'best_vs_budget':best_vs_budget,
                 'winner':stages[0]}
@@ -397,6 +459,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     return {'status':final_status,
             'class_key':class_key,'level':level,'source_ir_id':ir.id,
             'source_context_sha256':context,'budget':max_evaluations,
+            'stat_probe_axis_selection':axis_receipt,
             'attempted':tried,'evaluated':successes,'blocked':blockers,
             'unspent_budget':max_evaluations-tried,
             'named_gear_states_evaluated':len(selections),
@@ -535,7 +598,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                                    opening_action_ids: tuple[str, ...] = (),
                                    preferred_policy=None,
                                    baseline_record: dict | None = None,
-                                   allow_paid_winner_after_nonpositive: bool = False) -> dict:
+                                   allow_paid_winner_after_nonpositive: bool = False,
+                                   breadth_first_verified_native_winner: bool = False) -> dict:
     """Find a measured beneficial stat delta on an executable source policy.
 
     Keep source-IR policies first. On the Mage L30 native-item path, use the
@@ -561,6 +625,9 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     attempted_policy_opening_action_ids = []
     baseline_failures = []
     baseline_reused_any = False
+    # A real, completed before/after run can establish exactly zero sensitivity.
+    # Retain the first such receipt but prefer any later positive source policy.
+    zero_receipt = None
     opening_action_ids = tuple(str(x) for x in opening_action_ids)
     prefix_options = (
         (opening_action_ids,) if opening_action_ids and preferred_policy is not None
@@ -611,6 +678,15 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             # baseline has been established.
             continue
         policy_probe_deltas = tuple(probe_deltas)
+        if (breadth_first_verified_native_winner
+                and preferred_score is not None
+                and policy_source == 'source_ir_policy'):
+            # With a verified, already-paid winner available, spend one
+            # largest source-item-sized delta on each distinct source policy
+            # before exhausting the hard budget on a second unsuccessful
+            # delta for the first policy. This does not waive any paid
+            # execution or infer a positive weight from a failed probe.
+            policy_probe_deltas = tuple(probe_deltas[:1])
         if (policy_source == 'paid_search_winner'
                 and source_policy_baseline_established
                 and allow_paid_winner_after_nonpositive):
@@ -639,11 +715,8 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                 })
                 continue
             if cached_baseline is not None:
-                try:
-                    cached_value = float(cached_baseline)
-                except (TypeError, ValueError):
-                    cached_value = float('nan')
-                if isfinite(cached_value) and cached_value > 0.:
+                cached_value = _positive_paid_seconds(cached_baseline)
+                if cached_value is not None:
                     baseline = cached_value
                     baseline_source = (
                         'paid_search_winner_record'
@@ -686,11 +759,9 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             elif not execution.timeline.target_defeated:
                 reason = 'BASELINE_TARGET_NOT_DEFEATED'
             else:
-                try:
-                    baseline_value = float(before.seconds_per_mob)
-                except (TypeError, ValueError):
-                    baseline_value = float('nan')
-                reason = (None if isfinite(baseline_value) and baseline_value > 0.
+                baseline_value = _positive_paid_seconds(
+                    getattr(before, 'seconds_per_mob', None))
+                reason = (None if baseline_value is not None
                           else 'BASELINE_NONPOSITIVE_OR_NONFINITE_OBJECTIVE')
             if reason is not None:
                 baseline_failures.append({
@@ -733,11 +804,30 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             if (after is None or execution is None or
                     (active_prefix and
                      not ordered_prefix_executed(execution, active_prefix)) or
-                    not execution.timeline.target_defeated or
-                    not isfinite(float(after.seconds_per_mob)) or
-                    after.seconds_per_mob <= 0):
+                    not execution.timeline.target_defeated):
                 continue
-            improvement = baseline - float(after.seconds_per_mob)
+            paid_seconds = _positive_paid_seconds(
+                getattr(after, 'seconds_per_mob', None))
+            if paid_seconds is None:
+                continue
+            improvement = baseline - paid_seconds
+            if improvement == 0.0 and zero_receipt is None:
+                # Both objectives are finite, positive, target-defeating paid
+                # executions of the same source policy and opening prefix.
+                # An exact zero is measured; failures and negative effects are
+                # never silently rounded to zero.
+                zero_receipt = {
+                    'policy_id': str(policy.id),
+                    'policy_source': policy_source,
+                    'baseline_seconds_per_mob': baseline,
+                    'perturbed_seconds_per_mob': paid_seconds,
+                    'delta': float(delta),
+                    'probe_deltas': [float(x) for x in policy_probe_deltas],
+                    'requested_probe_deltas': [float(x) for x in probe_deltas],
+                    'baseline_reused': policy_baseline_reused,
+                    'baseline_source': baseline_source,
+                    'opening_action_ids': list(active_prefix),
+                }
             if improvement > 1e-12:
                 return {
                     'status': 'MEASURED_POSITIVE_SOURCE_POLICY_WITNESS',
@@ -745,7 +835,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'policy_source': policy_source,
                     'weight_s_saved_per_mob_per_unit': improvement / float(delta),
                     'baseline_seconds_per_mob': baseline,
-                    'perturbed_seconds_per_mob': float(after.seconds_per_mob),
+                    'perturbed_seconds_per_mob': paid_seconds,
                     'delta': float(delta),
                     'probe_deltas': [float(x) for x in policy_probe_deltas],
                     'requested_probe_deltas': [float(x) for x in probe_deltas],
@@ -765,6 +855,20 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'engine': 'gsim_CombatRuntime',
                     'method': 'same_paid_source_policy_real_combat_and_recovery_before_after',
                 }
+    if zero_receipt is not None:
+        return {
+            'status': 'MEASURED_ZERO_SOURCE_POLICY_WITNESS',
+            'stat': stat, 'weight_s_saved_per_mob_per_unit': 0.0,
+            **zero_receipt,
+            'paid_evaluations': used,
+            'attempted_policies': attempted_policies,
+            'attempted_policy_sources': attempted_policy_sources,
+            'attempted_policy_opening_action_ids': attempted_policy_opening_action_ids,
+            'baseline_failures': baseline_failures,
+            'source_ir_id': str(ir.id),
+            'engine': 'gsim_CombatRuntime',
+            'method': 'same_paid_source_policy_real_combat_and_recovery_before_after',
+        }
     return {
         'status': 'NO_POSITIVE_SOURCE_POLICY_WITNESS',
         'stat': stat, 'probe_deltas': [float(x) for x in probe_deltas],

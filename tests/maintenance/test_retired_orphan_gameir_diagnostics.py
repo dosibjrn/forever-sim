@@ -9,6 +9,41 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired gsim-only 1/2/100-mob historical replay (no active native gate caller).
+    "tools/wf61_live_persistent_replay.py",
+    # WF260 historical GameIR talent/gear/policy and frozen Mage challenger runner; active gates use native producers.
+    "tools/wf260_run_budgeted_joint.py",
+    # Orphan WF-COMBAT232/233 GameIR weapon and armor paid-report runners.
+    "tools/wf_combat232_weapon_evidence.py",
+    "tools/wf_combat233_source_armor_replay.py",
+    # PR #912 nonoverlapping orphaned historical frontends, retired after #913.
+    "tools/audit_l20_fidelity.py",
+    "tools/wf249_ingest_talent_scope.py",
+    "tools/wf302_persistent_joint_optimizer.py",
+    # Orphaned WF389/WF408/WF410/WF412 Python GameIR P3/100-mob report runners.
+    "tools/wf389_paid_weapon_package_probe.py",
+    "tools/wf408_rerun_druid20_p3.py",
+    "tools/wf410_druid20_live_p3.py",
+    "tools/wf412_druid20_paid_stat_probe.py",
+    # Historical WF324 Druid L20 bounded GameIR searches; no active gate/optimizer caller.
+    "tools/wf324_druid_l20_talent_screening.py",
+    "tools/wf324_persistent_blind_selection.py",
+    "tools/wf324_refine_persistent_discovered.py",
+    # WF358 frozen GameIR/SQLite contextual Top5 replay and report; no active gate caller.
+    "tools/wf358_l30_p3_empirical_report.py",
+    "tools/wf358_l30_p3_top5_replay.py",
+    # Retired Python GameIR 100-mob continuity challenger; active gates run through wf_gate.
+    "tools/wf299_100_mob_continuity_probe.py",
+    # Retired GameIR-only cold 30s source benchmark; live cold gates use wf_gate.py.
+    "tools/wf299_30s_acceptance.py",
+    "tools/wf299_30s_worker.py",
+    # Historical Warrior L30 Python GameIR paid-gear runners; frozen reports remain.
+    # Retired provisional Python source-membership and heuristic role Top5 probes.
+    "tools/wf363_warrior_l30_p3_probe.py",
+    "tools/wf365_warrior_l30_p3_role_probe.py",
+    "tools/wf368_warrior_l30_p3_paid_swaps.py",
+    "tools/wf370_warrior_l30_paid_bis_challenge.py",
+    "tools/wf370_warrior_l30_paid_aware_top5.py",
     "tools/wf261_stateful_benchmark.py",
     "tools/wf263_l1_value_benchmark.py",
     "tools/wf276_resource_prefix_benchmark.py",
@@ -20,7 +55,7 @@ RETIRED_TOOLS = (
     "tools/wf319_druid_l20_index_l2_parity.py",
     # One-off WF300 GameIR talent-neighbor diagnostic had no callers; active runtime regressions remain.
     "tools/wf300_two_stage_adversarial_100mob.py",
-    # One-off equal-terms wrapper; retain the shared WF299 probe and behavior tests.
+    # One-off equal-terms wrapper; its WF299 GameIR probe/test are retired too.
     "tools/wf300_continuous_100_mob_acceptance.py",
     # One-off WF343 report driver had no callers; underlying P3 behavior tests remain.
     "tools/wf343_direct_percent_top5.py",
@@ -34,6 +69,18 @@ RETIRED_TOOLS = (
     # WF341 provisional-rating 100-mob probes were used only by retired WF342 reporters.
     "tools/wf341_rating_probe.py",
     "tools/wf341_defense_check.py",
+    # Obsolete WF339/341 fixed-Druid GameIR/SQLite paid-report producers; preserve reports.
+    # Historical WF340/WF347 Python-GameIR Top-5 and cold P4/P5 report runners.
+    # Their one-off outputs survive as frozen evidence; live gates use wf_gate.py.
+    "tools/wf340_p4_worker.py",
+    "tools/wf340_strict_p4.py",
+    "tools/wf346_build_top5.py",
+    "tools/wf347_build_top5.py",
+    "tools/wf347_p4_worker.py",
+    "tools/wf347_strict_p4.py",
+    "tools/wf339_build_weighted_top5.py",
+    "tools/wf339_weighted_slot_pilot.py",
+    "tools/wf341_rating_sensitivity.py",
     "tools/wf300_continuous_source_policy_benchmark.py",
     # One-off Python talent-source transcription; frozen stage retained.
     "tools/wf350_build_source_evidence.py",
@@ -67,6 +114,11 @@ RETIRED_TOOLS = (
     "tools/wf365_druid_l30_reaudit.py",
     "tools/wf365_spaced_pull_smoke.py",
     "tools/wf353_l30_p3_context_replay.py",
+    # Staged Druid L30 P3/GameIR calibration CLIs; the required P2-era SQLite is gone.
+    "tools/wf353_l30_p3_direct_swaps.py",
+    "tools/wf353_l30_p3_joint_item_swaps.py",
+    "tools/wf358_l30_p3_causal_weights.py",
+    "tools/wf358_l30_p3_joint_challengers.py",
     "tools/wf303_checkpoint_falsifier.py",
     "tools/wf305_ingest_web_observed_spell_dependencies.py",
     "tools/wf357_l30_fresh_replay.py",
@@ -99,6 +151,9 @@ RETIRED_TOOLS = (
     "tools/wf_feral01b_source_damage_probe.py",
     "tools/wf_feral01c2c_replay.py",
     "tools/wf_feral01c2d1_replay.py",
+    # WF326/WF327 orphaned Druid L20 GameIR/SQLite evidence generators; retain reports.
+    "tools/wf326_druid20_slot_search.py",
+    "tools/wf327_druid_l20_action_proxy.py",
     # WF325 scratch-path-only replay drivers and WF347 fixed-policy HP5 probe.
     "tools/wf325_druid_l20_blind_joint.py",
     "tools/wf325_druid_l20_paid_persistent_replay.py",
@@ -123,6 +178,9 @@ RETIRED_TOOLS = (
     "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
+    # Exclusive Python source/legal empirical P3 proxy and 100-mob causal reporter.
+    "src/game/data/forever/source_checkpoint_p3_empirical_weights.py",
+    "src/game/data/forever/source_checkpoint_p3_causal_summary.py",
     "src/v2/source_sqlite_spell_facts.py",
     "src/v2/source_sqlite_spell_semantics.py",
     # Historical six-gate/P1/P2 reader; current certification uses m1_progress.
@@ -134,6 +192,25 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf260_run_budgeted_joint",
+    "wf_combat232_weapon_evidence",
+    "wf_combat233_source_armor_replay",
+    "audit_l20_fidelity",
+    "wf249_ingest_talent_scope",
+    "wf302_persistent_joint_optimizer",
+    "wf389_paid_weapon_package_probe",
+    "wf408_rerun_druid20_p3",
+    "wf410_druid20_live_p3",
+    "wf412_druid20_paid_stat_probe",
+    "wf324_druid_l20_talent_screening",
+    "wf324_persistent_blind_selection",
+    "wf324_refine_persistent_discovered",
+    "wf358_l30_p3_empirical_report",
+    "wf358_l30_p3_top5_replay",
+    "wf363_warrior_l30_p3_probe",
+    "wf365_warrior_l30_p3_role_probe",
+    "source_checkpoint_p3_empirical_weights",
+    "source_checkpoint_p3_causal_summary",
     "wf261_stateful_benchmark",
     "wf263_l1_value_benchmark",
     "wf276_resource_prefix_benchmark",
@@ -143,6 +220,8 @@ RETIRED_IMPORT_NAMES = (
     "wf279_paid_fixed_marginal_benchmark",
     "wf280_real_mode_path_benchmark",
     "wf319_druid_l20_index_l2_parity",
+    "wf299_30s_acceptance",
+    "wf299_30s_worker",
     "wf300_two_stage_adversarial_100mob",
     "wf300_continuous_100_mob_acceptance",
     "wf343_direct_percent_top5",
@@ -151,6 +230,15 @@ RETIRED_IMPORT_NAMES = (
     "wf427_druid_l30_quest_horizon",
     "wf341_rating_probe",
     "wf341_defense_check",
+    "wf340_p4_worker",
+    "wf340_strict_p4",
+    "wf346_build_top5",
+    "wf347_build_top5",
+    "wf347_p4_worker",
+    "wf347_strict_p4",
+    "wf339_build_weighted_top5",
+    "wf339_weighted_slot_pilot",
+    "wf341_rating_sensitivity",
     "wf300_continuous_source_policy_benchmark",
     "wf350_build_source_evidence",
     "wf399_qualification_probe",
@@ -181,6 +269,10 @@ RETIRED_IMPORT_NAMES = (
     "wf365_druid_l30_reaudit",
     "wf365_spaced_pull_smoke",
     "wf353_l30_p3_context_replay",
+    "wf353_l30_p3_direct_swaps",
+    "wf353_l30_p3_joint_item_swaps",
+    "wf358_l30_p3_causal_weights",
+    "wf358_l30_p3_joint_challengers",
     "source_sqlite_spell_facts",
     "source_sqlite_spell_semantics",
     "wf303_checkpoint_falsifier",
@@ -207,6 +299,8 @@ RETIRED_IMPORT_NAMES = (
     "wf_feral01b_source_damage_probe",
     "wf_feral01c2c_replay",
     "wf_feral01c2d1_replay",
+    "wf326_druid20_slot_search",
+    "wf327_druid_l20_action_proxy",
     "wf325_druid_l20_blind_joint",
     "wf325_druid_l20_paid_persistent_replay",
     "wf347_hp5_persistent_probe",
@@ -287,6 +381,11 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/test_wf61_live_persistent_replay.py",
+    "tests/generic/search/test_wf260_budgeted_joint_talents.py",
+    "tests/test_wf358_p3_contextual_top5.py",
+    "tests/test_wf300_continuous_mob.py",
+    "tests/gates/test_wf299_30_second_gate.py",
     "tests/maintenance/test_historical_joint_replay_compat.py",
     "tests/test_wf378_recovery_channel_tdd.py",
     "tests/test_wf365_druid_l30_holdout.py",
@@ -327,7 +426,6 @@ RETAINED_BEHAVIOR_TESTS = (
     "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
     "tests/test_actor_recovery_channel.py",
-    "tests/test_wf61_live_persistent_replay.py",
     "tests/test_wf61_companion_persistence.py",
     "tests/test_work2_persistent_pack_budget.py",
     # Keep the real shared Hunter companion source/search path covered after runner retirement.
@@ -339,7 +437,18 @@ RETAINED_BEHAVIOR_TESTS = (
 
 
 RETAINED_HISTORICAL_EVIDENCE = (
+    # Frozen WF408/WF410/WF412 reports remain historical; only generators retire.
+    "evidence/wf408/WF408_DRUID20_MERGED_P3_LIVE.json",
+    "evidence/wf410/WF410_DRUID20_PROCESS_V2_P3_LIVE.json",
+    "evidence/wf412/WF412_DRUID20_PAID_REOPTIMIZED_STAT_PROBES.json",
+    # Snapshot of the discontinued WF358 source-IR 100-mob contextual study.
+    "evidence/wf358/WF358_L30_P3_TOP5_DIRECT_REPLAYS.json",
+    "evidence/wf358/WF358_L30_P3_CONTEXTUAL_TOP5_AND_WEIGHTS.json",
+    "evidence/wf358/WF358_L30_CAUSAL_STAT_100MOB.json",
+    "evidence/wf358/WF358_L30_CAUSAL_STAT_WEIGHT_TABLE.json",
     "evidence/wf365/WF365_DRUID_L30_REVOCATION.json",
+    "evidence/wf363/WF363_WARRIOR_L30_P3_PROBE.json",
+    "evidence/wf365/WF365_WARRIOR_L30_P3_ROLE_PROBE.json",
     "evidence/wf343/WF343_SOURCE_DISPLAY_PERCENT_TOP5.json",
     "evidence/wf343/WF343_TOP5_READABLE_REPORT.md",
     "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_DIAGONAL.json",
@@ -353,10 +462,25 @@ RETAINED_HISTORICAL_EVIDENCE = (
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
     "evidence/wf357/WF357_L30_P3_RECOVERY_RECALIBRATION.json",
+    # Preserve original WF326/WF327 reports after deleting their orphaned generators.
+    "evidence/wf326/WF326_SLOT_SEARCH_EVIDENCE.json",
+    "evidence/wf327/WF327_DRUID20_ACTION_PROXY_AND_L2.json",
     # Preserve the original measured results; retire only the one-off producers.
     "evidence/wf325/WF325_BLIND_JOINT.json",
     "evidence/wf325/WF325_REPLAYED_BUDGETED_L2_AND_100MOB.json",
     "evidence/wf347/WF347_FIXED_POLICY_HP5_100MOB.json",
+    # Retain the measured historical reports, never regenerate via obsolete Python GameIR.
+    "evidence/wf340/WF340_P4_STRICT_30S.json",
+    "evidence/wf340/WF340_P5_STRICT_300S.json",
+    "evidence/wf346/WF346_TOP5.json",
+    "evidence/wf346/WF346_TOP5.md",
+    "evidence/wf347/WF347_TOP5.json",
+    "evidence/wf347/WF347_TOP5.md",
+    "evidence/wf347/WF347_P4_STRICT.json",
+    "evidence/wf347/WF347_P5_STRICT.json",
+    "evidence/wf339/WF339_DRUID_L20_WEIGHTED_TOP5_PER_SLOT.json",
+    "evidence/wf339/WF339_WEIGHTED_SLOT_PILOT.json",
+    "evidence/wf341/WF341_DRUID_L20_CHANCE_SENSITIVITY_TOP5.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
     "evidence/wf328/WF328_REAL_MODE_PREFIX_30_PAID_AND_100MOB.json",
     "evidence/wf328/WF328_GEARED_BLIND_100MOB_SAME_SOURCE.json",

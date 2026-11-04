@@ -1,8 +1,12 @@
-# WoW Forever — OVERALL PLAN v7 (APPROVED)
+# WoW Forever — OVERALL PLAN v8 (APPROVED)
 
-**Date:** 2026-11-04 (v7 architecture amendment to v6 approved 2026-11-03)  
-**Status:** **APPROVED, IMMUTABLE.** v5 product scope was approved 2026-10-15; v6 retired P1/P2 formal acceptance on 2026-11-03. v7 is the owner's explicit 2026-11-04 architectural amendment defining the single source of game data and optimizer alternatives. Previous versions remain in Git history.  
+**Date:** 2026-11-04  
+**Status:** **OWNER-APPROVED.** v8 reduces redundant acceptance obligations; v7 remains the single-source architecture decision, v6 retires P1/P2. Git history contains all earlier approvals.
 **Purpose:** Define WHAT is built, the end-state and precisely when DONE DONE occurs. No gate implementation procedure or changeable milestone ordering belongs here; those live in PROCESS and milestone plans.
+
+## Owner-approved v8 acceptance simplification (2026-11-04)
+
+Keep all **148 checkpoints, nine active P3–P7.5 gates (1,332 pairs), M1 partial-inclusive diagnostic and real native-paid results**. P3 now tests representative legal gear and mechanically relevant score sensitivity, not arbitrary positive weights. P4/P5 use genuine **30s and 300s snapshots of one cold 300s search**; P4–P6 retain distinct winners' real continuous **100-mob** leveling/recovery/survival results, but identical compatible receipts may be reused. P7's pinned, stationary non-attacking DPS reference is measured directly in the selected genuine MythicSim Rust/Go engine: P7.1 uses one reproducible stochastic baseline; P7.2–P7.4 use genuinely paid single-axis changed alternatives; P7.5 retains the **independent cold 300s joint search, 1,000 stochastic fights and 93% accepted-compatible comparison**. The P7-only 2D handshake, duplicate axis holdouts and duplicative 100-mob replays are no longer acceptance prerequisites. **P4–P6's real spatial native↔world causality is unchanged.** Exact predicates live only in [gate contracts](docs/gates/README.md). A new contract does not automatically grant a historical or unexecuted PASS.
 
 ## Owner-approved v7 single-source architecture amendment (2026-11-04)
 
@@ -10,11 +14,11 @@
 
 **Forever owns the scenario and generic optimizer only:** it requests native available alternatives for the class/level/spec/scenario, proposes and recombines gear × enchants × talents × APL candidates, asks the selected pinned native engine to prepare/validate/execute whole builds, and scores/searches actual results. No permanent Python GameIR, copied SQLite item source, class-specific Python talent eligibility or duplicate Warcraft game-rule catalogue. Retired P1/P2-only code is deleted, not rebuilt as a new Rust/Python proof pipeline. Migrate *live* P3–P7.5/optimizer consumers without breaking them before deleting transitional dependencies. The currently approved Go execution alternative is not silently outlawed by the Rust-owned target architecture.
 
-**This is an ownership/architecture decision, not a new completion gate.** The existing 148 checkpoints, nine P3–P7.5 gates per checkpoint, 30/300-second searches, real world/100-mob execution, P7 native↔2D causality and 1,000-fight stochastic holdout remain exactly as approved. Missing options APIs are implementation work, not an additional proof requirement or a reason to rerun already accepted, unaffected gates.
+**v7 governs game-fact ownership, not the current acceptance costs.** v8's active acceptance is defined in the current PROCESS and gate contracts; no new gate or duplicate MythicSim validation is introduced.
 
 ## Owner-approved v6 scope amendment (2026-11-03)
 
-Retire P1 ability and P2 talent gates from formal checkpoint acceptance. The active acceptance set is P3–P6 plus P7.1–P7.5 (nine gates per checkpoint, 1,332 active checkpoint-gate pairs). The 148 checkpoint identities and user-facing product goal are unchanged. MythicSim remains the authority for spell/talent availability, legality and effects; those facts are consumed by active production paths without separate P1/P2 acceptance. Existing P1/P2 ledger entries remain historical and do not count toward current M1 or checkpoint completion. No other active gate threshold or scenario is relaxed.
+Retire P1 ability and P2 talent gates from formal checkpoint acceptance. The active acceptance set is P3–P6 plus P7.1–P7.5 (nine gates per checkpoint, 1,332 active checkpoint-gate pairs). The 148 checkpoint identities and user-facing product goal are unchanged. MythicSim remains the authority for spell/talent availability, legality and effects; those facts are consumed by active production paths without separate P1/P2 acceptance. Existing P1/P2 ledger entries remain historical and do not count toward current M1 or checkpoint completion. This was the scope decision at v6; current v8 gate predicates supersede older acceptance conditions.
 
 ## Product goal
 
@@ -31,9 +35,9 @@ A user must be able to inspect actual selected gear with item identities and sco
 - Other eight classes **three** spec/profile constraints × four levels = **96**.
 - **Total 36 + 16 + 96 = 148.**
 
-Each accepted checkpoint includes a source-legal actual whole-build decision, real 100 consecutive-mob combat/recovery and comparable independent 30s/300s and old-optimizer challenger as required by PROCESS. No checkpoint is accepted on isolated action inventory, item metadata, unit-test green, unproven search candidate, or incompatible proxy benchmark. A checkpoint can be *diagnostic* without counting as DONE.
+Each accepted checkpoint includes source-legal real whole-build decisions, genuine 30s/300s timed search evidence, each distinct leveling winner's continuous 100-mob combat/recovery/survival, the approved P6 comparison, and the five pinned native-DPS P7 gates. Do not accept isolated action inventory, metadata, green unit tests or incompatible proxies. A diagnostic checkpoint is not DONE.
 
-**Definition of first-phase DONE DONE:** exactly **148/148 accepted** in the machine-readable register with compatible current proof; 0 false-green entries. Final scorecard and reproducible artifacts published. This is the current working finish line; the historical 540 metric is not substituted for it.
+**Definition of first-phase DONE DONE:** exactly **148/148 accepted**, each with **nine genuine active gate PASSes** in the machine-readable register, 0 false-green entries. There is no separate checkpoint provenance certificate or hidden tenth gate. Final scorecard and reproducible artifacts published. This is the current working finish line; the historical 540 metric is not substituted for it.
 
 ## Broader product destination beyond the 148-checkpoint finish line
 
@@ -65,5 +69,6 @@ As of the source records inspected 2026-10-15, strictly certified coverage was *
 
 - This v5 text was drafted following the user's explicit governance instructions on 2026-10-15.
 - **v6 owner-approved 2026-11-03:** retire P1/P2 formal acceptance; keep 148 checkpoint identities and the remaining nine active gates.
-- **v7 owner-approved 2026-11-04:** pinned MythicSim Rust supplies available optimizer alternatives and owns game-data/legality; Forever handles scenario/search/scoring, removes GameIR and redundant source rules without changing any gate.
-- **Approved explicitly by user 2026-10-15:** "Je, W" in reply to the assistant asking "Hyväksytkö Overall Plan v5:n uudeksi pyhäksi lähtötasoksi?". This approved copy is frozen; do not modify without new explicit permission.
+- **v7 owner-approved 2026-11-04:** pinned MythicSim Rust supplies available optimizer alternatives and owns game-data/legality; Forever handles scenario/search/scoring, removes GameIR and redundant source rules.
+- **v8 owner-approved 2026-11-04:** remove redundant P3–P7 proof and search costs while preserving the same nine gates, 148 checkpoints, native engine and genuine leveling/DPS results.
+- All approved revisions require the user's explicit authorization; historical approval texts are retained in Git history.

@@ -72,7 +72,8 @@ def probe_gate(class_key: str, level: int, spec: str, gate: str,
                 "production_engine", "engine_id", "source_id",
                 "source_context_sha256", "real_source_search_evaluated",
                 "real_catalogue_top5_items_scored", "source_policy_stat_witnesses",
-                "real_measured_stat_weights", "real_catalogue_legal_items",
+                "real_measured_stat_weights", "real_stat_probe_axis_selection",
+                "real_catalogue_legal_items",
                 "real_catalogue_slots_scored", "source_profile_production_build",
                 "actual_search_result_status"):
         if key in result:

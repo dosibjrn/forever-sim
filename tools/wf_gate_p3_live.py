@@ -84,6 +84,7 @@ def native_item_options_required(
         or (key == "shaman" and level == 20 and profile == "unrestricted")
         or (key == "paladin" and level == 20 and profile == "unrestricted")
         or (key == "mage" and level == 30 and profile == "unrestricted")
+        or (key == "rogue" and level == 20 and profile == "unrestricted")
     )
 
 
@@ -107,6 +108,61 @@ def _p3_stat_witness_priority(ir, policy) -> tuple[str, ...]:
         "spell_power", "intellect", "spirit", "mp5", "hit", "crit",
         "agility", "attack_power", "strength",
     )
+
+
+def _p3_executable_weight_witness_axes(blockers, weights, executable_axes, priority):
+    """Retry missing or zero weights only when the selected source can execute them.
+
+    Item-level P3 blockers determine applicability; executable_axes comes from
+    the selected IR's real stat-perturbation provider. A missing weight is NOT
+    a measured zero, and an unsupported native item stat is NOT executable.
+    Both cases remain unresolved unless a genuinely paid same-policy probe
+    later establishes a finite weight.
+    """
+    available = set(executable_axes)
+    rank = {axis: index for index, axis in enumerate(priority)}
+    selected = set()
+    for blocker in blockers:
+        kind, separator, axis = str(blocker).partition(":")
+        if not separator or kind not in ("MISSING_WEIGHT", "NONPOSITIVE_RELEVANT_WEIGHT"):
+            continue
+        if kind == "MISSING_WEIGHT":
+            # Only the paid source-runner's *actual* axis-selection receipt can
+            # authorize a previously missing axis for real stat perturbation.
+            if axis not in available or axis in weights:
+                continue
+        elif weights.get(axis) != 0.0:
+            # Keep previously measured zero-weight witness attempts intact.
+            # A mock or partial receipt must never erase an existing witness.
+            continue
+        selected.add(axis)
+    return sorted(selected, key=lambda axis: (rank.get(axis, len(rank)), axis))
+
+
+def _accept_paid_p3_stat_witness(weights: dict, axis: str, witness: dict) -> bool:
+    """Apply only a real paid positive slope or a genuinely measured missing zero.
+
+    Exact-zero derivatives may satisfy P3's nonnegative item requirement, but
+    only when a completed paid before/after witness exists. They must not
+    overwrite an existing measured weight, turn a negative effect into zero,
+    or turn an unsupported stat into an assumed zero.
+    """
+    status = witness.get("status")
+    if witness.get("stat") != axis:
+        return False
+    measured = witness.get("weight_s_saved_per_mob_per_unit")
+    if type(measured) not in (int, float) or not isfinite(measured):
+        return False
+    if status == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
+        if measured <= 0:
+            return False
+    elif status == "MEASURED_ZERO_SOURCE_POLICY_WITNESS":
+        if measured != 0.0 or axis in weights:
+            return False
+    else:
+        return False
+    weights[axis] = float(measured)
+    return True
 
 
 def _native_item_stat_probe_deltas(item_check: dict, axis: str):
@@ -204,18 +260,9 @@ def _source_actor_context_summary(ir) -> dict:
     }
 
 
-def _allow_cooldown_fallback_for_profile(class_key: str, level: int, spec: str) -> bool:
-    """Enable cooldown continuations only for the Paladin L20 unrestricted P3 lane."""
-    return (
-        str(class_key).lower() == "paladin"
-        and int(level) == 20
-        and str(spec).lower() == "unrestricted"
-    )
-
-
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
-    # Priest/Mage L20, unrestricted Shaman L20, and unrestricted Mage L30
-    # P3 use native ItemSparse; other profiles/levels retain their existing path.
+    # Selected P3 class/level paths require authoritative native ItemSparse.
+    # Unsupported native queries refuse; never fall back to Python/SQLite gear.
     native_required = native_item_options_required(class_key, level, spec)
     native_binary = (os.environ.get('FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN')
                      if native_required else None)
@@ -223,6 +270,26 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         return {'status': 'BLOCKED',
                 'reasons': ['P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED'],
                 'production_component': 'src.game.native_p3_item_options'}
+    native_options = None
+    if (str(class_key).lower() == "rogue" and int(level) == 20
+            and str(spec).lower() == "unrestricted"):
+        # Rogue's selected engine capability was previously untested because
+        # SQLite returned no items. Refuse *before* consuming paid evaluations
+        # until the exact pinned native engine can supply legal options.
+        from src.game.native_p3_item_options import (
+            NativeItemOptionsError, query_native_p3_item_options)
+        try:
+            native_options = query_native_p3_item_options(
+                native_binary, class_key, level, spec=spec, slot="all")
+        except NativeItemOptionsError as exc:
+            return {'status': 'BLOCKED', 'reasons': [str(exc)],
+                    'production_component': 'src.game.native_p3_item_options',
+                    'real_source_search_evaluated': 0}
+        if not native_options['items']:
+            return {'status': 'BLOCKED',
+                    'reasons': ['NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES'],
+                    'production_component': 'src.game.native_p3_item_options',
+                    'real_source_search_evaluated': 0}
 
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
@@ -322,7 +389,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                      "crit", "hit", "dodge", "parry",
                      "health_regeneration_per_5s", "weapon_dps"),
         schedule_incoming_attacks=schedule_incoming_attacks,
-        allow_cooldown_fallback=_allow_cooldown_fallback_for_profile(class_key, level, spec))
+        # Neither cooldown pacing nor existing melee auto-attacks are P3
+        # legality gates; try them through the real paid executor for any class.
+        allow_cooldown_fallback=True,
+        source_search_auto_fallback=True)
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
     sensitivity = next((x for x in result.get("sensitivity_history", ())
@@ -343,10 +413,11 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         for attack in getattr(ir, 'auto_attacks', ())
         for source in getattr(attack, 'provenance', ())
         if isinstance(source, dict))
-    if cooldown_fallback and (actor_proxy or weapon_proxy):
+    auto_fallback = fallback_id == "__source_verified_auto_attack_only__"
+    if (cooldown_fallback or auto_fallback) and (actor_proxy or weapon_proxy):
         return {
             "status": "BLOCKED",
-            "reasons": ["P3_SOURCE_COOLDOWN_WINNER_HAS_PROXY_ACTOR_OR_WEAPON"],
+            "reasons": ["P3_SOURCE_CONTINUATION_HAS_PROXY_ACTOR_OR_WEAPON"],
             "production_component": "src.v2.source_budgeted_gear.run_source_budgeted_gear",
             "real_source_search_attempts": result.get("attempted", 0),
             "real_source_search_evaluated": 0,
@@ -398,7 +469,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
-            native_options_binary=native_binary)
+            native_options_binary=native_binary,
+            native_options_response=native_options)
     except ValueError as exc:
         if native_binary is None:
             raise
@@ -415,18 +487,19 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # source search's remaining bounded budget.
     extra_evaluations = 0
     source_policy_stat_witnesses = []
+    newly_measured_weight = False
     # Reuse a paid baseline for the same source policy across stat axes. Without
     # this, repeated baseline runs consume the fixed P3 budget before later
     # required axes (such as Spirit) receive their own paid perturbation.
     source_policy_baseline_cache = {}
     witness_priority = _p3_stat_witness_priority(ir, policy)
-    witness_rank = {axis: index for index, axis in enumerate(witness_priority)}
-    witness_blockers = sorted(
-        (blocker for blocker in item_check["blockers"]
-         if blocker.startswith("NONPOSITIVE_RELEVANT_WEIGHT:")),
-        key=lambda blocker: (
-            witness_rank.get(blocker.split(":", 1)[1], len(witness_rank)),
-            blocker.split(":", 1)[1]))
+    # Reuse the *same* source-executor axis receipt that fed the paid search:
+    # querying an unrelated/default IR again can silently change DB scope.
+    source_probe_axes = (
+        (result.get("stat_probe_axis_selection") or {})
+        .get("selected_for_paid_probe") or ())
+    witness_axes = _p3_executable_weight_witness_axes(
+        item_check["blockers"], weights, source_probe_axes, witness_priority)
     mage_l30_native = (
         str(class_key).lower() == "mage" and int(level) == 30
         and str(spec).lower() == "unrestricted"
@@ -436,15 +509,23 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         shaman_l20_spellbook
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
-    native_item_sized_probe = mage_l30_native or shaman_l20_native
+    rogue_l20_native = (
+        str(class_key).lower() == "rogue" and int(level) == 20
+        and str(spec).lower() == "unrestricted"
+        and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    )
+    # The Rogue item catalogue now comes from the same selected native
+    # ItemSparse provider as Mage/Shaman. Probe real top-five item stat sizes,
+    # not guessed (5, 20) deltas; every weight still needs a paid comparison.
+    native_item_sized_probe = (
+        mage_l30_native or shaman_l20_native or rogue_l20_native)
     if shaman_l20_native:
         # This issue is only the Spell Power witness. Other zero axes are
         # separate P3 defects. If the exact native coefficient/action was not
         # obtained, retain the existing score without attempting a substitute.
-        witness_blockers = (
+        witness_axes = (
             [] if native_spell_coefficients_error else [
-                blocker for blocker in witness_blockers
-                if blocker == "NONPOSITIVE_RELEVANT_WEIGHT:spell_power"
+                axis for axis in witness_axes if axis == "spell_power"
             ])
     # The Shaman paid winner is eligible only when its actual fallback is the
     # exact, native-enriched rank-915 source action.
@@ -454,7 +535,6 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         shaman_l20_native and native_spell_winner
         and native_spell_coefficients_error is None
         and bool(native_spell_coefficients_applied))
-    witness_axes = [blocker.split(":", 1)[1] for blocker in witness_blockers]
     if (force_native_shaman_spell_power_witness
             and "spell_power" not in witness_axes):
         # The native coefficient can make the initial CombatRuntime sensitivity
@@ -467,7 +547,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             policy, record, tuple(record.get("prefix") or ())) is not None
     )
     for axis in witness_axes:
-        if (weights.get(axis) != 0.0
+        if (axis in weights and weights[axis] != 0.0
                 and not (force_native_shaman_spell_power_witness
                          and axis == "spell_power")):
             continue
@@ -504,24 +584,24 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             preferred_policy=(policy if native_spell_winner else None),
             baseline_record=(record if native_spell_winner else None),
             allow_paid_winner_after_nonpositive=(
-                native_fallback_action and (mage_l30_native or shaman_l20_native)))
+                native_fallback_action and (mage_l30_native or shaman_l20_native)),
+            breadth_first_verified_native_winner=mage_l30_native)
         if native_item_sized_probe:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
-        if witness["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS":
-            weights[axis] = witness["weight_s_saved_per_mob_per_unit"]
-    if any(w["status"] == "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS"
-           for w in source_policy_stat_witnesses):
+        if _accept_paid_p3_stat_witness(weights, axis, witness):
+            newly_measured_weight = True
+    if newly_measured_weight:
         item_check = fast_p3_smoke_for_policy(
             source_ir=ir, policy=policy, class_key=class_key, level=level,
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
-            native_options_binary=native_binary)
+            native_options_binary=native_binary,
+            native_options_response=native_options)
     reasons = list(item_check["blockers"])
-    # The same source-legal selected IR was used for actual CombatRuntime
-    # sensitivity and the real item scorer. Never fake a positive stat weight.
-    # Source-ranked, real CombatRuntime measurements were used for each
-    # measured derivative; the ordinary source item scorer tested ilvl top5.
+    # The source policy was paid by CombatRuntime, but item scoring does NOT
+    # become native equipped-build execution merely because candidate items
+    # originated in Rust. Preserve real provenance and the measured receipt.
     status = "FAIL" if reasons else "PASS"
     proof = {}
     if status == "PASS":
@@ -539,9 +619,18 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_source_search_attempts": result.get("attempted", 0),
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
+        # This is the resolver used by the paid source search, not a second
+        # P3 applicability rule or an invented zero for absent primary stats.
+        "real_stat_probe_axis_selection": result.get("stat_probe_axis_selection"),
         "real_measured_stat_weights": dict(sorted(weights.items())),
         "real_catalogue_legal_items": item_check["legal_item_count"],
+        # Compatibility alias for existing gate/recorder consumers. Native
+        # options are now an explicit <=2 representative per-slot sample.
         "real_catalogue_top5_items_scored": item_check["tested_item_count"],
+        "real_native_representative_items_scored": (
+            item_check["tested_item_count"] if item_check["source"] ==
+            "MYTHICSIM_NATIVE_ITEM_OPTIONS" else None),
+        "real_selected_item_alternatives_by_slot": item_check["slots"],
         "real_catalogue_slots_scored": item_check["slot_count"],
         # Comparable measured unit: one source-legal top-ilvl item x
         # applicable ordinary stat requirement, checked in the real selector.
@@ -550,7 +639,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "reachability_count": item_check["tested_stat_assertions"],
         "pass_count": item_check["verified_stat_assertions"],
         "behavior_probes_executed": result.get("evaluated", 0) + extra_evaluations,
-        "partial_scope": "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS",
+        "partial_scope": (
+            "CURRENT_NATIVE_REPRESENTATIVE_ITEM_STAT_WEIGHT_ASSERTIONS"
+            if item_check["source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+            else "CURRENT_SOURCE_TOP5_ITEM_STAT_WEIGHT_ASSERTIONS"),
         "coverage_basis": "executed_behavior_assertions",
         "coverage_scope_complete": False,
         "real_item_score_checked": item_check["source"] in (

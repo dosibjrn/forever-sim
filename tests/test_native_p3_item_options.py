@@ -49,6 +49,36 @@ def test_native_p3_forwards_request_and_preserves_source_candidates():
                           "--level", "20", "--spec", "unrestricted", "--slot", "all"]
     assert seen[0][1]["timeout"] == 60
 
+@pytest.mark.parametrize("level", [20, 30])
+def test_native_p3_mage_client_universe_counts_are_explicit_and_forwarded(level):
+    # Forever transports the native exclusion/unknown distinction untouched.
+    # It does not independently judge which Warcraft items belong in ItemSparse.
+    item = {"item_id": 25, "item_level": 3, "required_level": 1,
+            "slot": "chest", "stats": {"Stamina": 2.0}}
+    payload = _response(**{"class": "mage", "level": level,
+                           "excluded_non_client_item_count": 2239,
+                           "items": [item]})
+    actual = query_native_p3_item_options(
+        "native", "mage", level, runner=_runner(payload))
+    assert actual == payload
+    assert actual["status"] == "ok"
+    assert actual["unverified_candidate_count"] == 0
+    assert actual["excluded_non_client_item_count"] == 2239
+    assert actual["items"] == [item]
+
+
+@pytest.mark.parametrize("level", [20, 30])
+def test_native_p3_mage_rejects_missing_client_exclusion_receipt(level):
+    payload = _response(**{"class": "mage", "level": level})
+    del payload["excluded_non_client_item_count"]
+    with pytest.raises(
+        NativeItemOptionsError,
+        match="EXCLUDED_NON_CLIENT_COUNT_UNAVAILABLE",
+    ):
+        query_native_p3_item_options(
+            "native", "mage", level, runner=_runner(payload))
+
+
 def test_native_p3_forwards_shaman_request_and_preserves_source_candidates():
     item = {
         "item_id": 25, "name": "Sourced Shaman chest", "item_level": 3,
@@ -279,6 +309,7 @@ def test_m1_recorder_builds_exact_native_binary_for_verified_option_consumers():
     assert 'if [[ "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]] ||' in workflow
     assert '[[ "$level" == 20 && "$class" == shaman && "$spec" == unrestricted ]] ||' in workflow
     assert '[[ "$level" == 20 && "$class" == paladin && "$spec" == unrestricted ]] ||' in workflow
+    assert '[[ "$level" == 20 && "$class" == rogue && "$spec" == unrestricted ]] ||' in workflow
     assert '[[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]]; then' in workflow
     assert 'elif [[ ( "$gate" == P4 || "$gate" == P5 ) && "$class" == priest && "$level" == 20 ]]; then' in workflow
     assert "native_options_needed=true" in workflow
@@ -330,8 +361,9 @@ def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
     ("priest", 0),
     ("shaman", 3075),
     ("paladin", 1240),
+    ("rogue", 1789),
 ])
-def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
+def test_native_p3_scores_only_two_representative_source_candidates(
         class_key, excluded_count):
     levels = [3, 12, 7, 11, 9, 10, 8]
     items = tuple(ItemRecord(
@@ -363,10 +395,42 @@ def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five(
     assert report["source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     assert report["legal_item_count"] == 7
     assert report["native_excluded_non_client_item_count"] == excluded_count
-    assert report["tested_item_count"] == 5
-    assert report["slots"]["chest"]["selected_ids"] == [101, 103, 105, 104, 106]
-    assert report["slots"]["chest"]["selection"] == "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+    assert report["tested_item_count"] == 2
+    assert report["slots"]["chest"]["selected_ids"] == [101, 103]
+    assert report["slots"]["chest"]["selection"] == "NATIVE_REPRESENTATIVE_UP_TO_TWO"
 
+
+
+def test_native_p3_prefers_distinct_stat_vector_and_keeps_zero_negative_paid_weights():
+    """Only the native option universe supplies candidates; no arbitrary
+    all-stats-positive predicate or Python class-specific eligibility."""
+    items = (
+        ItemRecord(item_id=991001, name="Agility top", slot="chest", item_level=25,
+                   required_level=1, agility=5.0, identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+        ItemRecord(item_id=991002, name="Same stats", slot="chest", item_level=24,
+                   required_level=1, agility=5.0, identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+        ItemRecord(item_id=991003, name="Stamina tradeoff", slot="chest", item_level=23,
+                   required_level=1, stamina=8.0, identity_origin="mythicsim_native",
+                   source_type="mythicsim_native"),
+    )
+    metadata = {"status": "ok", "unverified_candidate_count": 0,
+                "excluded_non_client_item_count": 0, "source": "native"}
+    with patch("src.game.native_p3_item_options.native_p3_item_records",
+               return_value=(items, {}, metadata)):
+        report = fast_p3_smoke(
+            class_key="rogue", level=20,
+            weights={"agility": 0.0, "stamina": -0.2},
+            weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+            weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
+            defensive_positive_required=True, native_options_binary="selected-native")
+    assert report["slots"]["chest"]["selected_ids"] == [991001, 991003]
+    assert report["tested_item_count"] == 2
+    assert report["verified_stat_assertions"] == 2
+    assert not any(reason.startswith(("NONPOSITIVE_RELEVANT_WEIGHT:",
+                                      "NEGATIVE_WEIGHT:"))
+                   for reason in report["blockers"])
 
 
 def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():
@@ -379,11 +443,15 @@ def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():
     assert native_item_options_required("mage", 30, "unrestricted")
     assert native_item_options_required("shaman", 20, "unrestricted")
     assert native_item_options_required("paladin", 20, "unrestricted")
+    assert native_item_options_required("rogue", 20, "unrestricted")
+    assert native_item_options_required("ROGUE", 20, "UNRESTRICTED")
     assert native_item_options_required("SHAMAN", 20, "UNRESTRICTED")
     assert not native_item_options_required("shaman", 20, "enhancement")
     assert not native_item_options_required("shaman", 30, "unrestricted")
     assert not native_item_options_required("paladin", 20, "retribution")
     assert not native_item_options_required("paladin", 30, "unrestricted")
+    assert not native_item_options_required("rogue", 20, "combat")
+    assert not native_item_options_required("rogue", 30, "unrestricted")
     assert not native_item_options_required("mage", 30, "feral-cat")
     assert not native_item_options_required("priest", 30, "unrestricted")
     assert not native_item_options_required("mage", 40, "unrestricted")
@@ -694,3 +762,85 @@ def test_native_shaman_spellbook_reports_conflicting_exact_action_ids():
         match=r"DUPLICATE_COEFFICIENT_CONFLICT:.*previous_action_id",
     ):
         query_native_shaman_spell_coefficients("native", runner=_runner(prepared))
+
+
+def test_rogue_p3_requires_selected_native_binary_before_paid_search(monkeypatch):
+    from tools.wf_gate_p3_live import run_live
+
+    monkeypatch.delenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", raising=False)
+    result = run_live(Path("."), "rogue", 20, spec="unrestricted")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == ["P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED"]
+    assert "real_source_search_evaluated" not in result
+
+
+def test_rogue_p3_forwards_native_options_and_preserves_source_response():
+    payload = _response(**{
+        "class": "rogue",
+        "source": "mythicsim:data/items.jsonl+client:ItemSparse.RequiredLevel",
+        "excluded_non_client_item_count": 1789,
+    })
+    commands = []
+
+    def runner(command, **kwargs):
+        commands.append(command)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+
+    response = query_native_p3_item_options(
+        "native", "rogue", 20, spec="unrestricted", slot="all", runner=runner)
+    assert response == payload
+    assert commands == [[
+        "native", "item-options", "--class", "rogue", "--level", "20",
+        "--spec", "unrestricted", "--slot", "all",
+    ]]
+
+
+def test_rogue_p3_propagates_native_refusal_without_paid_or_sqlite_fallback(monkeypatch):
+    from tools.wf_gate_p3_live import run_live
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    with patch(
+        "src.game.native_p3_item_options.query_native_p3_item_options",
+        side_effect=NativeItemOptionsError(
+            "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"),
+    ), patch(
+        "src.game.data.forever.registry.build_game_ir_slice",
+        side_effect=AssertionError("native refusal must precede source paid work"),
+    ):
+        result = run_live(Path("."), "rogue", 20, spec="unrestricted")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == [
+        "P3_NATIVE_ITEM_OPTIONS_REFUSED:NATIVE_ITEM_OPTIONS_UNSUPPORTED_CLASS"]
+    assert result["real_source_search_evaluated"] == 0
+
+
+def test_rogue_p3_empty_native_options_never_resume_legacy_selector(monkeypatch):
+    from tools.wf_gate_p3_live import run_live
+
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    with patch(
+        "src.game.native_p3_item_options.query_native_p3_item_options",
+        return_value=_response(**{"class": "rogue", "status": "empty", "items": []}),
+    ), patch(
+        "src.game.data.forever.registry.build_game_ir_slice",
+        side_effect=AssertionError("empty native result must not search legacy SQLite"),
+    ):
+        result = run_live(Path("."), "rogue", 20, spec="unrestricted")
+    assert result["status"] == "BLOCKED"
+    assert result["reasons"] == ["NATIVE_ITEM_OPTIONS_NO_VERIFIED_CANDIDATES"]
+    assert result["real_source_search_evaluated"] == 0
+
+
+def test_selected_engine_workflow_executes_rogue_native_and_real_p3_no_record():
+    workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
+    rogue = workflow.split(
+        "Run no-record Rogue L20 P3 native capability and gate receipt", 1
+    )[1].split("Run no-record Priest and Mage L20 P3", 1)[0]
+    assert "--class rogue --level 20 --spec unrestricted --slot all" in rogue
+    assert "python tools/wf_gate.py --class rogue --level 20" in rogue
+    assert "--spec unrestricted --gate P3 --out" in rogue
+    assert '"P3_NATIVE_ITEM_OPTIONS_REFUSED:" + refusal' in rogue
+    assert 'row["real_source_search_evaluated"] == 0' in rogue
+    assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in rogue
+    assert '"P3_NO_LEGAL_ITEMS_IN_CURRENT_DB" not in row.get("reasons", [])' in rogue
+    assert "--record-pass" not in rogue

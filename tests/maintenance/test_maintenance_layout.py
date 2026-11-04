@@ -70,7 +70,6 @@ class MaintenanceTestLayout(unittest.TestCase):
         policy_consumers = (
             ROOT / "tools" / "wf282_source_role_heldout_benchmark.py",
             ROOT / "tools" / "wf298_druid_l20_verified_delta.py",
-            ROOT / "tools" / "wf299_100_mob_continuity_probe.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
             ROOT / "tests" / "test_wf245_policy_frontier.py",
         )
@@ -82,8 +81,6 @@ class MaintenanceTestLayout(unittest.TestCase):
             ROOT / "tools" / "wf298_druid_l20_verified_delta.py",
             ROOT / "tests" / "test_wf243_source_joint_repeated_pulls.py",
             ROOT / "tests" / "test_wf245_policy_frontier.py",
-            ROOT / "tests" / "test_wf283_online_source_corridors.py",
-            ROOT / "tests" / "test_wf300_continuous_mob.py",
         )
         for consumer in fixture_consumers:
             source = consumer.read_text()

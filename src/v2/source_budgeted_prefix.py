@@ -211,7 +211,8 @@ def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: i
                                max_prefix_length: int = 4, beam_width: int = 2,
                                ir_slice=None, schedule_incoming_attacks: bool = True,
                                l0_action_priority: dict[str, int] | None = None,
-                               allow_cooldown_fallback: bool = False) -> dict:
+                               allow_cooldown_fallback: bool = False,
+                               include_auto_fallback: bool = False) -> dict:
     """Online search: each next depth>=3 trial is chosen using measured scores.
 
     At small action counts, all ordered length-one and length-two prefixes
@@ -228,12 +229,13 @@ def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: i
         raise ValueError('IR class/level mismatch')
     envelope = source_prefix_envelope(
         ir, level=level, l0_action_priority=l0_action_priority,
+        include_auto_fallback=include_auto_fallback,
         allow_cooldown_fallback=allow_cooldown_fallback)
     actions, fillers = envelope['actions'], envelope['fillers']
     # An executable destination mode can be the only combat branch. Do not
     # suppress it merely because the starting mode has no repeatable filler.
     has_mode_search = any(path['fillers'] for path in envelope['mode_paths'])
-    if (not actions or not fillers) and not has_mode_search:
+    if not fillers and not has_mode_search:
         return {'status': 'BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK', 'envelope': envelope,
                 'attempted': 0, 'evaluated': 0, 'blocked': 0, 'budget': max_evaluations}
     context = sha256(dumps({'software': SOFTWARE_VERSION, 'ir': ir.as_dict(),
@@ -243,6 +245,12 @@ def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: i
                            sort_keys=True, default=str).encode()).hexdigest()
     candidates = []
     seen = set()
+    # Existing automatic attacks are executable even when there is no
+    # spell to press. Pay for that baseline rather than pre-vetoing melee.
+    if AUTO_ONLY_FALLBACK in fillers:
+        candidate = PrefixCandidate((), AUTO_ONLY_FALLBACK)
+        candidates.append(candidate)
+        seen.add(candidate)
     action_map = {action.id: action for action in ir.actions}
     # WF328: the old prefix search *discovered* source-legal form paths but
     # never submitted one of them to CombatRuntime. Reserve early candidates
@@ -327,10 +335,14 @@ def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: i
         if attempted >= max_evaluations:
             raise AssertionError('hard budget exceeded')
         attempted += 1  # charge before runtime, including failures
+        # Auto-attack continuation has *no* synthetic Action ID: the
+        # existing combat event queue advances melee swings itself.
+        rules = (() if candidate.fallback == AUTO_ONLY_FALLBACK else (
+            PolicyRuleDefinition(id='fallback:0', action_id=candidate.fallback),))
         policy = PolicyDefinition(
             id=f'{ir.id}:budgeted-fallback:{candidate.fallback}',
             label='Sourced repeatable fallback after ordered opening',
-            rules=(PolicyRuleDefinition(id='fallback:0', action_id=candidate.fallback),),
+            rules=rules,
             provenance={'authority':'source_budgeted_prefix', 'search_performed': True})
         record = {'attempt': attempted, 'prefix': list(candidate.prefix),
                   'fallback': candidate.fallback, 'parent_score': parent,
@@ -389,7 +401,8 @@ def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: i
             # available in the destination mode. In particular never append
             # naked caster actions after switching to Bear/Cat form.
             parent_prefix = tuple(parent['prefix'])
-            extension_actions = mode_actions_by_entry.get(parent_prefix[0],actions)
+            extension_actions = mode_actions_by_entry.get(
+                parent_prefix[0] if parent_prefix else None, actions)
             for action in extension_actions:
                 candidate = PrefixCandidate(parent_prefix + (action,), parent['fallback'])
                 if candidate in seen:
@@ -415,7 +428,8 @@ def run_source_budgeted_prefix(*, class_key: str, level: int, max_evaluations: i
         seen.add(candidate)
         child_attempts[parent_key] = child_attempts.get(parent_key, 0) + 1
         evaluate(candidate, parent=parent_score)
-    potential = len(fillers) * sum(len(actions) ** depth for depth in range(1, max_prefix_length + 1))
+    potential = (1 if AUTO_ONLY_FALLBACK in fillers else 0) + len(fillers) * sum(
+        len(actions) ** depth for depth in range(1, max_prefix_length + 1))
     potential += sum(len(path['fillers']) * sum(len(path['actions']) ** (depth-1)
                        for depth in range(2,max_prefix_length+1))
                      for path in envelope['mode_paths'])
