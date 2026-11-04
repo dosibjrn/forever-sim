@@ -92,9 +92,6 @@ def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
     (upstream / "data").mkdir()
     (upstream / "data/items.jsonl").write_text("{}\n")
     (upstream / "data/enchants.jsonl").write_text("{}\n")
-    catalogue = tmp_path / "data/forever/catalogue/items_2026-09-29.sqlite"
-    catalogue.parent.mkdir(parents=True)
-    catalogue.write_text("mock catalogue")
 
     base = {"raid": {"parties": [{"players": [{
         "class": "ClassDruid", "distanceFromTarget": 15,
@@ -108,24 +105,17 @@ def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(gate, "_source_native_world_parity", lambda *args, **kwargs: None)
 
-    class Validator:
-        @staticmethod
-        def require_sqlite_catalogue(path):
-            assert path == catalogue
-
-        def __init__(self, *args):
-            pass
-
-        def close(self):
-            pass
-
     proposal_calls = []
-    def candidate_pool(validator, limit, **kwargs):
-        proposal_calls.append((limit, kwargs))
-        return ({i: [200 + i] for i in range(16)}, {})
+    def pinned_rust_candidate_pool(items_path, enchants_path):
+        proposal_calls.append((items_path, enchants_path))
+        return (
+            {i: [200 + i] for i in range(16)},
+            {i: [None] for i in range(16)},
+            {"unique_item_options": 16, "unique_enchant_options": 0},
+        )
 
     gear = SimpleNamespace(
-        GearValidator=Validator, candidate_pool=candidate_pool,
+        pinned_rust_candidate_pool=pinned_rust_candidate_pool,
         RejectedGear=ValueError,
     )
     native_calls = []
@@ -156,6 +146,6 @@ def test_p74_native_refusal_stops_before_live_world(monkeypatch, tmp_path):
 
     report = gate.run_live(tmp_path, "druid", 60, spec="balance")
     assert report["status"] == "FAIL"
-    assert proposal_calls == [(15, {"native_authoritative": True})]
+    assert proposal_calls == [(upstream / "data/items.jsonl", upstream / "data/enchants.jsonl")]
     assert native_calls == [(3, "balanced")] * 3
     assert world_calls == []

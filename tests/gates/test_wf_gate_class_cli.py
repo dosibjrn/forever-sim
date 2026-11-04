@@ -44,6 +44,12 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
         "winner_selection": "paid_4x3_balanced_native_world_confirmed",
         "paid_balanced_finalists": 4,
         "paid_balanced_confirmed": 1,
+        "source_candidate_failure_count": 17,
+        "pinned_rust_unique_item_options": 321,
+        "pinned_rust_unique_enchant_options": 22,
+        "pinned_rust_item_options_applied": True,
+        "native_source_revision": "native-reference-revision",
+        "item_candidate_admission": "pinned_rust_items_jsonl",
         "paid_stochastic_finalists": 0,
         "paid_stochastic_confirmed_finalists": 0,
         "source_candidate_failures": ["SOURCE_REJECT_" + "x" * 300] * 5,
@@ -65,13 +71,18 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
     assert receipt["winner_selection"] == "paid_4x3_balanced_native_world_confirmed"
     assert receipt["paid_balanced_finalists"] == 4
     assert receipt["paid_balanced_confirmed"] == 1
+    assert receipt["source_candidate_failure_count"] == 17
+    assert receipt["pinned_rust_unique_item_options"] == 321
+    assert receipt["pinned_rust_unique_enchant_options"] == 22
+    assert receipt["pinned_rust_item_options_applied"] is True
+    assert receipt["native_source_revision"] == "native-reference-revision"
+    assert receipt["item_candidate_admission"] == "pinned_rust_items_jsonl"
     # Do not publish the P7.4 provider's hard-coded stochastic placeholders.
     assert "paid_stochastic_finalists" not in receipt
     assert "paid_stochastic_confirmed_finalists" not in receipt
     assert "paid_stochastic_finalist_failures" not in receipt
     assert len(receipt["source_candidate_failures"]) == 4
     assert len(receipt["balanced_finalist_failures"]) == 4
-    assert all(len(message) == 180 for name in
-               ("source_candidate_failures", "balanced_finalist_failures")
-               for message in receipt[name])
+    assert all(len(message) == len("SOURCE_REJECT_") + 300 for message in receipt["source_candidate_failures"])
+    assert all(len(message) == 180 for message in receipt["balanced_finalist_failures"])
     assert receipt["status"] == "FAIL"
