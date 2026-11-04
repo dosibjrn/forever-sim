@@ -253,7 +253,7 @@ def test_native_p3_empty_result_keeps_native_status_without_sqlite_fallback(
         return_value=((), {}, metadata),
     ):
         report = fast_p3_smoke(
-            class_key="priest", level=20, weights={"stamina": 1.0},
+            class_key=class_key, level=20, weights={"stamina": 1.0},
             weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
             weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
             defensive_positive_required=False, native_options_binary="native")
