@@ -47,6 +47,34 @@ def test_native_p3_forwards_request_and_preserves_source_candidates():
                           "--level", "20", "--spec", "unrestricted", "--slot", "all"]
     assert seen[0][1]["timeout"] == 60
 
+def test_native_p3_forwards_shaman_request_and_preserves_source_candidates():
+    item = {
+        "item_id": 25, "name": "Sourced Shaman chest", "item_level": 3,
+        "required_level": 1, "slot": "chest", "stats": {"Stamina": 4.0},
+    }
+    payload = _response(items=[item], **{"class": "shaman"})
+    seen = []
+
+    def runner(command, **kwargs):
+        seen.append(command)
+        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+
+    records, unmapped, metadata = native_p3_item_records(
+        "native", "shaman", 20, runner=runner)
+
+    assert seen == [[
+        "native", "item-options", "--class", "shaman", "--level", "20",
+        "--spec", "unrestricted", "--slot", "all",
+    ]]
+    assert len(records) == 1
+    assert records[0].item_id == 25
+    assert records[0].stamina == 4.0
+    assert unmapped == {}
+    assert metadata["status"] == "ok"
+    assert metadata["unverified_candidate_count"] == 0
+    assert metadata["source"].startswith("mythicsim:")
+
+
 
 def test_native_p3_empty_is_distinct_from_refusal():
     assert query_native_p3_item_options("native", "priest", 20, runner=_runner(
@@ -262,10 +290,26 @@ def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():
     assert native_item_options_required("mage", 20, "unrestricted")
     assert native_item_options_required("mage", 20, "arcane")
     assert native_item_options_required("mage", 30, "unrestricted")
+    assert native_item_options_required("shaman", 20, "unrestricted")
+    assert native_item_options_required("SHAMAN", 20, "UNRESTRICTED")
+    assert not native_item_options_required("shaman", 20, "enhancement")
+    assert not native_item_options_required("shaman", 30, "unrestricted")
     assert not native_item_options_required("mage", 30, "feral-cat")
     assert not native_item_options_required("priest", 30, "unrestricted")
     assert not native_item_options_required("mage", 40, "unrestricted")
     assert not native_item_options_required("warrior", 20, "unrestricted")
+
+def test_selected_engine_workflow_runs_shaman_l20_native_p3_without_record():
+    workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
+    assert "Run no-record Shaman L20 P3 with native item options" in workflow
+    shaman = workflow.split(
+        "Run no-record Shaman L20 P3 with native item options", 1
+    )[1].split("Run no-record Mage L30 P3 with native item options", 1)[0]
+    assert "--class shaman --level 20" in shaman
+    assert '--spec unrestricted --gate P3 --out "$report"' in shaman
+    assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in shaman
+    assert 'row["real_source_search_evaluated"] <= 44' in shaman
+    assert "--record-pass" not in shaman
 
 def test_selected_engine_workflow_runs_mage_l30_native_p3_without_record():
     workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
