@@ -1,6 +1,6 @@
 # WORK PRIORITY — live M1 queue
 
-Refreshed against main `ce7b50eeef8028d5bb316580558d00ac8cb883da`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
+Refreshed against main `82c894afe3164a54397d9bae6e7189fecb85bfd0`. Canonical ledger blob: `8a93be655f200dd48206996496373b0c230fb735`.
 
 ## Current M1 scoreboard
 
@@ -27,7 +27,8 @@ Refreshed against main `ce7b50eeef8028d5bb316580558d00ac8cb883da`. Canonical led
 - Unlike Shaman, the canonical catalogue has **6,849 Paladin class-eligible item IDs**. The first stop is the `source_naked` no-winner path before gear scoring, not missing item candidates.
 - **Code evidence on main:** `tools/wf_gate_p3_live.py::run_live` omits backend flags, so `run_source_budgeted_gear` uses its default `policy_search_backend="prefix"`. The same gear runner supports `policy_search_backend="stateful", stateful_search_auto_fallback=True`; `tests/generic/search/test_wf287_source_auto_continuation.py::test_same_auto_continuation_reoptimizes_named_gear_and_talent_root` already exercises that path for Paladin L20 and requires `EVALUATED_BOUNDED` with `AUTO_ONLY_FALLBACK`. Its companion test verifies a real `AutoAttackSwing` timeline event. This is a source-backed, tested alternative—not proof of the P3 root cause.
 - **In-flight draft PR #851:** preserves the real prefix `source_naked` trace and reproduces stateful + `AUTO_ONLY_FALLBACK` under 44 evaluations. It verifies a real `AutoAttackSwing`, but the actor base stats and 14-DPS weapon are explicitly scenario proxies; this is diagnostic only, not a source-backed P3 winner or M1 coverage. Keep #845 open.
-- **Next action after #851:** use the production trace to isolate the first executable failure. Establish source-backed Paladin L20 actor/weapon context only if the trace proves it is required; wire stateful fallback only if a changed-HEAD no-record P3 producer then demonstrates a source-backed winner and paid item/stat scoring. Do not stop at another report-only change, change global defaults, synthesize an action or accept a proxy.
+- **Trace result:** the completed no-record producer reports `BLOCKED_NO_EXECUTABLE_SOURCE_FALLBACK`, 0 attempted/evaluated, five source actions, no repeatable fillers and no auto-fallback IDs; only two non-offensive heals were rejected.
+- **Next action:** obtain source-backed Paladin L20 actor/weapon context (reuse #817's native L20 actor interface if it naturally supports Paladin), then enable the already-tested stateful + `AUTO_ONLY_FALLBACK` path only if a changed-HEAD no-record P3 producer demonstrates a source-backed winner and paid item/stat scoring. Do not stop at another report-only change, change global defaults, synthesize an action or accept a proxy.
 - One changed-HEAD no-record light producer must show `real_source_search_evaluated>0` and actual first paid item/stat assertions (or the exact remaining BLOCKED reason). Merge records once only if eligible measured coverage results. No unchanged retry.
 - Conditional full-PASS ceiling: `1/1332` = **+0.07508 percentage points**; near-term gain and cost remain unknown. This is the next independent Work2 task after #831's receipt, while Work1 remains on the separate Rust Shaman/Player work.
 
