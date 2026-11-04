@@ -58,17 +58,17 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
         }, {})
 
     def world(_binary, request, *, target_count):
-        assert target_count == 100
+        assert target_count in (2, 100)
         build = json.loads(request.read_text())
-        # The real 30/300s search validates its frozen source-paid 30s
-        # candidate after discovery; short regression runs still validate
-        # each current paid proposal immediately.
+        # Two-target paid native/world routes rank the actual 30/300s
+        # search; only its frozen finalists run 100-mob routes afterward.
         assert build in paid_builds
         if budget != 300.0:
             assert build == paid_builds[-1]
-        world_builds.append(build)
+        if target_count == 100:
+            world_builds.append(build)
         now[0] += 5.0
-        if first_world_native_failure and len(world_builds) == 1:
+        if first_world_native_failure and target_count == 100 and len(world_builds) == 1:
             raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", 1,
                 "prepared input rejected: RUST_MULTI_WORLD_TARGET_NOT_NATIVE_LETHAL",
                 1, 56))
@@ -78,12 +78,13 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             "native_2d_persistent_actor_verified": True,
             "native_2d_persistent_world_ack_verified": True,
             "native_2d_persistent_paid_recovery": paid_recovery,
-            "native_2d_persistent_world_targets_killed": 100,
-            "native_2d_persistent_source_action_events": 100,
+            "native_2d_persistent_world_targets_killed": target_count,
+            "native_2d_persistent_source_action_events": target_count,
             "native_2d_persistent_source_action_counts_by_target":
-                [{"spell:585": 1} for _ in range(100)],
-            "native_2d_persistent_elapsed_seconds":
-                1100.0 - len(world_builds) * 100.0,
+                [{"spell:585": 1} for _ in range(target_count)],
+            "native_2d_persistent_elapsed_seconds": (
+                1100.0 - len(paid_builds) * 100.0 if target_count == 100
+                else 60.0 - len(paid_builds) * 2.0),
         }
 
     receipt = run_native_priest_l20_cold(
@@ -264,24 +265,47 @@ def test_real_native_rating_refusals_do_not_starve_sparse_paid_proposals(tmp_pat
     assert receipt["native_cold_gate_accepted"] is False
 
 
-def test_300s_source_paid_snapshot_survives_deferred_100mob_validation(tmp_path):
-    # The production 30/300 clock must not spend the first window executing
-    # a possibly >30s route before any genuinely paid candidate is frozen.
+def test_300s_paid_world_snapshot_survives_deferred_100mob_validation(tmp_path):
+    # Five distinct native-paid two-mob routes finish at 8,16,24,32,40s.
+    # Full 100-mob source/world evaluation is after search and never
+    # retroactively selects a 30s winner.
     receipt, paid, world = _runner(
         tmp_path, budget=300.0, snapshot=30.0)
     assert len(paid) == 5
-    assert len(world) == 1  # Only the *selected* 30s candidate replayed.
-    assert world[0] in paid
-    assert receipt["native_cold_search_wall_s"] == 15.0
-    assert receipt["native_cold_native_paid_before_30"] == 5
-    assert receipt["native_cold_native_paid_after_30"] == 0
-    assert receipt["native_cold_30s_paid_selection"]["paid_completed_elapsed_s"] == 3.0
-    assert receipt["native_cold_30s_post_search_route"]["status"] == "COMPLETE"
-    assert receipt["native_cold_snapshot_30"]["route_s_per_mob"] == 10.0
+    assert len(world) == 2  # Only distinct 30s/300s finalists.
+    assert all(b in paid for b in world)
+    assert receipt["native_cold_search_wall_s"] == 40.0
+    assert receipt["native_cold_native_paid_before_30"] == 3
+    assert receipt["native_cold_native_paid_after_30"] == 2
+    assert receipt["native_cold_30s_paid_selection"]["paid_completed_elapsed_s"] == 24.0
+    assert receipt["native_cold_30s_paid_selection"]["route_probe_target_count"] == 2
+    assert receipt["native_cold_30s_paid_selection"]["route_probe_s_per_mob"] == 27.0
+    assert receipt["native_cold_snapshot_30"]["route_s_per_mob"] == 8.0
+    assert receipt["native_cold_final_300"]["route_s_per_mob"] == 6.0
+    assert receipt["native_cold_snapshot_30"]["source_build"] == paid[2]
+    assert receipt["native_cold_final_300"]["source_build"] == paid[4]
     assert receipt["native_cold_snapshot_30"]["real_100mob_receipt"][
         "native_2d_persistent_world_targets_killed"] == 100
-    assert receipt["native_cold_300s_reached"] is False  # Exhausted, not a 300s pass.
+    assert receipt["native_cold_300s_paid_selection"][
+        "snapshot_selection_objective"] == "NATIVE_2MOB_PAID_WORLD_SECONDS_PER_MOB"
+    assert receipt["native_cold_completed_100mob_finalists"] == 2
+    assert receipt["native_cold_300s_reached"] is False
     assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_slow_100mob_finalist_does_not_retime_paid_30s_route(tmp_path):
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0)
+    # Route measurements are paid, comparable, and source-world-native;
+    # post-search 100-mob runs are not part of the cold 30s frontier.
+    assert receipt["native_cold_search_wall_s"] == 40.0
+    assert receipt["native_cold_30s_paid_selection"][
+        "paid_completed_elapsed_s"] == 24.0
+    assert receipt["native_cold_snapshot_30"]["source_build"] == paid[2]
+    assert receipt["native_cold_final_300"]["source_build"] == paid[4]
+    assert len(world) == 2
+    assert receipt["native_cold_native_paid_after_30"] == 2
+
 
 
 def test_deferred_30s_candidate_refusal_never_invents_world_winner(tmp_path):
@@ -289,9 +313,10 @@ def test_deferred_30s_candidate_refusal_never_invents_world_winner(tmp_path):
         tmp_path, budget=300.0, snapshot=30.0,
         first_world_native_failure=True)
     assert len(paid) == 5
-    assert len(world) == 1
+    assert len(world) == 2
     assert receipt["native_cold_30s_paid_selection"] is not None
     assert receipt["native_cold_snapshot_30"] is None
+    assert receipt["native_cold_final_300"] is not None
     assert receipt["native_cold_30s_post_search_route"]["status"] == "WORLD_INCOMPLETE"
     assert receipt["native_cold_30s_post_search_route"][
         "native_2d_persistent_observed_kills"] == 1
@@ -313,8 +338,8 @@ def test_deferred_native_sparse_refusals_still_freeze_paid_30s_build(tmp_path):
         tmp_path, budget=300.0, snapshot=30.0, options=options,
         refuse_dense_at=2, max_attempts=7)
     assert len(paid) == 7
-    assert len(world) == 1
-    assert receipt["native_cold_native_paid_before_30"] == 3
+    assert len(world) == 2
+    assert receipt["native_cold_native_paid_before_30"] == 2
     assert receipt["native_cold_30s_post_search_route"]["status"] == "COMPLETE"
     assert receipt["native_cold_snapshot_30"]["source_build"] in paid
     assert receipt["native_cold_gate_accepted"] is False
