@@ -181,3 +181,109 @@ def test_upstream_candidate_verification_passes_explicit_rng_mode():
     assert calls
     assert all(any(keyword.arg == "rng_mode" for keyword in node.keywords)
                for node in calls)
+
+
+
+def _world_parity_fixture(*, first_lethal=False, second_lethal=True,
+                          live_native_dps=87.5, world_mean_dps=87.5):
+    from tools.wf_gate_p7_1_live import _source_native_world_parity
+
+    rows = [
+        {
+            "iteration_index": 0,
+            "duration_s": 100.0 if first_lethal else 120.0,
+            "world_dps": 100.0 if first_lethal else 75.0,
+            "world_applied_damage": 10000.0 if first_lethal else 9000.0,
+            "world_applied_precombat_damage": 0.0,
+            "world_target_health_remaining": 0.0 if first_lethal else 1000.0,
+            "world_target_max_health": 10000.0,
+            "world_target_lethal": first_lethal,
+        },
+        {
+            "iteration_index": 1,
+            "duration_s": 100.0 if second_lethal else 120.0,
+            "world_dps": 100.0 if second_lethal else 75.0,
+            "world_applied_damage": 10000.0 if second_lethal else 9000.0,
+            "world_applied_precombat_damage": 0.0,
+            "world_target_health_remaining": 0.0 if second_lethal else 1000.0,
+            "world_target_max_health": 10000.0,
+            "world_target_lethal": second_lethal,
+        },
+    ]
+    live = {
+        "iterations_done": 2,
+        "native_damage_events": 4,
+        "native_world_ticks": 4,
+        "native_dps": live_native_dps,
+        "world_mean_dps": world_mean_dps,
+        "sampled_duration_s": rows[0]["duration_s"],
+        "source_request_raw_sha256": "fixture-source-sha",
+        "per_iteration": rows,
+    }
+    native = {
+        "iterations": 2,
+        "native_dps": 100.0,
+        "first_duration_s": 120.0,
+    }
+    return _source_native_world_parity, native, live
+
+
+def test_p7_native_world_parity_remains_strict_when_targets_survive():
+    parity, native, live = _world_parity_fixture(
+        first_lethal=False, second_lethal=False,
+    )
+    assert parity(native, live, 2, expected_raw_sha="fixture-source-sha") == (
+        "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
+    )
+    assert parity(
+        native, live, 2, expected_raw_sha="fixture-source-sha",
+        allow_world_lethal=True,
+    ) == "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
+
+
+def test_p7_native_world_parity_allows_source_only_divergence_after_lethal_ack():
+    parity, native, live = _world_parity_fixture(
+        first_lethal=False, second_lethal=True,
+    )
+    assert parity(native, live, 2, expected_raw_sha="fixture-source-sha") == (
+        "P7_1_NATIVE_LIVE_SAVED_DPS_PARITY_FAILED"
+    )
+    assert parity(
+        native, live, 2, expected_raw_sha="fixture-source-sha",
+        allow_world_lethal=True,
+    ) is None
+
+
+def test_p7_native_world_parity_allows_first_fight_lethal_duration_change():
+    parity, native, live = _world_parity_fixture(
+        first_lethal=True, second_lethal=False,
+    )
+    assert parity(native, live, 2, expected_raw_sha="fixture-source-sha") == (
+        "P7_1_NATIVE_WORLD_FIRST_DURATION_DIVERGED"
+    )
+    assert parity(
+        native, live, 2, expected_raw_sha="fixture-source-sha",
+        allow_world_lethal=True,
+    ) is None
+
+
+def test_p7_native_world_parity_rejects_forged_world_lethal_health_receipt():
+    parity, native, live = _world_parity_fixture(
+        first_lethal=False, second_lethal=True,
+    )
+    live["per_iteration"][1]["world_target_health_remaining"] = 1.0
+    assert parity(
+        native, live, 2, expected_raw_sha="fixture-source-sha",
+        allow_world_lethal=True,
+    ) == "P7_1_WORLD_TARGET_HEALTH_LEDGER_INVALID"
+
+
+def test_p7_native_world_parity_never_relaxes_coupled_native_to_world_dps():
+    parity, native, live = _world_parity_fixture(
+        first_lethal=False, second_lethal=True,
+        live_native_dps=87.5, world_mean_dps=87.4,
+    )
+    assert parity(
+        native, live, 2, expected_raw_sha="fixture-source-sha",
+        allow_world_lethal=True,
+    ) == "P7_1_NATIVE_LIVE_WORLD_DPS_PARITY_FAILED"
