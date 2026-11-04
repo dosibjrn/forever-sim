@@ -434,8 +434,9 @@ def run_live(root: Path, class_key: str, level: int, *,
     # Keep the old Balance diagnostic path unchanged while migrating the
     # checkpoint-critical unrestricted route to direct selected-native calls.
     native_only = spec == "unrestricted"
-    prepared = _pinned_source_runtime(
-        root, class_key, level, spec, "P7.5", require_world=not native_only)
+    prepared = (_pinned_source_runtime(
+        root, class_key, level, spec, "P7.5", require_world=False)
+        if native_only else _pinned_source_runtime(root, class_key, level, spec, "P7.5"))
     if isinstance(prepared, dict):
         return prepared
     base, meta, binary = prepared
