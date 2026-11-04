@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # Retired Python GameIR 100-mob continuity challenger; active gates run through wf_gate.
+    "tools/wf299_100_mob_continuity_probe.py",
     "tools/wf261_stateful_benchmark.py",
     "tools/wf263_l1_value_benchmark.py",
     "tools/wf276_resource_prefix_benchmark.py",
@@ -317,6 +319,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/test_wf300_continuous_mob.py",
     "tests/maintenance/test_historical_joint_replay_compat.py",
     "tests/test_wf378_recovery_channel_tdd.py",
     "tests/test_wf365_druid_l30_holdout.py",
