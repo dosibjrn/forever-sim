@@ -161,9 +161,10 @@ def test_paladin_live_p3_wires_native_item_deltas_and_paid_winner_first(
         item_calls.append(kwargs)
         gained = kwargs["weights"].get("agility", 0.0) > 0
         return {
-            "blockers": [] if gained else [
-                "NONPOSITIVE_RELEVANT_WEIGHT:agility",
-                "NONPOSITIVE_RELEVANT_WEIGHT:intellect"],
+            "blockers": (["NONPOSITIVE_RELEVANT_WEIGHT:intellect"]
+                         if gained else [
+                             "NONPOSITIVE_RELEVANT_WEIGHT:agility",
+                             "NONPOSITIVE_RELEVANT_WEIGHT:intellect"]),
             "slots": {
                 "chest": {"items": [{
                     "item_id": 101, "name": "Native chest",
@@ -197,6 +198,7 @@ def test_paladin_live_p3_wires_native_item_deltas_and_paid_winner_first(
     monkeypatch.setattr(budgeted, "paid_source_policy_stat_witness", witness)
 
     result = p3.run_live(Path("."), "paladin", 20)
+    assert result["status"] == "FAIL"  # Intellect remains unsatisfied.
     assert result["real_source_search_evaluated"] == 41
     assert result["pass_count"] == 155
     assert result["reachability_count"] == 210
