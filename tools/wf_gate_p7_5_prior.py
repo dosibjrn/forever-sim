@@ -14,6 +14,7 @@ from pathlib import Path
 
 _PRIORS = ("P7.1", "P7.2", "P7.3", "P7.4")
 _ENGINE = "pinned_mythicsim_rust_gsim_2d"
+_NATIVE_ENGINE = "pinned_mythicsim_rust_native"
 
 
 def _positive_number(value) -> bool:
@@ -25,13 +26,35 @@ def _accepted_final(gate: str, report: dict, reference_dps: float,
     """Return a genuine 1k live final, or reject a partial/proxy receipt."""
     if (not isinstance(report, dict) or report.get("status") != "PASS"
             or report.get("reasons") != []
-            or report.get("production_engine") != _ENGINE
+            or report.get("production_engine") not in (_ENGINE, _NATIVE_ENGINE)
             or report.get("source_request_raw_sha256") != source_sha256
             or not isinstance(report.get("runtime_proof"), dict)
             or report["runtime_proof"].get("executed") is not True
             or report["runtime_proof"].get("engine_revision")
                != report.get("native_source_revision")):
         return None
+
+    # P7.1 is now accepted by the pinned stationary native scorer, without
+    # a 2D world witness. Its actual 1,000-fight stochastic arithmetic mean is
+    # a valid P7.5 comparator when the accepted run URL, source, engine and
+    # executed proof all match. Do not mistake the old live-world receipt
+    # requirements for a P7 stationary acceptance condition.
+    if report["production_engine"] == _NATIVE_ENGINE:
+        if gate != "P7.1":
+            return None
+        if (not _positive_number(report.get("saved_reference_dps"))
+                or not math.isclose(float(report["saved_reference_dps"]),
+                                    reference_dps, rel_tol=0, abs_tol=1e-6)
+                or type(report.get("iterations")) is not int
+                or report["iterations"] != 1000
+                or type(report.get("sampled_source_fights")) is not int
+                or report["sampled_source_fights"] != 1000
+                or report.get("stochastic_rng") is not True
+                or report.get("selected_validation") != "1000_native_stochastic_fights"
+                or not _positive_number(report.get("native_dps"))):
+            return None
+        mean = float(report["native_dps"])
+        return mean if mean >= 0.99 * reference_dps else None
 
     # The production M1 CLI deliberately projects the full provider receipt
     # into a compact JSON result. Earlier accepted P7.1/P7.2 M1 runs retain
