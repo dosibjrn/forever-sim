@@ -7,6 +7,7 @@ This transport does NOT certify the paid native/2D 100-mob screen.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -212,16 +213,18 @@ def score_source_priest_l20_candidates(binary: str | Path,
     # The selected paid candidate, not a synthetic world-only request, reaches
     # the existing live Rust↔2D ACK loop once per bounded diagnostic.
     live = None
+    live_attempted = False
     if world_screen is not None and paid:
         candidate = max(
             paid, key=lambda row: (
                 row["native_source_action_casts"] > 0, row["native_score"]))
         if candidate["native_source_action_casts"] > 0:
+            live_attempted = True
             try:
                 live = world_screen(binary, folder / candidate["candidate"])
                 candidate["native_2d_fight"] = live
             except (OSError, ValueError, RuntimeError, TimeoutError,
-                    AssertionError) as exc:
+                    AssertionError, subprocess.SubprocessError) as exc:
                 candidate["native_2d_fight_error"] = str(exc)[-500:]
     return {
         "native_candidate_requests_attempted": len(rows),
@@ -232,7 +235,7 @@ def score_source_priest_l20_candidates(binary: str | Path,
             (row["native_source_action_ids_cast"] for row in paid),
             default=0),
         "native_candidate_receipts": rows,
-        "native_2d_live_ack_attempted": int(world_screen is not None and bool(paid)),
+        "native_2d_live_ack_attempted": int(live_attempted),
         "native_2d_live_ack_verified": int(bool(live and live.get(
             "native_2d_fight_ack_complete") is True)),
         "native_2d_screen_complete": False,
