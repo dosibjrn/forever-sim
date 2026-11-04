@@ -1,7 +1,8 @@
 """Keep unreferenced one-off GameIR diagnostics out of the live CLI surface.
 
-These historical probes had no production, test, workflow, or documentation
-callers. Their useful implementation history remains available in Git.
+The retired tool modules had no direct production, test, workflow, or
+documentation callers. Separate source/runtime regression tests remain.
+Their implementation history is retained in Git.
 """
 from pathlib import Path
 
@@ -18,6 +19,10 @@ RETIRED_TOOLS = (
     "tools/wf378_evocation_recovery.py",
     "tools/wf242_multi_pull_replay.py",
     "tools/wf244_effect_batch_replay.py",
+    "tools/wf257_l30_full_gear.py",
+    "tools/wf258_run_budgeted_prefix.py",
+    "tools/wf264_decision_sustained.py",
+    "tools/wf269_rake_l27_real_replay.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf303_source_wide_100mob",
@@ -31,6 +36,10 @@ RETIRED_IMPORT_NAMES = (
     "wf378_evocation_recovery",
     "wf242_multi_pull_replay",
     "wf244_effect_batch_replay",
+    "wf257_l30_full_gear",
+    "wf258_run_budgeted_prefix",
+    "wf264_decision_sustained",
+    "wf269_rake_l27_real_replay",
 )
 
 
