@@ -15,6 +15,8 @@ on:
       - 'tools/wf360_l30_*.py'
       - 'tools/wf300_nine_class_*.py'
       - 'tools/wf300_two_stage_adversarial_100mob.py'
+      - 'tools/wf300_continuous_100_mob_acceptance.py'
+      - 'tools/wf357_l30_recovery_p3_recalibrate.py'
       - 'tools/wf353_l30_current_*.py'
       - 'tools/wf373_druid_l30_primal_vs_swipe_100mob.py'
       - 'tools/wf343_direct_percent_top5.py'
