@@ -30,6 +30,7 @@ on:
       - 'tests/test_wf61_live_persistent_replay.py'
       - 'tests/test_wf61_companion_persistence.py'
       - 'tests/test_work2_persistent_pack_budget.py'
+      - 'tests/test_wf252_companion_joint.py'
       - 'tools/wf300_continuous_source_policy_benchmark.py'
       - 'tools/wf350_build_source_evidence.py'
       - 'tools/wf341_rating_probe.py'
@@ -191,6 +192,7 @@ jobs:
           tests/test_wf61_live_persistent_replay.py
           tests/test_wf61_companion_persistence.py
           tests/test_work2_persistent_pack_budget.py
+          tests/test_wf252_companion_joint.py
           tests/mechanics/druid/test_druid_mechanics_layout.py
           tests/mechanics/druid/test_druid_cat_closure_v0114896.py
           tests/mechanics/druid/test_druid_balance_mana_weights_v0114854.py
