@@ -8,6 +8,12 @@ on:
       - 'integrations/mythicsim-rust/apl_mutation.py'
       - 'integrations/mythicsim-rust/tests/test_apl_mutation_fallback_order.py'
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
+      - 'integrations/mythicsim-rust/live_world_probe.py'
+      - 'integrations/mythicsim-rust/diagnose_p74_frozen_winner.py'
+      - 'tools/wf_gate_p7_1_live.py'
+      - 'tools/wf_gate_p7_4_live.py'
+      - 'tests/gates/test_wf_gate_p7_4_live.py'
+      - 'tests/test_work1_p7_balanced_native_world_rng.py'
       - 'integrations/mythicsim-rust/engine'
       - 'docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json'
       - 'tests/test_p75_axis_ablation.py'
@@ -34,7 +40,7 @@ jobs:
       - name: Install bounded test dependency
         run: python -m pip install --disable-pip-version-check 'pytest==8.3.5' 'beautifulsoup4==4.13.4'
       - name: Verify native clock and real gsim world lethal ACK (not gate)
-        run: python -m pytest -q tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/test_work2_native_health_damage_controls.py tests/test_work2_native_world_elapsed.py tests/integration/backend/test_wf_go_native_world_damage_ack.py tests/test_p75_axis_ablation.py
+        run: python -m pytest -q tests/test_work1_p7_balanced_native_world_rng.py tests/gates/test_wf_gate_p7_4_live.py tests/test_work2_gsim_world_walk.py tests/test_work2_native_world_clock_ack.py tests/test_work2_native_health_damage_controls.py tests/test_work2_native_world_elapsed.py tests/integration/backend/test_wf_go_native_world_damage_ack.py tests/test_p75_axis_ablation.py
 
   source-health-world:
     # One bounded real selected-Rust ↔ gsim 2D source-HP smoke; not P4–P6.
@@ -115,3 +121,7 @@ jobs:
             --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
             --prepared integrations/mythicsim-rust/engine/fixtures/mage/prepared-v2/feral-bear-druid-defensives.prepared.json \
             --mob-health 1200 --targets 2 --require-native-health-damage
+      - name: Replay exact P7.4 frozen winner against native and live 2D (25 stochastic fights; not gate)
+        run: |
+          python integrations/mythicsim-rust/diagnose_p74_frozen_winner.py \
+            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine
