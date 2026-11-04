@@ -166,10 +166,11 @@ jobs:
     # Opt-in only: changed integration code must not replay the same 300s
     # source search automatically on every subsequent PR push.
     # One explicit label authorizes one changed-HEAD paid run. The source
-    # branch uses L30; the follow-on frozen-build branch checks L40.
+    # branch checks L30, L40, or L60 Balance. Never run heavy probes for generic PRs.
     if: >-
       (startsWith(github.head_ref, 'work/work2-p6-shared-cold-') ||
-       startsWith(github.head_ref, 'work/work2-p6-l40-followon-')) &&
+       startsWith(github.head_ref, 'work/work2-p6-l40-followon-') ||
+       startsWith(github.head_ref, 'work/work2-p6-l60-balance-')) &&
       contains(github.event.pull_request.labels.*.name, 'p6-paid-no-record')
     needs: source-search
     runs-on: ubuntu-latest
@@ -189,10 +190,19 @@ jobs:
       - name: Pay one real shared 300s source search and P6 100-mob comparison
         env:
           FOREVER_P6_FULL_SOURCE_COMPARE: '1'
-          P6_LEVEL: ${{ startsWith(github.head_ref, 'work/work2-p6-l40-followon-') && '40' || '30' }}
+          P6_LEVEL: ${{ startsWith(github.head_ref, 'work/work2-p6-l60-balance-') && '60' || startsWith(github.head_ref, 'work/work2-p6-l40-followon-') && '40' || '30' }}
+          P6_SPEC: ${{ startsWith(github.head_ref, 'work/work2-p6-l60-balance-') && 'balance' || 'unrestricted' }}
         run: |
-          python tools/wf_gate.py --class druid --level "$P6_LEVEL" --spec unrestricted \
-            --gate P6 --out "${{ runner.temp }}/work2-p6-L${P6_LEVEL}-no-record.json"
+          python tools/wf_gate.py --class druid --level "$P6_LEVEL" --spec "$P6_SPEC" \
+            --gate P6 --out "${{ runner.temp }}/work2-p6-L${P6_LEVEL}-${P6_SPEC}-no-record.json"
+      - name: Retain inspectable frozen winners and 100-mob receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: work2-p6-paid-L${{ env.P6_LEVEL || 'checkpoint' }}-${{ env.P6_SPEC || 'source' }}
+          path: ${{ runner.temp }}/work2-p6-L*-no-record.json
+          if-no-files-found: warn
+          retention-days: 7
 
   selected-native-p72:
     # One selected-engine read-only acceptance probe on Work2's P7.3 lane.
