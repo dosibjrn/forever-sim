@@ -65,6 +65,33 @@ def _paid_elite_choice(elites, rng, proposal_index):
     return rng.choice(elites[:min(18, len(elites))])[1]
 
 
+def _native_refusal(exc: Exception) -> tuple[str, str]:
+    """Forward the structured Rust preparation refusal instead of calling it an engine error.
+
+    The scorer's nonzero CLI return embeds Rust's JSON refusal in the
+    RuntimeError's `output=` tail. Its talent rejection is authoritative.
+    Unrecognized native output remains an execution error.
+    """
+    status = str(getattr(exc, "status", "")).upper()
+    reason = str(getattr(exc, "reason", exc))
+    if status in ("INVALID", "UNSUPPORTED", "UNSCORED"):
+        return status, reason
+    if " output=" in reason:
+        try:
+            decoded = json.loads(reason.rsplit(" output=", 1)[1])
+            refusal = decoded.get("refusal") if isinstance(decoded, dict) else None
+            if isinstance(refusal, dict):
+                code = refusal.get("code")
+                message = str(refusal.get("reason", ""))[:400]
+                if code == "talents":
+                    return "INVALID", "NATIVE_TALENTS:" + message
+                if code == "unsupported":
+                    return "UNSUPPORTED", "NATIVE_UNSUPPORTED:" + message
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+    return "ERROR", reason
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     prepared = _pinned_source_runtime(
@@ -120,9 +147,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                     native = production.native_source_control(
                         binary, path, 3, rng_mode="balanced")
                 except Exception as exc:
-                    status = str(getattr(exc, "status", "")).upper()
-                    sample = (status or "ERROR") + ":" + str(
-                        getattr(exc, "reason", exc))[:180]
+                    status, reason = _native_refusal(exc)
+                    sample = status + ":" + reason[:400]
                     if status == "INVALID":
                         invalid += 1
                         refusal_samples.append(sample)
