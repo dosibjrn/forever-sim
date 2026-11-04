@@ -6,7 +6,8 @@ import json
 import pytest
 
 from tools.wf_native_priest_l20_cold import (
-    _source_native_builds, native_cold_gate_verdicts, run_native_priest_l20_cold,
+    _source_native_builds, native_cold_gate_verdicts, native_cold_p6_verdict,
+    run_native_priest_l20_cold,
 )
 
 
@@ -33,7 +34,8 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             paid_recovery=True, native_identity=True,
             first_world_native_failure=False, cast_receipts=1,
             options=None, refuse_dense_at=None, full_route_delay=5.0,
-            source_request=None, refuse_changed_world_route=False):
+            source_request=None, refuse_changed_world_route=False,
+            reverse_full_route=False):
     source_path = tmp_path / "source.json"
     source_path.write_text(json.dumps(_source()))
     now = [0.0]
@@ -94,7 +96,9 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             "native_2d_persistent_source_action_counts_by_target":
                 [{"spell:585": 1} for _ in range(target_count)],
             "native_2d_persistent_elapsed_seconds": (
-                1100.0 - (paid_builds.index(build) + 1) * 100.0
+                (500.0 + paid_builds.index(build) * 100.0
+                 if reverse_full_route else
+                 1100.0 - (paid_builds.index(build) + 1) * 100.0)
                 if target_count == 100 else
                 60.0 - (paid_builds.index(build) + 1) * 2.0),
         }
@@ -206,7 +210,7 @@ def test_cold_opt_in_uses_one_real_producer_and_does_not_grant_gate_pass(
     assert result["status"] == "FAIL"
     assert result["paid_candidates"] == 4
     assert result["screen_complete_candidates"] == 3
-    assert "P4_P5_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED" in result["reasons"]
+    assert "P4_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED" in result["reasons"]
     assert "P4_FROZEN_WINNER_REAL_100MOB_RECEIPT_INCOMPLETE" in result["reasons"]
 
 
@@ -304,6 +308,33 @@ def test_300s_paid_world_snapshot_survives_deferred_100mob_validation(tmp_path):
     assert receipt["native_cold_completed_100mob_finalists"] == 2
     assert receipt["native_cold_300s_reached"] is False
     assert receipt["native_cold_gate_accepted"] is False
+
+
+def test_300s_best_of_uses_paid_100mob_not_two_target_proxy(tmp_path):
+    # Search probes favor the late candidate (25 < 27 seconds/mob), but
+    # its truly executed 100-mob world route is slower (9 > 7 s/mob).
+    # The longer 300s frontier includes the genuine early source build.
+    receipt, paid, world = _runner(
+        tmp_path, budget=300.0, snapshot=30.0, reverse_full_route=True)
+    assert len(paid) == 5
+    assert len(world) == 2  # Both distinct frozen finalists really ran.
+    assert receipt["native_cold_30s_paid_selection"][
+        "source_build"] == paid[2]
+    assert receipt["native_cold_30s_paid_selection"][
+        "route_probe_s_per_mob"] == 27.0
+    assert receipt["native_cold_300s_paid_selection"][
+        "source_build"] == paid[2]  # Better actual full-route build retained.
+    assert receipt["native_cold_snapshot_30"]["route_s_per_mob"] == 7.0
+    assert receipt["native_cold_final_300"]["route_s_per_mob"] == 7.0
+    assert receipt["native_cold_300s_post_search_route"][
+        "reused_30s_receipt"] is True
+    assert receipt["native_cold_completed_100mob_finalists"] == 2
+    p6 = receipt["native_cold_p6_verdict"]
+    assert p6["T30_s_per_mob"] == p6["T300_s_per_mob"] == 7.0
+    assert "P6_300S_REGRESSION_EXCEEDS_1_PERCENT" not in p6["reasons"]
+    # A 40-second discovery run is not a 300-second gate PASS.
+    assert receipt["native_cold_300s_reached"] is False
+    assert p6["status"] == "FAIL"
 
 
 def test_slow_100mob_finalist_does_not_retime_paid_30s_route(tmp_path):
@@ -565,6 +596,76 @@ def test_native_cold_accepts_genuine_window_receipts_not_hardcoded_fail():
     changed["native_cold_300s_reached"] = False
     assert all(v["status"] == "FAIL"
                for v in native_cold_gate_verdicts(changed).values())
+
+
+
+def test_priest_native_p6_reuses_real_frozen_100mob_receipts_without_replay():
+    # These are mocked Forever-owned receipt mappings, not a gameplay test.
+    build = _source()
+    digest = hashlib.sha256(json.dumps(
+        build, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    selection = lambda elapsed: {
+        "source_request_sha256": digest, "source_build": build,
+        "paid_completed_elapsed_s": elapsed}
+    world = {
+        "native_2d_persistent_actor_verified": True,
+        "native_2d_persistent_world_ack_verified": True,
+        "native_2d_persistent_paid_recovery": True,
+        "native_2d_persistent_world_targets_killed": 100,
+        "native_2d_persistent_source_action_events": 100,
+        "native_2d_persistent_source_action_counts_by_target":
+            [{"native:585": 1} for _ in range(100)],
+        "native_2d_persistent_elapsed_seconds": 4201.0,
+    }
+    winner = {**selection(5.0), "route_s_per_mob": 42.01,
+              "real_100mob_receipt": world}
+    cold = {
+        "native_cold_300s_reached": True,
+        "native_cold_native_paid_after_30": 1,
+        "native_cold_paid_world_route_builds": 2,
+        "native_cold_30s_paid_selection": selection(5.0),
+        "native_cold_300s_paid_selection": selection(35.0),
+        "native_cold_snapshot_30": copy.deepcopy(winner),
+        "native_cold_final_300": copy.deepcopy(winner),
+    }
+    result = native_cold_p6_verdict(cold)
+    assert result == {
+        "status": "PASS", "reasons": [], "T30_s_per_mob": 42.01,
+        "T300_s_per_mob": 42.01, "ratio_T30_T300": 1.0,
+        "identical_winner_build": True,
+    }
+    # Numeric saturation alone never accepts an incomplete or incomparable run.
+    changed = copy.deepcopy(cold)
+    changed["native_cold_final_300"]["real_100mob_receipt"][
+        "native_2d_persistent_world_targets_killed"] = 99
+    assert native_cold_p6_verdict(changed)["status"] == "FAIL"
+    changed = copy.deepcopy(cold)
+    other_source = copy.deepcopy(changed["native_cold_final_300"]["source_build"])
+    other_source["encounter"]["duration"] = 60
+    changed["native_cold_final_300"]["source_build"] = other_source
+    changed["native_cold_300s_paid_selection"]["source_build"] = other_source
+    assert "P6_NATIVE_COLD_INCOMPARABLE_SOURCE_SCENARIO" in (
+        native_cold_p6_verdict(changed)["reasons"])
+    changed = copy.deepcopy(cold)
+    changed["native_cold_final_300"]["real_100mob_receipt"][
+        "native_2d_persistent_elapsed_seconds"] = 4000.0
+    changed["native_cold_final_300"]["route_s_per_mob"] = 40.0
+    # A substantially BETTER 300s finalist must not be rejected.
+    assert native_cold_p6_verdict(changed)["status"] == "PASS"
+    changed["native_cold_final_300"]["real_100mob_receipt"][
+        "native_2d_persistent_elapsed_seconds"] = 4242.0
+    changed["native_cold_final_300"]["route_s_per_mob"] = 42.42
+    # Less than 1% slower is within the owner-approved tolerance.
+    assert native_cold_p6_verdict(changed)["status"] == "PASS"
+    changed["native_cold_final_300"]["real_100mob_receipt"][
+        "native_2d_persistent_elapsed_seconds"] = 4250.0
+    changed["native_cold_final_300"]["route_s_per_mob"] = 42.50
+    assert "P6_300S_REGRESSION_EXCEEDS_1_PERCENT" in (
+        native_cold_p6_verdict(changed)["reasons"])
+    changed = copy.deepcopy(cold)
+    changed["native_cold_native_paid_after_30"] = 0
+    assert "P6_NATIVE_COLD_NO_PAID_CONTINUATION" in (
+        native_cold_p6_verdict(changed)["reasons"])
 
 
 def test_native_cold_records_only_executed_changed_talent_apl_witness(tmp_path):

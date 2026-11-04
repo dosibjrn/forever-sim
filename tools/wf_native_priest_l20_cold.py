@@ -200,6 +200,68 @@ def native_cold_gate_verdicts(cold: dict) -> dict:
     return verdicts
 
 
+
+def native_cold_p6_verdict(cold: dict) -> dict:
+    """Compare the actual frozen native/world 100-mob winners of ONE search.
+
+    This only consumes the paid receipts already produced by P4/P5. It does
+    not rerun a build, invent a route, or inherit P4's unlock-only predicate.
+    """
+    early = cold.get("native_cold_snapshot_30")
+    late = cold.get("native_cold_final_300")
+    valid30 = _native_cold_winner_receipt_valid(cold, "P4")
+    valid300 = _native_cold_winner_receipt_valid(cold, "P5")
+    reasons = []
+    if cold.get("native_cold_300s_reached") is not True:
+        reasons.append("P6_NATIVE_COLD_300S_NOT_REACHED")
+    if type(cold.get("native_cold_native_paid_after_30")) is not int or (
+            cold["native_cold_native_paid_after_30"] < 1):
+        reasons.append("P6_NATIVE_COLD_NO_PAID_CONTINUATION")
+    if type(cold.get("native_cold_paid_world_route_builds")) is not int or (
+            cold["native_cold_paid_world_route_builds"] < 2):
+        reasons.append("P6_NATIVE_COLD_NO_DISTINCT_PAID_BUILDS")
+    if not valid30:
+        reasons.append("P6_NATIVE_COLD_30S_100MOB_RECEIPT_INCOMPLETE")
+    if not valid300:
+        reasons.append("P6_NATIVE_COLD_300S_100MOB_RECEIPT_INCOMPLETE")
+
+    t30 = _verified_route(early.get("real_100mob_receipt")) if valid30 else None
+    t300 = _verified_route(late.get("real_100mob_receipt")) if valid300 else None
+    if valid30 and valid300:
+        # Gear/talents/APL/name may differ: they are the optimized build.
+        # Encounter, native RNG protocol and starting actor/scenario must not.
+        source30 = early.get("source_build")
+        source300 = late.get("source_build")
+        try:
+            actor30 = source30["raid"]["parties"][0]["players"][0]
+            actor300 = source300["raid"]["parties"][0]["players"][0]
+            same_scenario = (
+                source30["encounter"] == source300["encounter"]
+                and source30["simOptions"] == source300["simOptions"]
+                and all(actor30.get(k) == actor300.get(k) for k in (
+                    "class", "level", "race", "distanceFromTarget",
+                    "reactionTimeMs", "channelClipDelayMs")))
+        except (TypeError, KeyError, IndexError):
+            same_scenario = False
+        if not same_scenario:
+            reasons.append("P6_NATIVE_COLD_INCOMPARABLE_SOURCE_SCENARIO")
+        if t300 > 1.01 * t30:
+            reasons.append("P6_300S_REGRESSION_EXCEEDS_1_PERCENT")
+
+    ratio = t30 / t300 if t30 is not None and t300 is not None else None
+    return {
+        "status": "FAIL" if reasons else "PASS",
+        "reasons": reasons,
+        "T30_s_per_mob": t30,
+        "T300_s_per_mob": t300,
+        "ratio_T30_T300": ratio,
+        "identical_winner_build": bool(
+            valid30 and valid300
+            and early["source_request_sha256"] == late["source_request_sha256"]
+            and early["source_build"] == late["source_build"]),
+    }
+
+
 def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                                item_options: list[dict], *, score_request=None,
                                world_screen=None, clock=None,
@@ -455,6 +517,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                     }
 
         frozen, snapshot_validation = qualify_finalist(early_paid)
+        completed_distinct_finalists = int(frozen is not None)
         if (final_paid is not None and early_paid is not None
                 and final_paid["source_request_sha256"]
                 == early_paid["source_request_sha256"]):
@@ -466,6 +529,23 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 final_validation["reused_30s_receipt"] = True
         else:
             best_final, final_validation = qualify_finalist(final_paid)
+            completed_distinct_finalists = (
+                int(frozen is not None) + int(best_final is not None))
+            # The 300s search frontier includes the 30s winner. Its
+            # two-target screening score can rank a different build first,
+            # but P4/P5/P6 ultimately optimize the PAID 100-target objective.
+            # When the genuinely replayed 30s finalist is faster, retain it
+            # as the 300s best-of finalist instead of regressing to a slower
+            # two-target proxy winner. Both builds were selected within the
+            # 300s cold search; never manufacture an unexecuted route.
+            if (frozen is not None
+                    and (best_final is None or frozen["route_s_per_mob"]
+                         <= best_final["route_s_per_mob"])):
+                best_final = copy.deepcopy(frozen)
+                final_paid = copy.deepcopy(early_paid)
+                final_validation = copy.deepcopy(snapshot_validation)
+                if final_validation is not None:
+                    final_validation["reused_30s_receipt"] = True
     if not deferred_snapshot and frozen is None and wall_s >= snapshot_s:
         frozen = copy.deepcopy(best_early)
     # Exhausted candidate spaces and late native calls are reported honestly.
@@ -479,11 +559,10 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_30s_post_search_route": snapshot_validation,
         "native_cold_300s_post_search_route": final_validation,
         "native_cold_300s_paid_selection": copy.deepcopy(final_paid),
-        "native_cold_completed_100mob_finalists": (int(frozen is not None)
-                                                  + int(best_final is not None and
-                                                        (frozen is None or best_final["source_request_sha256"]
-                                                         != frozen["source_request_sha256"]))
-                                                  if deferred_snapshot else 0),
+        # Count distinct actually completed 100-mob qualification routes,
+        # even when the 300s best-of chooses the faster early receipt.
+        "native_cold_completed_100mob_finalists": (
+            completed_distinct_finalists if deferred_snapshot else 0),
         "native_cold_final_300": copy.deepcopy(best_final),
         "native_cold_native_paid_before_30": scored_before,
         "native_cold_native_paid_after_30": scored_after,
@@ -503,6 +582,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_rows": rows,
     }
     result["native_cold_gate_verdicts"] = native_cold_gate_verdicts(result)
+    result["native_cold_p6_verdict"] = native_cold_p6_verdict(result)
     result["native_cold_gate_accepted"] = all(
         v["status"] == "PASS" for v in result["native_cold_gate_verdicts"].values())
     return result

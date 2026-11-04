@@ -81,11 +81,71 @@ def _complete_finite_paid_replay(row: dict) -> bool:
         and isfinite(seconds) and seconds > 0)
 
 
+def _run_priest_native_p6(class_key: str, level: int, spec: str) -> dict:
+    """Evaluate P6 from the SAME executed native cold producer as P4/P5.
+
+    This is an explicit heavy opt-in, never the hourly bounded legacy probe.
+    For shared-run recording Merge must reuse the producer's P6 verdict,
+    rather than dispatch three independent 300s cold starts.
+    """
+    import hashlib
+    import os
+    from uuid import uuid4
+    from tools.wf_gate_p4_p5_partial import _native_cold_options_without_paid_executor
+    from tools.wf_native_priest_l20_cold import native_cold_p6_verdict
+
+    cold = _native_cold_options_without_paid_executor(
+        class_key, level, spec, gate="P4")
+    if "native_cold_300s_reached" not in cold:
+        return {
+            "status": cold.get("status", "BLOCKED"),
+            "reasons": cold.get("reasons") or ["P6_NATIVE_COLD_PRODUCER_NOT_EXECUTED"],
+            "production_component": cold.get("production_component"),
+        }
+    verdict = native_cold_p6_verdict(cold)
+    result = {
+        "status": verdict["status"], "reasons": verdict["reasons"],
+        "production_engine": "mythicsim-rust-native-world",
+        "production_component": "tools.wf_native_priest_l20_cold.run_native_priest_l20_cold",
+        "source_replay_T30_s_per_mob": verdict["T30_s_per_mob"],
+        "source_replay_T300_s_per_mob": verdict["T300_s_per_mob"],
+        "source_replay_T30_T300": verdict["ratio_T30_T300"],
+        "source_replay_300s_nonregression": bool(
+            verdict["T30_s_per_mob"] is not None
+            and verdict["T300_s_per_mob"] is not None
+            and verdict["T300_s_per_mob"] <= 1.01 * verdict["T30_s_per_mob"]),
+        "native_cold_identical_winner_build": verdict["identical_winner_build"],
+        "coverage_scope_complete": verdict["status"] == "PASS",
+    }
+    if verdict["status"] == "PASS":
+        binary = os.environ.get("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN")
+        try:
+            engine_sha = hashlib.sha256(Path(binary).read_bytes()).hexdigest()
+        except (OSError, TypeError):
+            result.update(status="FAIL", coverage_scope_complete=False,
+                          reasons=["P6_EXECUTED_NATIVE_BINARY_IDENTITY_UNAVAILABLE"])
+        else:
+            first = cold["native_cold_snapshot_30"]["source_request_sha256"]
+            last = cold["native_cold_final_300"]["source_request_sha256"]
+            source_sha = hashlib.sha256((first + ":" + last).encode()).hexdigest()
+            result["runtime_proof"] = {
+                "executed": True,
+                "engine_revision": "mythicsim-rust-bin-sha256:" + engine_sha,
+                "source_revision": "source-pair-sha256:" + source_sha,
+                "run_id": os.environ.get("GITHUB_RUN_ID")
+                          or "native-priest-l20-p6-" + uuid4().hex,
+            }
+    return result
+
+
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
     # Full 30/300s paid searches are deliberately explicit, never hourly.
     # This is the SAME source-paid production runner, not a gate-only scorer.
     import os
+    if ((class_key, level, spec) == ("priest", 20, "unrestricted")
+            and os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") == "1"):
+        return _run_priest_native_p6(class_key, level, spec)
     if os.environ.get("FOREVER_P6_FULL_SOURCE_COMPARE") == "1":
         from tools.wf_gate_p6_full_source import run_full_source_comparison
         return run_full_source_comparison(root, class_key, level, spec=spec)
