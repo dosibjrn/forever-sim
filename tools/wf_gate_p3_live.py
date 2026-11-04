@@ -184,6 +184,8 @@ def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
     initial_mana = getattr(mana, "initial_amount", None)
     if type(initial_mana) not in (int, float) or not isfinite(float(initial_mana)):
         return rejected("BASELINE_MANA_AMOUNT_UNAVAILABLE")
+    if getattr(mana, "metadata", {}).get("base_mana") is None:
+        return rejected("INTELLECT_TO_MANA_CAPACITY_CONVERSION_UNAVAILABLE")
     if tuple(getattr(mana, "event_gain_rules", ()) or ()):
         return rejected("MANA_EVENT_GAIN_RULES_UNRESOLVED")
 
@@ -232,12 +234,23 @@ def _paladin_policy_mana_constraint(ir, policy, record) -> dict:
         if action is None:
             return rejected("POLICY_ACTION_MISSING_FROM_SOURCE_IR",
                             policy_action_id=action_id)
+        conditions = tuple(getattr(rule, "conditions", ()) or ())
+        # A non-mana guard may simply be false at the end of this encounter.
+        # Do not treat that action as an available next cast. Unconditional
+        # rules and rules explicitly gated on actor mana are auditable here.
+        if any(
+            str(getattr(condition, "kind", "")) != "resource_threshold"
+            or str(getattr(condition, "resource_id", "")) != "mana"
+            for condition in conditions
+        ):
+            continue
         amount = sum(
             float(cost.amount) for cost in tuple(getattr(action, "costs", ()) or ())
             if str(getattr(cost, "resource_id", "")) == "mana")
         if amount > 0.0:
             policy_mana_action_costs.append({
                 "action_id": action_id, "mana_cost": amount,
+                "mana_guarded": bool(conditions),
             })
     if not policy_mana_action_costs:
         return rejected(
