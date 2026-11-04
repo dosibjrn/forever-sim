@@ -50,9 +50,12 @@ RETIRED_IMPORT_NAMES = (
 RETIRED_OUTPUTS = ("evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",)
 
 
+RETIRED_TESTS = ("tests/test_wf378_recovery_channel_tdd.py",)
+
+
 RETAINED_BEHAVIOR_TESTS = (
     "tests/test_wf241_mixed_hot_recovery.py",
-    "tests/test_wf378_recovery_channel_tdd.py",
+    "tests/test_actor_recovery_channel.py",
 )
 
 
@@ -72,6 +75,9 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
         encoding="utf-8"
     )
     for relative in RETIRED_TOOLS:
+        assert relative not in workflow, relative
+    for relative in RETIRED_TESTS:
+        assert not (ROOT / relative).exists(), relative
         assert relative not in workflow, relative
     for relative in RETAINED_BEHAVIOR_TESTS:
         assert relative in workflow, f"retained recovery regression is not run: {relative}"
