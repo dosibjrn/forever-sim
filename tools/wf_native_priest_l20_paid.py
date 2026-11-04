@@ -221,10 +221,30 @@ def score_source_priest_l20_candidates(binary: str | Path,
         if candidate["native_source_action_casts"] > 0:
             live_attempted = True
             try:
-                live = world_screen(binary, folder / candidate["candidate"])
+                from hashlib import sha256
+                # native_score_request pays for a request normalized to one
+                # balanced iteration and seed 42. Replay that EXACT request;
+                # a source directory may supply a different original seed.
+                effective = json.loads(
+                    (folder / candidate["candidate"]).read_text(encoding="utf-8"))
+                effective["simOptions"]["iterations"] = 1
+                effective["simOptions"]["randomSeed"] = "42"
+                effective_sha = sha256(json.dumps(
+                    effective, sort_keys=True, separators=(",", ":")
+                ).encode("utf-8")).hexdigest()
+                if effective_sha != candidate["native_request_sha256"]:
+                    raise RuntimeError(
+                        "PRIEST_L20_PAID_WORLD_EFFECTIVE_REQUEST_IDENTITY_MISMATCH")
+                # The live runner verifies the file's raw SHA and the selected
+                # native prepared SHA on every world tick/ACK.
+                execution_request = folder / "live-world-effective-request.json"
+                execution_request.write_text(
+                    json.dumps(effective, sort_keys=True), encoding="utf-8")
+                live = world_screen(binary, execution_request)
                 candidate["native_2d_fight"] = live
             except (OSError, ValueError, RuntimeError, TimeoutError,
-                    AssertionError, subprocess.SubprocessError) as exc:
+                    AssertionError, KeyError, TypeError,
+                    subprocess.SubprocessError) as exc:
                 candidate["native_2d_fight_error"] = str(exc)[-500:]
     return {
         "native_candidate_requests_attempted": len(rows),
