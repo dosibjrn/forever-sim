@@ -424,7 +424,7 @@ def test_selected_engine_workflow_runs_paladin_l20_native_p3_without_record():
     assert 'row["native_item_options_status"] == "ok"' in paladin
     assert 'row["native_unverified_candidate_count"] == 0' in paladin
     assert 'row["native_excluded_non_client_item_count"] > 0' in paladin
-    assert 'row["real_source_search_evaluated"] > 0' in paladin
+    assert '0 < row["real_source_search_evaluated"] <= 44' in paladin
     assert "--record-pass" not in paladin
 
 
