@@ -105,6 +105,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
     # stat sensitivities for classes without a named gear-role catalogue.
     # The later proposal loop naturally skips named gear selection when no
     # roles exist; do not invent a role or reject the P3 item-scoring path.
+    gear_roles = tuple(available_gear_roles(class_key))
     ir = remove_combat_policy_seeds_preserve_maintenance(ir)  # never trust a historical priority winner
     context = sha256(dumps({'ir':ir.as_dict(),'software':SOFTWARE_VERSION,
                            'objective':'real_incoming_combat_recovery',
@@ -287,7 +288,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
         if not weight_vectors:
             weight_vectors=[{axis:1.0} for axis in axes]
         for vector in weight_vectors:
-            for role in available_gear_roles(class_key):
+            for role in gear_roles:
                 try:
                     gear=select_named_gear(class_key=class_key,level=level,
                         stat_weights=vector,role=role,
@@ -349,9 +350,19 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                 if updated is not None:
                     weights=updated
     ranked = sorted(gear_results,key=lambda x:(x[0],x[1]['stage']))
-    winner = ranked[0][1] if ranked else None
-    runner_up = ranked[1][1] if len(ranked)>1 else None
-    return {'status':'EVALUATED_BOUNDED' if winner else 'BLOCKED_NO_KILL',
+    if not gear_roles:
+        # The naked source policy and paid sensitivity are the meaningful
+        # result for P3; there is no named-gear winner to synthesize.
+        winner = next((stage for stage in stages
+                       if stage.get('stage') == 'source_naked'), None)
+        runner_up = None
+        final_status = ('EVALUATED_NAKED_ONLY_NO_GEAR_ROLES'
+                        if winner is not None else 'BLOCKED_NO_KILL')
+    else:
+        winner = ranked[0][1] if ranked else None
+        runner_up = ranked[1][1] if len(ranked)>1 else None
+        final_status = 'EVALUATED_BOUNDED' if winner else 'BLOCKED_NO_KILL'
+    return {'status':final_status,
             'class_key':class_key,'level':level,'source_ir_id':ir.id,
             'source_context_sha256':context,'budget':max_evaluations,
             'attempted':tried,'evaluated':successes,'blocked':blockers,
@@ -369,6 +380,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
             'stateful_search_guarded_continuations':stateful_search_guarded_continuations,
             'stateful_family_budget_mode':stateful_family_budget_mode,
             'gear_role_exploration':gear_role_exploration,
+            'gear_role_search_skipped':not bool(gear_roles),
             'source_roles_evaluated':sorted(evaluated_roles),
             'role_proposal_trace':role_proposal_trace,
             'winner':winner,'runner_up':runner_up,
