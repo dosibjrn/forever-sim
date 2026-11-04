@@ -1,0 +1,67 @@
+name: P7.2 selected-native changed-APL probe (no record)
+
+on:
+  pull_request:
+    paths:
+      - tools/wf_gate_p7_2_live.py
+      - tests/test_work2_p72_native_axis.py
+      - .github/workflows/native-p72-no-record.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p72-native-no-record-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  selected-native-p72:
+    # Production native scoring, not a substitute for Merge's official recorder.
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact PR source and pinned native gitlink
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: true
+          fetch-depth: 0
+
+      - name: Confirm selected MythicSim fork identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          engine=integrations/mythicsim-rust/engine
+          selected="$(git ls-tree HEAD -- "$engine" | awk '$1=="160000" && $2=="commit" {print $3}')"
+          actual="$(git -C "$engine" rev-parse HEAD)"
+          test -n "$selected" && test "$selected" = "$actual"
+          test -f "$engine/src/core/fight/world_bridge.rs"
+          test "$(git -C "$engine" remote get-url origin)" != ""
+          echo "PR source HEAD=$(git rev-parse HEAD)"
+          echo "Exact selected Rust gitlink=$actual"
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install source gate runtime dependency
+        run: python -m pip install --disable-pip-version-check 'beautifulsoup4==4.13.4'
+
+      - name: Build actual selected native scorer (no Rust rules audit)
+        working-directory: integrations/mythicsim-rust/engine
+        env:
+          CARGO_PROFILE_RELEASE_LTO: 'off'
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+        run: cargo build --release --locked --bin forever-engine
+
+      - name: Execute uncredited unrestricted P7.2 on selected native (NO RECORD)
+        env:
+          FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "NO-RECORD druid:60:unrestricted:P7.2, source HEAD=$(git rev-parse HEAD)"
+          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.2
+          echo "No --record-pass was supplied; only Merge may write the official M1 ledger."
