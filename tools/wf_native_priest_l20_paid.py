@@ -269,6 +269,15 @@ def _native_world_completed_kills(exc: BaseException) -> int:
             and detail[0] == "RUST_TWO_WORLD_KILLS_NOT_COMPLETED"
             and isinstance(detail[2], list)):
         return len(detail[2])
+    # A Rust nonzero exit is the most common genuinely observed failure of
+    # the 100-target actor, not a loss of already ACKed earlier targets.
+    # Only the bridge-supplied nonnegative integer (never stderr text)
+    # counts, and this count never grants native_2d_persistent_verified.
+    if (isinstance(detail, tuple) and len(detail) >= 5
+            and detail[0] == "RUST_TWO_WORLD_NATIVE_FAILED"
+            and type(detail[3]) is int and detail[3] >= 0
+            and type(detail[4]) is int and detail[4] >= detail[3]):
+        return detail[3]
     return 0
 
 
@@ -287,7 +296,12 @@ def _native_world_error(exc: BaseException) -> str:
             return (f"{code}:completed={len(detail[2])}"
                     f":native_damage_events={detail[3]}")
         if code == "RUST_TWO_WORLD_NATIVE_FAILED" and len(detail) >= 3:
-            return f"{code}:exit={detail[1]}:{str(detail[2])[-350:]}"[-500:]
+            observed = _native_world_completed_kills(exc)
+            progress = (f":completed={observed}:native_damage_events={detail[4]}"
+                        if len(detail) >= 5 and type(detail[4]) is int
+                        and type(detail[3]) is int and detail[3] >= 0
+                        and detail[4] >= detail[3] else "")
+            return f"{code}:exit={detail[1]}{progress}:{str(detail[2])[-280:]}"[-500:]
         return (code + ":" + str(detail[1:])[-350:])[-500:]
     return str(exc)[-500:]
 
