@@ -118,6 +118,7 @@ on:
       - 'tests/test_selected_source_plumbing.py'
       - 'tests/test_prio_p3_live_sourced_chance_gear.py'
       - 'tests/test_prio_p3_source_policy_sp.py'
+      - 'tests/test_work2_shaman_intellect_witness.py'
       - 'tests/test_work2_paladin_p3_source_naked.py'
       - 'src/v2/generic_frontier.py'
       - 'src/v2/generic_melee_routes.py'
@@ -185,6 +186,7 @@ jobs:
           tests/test_wf309_source_stat_aura_pipeline.py
           tests/test_prio_discrete_stat_sensitivity.py
           tests/test_prio_p3_source_policy_sp.py
+          tests/test_work2_shaman_intellect_witness.py
           tests/test_work2_paladin_p3_source_naked.py
           tests/test_work2_paladin_native_context.py
           tests/test_native_p3_item_options.py
