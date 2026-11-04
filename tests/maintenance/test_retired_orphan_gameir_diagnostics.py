@@ -22,6 +22,10 @@ RETIRED_TOOLS = (
     "tools/wf343_direct_percent_top5.py",
     # WF431 one-off paid GameIR search runner; retained evidence is diagnostic only.
     "tools/wf431_modified_action_paid_search.py",
+    # Historical GameIR/SQLite continuity runner; no active callers.
+    "tools/wf300_continuous_source_policy_benchmark.py",
+    # One-off Python talent-source transcription; frozen stage retained.
+    "tools/wf350_build_source_evidence.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
     "tools/wf384_generic_checkpoint_screen.py",
@@ -85,6 +89,8 @@ RETIRED_IMPORT_NAMES = (
     "wf319_druid_l20_index_l2_parity",
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
+    "wf300_continuous_source_policy_benchmark",
+    "wf350_build_source_evidence",
     "wf399_qualification_probe",
     "wf399_replay_winner",
     "wf384_generic_checkpoint_screen",
@@ -203,6 +209,7 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf343/WF343_TOP5_READABLE_REPORT.md",
     "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_DIAGONAL.json",
     "evidence/wf431/WF431_PAID_SOURCE_MODIFIED_APL_MARGINAL_SCREEN.json",
+    "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
 )
 
 
