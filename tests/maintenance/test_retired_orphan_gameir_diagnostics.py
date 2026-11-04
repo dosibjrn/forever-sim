@@ -84,6 +84,8 @@ RETIRED_TOOLS = (
     "tools/wf357_l30_recovery_frontier.py",
     # Standalone recalibration producer has no callers; retain its completed report.
     "tools/wf357_l30_recovery_p3_recalibrate.py",
+    # Legacy v2 challenger exporter has no active P7 consumer; retain reconstruction manifests.
+    "tools/wf356_export_legacy_druid30.py",
     # WF322's one-off staged build-parity producer; the input and behavior regressions remain.
     "tools/wf322_druid_l20_build_parity.py",
     # WF328's one-off GameIR/SQLite report producers; keep their historical JSON and prefix regression.
@@ -165,6 +167,8 @@ RETIRED_IMPORT_NAMES = (
     "wf441_100mob_swiftmend_evidence",
     "wf357_l30_recovery_frontier",
     "wf357_l30_recovery_p3_recalibrate",
+    "wf356_export_legacy_druid30",
+    "export_legacy_winner",
     "wf322_druid_l20_build_parity",
     "wf328_druid_l20_mode_search_evidence",
     "wf328_geared_blind_joint_check",
@@ -226,6 +230,7 @@ RETIRED_TESTS = (
     "tests/gates/test_wf367_six_port_acceptance.py",
     "tests/test_wf359_druid_l30_p3_rebase.py",
     "tests/test_wf427_quest_horizon_paid_tdd.py",
+    "tests/test_wf356_export_legacy_druid30.py",
 )
 
 RETIRED_COMMANDS = (
@@ -257,6 +262,8 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf359/WF359_L30_P3_REBASED_DIRECT_100MOB.json",
     "evidence/wf359/WF359_L30_P3_REBASED_TOP5.json",
     "evidence/wf359/WF359_RECONSTRUCTION.json",
+    # Retain the WF394 reconstruction manifest that records the archived WF356 source run.
+    "evidence/wf394/RECONSTRUCTION.json",
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
     "evidence/wf357/WF357_L30_P3_RECOVERY_RECALIBRATION.json",
@@ -289,6 +296,8 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
     )
     workflow_triggers = workflow.split("permissions:", 1)[0]
     assert "      - 'tools/wf300_continuous_100_mob_acceptance.py'" in workflow_triggers
+    assert "      - 'tools/wf356_export_legacy_druid30.py'" in workflow_triggers
+    assert "      - 'tests/test_wf356_export_legacy_druid30.py'" in workflow_triggers
     workflow_jobs = workflow.split("jobs:", 1)[1] if "jobs:" in workflow else ""
     for relative in RETIRED_TOOLS:
         assert relative not in workflow_jobs, relative
