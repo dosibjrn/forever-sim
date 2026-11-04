@@ -116,13 +116,16 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
             # Opt in on a selected bridge-capable engine. The same paid
             # candidate then flows through the existing real native↔gsim-2D
             # damage/ACK loop; a one-fight ACK is NOT a 100-mob screen.
-            live_kwargs = ({"world_screen": couple_source_priest_l20_world,
-                            "persistent_world": couple_source_priest_l20_persistent_world,
-                            # Explicitly opt in to as many as 100 consecutive
-                            # distinct native-world targets. The same actor is
-                            # retained; paid recovery is still not claimed.
-                            "persistent_target_count": int(os.environ.get(
-                                "FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS", "2"))}
+            persistent_targets = int(os.environ.get(
+                "FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS", "2"))
+            live_kwargs = ({"persistent_world": couple_source_priest_l20_persistent_world,
+                            # A requested full 100-target screen is already
+                            # native↔2D ACKed. Do not spend another independent
+                            # one-fight smoke or pre-veto on its outcome.
+                            # Keep the smaller two-target CI smoke unchanged.
+                            "world_screen": (None if persistent_targets == 100
+                                             else couple_source_priest_l20_world),
+                            "persistent_target_count": persistent_targets}
                            if os.environ.get("FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD") == "1"
                            else {})
             if candidate_dir:
