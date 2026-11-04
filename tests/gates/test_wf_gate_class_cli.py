@@ -41,8 +41,10 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
             {"slot": 1, "item_id": 225, "enchant_id": 201}],
         "winner_live_dps": 717.5,
         "winner_screen_dps": 720.0,
-        "winner_selection": "paid_2x24_stochastic_live_native_finalist",
-        "paid_stochastic_finalists": 4,
+        "winner_selection": "paid_4x3_balanced_native_world_confirmed",
+        "paid_balanced_finalists": 6,
+        "paid_balanced_confirmed": 2,
+        "paid_stochastic_finalists": 0,
         "source_candidate_failures": ["SOURCE_REJECT_" + "x" * 300] * 5,
         "paid_stochastic_finalist_failures": ["NATIVE_TIMEOUT_" + "y" * 300] * 6,
         "frozen_stochastic_world_dps": 717.5,
@@ -58,8 +60,10 @@ def test_p74_cli_preserves_frozen_paid_gear_and_search_metadata_on_fail(monkeypa
         {"slot": 1, "item_id": 225, "enchant_id": 201}]
     assert receipt["winner_live_dps"] == 717.5
     assert receipt["winner_screen_dps"] == 720.0
-    assert receipt["winner_selection"] == "paid_2x24_stochastic_live_native_finalist"
-    assert receipt["paid_stochastic_finalists"] == 4
+    assert receipt["winner_selection"] == "paid_4x3_balanced_native_world_confirmed"
+    assert receipt["paid_balanced_finalists"] == 6
+    assert receipt["paid_balanced_confirmed"] == 2
+    assert receipt["paid_stochastic_finalists"] == 0
     assert len(receipt["source_candidate_failures"]) == 4
     assert len(receipt["paid_stochastic_finalist_failures"]) == 4
     assert all(len(message) == 180 for name in
