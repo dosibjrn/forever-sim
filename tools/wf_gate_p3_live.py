@@ -248,6 +248,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
 
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
+    from src.game.gear import executable_gear_stats
     from src.v2.source_budgeted_gear import (
         run_source_budgeted_gear, paid_search_winner_baseline,
         paid_source_policy_stat_witness)
