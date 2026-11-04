@@ -24,7 +24,7 @@ druid	60	balance	P6	2026-11-03T16:10:02.582366+00:00	2c91916cf82a19409b17763433e
 druid	60	balance	P7.1	2026-11-02T18:54:43.433851+00:00	1316cdc13386ffd0238789cdee1d6003758a63b5	https://github.com/dosibjrn/forever-sim/actions/runs/41504411112		PASS				2026-11-02T18:54:43.433851+00:00
 druid	60	balance	P7.2	2026-11-02T19:05:46.679575+00:00	cbbe16116ee613603339586f8b7ffcf54029c60d	https://github.com/dosibjrn/forever-sim/actions/runs/41505354334		PASS				2026-11-02T19:05:46.679575+00:00
 druid	60	balance	P7.3	2026-11-03T01:49:53.880681+00:00	762d49554fb86fcadaf6e7eb5562e7a29fa332cf	https://github.com/dosibjrn/forever-sim/actions/runs/41561333080		PASS				2026-11-03T01:49:53.880681+00:00
-druid	60	balance	P7.4		81df15829c5f96d01117059e78a88f9c7135d582	https://github.com/dosibjrn/forever-sim/actions/runs/41745542334		PARTIAL	630.6929	720.9117	1	2026-11-04T00:25:07.986300+00:00
+druid	60	balance	P7.4		1a66a270aa15e196dffb234274fe1dff0ca851aa	https://github.com/dosibjrn/forever-sim/actions/runs/41746867119		PARTIAL	704.6605	720.9117	1	2026-11-04T00:35:46.871650+00:00
 druid	60	balance	P7.5	2026-11-03T23:51:14.669553+00:00	40eabd22c60d9cb3f009e5725aa5a86b9697d4b2	https://github.com/dosibjrn/forever-sim/actions/runs/41741229700		PASS				2026-11-03T23:51:14.669553+00:00
 druid	60	feral	P1		bf71e97821ef807f29fe55beed5e847550cb0fd4	https://github.com/dosibjrn/forever-sim/actions/runs/41678494575		PARTIAL	15	22	1	2026-11-03T16:52:08.671649+00:00
 druid	60	unrestricted	P3	2026-11-03T23:46:29.343484+00:00	ca7d07be089d4b1286b18af99858a4aecdefb845	https://github.com/dosibjrn/forever-sim/actions/runs/41741730565		PASS				2026-11-03T23:46:29.343484+00:00
