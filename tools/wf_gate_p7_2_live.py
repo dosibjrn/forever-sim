@@ -84,7 +84,12 @@ def _paid_elite_choice(elites, rng: random.Random, proposal_index: int):
 def _pinned_source_runtime(root: Path, class_key: str, level: int,
                            spec: str, gate: str, *, require_world: bool = True):
     """One exact-source native preflight shared by P7 discovery gates."""
-    if (class_key, level, spec) != ("druid", 60, "balance"):
+    # "unrestricted" imposes no Balance/Feral/Restoration profile constraint:
+    # the authenticated level-60 Balance build remains an eligible Druid
+    # reference for P7.2. Keep the narrower selection for other P7 producers.
+    if ((class_key, level) != ("druid", 60)
+            or not (spec == "balance"
+                    or (gate == "P7.2" and spec == "unrestricted"))):
         return _blocked(gate.replace(".", "_") + "_PINNED_REFERENCE_NOT_SELECTED_FOR_CHECKPOINT")
     request = root / "docs/evidence/druid-l60-balance/p7.3/saved_728_request.json"
     witness = root / "docs/evidence/wf633/WF633_VALIDATION.json"
@@ -114,6 +119,9 @@ def _pinned_source_runtime(root: Path, class_key: str, level: int,
         return _blocked(gate.replace(".", "_") + "_PINNED_NATIVE_WORLD_BUILD_NOT_VERIFIED")
     # Keep the saved report's original engine_revision unchanged.
     meta["selected_engine_revision"] = selected_rust
+    # Preserve the actual source profile instead of relabeling the saved
+    # Balance report as an independently measured unrestricted reference.
+    meta["selected_reference_profile"] = "balance"
     return (base, meta, binary)
 
 
@@ -218,6 +226,8 @@ def run_live(root: Path, class_key: str, level: int, *,
         "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
         "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
         "saved_reference_dps": float(meta["reference_dps"]),
+        "reference_profile": meta.get("selected_reference_profile", "balance"),
+        "checkpoint_spec": spec,
         "original_apl_hash": initial_hash,
         "cold_winner_request_sha256": selected_sha,
         "cold_winner_apl": winner["raid"]["parties"][0]["players"][0][
