@@ -14,7 +14,7 @@ import tempfile
 import time
 
 from p74_preflight import preflight, player
-from p74_gear_validation import GearValidator, RejectedGear, SLOTS, SOURCE_SLOTS, sha256
+from p74_gear_validation import GearValidator, RejectedGear, RUST_TYPES, SLOTS, SOURCE_SLOTS, sha256
 
 REFERENCE_DPS = 728.1936126415858
 
@@ -66,6 +66,126 @@ def candidate_pool(validator, limit, *, independent_enchants=False,
             raise ValueError(f"No PINNED-RUST legal source candidates: slot={slot}, index={i}, excluded={dict(exclusions)}")
         pool[i]=ids
     return pool,exclusions
+
+
+def native_candidate_pool(binary):
+    """Build the P7.4 item/enchant proposal pools from pinned Rust itself.
+
+    The native gear-options command enumerates the selected engine's item and
+    enchant tables. Forever applies only the existing stat proposal ordering
+    and structural weapon/relic slot shape; it does not consult the SQLite
+    catalogue or recreate source legality. Every complete proposal is still
+    paid through native source simulation before the live 2D score is accepted.
+    """
+    item_types = sorted({RUST_TYPES[slot] for slot in SLOTS})
+    try:
+        completed = subprocess.run(
+            [str(binary.resolve()), "gear-options", "--item-types",
+             ",".join(item_types)],
+            capture_output=True, text=True, timeout=60,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise NativeFailure(
+            "gear_options_timeout", "Pinned Rust gear-options query timed out"
+        ) from exc
+    if completed.returncode:
+        diagnostic = ((completed.stdout or "") + "\n" +
+                      (completed.stderr or "")).strip()
+        raise NativeFailure(
+            "gear_options", f"gear-options exit={completed.returncode}: "
+            f"{diagnostic[-1600:]}", completed.returncode,
+        )
+    try:
+        report = json.loads(completed.stdout)
+    except (TypeError, ValueError) as exc:
+        raise NativeFailure(
+            "gear_options_result",
+            f"gear-options returned invalid JSON: {(completed.stdout or '')[-800:]}",
+            completed.returncode,
+        ) from exc
+    if (not isinstance(report, dict)
+            or report.get("engine") != "forever-engine"
+            or not isinstance(report.get("source_revision"), str)
+            or not isinstance(report.get("item_types"), dict)):
+        raise NativeFailure("gear_options_identity", "Invalid native gear-options identity")
+
+    grouped = report["item_types"]
+    pool = {}
+    enchant_pools = {}
+    for slot_index, slot in enumerate(SLOTS):
+        item_type = RUST_TYPES[slot]
+        group = grouped.get(item_type)
+        if not isinstance(group, dict):
+            raise NativeFailure(
+                "gear_options_missing_type", f"Native gear-options omitted {item_type}"
+            )
+        rows = group.get("items")
+        if not isinstance(rows, list):
+            raise NativeFailure(
+                "gear_options_invalid_items", f"Native gear-options items are invalid for {item_type}"
+            )
+        candidates = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            item_id = row.get("id")
+            if (type(item_id) is not int or item_id <= 0
+                    or row.get("type") != item_type):
+                continue
+            stats = row.get("stats")
+            if not isinstance(stats, list) or len(stats) <= 16:
+                continue
+            if slot == "weapon":
+                if row.get("hand_type") not in (
+                    "HandTypeOneHand", "HandTypeMainHand",
+                    "HandTypeTwoHand", "HandTypeUnknown",
+                ) or row.get("weapon_type") == "WeaponTypeShield":
+                    continue
+            if slot == "relic" and row.get("ranged_weapon_type") not in (
+                "RangedWeaponTypeIdol", "RangedWeaponTypeUnknown", "",
+            ):
+                continue
+
+            def stat(index):
+                value = stats[index]
+                return (float(value) if type(value) in (int, float)
+                        and math.isfinite(value) else 0.0)
+
+            # Same lightweight proposal heuristic as the previous full-pool
+            # search, now calculated from Rust's base-scaling stat vector.
+            score = (stat(5) + .5 * stat(3) + 1.5 * stat(12)
+                     + 1.3 * stat(13) + .1 * stat(16))
+            candidates.append((score, item_id))
+        candidates.sort(key=lambda item: (-item[0], item[1]))
+        if not candidates:
+            raise ValueError(
+                f"No native Rust item options for slot={slot}, type={item_type}"
+            )
+        pool[slot_index] = [item_id for _, item_id in candidates]
+
+        enchant_rows = group.get("enchants")
+        if not isinstance(enchant_rows, list):
+            raise NativeFailure(
+                "gear_options_invalid_enchants",
+                f"Native gear-options enchants are invalid for {item_type}",
+            )
+        choices = [None]
+        for row in enchant_rows:
+            if isinstance(row, dict) and type(row.get("id")) is int and row["id"] > 0:
+                choices.append(row["id"])
+        enchant_pools[slot_index] = list(dict.fromkeys(choices))
+
+    metadata = {
+        "source_revision": report["source_revision"],
+        "unique_item_options": len({
+            item_id for candidates in pool.values() for item_id in candidates
+        }),
+        "unique_enchant_options": len({
+            enchant_id for choices in enchant_pools.values()
+            for enchant_id in choices if enchant_id is not None
+        }),
+    }
+    return pool, enchant_pools, metadata
 
 def source_enchant_pools(validator, pools):
     """Enumerate slot-legal native enchants; never whitelist saved gear only.
