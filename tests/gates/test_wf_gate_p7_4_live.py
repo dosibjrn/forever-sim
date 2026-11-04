@@ -1041,3 +1041,75 @@ def test_p74_native_axis_never_passes_unchanged_reference(monkeypatch, tmp_path)
     assert report["reasons"] == ["P7_4_NO_NATIVE_PAID_CHANGED_GEAR_CANDIDATE"]
     assert report["cold_unique_source_requests"] == 0
     assert report["source_legal_cold_candidates_paid"] == 0
+
+
+def test_feral_p74_selects_original_source_and_pays_changed_gear_on_go_rules(
+        monkeypatch, tmp_path):
+    """Forever transport of an authentic Feral P7.4 request; mocked native scorer."""
+    import json
+    from pathlib import Path
+    from tools import wf_gate_p7_2_live as p72
+    from tools.wf_gate_p7_1_live import FERAL_REFERENCE_DPS, SAVED_FERAL_RAW_SHA
+
+    root = Path(__file__).resolve().parents[2]
+    reference_path = root / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json"
+    base = json.loads(reference_path.read_text())
+    fixed = copy.deepcopy(base)
+    original_player = base["raid"]["parties"][0]["players"][0]
+    original_items = original_player["equipment"]["items"]
+    new_id = original_items[0]["id"] + 1
+    binary = tmp_path / "upstream/target/release/forever-engine"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("mock executable; real engine never invoked")
+    data = binary.parents[2] / "data"
+    data.mkdir()
+    (data / "items.jsonl").write_text("{}\n")
+    (data / "enchants.jsonl").write_text("{}\n")
+    monkeypatch.setenv("FOREVER_MYTHICSIM_RUST_BIN", str(binary))
+    monkeypatch.setenv("FOREVER_P7_FULL_SOURCE_SEARCH", "0")
+    monkeypatch.setattr(
+        p72, "_selected_rust_submodule", lambda *a: "selected-feral-rust-pin")
+
+    pool = SimpleNamespace(pinned_rust_candidate_pool=lambda *a: (
+        {0: [new_id]}, {0: [original_items[0].get("enchant")]},
+        {"unique_item_options": 1, "unique_enchant_options": 0}))
+    requests = []
+
+    def native_score(selected_binary, path, iterations, *, rng_mode, go_rules=False):
+        assert selected_binary == binary.resolve()
+        assert iterations == 3 and rng_mode == "balanced" and go_rules is True
+        candidate = json.loads(path.read_text())
+        changed = candidate["raid"]["parties"][0]["players"][0]
+        assert changed["equipment"]["items"][0]["id"] == new_id
+        assert changed["equipment"] != original_player["equipment"]
+        assert changed["rotation"] == original_player["rotation"]
+        assert changed["talentsString"] == original_player["talentsString"]
+        requests.append(candidate)
+        return {"iterations": 3, "native_dps": 885.25}
+
+    monkeypatch.setattr(gate, "_source_module", lambda path, *a: (
+        pool if "p74_gear_search" in str(path) else
+        SimpleNamespace(native_source_control=native_score)))
+    report = gate.run_live(root, "druid", 60, spec="feral")
+    assert report["status"] == "PASS"  # mock transport, NOT a native gate PASS
+    assert report["source_request_raw_sha256"] == SAVED_FERAL_RAW_SHA
+    assert report["saved_reference_dps"] == FERAL_REFERENCE_DPS
+    assert report["reference_profile"] == report["checkpoint_spec"] == "feral"
+    assert report["native_rules"] == "go_reference"
+    assert report["native_source_revision"] == "selected-feral-rust-pin"
+    assert report["source_fixed_rotation_and_talents"] is True
+    assert report["source_legal_cold_candidates_paid"] == len(requests) == 1
+    assert report["winner_native_dps"] == 885.25
+    assert base == fixed
+
+
+def test_feral_p74_rejects_modified_original_source_before_native(monkeypatch, tmp_path):
+    """A changed pinned Feral request is not a replacement gear search input."""
+    root = tmp_path
+    request = root / "docs/evidence/druid-l60-feral/p7.1/saved_811_request.json"
+    request.parent.mkdir(parents=True)
+    request.write_text('{"raid":{}, "encounter":{}}')
+    report = gate._pinned_source_runtime(
+        root, "druid", 60, "feral", "P7.4", require_world=False)
+    assert report == {"status": "BLOCKED",
+                      "reasons": ["P7_4_PINNED_SOURCE_REQUEST_CHANGED"]}
