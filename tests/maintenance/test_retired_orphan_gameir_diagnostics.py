@@ -24,6 +24,10 @@ RETIRED_TOOLS = (
     "tools/wf431_modified_action_paid_search.py",
     # WF359 one-off P3 rebase depended on the retired staged P2 SQLite database.
     "tools/wf359_druid_l30_p3_rebase.py",
+    # Historical GameIR/SQLite continuity runner; no active callers.
+    "tools/wf300_continuous_source_policy_benchmark.py",
+    # One-off Python talent-source transcription; frozen stage retained.
+    "tools/wf350_build_source_evidence.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
     "tools/wf384_generic_checkpoint_screen.py",
@@ -88,6 +92,8 @@ RETIRED_IMPORT_NAMES = (
     "wf343_direct_percent_top5",
     "wf431_modified_action_paid_search",
     "wf359_druid_l30_p3_rebase",
+    "wf300_continuous_source_policy_benchmark",
+    "wf350_build_source_evidence",
     "wf399_qualification_probe",
     "wf399_replay_winner",
     "wf384_generic_checkpoint_screen",
@@ -211,6 +217,7 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf359/WF359_L30_P3_REBASED_DIRECT_100MOB.json",
     "evidence/wf359/WF359_L30_P3_REBASED_TOP5.json",
     "evidence/wf359/WF359_RECONSTRUCTION.json",
+    "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
 )
 
 
