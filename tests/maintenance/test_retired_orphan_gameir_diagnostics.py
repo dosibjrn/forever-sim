@@ -12,6 +12,10 @@ RETIRED_TOOLS = (
     "tools/wf263_l1_value_benchmark.py",
     "tools/wf276_resource_prefix_benchmark.py",
     "tools/wf303_source_wide_100mob.py",
+    "tools/wf270_action_source_coverage.py",
+    "tools/wf272_real_source_ranked_finisher.py",
+    "tools/wf279_paid_fixed_marginal_benchmark.py",
+    "tools/wf280_real_mode_path_benchmark.py",
     "tools/wf319_druid_l20_index_l2_parity.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
@@ -31,6 +35,7 @@ RETIRED_TOOLS = (
     "tools/wf_checkpoint_druid_balance_l60.py",
     "tools/wf_native_session_capability.py",
     "tools/wf369_druid_l30_apl_probe.py",
+    "tools/wf365_bear_primal_diagnostic.py",
     "tools/wf353_l30_p3_context_replay.py",
 )
 RETIRED_SOURCE_MODULES = (
@@ -43,6 +48,10 @@ RETIRED_IMPORT_NAMES = (
     "wf263_l1_value_benchmark",
     "wf276_resource_prefix_benchmark",
     "wf303_source_wide_100mob",
+    "wf270_action_source_coverage",
+    "wf272_real_source_ranked_finisher",
+    "wf279_paid_fixed_marginal_benchmark",
+    "wf280_real_mode_path_benchmark",
     "wf319_druid_l20_index_l2_parity",
     "wf399_qualification_probe",
     "wf399_replay_winner",
@@ -62,6 +71,7 @@ RETIRED_IMPORT_NAMES = (
     "wf_checkpoint_druid_balance_l60",
     "wf_native_session_capability",
     "wf369_druid_l30_apl_probe",
+    "wf365_bear_primal_diagnostic",
     "wf353_l30_p3_context_replay",
     "source_sqlite_spell_facts",
     "source_sqlite_spell_semantics",
@@ -71,6 +81,7 @@ RETIRED_IMPORT_NAMES = (
 RETIRED_OUTPUTS = (
     "evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",
     "evidence/wf369/WF369_DRUID_L30_APL_PROBE.json",
+    "evidence/wf365/WF365_BEAR_PRIMAL_DIAGNOSTIC.json",
 )
 
 
@@ -89,6 +100,8 @@ RETIRED_COMMANDS = (
 
 
 RETAINED_BEHAVIOR_TESTS = (
+    "tests/test_wf270_index_to_ir_action_frontier.py",
+    "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
     "tests/test_actor_recovery_channel.py",
 )
