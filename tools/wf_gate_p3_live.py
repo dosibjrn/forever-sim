@@ -171,7 +171,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     from src.game.data.forever.registry import build_game_ir_slice
     from src.game.checkpoint_p3_smoke import fast_p3_smoke_for_policy
     from src.v2.source_budgeted_gear import (run_source_budgeted_gear,
-        paid_source_policy_stat_witness)
+        paid_source_policy_stat_witness, paid_search_winner_baseline_record)
     from src.v2.source_stateful_budgeted import _make_policy
     from src.game.model import PolicyCondition
 
@@ -262,6 +262,14 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         and str(spec).lower() == "unrestricted"
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
+    # Paid-winner baseline reuse is intentionally restricted to this one
+    # native Mage L30 checkpoint; all other classes keep source-IR-only paths.
+    use_paid_winner_baseline = mage_l30_native
+    paid_winner_baseline_available = (
+        use_paid_winner_baseline
+        and paid_search_winner_baseline_record(
+            policy, record, tuple(record.get("prefix", ()))) is not None
+    )
     for blocker in witness_blockers:
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
@@ -285,7 +293,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             for key, value in source_policy_baseline_cache.items()
         )
         minimum_evaluations = (
-            1 if has_reusable_baseline
+            1 if (has_reusable_baseline or paid_winner_baseline_available)
             else (3 if mage_l30_native and record.get("prefix") else 2)
         )
         if remaining < minimum_evaluations:
@@ -295,7 +303,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             max_evaluations=remaining,
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
-            opening_action_ids=tuple(record.get("prefix", ())))
+            opening_action_ids=tuple(record.get("prefix", ())),
+            preferred_policy=(policy if use_paid_winner_baseline else None),
+            baseline_record=(record if use_paid_winner_baseline else None))
         if mage_l30_native:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
