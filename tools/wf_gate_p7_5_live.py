@@ -507,12 +507,9 @@ def run_live(root: Path, class_key: str, level: int, *,
             if full_search and (elapsed >= 240.0 or
                                 _p74_early_rerank_due(
                                     elapsed, len(balanced_finalists))):
-                # P7.4 already confirms the strongest paid finalist
-                # with 144 independent non-holdout fights. P7.5 formerly
-                # stopped at 96, even after a measured 716.30 paid finalist
-                # fell to 702.79 in its 1,000-fight frozen holdout.
-                # Reuse its bounded two-deep-confirmation schedule with 3-fight
-                # balanced paid screens; never select with the frozen holdout.
+                # P7.4 and P7.5 share this bounded two-stage confirmation
+                # schedule. Both rank paid finalists with deterministic
+                # Balanced native+2D screens; never select with the holdout.
                 next_deep = _next_p74_deep_confirmation(
                     balanced_finalists, confirmed,
                     deep_confirmation_attempted, elapsed)
