@@ -201,6 +201,8 @@ def main(argv=None) -> int:
             # values never modify the provider verdict or create M1 credit.
             for key in ("search_wall_s", "cold_unique_source_requests",
                         "winner_live_dps", "winner_screen_dps",
+                        "paid_balanced_finalists",
+                        "paid_balanced_confirmed",
                         "paid_stochastic_finalists",
                         "paid_stochastic_confirmed_finalists",
                         "source_legal_cold_candidates_paid",
