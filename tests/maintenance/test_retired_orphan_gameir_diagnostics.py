@@ -30,6 +30,8 @@ RETIRED_TOOLS = (
     "tools/wf262_run_stateful_joint.py",
     "tools/wf_checkpoint_druid_balance_l60.py",
     "tools/wf_native_session_capability.py",
+    "tools/wf369_druid_l30_apl_probe.py",
+    "tools/wf353_l30_p3_context_replay.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf261_stateful_benchmark",
@@ -54,10 +56,15 @@ RETIRED_IMPORT_NAMES = (
     "wf262_run_stateful_joint",
     "wf_checkpoint_druid_balance_l60",
     "wf_native_session_capability",
+    "wf369_druid_l30_apl_probe",
+    "wf353_l30_p3_context_replay",
 )
 
 
-RETIRED_OUTPUTS = ("evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",)
+RETIRED_OUTPUTS = (
+    "evidence/wf378/WF378_100MOB_DIAGNOSTIC.json",
+    "evidence/wf369/WF369_DRUID_L30_APL_PROBE.json",
+)
 
 
 RETIRED_TESTS = (
