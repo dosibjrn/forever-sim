@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -362,6 +363,7 @@ def test_selected_paid_l20_native_candidate_is_sent_to_one_live_world_screen(tmp
     def world_screen(binary, request_path):
         seen.append(json.loads(request_path.read_text()))
         return {"native_2d_fight_ack_complete": True,
+                "native_2d_world_target_killed": True,
                 "native_2d_screen_complete": False,
                 "native_2d_world_ticks": 3}
 
@@ -373,6 +375,7 @@ def test_selected_paid_l20_native_candidate_is_sent_to_one_live_world_screen(tmp
     assert result["native_paid_whole_builds"] == 2
     assert result["native_2d_live_ack_attempted"] == 1
     assert result["native_2d_live_ack_verified"] == 1
+    assert result["native_2d_live_world_kills"] == 1
     assert result["native_2d_screen_complete"] is False
     assert "pass_count" not in result
     assert result["native_candidate_receipts"][1]["native_2d_fight"][
@@ -484,3 +487,69 @@ def test_paid_world_retries_another_source_build_without_polluting_frontier(tmp_
     # Critical for cold P4/P5: no synthetic candidate becomes a new input.
     assert sorted(path.name for path in tmp_path.iterdir()) == ["a.json", "b.json"]
     assert json.loads((tmp_path / "b.json").read_text()) == preferred
+
+
+def test_nonlethal_world_ack_tries_next_paid_build_for_a_real_kill(tmp_path):
+    """A live ACK is not a kill: continue the bounded paid source frontier."""
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    first = _request()
+    second = copy.deepcopy(first)
+    second["raid"]["parties"][0]["players"][0]["talentsString"] = "1-0-0"
+    (tmp_path / "a.json").write_text(json.dumps(first))
+    (tmp_path / "b.json").write_text(json.dumps(second))
+    observed = []
+
+    def scorer(binary, candidate, **kwargs):
+        effective = copy.deepcopy(candidate)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
+        key = sha256(json.dumps(
+            effective, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        return {
+            "effective_request_sha256": key,
+            "score": (30. if candidate["raid"]["parties"][0]["players"][0][
+                "talentsString"] == "0-0-0" else 20.),
+            "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 3}],
+        }, {}
+
+    def world_screen(binary, request_path):
+        current = json.loads(request_path.read_text())
+        observed.append(current)
+        return {
+            "native_2d_fight_ack_complete": True,
+            "native_2d_world_target_killed": len(observed) == 2,
+            "native_2d_world_ticks": 7,
+            "native_2d_screen_complete": False,
+        }
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer, world_screen=world_screen)
+    assert len(observed) == 2
+    assert result["native_2d_live_ack_attempted"] == 2
+    assert result["native_2d_live_ack_verified"] == 2
+    assert result["native_2d_live_world_kills"] == 1
+    rows = result["native_candidate_receipts"]
+    assert rows[0]["native_2d_fight"]["native_2d_world_target_killed"] is False
+    assert rows[1]["native_2d_fight"]["native_2d_world_target_killed"] is True
+    assert result["native_2d_screen_complete"] is False
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["a.json", "b.json"]
+
+
+def test_selected_priest_l20_target_uses_declared_classic_proxy_hp():
+    """Keep the paid source scenario on a real L20 proxy, not a 10k smoke boss."""
+    from tools.wf_gsim_go_live_range_probe import source_target_health_from_request
+
+    source_path = (Path(__file__).resolve().parents[1]
+        / "integrations/mythicsim-rust/fixtures/priest-l20-native-smite.request.json")
+    request = source_path.read_bytes()
+    source = json.loads(request)
+    assert source["encounter"]["duration"] == 90
+    assert source["encounter"]["targets"][0]["level"] == 20
+    assert "CMaNGOS Classic-proxy" in source["encounter"]["targets"][0]["name"]
+    # Explicit CMaNGOS BaseHealthExp0 L20 ordinary-melee proxy, not verified
+    # Forever-server creature HP (see src/scenarios/leveling_targets.py).
+    assert source_target_health_from_request(
+        request, expected_target_level=20) == 484.
