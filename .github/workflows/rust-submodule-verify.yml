@@ -135,9 +135,9 @@ jobs:
 
       - name: Run no-record Paladin L20 P3 with native player context and item options
         env:
-          GH_TOKEN: \${{ github.token }}
-          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: \${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
-          FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN: \${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+          GH_TOKEN: ${{ github.token }}
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+          FOREVER_P3_NATIVE_PLAYER_CONTEXT_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
         shell: bash
         run: |
           set -euo pipefail
