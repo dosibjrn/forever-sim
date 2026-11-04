@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'tests/maintenance/**'
+      - 'src/v2/source_sqlite_spell_facts.py'
+      - 'src/v2/source_sqlite_spell_semantics.py'
       - 'tests/integration/source/**'
       - 'tests/mechanics/**'
       - 'src/rulesets/forever/classes/druid/mechanics.py'
