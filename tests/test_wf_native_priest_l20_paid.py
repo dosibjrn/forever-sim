@@ -1439,3 +1439,28 @@ def test_priest_retained_world_refuses_incomplete_native_regen_receipts(broken, 
     ]
     with pytest.raises(AssertionError, match=reason):
         module._native_mana_continuity(windows, 2)
+
+
+@pytest.mark.parametrize(("native_failure", "expected"), [
+    (
+        AssertionError(("RUST_TWO_WORLD_KILLS_NOT_COMPLETED", None,
+                        [{"target_id": "m1"}, {"target_id": "m0"}], 32)),
+        "RUST_TWO_WORLD_KILLS_NOT_COMPLETED:completed=2:native_damage_events=32",
+    ),
+    (
+        AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", 1,
+                        "native mana exhausted on third target")),
+        "RUST_TWO_WORLD_NATIVE_FAILED:exit=1:native mana exhausted on third target",
+    ),
+    (
+        RuntimeError("RUST_NATIVE_PREPARE_REFUSED"),
+        "RUST_NATIVE_PREPARE_REFUSED",
+    ),
+])
+def test_100_target_native_failure_keeps_causal_reason(native_failure, expected):
+    """An actual 100-target producer failure must not lose its error prefix.
+
+    These are formatting regressions only, never synthetic P4/P5 receipts.
+    """
+    from tools.wf_native_priest_l20_paid import _native_world_error
+    assert _native_world_error(native_failure) == expected
