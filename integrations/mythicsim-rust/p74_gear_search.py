@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cold native P7.4 gear search. Diagnostic only; not live Go↔Rust gate proof."""
+"""P7.4 gear-search helpers; live candidate pools come from pinned Rust data."""
 import argparse
 from collections import Counter
 import copy
@@ -14,7 +14,7 @@ import tempfile
 import time
 
 from p74_preflight import preflight, player
-from p74_gear_validation import GearValidator, RejectedGear, SLOTS, SOURCE_SLOTS, sha256
+from p74_gear_validation import GearValidator, RejectedGear, RUST_TYPES, SLOTS, SOURCE_SLOTS, read_jsonl, sha256
 
 REFERENCE_DPS = 728.1936126415858
 
@@ -66,6 +66,101 @@ def candidate_pool(validator, limit, *, independent_enchants=False,
             raise ValueError(f"No PINNED-RUST legal source candidates: slot={slot}, index={i}, excluded={dict(exclusions)}")
         pool[i]=ids
     return pool,exclusions
+
+
+
+def pinned_rust_candidate_pool(items_path, enchants_path):
+    """Build P7.4 proposals directly from the pinned Rust JSONL data tables.
+
+    This reads Rust's own item/enchant rows, not the Forever SQLite catalogue.
+    It applies only slot-shape and proposal-ranking logic; complete candidate
+    acceptance remains the paid native source-control simulation.
+    """
+    rust_items = read_jsonl(items_path)
+    rust_enchants = read_jsonl(enchants_path)
+    pool = {}
+    enchant_pools = {}
+    for slot_index, slot in enumerate(SLOTS):
+        item_type = RUST_TYPES[slot]
+        candidates = []
+        for row in rust_items.values():
+            if not isinstance(row, dict) or row.get("type") != item_type:
+                continue
+            item_id = row.get("id")
+            if type(item_id) is not int or item_id <= 0:
+                continue
+            scaling_options = row.get("scaling_options")
+            if not isinstance(scaling_options, dict):
+                continue
+            scaling = scaling_options.get("0", scaling_options.get(0))
+            if not isinstance(scaling, dict):
+                continue
+            stats = scaling.get("stats")
+            if not isinstance(stats, dict):
+                continue
+            if slot == "weapon":
+                if row.get("hand_type") not in (
+                    "HandTypeOneHand", "HandTypeMainHand",
+                    "HandTypeTwoHand", "HandTypeUnknown",
+                ) or row.get("weapon_type") == "WeaponTypeShield":
+                    continue
+            if slot == "relic" and row.get("ranged_weapon_type") not in (
+                "RangedWeaponTypeIdol", "RangedWeaponTypeUnknown", "",
+            ):
+                continue
+
+            def stat(index):
+                value = stats.get(str(index), stats.get(index, 0.0))
+                return (float(value) if type(value) in (int, float)
+                        and math.isfinite(value) else 0.0)
+
+            score = (stat(5) + .5 * stat(3) + 1.5 * stat(12)
+                     + 1.3 * stat(13) + .1 * stat(16))
+            candidates.append((score, item_id))
+        candidates.sort(key=lambda item: (-item[0], item[1]))
+        if not candidates:
+            raise ValueError(
+                f"No pinned Rust item options for slot={slot}, type={item_type}"
+            )
+        pool[slot_index] = [item_id for _, item_id in candidates]
+
+        valid_enchant_types = {
+            item_type,
+            "EnchantType" + item_type.removeprefix("ItemType"),
+        }
+        if slot == "weapon":
+            valid_enchant_types.add("EnchantTypeWeapon")
+        choices = [None]
+        for enchant in rust_enchants.values():
+            if not isinstance(enchant, dict):
+                continue
+            enchant_id = enchant.get("id")
+            if type(enchant_id) is not int or enchant_id <= 0:
+                continue
+            types = [
+                str(enchant.get("type") or ""),
+                str(enchant.get("enchant_type") or ""),
+            ]
+            types.extend(str(value) for value in (enchant.get("extra_types") or []))
+            if any(
+                value in valid_enchant_types
+                or value.endswith("All")
+                or value.endswith("Any")
+                for value in types
+            ):
+                choices.append(enchant_id)
+        enchant_pools[slot_index] = list(dict.fromkeys(choices))
+
+    metadata = {
+        "unique_item_options": len({
+            item_id for candidates in pool.values() for item_id in candidates
+        }),
+        "unique_enchant_options": len({
+            enchant_id for choices in enchant_pools.values()
+            for enchant_id in choices if enchant_id is not None
+        }),
+    }
+    return pool, enchant_pools, metadata
 
 def source_enchant_pools(validator, pools):
     """Enumerate slot-legal native enchants; never whitelist saved gear only.
