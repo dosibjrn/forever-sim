@@ -84,9 +84,26 @@ jobs:
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             git checkout -B main origin/main
-            active="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=100" \
-              --jq '[.workflow_runs[] | select(.name=="M1 - Merge-owned batch live gate recorder" and (.status=="queued" or .status=="in_progress"))] | length')"
-            [[ "$active" == 0 ]] || { echo "M1_RECORDER_IN_PROGRESS"; exit 2; }
+            candidate_runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=100" \
+              --jq '[.workflow_runs[] | select(.name=="M1 - Merge-owned batch live gate recorder" and (.status=="queued" or .status=="in_progress")) | .id] | .[]')"
+            active=0
+            while IFS= read -r run_id; do
+              [[ -n "$run_id" ]] || continue
+              job_payload="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100")"
+              job_count="$(jq '.jobs | length' <<< "$job_payload")"
+              if [[ "$job_count" == 0 ]]; then
+                active=1
+                continue
+              fi
+              running_jobs="$(jq '[.jobs[] | select(.name=="record" and (.status=="queued" or .status=="in_progress"))] | length' <<< "$job_payload")"
+              if [[ "$running_jobs" -gt 0 ]]; then active=1; fi
+            done <<< "$candidate_runs"
+            if [[ "$active" != 0 ]]; then
+              echo "M1_RECORDER_IN_PROGRESS attempt=$attempt"
+              if [[ "$attempt" == 5 ]]; then exit 2; fi
+              sleep 5
+              continue
+            fi
 
             python - "$TARGET" "$EXPECTED_RUN" <<'PY'
           import csv

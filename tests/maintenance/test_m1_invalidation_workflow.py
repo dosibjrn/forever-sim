@@ -24,3 +24,11 @@ def test_general_m1_recorder_does_not_share_invalidation_trigger():
     recorder = Path(".github/workflows/m1-on-demand-record.yml").read_text()
     assert "startsWith(github.event.comment.body, '/m1-run ')" in recorder
     assert "startsWith(github.event.comment.body, '/m1-invalidate ')" not in recorder
+
+
+def test_invalidation_waits_for_real_recorder_jobs_not_skipped_comment_runs():
+    workflow = Path(".github/workflows/m1-invalidate.yml").read_text()
+    assert 'actions/runs/$run_id/jobs?per_page=100' in workflow
+    assert 'select(.name=="record" and (.status=="queued" or .status=="in_progress"))' in workflow
+    assert 'M1_RECORDER_IN_PROGRESS attempt=$attempt' in workflow
+    assert 'sleep 5' in workflow
