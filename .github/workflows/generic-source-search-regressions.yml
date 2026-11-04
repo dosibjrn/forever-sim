@@ -148,14 +148,14 @@ jobs:
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_paid_rerank_ledger_replays_all_finalist_evaluations
           integrations/mythicsim-rust/tests/test_p75_unrestricted_99pct.py::UnrestrictedNinetyNinePercentTests::test_cold_apl_can_generate_19_actions_from_10_action_source_grammar
 
-  selected-native-p72:
-    # One selected-engine read-only acceptance probe on Work2's P7.3 lane.
+  selected-native-p74:
+    # One selected-engine read-only no-record probe on Work2's new P7.4 lane.
     # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
     if: startsWith(github.head_ref, 'work/work2-p72-native-axis-')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - name: Checkout exact P7.2 PR HEAD with selected Rust fork
+      - name: Checkout exact P7.4 PR HEAD with selected Rust fork
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -182,8 +182,8 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: 'off'
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
         run: cargo build --release --locked --bin forever-engine
-      - name: Pay real P7.3 changed-talents candidate without recording M1
+      - name: Pay real P7.4 changed-equipment candidate without recording M1
         env:
           FOREVER_MYTHICSIM_RUST_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/release/forever-engine
         run: |
-          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.3
+          python tools/wf_gate.py --class druid --level 60 --spec unrestricted --gate P7.4
