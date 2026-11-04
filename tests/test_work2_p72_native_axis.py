@@ -85,3 +85,36 @@ def test_native_refusal_does_not_claim_p7_2_pass(monkeypatch):
     assert result["status"] == "FAIL"
     assert result["source_legal_cold_candidates_paid"] == 0
     assert "NATIVE_SOURCE_CONTROL_FAILED" in result["cold_candidate_failures"][0]
+
+
+def test_public_gate_receipt_keeps_real_native_score_and_changed_apl(
+        monkeypatch, capsys):
+    import json
+    from tools import wf_gate
+    changed = [{"action": {"castSpell": {"spellId": 8921}}}]
+    report = {
+        "status": "PASS",
+        "reasons": [],
+        "runtime_proof": {"executed": True, "engine_revision": "selected-rust",
+                          "source_revision": "paid-candidate",
+                          "run_id": "native-paid-1"},
+        "production_engine": "pinned_mythicsim_rust_native",
+        "native_source_revision": "selected-rust",
+        "source_request_raw_sha256": "source-sha",
+        "source_legal_cold_candidates_paid": 1,
+        "cold_winner_request_sha256": "paid-candidate",
+        "winner_native_dps": 22.0,
+        "original_apl_hash": "original-hash",
+        "cold_winner_apl": changed,
+        "source_fixed_gear_and_talents": True,
+        "selected_validation": "3_native_balanced_fights_per_distinct_apl",
+    }
+    monkeypatch.setattr(wf_gate, "_run_live_gate", lambda *args: report)
+    assert wf_gate.main(["--class", "druid", "--level", "60",
+                         "--spec", "balance", "--gate", "P7.2"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    row = result["results"][0]
+    assert row["winner_native_dps"] == 22.0
+    assert row["cold_winner_apl"] == changed
+    assert row["source_fixed_gear_and_talents"] is True
+    assert row["cold_winner_request_sha256"] == "paid-candidate"
