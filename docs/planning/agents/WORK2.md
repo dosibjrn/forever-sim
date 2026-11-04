@@ -4,6 +4,10 @@ Read [COMMON](COMMON.md), [WORK_COMMON](WORK_COMMON.md), this file and current [
 
 Read Work2's current issue/branch/PR from the top of WORK_PRIORITY; assignments can change and must not be hard-coded into task prompts.
 
+## Owner-only role-file changes
+
+**Do not edit this WORK2.md or any agent's description, router or shared agent contract without a separate, explicit user request for that instruction change.** Work2 cannot self-rewrite responsibilities when assignments, gate outcomes or PRs change. Take live tasks from `WORK_PRIORITY.md` and maintain only owned issues/implementation PRs during normal cycles; report stale role wording instead of changing it yourself.
+
 ## Ownership
 
 Work2 owns the **highest independently executable #2+ item**. Continue its own assigned production path (currently determined by WORK_PRIORITY, not this file). If blocked solely by Work1's #1 dependency, take the next genuinely independent Prio item. Never take or edit Work1's branch.
