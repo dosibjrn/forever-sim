@@ -50,6 +50,29 @@ def _build_identity(winner: dict) -> str:
                       sort_keys=True, separators=(',', ':'), default=str)
 
 
+
+def _shared_replay_winners(report: dict) -> list[dict]:
+    """Run the actual frozen 30s and final 300s builds, not every proxy finalist.
+
+    P6 compares precisely these two builds. An identical build is only paid
+    once; all other shortlist screens remain useful search diagnostics.
+    """
+    snapshot = report.get('shared_search_snapshot') or {}
+    candidates = (snapshot.get('winner'), report.get('search_winner'))
+    winners, identities = [], set()
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        try:
+            identity = _build_identity(candidate)
+        except ValueError:
+            continue
+        if identity not in identities:
+            winners.append(candidate)
+            identities.add(identity)
+    return winners
+
+
 def _complete_receipt(row: dict) -> bool:
     if not isinstance(row, dict):
         return False
@@ -118,7 +141,8 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
     root = Path(root)
     with TemporaryDirectory(prefix='p6-shared-source-') as temp:
         folder = Path(temp)
-        report, error = _execute(root, ['--budget', '300', *checkpoint_args],
+        report, error = _execute(root, ['--budget', '300', '--p6-shared-finalists',
+                                        *checkpoint_args],
                                  folder / 'shared-300.json', 720)
         if error:
             return {'status': 'FAIL', 'reasons': ['P6_300S_' + error],
@@ -171,7 +195,20 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
             'executed': True, 'engine_revision': 'gsim-' + SOFTWARE_VERSION,
             'source_revision': sha256(source_identity.encode()).hexdigest(),
             'run_id': 'shared-source-paid-p6-' + str(uuid4())}}
+    selected_paid_winners = [
+        {'budget_s': budget,
+         'paid_candidate_index': winner.get('paid_candidate_index'),
+         'screen_finished_elapsed_s': winner.get('screen_finished_elapsed_s'),
+         'screen_s_per_mob': winner.get('screen_s_per_mob'),
+         'gear_move': winner.get('gear_move'),
+         'policy': winner.get('policy'),
+         'policy_signature': winner.get('policy_signature'),
+         'recovery': winner.get('recovery'),
+         'allocation': winner.get('allocation')}
+        for budget, winner in ((30, winner30), (300, winner300))
+    ]
     return {
+        'selected_paid_winners': selected_paid_winners,
         'status': 'FAIL' if reasons else 'PASS', 'reasons': reasons, **proof,
         'production_engine': 'gsim_CombatRuntime',
         'production_component': 'src.v2.source_bounded_joint_frontier.search_bounded_joint_frontier',
