@@ -11,6 +11,7 @@ on:
       - src/game/native_p3_item_options.py
       - tests/gates/test_wf_gate_class_cli.py
       - tests/test_native_p3_item_options.py
+      - tests/test_prio_p3_source_policy_sp.py
       - tools/wf_gate.py
       - tools/wf_gate_p3_live.py
 
@@ -88,6 +89,64 @@ jobs:
                 "unverified", row["native_unverified_candidate_count"], flush=True)
           PY
           done
+      - name: Run no-record Mage L30 P3 with native item options
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN: ${{ github.workspace }}/integrations/mythicsim-rust/engine/target/debug/forever-engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/native-p3-no-record/mage-l30-p3.json"
+          rc=0
+          timeout 600s python tools/wf_gate.py --class mage --level 30 \
+            --spec unrestricted --gate P3 --out "$report" || rc=$?
+          python - "$report" "$rc" <<'PY'
+          import json, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text())
+          rc = int(sys.argv[2])
+          assert report["class"] == "mage" and report["level"] == 30
+          assert report["spec"] == "unrestricted" and report["gate"] == "P3"
+          if report["status"] == "BLOCKED":
+              reasons = report.get("reasons", [])
+              assert reasons and any(
+                  reason.startswith("P3_NATIVE_ITEM_OPTIONS_") for reason in reasons
+              ), (report, rc)
+              assert "P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED" not in reasons
+              assert rc == 1, (report, rc)
+              print("NO_RECORD_NATIVE_P3_BLOCKED mage:30", reasons, flush=True)
+          else:
+              assert report["status"] in ("FAIL", "PASS"), report
+              assert rc == (0 if report["status"] == "PASS" else 1), (report, rc)
+              assert len(report["results"]) == 1
+              row = report["results"][0]
+              assert row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+              native_status = row["native_item_options_status"]
+              assert native_status in ("ok", "empty", "partial_level_unknown")
+              unknown = row["native_unverified_candidate_count"]
+              assert type(unknown) is int and unknown >= 0
+              assert native_status == "partial_level_unknown" or unknown == 0
+              if native_status == "partial_level_unknown":
+                  assert unknown > 0
+                  assert any(
+                      reason == f"NATIVE_ITEM_OPTIONS_PARTIAL_LEVEL_UNKNOWN:{unknown}"
+                      for reason in row["reasons"]
+                  )
+              source = row["native_item_options_source"]
+              assert isinstance(source, str) and source.startswith("mythicsim:")
+              known = row["real_catalogue_legal_items"]
+              assert type(known) is int and known >= 0
+              assert type(row["real_catalogue_slots_scored"]) is int
+              assert type(row["real_catalogue_top5_items_scored"]) is int
+              assert type(row["real_source_search_evaluated"]) is int
+              print("NO_RECORD_NATIVE_P3_MEASURED mage:30",
+                    "known_items", known,
+                    "native_status", native_status,
+                    "unknown_level_excluded", unknown,
+                    "top5_scored", row["real_catalogue_top5_items_scored"],
+                    "reachability", row["reachability_count"], flush=True)
+          PY
+
       - name: Upload no-record native P3 reports
         if: always()
         uses: actions/upload-artifact@v4

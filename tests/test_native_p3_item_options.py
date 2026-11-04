@@ -150,12 +150,17 @@ def test_native_p3_partial_unknown_is_measured_but_not_certified():
 
 
 
-@pytest.mark.parametrize("class_key", ["priest", "mage"])
-def test_native_p3_live_gate_fails_closed_without_binary(monkeypatch, class_key):
+@pytest.mark.parametrize(("class_key", "level", "spec"), [
+    ("priest", 20, "unrestricted"),
+    ("mage", 20, "unrestricted"),
+    ("mage", 30, "unrestricted"),
+])
+def test_native_p3_live_gate_fails_closed_without_binary(
+        monkeypatch, class_key, level, spec):
     from tools.wf_gate_p3_live import run_live
 
     monkeypatch.delenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", raising=False)
-    report = run_live(Path("."), class_key, 20)
+    report = run_live(Path("."), class_key, level, spec=spec)
     assert report == {
         "status": "BLOCKED",
         "reasons": ["P3_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED"],
@@ -163,11 +168,13 @@ def test_native_p3_live_gate_fails_closed_without_binary(monkeypatch, class_key)
     }
 
 
-def test_m1_recorder_builds_exact_native_binary_for_priest_mage_p3_only():
+def test_m1_recorder_builds_exact_native_binary_for_verified_p3_targets_only():
     workflow = Path(".github/workflows/m1-on-demand-record.yml").read_text()
     assert "p3_native_needed=false" in workflow
     assert 'IFS=: read -r class level spec gate <<< "$entry"' in workflow
-    assert 'if [[ "$gate" == P3 && "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]]; then' in workflow
+    assert 'if [[ "$gate" == P3 ]]; then' in workflow
+    assert 'if [[ "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]] ||' in workflow
+    assert '[[ "$level" == 30 && "$class" == mage && "$spec" == unrestricted ]]; then' in workflow
     assert "p3_native_needed=true" in workflow
     assert "if: steps.targets.outputs.invalidate != 'true' && steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
     assert 'git submodule update --init --depth 1 "$engine"' in workflow
@@ -244,11 +251,29 @@ def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five():
 
 
 
-def test_native_p3_activation_is_limited_to_verified_l20_targets():
+def test_native_p3_activation_is_limited_to_verified_unrestricted_targets():
     from tools.wf_gate_p3_live import native_item_options_required
 
-    assert native_item_options_required("priest", 20)
-    assert native_item_options_required("mage", 20)
-    assert not native_item_options_required("priest", 30)
-    assert not native_item_options_required("mage", 30)
-    assert not native_item_options_required("warrior", 20)
+    assert native_item_options_required("priest", 20, "unrestricted")
+    assert native_item_options_required("priest", 20, "shadow")
+    assert native_item_options_required("mage", 20, "unrestricted")
+    assert native_item_options_required("mage", 20, "arcane")
+    assert native_item_options_required("mage", 30, "unrestricted")
+    assert not native_item_options_required("mage", 30, "feral-cat")
+    assert not native_item_options_required("priest", 30, "unrestricted")
+    assert not native_item_options_required("mage", 40, "unrestricted")
+    assert not native_item_options_required("warrior", 20, "unrestricted")
+
+def test_selected_engine_workflow_runs_mage_l30_native_p3_without_record():
+    workflow = Path(".github/workflows/rust-submodule-verify.yml").read_text()
+    assert "Run no-record Mage L30 P3 with native item options" in workflow
+    mage30 = workflow.split(
+        "Run no-record Mage L30 P3 with native item options", 1
+    )[1].split("Upload no-record native P3 reports", 1)[0]
+    assert "--class mage --level 30" in mage30
+    assert '--spec unrestricted --gate P3 --out "$report"' in mage30
+    assert 'row["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"' in mage30
+    assert 'row["native_item_options_status"]' in mage30
+    assert 'row["native_unverified_candidate_count"]' in mage30
+    assert 'row["real_catalogue_legal_items"]' in mage30
+    assert "--record-pass" not in mage30
