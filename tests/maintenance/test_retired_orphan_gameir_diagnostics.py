@@ -13,6 +13,7 @@ RETIRED_TOOLS = (
     "tools/wf399_replay_winner.py",
     "tools/wf384_generic_checkpoint_screen.py",
     "tools/wf385_mage_stamina_100mob.py",
+    "tools/wf294_l1_partial_nine_class.py",
 )
 RETIRED_IMPORT_NAMES = (
     "wf303_source_wide_100mob",
@@ -21,6 +22,7 @@ RETIRED_IMPORT_NAMES = (
     "wf399_replay_winner",
     "wf384_generic_checkpoint_screen",
     "wf385_mage_stamina_100mob",
+    "wf294_l1_partial_nine_class",
 )
 
 
