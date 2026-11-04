@@ -88,6 +88,18 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
     if candidate is None:
         return {"status": "NO_DISTINCT_NATIVE_EQUIPPED_ALTERNATIVE",
                 "paid_attempts": 0, "comparison": None, "swap": None}
+    # Do not spend two native executions on a level-60/missing-level donor
+    # and then mislabel its DPS as Rogue L20 checkpoint evidence. The source
+    # request must carry the exact L20 actor; native decides if it is runnable.
+    requested_level = _first_player(reference).get("level")
+    if type(requested_level) is not int or requested_level != 20:
+        return {
+            "status": "NATIVE_REQUEST_CHECKPOINT_MISMATCH",
+            "paid_attempts": 0, "comparison": None, "swap": swap,
+            "actor_checkpoint_verified": False,
+            "actor_requested_level": requested_level,
+            "promotion": "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR",
+        }
     original = copy.deepcopy(reference)
     deadline = time.monotonic() + seconds
     rows = []
@@ -122,8 +134,17 @@ def compare_equipped_native(binary, reference: dict, selection: dict, *,
         "comparison": ({"delta_dps": delta, "baseline_dps": rows[0]["score"],
                         "equipped_dps": rows[1]["score"]} if paired else None),
         "iterations": iterations, "seed": seed,
-        "actor_checkpoint_verified": False,
-        "promotion": "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR",
+        "actor_requested_level": requested_level,
+        # Both actual selected-native evaluations must have returned finite
+        # scores for this exact L20 request and its one-item mutation.
+        # This is not by itself a P3 PASS: the caller retains other blockers.
+        "actor_checkpoint_verified": paired,
+        "promotion": (
+            "MATCHED_ROGUE_L20_NATIVE_SCORED_DIFFERENCE"
+            if paired and delta != 0 else
+            "MATCHED_ROGUE_L20_NATIVE_EQUAL" if paired else
+            "NOT_P3_PASS_WITHOUT_MATCHED_NATIVE_L20_ACTOR"
+        ),
     }
 
 
