@@ -59,7 +59,7 @@ def test_mage_breadth_reaches_already_paid_winner_under_five_paid_calls(monkeypa
     calls.clear()
     unchanged = budgeted.paid_source_policy_stat_witness(
         ir, breadth_first_verified_native_winner=False, **args)
-    assert unchanged["status"] == "NO_POSITIVE_SOURCE_POLICY_WITNESS"
+    assert unchanged["status"] == "MEASURED_ZERO_SOURCE_POLICY_WITNESS"
     assert unchanged["paid_evaluations"] == 5
     assert ("search-winner", 20.) not in calls
 
@@ -87,7 +87,7 @@ def test_breadth_opt_in_requires_verified_paid_baseline(monkeypatch):
         max_evaluations=3, schedule_incoming_attacks=True,
         preferred_policy=selected, baseline_record={"invalid": True},
         breadth_first_verified_native_winner=True)
-    assert row["status"] == "NO_POSITIVE_SOURCE_POLICY_WITNESS", row
+    assert row["status"] == "MEASURED_ZERO_SOURCE_POLICY_WITNESS", row
     assert row["paid_evaluations"] == 3
     # With no verified reuse, source policy retains both real paid deltas.
     assert calls == ["source", "source", "source"]
