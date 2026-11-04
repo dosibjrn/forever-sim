@@ -127,7 +127,7 @@ def _p75_paid_rebuild_axes(proposal_index: int):
 
 
 def _paid_p75_balanced_finalist(production, binary, request, distance, *,
-                                seeds=("1955004", "1955047")):
+                                seeds=("1955004", "1955047"), native_only=False):
     """Rank paid P7.5 candidates only with deterministic balanced RNG.
 
     Keep a small, reproducible three-fight screen for each independent seed.
@@ -145,17 +145,23 @@ def _paid_p75_balanced_finalist(production, binary, request, distance, *,
             path.write_text(json.dumps(candidate))
             native = production.native_source_control(
                 binary, path, 3, rng_mode="balanced")
-            live = production.run(
-                binary, path, distance=distance, iterations=3,
-                rng_mode="balanced")
-            mismatch = _source_native_world_parity(native, live, 3)
-            if mismatch is not None:
-                raise ValueError("P75_BALANCED_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
-        if (live.get("iterations_done") != 3
-                or live.get("native_damage_events", 0) <= 0
-                or live.get("native_world_ticks", 0) <= 0):
-            raise ValueError("P75_BALANCED_FINALIST_WORLD_INCOMPLETE")
-        score = float(live["world_mean_dps"])
+            if native_only:
+                if type(native.get("iterations")) is not int or native["iterations"] != 3:
+                    raise ValueError("P75_BALANCED_FINALIST_NATIVE_ITERATIONS_INVALID")
+                live = native
+                score = float(native["native_dps"])
+            else:
+                live = production.run(
+                    binary, path, distance=distance, iterations=3,
+                    rng_mode="balanced")
+                mismatch = _source_native_world_parity(native, live, 3)
+                if mismatch is not None:
+                    raise ValueError("P75_BALANCED_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
+                if (live.get("iterations_done") != 3
+                        or live.get("native_damage_events", 0) <= 0
+                        or live.get("native_world_ticks", 0) <= 0):
+                    raise ValueError("P75_BALANCED_FINALIST_WORLD_INCOMPLETE")
+                score = float(live["world_mean_dps"])
         if not 0 <= score < float("inf"):
             raise ValueError("P75_BALANCED_FINALIST_DPS_INVALID")
         scores.append(score)
@@ -424,7 +430,12 @@ def _p75_crossover_rng(proposal_index: int) -> random.Random:
 
 def run_live(root: Path, class_key: str, level: int, *,
              spec: str = "unrestricted") -> dict:
-    prepared = _pinned_source_runtime(root, class_key, level, spec, "P7.5")
+    # Approved P7.5 is a stationary native benchmark, not a world-ACK gate.
+    # Keep the old Balance diagnostic path unchanged while migrating the
+    # checkpoint-critical unrestricted route to direct selected-native calls.
+    native_only = spec == "unrestricted"
+    prepared = _pinned_source_runtime(
+        root, class_key, level, spec, "P7.5", require_world=not native_only)
     if isinstance(prepared, dict):
         return prepared
     base, meta, binary = prepared
@@ -532,7 +543,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                         second_score, second_live = _paid_p75_balanced_finalist(
                             production, binary, row[3], distance,
                             seeds=(("1955181", "1955207") if is_deep
-                                   else ("1955113", "1955139")))
+                                   else ("1955113", "1955139")),
+                            native_only=native_only)
                         # Initial 6, confirmed 12, deep-confirmed 18
                         # genuine paid balanced fights: weight old 12-fight
                         # mean twice when incorporating the last 6.
@@ -565,7 +577,8 @@ def run_live(root: Path, class_key: str, level: int, *,
                     try:
                         balanced_score, balanced_live = _paid_p75_balanced_finalist(
                             production, binary, candidate, distance,
-                            seeds=("1955004", "1955047"))
+                            seeds=("1955004", "1955047"),
+                            native_only=native_only)
                         balanced_finalists.append((
                             balanced_score, balanced_live, candidate_sha,
                             candidate, screen_score))
@@ -678,17 +691,23 @@ def run_live(root: Path, class_key: str, level: int, *,
                     # --gate without a second Python legality decision.
                     native = production.native_source_control(
                         binary, path, 3, rng_mode="balanced")
-                    live = production.run(
-                        binary, path, distance=distance, iterations=3,
-                        rng_mode="balanced")
-                    mismatch = _source_native_world_parity(native, live, 3)
-                    if mismatch is not None:
-                        raise ValueError("P7_5_" + mismatch)
-                if (live.get("iterations_done") != 3
-                        or live.get("native_damage_events", 0) <= 0
-                        or live.get("native_world_ticks", 0) <= 0):
-                    raise ValueError("SOURCE_JOINT_NATIVE_WORLD_EXECUTION_INCOMPLETE")
-                score = float(live["world_mean_dps"])
+                    if native_only:
+                        if type(native.get("iterations")) is not int or native["iterations"] != 3:
+                            raise ValueError("P7_5_NATIVE_SCREEN_ITERATIONS_INVALID")
+                        live = native
+                        score = float(native["native_dps"])
+                    else:
+                        live = production.run(
+                            binary, path, distance=distance, iterations=3,
+                            rng_mode="balanced")
+                        mismatch = _source_native_world_parity(native, live, 3)
+                        if mismatch is not None:
+                            raise ValueError("P7_5_" + mismatch)
+                        if (live.get("iterations_done") != 3
+                                or live.get("native_damage_events", 0) <= 0
+                                or live.get("native_world_ticks", 0) <= 0):
+                            raise ValueError("SOURCE_JOINT_NATIVE_WORLD_EXECUTION_INCOMPLETE")
+                        score = float(live["world_mean_dps"])
                 if not 0 <= score < float("inf"):
                     raise ValueError("SOURCE_JOINT_NATIVE_WORLD_DPS_INVALID")
                 executed += 1
@@ -716,7 +735,8 @@ def run_live(root: Path, class_key: str, level: int, *,
     if best is None:
         return {"status": "FAIL",
                 "reasons": ["P7_5_NO_SOURCE_LEGAL_JOINT_CANDIDATE_REACHED_NATIVE_WORLD"],
-                "production_engine": "pinned_mythicsim_rust_gsim_2d",
+                "production_engine": ("pinned_mythicsim_rust_native" if native_only
+                                      else "pinned_mythicsim_rust_gsim_2d"),
                 "search_wall_s": search_wall_s,
                 "cold_candidate_failures": failures[:4]}
 
@@ -736,33 +756,48 @@ def run_live(root: Path, class_key: str, level: int, *,
                 n = P7_FINAL_STOCHASTIC_ITERATIONS
                 native = production.native_source_control(
                     binary, frozen_path, n, rng_mode="stochastic")
-                world = production.run(
-                    binary, frozen_path, distance=distance, iterations=n,
-                    rng_mode="stochastic")
-                mismatch = _source_native_world_parity(
-                    native, world, n, expected_raw_sha=frozen_sha)
-                if mismatch is not None:
-                    raise ValueError("FROZEN_STOCHASTIC_NATIVE_WORLD_PARITY:" + mismatch)
                 native_dps = float(native["native_dps"])
-                world_dps = float(world["world_mean_dps"])
-                if not (0 <= native_dps < float("inf")
-                        and 0 <= world_dps < float("inf")
-                        and int(world["native_damage_events"]) > 0
-                        and int(world["native_world_ticks"]) > 0):
-                    raise ValueError("P7_5_FROZEN_STOCHASTIC_WORLD_INVALID")
-                reference_only_floor = (P7_5_FINAL_DPS_FLOOR_FRACTION
-                                        * float(meta["reference_dps"]))
-                final = {
-                    "frozen_request_raw_sha256": frozen_sha,
-                    "frozen_stochastic_iterations": n,
-                    "frozen_stochastic_native_dps": native_dps,
-                    "frozen_stochastic_world_dps": world_dps,
-                    "frozen_stochastic_world_damage_events": int(world["native_damage_events"]),
-                    "frozen_stochastic_world_boundaries": int(world["native_world_ticks"]),
-                    "frozen_stochastic_external_only_floor_met": (
-                        native_dps >= reference_only_floor
-                        and world_dps >= reference_only_floor),
-                }
+                if native_only:
+                    if (type(native.get("iterations")) is not int
+                            or native["iterations"] != n
+                            or not 0 <= native_dps < float("inf")):
+                        raise ValueError("P7_5_FROZEN_STOCHASTIC_NATIVE_INVALID")
+                    reference_only_floor = (P7_5_FINAL_DPS_FLOOR_FRACTION
+                                            * float(meta["reference_dps"]))
+                    final = {
+                        "frozen_request_raw_sha256": frozen_sha,
+                        "frozen_stochastic_iterations": n,
+                        "frozen_stochastic_native_dps": native_dps,
+                        "frozen_stochastic_external_only_floor_met": (
+                            native_dps >= reference_only_floor),
+                    }
+                else:
+                    world = production.run(
+                        binary, frozen_path, distance=distance, iterations=n,
+                        rng_mode="stochastic")
+                    mismatch = _source_native_world_parity(
+                        native, world, n, expected_raw_sha=frozen_sha)
+                    if mismatch is not None:
+                        raise ValueError("FROZEN_STOCHASTIC_NATIVE_WORLD_PARITY:" + mismatch)
+                    world_dps = float(world["world_mean_dps"])
+                    if not (0 <= native_dps < float("inf")
+                            and 0 <= world_dps < float("inf")
+                            and int(world["native_damage_events"]) > 0
+                            and int(world["native_world_ticks"]) > 0):
+                        raise ValueError("P7_5_FROZEN_STOCHASTIC_WORLD_INVALID")
+                    reference_only_floor = (P7_5_FINAL_DPS_FLOOR_FRACTION
+                                            * float(meta["reference_dps"]))
+                    final = {
+                        "frozen_request_raw_sha256": frozen_sha,
+                        "frozen_stochastic_iterations": n,
+                        "frozen_stochastic_native_dps": native_dps,
+                        "frozen_stochastic_world_dps": world_dps,
+                        "frozen_stochastic_world_damage_events": int(world["native_damage_events"]),
+                        "frozen_stochastic_world_boundaries": int(world["native_world_ticks"]),
+                        "frozen_stochastic_external_only_floor_met": (
+                            native_dps >= reference_only_floor
+                            and world_dps >= reference_only_floor),
+                    }
         except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
                 TypeError, AssertionError, subprocess.SubprocessError) as exc:
             final = {"frozen_stochastic_failure":
@@ -783,9 +818,12 @@ def run_live(root: Path, class_key: str, level: int, *,
     prior_dps = prior["dps"] if prior is not None else None
     required = (p7_required_dps(
         "P7.5", float(meta["reference_dps"]),
-        strongest_accepted_compatible_prior=prior_dps)
-        if prior_dps is not None else None)
-    reasons = ([] if prior is not None else [
+        strongest_accepted_compatible_prior=(
+            prior_dps if prior_dps is not None else float(meta["reference_dps"])))
+        if native_only or prior_dps is not None else None)
+    # Optional axis stochastic evidence is not a prerequisite. The native
+    # unrestricted target uses the pinned reference when none qualifies.
+    reasons = ([] if native_only or prior is not None else [
         "P7_5_ACCEPTED_COMPATIBLE_PRIOR_REQUIRED_FOR_FINAL_DPS_FLOOR"])
     if not full_search:
         reasons.append("P7_5_FULL_300S_COLD_SEARCH_AND_1000_STOCHASTIC_HOLDOUT_NOT_EXECUTED")
@@ -797,7 +835,7 @@ def run_live(root: Path, class_key: str, level: int, *,
         reasons.append("P7_5_FROZEN_STOCHASTIC_DPS_BELOW_EXTERNAL_ONLY_FLOOR")
     elif required is not None and (
             final["frozen_stochastic_native_dps"] < required
-            or final["frozen_stochastic_world_dps"] < required):
+            or (not native_only and final["frozen_stochastic_world_dps"] < required)):
         reasons.append("P7_5_FROZEN_STOCHASTIC_DPS_BELOW_ACCEPTED_PRIOR_FLOOR")
     # An unestablished accepted-compatible prior is a missing *comparison*,
     # not evidence that combat/search failed. Label a genuine full-run budget,
@@ -825,12 +863,14 @@ def run_live(root: Path, class_key: str, level: int, *,
         "status": ("FAIL" if failed_execution else
                    "BLOCKED" if reasons else "PASS"),
         "reasons": reasons,
-        "production_engine": "pinned_mythicsim_rust_gsim_2d",
+        "production_engine": ("pinned_mythicsim_rust_native" if native_only
+                              else "pinned_mythicsim_rust_gsim_2d"),
         "production_component": "integrations/mythicsim-rust/live_world_probe.py",
         "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
         "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
         "saved_reference_dps": float(meta["reference_dps"]),
-        "joint_cold_world_dps": score,
+        **({"joint_cold_native_dps": score} if native_only
+           else {"joint_cold_world_dps": score}),
         "cold_balanced_screen_best_dps": best[0],
         "selected_balanced_screen_dps": selected_balanced_score,
         "paid_joint_balanced_finalists": len(balanced_finalists),
@@ -864,8 +904,9 @@ def run_live(root: Path, class_key: str, level: int, *,
             "P7.5", final["frozen_request_raw_sha256"],
             engine_revision=meta.get("selected_engine_revision", PINNED_RUST))
            if complete_search and not reasons and "frozen_request_raw_sha256" in final else {}),
-        "world_damage_events": int(live["native_damage_events"]),
-        "world_boundaries": int(live["native_world_ticks"]),
+        **({} if native_only else {
+            "world_damage_events": int(live["native_damage_events"]),
+            "world_boundaries": int(live["native_world_ticks"])}),
         "source_legal_joint_candidates_paid": executed,
         "search_strategy": strategy,
         **(wf613.diagnostics() if wf613 is not None else {}),
