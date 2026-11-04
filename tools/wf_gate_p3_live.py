@@ -261,6 +261,14 @@ def _source_actor_context_summary(ir) -> dict:
 
 
 
+def _native_equipped_p3_reservation(
+        class_key: str, level: int, spec: str, native_binary: str | None) -> int:
+    """Reserve two paid attempts only for the selected Rogue native request."""
+    return (2 if native_binary and str(class_key).lower() == "rogue"
+            and int(level) == 20 and str(spec).lower() == "unrestricted"
+            and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
+
+
 def _paid_native_equipped_probe(root: Path, native_binary: str | None,
                                 item_check: dict, remaining: int):
     """Use the existing selected-native sim boundary when an exact source
@@ -421,10 +429,8 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
     # Reserve a real baseline+equipped Rust pair when a native source request
     # is supplied. Otherwise the earlier 44-budget Python source search can
     # consume both slots and the selected-native pair never executes.
-    native_pair_reserved = (
-        2 if native_binary and str(class_key).lower() == "rogue"
-        and int(level) == 20 and str(spec).lower() == "unrestricted"
-        and os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST") else 0)
+    native_pair_reserved = _native_equipped_p3_reservation(
+        class_key, level, spec, native_binary)
     source_search_budget = max_p3_evaluations - native_pair_reserved
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
