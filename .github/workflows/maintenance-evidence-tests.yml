@@ -205,7 +205,13 @@ jobs:
           assert actor["actor_provenance"][0]["authority"] == (
               "scenario_proxy_not_source_backed"
           ), actor
+          assert actor["actor_provenance"][0]["capture_id"] == (
+              "wf251_two_classes_2026-10-11"
+          ), actor
           auto = actor["auto_attacks"][0]
+          assert auto["provenance"][0]["capture_id"] == (
+              "wf251_two_classes_2026-10-11"
+          ), auto
           assert auto["damage_source"]["flat_dps"] == 14.0, auto
           assert any(source.get("caveat") ==
                      "ordinary_melee_auto_and_weapon_speed_scenario_proxy"
