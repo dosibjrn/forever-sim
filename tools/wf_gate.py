@@ -168,7 +168,7 @@ def main(argv=None) -> int:
                     "native_first_duration_s", "world_first_duration_s",
                     "source_replay_Tfirst_Tsecond", "source_replay_T30_T300",
                     "source_replay_T30_s_per_mob", "source_replay_T300_s_per_mob",
-                    "selected_paid_winners", "source_replay_numeric_saturation",
+                    "selected_paid_winners", "source_replay_300s_nonregression",
                     "joint_cold_world_dps", "joint_cold_native_dps",
                     "frozen_stochastic_iterations", "frozen_stochastic_native_dps",
                     "frozen_request_raw_sha256", "search_wall_s",
