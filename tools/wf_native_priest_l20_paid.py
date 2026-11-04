@@ -212,19 +212,23 @@ def score_source_priest_l20_candidates(binary: str | Path,
     paid = [row for row in rows if row["status"] == "NATIVE_PAID"]
     # The selected paid candidate, not a synthetic world-only request, reaches
     # the existing live Rust↔2D ACK loop once per bounded diagnostic.
-    live = None
-    live_attempted = False
-    if world_screen is not None and paid:
-        candidate = max(
-            paid, key=lambda row: (
-                row["native_source_action_casts"] > 0, row["native_score"]))
-        if candidate["native_source_action_casts"] > 0:
-            live_attempted = True
+    # A strong native-only score cannot prove that the same build works in
+    # the ACKed 2D world. Try the next genuinely paid source candidate if the
+    # first live request fails, with at most two costly world diagnostics.
+    # Neither result may count as a persistent 100-mob paid screen.
+    live_attempted = 0
+    live_verified = 0
+    if world_screen is not None:
+        from tempfile import TemporaryDirectory
+        ranked = sorted(
+            (row for row in paid if row["native_source_action_casts"] > 0),
+            key=lambda row: row["native_score"], reverse=True)
+        for candidate in ranked[:min(2, max_paid_builds)]:
+            live_attempted += 1
             try:
-                from hashlib import sha256
-                # native_score_request pays for a request normalized to one
-                # balanced iteration and seed 42. Replay that EXACT request;
-                # a source directory may supply a different original seed.
+                # Replay the exact normalized request paid by the native scorer.
+                # The original source JSON and candidate directory are read-only:
+                # never leak the synthesized replay into later cold frontiers.
                 effective = json.loads(
                     (folder / candidate["candidate"]).read_text(encoding="utf-8"))
                 effective["simOptions"]["iterations"] = 1
@@ -235,13 +239,19 @@ def score_source_priest_l20_candidates(binary: str | Path,
                 if effective_sha != candidate["native_request_sha256"]:
                     raise RuntimeError(
                         "PRIEST_L20_PAID_WORLD_EFFECTIVE_REQUEST_IDENTITY_MISMATCH")
-                # The live runner verifies the file's raw SHA and the selected
-                # native prepared SHA on every world tick/ACK.
-                execution_request = folder / "live-world-effective-request.json"
-                execution_request.write_text(
-                    json.dumps(effective, sort_keys=True), encoding="utf-8")
-                live = world_screen(binary, execution_request)
+                # The live runner checks its raw request identity, prepared
+                # native protobuf identity, real world ticks and damage ACKs.
+                with TemporaryDirectory(prefix="priest-l20-live-world-") as directory:
+                    execution_request = Path(directory) / "source.json"
+                    execution_request.write_text(
+                        json.dumps(effective, sort_keys=True), encoding="utf-8")
+                    live = world_screen(binary, execution_request)
+                if (not isinstance(live, dict)
+                        or live.get("native_2d_fight_ack_complete") is not True):
+                    raise RuntimeError("PRIEST_L20_PAID_WORLD_ACK_NOT_VERIFIED")
                 candidate["native_2d_fight"] = live
+                live_verified += 1
+                break
             except (OSError, ValueError, RuntimeError, TimeoutError,
                     AssertionError, KeyError, TypeError,
                     subprocess.SubprocessError) as exc:
@@ -255,9 +265,8 @@ def score_source_priest_l20_candidates(binary: str | Path,
             (row["native_source_action_ids_cast"] for row in paid),
             default=0),
         "native_candidate_receipts": rows,
-        "native_2d_live_ack_attempted": int(live_attempted),
-        "native_2d_live_ack_verified": int(bool(live and live.get(
-            "native_2d_fight_ack_complete") is True)),
+        "native_2d_live_ack_attempted": live_attempted,
+        "native_2d_live_ack_verified": live_verified,
         "native_2d_screen_complete": False,
         "native_candidate_search_budget_s": budget_s,
     }
