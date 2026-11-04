@@ -295,6 +295,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
             seen.add(identity)
             path.write_text(json.dumps(build, sort_keys=True), encoding="utf-8")
             row = {"source_request_sha256": identity, "status": "NATIVE_REFUSED"}
+            candidate_talent_witnesses = []
             try:
                 paid = score_source_priest_l20(
                     binary, path, score_request=score_request,
@@ -313,7 +314,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                     for action_id, casts in row["native_source_action_cast_counts"].items():
                         if (type(casts) is int and casts > 0
                                 and action_id not in baseline_cast_ids):
-                            native_talent_action_witnesses.append({
+                            candidate_talent_witnesses.append({
                                 "source_request_sha256": identity,
                                 "native_action_id": action_id,
                                 "native_casts": casts,
@@ -391,6 +392,12 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                         (early_paid is None or candidate["route_probe_s_per_mob"]
                          < early_paid["route_probe_s_per_mob"])):
                     early_paid = copy.deepcopy(candidate)
+            # An unlocked action cast in a native one-fight preflight is
+            # genuine, but P4's whole-build comparison also needs that same
+            # build's paid native/2D route objective. Do not award comparison
+            # credit to a world-refused candidate.
+            if in_budget and row["status"] in ("NATIVE_ROUTE_PAID", "COMPLETE"):
+                native_talent_action_witnesses.extend(candidate_talent_witnesses)
             if in_budget and row["status"] == "COMPLETE":
                 winner = {k: copy.deepcopy(row[k]) for k in (
                     "source_request_sha256", "native_request_sha256",
