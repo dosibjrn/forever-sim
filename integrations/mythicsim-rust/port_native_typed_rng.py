@@ -142,6 +142,23 @@ def migrate_test_simulate_calls(root):
     return changed
 
 
+def ensure_rng_mode_import(root, name):
+    """Add RngMode to the CLI import, accepting already-ported wrapped imports."""
+    path = root / name
+    src = path.read_text()
+    start = src.find("use forever_engine::{")
+    end = src.find("};", start)
+    if start < 0 or end < 0:
+        raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: forever_engine import block missing")
+    imports = src[start:end]
+    if "RngMode" in imports:
+        return
+    if "Request," not in imports:
+        raise RuntimeError(f"RNG_SOURCE_DRIFT {name}: Request import missing")
+    updated = imports.replace("Request,", "Request, RngMode,", 1)
+    path.write_text(src[:start] + updated + src[end:])
+
+
 def migrate(root):
     one(root, "src/core/rng.rs",
         "pub(crate) enum RandomRequest { Uniform01, Bernoulli(f64) }",
@@ -278,8 +295,7 @@ mod typed_rng_api_tests {
     one(root, eng, "classes::run_prepared(prepared)", "classes::run_prepared(prepared, rng_mode)")
     one(root, "src/lib.rs", "pub mod contracts;", "pub mod contracts;\npub use core::rng::RngMode;")
     main = "src/main.rs"
-    one(root, main, "PreparedError, Refusal, Request, Rules, SOURCE_REVISION,",
-        "PreparedError, Refusal, Request, RngMode, Rules, SOURCE_REVISION,")
+    ensure_rng_mode_import(root, main)
     one(root, main, "    let mut infile = None;", "    let mut rng_mode: Option<RngMode> = None;\n    let mut infile = None;")
     one(root, main,
         '            "--trace" if !trace => trace = true,',
