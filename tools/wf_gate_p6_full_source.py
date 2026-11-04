@@ -90,7 +90,12 @@ def _reuse_identical_receipt(report: dict, winner: dict) -> dict | None:
     identity = _build_identity(winner)
     validation = report.get('validation') or {}
     for index, candidate in enumerate(report.get('validation_shortlist') or []):
-        if _build_identity(candidate) != identity:
+        try:
+            if _build_identity(candidate) != identity:
+                continue
+        except ValueError:
+            # An incomplete unselected search row cannot be reused as a
+            # winner receipt; the selected build must still be paid below.
             continue
         for row in validation.get('rows') or []:
             if (isinstance(row, dict) and str(row.get('id')) == str(index)
@@ -221,6 +226,9 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
         'production_component': 'src.v2.source_bounded_joint_frontier.search_bounded_joint_frontier',
         'source_db_sha256': report.get('source_db_sha256'),
         'source_gear_catalogue_snapshot': report.get('source_gear_catalogue_snapshot'),
+        # Keep the actual paid checkpoint/scenario and candidate-space
+        # parameters after the temporary WF437 search report is removed.
+        'source_search_space': report.get('source_search_space'),
         'source_replay_results': results,
         'source_replay_T30_T300': ratio,
         'source_replay_T30_s_per_mob': t30,
