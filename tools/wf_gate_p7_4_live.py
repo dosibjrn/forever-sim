@@ -322,159 +322,154 @@ def run_live(root: Path, class_key: str, level: int, *,
     failures = []
     seen = set()
     proposals = 0
-    validator = gear_search.GearValidator(catalogue, items, enchants, base)
     search_start = time.monotonic()
     search_deadline = search_start + 300.0
     worst_screen_s = 0.0
     try:
-        # The existing source+Rust item validator enumerates the pool once;
-        # re-querying SQLite for every candidate would waste the 300s budget.
-        # Full cold search must not discard source/Rust-admitted items merely
-        # because their heuristic static score falls below a top-80 cutoff.
-        # candidate_pool already validates all catalogue item IDs, and
-        # list[:None] preserves the entire per-slot admitted pool. Enchant
-        # choices are also selected from the pinned source/Rust validator;
-        # unrecorded item-effect semantics are not inferred.
-        pool, _ = gear_search.candidate_pool(
-            validator, limit=None if full_search else 15,
-            native_authoritative=True,
-            **({"independent_enchants": True} if full_search else {}))
-        enchant_pools = (gear_search.source_enchant_pools(validator, pool)
-                         if full_search else None)
+        pool, enchant_pools, options_meta = gear_search.native_candidate_pool(binary)
+    except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
+            TypeError, AssertionError, subprocess.SubprocessError) as exc:
+        return {
+            "status": "FAIL",
+            "reasons": ["P7_4_NATIVE_GEAR_OPTIONS_FAILED:"
+                        + type(exc).__name__ + ":" + str(exc)[:240]],
+            "production_engine": "pinned_mythicsim_rust_gsim_2d",
+            "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
+            "item_candidate_admission": "pinned_rust_native_gear_options",
+        }
         while True:
-            elapsed = time.monotonic() - search_start if full_search else 0.0
-            if (full_search and elapsed >= 300.0
-                    or not full_search and proposals >= 3):
-                break
-            # The old P7.4 froze the maximum of hundreds of noisy three-fight
-            # scores. Independently rerank paid leaders *inside* the same
-            # search budget to avoid selecting a lucky-screen outlier.
-            if full_search and (elapsed >= 240.0 or
-                                _p74_early_rerank_due(
-                                    elapsed, len(reranked))):
-                confirmation = (
-                    _next_p74_confirmation(
-                        reranked, confirmation_attempted, elapsed)
-                    if len(confirmation_attempted) < 3 else None)
-                if confirmation is not None and _paid_step_has_budget(
-                        search_start, max(worst_rerank_s, worst_screen_s)):
-                    index, row = confirmation
-                    confirmation_attempted.add(row[2])
-                    started = time.perf_counter()
-                    try:
-                        second_score, second_live = _paid_p74_balanced_finalist(
-                            production, binary, row[3],
-                            player["distanceFromTarget"],
-                            seeds=("1955113", "1955139"))
-                        # Compare finalists on the same independent 12 fights;
-                        # the original lucky 3-fight screen is diagnostic only.
-                        reranked[index] = (
-                            (row[0] + second_score) / 2,
-                            second_live, *row[2:])
-                        confirmed.add(row[2])
-                    except (ValueError, RuntimeError, OSError, KeyError,
-                            TimeoutError, TypeError, AssertionError,
-                            subprocess.SubprocessError) as exc:
-                        rerank_failures.append(
-                            "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:160])
-                    finally:
-                        worst_rerank_s = max(
-                            worst_rerank_s, time.perf_counter() - started)
-                    continue
-                pending = next((
-                    row for row in screen_archive
-                    if row[2] not in rerank_seen), None)
-                if (pending is not None and len(reranked) < 6
-                        and _paid_step_has_budget(
-                            search_start, max(worst_rerank_s, worst_screen_s))):
-                    screen_score, screen_live, candidate_sha, candidate = pending
-                    rerank_seen.add(candidate_sha)
-                    started = time.perf_counter()
-                    try:
-                        balanced_score, balanced_live = _paid_p74_balanced_finalist(
-                            production, binary, candidate,
-                            player["distanceFromTarget"])
-                        reranked.append((
-                            balanced_score, balanced_live, candidate_sha,
-                            candidate, screen_score))
-                    except (ValueError, RuntimeError, OSError, KeyError,
-                            TimeoutError, TypeError, AssertionError,
-                            subprocess.SubprocessError) as exc:
-                        rerank_failures.append(
-                            type(exc).__name__ + ":" + str(exc)[:160])
-                    finally:
-                        worst_rerank_s = max(
-                            worst_rerank_s, time.perf_counter() - started)
-                    continue
-            if full_search and not _paid_step_has_budget(
-                    search_start, worst_screen_s):
-                break  # preserve time for the final 1,000-fight holdout
-            paid_start = time.perf_counter()
-            proposals += 1
-            try:
-                # Local exploitation uses only a winner already paid in THIS
-                # cold run; every fifth draw is independently cold. The saved
-                # gear and other gates' winners are never injected as elites.
-                # Only the balanced-scored paid archive may guide local edits.
-                elite = (_paid_gear_elite_choice(elites, rng, proposals, reranked)
-                         if full_search else None)
-                candidate = _cold_gear(
-                    base, validator, gear_search, rng, pool=pool,
-                    enchant_pools=enchant_pools, elite=elite,
-                    # Four of five proposals exploit legal stat-ranked source
-                    # candidates; every fifth samples the entire source
-                    # universe uniformly. This is not a top-N legality filter.
-                    source_ranked=full_search and proposals % 5 != 0,
-                    # Within the 4/5 paid-elite proposals, use one-slot
-                    # coordinate edits or enchant-only corrections alongside
-                    # the existing 1-5-slot neighborhood. Every fifth draw
-                    # remains a fully independent cold source-pool candidate.
-                    neighbor_mode=(
-                        "enchant" if full_search and elite is not None
-                        and proposals % 4 == 0 else
-                        "single" if full_search and elite is not None
-                        and proposals % 4 in (1, 3) else "mixed"),
-                    native_authoritative=True)
-                candidate_sha = hashlib.sha256(json.dumps(
-                    candidate, sort_keys=True).encode()).hexdigest()
-                if candidate_sha in seen:
-                    continue  # only distinct legal loadouts are paid
-                seen.add(candidate_sha)
-                with tempfile.TemporaryDirectory(prefix="forever_p74_live_") as tmp:
-                    path = Path(tmp) / "cold-source-gear.json"
-                    path.write_text(json.dumps(candidate))
-                    native = production.native_source_control(
-                        binary, path, 3, rng_mode="balanced")
-                    live = production.run(
-                        binary, path, distance=player["distanceFromTarget"],
-                        iterations=3, rng_mode="balanced")
-                    parity_failure = _source_native_world_parity(native, live, 3)
-                    if parity_failure is not None:
-                        raise ValueError("SOURCE_NATIVE_WORLD_PARITY_FAILED:" + parity_failure)
-                if (live.get("iterations_done") != 3
-                        or live.get("native_damage_events", 0) <= 0
-                        or live.get("native_world_ticks", 0) <= 0):
-                    raise ValueError("SOURCE_GEAR_NATIVE_WORLD_INCOMPLETE")
-                score = float(live["world_mean_dps"])
-                if not 0 <= score < float("inf"):
-                    raise ValueError("SOURCE_GEAR_INVALID_WORLD_DPS")
-                executed += 1
-                elites.append((score, candidate))
-                elites.sort(key=lambda item: item[0], reverse=True)
-                del elites[24:]
-                screen_archive.append((score, live, candidate_sha, candidate))
-                screen_archive.sort(key=lambda row: row[0], reverse=True)
-                del screen_archive[24:]
-                if best is None or score > best[0]:
-                    best = (score, live, candidate_sha, candidate)
-            except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
-                    TypeError, AssertionError, subprocess.SubprocessError) as exc:
-                failures.append(type(exc).__name__ + ":" + str(exc)[:180])
-            finally:
-                worst_screen_s = max(
-                    worst_screen_s, time.perf_counter() - paid_start)
-    finally:
-        validator.close()
+        elapsed = time.monotonic() - search_start if full_search else 0.0
+        if (full_search and elapsed >= 300.0
+                or not full_search and proposals >= 3):
+            break
+        # The old P7.4 froze the maximum of hundreds of noisy three-fight
+        # scores. Independently rerank paid leaders *inside* the same
+        # search budget to avoid selecting a lucky-screen outlier.
+        if full_search and (elapsed >= 240.0 or
+                            _p74_early_rerank_due(
+                                elapsed, len(reranked))):
+            confirmation = (
+                _next_p74_confirmation(
+                    reranked, confirmation_attempted, elapsed)
+                if len(confirmation_attempted) < 3 else None)
+            if confirmation is not None and _paid_step_has_budget(
+                    search_start, max(worst_rerank_s, worst_screen_s)):
+                index, row = confirmation
+                confirmation_attempted.add(row[2])
+                started = time.perf_counter()
+                try:
+                    second_score, second_live = _paid_p74_balanced_finalist(
+                        production, binary, row[3],
+                        player["distanceFromTarget"],
+                        seeds=("1955113", "1955139"))
+                    # Compare finalists on the same independent 12 fights;
+                    # the original lucky 3-fight screen is diagnostic only.
+                    reranked[index] = (
+                        (row[0] + second_score) / 2,
+                        second_live, *row[2:])
+                    confirmed.add(row[2])
+                except (ValueError, RuntimeError, OSError, KeyError,
+                        TimeoutError, TypeError, AssertionError,
+                        subprocess.SubprocessError) as exc:
+                    rerank_failures.append(
+                        "CONFIRM:" + type(exc).__name__ + ":" + str(exc)[:160])
+                finally:
+                    worst_rerank_s = max(
+                        worst_rerank_s, time.perf_counter() - started)
+                continue
+            pending = next((
+                row for row in screen_archive
+                if row[2] not in rerank_seen), None)
+            if (pending is not None and len(reranked) < 6
+                    and _paid_step_has_budget(
+                        search_start, max(worst_rerank_s, worst_screen_s))):
+                screen_score, screen_live, candidate_sha, candidate = pending
+                rerank_seen.add(candidate_sha)
+                started = time.perf_counter()
+                try:
+                    balanced_score, balanced_live = _paid_p74_balanced_finalist(
+                        production, binary, candidate,
+                        player["distanceFromTarget"])
+                    reranked.append((
+                        balanced_score, balanced_live, candidate_sha,
+                        candidate, screen_score))
+                except (ValueError, RuntimeError, OSError, KeyError,
+                        TimeoutError, TypeError, AssertionError,
+                        subprocess.SubprocessError) as exc:
+                    rerank_failures.append(
+                        type(exc).__name__ + ":" + str(exc)[:160])
+                finally:
+                    worst_rerank_s = max(
+                        worst_rerank_s, time.perf_counter() - started)
+                continue
+        if full_search and not _paid_step_has_budget(
+                search_start, worst_screen_s):
+            break  # preserve time for the final 1,000-fight holdout
+        paid_start = time.perf_counter()
+        proposals += 1
+        try:
+            # Local exploitation uses only a winner already paid in THIS
+            # cold run; every fifth draw is independently cold. The saved
+            # gear and other gates' winners are never injected as elites.
+            # Only the balanced-scored paid archive may guide local edits.
+            elite = (_paid_gear_elite_choice(elites, rng, proposals, reranked)
+                     if full_search else None)
+            candidate = _cold_gear(
+                base, None, gear_search, rng, pool=pool,
+                enchant_pools=enchant_pools, elite=elite,
+                # Four of five proposals exploit legal stat-ranked source
+                # candidates; every fifth samples the entire source
+                # universe uniformly. This is not a top-N legality filter.
+                source_ranked=full_search and proposals % 5 != 0,
+                # Within the 4/5 paid-elite proposals, use one-slot
+                # coordinate edits or enchant-only corrections alongside
+                # the existing 1-5-slot neighborhood. Every fifth draw
+                # remains a fully independent cold source-pool candidate.
+                neighbor_mode=(
+                    "enchant" if full_search and elite is not None
+                    and proposals % 4 == 0 else
+                    "single" if full_search and elite is not None
+                    and proposals % 4 in (1, 3) else "mixed"),
+                native_authoritative=True)
+            candidate_sha = hashlib.sha256(json.dumps(
+                candidate, sort_keys=True).encode()).hexdigest()
+            if candidate_sha in seen:
+                continue  # only distinct legal loadouts are paid
+            seen.add(candidate_sha)
+            with tempfile.TemporaryDirectory(prefix="forever_p74_live_") as tmp:
+                path = Path(tmp) / "cold-source-gear.json"
+                path.write_text(json.dumps(candidate))
+                native = production.native_source_control(
+                    binary, path, 3, rng_mode="balanced")
+                live = production.run(
+                    binary, path, distance=player["distanceFromTarget"],
+                    iterations=3, rng_mode="balanced")
+                parity_failure = _source_native_world_parity(native, live, 3)
+                if parity_failure is not None:
+                    raise ValueError("SOURCE_NATIVE_WORLD_PARITY_FAILED:" + parity_failure)
+            if (live.get("iterations_done") != 3
+                    or live.get("native_damage_events", 0) <= 0
+                    or live.get("native_world_ticks", 0) <= 0):
+                raise ValueError("SOURCE_GEAR_NATIVE_WORLD_INCOMPLETE")
+            score = float(live["world_mean_dps"])
+            if not 0 <= score < float("inf"):
+                raise ValueError("SOURCE_GEAR_INVALID_WORLD_DPS")
+            executed += 1
+            elites.append((score, candidate))
+            elites.sort(key=lambda item: item[0], reverse=True)
+            del elites[24:]
+            screen_archive.append((score, live, candidate_sha, candidate))
+            screen_archive.sort(key=lambda row: row[0], reverse=True)
+            del screen_archive[24:]
+            if best is None or score > best[0]:
+                best = (score, live, candidate_sha, candidate)
+        except (ValueError, RuntimeError, OSError, KeyError, TimeoutError,
+                TypeError, AssertionError, subprocess.SubprocessError) as exc:
+            failures.append(type(exc).__name__ + ":" + str(exc)[:180])
+        finally:
+            worst_screen_s = max(
+                worst_screen_s, time.perf_counter() - paid_start)
+
     if full_search:
         # Unused tail time is too short for an observed paid native+2D step.
         # Complete the actual 300s independent wall-time window rather than
