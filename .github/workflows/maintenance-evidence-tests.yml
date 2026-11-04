@@ -16,6 +16,7 @@ on:
       - 'tools/wf300_nine_class_*.py'
       - 'tools/wf353_l30_current_*.py'
       - 'tools/wf343_direct_percent_top5.py'
+      - 'tools/wf431_modified_action_paid_search.py'
       - 'tools/wf357_recovery_probe.py'
       - 'tools/wf391_generic_joint_probe.py'
       - 'tools/wf417_source_root_2d_probe.py'
