@@ -120,3 +120,81 @@ def test_priest_p4_p5_p6_three_verdicts_one_executed_cold(
     assert [x.kwargs["gate"] for x in record.call_args_list] == ["P4", "P5", "P6"]
     assert paid.call_count == 1
     assert source._SHARED_PRIEST_L20_COLD is None
+
+
+@pytest.mark.parametrize("p5_status", ["PASS", "FAIL"])
+def test_priest_p5_p6_one_cold_does_not_re_record_p4(
+        tmp_path, monkeypatch, capsys, p5_status):
+    """Only requested P5 and P6 are recorded; P4 stays accepted unchanged."""
+    from tools import wf_gate_p6_live
+
+    binary = tmp_path / "selected-native"
+    binary.write_bytes(b"selected native executable")
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", str(binary))
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST_DIR", "native-source")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD", "1")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_PERSISTENT_TARGETS", "100")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH", "1")
+    cold = {
+        "native_cold_search_wall_s": 300.12,
+        "native_cold_native_paid_before_30": 2,
+        "native_cold_native_paid_after_30": 2,
+        "native_cold_completed_routes_before_30": 1,
+        "native_cold_completed_routes_after_30": 1,
+        "native_cold_snapshot_30": {"source_request_sha256": "a" * 64},
+        "native_cold_final_300": {"source_request_sha256": "a" * 64},
+    }
+
+    def native_p6(root, class_key, level, *, spec):
+        receipt = source._native_cold_options_without_paid_executor(
+            class_key, level, spec, gate="P4")
+        assert receipt["native_cold_search_wall_s"] == 300.12
+        return {"status": "PASS", "reasons": [],
+                "runtime_proof": {"executed": True,
+                                  "engine_revision": "selected-native",
+                                  "source_revision": "shared-cold",
+                                  "run_id": "once"}}
+
+    with (
+        patch("src.game.native_p3_item_options.query_native_p3_item_options",
+              return_value={"items": [{"id": 1}],
+                            "unverified_candidate_count": 0,
+                            "status": "VALID"}),
+        patch("tools.wf_native_priest_l20_cold.run_native_priest_l20_cold",
+              return_value=cold) as paid,
+        patch("tools.wf_native_priest_l20_cold.native_cold_gate_verdicts",
+              return_value={"P4": {"status": "PASS", "reasons": []},
+                            "P5": {"status": p5_status,
+                                   "reasons": [] if p5_status == "PASS"
+                                   else ["REAL_P5_FAILURE"]}}),
+        patch.object(wf_gate_p6_live, "run_live", native_p6),
+        patch("tools.m1_progress.record_pass") as record,
+        patch("tools.m1_progress.record_partial"),
+    ):
+        rc = wf_gate.main(["--class", "priest", "--level", "20",
+                           "--spec", "unrestricted", "--gate", "P5+P6",
+                           "--record-progress"])
+    out = json.loads(capsys.readouterr().out.splitlines()[-1])
+    assert paid.call_count == 1
+    assert [r["gate"] for r in out["results"]] == ["P5", "P6"]
+    assert [r["status"] for r in out["results"]] == [p5_status, "PASS"]
+    assert [x.kwargs["gate"] for x in record.call_args_list] == (
+        ["P5", "P6"] if p5_status == "PASS" else ["P6"])
+    assert rc == (0 if p5_status == "PASS" else 1)
+    assert source._SHARED_PRIEST_L20_COLD is None
+
+
+def test_priest_p5_p6_requires_explicit_native_cold_opt_in():
+    with pytest.raises(SystemExit) as err:
+        wf_gate.main(["--class", "priest", "--level", "20",
+                      "--gate", "P5+P6"])
+    assert err.value.code == 2
+
+
+def test_merge_heavy_p5_p6_dispatch_does_not_launch_p4():
+    from pathlib import Path
+    workflow = Path(".github/workflows/m1-on-demand-record.yml").read_text()
+    assert "priest_p5_p6=true" in workflow
+    assert 'cli_gate="P5+P6"' in workflow
+    assert '[[ "$priest_p5_p6" == true &&' in workflow
+    assert '" $TARGETS " != *" priest:20:unrestricted:P4 "*' in workflow
