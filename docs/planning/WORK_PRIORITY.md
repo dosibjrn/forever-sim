@@ -9,7 +9,7 @@
 - **Target:** `druid:30:unrestricted:P4`. Current high-water is **PARTIAL 3/35** from [run #41460353196](https://github.com/dosibjrn/forever-sim/actions/runs/41460353196); Druid L30 unrestricted P3 is PASS. The analogous L40 unrestricted P4 is PASS in [run #41744549169](https://github.com/dosibjrn/forever-sim/actions/runs/41744549169).
 - **Next action:** on fresh main, verify no identical run is active, then run exactly one full trusted P4 acceptance: `/m1-run --heavy druid:30:unrestricted:P4` on an already-merged PR, or the existing workflow dispatch with `allow_heavy=true`. This is the existing independent 30-second cold gear × talents × generated-policy × pull/recovery/survival search plus its continuous 100-mob finalist. Merge records only the producer's actual verdict. No wrapper, new predicate or hand-edited ledger.
 - **Maximum unearned increment if it PASSes:** `(1 - 3/35) / 1332 = 0.0006864007` measured fraction (**+0.06864 percentage points**). This beats L20 P4's remaining 22/25 headroom (+0.06607 pp). L30 P5 has the same 3/35 headroom but a 300-second search.
-- **Why #1:** it is a credible same-class P4 path with a nearby L40 P4 PASS and materially cheaper compute than another P7 heavy run. No identical L30 P4 run is active in the current Actions history.
+- **Why #1:** it is a credible same-class P4 path with a nearby L40 P4 PASS and materially cheaper compute than another P7 heavy run. The previous Prio handoff found no identical run active; Merge must recheck the live Actions list immediately before dispatch.
 
 ## #2 — Work1: improve Druid L60 Balance P7.4 winner/search path — [issue #131](https://github.com/dosibjrn/forever-sim/issues/131)
 
@@ -17,6 +17,7 @@
 - **Correct receipt interpretation:** the P7.4 provider already ran its paid Balanced finalist path: `winner_selection=paid_4x3_balanced_native_world_confirmed`. It returns the actual `paid_balanced_finalists` and `paid_balanced_confirmed` counts at `tools/wf_gate_p7_4_live.py:581–582`. The `paid_stochastic_finalists=0` fields are hard-coded placeholders because this P7.4 path uses Balanced, not stochastic, finalist screens; those zeros do **not** mean finalist selection failed. The current `tools/wf_gate.py` receipt whitelist forwards the stochastic placeholders but omits the two real Balanced counters.
 - **Next implementation:** forward the two existing bounded Balanced counters through the P7.4 CLI/M1 Actions receipt and add a focused serializer regression. Then use those actual counts, the four recorded `NATIVE_SOURCE_CONTROL_FAILED` refusals and the frozen winner evidence to choose a concrete production search improvement toward the unchanged 720.9117 DPS floor. The receipt-only change earns no M1 credit; only a real subsequent P7.4 measurement can improve the gate. Do not repeat the unchanged 300-second search.
 - **Relative value:** the remaining P7.4 high-water headroom is only about **+0.00169 percentage points** and another full heavy run is required, so this lane remains behind #753.
+
 ## #3 — Work2: native legal-item options for Priest L20 P3 — [issue #754](https://github.com/dosibjrn/forever-sim/issues/754)
 
 - **Target:** `priest:20:unrestricted:P3`. Official [run #41747651321](https://github.com/dosibjrn/forever-sim/actions/runs/41747651321) reached `P3_NO_LEGAL_ITEMS_IN_CURRENT_DB`; no Priest coverage or PASS was recorded.
