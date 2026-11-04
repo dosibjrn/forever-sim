@@ -2,7 +2,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.wf_gate_p6_full_source import run_full_source_comparison
+from tools.wf_gate_p6_full_source import (run_full_source_comparison,
+    _shared_replay_winners)
 
 
 def _winner(policy='a'):
@@ -37,7 +38,8 @@ def test_p6_one_cold_search_and_identical_paid_winner_reused():
         result = run_full_source_comparison(Path('.'), 'druid', 30)
     assert result['status'] == 'PASS'
     assert result['shared_cold_search'] is True
-    assert len(calls) == 1 and calls[0][:2] == ['--budget', '300']
+    assert len(calls) == 1 and calls[0][:3] == [
+        '--budget', '300', '--p6-shared-finalists']
     assert result['source_replay_T30_T300'] == 1.
     assert all(row['count'] == 100 and row['reused']
                for row in result['source_replay_results'])
@@ -93,3 +95,23 @@ def test_p6_partial_100mob_cannot_pass_despite_positive_time():
     assert result['status'] == 'FAIL'
     assert 'P6_SHARED_WINNER_REAL_100MOB_REPLAY_INCOMPLETE' in result['reasons']
     assert result['source_replay_T30_T300'] is None
+
+
+def test_p6_only_selected_30s_and_300s_full_builds_need_real_replay():
+    report = _report(snapshot=_winner('early'))
+    # Extra highly ranked proxy finalists are NOT P6-selected builds and
+    # should never incur another 100-mob production replay.
+    report['validation_shortlist'] = [
+        _winner('unselected-' + str(index)) for index in range(20)]
+    winners = _shared_replay_winners(report)
+    assert [w['policy_signature'] for w in winners] == ['early', 'a']
+
+
+def test_p6_identical_frozen_build_pays_one_shared_100mob_replay():
+    assert len(_shared_replay_winners(_report())) == 1
+
+
+def test_p6_missing_frozen_snapshot_does_not_forge_30s_winner():
+    report = _report()
+    report['shared_search_snapshot']['winner'] = None
+    assert [w['policy_signature'] for w in _shared_replay_winners(report)] == ['a']
