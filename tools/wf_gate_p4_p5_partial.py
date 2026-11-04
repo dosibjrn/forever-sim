@@ -130,6 +130,38 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                                              else couple_source_priest_l20_world),
                             "persistent_target_count": persistent_targets}
                            if live_enabled else {})
+            # Explicit opt-in for the real single 300s native/world cold
+            # search. Its 30s snapshot and 300s winner share one execution;
+            # normal hourly P4/P5 probes remain cheap and unchanged.
+            if os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") == "1":
+                if not request_file or not live_enabled or persistent_targets != 100:
+                    raise ValueError("P4_P5_NATIVE_COLD_REQUIRES_SOURCE_LIVE_100MOB")
+                from tools.wf_native_priest_l20_cold import run_native_priest_l20_cold
+                cold = run_native_priest_l20_cold(binary, request_file, options)
+                report.update(cold)
+                report["status"] = "FAIL"
+                report["paid_candidates"] = (
+                    cold["native_cold_native_paid_before_30"]
+                    + cold["native_cold_native_paid_after_30"])
+                report["screen_complete_candidates"] = (
+                    cold["native_cold_completed_routes_before_30"]
+                    + cold["native_cold_completed_routes_after_30"])
+                if not cold["native_cold_300s_reached"]:
+                    reason = "P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED"
+                elif cold["native_cold_300s_overrun"]:
+                    reason = "P4_P5_NATIVE_COLD_DEADLINE_OVERRUN"
+                elif cold["native_cold_snapshot_30"] is None:
+                    reason = "P4_P5_NATIVE_30S_PAID_WINNER_UNAVAILABLE"
+                elif cold["native_cold_final_300"] is None:
+                    reason = "P4_P5_NATIVE_300S_PAID_WINNER_UNAVAILABLE"
+                elif cold["native_cold_native_paid_after_30"] == 0:
+                    reason = "P5_NO_NATIVE_PAID_CONTINUATION_AFTER_30S"
+                else:
+                    # Producer progress is not a gate PASS. Merge must inspect
+                    # native source/talent/policy breadth and approved predicates.
+                    reason = "P4_P5_NATIVE_COLD_PRODUCER_EXECUTED_GATE_NOT_ACCEPTED"
+                report["reasons"] = [reason]
+                return report
             if candidate_dir:
                 paid = score_source_priest_l20_candidates(
                     binary, candidate_dir, **live_kwargs)
