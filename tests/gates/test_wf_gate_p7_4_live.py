@@ -658,3 +658,11 @@ def test_p74_paid_step_guard_prevents_observed_302s_overrun(monkeypatch):
     assert gate._paid_step_has_budget(0.0, 0.10)
     clock.now = 299.95
     assert not gate._paid_step_has_budget(0.0, 0.10)
+
+
+def test_p74_paid_step_guard_respects_reserved_candidate_deadline(monkeypatch):
+    now = [252.0]
+    monkeypatch.setattr(gate.time, "monotonic", lambda: now[0])
+    assert gate._paid_step_has_budget(0.0, 1.0, deadline_s=255.0)
+    now[0] = 254.0
+    assert not gate._paid_step_has_budget(0.0, 1.0, deadline_s=255.0)
