@@ -91,3 +91,67 @@ def test_missing_defensive_weight_is_not_forgiven(minimal_catalogue):
     del weights["armor"]
     result = _run(weights)
     assert "MISSING_WEIGHT:armor" in result["blockers"]
+
+
+@pytest.fixture
+def native_weapon_scorer(monkeypatch):
+    """Exercise the native-item scorer mapping, without auditing Rust mechanics."""
+    from src.game import native_p3_item_options
+
+    item = SimpleNamespace(item_id=101, item_level=20, required_level=20,
+                           name="Native-equipped weapon", source_url="native")
+    stats = {"weapon_dps": 6.0, "mean_weapon_hit_damage": 4.0}
+    monkeypatch.setattr(
+        native_p3_item_options, "native_p3_item_records",
+        lambda *args, **kwargs: (
+            (item,), {}, {"status": "ok", "unverified_candidate_count": 0,
+                          "excluded_non_client_item_count": 0,
+                          "source": "selected-native"}
+        ),
+    )
+    monkeypatch.setattr(p3, "source_item_slots",
+                        lambda row: ("main_hand",))
+    monkeypatch.setattr(p3, "_ordinary_stats", lambda row: stats)
+    monkeypatch.setattr(
+        p3, "item_score",
+        lambda row, weights: sum(
+            float(weights.get(axis, 0.0)) * amount
+            for axis, amount in stats.items()
+        ),
+    )
+
+
+@pytest.mark.parametrize("weight", [0.0, -0.4])
+def test_native_measured_weapon_tradeoffs_are_valid_p3_scores(
+        native_weapon_scorer, weight):
+    report = p3.fast_p3_smoke(
+        class_key="priest", level=20,
+        weights={"weapon_dps": weight, "mean_weapon_hit_damage": weight},
+        weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+        weapon_damage_dependent=True,
+        equipped_weapon_dps_relevant=True,
+        native_options_binary="selected-native",
+    )
+    assert report["blockers"] == []
+    assert report["p3_pass"] is True
+    assert report["tested_stat_assertions"] == 2
+    assert report["verified_stat_assertions"] == 2
+    assert report["slots"]["main_hand"]["items"][0]["score"] == weight * 10.0
+
+
+@pytest.mark.parametrize(("weights", "missing"), [
+    ({"weapon_dps": -0.4}, "MISSING_WEIGHT:mean_weapon_hit_damage"),
+    ({"mean_weapon_hit_damage": -0.4}, "MISSING_APPLICABLE_DPS_WEIGHT"),
+])
+def test_native_weapon_sensitivity_still_needs_measured_axes(
+        native_weapon_scorer, weights, missing):
+    report = p3.fast_p3_smoke(
+        class_key="priest", level=20,
+        weights=weights,
+        weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
+        weapon_damage_dependent=True,
+        equipped_weapon_dps_relevant=True,
+        native_options_binary="selected-native",
+    )
+    assert report["p3_pass"] is False
+    assert missing in report["blockers"]
