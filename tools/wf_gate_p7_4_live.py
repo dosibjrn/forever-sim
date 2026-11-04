@@ -248,7 +248,7 @@ def _paid_p74_balanced_finalist(production, binary, request, distance, *,
             live = production.run(
                 binary, path, distance=distance, iterations=3,
                 rng_mode="balanced")
-            mismatch = _source_native_world_parity(native, live, 3)
+            mismatch = _source_native_world_parity(native, live, 3, allow_world_lethal=True)
             if mismatch is not None:
                 raise ValueError("P74_BALANCED_FINALIST_NATIVE_WORLD_PARITY:" + mismatch)
         if (live.get("iterations_done") != 3
@@ -439,7 +439,7 @@ def run_live(root: Path, class_key: str, level: int, *,
                 live = production.run(
                     binary, path, distance=player["distanceFromTarget"],
                     iterations=3, rng_mode="balanced")
-                parity_failure = _source_native_world_parity(native, live, 3)
+                parity_failure = _source_native_world_parity(native, live, 3, allow_world_lethal=True)
                 if parity_failure is not None:
                     raise ValueError("SOURCE_NATIVE_WORLD_PARITY_FAILED:" + parity_failure)
             if (live.get("iterations_done") != 3
@@ -509,16 +509,25 @@ def run_live(root: Path, class_key: str, level: int, *,
                     binary, frozen_path, distance=player["distanceFromTarget"],
                     iterations=n, rng_mode="stochastic")
                 mismatch = _source_native_world_parity(
-                    native, world, n, expected_raw_sha=frozen_sha)
+                    native, world, n, expected_raw_sha=frozen_sha,
+                    allow_world_lethal=True)
                 if mismatch is not None:
                     raise ValueError("FROZEN_STOCHASTIC_NATIVE_WORLD_PARITY:" + mismatch)
-                native_dps = float(native["native_dps"])
+                # Score the native engine's coupled world run. A standalone
+                # source-only control has no finite-world-HP feedback and is
+                # not comparable if any holdout fight ends on a lethal ACK.
+                native_control_dps = float(native["native_dps"])
+                native_dps = float(world["native_dps"])
                 world_dps = float(world["world_mean_dps"])
+                lethal_fights = int(world.get("world_target_lethal_fights", 0))
                 final = {
                     "frozen_request_raw_sha256": frozen_sha,
                     "frozen_stochastic_iterations": n,
                     "frozen_stochastic_native_dps": native_dps,
+                    "frozen_stochastic_native_control_dps": native_control_dps,
+                    "frozen_stochastic_native_control_comparable": lethal_fights == 0,
                     "frozen_stochastic_world_dps": world_dps,
+                    "frozen_stochastic_world_target_lethal_fights": lethal_fights,
                     "frozen_stochastic_world_damage_events": int(world["native_damage_events"]),
                     "frozen_stochastic_world_boundaries": int(world["native_world_ticks"]),
                     "frozen_stochastic_reference_floor_met": (
@@ -591,6 +600,9 @@ def run_live(root: Path, class_key: str, level: int, *,
         **final,
         "world_damage_events": int(live["native_damage_events"]),
         "world_boundaries": int(live["native_world_ticks"]),
+        "world_target_lethal_fights": int(live.get("world_target_lethal_fights", 0)),
+        "native_source_control_comparable": int(
+            live.get("world_target_lethal_fights", 0)) == 0,
         "source_legal_cold_candidates_paid": executed,
         "source_candidate_failure_count": len(failures),
         "source_candidate_failures": failures[:4],

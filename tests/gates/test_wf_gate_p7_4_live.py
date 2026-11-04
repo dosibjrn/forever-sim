@@ -139,7 +139,9 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         assert distance == 15
         calls.append(("world", iterations, rng_mode, path.read_text()))
         item_id = json.loads(path.read_text())["raid"]["parties"][0]["players"][0]["equipment"]["items"][0]["id"]
-        return {"world_mean_dps": 729.0 if item_id == 11 else 700.0,
+        return {"native_dps": 729.0 if item_id == 11 else 700.0,
+                "world_mean_dps": 729.0 if item_id == 11 else 700.0,
+                "world_target_lethal_fights": 1,
                 "iterations_done": iterations, "native_damage_events": 12,
                 "native_world_ticks": 25}
 
@@ -163,6 +165,10 @@ def test_full_p74_freezes_one_paid_source_gear_winner_for_stochastic_holdout(
         calls[5][3].encode()).hexdigest()
     assert report["cold_winner_request_sha256"] == hashlib.sha256(
         json.dumps(json.loads(calls[5][3]), sort_keys=True).encode()).hexdigest()
+    assert report["frozen_stochastic_native_dps"] == 729.0
+    assert report["frozen_stochastic_native_control_dps"] == 730.0
+    assert report["frozen_stochastic_native_control_comparable"] is False
+    assert report["frozen_stochastic_world_target_lethal_fights"] == 1
     assert report["cold_unique_source_requests"] == 2
     frozen_items = json.loads(calls[5][3])["raid"]["parties"][0]["players"][0]["equipment"]["items"]
     assert report["cold_winner_gear"] == [
@@ -683,12 +689,13 @@ def test_p74_balanced_finalist_uses_paid_native_and_2d_with_independent_seeds(
     def world(binary, path, distance, iterations, *, rng_mode):
         seed = json.loads(path.read_text())["simOptions"]["randomSeed"]
         observed.append(("world", seed, iterations, rng_mode))
-        return {"world_mean_dps": {"321": 700.0, "654": 740.0}[seed],
+        return {"native_dps": {"321": 700.0, "654": 740.0}[seed],
+                "world_mean_dps": {"321": 700.0, "654": 740.0}[seed],
                 "iterations_done": 3, "native_damage_events": 1,
                 "native_world_ticks": 2}
 
     monkeypatch.setattr(gate, "_source_native_world_parity",
-                        lambda native, world, n: None)
+                        lambda native, world, n, **kwargs: None)
     producer = SimpleNamespace(native_source_control=native, run=world)
     score, live = gate._paid_p74_balanced_finalist(
         producer, tmp_path / "binary", request, 15, seeds=("321", "654"))
@@ -781,7 +788,8 @@ def test_p74_live_reranks_noisy_paid_gear_before_1000_stochastic_holdout(
     def world(binary, path, distance, iterations, *, rng_mode):
         req = json.loads(path.read_text())
         score = {11: 760.0, 12: 755.0, 13: 740.0}[item(req)]
-        return {"world_mean_dps": 740.0 if rng_mode == "stochastic" else score,
+        return {"native_dps": 740.0 if rng_mode == "stochastic" else score,
+                "world_mean_dps": 740.0 if rng_mode == "stochastic" else score,
                 "iterations_done": iterations, "native_damage_events": 2,
                 "native_world_ticks": 3}
     production = SimpleNamespace(native_source_control=native, run=world)

@@ -132,6 +132,9 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     assert native["native_request_sha256"] == request_sha
                     assert native["native_duration_ns"] > 0
                     assert abs(native["native_total_damage"] - iteration_damage) < 1e-4, ("NATIVE_WORLD_DAMAGE_EVENTS_UNACCOUNTED", native["native_total_damage"], iteration_damage, event_count, pet_damage_events)
+                    target = world.targets["m1"]
+                    target_health_remaining = float(target.health)
+                    target_max_health = float(target.max_health)
                     samples.append({
                         "iteration_index": iteration,
                         "duration_s": native["native_duration_ns"] / 1e9,
@@ -141,6 +144,12 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                         # damage, though native encounter total and actual gsim
                         # target HP include it. Score only in-fight damage.
                         "world_dps": (iteration_damage - iteration_precombat_damage) / (native["native_duration_ns"] / 1e9),
+                        # A lethal world ACK legitimately ends the native fight.
+                        # Keep the per-fight HP receipt so standalone source-only
+                        # controls are not compared past a world-only terminal event.
+                        "world_target_health_remaining": target_health_remaining,
+                        "world_target_max_health": target_max_health,
+                        "world_target_lethal": not bool(target.alive),
                     })
                     continue
                 if native.get("type") != "native_rust_world_boundary_request":
@@ -307,6 +316,10 @@ def run(binary: Path, request: Path, *, distance: float, forge_ack: bool = False
                     "native_precombat_damage_events": precombat_damage_events,
                     "native_world_ticks": total_ticks,
                     "world_health_remaining": world.targets["m1"].health,
+                    "world_target_lethal_fights": sum(
+                        1 for sample in samples if sample["world_target_lethal"]),
+                    "world_target_survived_fights": sum(
+                        1 for sample in samples if not sample["world_target_lethal"]),
                     "per_iteration": samples,
                     "source_request_proto_sha256": request_sha,
                     "source_request_raw_sha256": raw_sha,
