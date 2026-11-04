@@ -528,6 +528,21 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 final_validation["reused_30s_receipt"] = True
         else:
             best_final, final_validation = qualify_finalist(final_paid)
+            # The 300s search frontier includes the 30s winner. Its
+            # two-target screening score can rank a different build first,
+            # but P4/P5/P6 ultimately optimize the PAID 100-target objective.
+            # When the genuinely replayed 30s finalist is faster, retain it
+            # as the 300s best-of finalist instead of regressing to a slower
+            # two-target proxy winner. Both builds were selected within the
+            # 300s cold search; never manufacture an unexecuted route.
+            if (frozen is not None
+                    and (best_final is None or frozen["route_s_per_mob"]
+                         <= best_final["route_s_per_mob"])):
+                best_final = copy.deepcopy(frozen)
+                final_paid = copy.deepcopy(early_paid)
+                final_validation = copy.deepcopy(snapshot_validation)
+                if final_validation is not None:
+                    final_validation["reused_30s_receipt"] = True
     if not deferred_snapshot and frozen is None and wall_s >= snapshot_s:
         frozen = copy.deepcopy(best_early)
     # Exhausted candidate spaces and late native calls are reported honestly.
