@@ -108,6 +108,8 @@ def _source_rank_spell_power_coefficient(class_key, family_key, rank):
     """
     class_key = str(class_key or "").strip().lower()
     family_key = str(family_key or "").strip().lower()
+    if not class_key or not family_key:
+        return None
     try:
         from importlib import import_module
         module_name = f"src.rulesets.forever.classes.{class_key}.wowhead_facts"
