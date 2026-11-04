@@ -863,12 +863,29 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
         "scaling_options": {"0": {"stats": {"5": 100.0}}},
         "ranged_weapon_type": "RangedWeaponTypeBow",
     })
-    item_rows.append({
-        "id": 9004, "type": relic_type,
-        "scaling_options": {"0": {"ilvl": 65}},
-        "ranged_weapon_type": "RangedWeaponTypeIdol",
-        "item_effects": [{"buff_id": 27851, "buff_name": "Reduced Claw and Rake Cost"}],
-    })
+    # Exact statless base-scaling shapes copied from the pinned Rust
+    # data/items.jsonl at deb366e986dbc156e2242ddac3ac8c4ac854c107.
+    # All three must remain proposals; native prepare/execute owns effects
+    # and final admission.
+    item_rows.extend([
+        {
+            "id": 22397, "name": "Idol of Ferocity", "type": relic_type,
+            "ranged_weapon_type": "RangedWeaponTypeIdol", "unique": True,
+            "scaling_options": {"0": {"ilvl": 57}},
+        },
+        {
+            "id": 833, "name": "Lifestone", "type": search.RUST_TYPES["trinket"],
+            "scaling_options": {"0": {"ilvl": 56}},
+        },
+        {
+            "id": 754, "name": "Shortsword of Vengeance", "type": weapon_type,
+            "weapon_type": "WeaponTypeSword", "hand_type": "HandTypeOneHand",
+            "scaling_options": {"0": {
+                "rand_prop_points": 11, "weapon_damage_min": 53,
+                "weapon_damage_max": 99, "ilvl": 47,
+            }},
+        },
+    ])
 
     items_path = tmp_path / "items.jsonl"
     enchants_path = tmp_path / "enchants.jsonl"
@@ -879,11 +896,13 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
         items_path, enchants_path)
 
     assert pool[0][:2] == [9999, 1000 + item_types.index(head_type)]
-    assert pool[14] == [1000 + item_types.index(weapon_type)]
+    assert 754 in pool[14]  # statless native weapon: Shortsword of Vengeance
+    assert 833 in pool[12] and 833 in pool[13]  # statless native trinket: Lifestone
     assert pool[15][0] == 1000 + item_types.index(relic_type)
-    assert 9004 in pool[15]  # real relics can have item_effects but no stat map
+    assert 22397 in pool[15]  # statless native relic: Idol of Ferocity
+    assert 9003 not in pool[15]  # known bow remains outside the druid relic proposal slot
     assert enchant_pools[6] == [None, 2000 + item_types.index(search.RUST_TYPES["hands"])]
     assert metadata == {
-        "unique_item_options": len(item_types) + 2,
+        "unique_item_options": len(item_types) + 4,
         "unique_enchant_options": len(item_types),
     }
