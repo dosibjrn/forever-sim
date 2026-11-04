@@ -61,7 +61,7 @@ def paid_source_action_coverage(search: dict, source_actions) -> dict:
 
 
 def _native_cold_options_without_paid_executor(class_key: str, level: int,
-                                               spec: str) -> dict:
+                                               spec: str, *, gate: str = "P4") -> dict:
     """Consult Rust when no legacy gear role exists; never fake a paid screen.
 
     Item-options enumerates individually eligible gear, not a legal complete
@@ -136,7 +136,8 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
             if os.environ.get("FOREVER_P4_P5_PRIEST_L20_COLD_SEARCH") == "1":
                 if not (request_file or candidate_dir) or not live_enabled or persistent_targets != 100:
                     raise ValueError("P4_P5_NATIVE_COLD_REQUIRES_SOURCE_LIVE_100MOB")
-                from tools.wf_native_priest_l20_cold import run_native_priest_l20_cold
+                from tools.wf_native_priest_l20_cold import (
+                    native_cold_gate_verdicts, run_native_priest_l20_cold)
                 cold = run_native_priest_l20_cold(binary, request_file or candidate_dir, options)
                 # Optional ordinary Actions artifact of this *executed* source
                 # run, never a second M1 ledger or a replay input authority.
@@ -150,7 +151,11 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                         cold, sort_keys=True, ensure_ascii=False) + "\n",
                         encoding="utf-8")
                 report.update(cold)
-                report["status"] = "FAIL"
+                # Reevaluate the actual native/window receipts, never trust
+                # a producer-set PASS boolean or a successful workflow exit.
+                verdicts = native_cold_gate_verdicts(cold)
+                verdict = verdicts[gate]
+                report["status"] = verdict["status"]
                 report["paid_candidates"] = (
                     cold["native_cold_native_paid_before_30"]
                     + cold["native_cold_native_paid_after_30"])
@@ -158,24 +163,11 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
                     "native_cold_completed_100mob_finalists",
                     cold["native_cold_completed_routes_before_30"]
                     + cold["native_cold_completed_routes_after_30"])
-                if not cold["native_cold_300s_reached"]:
-                    reason = "P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED"
-                # A paid native/world evaluation can cross the exact 300s
-                # cutoff after it starts. The producer excludes that entire
-                # late result from both finalist windows; elapsed wall over
-                # 300s is diagnostic, not grounds for rejecting pre-cutoff
-                # real paid winners or the completed cold search.
-                elif cold["native_cold_snapshot_30"] is None:
-                    reason = "P4_P5_NATIVE_30S_PAID_WINNER_UNAVAILABLE"
-                elif cold["native_cold_final_300"] is None:
-                    reason = "P4_P5_NATIVE_300S_PAID_WINNER_UNAVAILABLE"
-                elif cold["native_cold_native_paid_after_30"] == 0:
-                    reason = "P5_NO_NATIVE_PAID_CONTINUATION_AFTER_30S"
-                else:
-                    # Producer progress is not a gate PASS. Merge must inspect
-                    # native source/talent/policy breadth and approved predicates.
-                    reason = "P4_P5_NATIVE_COLD_PRODUCER_EXECUTED_GATE_NOT_ACCEPTED"
-                report["reasons"] = [reason]
+                # A finished post-300s finalist is eligible if its frozen
+                # selected build and 100-mob receipt match; the cutoff applies
+                # to the selection, not to the independent finalist replay.
+                report["reasons"] = verdict["reasons"]
+                report["coverage_scope_complete"] = verdict["status"] == "PASS"
                 return report
             if candidate_dir:
                 paid = score_source_priest_l20_candidates(
@@ -253,7 +245,7 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
         # A missing Forever SQLite role is not evidence of missing native
         # Priest gear. Ask the selected Rust item-options source directly.
         # Never pass those items through the legacy Python legality/runtime.
-        return _native_cold_options_without_paid_executor(class_key, level, spec)
+        return _native_cold_options_without_paid_executor(class_key, level, spec, gate=gate)
     ir = build_game_ir_slice(class_key=class_key, level=level)
     if ir is None:
         return {"status": "BLOCKED", "reasons": [
