@@ -365,11 +365,11 @@ def run_full_paid_source_search(root: Path, class_key: str, level: int, *,
     # The frozen 30s winner can be different from the 300s validated
     # winner. Verify that its saved shortlist entry is the actual paid
     # candidate frozen at the cutoff; never alias the later finalist.
-    if (not 0 <= frozen_index < len(shortlist)
+    if (not isinstance(snapshot_winner, dict)
+            or not 0 <= frozen_index < len(shortlist)
             or not isinstance(shortlist[frozen_index], dict)
             or shortlist[frozen_index].get("paid_candidate_index")
-               != snapshot_winner.get("paid_candidate_index")
-               if isinstance(snapshot_winner, dict) else True):
+               != snapshot_winner.get("paid_candidate_index")):
         frozen_index = -1
     winner_index = frozen_index if gate == "P4" else final_index
 
