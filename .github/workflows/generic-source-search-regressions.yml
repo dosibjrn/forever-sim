@@ -1,5 +1,8 @@
 name: Generic source-paid search regressions
 on:
+  push:
+    branches:
+      - 'work/work2-p72-native-axis-20261104'
   pull_request:
     paths:
       - 'tests/generic/search/**'
@@ -151,14 +154,14 @@ jobs:
   selected-native-p74:
     # One selected-engine read-only no-record probe on Work2's new P7.4 lane.
     # This is NOT the Merge-owned M1 recorder or a new acceptance predicate.
-    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-')
+    if: startsWith(github.head_ref, 'work/work2-p72-native-axis-') || github.ref == 'refs/heads/work/work2-p72-native-axis-20261104'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - name: Checkout exact P7.4 PR HEAD with selected Rust fork
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           submodules: true
           lfs: true
           fetch-depth: 0
