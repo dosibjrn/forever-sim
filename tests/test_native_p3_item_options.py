@@ -167,7 +167,7 @@ def test_m1_recorder_builds_exact_native_binary_for_priest_mage_p3_only():
     workflow = Path(".github/workflows/m1-on-demand-record.yml").read_text()
     assert "p3_native_needed=false" in workflow
     assert 'IFS=: read -r class level spec gate <<< "$entry"' in workflow
-    assert 'if [[ "$gate" == P3 && ( "$class" == priest || "$class" == mage ) ]]; then' in workflow
+    assert 'if [[ "$gate" == P3 && "$level" == 20 && ( "$class" == priest || "$class" == mage ) ]]; then' in workflow
     assert "p3_native_needed=true" in workflow
     assert "if: steps.targets.outputs.p3_native_needed == 'true' && steps.targets.outputs.p7_needed != 'true'" in workflow
     assert 'git submodule update --init --depth 1 "$engine"' in workflow
@@ -241,3 +241,14 @@ def test_native_p3_scores_native_candidates_only_and_selects_ilvl_top_five():
     assert report["tested_item_count"] == 5
     assert report["slots"]["chest"]["selected_ids"] == [101, 103, 105, 104, 106]
     assert report["slots"]["chest"]["selection"] == "HIGHEST_ITEM_LEVEL_NOT_SCORE"
+
+
+
+def test_native_p3_activation_is_limited_to_verified_l20_targets():
+    from tools.wf_gate_p3_live import native_item_options_required
+
+    assert native_item_options_required("priest", 20)
+    assert native_item_options_required("mage", 20)
+    assert not native_item_options_required("priest", 30)
+    assert not native_item_options_required("mage", 30)
+    assert not native_item_options_required("warrior", 20)
