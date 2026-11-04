@@ -265,3 +265,146 @@ def test_native_item_proposals_do_not_overwrite_an_already_equipped_source(
             "/native", source_file, [{"item_id": 456, "slot": "head"}],
             score_request=lambda *a, **k: (_ for _ in ()).throw(
                 AssertionError("must not silently replace source gear")))
+
+
+def test_l20_live_world_uses_exact_source_request_target_and_native_ack(tmp_path):
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import couple_source_priest_l20_world
+
+    source = _request()
+    actor = source["raid"]["parties"][0]["players"][0]
+    actor["distanceFromTarget"] = 20
+    source["encounter"]["targets"][0]["stats"] = [0] * 32 + [10000]
+    path = tmp_path / "l20-source.json"
+    path.write_text(json.dumps(source))
+    invocations = []
+
+    def real_world_boundary(binary, request_path, **kwargs):
+        invocations.append((binary, request_path, kwargs))
+        return {
+            "source_request_raw_sha256": sha256(request_path.read_bytes()).hexdigest(),
+            "source_request_proto_sha256": "actual-prepared-native-id",
+            "iterations_done": 1, "native_world_ticks": 7,
+            "native_damage_events": 3,
+            "source_action_events_before": {"native-action-585": 2},
+            "world_target_lethal_fights": 0,
+        }
+
+    report = couple_source_priest_l20_world(
+        "/selected/rust", path, world_run=real_world_boundary)
+    assert len(invocations) == 1
+    assert str(invocations[0][0]) == "/selected/rust"
+    assert invocations[0][1] == path
+    assert invocations[0][2] == {
+        "distance": 20.0, "iterations": 1, "rng_mode": "balanced",
+        "expected_target_level": 20,
+    }
+    assert report["native_2d_fight_ack_complete"] is True
+    assert report["native_2d_world_damage_events"] == 3
+    assert report["native_2d_source_action_events"] == {"native-action-585": 2}
+    assert report["native_2d_screen_complete"] is False
+    assert json.loads(path.read_text()) == source
+
+    def wrong_identity(binary, request_path, **kwargs):
+        return {**real_world_boundary(binary, request_path, **kwargs),
+                "source_request_raw_sha256": "unrelated-request"}
+    with pytest.raises(RuntimeError, match="RECEIPT_INCOMPLETE"):
+        couple_source_priest_l20_world(
+            "/selected/rust", path, world_run=wrong_identity)
+
+
+def test_l20_world_requires_real_source_level_and_distance(tmp_path):
+    from tools.wf_native_priest_l20_paid import couple_source_priest_l20_world
+
+    source = _request()
+    source["encounter"]["targets"][0]["level"] = 63
+    source["raid"]["parties"][0]["players"][0]["distanceFromTarget"] = 20
+    path = tmp_path / "invalid-world.json"
+    path.write_text(json.dumps(source))
+    with pytest.raises(ValueError, match="WORLD_ACTOR_TARGET_OR_DISTANCE_INVALID"):
+        couple_source_priest_l20_world(
+            "/native", path, world_run=lambda *a, **k: pytest.fail(
+                "non-L20 target must not reach world"))
+    source["encounter"]["targets"][0]["level"] = 20
+    source["raid"]["parties"][0]["players"][0]["distanceFromTarget"] = 0
+    path.write_text(json.dumps(source))
+    with pytest.raises(ValueError, match="WORLD_ACTOR_TARGET_OR_DISTANCE_INVALID"):
+        couple_source_priest_l20_world(
+            "/native", path, world_run=lambda *a, **k: pytest.fail(
+                "invalid world distance must not run"))
+
+
+def test_selected_paid_l20_native_candidate_is_sent_to_one_live_world_screen(tmp_path):
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    first = _request()
+    better = copy.deepcopy(first)
+    better["raid"]["parties"][0]["players"][0]["talentsString"] = "1-0-0"
+    (tmp_path / "a.json").write_text(json.dumps(first))
+    (tmp_path / "b.json").write_text(json.dumps(better))
+    seen = []
+
+    def scorer(binary, candidate, **kwargs):
+        score = 21. if candidate["raid"]["parties"][0]["players"][0]["talentsString"] == "1-0-0" else 10.
+        return {
+            "effective_request_sha256": "paid-" + str(score),
+            "score": score, "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 2}],
+        }, {}
+
+    def world_screen(binary, request_path):
+        seen.append(json.loads(request_path.read_text()))
+        return {"native_2d_fight_ack_complete": True,
+                "native_2d_screen_complete": False,
+                "native_2d_world_ticks": 3}
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer, world_screen=world_screen)
+    assert seen == [better]
+    assert result["native_paid_whole_builds"] == 2
+    assert result["native_2d_live_ack_attempted"] == 1
+    assert result["native_2d_live_ack_verified"] == 1
+    assert result["native_2d_screen_complete"] is False
+    assert "pass_count" not in result
+    assert result["native_candidate_receipts"][1]["native_2d_fight"][
+        "native_2d_fight_ack_complete"] is True
+
+
+def test_native_paid_world_refusal_does_not_grant_completion(tmp_path):
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+    (tmp_path / "a.json").write_text(json.dumps(_request()))
+
+    def scorer(binary, candidate, **kwargs):
+        return {
+            "effective_request_sha256": "native-request",
+            "score": 12., "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 1}],
+        }, {}
+
+    def world_screen(binary, request_path):
+        raise RuntimeError("RUST_WORLD_DAMAGE_ACK_EVENTS_MISMATCH")
+
+    result = score_source_priest_l20_candidates(
+        "/native", tmp_path, score_request=scorer, world_screen=world_screen)
+    assert result["native_paid_whole_builds"] == 1
+    assert result["native_2d_live_ack_attempted"] == 1
+    assert result["native_2d_live_ack_verified"] == 0
+    assert result["native_2d_screen_complete"] is False
+    assert "ACK_EVENTS_MISMATCH" in result["native_candidate_receipts"][0][
+        "native_2d_fight_error"]
+
+
+def test_target_health_probe_preserves_p7_default_but_accepts_explicit_l20():
+    from tools.wf_gsim_go_live_range_probe import source_target_health_from_request
+
+    source = _request()
+    source["encounter"]["targets"][0]["stats"] = [0] * 32 + [10000]
+    raw = json.dumps(source).encode()
+    with pytest.raises(ValueError, match="SOURCE_DPS_TARGET_LEVEL_MISMATCH"):
+        source_target_health_from_request(raw)
+    assert source_target_health_from_request(
+        raw, expected_target_level=20) == 10000.
+    source["encounter"]["targets"][0]["level"] = 63
+    assert source_target_health_from_request(json.dumps(source).encode()) == 10000.
