@@ -1464,3 +1464,46 @@ def test_100_target_native_failure_keeps_causal_reason(native_failure, expected)
     """
     from tools.wf_native_priest_l20_paid import _native_world_error
     assert _native_world_error(native_failure) == expected
+
+
+def test_failed_100_target_native_actor_preserves_actual_world_kills(tmp_path):
+    """Real gsim ACK count survives a failed retained session without PASS."""
+    from hashlib import sha256
+    from tools.wf_native_priest_l20_paid import score_source_priest_l20_candidates
+
+    (tmp_path / "candidate.json").write_text(json.dumps(_request()))
+
+    def scorer(binary, request, **kwargs):
+        effective = copy.deepcopy(request)
+        effective["simOptions"].update(iterations=1, randomSeed="42")
+        digest = sha256(json.dumps(
+            effective, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        return {
+            "effective_request_sha256": digest,
+            "score": 13.,
+            "rng_mode": "balanced",
+            "native_action_cast_receipts": [{"id": {"spellId": 585}, "casts": 3}],
+        }, {}
+
+    def failed_world(binary, request_path, *, target_count):
+        assert target_count == 100
+        raise AssertionError((
+            "RUST_TWO_WORLD_KILLS_NOT_COMPLETED", None,
+            [{"target_id": "m1"}, {"target_id": "m0"}], 32,
+        ))
+
+    result = score_source_priest_l20_candidates(
+        "/selected/native", tmp_path, score_request=scorer,
+        persistent_world=failed_world, persistent_target_count=100,
+        max_paid_builds=1,
+    )
+    row = result["native_candidate_receipts"][0]
+    assert result["native_paid_whole_builds"] == 1
+    assert result["native_2d_persistent_attempted"] == 1
+    assert result["native_2d_persistent_verified"] == 0
+    assert result["native_2d_persistent_targets_killed"] == 0
+    assert result["native_2d_persistent_max_observed_kills"] == 2
+    assert row["native_2d_persistent_observed_kills"] == 2
+    assert row["native_2d_persistent_error"] == (
+        "RUST_TWO_WORLD_KILLS_NOT_COMPLETED:completed=2:native_damage_events=32")
+    assert result["native_2d_screen_complete"] is False
