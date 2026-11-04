@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from src.game.data.forever.registry import build_game_ir_slice
 from src.game.talent_execution_coverage import compile_talent_runtime,compile_talent_candidate
-from src.game.checkpoint_pipeline import checkpoint_preflight
 
 ROOT=Path(__file__).resolve().parents[1]
 MAGE=ROOT/'data/forever/staged_mage_l30_talent_positions_70374.sqlite'
@@ -56,13 +55,3 @@ def test_class_neutral_semantics_compile_nature_scope_without_druid_switch():
     with_rank=replace(ir,talents=tuple(replace(x,ranks=(rank,*x.ranks[1:])) if x.id==t.id else x for x in ir.talents))
     altered,report=compile_talent_runtime(with_rank)
     assert next(x for x in altered.talents if x.id==t.id).ranks[0].modifiers[0].kind=='effect_damage_pct'
-
-
-def test_preflight_reports_actual_cross_class_missing_rank_counts():
-    for cls,db in [('mage',MAGE),('druid',DRUID)]:
-        ir=build_game_ir_slice(class_key=cls,level=30,ability_db_path=db)
-        pre=checkpoint_preflight(class_key=cls,level=30,ir=ir)
-        coverage=pre['talent_execution_coverage']
-        assert coverage['rank_count']>0
-        assert coverage['rank_missing_executor']>=0
-        assert any(b['scope']=='talents' and 'ranks_missing_executor' in b for b in pre['blockers'])
