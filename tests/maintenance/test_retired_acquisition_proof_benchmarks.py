@@ -243,6 +243,9 @@ def test_retired_source_proof_and_audit_clis_are_not_live_tools():
     for relative in RETIRED_TOOLS:
         assert not (ROOT / relative).exists(), relative
     assert (ROOT / "tools/wf_gate.py").is_file()
+    # The retired WF353 generator must not take its historical measured inputs with it.
+    assert (ROOT / "evidence/wf353/WF353_L30_DISCOVERED_STAGES.json").is_file()
+    assert (ROOT / "evidence/wf353/WF353_L30_DISCOVERY_CONTEXT.json").is_file()
     assert not (ROOT / "src/v2/source_budgeted_level_route.py").exists()
     assert not (ROOT / "tools/wf_gate_p2_live.py").exists()
 
