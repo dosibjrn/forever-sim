@@ -952,3 +952,149 @@ def test_live_shaman_p3_requires_paid_spell_power_witness_after_positive_sensiti
     assert result["reachability_count"] == 204
     assert result["pass_count"] == 94
     assert result["real_source_search_evaluated"] == 34
+
+
+def test_shaman_positive_spell_power_requires_exact_native_fallback(monkeypatch):
+    from types import SimpleNamespace
+    import src.game.checkpoint_p3_smoke as p3_smoke
+    import src.game.data.forever.registry as registry
+    import src.game.native_p3_item_options as native_options
+    import src.v2.source_budgeted_gear as budgeted
+    import src.v2.source_stateful_budgeted as stateful
+    import tools.wf_gate_p3_live as p3
+
+    ir = SimpleNamespace(
+        actor=SimpleNamespace(metadata={"class_key": "shaman", "level": 20}),
+        policies=(),
+        actions=(
+            SimpleNamespace(id="lightning_bolt:915", cooldown_s=0,
+                            effects=(), requirements=()),
+            SimpleNamespace(id="rockbiter:8019", cooldown_s=0,
+                            effects=(), requirements=()),
+        ),
+    )
+    monkeypatch.setattr(registry, "build_game_ir_slice",
+                        lambda **kwargs: ir)
+    monkeypatch.setattr(
+        p3, "_source_profile_build_ir",
+        lambda root, source_ir, class_key, level, spec:
+            (source_ir, {"profile": spec, "full_point_source_allocation": None}))
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "native-test-binary")
+    native_facts = {
+        "source": "MYTHICSIM_RUST_PREPARED_V2_PLAYER_SPELLS",
+        "engine_revision": "native-shaman-test-revision",
+        "spell_power_coefficients": {915: 0.714},
+    }
+    applied = [{
+        "action_id": "lightning_bolt:915",
+        "spell_id": 915,
+        "spell_power_coefficient": 0.714,
+    }]
+    monkeypatch.setattr(
+        native_options, "query_native_shaman_spell_coefficients",
+        lambda _binary: native_facts)
+    monkeypatch.setattr(
+        native_options, "apply_native_shaman_lightning_bolt_coefficient",
+        lambda source_ir, _facts: (source_ir, applied))
+
+    def run_case(fallback):
+        prefix = [f"shaman:{fallback}"]
+        record = {
+            "status": "evaluated",
+            "fallback": fallback,
+            "prefix": prefix,
+            "score_s_per_mob": 12.5,
+            "guarded_action": None,
+            "guarded_conditions": [],
+            "selected_actions": [{"action_id": prefix[0]}],
+        }
+        search_result = {
+            "stages": [{"stage": "source_naked", "winner": record}],
+            "sensitivity_history": [{
+                "stage": "source_naked",
+                "values": {"spell_power": 0.1, "agility": 0.1, "intellect": 0.1},
+            }],
+            "attempted": 41,
+            "evaluated": 41,
+            "status": "EVALUATED_BOUNDED",
+            "source_context_sha256": "test-shaman-source-context",
+        }
+        winner_policy = SimpleNamespace(
+            id="paid-search-winner",
+            provenance={"authority": "source_stateful_budgeted",
+                        "search_performed": True},
+            rules=(SimpleNamespace(
+                id="fallback:0", action_id=fallback, conditions=()),),
+        )
+        monkeypatch.setattr(budgeted, "run_source_budgeted_gear",
+                            lambda **kwargs: search_result)
+        monkeypatch.setattr(stateful, "_make_policy",
+                            lambda *args, **kwargs: winner_policy)
+        monkeypatch.setattr(budgeted, "paid_search_winner_baseline",
+                            lambda *args, **kwargs: 12.5)
+
+        smoke_calls = []
+
+        def native_smoke(**kwargs):
+            smoke_calls.append(kwargs)
+            return {
+                "blockers": [],
+                "legal_item_count": 1,
+                "tested_item_count": 1,
+                "slot_count": 1,
+                "tested_stat_assertions": 1,
+                "verified_stat_assertions": 1,
+                "source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+                "slots": {"chest": {"items": [{
+                    "item_id": 499, "name": "Native robe",
+                    "stat_values": {"spell_power": 20.0},
+                }]}},
+                "native_item_options_status": "ok",
+                "native_unverified_candidate_count": 0,
+                "native_excluded_non_client_item_count": 3075,
+                "native_item_options_source": "mythicsim:test-ItemSparse",
+            }
+
+        monkeypatch.setattr(p3_smoke, "fast_p3_smoke_for_policy", native_smoke)
+        witness_calls = []
+
+        def witness(_ir, **kwargs):
+            witness_calls.append(kwargs)
+            return {
+                "status": "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS",
+                "stat": "spell_power",
+                "weight_s_saved_per_mob_per_unit": 0.25,
+                "paid_evaluations": 1,
+                "policy_id": "paid-search-winner",
+                "policy_source": "paid_search_winner",
+                "baseline_reused": True,
+                "baseline_source": "paid_search_winner_record",
+                "probe_deltas": list(kwargs["probe_deltas"]),
+            }
+
+        monkeypatch.setattr(budgeted, "paid_source_policy_stat_witness", witness)
+        result = p3.run_live(ROOT, "shaman", 20, spec="unrestricted")
+        return result, record, winner_policy, witness_calls, smoke_calls
+
+    exact, record, winner_policy, calls, smoke_calls = run_case("lightning_bolt:915")
+    assert len(calls) == 1
+    assert calls[0]["stat"] == "spell_power"
+    assert calls[0]["probe_deltas"] == (20.0,)
+    assert calls[0]["preferred_policy"] is winner_policy
+    assert calls[0]["baseline_record"] is record
+    assert calls[0]["allow_paid_winner_after_nonpositive"] is True
+    assert exact["native_paid_winner_spell_probe_enabled"] is True
+    assert exact["source_policy_stat_witnesses"][0]["status"] == (
+        "MEASURED_POSITIVE_SOURCE_POLICY_WITNESS")
+    assert exact["real_measured_stat_weights"]["spell_power"] == 0.25
+    assert exact["real_source_search_evaluated"] == 42
+    assert len(smoke_calls) == 2
+    assert exact["behavior_probes_executed"] <= 44
+
+    other, _record, _policy, other_calls, other_smoke_calls = run_case("rockbiter:8019")
+    assert other_calls == []
+    assert other["native_spell_coefficients_applied"] == applied
+    assert other["native_paid_winner_spell_probe_enabled"] is False
+    assert other["source_policy_stat_witnesses"] == []
+    assert other["real_measured_stat_weights"]["spell_power"] == 0.1
+    assert len(other_smoke_calls) == 1
