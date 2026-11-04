@@ -82,6 +82,59 @@ def test_live_world_process_explicit_rng_mode(monkeypatch, tmp_path, mode):
     assert seen[0][1]["FOREVER_GSIM_WORLD_BRIDGE"] == "1"
 
 
+def test_native_and_live_world_use_identical_iteration_limited_request(
+        monkeypatch, tmp_path):
+    """The native control and live bridge must run the same first N RNG stream."""
+    producer = _producer()
+    request = tmp_path / "source.json"
+    original = {
+        "simOptions": {"iterations": 10000, "randomSeed": "1179706472"},
+        "raid": {"parties": [{"players": [{"distanceFromTarget": 15}]}]},
+        "encounter": {"targets": [{"level": 63}]},
+    }
+    request.write_text(json.dumps(original))
+    binary = tmp_path / "forever-engine"
+    binary.write_text("injected test only")
+    seen = []
+
+    def fake_run(argv, **kwargs):
+        source_path = Path(argv[argv.index("--request") + 1])
+        source = json.loads(source_path.read_text())
+        seen.append((argv[1], source))
+        output = Path(argv[argv.index("--outfile") + 1])
+        if argv[1] == "prepare":
+            output.write_text(json.dumps({"request_sha256": "prepared-id"}))
+        else:
+            output.write_text(json.dumps({
+                "identity": {"engine": "forever-engine"},
+                "result": {"iterationsDone": 3,
+                           "raidMetrics": {"dps": {"avg": 730.0}},
+                           "firstIterationDuration": 120.0},
+            }))
+        return SimpleNamespace(returncode=0, stderr="")
+
+    def fake_popen(argv, **kwargs):
+        source_path = Path(argv[argv.index("--request") + 1])
+        seen.append(("world-sim", json.loads(source_path.read_text())))
+        raise RuntimeError("EXPECTED_NATIVE_WORLD_ENV_CAPTURE")
+
+    monkeypatch.setattr(producer.subprocess, "run", fake_run)
+    monkeypatch.setattr(producer.subprocess, "Popen", fake_popen)
+    native = producer.native_source_control(
+        binary, request, 3, rng_mode="stochastic")
+    assert native["iterations"] == 3
+    with pytest.raises(RuntimeError, match="EXPECTED_NATIVE_WORLD_ENV_CAPTURE"):
+        producer.run(binary, request, distance=15., iterations=3,
+                     rng_mode="stochastic")
+
+    assert [kind for kind, _ in seen] == ["sim", "prepare", "world-sim"]
+    assert seen[0][1] == seen[1][1] == seen[2][1]
+    assert all(source["simOptions"]["iterations"] == 3 for _, source in seen)
+    assert all(source["simOptions"]["randomSeed"] == "1179706472"
+               for _, source in seen)
+    assert request.read_text() == json.dumps(original)
+
+
 def test_invalid_rng_mode_fails_before_source_execution(tmp_path):
     producer = _producer()
     with pytest.raises(ValueError, match="RNG_MODE_INVALID"):
