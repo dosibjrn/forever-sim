@@ -41,6 +41,7 @@ on:
       - 'tools/wf430_l30_starfire_100mob.py'
       - 'tools/wf441_100mob_swiftmend_evidence.py'
       - 'tools/wf357_l30_recovery_frontier.py'
+      - 'tools/wf357_l30_recovery_p3_recalibrate.py'
       - 'tools/wf322_druid_l20_build_parity.py'
       - 'tools/wf328_druid_l20_mode_search_evidence.py'
       - 'tools/wf328_geared_blind_joint_check.py'

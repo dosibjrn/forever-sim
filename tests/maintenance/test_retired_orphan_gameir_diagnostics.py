@@ -80,6 +80,8 @@ RETIRED_TOOLS = (
     "tools/wf430_l30_starfire_100mob.py",
     # One-off WF357 staged-SQLite recovery frontier; keep its report as historical evidence.
     "tools/wf357_l30_recovery_frontier.py",
+    # Standalone recalibration producer has no callers; retain its completed report.
+    "tools/wf357_l30_recovery_p3_recalibrate.py",
     # WF322's one-off staged build-parity producer; the input and behavior regressions remain.
     "tools/wf322_druid_l20_build_parity.py",
     # WF328's one-off GameIR/SQLite report producers; keep their historical JSON and prefix regression.
@@ -159,6 +161,7 @@ RETIRED_IMPORT_NAMES = (
     "wf430_l30_starfire_100mob",
     "wf441_100mob_swiftmend_evidence",
     "wf357_l30_recovery_frontier",
+    "wf357_l30_recovery_p3_recalibrate",
     "wf322_druid_l20_build_parity",
     "wf328_druid_l20_mode_search_evidence",
     "wf328_geared_blind_joint_check",
@@ -253,6 +256,7 @@ RETAINED_HISTORICAL_EVIDENCE = (
     "evidence/wf359/WF359_RECONSTRUCTION.json",
     # Preserve the bounded WF357 recovery-frontier result; retire only its one-off producer.
     "evidence/wf357/WF357_L30_RECOVERY_FRONTIER.json",
+    "evidence/wf357/WF357_L30_P3_RECOVERY_RECALIBRATION.json",
     "evidence/wf350/druid_l30_source_talent_catalogue_70338.json",
     "evidence/wf328/WF328_REAL_MODE_PREFIX_30_PAID_AND_100MOB.json",
     "evidence/wf328/WF328_GEARED_BLIND_100MOB_SAME_SOURCE.json",
