@@ -1,0 +1,115 @@
+"""Transport-only regressions for the active Priest L20 native P4/P5 path."""
+from __future__ import annotations
+
+import copy
+import json
+
+import pytest
+
+from tools.wf_native_priest_l20_paid import score_source_priest_l20
+
+
+def _request():
+    return {
+        "raid": {"parties": [{"players": [{
+            "class": "ClassPriest", "level": 20, "race": "RaceHuman",
+            "talentsString": "0-0-0", "equipment": {"items": []},
+            "rotation": {"type": "TypeAPL", "priorityList": [
+                {"action": {"castSpell": {"spellId": {"spellId": 585}}}},
+            ]},
+        }]}]},
+        "encounter": {"duration": 30, "targets": [{"level": 20}]},
+        "simOptions": {"iterations": 1, "randomSeed": "42"},
+    }
+
+
+def test_paid_native_source_request_transport_and_exact_cast_identity(tmp_path):
+    request = _request()
+    path = tmp_path / "source-priest-l20.json"
+    path.write_text(json.dumps(request))
+    calls = []
+
+    def scorer(binary, candidate, **kwargs):
+        calls.append((binary, copy.deepcopy(candidate), kwargs))
+        return {
+            "effective_request_sha256": "exact-native-paid-request",
+            "score": 26.5, "rng_mode": "balanced",
+            "native_action_cast_receipts": [
+                {"id": {"spellId": 585}, "casts": 3},
+                {"id": {"spellId": 585, "tag": 1}, "casts": 9},
+                {"id": {"spellId": 2050}, "casts": 5},
+                {"id": {"spellId": 585}, "casts": True},
+            ],
+        }, {"result": "native output preserved by scorer"}
+
+    result = score_source_priest_l20(
+        "/selected/native", path, score_request=scorer)
+    assert len(calls) == 1
+    binary, passed, kwargs = calls[0]
+    assert str(binary) == "/selected/native"
+    assert passed == request
+    assert kwargs["rng_mode"] == "balanced"
+    assert kwargs["iterations"] == 1
+    assert kwargs["seed"] == 42
+    assert kwargs["objective"] == "DPS"
+    assert result["native_paid_whole_builds"] == 1
+    assert result["native_source_action_casts"] == 3
+    assert result["native_source_action_ids_cast"] == 1
+    assert result["native_request_sha256"] == "exact-native-paid-request"
+    assert result["native_actor_requested_level"] == 20
+    assert result["native_2d_screen_complete"] is False
+    assert json.loads(path.read_text()) == request
+
+
+@pytest.mark.parametrize("change,code", [
+    (lambda r: r["raid"]["parties"][0]["players"][0].update(level=60),
+     "P4_P5_NATIVE_PRIEST_L20_SOURCE_REQUEST_REQUIRED"),
+    (lambda r: r["raid"]["parties"][0]["players"][0].update(level=True),
+     "P4_P5_NATIVE_PRIEST_L20_SOURCE_REQUEST_REQUIRED"),
+    (lambda r: r["raid"]["parties"][0]["players"][0].update(**{"class": "ClassMage"}),
+     "P4_P5_NATIVE_PRIEST_L20_SOURCE_REQUEST_REQUIRED"),
+    (lambda r: r["raid"]["parties"][0]["players"][0]["rotation"].update(priorityList=[]),
+     "P4_P5_NATIVE_SOURCE_APL_CAST_REQUIRED"),
+])
+def test_native_source_guard_refuses_unproven_actor_or_no_cast(tmp_path, change, code):
+    request = _request()
+    change(request)
+    path = tmp_path / "bad.json"
+    path.write_text(json.dumps(request))
+    with pytest.raises(ValueError, match=code):
+        score_source_priest_l20("/selected/native", path,
+            score_request=lambda *a, **k: (_ for _ in ()).throw(
+                AssertionError("must not invoke native on invalid request")))
+
+
+def test_p4_p5_paid_native_receipt_does_not_claim_2d_completion(tmp_path, monkeypatch):
+    from tools import wf_gate_p4_p5_partial as gate
+    from src.game.native_p3_item_options import query_native_p3_item_options
+    from src.game import native_p3_item_options
+    from tools import wf_native_priest_l20_paid
+
+    source = tmp_path / "source.json"
+    source.write_text(json.dumps(_request()))
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "/selected/native")
+    monkeypatch.setenv("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST", str(source))
+    monkeypatch.setattr(native_p3_item_options, "query_native_p3_item_options",
+                        lambda *a, **k: {
+                            "status": "ok", "items": [{"item_id": 25, "slot": "chest"}],
+                            "unverified_candidate_count": 0,
+                        })
+    monkeypatch.setattr(wf_native_priest_l20_paid, "score_source_priest_l20",
+                        lambda *a, **k: {
+                            "native_paid_whole_builds": 1,
+                            "native_source_action_casts": 2,
+                            "native_2d_screen_complete": False,
+                            "native_request_sha256": "native-sha",
+                        })
+    report = gate._native_cold_options_without_paid_executor(
+        "priest", 20, "unrestricted")
+    assert report["status"] == "BLOCKED"
+    assert report["paid_candidates"] == 1
+    assert report["screen_complete_candidates"] == 0
+    assert report["coverage_scope_complete"] is False
+    assert report["reasons"] == ["P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"]
+    assert "pass_count" not in report
+    assert report["native_source_action_casts"] == 2
