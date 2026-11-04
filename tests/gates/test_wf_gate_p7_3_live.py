@@ -117,7 +117,10 @@ def test_p73_changed_talent_is_paid_directly_by_native_without_retired_gates(
             "selected_reference_profile": "balance"}, tmp_path / "binary"))
     proposals = SimpleNamespace(
         cold_talent_string=lambda template, rng: "cold-proposal",
-        mutate_talent_string=lambda parent, rng: "mutated-proposal")
+        mutate_talent_string=lambda parent, rng: "mutated-proposal",
+        # The provider probes minimal native-decided rank edits first. Keep
+        # this transport mock aligned with the genuine proposal interface.
+        lower_one_rank_neighbors=lambda reference: ["5532220115501351--504"])
     monkeypatch.setattr(gate, "native_talent_proposals", proposals)
     calls = []
 
