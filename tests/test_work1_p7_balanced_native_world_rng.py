@@ -57,7 +57,7 @@ def test_live_world_process_explicit_rng_mode(monkeypatch, tmp_path, mode):
     request.write_text(json.dumps({
         "simOptions": {"iterations": 10000, "randomSeed": "1179706472"},
         "raid": {"parties": [{"players": [{"distanceFromTarget": 15}]}]},
-        "encounter": {"targets": [{"level": 63}]},
+        "encounter": {"targets": [{"level": 63, "stats": [0.0] * 32 + [127393.0]}]},
     }))
     binary = tmp_path / "forever-engine"
     binary.write_text("injected test only")
@@ -90,7 +90,7 @@ def test_native_and_live_world_use_identical_iteration_limited_request(
     original = {
         "simOptions": {"iterations": 10000, "randomSeed": "1179706472"},
         "raid": {"parties": [{"players": [{"distanceFromTarget": 15}]}]},
-        "encounter": {"targets": [{"level": 63}]},
+        "encounter": {"targets": [{"level": 63, "stats": [0.0] * 32 + [127393.0]}]},
     }
     request.write_text(json.dumps(original))
     binary = tmp_path / "forever-engine"
@@ -205,7 +205,7 @@ def test_reference_cli_uses_explicit_stochastic_mode(monkeypatch, tmp_path, caps
             "class": "ClassDruid", "balanceDruid": {},
             "distanceFromTarget": 15.0,
         }]}]},
-        "encounter": {"targets": [{"level": 63}]},
+        "encounter": {"targets": [{"level": 63, "stats": [0.0] * 32 + [127393.0]}]},
     }))
     binary = tmp_path / "forever-engine"
     calls = []
