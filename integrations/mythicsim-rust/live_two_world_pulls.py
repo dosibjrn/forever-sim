@@ -522,7 +522,13 @@ def run(binary: Path, prepared: Path, *, mob_health: float | None = None,
                 raise AssertionError(("RUST_TWO_WORLD_FORGED_ACK_NOT_REJECTED", status, stderr[-2000:]))
             return {"forged_ack_rejected": True, "native_events": events}
         if status != 0:
-            raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", status, stderr[-3000:]))
+            # The selected Rust actor can run dry before target 100.  The
+            # native process exits nonzero, but each preceding lethal ACK was
+            # already applied by this same gsim world.  Forward that observed
+            # count and native event count to the real gate candidate scorer;
+            # a failed session still cannot become a completed world screen.
+            raise AssertionError(("RUST_TWO_WORLD_NATIVE_FAILED", status,
+                                  stderr[-3000:], len(kills), events))
         if native_report is None or len(kills) != target_count or events < target_count:
             raise AssertionError(("RUST_TWO_WORLD_KILLS_NOT_COMPLETED", native_report, kills, events))
         result = native_report["result"]
