@@ -208,3 +208,36 @@ def test_native_p3_reads_prepared_actor_from_the_selected_binary():
     assert actor == {"status": "PREPARED", "actor_class": "ClassRogue",
                      "actor_level": 60, "engine_revision": "native-sha",
                      "prepared_request_sha256": "source-sha"}
+
+
+def test_p3_cli_retains_selected_native_prepare_reason_and_actor(monkeypatch, capsys):
+    """A P3 FAIL must tell the next worker why Rust refused L20 preparation."""
+    from tools import wf_gate
+
+    def gate(*_args, **_kwargs):
+        return {
+            "status": "FAIL", "reasons": ["P3_NATIVE_L20_EQUIPPED_SCORE_NOT_ESTABLISHED"],
+            "native_equipped_paid_receipt": {
+                "status": "NATIVE_PREPARE_REFUSED",
+                "reason": "player level 20 is unsupported by selected native",
+                "paid_attempts": 0,
+                "actor_requested_level": 20,
+                "actor_checkpoint_verified": False,
+                "native_prepared_actor": {"status": "NATIVE_PREPARE_REFUSED",
+                                          "reason": "source native refusal"},
+            },
+        }
+
+    monkeypatch.setattr(wf_gate, "_run_live_gate", gate)
+    result = wf_gate.main(["--class", "rogue", "--level", "20",
+                           "--spec", "unrestricted", "--gate", "P3"])
+    assert result == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "FAIL"
+    receipt = output["results"][0]["native_equipped_paid_receipt"]
+    assert receipt["status"] == "NATIVE_PREPARE_REFUSED"
+    assert "player level 20 is unsupported" in receipt["reason"]
+    assert receipt["actor_requested_level"] == 20
+    assert receipt["native_prepared_actor"]["reason"] == "source native refusal"
+    assert receipt["paid_attempts"] == 0
+    assert receipt["actor_checkpoint_verified"] is False
