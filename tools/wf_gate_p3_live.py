@@ -214,6 +214,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             }
     max_p3_evaluations = 44
     schedule_incoming_attacks = True
+    strict_paladin_l20_source_auto = (
+        str(class_key).lower() == "paladin" and int(level) == 20
+        and str(spec).lower() == "unrestricted")
     result = run_source_budgeted_gear(
         class_key=class_key, level=level, ir_slice=ir,
         max_evaluations=max_p3_evaluations, initial_search=12, search_per_gear=3,
@@ -222,7 +225,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                      "spirit", "spell_power", "attack_power", "mp5",
                      "crit", "hit", "dodge", "parry",
                      "health_regeneration_per_5s", "weapon_dps"),
-        schedule_incoming_attacks=schedule_incoming_attacks)
+        schedule_incoming_attacks=schedule_incoming_attacks,
+        prefix_search_auto_fallback=strict_paladin_l20_source_auto,
+        prefix_require_source_verified_auto=strict_paladin_l20_source_auto)
     stages = result.get("stages") or []
     naked = next((x for x in stages if x.get("stage") == "source_naked"), None)
     sensitivity = next((x for x in result.get("sensitivity_history", ())
@@ -234,7 +239,9 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             + str(result.get("status"))],
             "production_component": "src.v2.source_budgeted_gear.run_source_budgeted_gear",
             "real_source_search_attempts": result.get("attempted", 0),
-            "real_source_search_evaluated": result.get("evaluated", 0)}
+            "real_source_search_evaluated": result.get("evaluated", 0),
+            "source_naked_search_status": result.get("source_naked_search_status"),
+            "source_naked_diagnostic": result.get("source_naked_diagnostic")}
     record = naked["winner"]
     native_spell_action_ids = {
         str(row.get("action_id")) for row in native_spell_coefficients_applied
