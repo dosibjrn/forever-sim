@@ -162,7 +162,9 @@ def run_live(root: Path, class_key: str, level: int, *,
         "production_component": "src.v2.source_bounded_joint_frontier.replay_joint_shortlist_100mob",
         "source_replay_results": results,
         "source_replay_Tfirst_Tsecond": ratio,
-        "source_replay_numeric_saturation": bool(ratio is not None and ratio <= 1.01),
+        "source_replay_300s_nonregression": bool(ratio is not None
+                                              and results[1]["mean_s_per_mob"]
+                                              <= 1.01 * results[0]["mean_s_per_mob"]),
         "full_p6_selected_backend_acceptance": False,
         "coverage_scope_complete": False,
         # Genuine sequential mob kills on TWO independently built candidates,

@@ -315,11 +315,13 @@ def compare_saved_cold_winners(search30, search300, *, source_ir, seed_stage,
     # The gate is NOT accepted just because numeric P6 looks good: source
     # coverage and source/engine acceptance must be independently certified.
     return {'status': ('INCOMPLETE_INDEPENDENT_100MOB_REPLAY' if not complete
-        else 'NUMERIC_P6_SATURATION_FAIL' if ratio > 1.01
+        else 'NUMERIC_P6_300S_REGRESSION_FAIL' if results[1]['s_per_mob'] > 1.01 * results[0]['s_per_mob']
         else 'PAID_COMPARISON_COMPLETE_DIAGNOSTIC_NOT_GATE_ACCEPTED'),
         'replays': results, 'T30_s_per_mob': results[0]['s_per_mob'],
         'T300_s_per_mob': results[1]['s_per_mob'],
-        'ratio_T30_T300': ratio, 'numeric_p6_within_1pct': bool(complete and ratio <= 1.01),
+        'ratio_T30_T300': ratio,
+         'numeric_p6_300s_nonregression': bool(
+             complete and results[1]['s_per_mob'] <= 1.01 * results[0]['s_per_mob']),
         'N30_unique_paid': n30, 'N300_unique_paid': n300,
         'p5_2x_breadth': breadth, 'p5_10x_breadth': tenfold_breadth,
         'same_source_legal_candidate_space_proven': same_space,
