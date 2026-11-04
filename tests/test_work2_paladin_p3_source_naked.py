@@ -8,7 +8,8 @@ import json
 from src.game.data.forever.registry import build_game_ir_slice
 from src.v2.generic_backend import _policy_combat_evaluation
 from src.v2.source_budgeted_gear import run_source_budgeted_gear
-from src.v2.source_budgeted_prefix import AUTO_ONLY_FALLBACK
+from src.v2.source_budgeted_prefix import (
+    AUTO_ONLY_FALLBACK, source_prefix_envelope, run_source_budgeted_prefix)
 from src.v2.source_stateful_budgeted import _make_policy
 
 
@@ -78,3 +79,32 @@ def test_paladin_l20_stateful_auto_fallback_reproduces_within_44_evaluations():
         "weapon_dps_proxy": auto.damage_source.flat_dps,
         "weapon_source_caveat": auto.provenance[0]["caveat"],
     }, sort_keys=True), flush=True)
+
+
+def test_paladin_l20_real_cooldown_action_is_a_paid_prefix_continuation():
+    """The source's Holy Strike may be tried on cooldown; it is not an auto."""
+    ir = build_game_ir_slice(class_key="paladin", level=20)
+    old = source_prefix_envelope(ir, level=20)
+    assert old["fillers"] == (), old
+    expanded = source_prefix_envelope(
+        ir, level=20, allow_cooldown_fallback=True)
+    assert "holy_strike:1866" in expanded["fillers"], expanded
+    assert AUTO_ONLY_FALLBACK not in expanded["fillers"]
+    assert all(
+        action_id in {action.id for action in ir.actions}
+        for action_id in expanded["fillers"])
+    assert all(
+        next(action for action in ir.actions if action.id == action_id).cooldown_s > 0
+        for action_id in expanded["fillers"])
+
+    result = run_source_budgeted_prefix(
+        class_key="paladin", level=20, ir_slice=ir,
+        max_evaluations=12, allow_cooldown_fallback=True)
+    assert 0 < result["attempted"] <= 12, result
+    assert result["envelope"]["fillers"] == expanded["fillers"], result
+    assert all(
+        record["fallback"] in expanded["fillers"]
+        for record in (*result.get("trials", ()), *result.get("failures", ())))
+    # Source cooldown exploration is a real production search change, but the
+    # actor/weapon remain explicitly marked as proxies. It is not P3 credit.
+    assert ir.actor.metadata["base_stats_are_zero_proxy"] is True
