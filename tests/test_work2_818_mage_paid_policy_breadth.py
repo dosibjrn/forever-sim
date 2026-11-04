@@ -176,3 +176,34 @@ def test_invalid_finished_naked_stat_probe_objective_is_not_measured(
         SimpleNamespace(), {"fallback": "source-spell", "prefix": ()},
         level=30, incoming=True)
     assert result is None
+
+
+
+@pytest.mark.parametrize("invalid_score", [
+    None, "NATIVE_UNSUPPORTED", "10.0", True, False,
+    float("nan"), float("inf"), float("-inf"), 0.0, -1.0,
+])
+def test_paid_search_winner_refuses_coerced_baseline_receipt(invalid_score):
+    """Only a real numeric paid winner may be reused for stat perturbations."""
+    winner = SimpleNamespace(
+        id="paid-search-winner",
+        provenance={"authority": "source_stateful_budgeted",
+                    "search_performed": True},
+        rules=(SimpleNamespace(id="fallback:0", action_id="mage:fireball",
+                               conditions=()),))
+    receipt = {
+        "status": "evaluated",
+        "score_s_per_mob": invalid_score,
+        "prefix": ["mage:fireball"],
+        "fallback": "mage:fireball",
+        "guarded_action": None,
+        "guarded_conditions": [],
+        "selected_actions": [{"action_id": "mage:fireball"}],
+    }
+    assert budgeted.paid_search_winner_baseline(
+        winner, receipt, ("mage:fireball",)) is None
+    # The same exact paid policy and action receipt remains reusable when
+    # its genuine measured objective is a finite positive number.
+    receipt["score_s_per_mob"] = 10.0
+    assert budgeted.paid_search_winner_baseline(
+        winner, receipt, ("mage:fireball",)) == 10.0
