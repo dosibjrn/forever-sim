@@ -39,6 +39,11 @@ def test_mage_l30_source_promoted_frost_fire_ranks_and_ranges():
     assert actions['fireball'].costs[0].amount==185
     assert actions['frostbolt'].costs[0].amount==100
     assert actions['fire_blast'].costs[0].amount==165
+    # The selected L30 rank has a sourced 42.9% SP coefficient. The
+    # index row's omission must not silently turn Spell Power into zero.
+    assert actions['fire_blast'].effects[0].spell_power_coefficient == 0.429
+    assert actions['fire_blast'].metadata['source_spell_power_coefficient_verified'] is True
+    assert actions['fire_blast'].effects[0].field_provenance['spell_power_coefficient']
     assert any('source_rank_movement_slow_unmodeled'==x.get('code') for x in ir.unsupported_semantics)
 
 
