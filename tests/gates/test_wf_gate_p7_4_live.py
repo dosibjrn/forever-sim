@@ -863,6 +863,11 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
         "scaling_options": {"0": {"stats": {"5": 100.0}}},
         "ranged_weapon_type": "RangedWeaponTypeBow",
     })
+    item_rows.append({
+        "id": 9004, "type": relic_type,
+        "scaling_options": {"0": {"ilvl": 65}},
+        "ranged_weapon_type": "RangedWeaponTypeIdol",
+    })
 
     items_path = tmp_path / "items.jsonl"
     enchants_path = tmp_path / "enchants.jsonl"
@@ -874,9 +879,44 @@ def test_pinned_rust_candidate_pool_uses_rust_jsonl_tables(tmp_path):
 
     assert pool[0][:2] == [9999, 1000 + item_types.index(head_type)]
     assert pool[14] == [1000 + item_types.index(weapon_type)]
-    assert pool[15] == [1000 + item_types.index(relic_type)]
+    assert pool[15][0] == 1000 + item_types.index(relic_type)
+    assert 9004 in pool[15]  # real relics can have item_effects but no stat map
     assert enchant_pools[6] == [None, 2000 + item_types.index(search.RUST_TYPES["hands"])]
     assert metadata == {
         "unique_item_options": len(item_types) + 1,
         "unique_enchant_options": len(item_types),
     }
+
+
+def test_pinned_rust_candidate_pool_accepts_actual_engine_jsonl():
+    """Exercise the checked-out engine data, including real statless idols."""
+    import pytest
+    import sys
+    from pathlib import Path
+
+    root = Path(gate.__file__).resolve().parents[1]
+    engine_data = root / "integrations/mythicsim-rust/engine/data"
+    items_path = engine_data / "items.jsonl"
+    enchants_path = engine_data / "enchants.jsonl"
+    if not items_path.is_file() or not enchants_path.is_file():
+        pytest.skip("pinned MythicSim source data is not checked out")
+
+    source_dir = root / "integrations/mythicsim-rust"
+    sys.path.insert(0, str(source_dir))
+    try:
+        search = gate._source_module(
+            source_dir / "p74_gear_search.py", "p74_actual_engine_jsonl_search_test")
+    finally:
+        sys.path.remove(str(source_dir))
+    pool, enchant_pools, metadata = search.pinned_rust_candidate_pool(
+        items_path, enchants_path)
+
+    assert set(pool) == set(range(len(search.SLOTS)))
+    assert all(pool[index] for index in range(len(search.SLOTS)))
+    assert 22397 in pool[15]  # Idol of Ferocity: native ItemTypeRanged, no stat map
+    assert metadata["unique_item_options"] > 0
+    assert metadata["unique_enchant_options"] > 0
+    assert all(choices and choices[0] is None for choices in enchant_pools.values())
+    assert any(enchant_id is not None
+               for choices in enchant_pools.values()
+               for enchant_id in choices)
