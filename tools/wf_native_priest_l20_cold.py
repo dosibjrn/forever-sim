@@ -180,6 +180,18 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         elif source["encounter"] != encounter:
             raise ValueError("PRIEST_L20_COLD_COMPARABLE_ENCOUNTER_MISMATCH")
         sources.append(source)
+    # The first authored request is the baseline policy. Compare later
+    # source-authored talent/APL proposals against its action identities, but
+    # count only genuinely executed *native* ActionIDs. Never infer an unlock
+    # merely from an APL entry or reproduce Rust's talent legality in Python.
+    baseline_actor = sources[0]["raid"]["parties"][0]["players"][0]
+    baseline_talents = baseline_actor.get("talentsString")
+    baseline_cast_ids = set()
+    for entry in baseline_actor.get("rotation", {}).get("priorityList", ()):
+        spell = (entry.get("action") or {}).get("castSpell")
+        if isinstance(spell, dict) and isinstance(spell.get("spellId"), dict):
+            baseline_cast_ids.add(json.dumps(spell["spellId"], sort_keys=True,
+                                             separators=(",", ":")))
     clock = clock or time.monotonic
     world_screen = world_screen or couple_source_priest_l20_persistent_world
     start = clock()
@@ -195,6 +207,7 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
     early_paid = None
     final_paid = None
     rows = []
+    native_talent_action_witnesses = []
     seen = set()
     scored_before = 0
     scored_after = 0
@@ -235,6 +248,17 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
                 row["native_source_action_ids_cast"] = paid.get(
                     "native_source_action_ids_cast", 0)
                 row["native_screen_score"] = paid.get("native_score")
+                actor = build["raid"]["parties"][0]["players"][0]
+                if actor.get("talentsString") != baseline_talents:
+                    for action_id, casts in row["native_source_action_cast_counts"].items():
+                        if (type(casts) is int and casts > 0
+                                and action_id not in baseline_cast_ids):
+                            native_talent_action_witnesses.append({
+                                "source_request_sha256": identity,
+                                "native_action_id": action_id,
+                                "native_casts": casts,
+                                "source_talents_changed": True,
+                            })
                 # A native fight with no source-action casts is an executed
                 # refusal for this leveling frontier, not a valid paid
                 # whole-build continuation or a 30s winner.
@@ -394,6 +418,10 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_completed_routes_before_30": completed_before,
         "native_cold_completed_routes_after_30": completed_after,
         "native_cold_attempted_distinct_builds": len(rows),
+        "native_cold_paid_world_route_builds": sum(
+            row["status"] in ("NATIVE_ROUTE_PAID", "COMPLETE")
+            for row in rows),
+        "native_cold_talent_action_witnesses": native_talent_action_witnesses,
         "native_cold_300s_reached": wall_s >= budget_s,
         # Deadline overrun reports an in-flight evaluation finishing late.
         # Only evaluations completed within the actual 300s window are
@@ -401,5 +429,4 @@ def run_native_priest_l20_cold(binary: str | Path, request_file: str | Path,
         "native_cold_300s_overrun": wall_s > budget_s,
         "native_cold_source": "MYTHICSIM_SOURCE_OPTIONS_PAID_100MOB_NATIVE_2D",
         "native_cold_rows": rows,
-        "native_cold_gate_accepted": False,
     }
