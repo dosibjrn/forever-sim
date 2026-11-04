@@ -478,8 +478,11 @@ def test_native_shaman_spell_coefficients_use_exact_prepared_rank_only():
             "class": "Shaman",
             "spells": [
                 {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.42},
-                # Same spell ID, different native action: overload proc tag.
+                # Same spell ID, different native actions: proc tag,
+                # item action, and nonempty other-ID are not the source cast.
                 {"action_id": {"spell_id": 915, "tag": 6}, "bonus_coefficient": 0.17},
+                {"action_id": {"spell_id": 915, "item_id": 123}, "bonus_coefficient": 0.13},
+                {"action_id": {"spell_id": 915, "other_id": "proc"}, "bonus_coefficient": 0.11},
                 {"action_id": {"spell_id": 943}, "bonus_coefficient": 0.63},
                 {"action_id": {"spell_id": 943, "tag": 6}, "bonus_coefficient": 0.11},
             ],
@@ -565,3 +568,21 @@ def test_native_shaman_spell_coefficient_enriches_only_matching_existing_rank():
         wrong if action.id == bolt.id else action for action in ir.actions))
     with pytest.raises(NativeItemOptionsError, match="SOURCE_RANK_MISMATCH"):
         apply_native_shaman_lightning_bolt_coefficient(mismatch, native)
+
+
+
+def test_native_shaman_spellbook_reports_conflicting_exact_action_ids():
+    prepared = {
+        "contract": "forever-prepared",
+        "schema_version": 2,
+        "reference": {"engine_revision": "native-shaman-test-revision"},
+        "player": {"class": "Shaman", "spells": [
+            {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.42},
+            {"action_id": {"spell_id": 915}, "bonus_coefficient": 0.43},
+        ]},
+    }
+    with pytest.raises(
+        NativeItemOptionsError,
+        match=r"DUPLICATE_COEFFICIENT_CONFLICT:.*previous_action_id",
+    ):
+        query_native_shaman_spell_coefficients("native", runner=_runner(prepared))
