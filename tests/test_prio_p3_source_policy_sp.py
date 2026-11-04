@@ -194,15 +194,23 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
     winner_policy = SimpleNamespace(id="paid-search-winner", provenance={})
     monkeypatch.setattr(stateful, "_make_policy",
                         lambda *args, **kwargs: winner_policy)
-    monkeypatch.setattr(
-        p3_smoke, "fast_p3_smoke_for_policy",
-        lambda **kwargs: {
+    monkeypatch.setenv("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN", "native-test-binary")
+    smoke_calls = []
+
+    def native_smoke(**kwargs):
+        smoke_calls.append(kwargs)
+        return {
             "blockers": ["NONPOSITIVE_RELEVANT_WEIGHT:spell_power"],
             "legal_item_count": 1, "tested_item_count": 1,
             "slot_count": 1, "tested_stat_assertions": 1,
             "verified_stat_assertions": 1,
-            "source": "CURRENT_CANONICAL_SQLITE_LEGAL_ITEMS",
-        })
+            "source": "MYTHICSIM_NATIVE_ITEM_OPTIONS",
+            "native_item_options_status": "partial_level_unknown",
+            "native_unverified_candidate_count": 2239,
+            "native_item_options_source": "mythicsim:test-ItemSparse.RequiredLevel",
+        }
+
+    monkeypatch.setattr(p3_smoke, "fast_p3_smoke_for_policy", native_smoke)
     captured = {}
 
     def witness(_ir, **kwargs):
@@ -217,6 +225,11 @@ def test_live_p3_passes_winning_opening_prefix_to_source_policy_witness(monkeypa
     result = p3.run_live(ROOT, "mage", 30, spec="unrestricted")
 
     assert captured["opening_action_ids"] == ("mage:fireball",)
+    assert len(smoke_calls) == 1
+    assert smoke_calls[0]["native_options_binary"] == "native-test-binary"
+    assert result["item_options_source"] == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    assert result["native_item_options_status"] == "partial_level_unknown"
+    assert result["native_unverified_candidate_count"] == 2239
     assert result["real_source_search_evaluated"] == 44
 
 
