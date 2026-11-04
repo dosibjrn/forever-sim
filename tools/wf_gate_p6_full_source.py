@@ -204,7 +204,14 @@ def run_full_source_comparison(root: Path, class_key: str, level: int, *,
          'policy': winner.get('policy'),
          'policy_signature': winner.get('policy_signature'),
          'recovery': winner.get('recovery'),
-         'allocation': winner.get('allocation')}
+         'allocation': winner.get('allocation'),
+         # The cold search's temporary JSON is deleted at gate exit.
+         # Retain both frozen winners' full executable configurations in the
+         # ordinary gate report so a paid P6 result can be inspected/replayed
+         # without reconstructing a build from its proxy proposal label.
+         'equipped_gear': winner.get('equipped_gear'),
+         'opening_action_ids': winner.get('opening_action_ids'),
+         'policy_ir': winner.get('policy_ir')}
         for budget, winner in ((30, winner30), (300, winner300))
     ]
     return {
