@@ -542,11 +542,19 @@ def test_native_cold_accepts_genuine_window_receipts_not_hardcoded_fail():
         "native_2d_persistent_world_targets_killed"] = 99
     assert native_cold_gate_verdicts(changed)["P4"]["status"] == "FAIL"
     assert native_cold_gate_verdicts(changed)["P5"]["status"] == "PASS"
-    # A proposed, never-executed unlock has no gate credit.
+    # The P4-only talent-unlock comparison cannot silently become an
+    # additional P5 condition. P5 independently judges its real 300s paid
+    # continuation and completed frozen 100-mob winner.
     changed = copy.deepcopy(cold)
     changed["native_cold_talent_action_witnesses"][0]["native_casts"] = 0
-    assert all(v["status"] == "FAIL"
-               for v in native_cold_gate_verdicts(changed).values())
+    assert native_cold_gate_verdicts(changed)["P4"] == {
+        "status": "FAIL", "reasons": [
+            "P4_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED"]}
+    assert native_cold_gate_verdicts(changed)["P5"] == {
+        "status": "PASS", "reasons": []}
+    changed["native_cold_talent_action_witnesses"] = []
+    assert native_cold_gate_verdicts(changed)["P4"]["status"] == "FAIL"
+    assert native_cold_gate_verdicts(changed)["P5"]["status"] == "PASS"
     # Post-30 continuation and distinct real paid world routes matter for P5.
     changed = copy.deepcopy(cold)
     changed["native_cold_native_paid_after_30"] = 0
