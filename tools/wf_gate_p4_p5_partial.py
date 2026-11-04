@@ -60,6 +60,45 @@ def paid_source_action_coverage(search: dict, source_actions) -> dict:
             "executed": len(complete)}
 
 
+def _native_cold_options_without_paid_executor(class_key: str, level: int,
+                                               spec: str) -> dict:
+    """Consult Rust when no legacy gear role exists; never fake a paid screen.
+
+    Item-options enumerates individually eligible gear, not a legal complete
+    build or a combat evaluator. Until the native whole-build paid path can
+    consume these options, preserve BLOCKED rather than crediting P4/P5.
+    """
+    import os
+    from src.game.native_p3_item_options import (
+        NativeItemOptionsError, query_native_p3_item_options)
+
+    component = "src.game.native_p3_item_options.query_native_p3_item_options"
+    binary = os.environ.get("FOREVER_P3_NATIVE_ITEM_OPTIONS_BIN")
+    if not binary:
+        return {"status": "BLOCKED", "reasons": [
+            "P4_P5_NATIVE_ITEM_OPTIONS_BINARY_REQUIRED"],
+            "production_component": component}
+    try:
+        response = query_native_p3_item_options(
+            binary, class_key, level, spec=spec)
+    except NativeItemOptionsError as exc:
+        return {"status": "BLOCKED", "reasons": [str(exc)],
+                "production_component": component}
+    options = response["items"]
+    return {
+        "status": "BLOCKED",
+        "reasons": [("P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED"
+                     if options else "P4_P5_NATIVE_ITEM_OPTIONS_EMPTY")],
+        "production_component": component,
+        "native_source_option_count": len(options),
+        "native_source_unverified_candidate_count": response["unverified_candidate_count"],
+        "native_source_status": response["status"],
+        "paid_candidates": 0,
+        "screen_complete_candidates": 0,
+        "coverage_scope_complete": False,
+    }
+
+
 def run_paid_partial(root: Path, class_key: str, level: int, *,
                      spec: str, gate: str, budget_s: float = 6.) -> dict:
     if gate not in ("P4", "P5"):
@@ -75,11 +114,16 @@ def run_paid_partial(root: Path, class_key: str, level: int, *,
     from src.v2.source_bounded_joint_frontier import (
         source_cold_start_stage, search_bounded_joint_frontier)
 
-    ir = build_game_ir_slice(class_key=class_key, level=level)
     roles = available_gear_roles(class_key)
-    if ir is None or not roles:
+    if not roles:
+        # A missing Forever SQLite role is not evidence of missing native
+        # Priest gear. Ask the selected Rust item-options source directly.
+        # Never pass those items through the legacy Python legality/runtime.
+        return _native_cold_options_without_paid_executor(class_key, level, spec)
+    ir = build_game_ir_slice(class_key=class_key, level=level)
+    if ir is None:
         return {"status": "BLOCKED", "reasons": [
-            "SOURCE_COLD_SEARCH_IR_OR_GEAR_ROLE_UNAVAILABLE"]}
+            "SOURCE_COLD_SEARCH_IR_UNAVAILABLE"]}
     # Named checkpoint specs are explicit product constraints, not inferred
     # Forever mechanics. Reuse P2's validated canonical profile and the
     # existing production joint search's source-legal spec frontier.
