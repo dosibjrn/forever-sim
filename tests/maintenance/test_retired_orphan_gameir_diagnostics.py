@@ -12,6 +12,8 @@ RETIRED_TOOLS = (
     "tools/wf263_l1_value_benchmark.py",
     "tools/wf276_resource_prefix_benchmark.py",
     "tools/wf303_source_wide_100mob.py",
+    "tools/wf270_action_source_coverage.py",
+    "tools/wf272_real_source_ranked_finisher.py",
     "tools/wf319_druid_l20_index_l2_parity.py",
     "tools/wf399_qualification_probe.py",
     "tools/wf399_replay_winner.py",
@@ -43,6 +45,8 @@ RETIRED_IMPORT_NAMES = (
     "wf263_l1_value_benchmark",
     "wf276_resource_prefix_benchmark",
     "wf303_source_wide_100mob",
+    "wf270_action_source_coverage",
+    "wf272_real_source_ranked_finisher",
     "wf319_druid_l20_index_l2_parity",
     "wf399_qualification_probe",
     "wf399_replay_winner",
@@ -89,6 +93,8 @@ RETIRED_COMMANDS = (
 
 
 RETAINED_BEHAVIOR_TESTS = (
+    "tests/test_wf270_index_to_ir_action_frontier.py",
+    "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
     "tests/test_actor_recovery_channel.py",
 )
