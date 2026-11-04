@@ -53,7 +53,14 @@ def _fixed_opening_score(ir, record, level, incoming, *, meter=None, max_events=
         not ordered_prefix_executed(execution, record['prefix']) or
         not execution.timeline.target_defeated):
         return None
-    return float(evaluation.seconds_per_mob)
+    # A native/paid evaluator may have a completed kill receipt but no usable
+    # numeric objective. It consumes its budget slot; it is not a measured
+    # sensitivity baseline and must not abort the rest of the P3 search.
+    try:
+        seconds = float(evaluation.seconds_per_mob)
+    except (TypeError, ValueError, AttributeError, OverflowError):
+        return None
+    return seconds if isfinite(seconds) and seconds > 0. else None
 
 
 def _source_probe_axis_selection(ir, requested: tuple[str, ...]) -> tuple[tuple[str, ...], dict]:
@@ -697,7 +704,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             if cached_baseline is not None:
                 try:
                     cached_value = float(cached_baseline)
-                except (TypeError, ValueError):
+                except (TypeError, ValueError, AttributeError, OverflowError):
                     cached_value = float('nan')
                 if isfinite(cached_value) and cached_value > 0.:
                     baseline = cached_value
@@ -744,7 +751,7 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             else:
                 try:
                     baseline_value = float(before.seconds_per_mob)
-                except (TypeError, ValueError):
+                except (TypeError, ValueError, AttributeError, OverflowError):
                     baseline_value = float('nan')
                 reason = (None if isfinite(baseline_value) and baseline_value > 0.
                           else 'BASELINE_NONPOSITIVE_OR_NONFINITE_OBJECTIVE')
