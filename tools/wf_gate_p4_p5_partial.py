@@ -85,7 +85,7 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
         return {"status": "BLOCKED", "reasons": [str(exc)],
                 "production_component": component}
     options = response["items"]
-    return {
+    report = {
         "status": "BLOCKED",
         "reasons": [("P4_P5_NATIVE_PAID_WHOLE_BUILD_EXECUTOR_NOT_CONNECTED"
                      if options else "P4_P5_NATIVE_ITEM_OPTIONS_EMPTY")],
@@ -97,6 +97,24 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
         "screen_complete_candidates": 0,
         "coverage_scope_complete": False,
     }
+    # Only the actual source-supplied Priest L20 request may exercise the
+    # selected native whole-build scorer. Never fabricate an L20 request by
+    # lowering an existing level-60 actor, or count a native-only fight as
+    # a completed 2D/100-mob gate screen.
+    request_file = os.environ.get("FOREVER_P4_P5_PRIEST_L20_SOURCE_REQUEST")
+    if options and class_key == "priest" and level == 20 and spec == "unrestricted" and request_file:
+        from tools.wf_native_priest_l20_paid import score_source_priest_l20
+        try:
+            paid = score_source_priest_l20(binary, request_file)
+        except (OSError, ValueError, RuntimeError, TimeoutError) as exc:
+            report["reasons"] = [
+                "P4_P5_NATIVE_PRIEST_L20_PAID_REFUSED:" + str(exc)[-400:]
+            ]
+            return report
+        report.update(paid)
+        report["paid_candidates"] = paid["native_paid_whole_builds"]
+        report["reasons"] = ["P4_P5_NATIVE_2D_100MOB_SCREEN_NOT_CONNECTED"]
+    return report
 
 
 def run_paid_partial(root: Path, class_key: str, level: int, *,
