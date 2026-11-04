@@ -405,13 +405,13 @@ def test_native_p3_prefers_distinct_stat_vector_and_keeps_zero_negative_paid_wei
     """Only the native option universe supplies candidates; no arbitrary
     all-stats-positive predicate or Python class-specific eligibility."""
     items = (
-        ItemRecord(item_id=1, name="Agility top", slot="chest", item_level=25,
+        ItemRecord(item_id=991001, name="Agility top", slot="chest", item_level=25,
                    required_level=1, agility=5.0, identity_origin="mythicsim_native",
                    source_type="mythicsim_native"),
-        ItemRecord(item_id=2, name="Same stats", slot="chest", item_level=24,
+        ItemRecord(item_id=991002, name="Same stats", slot="chest", item_level=24,
                    required_level=1, agility=5.0, identity_origin="mythicsim_native",
                    source_type="mythicsim_native"),
-        ItemRecord(item_id=3, name="Stamina tradeoff", slot="chest", item_level=23,
+        ItemRecord(item_id=991003, name="Stamina tradeoff", slot="chest", item_level=23,
                    required_level=1, stamina=8.0, identity_origin="mythicsim_native",
                    source_type="mythicsim_native"),
     )
@@ -425,7 +425,7 @@ def test_native_p3_prefers_distinct_stat_vector_and_keeps_zero_negative_paid_wei
             weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
             weapon_damage_dependent=False, equipped_weapon_dps_relevant=False,
             defensive_positive_required=True, native_options_binary="selected-native")
-    assert report["slots"]["chest"]["selected_ids"] == [1, 3]
+    assert report["slots"]["chest"]["selected_ids"] == [991001, 991003]
     assert report["tested_item_count"] == 2
     assert report["verified_stat_assertions"] == 2
     assert not any(reason.startswith(("NONPOSITIVE_RELEVANT_WEIGHT:",
