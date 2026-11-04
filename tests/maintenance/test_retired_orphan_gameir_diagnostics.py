@@ -45,6 +45,8 @@ RETIRED_TOOLS = (
     "tools/wf254_ingest_paladin_talents.py",
     "tools/wf257_ingest_flash_recovery.py",
     "tools/wf257_ingest_paladin_corridor.py",
+    # Retired P1-only stealth tooltip ingester; its only caller was a Python GameIR P1 test.
+    "tools/wf474_ingest_stealth.py",
     # Retired one-shot GameIR/SQLite observation ingesters; no active native or gate callers.
     "tools/wf437_ingest_critical_resource_source.py",
     "tools/wf438_ingest_resource_actions.py",
@@ -269,6 +271,8 @@ RETIRED_IMPORT_NAMES = (
     "m47_paladin_l20_selection",
     "m47_paladin_l20_adversarial",
     "wf442_ingest_source_rank_observations",
+    "wf474_ingest_stealth",
+    "test_wf474_generic_stealth",
     "test_wf444_joint_critical_proc_tdd",
     "test_wf445_joint_incoming_dodge_resource_tdd",
     "test_wf442_generic_avoidance_resource_red",
@@ -486,6 +490,8 @@ RETIRED_TESTS = (
     "tests/test_wf370_warrior_l30_bis_reconciliation.py",
     # Exclusive M47 L20 adversarial test read an absent generated root-level JSON.
     "tests/test_m47_paladin_l20_adversarial_v011471.py",
+    # P1-only stealth source-ingest and Python GameIR/runtime assertions are retired.
+    "tests/test_wf474_generic_stealth.py",
     # Retired synthetic Python GameIR Warcraft mechanics, not Forever-owned contracts.
     "tests/test_wf442_generic_avoidance_resource_red.py",
     "tests/test_wf442_generic_direct_heal_crit_red.py",

@@ -32,6 +32,8 @@ on:
       - 'tools/wf410_druid20_live_p3.py'
       - 'tools/wf412_druid20_paid_stat_probe.py'
       - 'tools/wf442_ingest_source_rank_observations.py'
+      - 'tools/wf474_ingest_stealth.py'
+      - 'tests/test_wf474_generic_stealth.py'
       - 'tests/test_wf442_generic_avoidance_resource_red.py'
       - 'tests/test_wf442_generic_direct_heal_crit_red.py'
       - 'tests/test_wf444_joint_critical_proc_tdd.py'
