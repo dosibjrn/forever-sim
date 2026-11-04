@@ -623,6 +623,9 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
     attempted_policy_opening_action_ids = []
     baseline_failures = []
     baseline_reused_any = False
+    # A real, completed before/after run can establish exactly zero sensitivity.
+    # Retain the first such receipt but prefer any later positive source policy.
+    zero_receipt = None
     opening_action_ids = tuple(str(x) for x in opening_action_ids)
     prefix_options = (
         (opening_action_ids,) if opening_action_ids and preferred_policy is not None
@@ -806,6 +809,23 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
             if paid_seconds is None:
                 continue
             improvement = baseline - paid_seconds
+            if improvement == 0.0 and zero_receipt is None:
+                # Both objectives are finite, positive, target-defeating paid
+                # executions of the same source policy and opening prefix.
+                # An exact zero is measured; failures and negative effects are
+                # never silently rounded to zero.
+                zero_receipt = {
+                    'policy_id': str(policy.id),
+                    'policy_source': policy_source,
+                    'baseline_seconds_per_mob': baseline,
+                    'perturbed_seconds_per_mob': paid_seconds,
+                    'delta': float(delta),
+                    'probe_deltas': [float(x) for x in policy_probe_deltas],
+                    'requested_probe_deltas': [float(x) for x in probe_deltas],
+                    'baseline_reused': policy_baseline_reused,
+                    'baseline_source': baseline_source,
+                    'opening_action_ids': list(active_prefix),
+                }
             if improvement > 1e-12:
                 return {
                     'status': 'MEASURED_POSITIVE_SOURCE_POLICY_WITNESS',
@@ -833,6 +853,20 @@ def paid_source_policy_stat_witness(ir, *, stat: str, level: int,
                     'engine': 'gsim_CombatRuntime',
                     'method': 'same_paid_source_policy_real_combat_and_recovery_before_after',
                 }
+    if zero_receipt is not None:
+        return {
+            'status': 'MEASURED_ZERO_SOURCE_POLICY_WITNESS',
+            'stat': stat, 'weight_s_saved_per_mob_per_unit': 0.0,
+            **zero_receipt,
+            'paid_evaluations': used,
+            'attempted_policies': attempted_policies,
+            'attempted_policy_sources': attempted_policy_sources,
+            'attempted_policy_opening_action_ids': attempted_policy_opening_action_ids,
+            'baseline_failures': baseline_failures,
+            'source_ir_id': str(ir.id),
+            'engine': 'gsim_CombatRuntime',
+            'method': 'same_paid_source_policy_real_combat_and_recovery_before_after',
+        }
     return {
         'status': 'NO_POSITIVE_SOURCE_POLICY_WITNESS',
         'stat': stat, 'probe_deltas': [float(x) for x in probe_deltas],
