@@ -131,6 +131,17 @@ jobs:
                 "paid_evaluations", row["real_source_search_evaluated"],
                 "native_status", row["native_item_options_status"],
                 "excluded_non_client", row["native_excluded_non_client_item_count"], flush=True)
+          print("NO_RECORD_NATIVE_P3_SHAMAN_WITNESSES",
+                json.dumps([{
+                    key: witness.get(key) for key in (
+                        "stat", "status", "policy_id", "policy_source",
+                        "opening_action_ids", "delta", "probe_delta_sources",
+                        "baseline_seconds_per_mob", "perturbed_seconds_per_mob",
+                        "paid_evaluations", "weight_s_saved_per_mob_per_unit")
+                } for witness in row.get("source_policy_stat_witnesses", [])],
+                    sort_keys=True),
+                "verified", row["pass_count"],
+                "applicable", row["reachability_count"], flush=True)
           PY
 
       - name: Run no-record Paladin L20 P3 with native player context and item options

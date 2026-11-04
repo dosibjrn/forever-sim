@@ -437,15 +437,6 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
     native_item_sized_probe = mage_l30_native or shaman_l20_native
-    if shaman_l20_native:
-        # This issue is only the Spell Power witness. Other zero axes are
-        # separate P3 defects. If the exact native coefficient/action was not
-        # obtained, retain the existing score without attempting a substitute.
-        witness_blockers = (
-            [] if native_spell_coefficients_error else [
-                blocker for blocker in witness_blockers
-                if blocker == "NONPOSITIVE_RELEVANT_WEIGHT:spell_power"
-            ])
     # The Shaman paid winner is eligible only when its actual fallback is the
     # exact, native-enriched rank-915 source action.
     native_spell_winner = (
@@ -454,6 +445,18 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         shaman_l20_native and native_spell_winner
         and native_spell_coefficients_error is None
         and bool(native_spell_coefficients_applied))
+    if shaman_l20_native:
+        # Keep the existing native Spell Power witness first. Only after the
+        # exact rank-915 action is source-enriched may the same bounded paid
+        # search try an Intellect derivative from native ItemSparse deltas.
+        # Other zero axes remain outside this independent P3 slice.
+        allowed = {"NONPOSITIVE_RELEVANT_WEIGHT:spell_power"}
+        if force_native_shaman_spell_power_witness:
+            allowed.add("NONPOSITIVE_RELEVANT_WEIGHT:intellect")
+        witness_blockers = (
+            [] if native_spell_coefficients_error else [
+                blocker for blocker in witness_blockers if blocker in allowed
+            ])
     witness_axes = [blocker.split(":", 1)[1] for blocker in witness_blockers]
     if (force_native_shaman_spell_power_witness
             and "spell_power" not in witness_axes):
