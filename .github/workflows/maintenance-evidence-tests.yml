@@ -13,6 +13,8 @@ on:
       - 'tools/wf245_joint_frontier_replay.py'
       - 'tools/wf246_primary_stat_replay.py'
       - 'tools/wf360_l30_*.py'
+      - 'tools/wf300_nine_class_*.py'
+      - 'tools/wf353_l30_current_*.py'
       - 'tests/test_wf360_*.py'
       - 'tests/test_wf303_checkpoint_falsifier.py'
       - 'tests/test_wf305_source_action_scope.py'
