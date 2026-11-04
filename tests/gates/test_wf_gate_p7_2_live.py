@@ -162,8 +162,8 @@ def test_unrestricted_p72_reuses_actual_balance_reference_and_pays_native(
     assert selected_binary == binary.resolve()
     assert meta["selected_reference_profile"] == "balance"
     assert original["raid"]["parties"][0]["players"][0]["balanceDruid"]
-    # All three approved single-axis producers can select this authentic
-    # unrestricted Druid build; P7.5 retains its separate joint-search path.
+    # The three single-axis producers and P7.5 joint search all reuse the
+    # authentic source build without inventing an unrestricted report.
     p73_reference = gate._pinned_source_runtime(
         root, "druid", 60, "unrestricted", "P7.3",
         require_world=False)
@@ -173,9 +173,10 @@ def test_unrestricted_p72_reuses_actual_balance_reference_and_pays_native(
         root, "druid", 60, "unrestricted", "P7.4", require_world=False)
     assert isinstance(p74_reference, tuple)
     assert p74_reference[1]["selected_reference_profile"] == "balance"
-    assert gate._pinned_source_runtime(
-        root, "druid", 60, "unrestricted", "P7.5",
-        require_world=False)["status"] == "BLOCKED"
+    p75_reference = gate._pinned_source_runtime(
+        root, "druid", 60, "unrestricted", "P7.5", require_world=False)
+    assert isinstance(p75_reference, tuple)
+    assert p75_reference[1]["selected_reference_profile"] == "balance"
 
     source_player = original["raid"]["parties"][0]["players"][0]
     changed = [{"action": {"castSpell": {"spellId": {"spellId": 8921}}}}]
