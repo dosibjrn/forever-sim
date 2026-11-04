@@ -33,7 +33,7 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
             paid_recovery=True, native_identity=True,
             first_world_native_failure=False, cast_receipts=1,
             options=None, refuse_dense_at=None, full_route_delay=5.0,
-            source_request=None):
+            source_request=None, refuse_changed_world_route=False):
     source_path = tmp_path / "source.json"
     source_path.write_text(json.dumps(_source()))
     now = [0.0]
@@ -69,6 +69,11 @@ def _runner(tmp_path, *, budget=40.0, snapshot=10.0, max_attempts=100,
         # Two-target paid native/world routes rank the actual 30/300s
         # search; only its frozen finalists run 100-mob routes afterward.
         assert build in paid_builds
+        if (refuse_changed_world_route and target_count == 2
+                and build["raid"]["parties"][0]["players"][0][
+                    "talentsString"] != _source()["raid"]["parties"][0][
+                        "players"][0]["talentsString"]):
+            return {"native_2d_persistent_world_ack_verified": False}
         if budget != 300.0:
             assert build == paid_builds[-1]
         if target_count == 100:
@@ -656,3 +661,26 @@ def test_priest_cold_adapter_emits_real_runtime_provenance_on_eligible_pass(
         "priest", 20, "unrestricted", gate="P4")
     assert denied["status"] == "FAIL"
     assert "P4_P5_EXECUTED_NATIVE_BINARY_IDENTITY_UNAVAILABLE" in denied["reasons"]
+
+
+def test_cold_does_not_credit_native_only_talent_cast_when_world_route_refuses(
+        tmp_path):
+    folder = tmp_path / "world-refused-talent"
+    folder.mkdir()
+    baseline = _source()
+    changed = copy.deepcopy(baseline)
+    actor = changed["raid"]["parties"][0]["players"][0]
+    actor["talentsString"] = "native-judged-talent-variant"
+    actor["rotation"]["priorityList"].insert(
+        0, {"action": {"castSpell": {"spellId": {"spellId": 15407}}}})
+    (folder / "01-baseline.json").write_text(json.dumps(baseline))
+    (folder / "02-talent.json").write_text(json.dumps(changed))
+    result, paid, _ = _runner(
+        tmp_path, budget=300.0, snapshot=30.0, max_attempts=2,
+        options=[], source_request=folder, refuse_changed_world_route=True)
+    assert len(paid) == 2
+    assert result["native_cold_rows"][1]["native_source_action_cast_counts"][
+        '{"spellId":15407}'] == 1
+    assert result["native_cold_rows"][1]["status"] == "WORLD_INCOMPLETE"
+    assert result["native_cold_talent_action_witnesses"] == []
+    assert native_cold_gate_verdicts(result)["P4"]["status"] == "FAIL"
