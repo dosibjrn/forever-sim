@@ -11,6 +11,7 @@ on:
       - src/game/native_p3_item_options.py
       - tests/gates/test_wf_gate_class_cli.py
       - tests/test_native_p3_item_options.py
+      - tests/test_prio_p3_source_policy_sp.py
       - tools/wf_gate.py
       - tools/wf_gate_p3_live.py
 
