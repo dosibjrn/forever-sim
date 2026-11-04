@@ -342,6 +342,9 @@ def render_history_svg(output, ledger=LEDGER):
         f'font-size="19" font-weight="bold">Measured {current["measured_percent"]:.4f}%</text>',
         f'<text x="785" y="103" fill="#f9fafb" font-family="Arial,sans-serif" '
         f'font-size="19" font-weight="bold">Certified {current["certified_checkpoints"]}/148</text>',
+        f'<text x="785" y="124" fill="#9ca3af" font-family="Arial,sans-serif" '
+        f'font-size="12">9/9 gate candidates: {current["complete_candidates"]} · '
+        f'pending compatibility: {current["complete_candidates"] - current["certified_checkpoints"]}</text>',
         '<line x1="39" y1="130" x2="67" y2="130" stroke="#34d399" stroke-width="3"/>',
         '<text x="75" y="135" fill="#d1d5db" font-family="Arial,sans-serif" font-size="14">'
         f'Full gate PASS (% of {TOTAL})</text>',
@@ -431,7 +434,12 @@ def main(argv=None):
     print(f"Whole checkpoints: {result['certified_checkpoints']}/148; "
           f"{len(GATES)} active gates per checkpoint; "
           f"{result['complete_candidates']} complete candidates")
-    print("Unlinked/mismatched compatibility IDs never certify a whole checkpoint.")
+    if result["complete_candidates"] > result["certified_checkpoints"]:
+        print(f"{result['complete_candidates'] - result['certified_checkpoints']} "
+              "9/9 PASS checkpoint candidate(s) await compatible provenance "
+              "(matching non-empty compatibility_id for all nine).")
+    else:
+        print("All 9/9 PASS checkpoint candidates have compatible provenance.")
     return 0
 
 
