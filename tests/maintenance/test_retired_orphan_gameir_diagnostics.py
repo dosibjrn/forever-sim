@@ -178,6 +178,7 @@ RETAINED_BEHAVIOR_TESTS = (
     "tests/test_wf272_source_ranked_periodic_finisher.py",
     "tests/test_wf241_mixed_hot_recovery.py",
     "tests/test_actor_recovery_channel.py",
+    "tests/test_work2_paid_recovery_event_budget.py",
 )
 
 

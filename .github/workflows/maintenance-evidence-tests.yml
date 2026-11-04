@@ -25,6 +25,7 @@ on:
       - 'tests/generic/search/test_wf391_generic_joint_frontier.py'
       - 'tests/test_wf424_insect_source_talent_100mob_tdd.py'
       - 'tests/test_wf430_source_compound_stun_tdd.py'
+      - 'tests/test_work2_paid_recovery_event_budget.py'
       - 'evidence/wf357/WF357_RECOVERY_100MOB.json'
       - 'evidence/wf424/WF424_DRUID_L30_INSECT_SWARM_100MOB.json'
       - 'evidence/wf429/WF429_L30_26PT_PUSHBACK_100MOB.json'
@@ -155,7 +156,8 @@ jobs:
           tests/test_prio_p3_live_sourced_chance_gear.py
           tests/test_wf380_legacy_bonus_talent_budget.py
           tests/test_wf241_mixed_hot_recovery.py
-          tests/test_actor_recovery_channel.py
+          tests/test_actor_recovery_channel.py \
+          tests/test_work2_paid_recovery_event_budget.py
           tests/mechanics/druid/test_druid_mechanics_layout.py
           tests/mechanics/druid/test_druid_cat_closure_v0114896.py
           tests/mechanics/druid/test_druid_balance_mana_weights_v0114854.py
