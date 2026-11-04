@@ -260,6 +260,45 @@ def _source_actor_context_summary(ir) -> dict:
     }
 
 
+
+def _paid_native_equipped_probe(root: Path, native_binary: str | None,
+                                item_check: dict, remaining: int):
+    """Use the existing selected-native sim boundary when an exact source
+    request is supplied. Do not convert a level-60 fixture into a claimed
+    level-20 actor or spend outside the shared P3 evaluation cap.
+    """
+    request_path = os.environ.get("FOREVER_P3_NATIVE_ROGUE_REQUEST")
+    if not request_path:
+        return None
+    if remaining < 2:
+        return {"status": "NOT_RUN_PAID_BUDGET_EXHAUSTED", "paid_attempts": 0}
+    if not native_binary:
+        return {"status": "NOT_RUN_NATIVE_BINARY_MISSING", "paid_attempts": 0}
+    import json
+    import subprocess
+    import sys
+
+    script = root / "integrations/mythicsim-rust/native_p3_equipped.py"
+    command = [sys.executable, str(script), "--binary", str(native_binary),
+               "--request", str(request_path)]
+    try:
+        completed = subprocess.run(
+            command, input=json.dumps(item_check.get("slots", {})),
+            capture_output=True, text=True, timeout=150, check=False)
+        if completed.returncode != 0:
+            return {"status": "NATIVE_EQUIPPED_PROBE_ERROR", "paid_attempts": 0,
+                    "error": (completed.stderr or completed.stdout)[-500:]}
+        receipt = json.loads(completed.stdout)
+        if (not isinstance(receipt, dict)
+                or type(receipt.get("paid_attempts")) is not int
+                or not 0 <= receipt["paid_attempts"] <= 2):
+            raise ValueError("P3_NATIVE_EQUIPPED_INVALID_RECEIPT")
+        return receipt
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        return {"status": "NATIVE_EQUIPPED_PROBE_ERROR",
+                "paid_attempts": 0, "error": str(exc)[-500:]}
+
+
 def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricted") -> dict:
     # Selected P3 class/level paths require authoritative native ItemSparse.
     # Unsupported native queries refuse; never fall back to Python/SQLite gear.
@@ -598,7 +637,21 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             weights=weights, weight_evidence_kind="MEASURED_SOURCE_CONTEXT",
             native_options_binary=native_binary,
             native_options_response=native_options)
+    native_equipped_receipt = (
+        _paid_native_equipped_probe(
+            root, native_binary, item_check,
+            max(0, max_p3_evaluations
+                - int(result.get("attempted", 0)) - extra_evaluations))
+        if rogue_l20_native else None)
     reasons = list(item_check["blockers"])
+    # An item-options source snapshot and Python weighted score alone cannot
+    # certify an actual selected-Rust equipped L20 actor. The native pair
+    # receipt remains explicit until the authoritative actor matches L20.
+    if rogue_l20_native and not (
+            native_equipped_receipt
+            and native_equipped_receipt.get("actor_checkpoint_verified") is True
+            and native_equipped_receipt.get("status") == "PAID_NATIVE_DIFFERENCE"):
+        reasons.append("P3_NATIVE_L20_EQUIPPED_SCORE_NOT_ESTABLISHED")
     # The source policy was paid by CombatRuntime, but item scoring does NOT
     # become native equipped-build execution merely because candidate items
     # originated in Rust. Preserve real provenance and the measured receipt.
@@ -619,6 +672,10 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "real_source_search_attempts": result.get("attempted", 0),
         "real_source_search_evaluated": result.get("evaluated", 0) + extra_evaluations,
         "source_policy_stat_witnesses": source_policy_stat_witnesses,
+        "native_equipped_paid_receipt": native_equipped_receipt,
+        "native_equipped_paid_attempts": (
+            native_equipped_receipt.get("paid_attempts", 0)
+            if native_equipped_receipt else 0),
         # This is the resolver used by the paid source search, not a second
         # P3 applicability rule or an invented zero for absent primary stats.
         "real_stat_probe_axis_selection": result.get("stat_probe_axis_selection"),
