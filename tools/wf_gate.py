@@ -179,6 +179,18 @@ def main(argv=None) -> int:
                     "cold_candidate_failures"):
             if key in report:
                 record[key] = report[key]
+        if gate == "P7.1":
+            # Forward the real pinned native stochastic mean and its saved
+            # comparator in the ordinary no-record Actions output. These are
+            # provider measurements, never an inferred gate PASS.
+            for key in ("native_dps", "saved_reference_dps", "required_dps"):
+                value = report.get(key)
+                if type(value) in (int, float) and math.isfinite(value) and value >= 0:
+                    record[key] = value
+            for key in ("reference_profile", "selected_validation"):
+                value = report.get(key)
+                if isinstance(value, str) and len(value) <= 128:
+                    record[key] = value
         if gate == "P3":
             # Make the real bounded Rust baseline/equipped pair visible to the
             # ordinary no-record CLI. Otherwise the producer's native verdict,
