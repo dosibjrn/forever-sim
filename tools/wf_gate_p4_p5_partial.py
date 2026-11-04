@@ -107,6 +107,7 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
             and spec == "unrestricted" and (request_file or candidate_dir)):
         from tools.wf_native_priest_l20_paid import (
             couple_source_priest_l20_world,
+            couple_source_priest_l20_persistent_world,
             score_native_priest_l20_item_candidates,
             score_source_priest_l20_candidates)
         try:
@@ -115,7 +116,8 @@ def _native_cold_options_without_paid_executor(class_key: str, level: int,
             # Opt in on a selected bridge-capable engine. The same paid
             # candidate then flows through the existing real native↔gsim-2D
             # damage/ACK loop; a one-fight ACK is NOT a 100-mob screen.
-            live_kwargs = ({"world_screen": couple_source_priest_l20_world}
+            live_kwargs = ({"world_screen": couple_source_priest_l20_world,
+                            "persistent_world": couple_source_priest_l20_persistent_world}
                            if os.environ.get("FOREVER_P4_P5_PRIEST_L20_LIVE_WORLD") == "1"
                            else {})
             if candidate_dir:
