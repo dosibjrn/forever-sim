@@ -171,16 +171,21 @@ def native_cold_gate_verdicts(cold: dict) -> dict:
     common = []
     if cold.get("native_cold_300s_reached") is not True:
         common.append("P4_P5_NATIVE_COLD_300S_SEARCH_NOT_COMPLETED")
+    # P4 alone requires an executed comparison of a reachable talent unlock.
+    # P5 is the independent continued-search verdict: its contract requires
+    # paid 300s breadth and its own 100-mob winner, not a second P4 unlock
+    # witness. Do not transfer a P4-only acceptance condition to P5.
     witnesses = cold.get("native_cold_talent_action_witnesses")
-    if not (isinstance(witnesses, list) and any(
-            isinstance(w, dict) and w.get("source_talents_changed") is True
-            and type(w.get("native_casts")) is int and w["native_casts"] > 0
-            and isinstance(w.get("native_action_id"), str)
-            for w in witnesses)):
-        common.append("P4_P5_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED")
+    has_unlock_comparison = isinstance(witnesses, list) and any(
+        isinstance(w, dict) and w.get("source_talents_changed") is True
+        and type(w.get("native_casts")) is int and w["native_casts"] > 0
+        and isinstance(w.get("native_action_id"), str)
+        for w in witnesses)
     verdicts = {}
     for gate in ("P4", "P5"):
         reasons = list(common)
+        if gate == "P4" and not has_unlock_comparison:
+            reasons.append("P4_SOURCE_TALENT_ACTION_NOT_NATIVE_COMPARED")
         if not _native_cold_winner_receipt_valid(cold, gate):
             reasons.append(gate + "_FROZEN_WINNER_REAL_100MOB_RECEIPT_INCOMPLETE")
         if gate == "P5":
