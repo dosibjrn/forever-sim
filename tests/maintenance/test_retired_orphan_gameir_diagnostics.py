@@ -57,6 +57,8 @@ RETIRED_TOOLS = (
     "tools/wf424_druid_l30_insect_probe.py",
     "tools/wf429_l30_pushback_100mob.py",
     "tools/wf430_l30_starfire_100mob.py",
+    # Unreferenced 300 s GameIR search driver retained under evidence/ by mistake.
+    "evidence/wf438/run300.py",
 )
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
