@@ -8,8 +8,8 @@ from src.game.checkpoint_p3_smoke import (
     policy_uses_weapon_damage,
 )
 from src.game.data.forever.druid import build_source_slice
-from src.game.data.forever.mage import build_mage_source_slice
-from src.game.data.forever.priest import build_priest_source_slice
+from src.game.data.forever.mage import build_source_slice as build_mage_source_slice
+from src.game.data.forever.priest import build_source_slice as build_priest_source_slice
 from src.rulesets.forever.items.catalogue import ItemRecord
 
 
@@ -100,7 +100,7 @@ def test_equipped_weapon_action_requires_matching_mode_source_and_both_weights(m
     )
     action = SimpleNamespace(
         id="strike",
-        requirements=(SimpleNamespace(kind="mode_is", value="human"),),
+        requirements=({"kind": "mode_is", "value": "human"},),
         effects=(
             SimpleNamespace(
                 effect_type="weapon_damage",
@@ -136,6 +136,37 @@ def test_equipped_weapon_action_requires_matching_mode_source_and_both_weights(m
     assert result["source_policy"]["equipped_weapon_dependency_derived_from_canonical_mode_facts_only"] is True
 
 
+def test_flat_dps_anchor_with_canonical_equipped_source_fact_is_applicable(monkeypatch):
+    # The real gear applicator replaces a flat-DPS anchor by source kind/mode,
+    # even when no actor stat ID is present on the original damage source.
+    fact = _source_fact(source_stat="weapon_dps")
+    monkeypatch.setattr(
+        "src.game.gear._weapon_facts_for_ir",
+        lambda _ir: ((fact, "human"),),
+    )
+    action = SimpleNamespace(
+        id="flat-strike",
+        requirements=({"kind": "mode_is", "value": "human"},),
+        effects=(
+            SimpleNamespace(
+                effect_type="weapon_damage",
+                damage_source=SimpleNamespace(
+                    kind="equipped_weapon", dps_stat_id=None, flat_dps=12.0,
+                ),
+            ),
+        ),
+    )
+    ir = SimpleNamespace(
+        id="flat-anchor-ir",
+        actor=SimpleNamespace(metadata={"class_key": "warrior"}),
+        actions=(action,),
+        auto_attacks=(),
+    )
+    policy = _policy("flat-strike")
+    assert policy_uses_equipped_weapon_damage(ir, policy) is True
+    assert policy_uses_equipped_weapon_mean_hit(ir, policy) is True
+
+
 def test_mode_free_proxy_autoattack_without_source_fact_is_not_equipped_weapon_dependency():
     auto = SimpleNamespace(
         id="mage:wand-auto",
@@ -159,7 +190,7 @@ def test_proxy_action_effect_without_a_matching_source_fact_is_not_equipped_weap
     monkeypatch.setattr("src.game.gear._weapon_facts_for_ir", lambda _ir: ())
     action = SimpleNamespace(
         id="wand-shot",
-        requirements=(SimpleNamespace(kind="mode_is", value="human"),),
+        requirements=({"kind": "mode_is", "value": "human"},),
         effects=(
             SimpleNamespace(
                 effect_type="weapon_damage",
