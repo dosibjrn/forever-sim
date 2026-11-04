@@ -380,8 +380,9 @@ def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> 
                 request = Path(tmp) / "changed-equipment.json"
                 request.write_text(json.dumps(candidate))
                 try:
+                    native_options = {"go_rules": True} if spec == "feral" else {}
                     native = production.native_source_control(
-                        binary, request, 3, rng_mode="balanced")
+                        binary, request, 3, rng_mode="balanced", **native_options)
                 except Exception as exc:
                     status, reason = _native_refusal(exc)
                     if status == "INVALID":
@@ -414,7 +415,9 @@ def _run_native_gear_axis(root: Path, class_key: str, level: int, spec: str) -> 
         "production_engine": "pinned_mythicsim_rust_native",
         "production_component": "integrations/mythicsim-rust/live_world_probe.py:native_source_control",
         "native_source_revision": meta.get("selected_engine_revision", PINNED_RUST),
-        "source_request_raw_sha256": SAVED_BALANCE_RAW_SHA,
+        "source_request_raw_sha256": meta.get(
+            "source_request_raw_sha256", SAVED_BALANCE_RAW_SHA),
+        "native_rules": "go_reference" if spec == "feral" else "forever",
         "saved_reference_dps": float(meta["reference_dps"]),
         "reference_profile": meta.get("selected_reference_profile", "balance"),
         "checkpoint_spec": spec,
