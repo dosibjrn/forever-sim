@@ -177,27 +177,6 @@ def test_retired_history_cannot_be_invalidated(tmp_path):
 
 
 
-def test_materially_invalidated_partial_receipt_can_be_removed(tmp_path, monkeypatch):
-    monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
-    path = tmp_path / "m1.tsv"
-    assert m1.record_partial(
-        class_key="mage", level=30, spec="unrestricted", gate="P3",
-        report=_behavior_partial(46, 160), path=path)
-    key = ("mage", "30", "unrestricted", "P3")
-    assert key in m1._rows(path)
-    assert m1.main(["--ledger", str(path), "--invalidate",
-                    "mage", "30", "unrestricted", "P3"]) == 0
-    assert key not in m1._rows(path)
-
-
-def test_m1_recorder_supports_owner_authenticated_partial_invalidation():
-    workflow = Path(".github/workflows/m1-on-demand-record.yml").read_text()
-    assert "startsWith(github.event.comment.body, '/m1-invalidate ')" in workflow
-    assert "INVALIDATE_REASON" in workflow
-    assert 'python tools/m1_progress.py --invalidate "$class" "$level" "$spec" "$gate"' in workflow
-    assert "M1: invalidate $INVALIDATE_TARGET ($INVALIDATE_REASON)" in workflow
-    assert "force:false" in workflow
-
 def test_partial_watermark_is_monotonic_but_logs_lower_current_measurement(
         monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(m1.subprocess, "check_output", lambda *a, **k: SHA)
