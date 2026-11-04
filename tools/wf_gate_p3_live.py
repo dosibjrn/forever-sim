@@ -248,8 +248,14 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             "src.v2.source_bounded_joint_frontier.source_spec_talent_frontier"}
     native_spell_facts = None
     native_spell_coefficients_applied = []
-    if (str(class_key).lower() == "mage" and int(level) == 30
-            and str(spec).lower() == "unrestricted"):
+    native_spell_coefficients_error = None
+    mage_l30_spell_probe = (
+        str(class_key).lower() == "mage" and int(level) == 30
+        and str(spec).lower() == "unrestricted")
+    shaman_l20_spell_probe = (
+        str(class_key).lower() == "shaman" and int(level) == 20
+        and str(spec).lower() == "unrestricted")
+    if mage_l30_spell_probe:
         from src.game.native_p3_item_options import (
             NativeItemOptionsError, apply_native_mage_spell_coefficients,
             query_native_mage_spell_coefficients,
@@ -264,6 +270,21 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
                 "reasons": [str(exc)],
                 "production_component": "src.game.native_p3_item_options",
             }
+    elif shaman_l20_spell_probe:
+        from src.game.native_p3_item_options import (
+            NativeItemOptionsError, apply_native_shaman_spell_coefficients,
+            query_native_shaman_spell_coefficients,
+        )
+        try:
+            native_spell_facts = query_native_shaman_spell_coefficients(native_binary)
+            ir, native_spell_coefficients_applied = (
+                apply_native_shaman_spell_coefficients(ir, native_spell_facts))
+        except (NativeItemOptionsError, ValueError, TypeError, OSError) as exc:
+            # The coefficient is optional evidence, never a substitute for the
+            # existing P3 result. Preserve the original 66/204 high-water and
+            # report the exact refusal instead of turning a missing source fact
+            # into a new BLOCKED verdict or a guessed positive weight.
+            native_spell_coefficients_error = str(exc)
     max_p3_evaluations = 44
     schedule_incoming_attacks = True
     result = run_source_budgeted_gear(
@@ -385,8 +406,23 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         and str(spec).lower() == "unrestricted"
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
+    shaman_l20_native = (
+        str(class_key).lower() == "shaman" and int(level) == 20
+        and str(spec).lower() == "unrestricted"
+        and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    )
+    native_item_sized_probe = mage_l30_native or shaman_l20_native
+    if shaman_l20_native:
+        # This issue is only the Spell Power witness. Other zero axes remain
+        # separate P3 defects; a missing native coefficient keeps the old
+        # score and does not trigger a generic or paid-winner substitute.
+        witness_blockers = (
+            [] if native_spell_coefficients_error else [
+                blocker for blocker in witness_blockers
+                if blocker == "NONPOSITIVE_RELEVANT_WEIGHT:spell_power"
+            ])
     paid_winner_baseline_available = (
-        mage_l30_native
+        (mage_l30_native or (shaman_l20_native and native_fallback_action))
         and paid_search_winner_baseline(
             policy, record, tuple(record.get("prefix") or ())) is not None
     )
@@ -394,7 +430,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         axis = blocker.split(":", 1)[1]
         if weights.get(axis) != 0.0:
             continue
-        if mage_l30_native:
+        if native_item_sized_probe:
             probe_deltas, probe_delta_sources = _native_item_stat_probe_deltas(
                 item_check, axis)
             # If native top-five items have no positive value for this axis,
@@ -414,7 +450,7 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         )
         minimum_evaluations = (
             1 if (has_reusable_baseline or paid_winner_baseline_available)
-            else (3 if mage_l30_native and record.get("prefix") else 2)
+            else (3 if native_item_sized_probe and record.get("prefix") else 2)
         )
         if remaining < minimum_evaluations:
             break
@@ -424,10 +460,15 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
             opening_action_ids=tuple(record.get("prefix", ())),
-            preferred_policy=(policy if mage_l30_native else None),
-            baseline_record=(record if mage_l30_native else None),
-            allow_paid_winner_after_nonpositive=native_fallback_action)
-        if mage_l30_native:
+            preferred_policy=(
+                policy if (mage_l30_native or
+                           (shaman_l20_native and native_fallback_action)) else None),
+            baseline_record=(
+                record if (mage_l30_native or
+                           (shaman_l20_native and native_fallback_action)) else None),
+            allow_paid_winner_after_nonpositive=(
+                native_fallback_action and (mage_l30_native or shaman_l20_native)))
+        if native_item_sized_probe:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
         source_policy_stat_witnesses.append(witness)
@@ -491,5 +532,6 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         "native_spell_coefficients_engine_revision": (
             native_spell_facts.get("engine_revision") if native_spell_facts else None),
         "native_spell_coefficients_applied": native_spell_coefficients_applied,
+        "native_spell_coefficients_error": native_spell_coefficients_error,
         "native_paid_winner_spell_probe_enabled": native_fallback_action,
     }
