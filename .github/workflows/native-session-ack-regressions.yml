@@ -10,7 +10,6 @@ on:
       - 'integrations/mythicsim-rust/port_native_typed_rng.py'
       - 'integrations/mythicsim-rust/engine'
       - 'docs/evidence/druid-l60-balance/p7.5/historical_wf678_winner_axes.json'
-      - 'tools/diagnostics/replay_historical_wf678_winner.py'
       - 'tests/test_p75_axis_ablation.py'
       - 'tests/test_work2_native_health_damage_controls.py'
       - 'tests/test_work2_native_world_elapsed.py'
@@ -104,22 +103,6 @@ jobs:
               "BALANCED_TYPED_RNG_MODE_IGNORED_BY_SELECTED_RUST", outputs)
           print("REAL_SELECTED_RUST_BALANCED_STOCHASTIC_NATIVE_2D_SMOKE_GREEN_NOT_GATE", flush=True)
           PY
-      - name: Download latest no-record P7.5 diagnostic report (read-only; pre-Work2 composition)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/p75-search-failure"
-          gh run download 41638882114 --repo "$GITHUB_REPOSITORY" \
-            --name "work1-p75-no-record-5db0100bec67aa78c4c099dca5f96f015c191080" \
-            --dir "$RUNNER_TEMP/p75-search-failure"
-          test -s "$RUNNER_TEMP/p75-search-failure/p75.json"
-      - name: Ablate historical WF678 gear, talents and APL against failed P7.5 search winner (diagnostic, not gate)
-        run: |
-          python tools/diagnostics/replay_historical_wf678_winner.py \
-            --binary integrations/mythicsim-rust/engine/target/debug/forever-engine \
-            --iterations 5 \
-            --search-report "$RUNNER_TEMP/p75-search-failure/p75.json"
       - name: Two distinct sourced-HP native↔2D world kills and forged-ACK rejection
         run: |
           python integrations/mythicsim-rust/live_two_world_pulls.py \
