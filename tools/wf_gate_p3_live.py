@@ -436,7 +436,21 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         shaman_l20_spellbook
         and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
     )
-    native_item_sized_probe = mage_l30_native or shaman_l20_native
+    paladin_l20_native = (
+        str(class_key).lower() == "paladin" and int(level) == 20
+        and str(spec).lower() == "unrestricted"
+        and item_check.get("source") == "MYTHICSIM_NATIVE_ITEM_OPTIONS"
+    )
+    native_item_sized_probe = (
+        mage_l30_native or shaman_l20_native or paladin_l20_native)
+    if paladin_l20_native:
+        # The assigned Agility witness is the first potentially payable axis.
+        # A native mana cost by itself does not prove an in-combat Intellect
+        # constraint; do not add a speculative Intellect/recovery probe here.
+        witness_blockers = [
+            blocker for blocker in witness_blockers
+            if blocker == "NONPOSITIVE_RELEVANT_WEIGHT:agility"
+        ]
     if shaman_l20_native:
         # This issue is only the Spell Power witness. Other zero axes are
         # separate P3 defects. If the exact native coefficient/action was not
@@ -461,11 +475,29 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
         # positive, removing the NONPOSITIVE blocker. Still require the explicit
         # paid source-policy witness for the exact native fallback action.
         witness_axes.insert(0, "spell_power")
-    paid_winner_baseline_available = (
-        native_spell_winner
-        and paid_search_winner_baseline(
-            policy, record, tuple(record.get("prefix") or ())) is not None
+    paid_winner_score = (
+        paid_search_winner_baseline(
+            policy, record, tuple(record.get("prefix") or ()))
+        if native_spell_winner or paladin_l20_native else None
     )
+    if paladin_l20_native and paid_winner_score is None:
+        # Fail closed rather than retry the source policy or reinterpret an
+        # unrelated paid score as this exact selected policy's baseline.
+        return {
+            "status": "BLOCKED",
+            "reasons": ["P3_PALADIN_PAID_WINNER_BASELINE_INVARIANT_REJECTED"],
+            "production_component": "src.v2.source_budgeted_gear.paid_search_winner_baseline",
+            "real_source_search_evaluated": result.get("evaluated", 0),
+            "paid_winner_record_status": record.get("status"),
+            "paid_winner_fallback": record.get("fallback"),
+            "paid_winner_opening_action_ids": list(record.get("prefix") or ()),
+            "paid_winner_selected_action_ids": [
+                x.get("action_id") for x in record.get("selected_actions", ())
+                if isinstance(x, dict)],
+            "paid_winner_guarded_action": record.get("guarded_action"),
+            "paid_winner_policy_provenance": getattr(policy, "provenance", None),
+        }
+    paid_winner_baseline_available = paid_winner_score is not None
     for axis in witness_axes:
         if (weights.get(axis) != 0.0
                 and not (force_native_shaman_spell_power_witness
@@ -501,10 +533,13 @@ def run_live(root: Path, class_key: str, level: int, *, spec: str = "unrestricte
             schedule_incoming_attacks=schedule_incoming_attacks,
             baseline_cache=source_policy_baseline_cache,
             opening_action_ids=tuple(record.get("prefix", ())),
-            preferred_policy=(policy if native_spell_winner else None),
-            baseline_record=(record if native_spell_winner else None),
+            preferred_policy=(
+                policy if native_spell_winner or paladin_l20_native else None),
+            baseline_record=(
+                record if native_spell_winner or paladin_l20_native else None),
             allow_paid_winner_after_nonpositive=(
-                native_fallback_action and (mage_l30_native or shaman_l20_native)))
+                native_fallback_action and (mage_l30_native or shaman_l20_native)),
+            prefer_verified_paid_winner_first=paladin_l20_native)
         if native_item_sized_probe:
             witness["probe_delta_sources"] = probe_delta_sources
         extra_evaluations += int(witness["paid_evaluations"])
