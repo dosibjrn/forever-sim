@@ -124,6 +124,7 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
                              required_level_policy: str = 'catalogue', ir_slice=None,
                              policy_search_backend: str = 'prefix',
                              allow_cooldown_fallback: bool = False,
+                             source_search_auto_fallback: bool = False,
                              max_event_transitions: int | None = None,
                              stateful_use_l1: bool = False,
                              stateful_l1_mode: str = 'value_gated',
@@ -199,7 +200,8 @@ def run_source_budgeted_gear(*, class_key: str, level: int, max_evaluations: int
             return run_source_budgeted_prefix(class_key=class_key,level=level,
                 max_evaluations=search_budget,ir_slice=search_ir,
                 schedule_incoming_attacks=schedule_incoming_attacks,
-                allow_cooldown_fallback=allow_cooldown_fallback)
+                allow_cooldown_fallback=allow_cooldown_fallback,
+                include_auto_fallback=source_search_auto_fallback)
         remaining=(15000 if max_event_transitions is None else max_event_transitions-event_total)
         if remaining<=0:
             return {'attempted':0,'evaluated':0,'blocked':0,'best_vs_budget':[],
