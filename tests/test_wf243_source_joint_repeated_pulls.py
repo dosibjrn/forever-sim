@@ -17,6 +17,30 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = json.loads((ROOT / 'tests/fixtures/wf243_heldout_feral_l20.json').read_text())
 
 
+def test_policy_from_record_preserves_frozen_rule_sequence_and_provenance():
+    policy = policy_from_record(FIXTURE['policy'])
+    source = FIXTURE['policy']
+    assert policy.id == source['id']
+    assert policy.label == source['label']
+    assert tuple(rule.action_id for rule in policy.rules) == tuple(
+        rule['action_id'] for rule in source['rules']
+    )
+    assert tuple(rule.phase for rule in policy.rules) == tuple(
+        rule['phase'] for rule in source['rules']
+    )
+    assert tuple(
+        tuple(condition.kind for condition in rule.conditions)
+        for rule in policy.rules
+    ) == tuple(
+        tuple(condition['kind'] for condition in rule['conditions'])
+        for rule in source['rules']
+    )
+    assert tuple(rule.provenance for rule in policy.rules) == tuple(
+        rule['provenance'] for rule in source['rules']
+    )
+    assert policy.provenance == source['provenance']
+
+
 def test_stratified_independent_sample_never_seeds_heldout_and_covers_trees():
     universe = ({}, {'a': 1}, {'b': 1}, {'c': 1}, {'a': 1, 'b': 1})
     sample, coverage = joint.independent_allocation_sample(
