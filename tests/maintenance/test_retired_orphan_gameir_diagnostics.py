@@ -9,6 +9,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED_TOOLS = (
+    # WF358 frozen GameIR/SQLite contextual Top5 replay and report; no active gate caller.
+    "tools/wf358_l30_p3_empirical_report.py",
+    "tools/wf358_l30_p3_top5_replay.py",
     # Retired Python GameIR 100-mob continuity challenger; active gates run through wf_gate.
     "tools/wf299_100_mob_continuity_probe.py",
     # Retired GameIR-only cold 30s source benchmark; live cold gates use wf_gate.py.
@@ -152,6 +155,9 @@ RETIRED_TOOLS = (
     "scripts/prove_p00c_legality.py",
 )
 RETIRED_SOURCE_MODULES = (
+    # Exclusive Python source/legal empirical P3 proxy and 100-mob causal reporter.
+    "src/game/data/forever/source_checkpoint_p3_empirical_weights.py",
+    "src/game/data/forever/source_checkpoint_p3_causal_summary.py",
     "src/v2/source_sqlite_spell_facts.py",
     "src/v2/source_sqlite_spell_semantics.py",
     # Historical six-gate/P1/P2 reader; current certification uses m1_progress.
@@ -163,6 +169,10 @@ RETIRED_SOURCE_MODULES = (
 )
 
 RETIRED_IMPORT_NAMES = (
+    "wf358_l30_p3_empirical_report",
+    "wf358_l30_p3_top5_replay",
+    "source_checkpoint_p3_empirical_weights",
+    "source_checkpoint_p3_causal_summary",
     "wf261_stateful_benchmark",
     "wf263_l1_value_benchmark",
     "wf276_resource_prefix_benchmark",
@@ -333,6 +343,7 @@ RETIRED_SOURCE_EVIDENCE = (
 
 
 RETIRED_TESTS = (
+    "tests/test_wf358_p3_contextual_top5.py",
     "tests/test_wf300_continuous_mob.py",
     "tests/gates/test_wf299_30_second_gate.py",
     "tests/maintenance/test_historical_joint_replay_compat.py",
@@ -387,6 +398,11 @@ RETAINED_BEHAVIOR_TESTS = (
 
 
 RETAINED_HISTORICAL_EVIDENCE = (
+    # Snapshot of the discontinued WF358 source-IR 100-mob contextual study.
+    "evidence/wf358/WF358_L30_P3_TOP5_DIRECT_REPLAYS.json",
+    "evidence/wf358/WF358_L30_P3_CONTEXTUAL_TOP5_AND_WEIGHTS.json",
+    "evidence/wf358/WF358_L30_CAUSAL_STAT_100MOB.json",
+    "evidence/wf358/WF358_L30_CAUSAL_STAT_WEIGHT_TABLE.json",
     "evidence/wf365/WF365_DRUID_L30_REVOCATION.json",
     "evidence/wf343/WF343_SOURCE_DISPLAY_PERCENT_TOP5.json",
     "evidence/wf343/WF343_TOP5_READABLE_REPORT.md",
