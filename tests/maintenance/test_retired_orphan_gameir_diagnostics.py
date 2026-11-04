@@ -69,6 +69,8 @@ RETIRED_TOOLS = (
 RETIRED_SOURCE_MODULES = (
     "src/v2/source_sqlite_spell_facts.py",
     "src/v2/source_sqlite_spell_semantics.py",
+    # Historical six-gate/P1/P2 reader; current certification uses m1_progress.
+    "src/game/checkpoint_acceptance_status.py",
 )
 
 RETIRED_IMPORT_NAMES = (
@@ -131,6 +133,8 @@ RETIRED_IMPORT_NAMES = (
     "source_spell_dependency_observations",
     "source_gap_audit",
     "scope_audit(",
+    "checkpoint_acceptance_status",
+    "accepted_checkpoint_status",
 )
 
 
@@ -176,6 +180,7 @@ RETIRED_TESTS = (
     "tests/generic/search/test_wf391_generic_joint_frontier.py",
     "tests/test_wf424_insect_source_talent_100mob_tdd.py",
     "tests/test_wf430_source_compound_stun_tdd.py",
+    "tests/gates/test_wf367_six_port_acceptance.py",
 )
 
 RETIRED_COMMANDS = (
@@ -236,9 +241,6 @@ def test_orphan_gameir_diagnostic_clis_stay_retired():
         assert (ROOT / relative).is_file(), f"retained search regression was removed: {relative}"
     for relative in RETAINED_HISTORICAL_EVIDENCE:
         assert (ROOT / relative).is_file(), f"historical revocation evidence was removed: {relative}"
-    reader = (ROOT / "src/game/checkpoint_acceptance_status.py").read_text(encoding="utf-8")
-    assert "evidence/wf365/WF365_DRUID_L30_REVOCATION.json" in reader
-
     for workflow_path in (ROOT / ".github/workflows").glob("*.yml"):
         workflow_source = workflow_path.read_text(encoding="utf-8")
         workflow_jobs = workflow_source.split("jobs:", 1)[1] if "jobs:" in workflow_source else ""
